@@ -1,0 +1,14 @@
+## .NET build artifacts
+bin/
+obj/
+
+## IDE
+.vs/
+.vscode/
+*.user
+
+## User Secrets (nunca deberían estar en el repo; se guardan fuera del proyecto igual)
+secrets.json
+
+## Variables de entorno locales
+.env
