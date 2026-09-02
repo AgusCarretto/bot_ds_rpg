@@ -69,9 +69,21 @@ class Program
         return Task.CompletedTask;
     }
 
+    // Discord.Net dispara Ready en cada reconexión (no solo en el login inicial); sin esta
+    // guarda, AddModulesAsync intentaría re-registrar los mismos módulos y tiraría una excepción
+    // sin manejar tras cualquier corte de red.
+    private static bool _modulesRegistered;
+
     private static async Task ReadyAsync(IConfiguration configuration)
     {
         Console.WriteLine($"\n[ÉXITO] ¡Asado y Acero RPG ({_client.CurrentUser.Username}) está en línea!");
+
+        if (_modulesRegistered)
+        {
+            return;
+        }
+
+        _modulesRegistered = true;
 
         await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
 
@@ -106,9 +118,17 @@ class Program
             Console.WriteLine($"[EXCEPCIÓN] {ex.Message}");
             if (interaction.Type == InteractionType.ApplicationCommand)
             {
-                var msg = await interaction.GetOriginalResponseAsync();
-                if (msg == null)
-                    await interaction.RespondAsync("¡Upa! Ocurrió un error inesperado al procesar tu comando.", ephemeral: true);
+                try
+                {
+                    var msg = await interaction.GetOriginalResponseAsync();
+                    if (msg == null)
+                        await interaction.RespondAsync("¡Upa! Ocurrió un error inesperado al procesar tu comando.", ephemeral: true);
+                }
+                catch
+                {
+                    // Puede fallar si la excepción original ocurrió antes de Defer/Respond
+                    // (nunca hubo una respuesta que consultar); no hay nada más que hacer acá.
+                }
             }
         }
     }
@@ -130,7 +150,11 @@ public static class ServiceProviderBuilder
             .AddSingleton<IGatheringRepository, GatheringRepository>()
             .AddSingleton<IItemRepository, ItemRepository>()
             .AddSingleton<IInventoryRepository, InventoryRepository>()
+            .AddSingleton<IShopRepository, ShopRepository>()
+            .AddSingleton<ICraftingRepository, CraftingRepository>()
+            .AddSingleton<ICasinoRepository, CasinoRepository>()
             .AddSingleton<ICombatService, CombatService>()
+            .AddSingleton<ICasinoService, CasinoService>()
             .BuildServiceProvider();
     }
 }

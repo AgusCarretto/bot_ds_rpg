@@ -3,7 +3,7 @@
 -- PostgreSQL
 -- =========================================================
 -- Orden de creación: items -> users -> inventory -> cooldowns
--- (users referencia items vía current_weapon_id, por eso items va primero)
+-- (users referencia items vía weapon_id/amulet_id, por eso items va primero)
 
 BEGIN;
 
@@ -17,7 +17,11 @@ CREATE TABLE IF NOT EXISTS items (
     rarity      TEXT NOT NULL DEFAULT 'Común'
                     CHECK (rarity IN ('Común', 'Raro', 'Épico', 'Legendario', 'Mítico')),
     stat_value  INTEGER NOT NULL DEFAULT 0 CHECK (stat_value >= 0),
-    sell_price  INTEGER NOT NULL DEFAULT 0 CHECK (sell_price >= 0)
+    sell_price  INTEGER NOT NULL DEFAULT 0 CHECK (sell_price >= 0), -- lo que paga la tienda al vender
+    buy_price   INTEGER NOT NULL DEFAULT 0 CHECK (buy_price >= sell_price), -- lo que cobra la tienda al comprar
+    -- Familia del arma (solo aplica cuando type = 'Weapon'): define la sinergia de clase en combate,
+    -- ver GameData/ClassCatalog.cs (WeaponType) y GameData/ClassWeaponSynergy.cs.
+    weapon_family TEXT CHECK (weapon_family IN ('Espadas', 'Dagas', 'Arcos', 'Grimorios'))
 );
 
 -- ---------------------------------------------------------
@@ -32,7 +36,10 @@ CREATE TABLE IF NOT EXISTS users (
     gold              INTEGER NOT NULL DEFAULT 50 CHECK (gold >= 0),
     max_hp            INTEGER NOT NULL DEFAULT 100 CHECK (max_hp > 0),
     current_hp        INTEGER NOT NULL DEFAULT 100 CHECK (current_hp >= 0),
-    current_weapon_id INTEGER REFERENCES items (item_id) ON DELETE SET NULL,
+    weapon_id         INTEGER REFERENCES items (item_id) ON DELETE SET NULL,
+    amulet_id         INTEGER REFERENCES items (item_id) ON DELETE SET NULL,
+    daily_streak      INTEGER NOT NULL DEFAULT 0 CHECK (daily_streak >= 0),
+    last_daily_claim  TIMESTAMPTZ, -- NULL = todavía no reclamó ningún /daily
     CONSTRAINT chk_current_hp_within_max CHECK (current_hp <= max_hp)
 );
 

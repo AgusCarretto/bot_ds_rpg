@@ -3,9 +3,10 @@ using BotDsRpg.Repositories;
 using Discord;
 using Discord.Interactions;
 
-public class CooldownModule(ICooldownRepository cooldownRepository) : InteractionModuleBase<SocketInteractionContext>
+public class CooldownModule(ICooldownRepository cooldownRepository, IUserRepository userRepository)
+    : InteractionModuleBase<SocketInteractionContext>
 {
-    [SlashCommand("cd", "Mostrá el estado de tus cooldowns (cazar, viajar, talar y minar).")]
+    [SlashCommand("cd", "Mostrá el estado de tus cooldowns (cazar, viajar, talar, minar y diario).")]
     public async Task HandleCooldownsAsync()
     {
         await DeferAsync(ephemeral: true);
@@ -23,6 +24,15 @@ public class CooldownModule(ICooldownRepository cooldownRepository) : Interactio
 
                 lines.Add($"{definition.Emoji} **{definition.DisplayName}**: {status}");
             }
+
+            // /daily no usa la tabla cooldowns (tiene su propia columna last_daily_claim con
+            // ventana de 24h/48h), así que lo evaluamos aparte con la misma lógica pura de /daily.
+            var player = await userRepository.GetOrCreateUserAsync(Context.User.Id);
+            var dailyCalculation = DailyRewardCalculator.Evaluate(player.LastDailyClaim, player.DailyStreak, DateTime.UtcNow);
+            string dailyStatus = dailyCalculation.Status == DailyClaimStatus.TooSoon
+                ? $"{TimeFormat.Remaining(dailyCalculation.RemainingCooldown!.Value)} restantes"
+                : "**¡Listo!** ✅";
+            lines.Add($"🎁 **Diario**: {dailyStatus}");
 
             var embed = new EmbedBuilder()
                 .WithTitle("⏱️ Tus cooldowns")

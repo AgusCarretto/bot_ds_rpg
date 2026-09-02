@@ -6,13 +6,16 @@ namespace BotDsRpg.Repositories;
 internal static class UserSql
 {
     public const string SelectColumns = """
-        discord_id        AS "DiscordId",
-        class             AS "Class",
-        level             AS "Level",
-        xp                AS "Xp",
-        gold              AS "Gold",
-        max_hp            AS "MaxHp",
-        current_hp        AS "CurrentHp",
-        current_weapon_id AS "CurrentWeaponId"
+        discord_id       AS "DiscordId",
+        class            AS "Class",
+        level            AS "Level",
+        xp               AS "Xp",
+        gold             AS "Gold",
+        max_hp           AS "MaxHp",
+        current_hp       AS "CurrentHp",
+        weapon_id        AS "WeaponId",
+        amulet_id        AS "AmuletId",
+        daily_streak     AS "DailyStreak",
+        last_daily_claim AS "LastDailyClaim"
         """;
 }

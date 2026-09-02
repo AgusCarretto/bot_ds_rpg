@@ -25,4 +25,18 @@ public sealed class InventoryRepository(IDbConnectionFactory connectionFactory) 
         var rows = await connection.QueryAsync<InventoryEntry>(command);
         return rows.AsList();
     }
+
+    public async Task<int> GetQuantityAsync(ulong discordId, int itemId, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT quantity
+            FROM inventory
+            WHERE discord_id = @DiscordId AND item_id = @ItemId;
+            """;
+
+        using IDbConnection connection = connectionFactory.CreateConnection();
+        var command = new CommandDefinition(sql, new { DiscordId = (long)discordId, ItemId = itemId }, cancellationToken: cancellationToken);
+        // QuerySingleOrDefaultAsync<int> devuelve 0 (default) si no hay fila, que es exactamente "no lo tiene".
+        return await connection.QuerySingleOrDefaultAsync<int>(command);
+    }
 }

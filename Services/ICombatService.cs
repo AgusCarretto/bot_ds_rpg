@@ -14,6 +14,6 @@ public sealed record CombatResult(
 
 public interface ICombatService
 {
-    CombatResult SimulateHunt(int playerLevel);
-    CombatResult SimulateTravel(int playerLevel);
+    CombatResult SimulateHunt(int playerLevel, int weaponDamage);
+    CombatResult SimulateTravel(int playerLevel, int weaponDamage);
 }

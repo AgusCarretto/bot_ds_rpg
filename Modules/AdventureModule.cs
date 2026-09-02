@@ -20,7 +20,7 @@ public class AdventureModule(
     public Task HandleTravelAsync() =>
         RunAdventureAsync(CooldownCatalog.Travel, combatService.SimulateTravel);
 
-    private async Task RunAdventureAsync(CooldownDefinition definition, Func<int, CombatResult> simulate)
+    private async Task RunAdventureAsync(CooldownDefinition definition, Func<int, int, CombatResult> simulate)
     {
         // La consulta de cooldown + la simulación + la transacción pueden superar los 3s
         // que da Discord antes de que la interacción expire.
@@ -44,7 +44,21 @@ public class AdventureModule(
                 return;
             }
 
-            var result = simulate(player.Level);
+            // El daño del arma equipada suma al poder de combate (0 si no tiene ninguna equipada),
+            // con un bonus si la familia del arma coincide con la de su clase (ver ClassCatalog).
+            var weapon = player.WeaponId is int weaponId ? await itemRepository.GetByIdAsync(weaponId) : null;
+            var amulet = player.AmuletId is int amuletId ? await itemRepository.GetByIdAsync(amuletId) : null;
+            bool hasSynergy = weapon is not null && ClassWeaponSynergy.Applies(player.Class, weapon.WeaponFamily);
+            int weaponDamage = ClassWeaponSynergy.ApplyBonus(weapon?.StatValue ?? 0, player.Class, weapon?.WeaponFamily);
+            int defense = amulet?.StatValue ?? 0;
+
+            var result = simulate(player.Level, weaponDamage);
+
+            // El amuleto equipado reduce el HP perdido en el combate (con piso en 0).
+            if (defense > 0 && result.HpLost > 0)
+            {
+                result = result with { HpLost = Math.Max(0, result.HpLost - defense) };
+            }
 
             Item? droppedItem = result.DroppedRarity is not null
                 ? await itemRepository.GetRandomByRarityAsync(result.DroppedRarity)
@@ -67,7 +81,7 @@ public class AdventureModule(
                 return;
             }
 
-            await FollowupAsync(embed: BuildResultEmbed(definition, result, droppedItem, outcome));
+            await FollowupAsync(embed: BuildResultEmbed(definition, result, droppedItem, outcome, hasSynergy));
         }
         catch (Exception)
         {
@@ -94,7 +108,7 @@ public class AdventureModule(
             .Build();
     }
 
-    private static Embed BuildResultEmbed(CooldownDefinition definition, CombatResult result, Item? droppedItem, LevelUpOutcome outcome)
+    private static Embed BuildResultEmbed(CooldownDefinition definition, CombatResult result, Item? droppedItem, LevelUpOutcome outcome, bool hasSynergy)
     {
         string title = definition.CommandName == "hunt" ? "🏹 Resultado de la caza" : "🗺️ Resultado del viaje";
         var embed = new EmbedBuilder().WithTitle(title);
@@ -110,7 +124,7 @@ public class AdventureModule(
         }
 
         embed.WithColor(Color.Green)
-            .WithDescription($"{result.MonsterEmoji} ¡Derrotaste a **{result.MonsterName}**!")
+            .WithDescription($"{result.MonsterEmoji} ¡Derrotaste a **{result.MonsterName}**!" + (hasSynergy ? " ⚡ *(sinergia de clase activa)*" : string.Empty))
             .AddField("💰 Oro ganado", result.GoldReward.ToString(), true)
             .AddField("📊 EXP ganada", result.XpReward.ToString(), true)
             .AddField("❤️ Vida", $"{player.CurrentHp} / {player.MaxHp}" + (result.HpLost > 0 ? $" (-{result.HpLost})" : string.Empty), true);

@@ -22,4 +22,18 @@ public interface IUserRepository
     // Gasta oro para restaurar HP (tope: max_hp). Devuelve null si no le alcanza el oro
     // (no aplica ningún cambio en ese caso).
     Task<User?> HealAsync(ulong discordId, int goldCost, int hpRestored, CancellationToken cancellationToken = default);
+
+    // Equipa un arma/amuleto ya validado como poseído por el llamador (EquipModule verifica el
+    // inventario antes de llamar). No descuenta nada del inventario, solo actualiza el puntero.
+    Task<User> EquipWeaponAsync(ulong discordId, int itemId, CancellationToken cancellationToken = default);
+    Task<User> EquipAmuletAsync(ulong discordId, int itemId, CancellationToken cancellationToken = default);
+
+    // Evalúa y aplica /daily de forma atómica (ver GameData/DailyRewardCalculator): si todavía
+    // no pasaron 24h, no aplica ningún cambio y Result queda en null.
+    Task<DailyClaimOutcome> ClaimDailyAsync(ulong discordId, CancellationToken cancellationToken = default);
+
+    // Top jugadores por progreso (nivel, y XP dentro del nivel actual como desempate).
+    // "xp" es el progreso hacia el próximo nivel (resetea al subir), no un total histórico,
+    // por eso el orden real es por nivel primero.
+    Task<IReadOnlyList<LeaderboardEntry>> GetTopPlayersAsync(int limit, CancellationToken cancellationToken = default);
 }

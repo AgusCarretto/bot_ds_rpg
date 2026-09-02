@@ -4,7 +4,8 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 
-public class GameModule(IUserRepository userRepository, IInventoryRepository inventoryRepository) : InteractionModuleBase<SocketInteractionContext>
+public class GameModule(IUserRepository userRepository, IInventoryRepository inventoryRepository, IItemRepository itemRepository)
+    : InteractionModuleBase<SocketInteractionContext>
 {
     // Comando barra: /profile
     [SlashCommand("profile", "Muestra tu estado actual, nivel y estadísticas en Asado y Acero RPG.")]
@@ -22,16 +23,31 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
             // automáticamente con los valores por defecto (Nivel 1, 0 EXP, 50 de oro, 100/100 HP, Guerrero).
             var player = await userRepository.GetOrCreateUserAsync(user.Id);
 
+            var weapon = player.WeaponId is int weaponId ? await itemRepository.GetByIdAsync(weaponId) : null;
+            var amulet = player.AmuletId is int amuletId ? await itemRepository.GetByIdAsync(amuletId) : null;
+            bool hasSynergy = weapon is not null && ClassWeaponSynergy.Applies(player.Class, weapon.WeaponFamily);
+
+            // Ataque = daño del arma equipada (con el bonus de sinergia si corresponde, igual que en combate).
+            // Defensa = stat del amuleto equipado (reduce el HP que se pierde en /hunt y /travel).
+            int attack = ClassWeaponSynergy.ApplyBonus(weapon?.StatValue ?? 0, player.Class, weapon?.WeaponFamily);
+            int defense = amulet?.StatValue ?? 0;
+
+            var classDef = ClassCatalog.All.FirstOrDefault(c => c.Name == player.Class);
+            int requiredXp = LevelingCalculator.RequiredXpForLevel(player.Level);
+
             var embed = new EmbedBuilder()
-                .WithTitle($"⚔️ Perfil de Aventurero: {user.Username}")
+                .WithAuthor(user.Username, user.GetAvatarUrl() ?? user.GetDefaultAvatarUrl())
+                .WithTitle($"{classDef?.Emoji ?? "🔥"} {player.Class} — Nivel {player.Level}")
                 .WithColor(Color.Orange) // Color cálido acorde al asado
                 .WithThumbnailUrl(user.GetAvatarUrl() ?? user.GetDefaultAvatarUrl())
-                .AddField("🔥 Clase", player.Class, true)
-                .AddField("⭐ Nivel", player.Level.ToString(), true)
-                .AddField("📊 EXP", $"{player.Xp} / {LevelingCalculator.RequiredXpForLevel(player.Level)}", true)
-                .AddField("❤️ Vida", $"{player.CurrentHp} / {player.MaxHp}", true)
-                .AddField("💰 Oro", $"{player.Gold} monedas", true)
-                .AddField("🗡️ Arma Equipada", player.CurrentWeaponId is null ? "Ninguna" : $"Ítem #{player.CurrentWeaponId}", false)
+                .AddField("📊 Experiencia", $"{ProgressBar.Render(player.Xp, requiredXp)}\n{player.Xp} / {requiredXp} XP", false)
+                .AddField("❤️ Vida", $"{ProgressBar.Render(player.CurrentHp, player.MaxHp)}\n{player.CurrentHp} / {player.MaxHp} HP", false)
+                .AddField("⚔️ Ataque", attack.ToString() + (hasSynergy ? " ⚡" : string.Empty), true)
+                .AddField("🛡️ Defensa", defense.ToString(), true)
+                .AddField("💰 Oro", player.Gold.ToString(), true)
+                .AddField("🗡️ Arma", weapon is null ? "_Ninguna_" : $"{weapon.Name} (+{weapon.StatValue})", true)
+                .AddField("📿 Amuleto", amulet is null ? "_Ninguno_" : $"{amulet.Name} (+{amulet.StatValue})", true)
+                .AddField("🎁 Racha diaria", player.DailyStreak > 0 ? $"Día {player.DailyStreak}" : "_Sin racha_", true)
                 .WithFooter("Asado y Acero RPG • Preparando las brasas...")
                 .WithCurrentTimestamp()
                 .Build();

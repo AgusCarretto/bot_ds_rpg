@@ -11,5 +11,8 @@ public sealed class User
     public int Gold { get; init; }
     public int MaxHp { get; init; }
     public int CurrentHp { get; init; }
-    public int? CurrentWeaponId { get; init; }
+    public int? WeaponId { get; init; }
+    public int? AmuletId { get; init; }
+    public int DailyStreak { get; init; }
+    public DateTime? LastDailyClaim { get; init; }
 }

@@ -4,14 +4,14 @@ namespace BotDsRpg.Services;
 
 public sealed class CombatService : ICombatService
 {
-    // Ambos comandos usan la misma fórmula de poder del jugador (nivel + azar);
+    // Ambos comandos usan la misma fórmula de poder del jugador (nivel + arma equipada + azar);
     // lo que cambia es qué tan duro pega el monstruo, cuánto HP cuesta pelear y qué tan
     // grande es el premio.
-    public CombatResult SimulateHunt(int playerLevel)
+    public CombatResult SimulateHunt(int playerLevel, int weaponDamage)
     {
         var monster = MonsterCatalog.RollFrom(MonsterCatalog.HuntMonsters);
 
-        int playerPower = PlayerPower(playerLevel);
+        int playerPower = PlayerPower(playerLevel, weaponDamage);
         int monsterPower = Random.Shared.Next(8, 19);
 
         if (playerPower < monsterPower)
@@ -24,15 +24,17 @@ public sealed class CombatService : ICombatService
         int xp = Random.Shared.Next(8, 21) + playerLevel;
         int victoryDamage = Random.Shared.Next(0, 11);
 
-        // /hunt no dropea materiales, solo oro y experiencia (a diferencia de /travel).
-        return new CombatResult(true, monster.Name, monster.Emoji, gold, xp, victoryDamage, null);
+        // 30% de probabilidad de dropear un material (de rareza sorteada) al ganar.
+        string? droppedRarity = Random.Shared.Next(100) < 30 ? RarityCatalog.RollTravelRarity() : null;
+
+        return new CombatResult(true, monster.Name, monster.Emoji, gold, xp, victoryDamage, droppedRarity);
     }
 
-    public CombatResult SimulateTravel(int playerLevel)
+    public CombatResult SimulateTravel(int playerLevel, int weaponDamage)
     {
         var monster = MonsterCatalog.RollFrom(MonsterCatalog.TravelMonsters);
 
-        int playerPower = PlayerPower(playerLevel);
+        int playerPower = PlayerPower(playerLevel, weaponDamage);
         int monsterPower = Random.Shared.Next(18, 33); // rango más duro que /hunt
 
         if (playerPower < monsterPower)
@@ -51,6 +53,6 @@ public sealed class CombatService : ICombatService
         return new CombatResult(true, monster.Name, monster.Emoji, gold, xp, victoryDamage, droppedRarity);
     }
 
-    private static int PlayerPower(int playerLevel) =>
-        12 + (playerLevel * 2) + Random.Shared.Next(0, 11);
+    private static int PlayerPower(int playerLevel, int weaponDamage) =>
+        12 + (playerLevel * 2) + weaponDamage + Random.Shared.Next(0, 11);
 }
