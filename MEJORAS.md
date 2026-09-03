@@ -2,6 +2,19 @@
 
 _Última revisión: 2026-09-03 (loot separado por fuente + equipo por clase)_
 
+## Nota de sincronización entre máquinas (2026-09-03)
+
+Al traer estos cambios a otra PC, la base de esa máquina estaba en el estado de la primerísima
+instalación (solo `schema.sql`/`seed.sql`/`add_hp_columns.sql`/`fix_material_types.sql`
+aplicados) — mucho más atrás de lo que este archivo asumía. Se recreó desde cero con el
+`schema.sql` actual (ya autosuficiente) + los 4 seeds de abajo, y además se corrió
+**`Database/seed_consumables_and_base_swords.sql`** (nuevo): completa la familia Espadas
+(le faltaban Común/Raro/Épico — "Hacha de Hierro MK3" incluido, cuya receta en
+`seed_recipes.sql` no insertaba nada por esto) y crea el catálogo de Consumibles completo
+(`type = 'Consumable'`), que no existía ninguno y por eso `/shop view`/`/shop buy`/`/use`
+no tenían nada para mostrar. Si vas a instalar en una tercera máquina, corré ese script
+también, después de `seed_recipes.sql`.
+
 ## Pendiente de acción tuya
 
 - **Correr contra la base real, EN ESTE ORDEN** (ninguno es idempotente salvo que se aclare lo contrario; correrlos dos veces duplica filas):
