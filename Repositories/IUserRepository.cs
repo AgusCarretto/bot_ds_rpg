@@ -15,13 +15,9 @@ public interface IUserRepository
     // (permite re-elegir clase desde /class en cualquier momento).
     Task<User> SetClassAsync(ulong discordId, string className, CancellationToken cancellationToken = default);
 
-    // Gasta oro para restaurar HP (tope: max_hp). Devuelve null si no le alcanza el oro
-    // (no aplica ningún cambio en ese caso). Bloqueado durante combate por TavernModule
-    // (no se puede gastar oro en pleno combate, ver /use para curación desde el inventario).
-    Task<User?> HealAsync(ulong discordId, int goldCost, int hpRestored, CancellationToken cancellationToken = default);
-
-    // Restaura HP sin costo de oro (tope: max_hp) — usado por /use fuera de combate, el consumible
-    // ya se descontó del inventario antes de llamar acá (ver IInventoryRepository.TryConsumeAsync).
+    // Restaura HP (tope: max_hp) — usado por /heal y /use fuera de combate; el consumible ya se
+    // descontó del inventario antes de llamar acá (ver IInventoryRepository.TryConsumeAsync). Ya
+    // no existe una curación "a oro" directa: siempre hace falta tener un Consumable comprado.
     Task<User> RestoreHpAsync(ulong discordId, int hpRestored, CancellationToken cancellationToken = default);
 
     // Equipa un arma/amuleto ya validado como poseído por el llamador (EquipModule verifica el

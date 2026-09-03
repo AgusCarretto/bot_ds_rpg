@@ -1,5 +1,6 @@
 using BotDsRpg.GameData;
 using BotDsRpg.Repositories;
+using BotDsRpg.Services;
 using Discord;
 using Discord.Interactions;
 
@@ -9,7 +10,7 @@ using Discord.Interactions;
 // que para poder separar archivos sin romper el grupo, ambos son la misma clase de C#.
 // Las recetas de forja viven en /forge (ForgeModule.cs), separadas de la Tienda por diseño de juego.
 [Group("shop", "Comprá objetos con tu oro.")]
-public partial class ShopModule(IUserRepository userRepository, IItemRepository itemRepository, IShopRepository shopRepository)
+public partial class ShopModule(IUserRepository userRepository, IItemRepository itemRepository, IShopRepository shopRepository, ICombatSessionService combatSessions)
     : InteractionModuleBase<SocketInteractionContext>
 {
     // Comando barra: /shop buy
@@ -22,7 +23,7 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
 
         try
         {
-            var result = await ExecuteBuyAsync(userRepository, itemRepository, shopRepository, Context.User.Id, itemName, quantity);
+            var result = await ExecuteBuyAsync(userRepository, itemRepository, shopRepository, combatSessions, Context.User.Id, itemName, quantity);
             await FollowupAsync(result.PlainMessage, embed: result.Embed, ephemeral: result.Embed is null);
         }
         catch (Exception)
@@ -76,9 +77,16 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
     public sealed record ShopActionResult(string? PlainMessage, Embed? Embed);
 
     public static async Task<ShopActionResult> ExecuteBuyAsync(
-        IUserRepository userRepository, IItemRepository itemRepository, IShopRepository shopRepository,
+        IUserRepository userRepository, IItemRepository itemRepository, IShopRepository shopRepository, ICombatSessionService combatSessions,
         ulong discordId, string itemName, int quantity)
     {
+        // No se puede ir de compras en pleno combate — mismo espíritu que el bloqueo de /heal
+        // (Modules/TavernModule.cs): comprar no debería ser una salida gratuita en medio de una pelea.
+        if (combatSessions.Peek(discordId) is not null)
+        {
+            return new ShopActionResult("No podés ir de compras en medio de un combate. Terminalo (atacando o huyendo) antes de pasar por la tienda.", null);
+        }
+
         if (quantity < 1)
         {
             return new ShopActionResult("La cantidad tiene que ser al menos 1.", null);

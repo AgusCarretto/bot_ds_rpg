@@ -42,17 +42,21 @@ CROSS JOIN (VALUES ('Hierro', 5), ('Cuero Grueso', 3)) AS ingredient(name, quant
 JOIN items ON items.name = ingredient.name
 ON CONFLICT (recipe_id, item_id) DO UPDATE SET quantity = EXCLUDED.quantity;
 
--- stat_value = HP que restaura (leído directo por Modules/UseModule.cs); sell/buy con el mismo
--- margen del 30% usado en el resto del catálogo (ver Database/add_buy_price.sql).
+-- stat_value = HP que restaura (leído directo por Modules/TavernModule.cs y Modules/UseModule.cs).
+-- Precios calculados para eficiencia pareja (~4.4-5.0 HP por oro de buy_price) en toda la escala
+-- de rareza — ver Database/rebalance_consumables.sql: la primera versión escalaba el precio más
+-- rápido que el heal, así que el ítem Común más barato siempre rendía más por oro que cualquier
+-- otro, y nunca convenía comprar nada más caro. Con eficiencia pareja, lo caro sigue costando más
+-- y curando más de un saque, pero deja de ser matemáticamente una mala compra.
 INSERT INTO items (name, type, rarity, stat_value, sell_price, buy_price) VALUES
-('Mate Amargo',                           'Consumable', 'Común',      10,  2,   3),
-('Pan Casero',                            'Consumable', 'Común',      15,  3,   4),
-('Choripán',                              'Consumable', 'Raro',       30,  10,  13),
-('Empanada de Carne',                     'Consumable', 'Raro',       25,  8,   11),
-('Asado de Tira',                         'Consumable', 'Épico',      60,  30,  39),
-('Vacío al Disco',                        'Consumable', 'Épico',      55,  25,  33),
-('Matambre Arrollado',                    'Consumable', 'Legendario', 100, 100, 130),
-('Cordero Patagónico',                    'Consumable', 'Legendario', 120, 100, 130),
-('Asado Completo del Domingo en Familia', 'Consumable', 'Mítico',     200, 500, 650),
-('Mate Dulce de la Abuela',               'Consumable', 'Mítico',     250, 500, 650)
+('Mate Amargo',                           'Consumable', 'Común',      15,  2,  3),
+('Pan Casero',                            'Consumable', 'Común',      20,  3,  4),
+('Empanada de Carne',                     'Consumable', 'Raro',       40,  7,  9),
+('Choripán',                              'Consumable', 'Raro',       50,  8,  11),
+('Vacío al Disco',                        'Consumable', 'Épico',      80,  14, 18),
+('Asado de Tira',                         'Consumable', 'Épico',      100, 17, 22),
+('Cordero Patagónico',                    'Consumable', 'Legendario', 150, 25, 33),
+('Matambre Arrollado',                    'Consumable', 'Legendario', 180, 31, 40),
+('Asado Completo del Domingo en Familia', 'Consumable', 'Mítico',     250, 43, 56),
+('Mate Dulce de la Abuela',               'Consumable', 'Mítico',     300, 52, 67)
 ON CONFLICT DO NOTHING;

@@ -62,7 +62,7 @@ public partial class TextCommandModule
     {
         try
         {
-            var result = await ShopModule.ExecuteBuyAsync(userRepository, itemRepository, shopRepository, Context.User.Id, item, cantidad);
+            var result = await ShopModule.ExecuteBuyAsync(userRepository, itemRepository, shopRepository, combatSessions, Context.User.Id, item, cantidad);
             await ReplyAsync(result.PlainMessage, embed: result.Embed);
         }
         catch (Exception)
@@ -161,15 +161,15 @@ public partial class TextCommandModule
         }
     }
 
-    // "aa heal" / "aa he" — misma lógica que /heal. No funciona en combate (gasta oro).
+    // "aa heal" / "aa he" — misma lógica que /heal. No funciona en combate.
     [Command("heal")]
     [Alias("he")]
-    [Summary("Pagá oro por algo de comer y recuperá HP (10 de oro = 30 HP). No funciona en combate.")]
+    [Summary("Comé un consumible de tu inventario para recuperar HP (comprado antes en /shop). No funciona en combate.")]
     public async Task HealAsync()
     {
         try
         {
-            var embed = await TavernModule.ExecuteHealAsync(userRepository, combatSessions, Context.User.Id);
+            var embed = await TavernModule.ExecuteHealAsync(userRepository, inventoryRepository, combatSessions, Context.User.Id);
             await ReplyAsync(embed: embed);
         }
         catch (Exception)

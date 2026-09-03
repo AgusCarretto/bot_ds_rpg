@@ -28,6 +28,23 @@ public sealed class InventoryRepository(IDbConnectionFactory connectionFactory) 
         return rows.AsList();
     }
 
+    public async Task<IReadOnlyList<OwnedItem>> GetOwnedByTypeAsync(ulong discordId, string type, CancellationToken cancellationToken = default)
+    {
+        string sql = $"""
+            SELECT {ItemSql.SelectColumns}, inv.quantity AS "Quantity"
+            FROM inventory inv
+            JOIN items i ON i.item_id = inv.item_id
+            WHERE inv.discord_id = @DiscordId AND i.type = @Type
+            ORDER BY i.buy_price;
+            """;
+
+        using IDbConnection connection = connectionFactory.CreateConnection();
+        var command = new CommandDefinition(sql, new { DiscordId = (long)discordId, Type = type }, cancellationToken: cancellationToken);
+        var rows = await connection.QueryAsync<Item, int, OwnedItem>(
+            command, (item, quantity) => new OwnedItem(item, quantity), splitOn: "Quantity");
+        return rows.AsList();
+    }
+
     public async Task<int> GetQuantityAsync(ulong discordId, int itemId, CancellationToken cancellationToken = default)
     {
         const string sql = """

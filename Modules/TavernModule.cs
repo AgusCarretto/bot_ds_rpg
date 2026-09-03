@@ -1,22 +1,27 @@
+using BotDsRpg.GameData;
 using BotDsRpg.Repositories;
 using BotDsRpg.Services;
 using Discord;
 using Discord.Interactions;
 
-public class TavernModule(IUserRepository userRepository, ICombatSessionService combatSessions) : InteractionModuleBase<SocketInteractionContext>
+// /heal ya no cuesta oro directo: rework a pedido para que curarse SIEMPRE dependa de tener algo
+// comprado en la tienda (ver Modules/ShopModule.cs). Consume automáticamente el Consumable más
+// barato que el jugador tenga en inventario (para no desperdiciar uno caro en una curación chica)
+// — si no tiene ninguno, lo manda a comprar primero. Sigue bloqueado en combate por la misma razón
+// de siempre: comer tranquilo no debería ser gratis en pleno combate, para eso está /use (cede el
+// turno al monstruo, ver Modules/UseModule.cs).
+public class TavernModule(IUserRepository userRepository, IInventoryRepository inventoryRepository, ICombatSessionService combatSessions)
+    : InteractionModuleBase<SocketInteractionContext>
 {
-    private const int HealGoldCost = 10;
-    private const int HealHpRestored = 30;
-
     // Comando barra: /heal
-    [SlashCommand("heal", "Pagá oro por algo de comer y recuperá HP (10 de oro = 30 HP). No funciona en combate.")]
+    [SlashCommand("heal", "Comé un consumible de tu inventario para recuperar HP (comprado antes en /shop). No funciona en combate.")]
     public async Task HandleHealAsync()
     {
         await DeferAsync();
 
         try
         {
-            var embed = await ExecuteHealAsync(userRepository, combatSessions, Context.User.Id);
+            var embed = await ExecuteHealAsync(userRepository, inventoryRepository, combatSessions, Context.User.Id);
             await FollowupAsync(embed: embed);
         }
         catch (Exception)
@@ -28,15 +33,14 @@ public class TavernModule(IUserRepository userRepository, ICombatSessionService 
 
     // Estático (sin dependencia de Context) para que Modules/TextCommandModule.cs comparta
     // exactamente la misma lógica en "aa heal".
-    public static async Task<Embed> ExecuteHealAsync(IUserRepository userRepository, ICombatSessionService combatSessions, ulong discordId)
+    public static async Task<Embed> ExecuteHealAsync(
+        IUserRepository userRepository, IInventoryRepository inventoryRepository, ICombatSessionService combatSessions, ulong discordId)
     {
-        // /heal gasta oro, y no se puede gastar oro en pleno combate (ver Modules/UseModule.cs
-        // para la alternativa gratuita con consumibles del inventario, que sí funciona en combate).
         if (combatSessions.Peek(discordId) is not null)
         {
             return new EmbedBuilder()
-                .WithTitle("⚔️ No podés comprar comida en pleno combate")
-                .WithDescription("Mientras estás peleando no se gasta oro. Usá **/use <ítem>** para curarte con un consumible de tu inventario.")
+                .WithTitle("⚔️ No podés comer tranquilo en pleno combate")
+                .WithDescription("Mientras estás peleando no podés parar a comer así nomás. Usá **/use <ítem>** para curarte con un consumible de tu inventario (te va a costar el turno).")
                 .WithColor(Color.DarkGrey)
                 .Build();
         }
@@ -52,20 +56,37 @@ public class TavernModule(IUserRepository userRepository, ICombatSessionService 
                 .Build();
         }
 
-        var healed = await userRepository.HealAsync(discordId, HealGoldCost, HealHpRestored);
+        // Ordenado por buy_price ascendente (ver InventoryRepository.GetOwnedByTypeAsync): el
+        // primero es el más barato que tiene, así una curación chica no gasta el consumible caro.
+        var owned = await inventoryRepository.GetOwnedByTypeAsync(discordId, "Consumable");
 
-        if (healed is null)
+        if (owned.Count == 0)
         {
             return new EmbedBuilder()
-                .WithTitle("💸 No te alcanza el oro")
-                .WithDescription($"Curarte cuesta **{HealGoldCost} de oro** y tenés **{player.Gold}**.")
+                .WithTitle("🍽️ No tenés nada para comer")
+                .WithDescription("Para curarte primero tenés que comprar un consumible. Usá **/shop view** para ver el catálogo y **/shop buy <ítem>** para comprarlo.")
                 .WithColor(Color.Red)
                 .Build();
         }
 
+        var chosen = owned[0].Item;
+
+        if (!await inventoryRepository.TryConsumeAsync(discordId, chosen.ItemId, 1))
+        {
+            // Perdió la carrera contra otra acción que gastó el mismo ítem casi al mismo tiempo
+            // (ej. /use o /shop sell disparados casi en simultáneo). Rarísimo, pero posible.
+            return new EmbedBuilder()
+                .WithTitle("😅 Justo se gastó")
+                .WithDescription($"Justo se te fue **{ItemDisplay.Format(chosen.Emoji, chosen.Name)}** por otra acción, probá de nuevo en un toque.")
+                .WithColor(Color.DarkGrey)
+                .Build();
+        }
+
+        var healed = await userRepository.RestoreHpAsync(discordId, chosen.StatValue);
+
         return new EmbedBuilder()
             .WithTitle("🍖 ¡Buen provecho!")
-            .WithDescription($"Comiste algo en la parrilla y recuperaste HP. Ahora tenés **{healed.CurrentHp}/{healed.MaxHp}** HP y **{healed.Gold}** de oro.")
+            .WithDescription($"Comiste **{ItemDisplay.Format(chosen.Emoji, chosen.Name)}** y recuperaste HP. Ahora tenés **{healed.CurrentHp}/{healed.MaxHp}** HP.")
             .WithColor(Color.Green)
             .Build();
     }

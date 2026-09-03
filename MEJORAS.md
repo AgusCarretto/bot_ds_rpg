@@ -2,6 +2,29 @@
 
 _Última revisión: 2026-09-03 (loot separado por fuente + equipo por clase)_
 
+## Rework de /heal + emojis de ítems + rebalance de Consumibles (2026-09-03)
+
+- **`items.emoji`** (columna nueva, `Database/add_item_emoji.sql`): emoji personalizado de Discord
+  por ítem ("<:nombre:id>"), mostrado en todo lugar que muestre nombres de ítems (`/profile`,
+  `/inventory`, `/shop`, `/forge recipes`/`make`, `/equip`, `/use`, drops de `/hunt`/`/travel`/
+  `/autohunt`/`/chop`/`/mine`) vía `GameData/ItemDisplay.Format`. Cargá los códigos por nombre
+  (`Database/update_item_emojis_batch1_materiales.sql` ya tiene los 4 de Madera reales, el resto
+  en placeholder) — no por `item_id`, que puede variar entre instalaciones.
+- **`/heal` reworkeado:** ya no gasta oro directo. Ahora consume automáticamente el Consumable más
+  barato que el jugador tenga en inventario (tiene que haberlo comprado antes en `/shop buy`); si
+  no tiene ninguno, te manda a la tienda. `IUserRepository.HealAsync` (el viejo, a oro) se borró —
+  quedó reemplazado por `RestoreHpAsync`, compartido con `/use`. Sigue bloqueado en combate, igual
+  que antes (para eso está `/use`, que sí funciona en pelea).
+- **`/shop buy` bloqueado en combate:** no existía ese chequeo — un jugador podía comprar
+  consumibles en pleno `/hunt`/`/travel`. Ahora usa el mismo `ICombatSessionService.Peek` que
+  `/heal`. `/shop sell`/`sellall` siguen sin bloquear (vender no da ninguna ventaja en combate).
+- **Rebalance de precios de Consumibles** (`Database/rebalance_consumables.sql`): la carga inicial
+  escalaba el heal linealmente con la rareza pero el precio más rápido, así que la eficiencia
+  (HP por oro) caía de ~3.75 (Común) a ~0.31 (Mítico) — nunca convenía comprar nada más caro que
+  el ítem Común más barato. Ajustado a ~4.4-5.0 HP/oro parejo en toda la escala.
+  `seed_consumables_and_base_swords.sql` ya quedó con los números nuevos (una instalación nueva
+  no necesita correr el rebalance).
+
 ## Nota de sincronización entre máquinas (2026-09-03)
 
 Al traer estos cambios a otra PC, la base de esa máquina estaba en el estado de la primerísima

@@ -61,30 +61,10 @@ public sealed class UserRepository(IDbConnectionFactory connectionFactory) : IUs
         return await connection.QuerySingleAsync<User>(command);
     }
 
-    public async Task<User?> HealAsync(ulong discordId, int goldCost, int hpRestored, CancellationToken cancellationToken = default)
-    {
-        // Update guardado: si no le alcanza el oro, el WHERE bloquea la actualización y no
-        // devuelve fila (atómico, no hace falta un SELECT previo ni transacción explícita).
-        string sql = $"""
-            UPDATE users
-            SET gold = gold - @GoldCost,
-                current_hp = LEAST(max_hp, current_hp + @HpRestored)
-            WHERE discord_id = @DiscordId AND gold >= @GoldCost
-            RETURNING {UserSql.SelectColumns};
-            """;
-
-        using IDbConnection connection = connectionFactory.CreateConnection();
-        var command = new CommandDefinition(
-            sql,
-            new { DiscordId = (long)discordId, GoldCost = goldCost, HpRestored = hpRestored },
-            cancellationToken: cancellationToken);
-        return await connection.QuerySingleOrDefaultAsync<User>(command);
-    }
-
     public async Task<User> RestoreHpAsync(ulong discordId, int hpRestored, CancellationToken cancellationToken = default)
     {
-        // Sin costo de oro ni guarda de "alcanza o no": el llamador (/use) ya validó y descontó
-        // el consumible del inventario antes de llegar acá, así que esto siempre aplica.
+        // Sin costo de oro ni guarda de "alcanza o no": el llamador (/heal o /use) ya validó y
+        // descontó el consumible del inventario antes de llegar acá, así que esto siempre aplica.
         string sql = $"""
             UPDATE users
             SET current_hp = LEAST(max_hp, current_hp + @HpRestored)
