@@ -1,3 +1,4 @@
+using BotDsRpg.GameData;
 using BotDsRpg.Repositories;
 using Discord;
 using Discord.Interactions;
@@ -47,13 +48,13 @@ public class EquipModule(IUserRepository userRepository, IItemRepository itemRep
 
         if (item.Type is not ("Weapon" or "Amulet"))
         {
-            return new EquipResult($"**{item.Name}** es de tipo `{item.Type}` y no se puede equipar (solo Armas o Amuletos).", null);
+            return new EquipResult($"**{ItemDisplay.Format(item.Emoji, item.Name)}** es de tipo `{item.Type}` y no se puede equipar (solo Armas o Amuletos).", null);
         }
 
         int owned = await inventoryRepository.GetQuantityAsync(discordId, item.ItemId);
         if (owned <= 0)
         {
-            return new EquipResult($"No tenés **{item.Name}** en tu inventario.", null);
+            return new EquipResult($"No tenés **{ItemDisplay.Format(item.Emoji, item.Name)}** en tu inventario.", null);
         }
 
         // Solo pedimos al jugador si el ítem tiene una clase exclusiva — evita una lectura de más
@@ -64,7 +65,7 @@ public class EquipModule(IUserRepository userRepository, IItemRepository itemRep
             if (!string.Equals(item.ClassRequirement, currentPlayer.Class, StringComparison.OrdinalIgnoreCase))
             {
                 return new EquipResult(
-                    $"**{item.Name}** es exclusivo de la clase **{item.ClassRequirement}** — vos sos **{currentPlayer.Class}**.", null);
+                    $"**{ItemDisplay.Format(item.Emoji, item.Name)}** es exclusivo de la clase **{item.ClassRequirement}** — vos sos **{currentPlayer.Class}**.", null);
             }
         }
 
@@ -78,7 +79,7 @@ public class EquipModule(IUserRepository userRepository, IItemRepository itemRep
 
         return new EquipResult(null, new EmbedBuilder()
             .WithTitle($"{emoji} ¡Equipado!")
-            .WithDescription($"Ahora tenés equipada/o **{item.Name}** como {slot} ({item.Rarity}, +{item.StatValue}).")
+            .WithDescription($"Ahora tenés equipada/o **{ItemDisplay.Format(item.Emoji, item.Name)}** como {slot} ({item.Rarity}, +{item.StatValue}).")
             .WithColor(Color.Green)
             .Build());
     }

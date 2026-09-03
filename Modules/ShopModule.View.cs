@@ -44,7 +44,7 @@ public partial class ShopModule
             foreach (var item in items.OrderBy(i => RarityCatalog.RankOf(i.Rarity)).ThenBy(i => i.Name))
             {
                 embed.AddField(
-                    $"[{item.Rarity}] {item.Name}",
+                    $"[{item.Rarity}] {ItemDisplay.Format(item.Emoji, item.Name)}",
                     $"❤️ Cura: {item.StatValue} HP | 💰 Compra: {item.BuyPrice} Oro | 💸 Venta: {item.SellPrice} Oro");
             }
         }

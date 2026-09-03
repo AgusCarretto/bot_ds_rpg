@@ -1,3 +1,4 @@
+using BotDsRpg.GameData;
 using BotDsRpg.Models;
 using BotDsRpg.Repositories;
 using Discord;
@@ -83,8 +84,8 @@ public class ForgeModule(IUserRepository userRepository, IRecipeRepository recip
 
         foreach (var recipe in recipes)
         {
-            string ingredients = string.Join(" + ", recipe.Ingredients.Select(i => $"{i.Quantity}x {i.ItemName}"));
-            string line = $"**{recipe.ResultItem.Name}**: {recipe.GoldCost} Oro + {ingredients}";
+            string ingredients = string.Join(" + ", recipe.Ingredients.Select(i => $"{i.Quantity}x {ItemDisplay.Format(i.Emoji, i.ItemName)}"));
+            string line = $"**{ItemDisplay.Format(recipe.ResultItem.Emoji, recipe.ResultItem.Name)}**: {recipe.GoldCost} Oro + {ingredients}";
 
             if (recipe.ResultItem.ClassRequirement is null)
             {
@@ -125,7 +126,7 @@ public class ForgeModule(IUserRepository userRepository, IRecipeRepository recip
         if (recipe is null)
         {
             var allRecipes = await recipeRepository.GetAllAsync();
-            string available = string.Join(", ", allRecipes.Select(r => r.ResultItem.Name));
+            string available = string.Join(", ", allRecipes.Select(r => ItemDisplay.Format(r.ResultItem.Emoji, r.ResultItem.Name)));
             return new ForgeMakeResult($"El herrero no conoce esa receta. Las disponibles son: {available}.", null);
         }
 
@@ -136,7 +137,7 @@ public class ForgeModule(IUserRepository userRepository, IRecipeRepository recip
             && !string.Equals(recipe.ResultItem.ClassRequirement, player.Class, StringComparison.OrdinalIgnoreCase))
         {
             return new ForgeMakeResult(
-                $"**{recipe.ResultItem.Name}** es exclusivo de la clase **{recipe.ResultItem.ClassRequirement}** — vos sos **{player.Class}**.", null);
+                $"**{ItemDisplay.Format(recipe.ResultItem.Emoji, recipe.ResultItem.Name)}** es exclusivo de la clase **{recipe.ResultItem.ClassRequirement}** — vos sos **{player.Class}**.", null);
         }
 
         // CraftAsync valida oro + cada ingrediente dentro de una única transacción SQL
@@ -148,14 +149,14 @@ public class ForgeModule(IUserRepository userRepository, IRecipeRepository recip
         {
             return new ForgeMakeResult(null, new EmbedBuilder()
                 .WithTitle("⚒️ El herrero no pudo forjarlo")
-                .WithDescription($"No pudiste forjar **{recipe.ResultItem.Name}**: {outcome.FailureReason}")
+                .WithDescription($"No pudiste forjar **{ItemDisplay.Format(recipe.ResultItem.Emoji, recipe.ResultItem.Name)}**: {outcome.FailureReason}")
                 .WithColor(Color.Red)
                 .Build());
         }
 
         return new ForgeMakeResult(null, new EmbedBuilder()
             .WithTitle("⚒️ ¡Forjado con éxito!")
-            .WithDescription($"¡El Herrero ha forjado **{recipe.ResultItem.Name}** con éxito!\nOro restante: **{outcome.Player!.Gold}**.")
+            .WithDescription($"¡El Herrero ha forjado **{ItemDisplay.Format(recipe.ResultItem.Emoji, recipe.ResultItem.Name)}** con éxito!\nOro restante: **{outcome.Player!.Gold}**.")
             .WithColor(Color.Green)
             .Build());
     }

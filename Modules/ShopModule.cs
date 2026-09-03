@@ -1,3 +1,4 @@
+using BotDsRpg.GameData;
 using BotDsRpg.Repositories;
 using Discord;
 using Discord.Interactions;
@@ -97,12 +98,12 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
 
         if (buyer is null)
         {
-            return new ShopActionResult($"No te alcanza el oro: **{item.Name}** x{quantity} cuesta **{totalCost}**.", null);
+            return new ShopActionResult($"No te alcanza el oro: **{ItemDisplay.Format(item.Emoji, item.Name)}** x{quantity} cuesta **{totalCost}**.", null);
         }
 
         return new ShopActionResult(null, new EmbedBuilder()
             .WithTitle("🛒 ¡Compra realizada!")
-            .WithDescription($"Compraste **{item.Name}** x{quantity} por **{totalCost}** de oro.\nOro restante: **{buyer.Gold}**.")
+            .WithDescription($"Compraste **{ItemDisplay.Format(item.Emoji, item.Name)}** x{quantity} por **{totalCost}** de oro.\nOro restante: **{buyer.Gold}**.")
             .WithColor(Color.Green)
             .Build());
     }
@@ -126,12 +127,12 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
 
         if (seller is null)
         {
-            return new ShopActionResult($"No tenés {quantity}x **{item.Name}** para vender.", null);
+            return new ShopActionResult($"No tenés {quantity}x **{ItemDisplay.Format(item.Emoji, item.Name)}** para vender.", null);
         }
 
         return new ShopActionResult(null, new EmbedBuilder()
             .WithTitle("💰 ¡Venta realizada!")
-            .WithDescription($"Vendiste **{item.Name}** x{quantity} por **{totalRefund}** de oro.\nOro total: **{seller.Gold}**.")
+            .WithDescription($"Vendiste **{ItemDisplay.Format(item.Emoji, item.Name)}** x{quantity} por **{totalRefund}** de oro.\nOro total: **{seller.Gold}**.")
             .WithColor(Color.Green)
             .Build());
     }

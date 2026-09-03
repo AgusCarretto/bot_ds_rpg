@@ -28,7 +28,7 @@ public sealed class RecipeRepository(IDbConnectionFactory connectionFactory) : I
             splitOn: "ItemId")).AsList();
 
         const string ingredientsSql = """
-            SELECT ri.recipe_id AS "RecipeId", i.item_id AS "ItemId", i.name AS "ItemName", ri.quantity AS "Quantity"
+            SELECT ri.recipe_id AS "RecipeId", i.item_id AS "ItemId", i.name AS "ItemName", ri.quantity AS "Quantity", i.emoji AS "Emoji"
             FROM recipe_ingredients ri
             JOIN items i ON i.item_id = ri.item_id
             ORDER BY ri.recipe_id;
@@ -44,7 +44,7 @@ public sealed class RecipeRepository(IDbConnectionFactory connectionFactory) : I
                 header.ResultItem!,
                 header.GoldCost,
                 ingredientsByRecipe[header.RecipeId]
-                    .Select(i => new RecipeIngredientDetails(i.ItemId, i.ItemName, i.Quantity))
+                    .Select(i => new RecipeIngredientDetails(i.ItemId, i.ItemName, i.Quantity, i.Emoji))
                     .ToList()))
             .ToList();
     }
@@ -66,5 +66,5 @@ public sealed class RecipeRepository(IDbConnectionFactory connectionFactory) : I
         public Item? ResultItem { get; init; }
     }
 
-    private sealed record IngredientRow(int RecipeId, int ItemId, string ItemName, int Quantity);
+    private sealed record IngredientRow(int RecipeId, int ItemId, string ItemName, int Quantity, string? Emoji);
 }

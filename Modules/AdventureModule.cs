@@ -332,7 +332,7 @@ public class AdventureModule(
 
         if (droppedItem is not null)
         {
-            embed.AddField("🎁 Material obtenido", $"{droppedItem.Name} ({droppedItem.Rarity})", false);
+            embed.AddField("🎁 Material obtenido", $"{ItemDisplay.Format(droppedItem.Emoji, droppedItem.Name)} ({droppedItem.Rarity})", false);
         }
 
         if (outcome.LevelsGained > 0)

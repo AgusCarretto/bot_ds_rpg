@@ -62,8 +62,8 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
             .AddField("⚔️ Ataque", $"{attack} " + (hasSynergy ? " ⚡" : string.Empty), true)
             .AddField("🛡️ Defensa", $"{defense} ", true)
             .AddField("💰 Oro", player.Gold.ToString(), true)
-            .AddField("🗡️ Arma", weapon is null ? "_Ninguna_" : $"{weapon.Name} (+{weapon.StatValue})", true)
-            .AddField("📿 Amuleto", amulet is null ? "_Ninguno_" : $"{amulet.Name} (+{amulet.StatValue})", true)
+            .AddField("🗡️ Arma", weapon is null ? "_Ninguna_" : $"{ItemDisplay.Format(weapon.Emoji, weapon.Name)} (+{weapon.StatValue})", true)
+            .AddField("📿 Amuleto", amulet is null ? "_Ninguno_" : $"{ItemDisplay.Format(amulet.Emoji, amulet.Name)} (+{amulet.StatValue})", true)
             .AddField("🎁 Racha diaria", player.DailyStreak > 0 ? $"Día {player.DailyStreak}" : "_Sin racha_", true)
             .WithFooter("Asado y Acero RPG • Preparando las brasas...")
             .WithCurrentTimestamp()
@@ -107,7 +107,7 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
             var lines = entries
                 .OrderBy(e => RarityCatalog.RankOf(e.Rarity))
                 .ThenBy(e => e.ItemName)
-                .Select(e => $"**{e.ItemName}** ×{e.Quantity} _({e.Rarity})_");
+                .Select(e => $"**{ItemDisplay.Format(e.Emoji, e.ItemName)}** ×{e.Quantity} _({e.Rarity})_");
 
             embed.WithDescription(string.Join('\n', lines));
         }

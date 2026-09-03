@@ -28,7 +28,10 @@ CREATE TABLE IF NOT EXISTS items (
     weapon_family TEXT CHECK (weapon_family IN ('Espadas', 'Dagas', 'Arcos', 'Grimorios')),
     -- Clase exclusiva para equipar/forjar este ítem (ver Modules/EquipModule.cs y
     -- Modules/ForgeModule.cs). NULL = disponible para cualquier clase.
-    class_requirement TEXT CHECK (class_requirement IN ('Guerrero', 'Ninja', 'Arquero', 'Hechicero'))
+    class_requirement TEXT CHECK (class_requirement IN ('Guerrero', 'Ninja', 'Arquero', 'Hechicero')),
+    -- Emoji personalizado de Discord ("<:nombre:id>"), NULL = todavía sin pixel art cargado
+    -- (GameData/ItemDisplay.cs cae a mostrar solo el nombre en ese caso).
+    emoji TEXT
 );
 
 -- ---------------------------------------------------------

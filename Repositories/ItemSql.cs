@@ -12,6 +12,7 @@ internal static class ItemSql
         sell_price  AS "SellPrice",
         buy_price   AS "BuyPrice",
         weapon_family AS "WeaponFamily",
-        class_requirement AS "ClassRequirement"
+        class_requirement AS "ClassRequirement",
+        emoji AS "Emoji"
         """;
 }

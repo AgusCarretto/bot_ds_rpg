@@ -53,7 +53,7 @@ public class UseModule(
 
         if (item.Type != "Consumable")
         {
-            return new UseResult($"**{item.Name}** es de tipo `{item.Type}` y no se puede usar (solo Consumibles).", null);
+            return new UseResult($"**{ItemDisplay.Format(item.Emoji, item.Name)}** es de tipo `{item.Type}` y no se puede usar (solo Consumibles).", null);
         }
 
         var session = combatSessions.Peek(discordId);
@@ -66,21 +66,21 @@ public class UseModule(
             {
                 return new UseResult(null, new EmbedBuilder()
                     .WithTitle("❤️ Ya estás al máximo")
-                    .WithDescription($"Tenés {player.CurrentHp}/{player.MaxHp} HP, no necesitás usar **{item.Name}** todavía.")
+                    .WithDescription($"Tenés {player.CurrentHp}/{player.MaxHp} HP, no necesitás usar **{ItemDisplay.Format(item.Emoji, item.Name)}** todavía.")
                     .WithColor(Color.Green)
                     .Build());
             }
 
             if (!await inventoryRepository.TryConsumeAsync(discordId, item.ItemId, 1))
             {
-                return new UseResult($"No tenés **{item.Name}** en tu inventario.", null);
+                return new UseResult($"No tenés **{ItemDisplay.Format(item.Emoji, item.Name)}** en tu inventario.", null);
             }
 
             var healed = await userRepository.RestoreHpAsync(discordId, item.StatValue);
 
             return new UseResult(null, new EmbedBuilder()
                 .WithTitle("🍖 ¡Usaste un consumible!")
-                .WithDescription($"Usaste **{item.Name}** y recuperaste HP. Ahora tenés **{healed.CurrentHp}/{healed.MaxHp}** HP.")
+                .WithDescription($"Usaste **{ItemDisplay.Format(item.Emoji, item.Name)}** y recuperaste HP. Ahora tenés **{healed.CurrentHp}/{healed.MaxHp}** HP.")
                 .WithColor(Color.Green)
                 .Build());
         }
@@ -92,7 +92,7 @@ public class UseModule(
 
         if (state.PlayerCurrentHp >= state.PlayerMaxHp)
         {
-            return new UseResult($"Ya estás al máximo de HP ({state.PlayerCurrentHp}/{state.PlayerMaxHp}), no hace falta usar **{item.Name}** ahora.", null);
+            return new UseResult($"Ya estás al máximo de HP ({state.PlayerCurrentHp}/{state.PlayerMaxHp}), no hace falta usar **{ItemDisplay.Format(item.Emoji, item.Name)}** ahora.", null);
         }
 
         // El ítem se descuenta ANTES de resolver el turno: si en el rarísimo caso de que el
@@ -101,7 +101,7 @@ public class UseModule(
         // AdventureCombatStarter, documentada a propósito en vez de agregar una compensación.
         if (!await inventoryRepository.TryConsumeAsync(discordId, item.ItemId, 1))
         {
-            return new UseResult($"No tenés **{item.Name}** en tu inventario.", null);
+            return new UseResult($"No tenés **{ItemDisplay.Format(item.Emoji, item.Name)}** en tu inventario.", null);
         }
 
         int healedHp = Math.Min(state.PlayerMaxHp, state.PlayerCurrentHp + item.StatValue);
@@ -134,7 +134,7 @@ public class UseModule(
 
             return new UseResult(null, new EmbedBuilder()
                 .WithTitle("☠️ Te curaste, pero no alcanzó")
-                .WithDescription($"Usaste **{item.Name}**, pero el **{state.MonsterName}** {state.MonsterEmoji} te remató mientras tanto.")
+                .WithDescription($"Usaste **{ItemDisplay.Format(item.Emoji, item.Name)}**, pero el **{state.MonsterName}** {state.MonsterEmoji} te remató mientras tanto.")
                 .WithColor(Color.DarkRed)
                 .Build());
         }
@@ -155,8 +155,8 @@ public class UseModule(
         await session.ReplyTarget.UpdateAsync(BuildCombatOngoingEmbed(nextState, item, monsterHit, monsterHitOutcome.Dodged), AdventureModule.BuildCombatButtons());
 
         string resultDescription = monsterHitOutcome.Dodged
-            ? $"Usaste **{item.Name}** y recuperaste HP. El **{state.MonsterName}** {state.MonsterEmoji} intentó golpearte, ¡pero esquivaste el ataque! 💨"
-            : $"Usaste **{item.Name}** y recuperaste HP, pero el **{state.MonsterName}** {state.MonsterEmoji} aprovechó para golpearte.";
+            ? $"Usaste **{ItemDisplay.Format(item.Emoji, item.Name)}** y recuperaste HP. El **{state.MonsterName}** {state.MonsterEmoji} intentó golpearte, ¡pero esquivaste el ataque! 💨"
+            : $"Usaste **{ItemDisplay.Format(item.Emoji, item.Name)}** y recuperaste HP, pero el **{state.MonsterName}** {state.MonsterEmoji} aprovechó para golpearte.";
 
         return new UseResult(null, new EmbedBuilder()
             .WithTitle("🍖 ¡Usaste un consumible en combate!")
@@ -174,7 +174,7 @@ public class UseModule(
         return new EmbedBuilder()
             .WithTitle($"⚔️ Combate contra {state.MonsterName} {state.MonsterEmoji}")
             .WithColor(Color.Gold)
-            .WithDescription($"Usaste **{item.Name}**. {monsterLine}")
+            .WithDescription($"Usaste **{ItemDisplay.Format(item.Emoji, item.Name)}**. {monsterLine}")
             .AddField("❤️ Tu HP", HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
             .AddField($"{state.MonsterEmoji} HP de {state.MonsterName}", HpLine(state.MonsterCurrentHp, state.MonsterMaxHp), true)
             .Build();
@@ -189,7 +189,7 @@ public class UseModule(
             .WithTitle($"💀 Derrota contra {state.MonsterName} {state.MonsterEmoji}")
             .WithColor(Color.DarkRed)
             .WithDescription(
-                $"Usaste **{item.Name}**, pero el **{state.MonsterName}** te hizo **{monsterHit}** de daño " +
+                $"Usaste **{ItemDisplay.Format(item.Emoji, item.Name)}**, pero el **{state.MonsterName}** te hizo **{monsterHit}** de daño " +
                 "y te dejó fuera de combate. Usá **/heal** para recuperarte.")
             .AddField("❤️ Tu HP", HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
             .AddField("📋 Resumen del combate", AdventureModule.BuildCombatSummaryLine(state), false)
