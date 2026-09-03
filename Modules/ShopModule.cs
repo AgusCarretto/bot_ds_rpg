@@ -26,9 +26,11 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
             var result = await ExecuteBuyAsync(userRepository, itemRepository, shopRepository, combatSessions, Context.User.Id, itemName, quantity);
             await FollowupAsync(result.PlainMessage, embed: result.Embed, ephemeral: result.Embed is null);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
+            // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot — pero
+            // logueamos la excepción real (antes se tragaba en silencio, imposible de diagnosticar).
+            Console.WriteLine($"[EXCEPCIÓN /shop buy] {ex}");
             await FollowupAsync("¡Upa! No pude procesar la compra, intentá de nuevo en un momento.", ephemeral: true);
         }
     }
@@ -46,9 +48,11 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
             var result = await ExecuteSellAsync(itemRepository, shopRepository, Context.User.Id, itemName, quantity);
             await FollowupAsync(result.PlainMessage, embed: result.Embed, ephemeral: result.Embed is null);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
+            // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot — pero
+            // logueamos la excepción real (antes se tragaba en silencio, imposible de diagnosticar).
+            Console.WriteLine($"[EXCEPCIÓN /shop sell] {ex}");
             await FollowupAsync("¡Upa! No pude procesar la venta, intentá de nuevo en un momento.", ephemeral: true);
         }
     }
@@ -64,9 +68,11 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
             var result = await ExecuteSellAllAsync(shopRepository, Context.User.Id);
             await FollowupAsync(result.PlainMessage, embed: result.Embed, ephemeral: result.Embed is null);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
+            // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot — pero
+            // logueamos la excepción real (antes se tragaba en silencio, imposible de diagnosticar).
+            Console.WriteLine($"[EXCEPCIÓN /shop sellall] {ex}");
             await FollowupAsync("¡Upa! No pude procesar la venta, intentá de nuevo en un momento.", ephemeral: true);
         }
     }

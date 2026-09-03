@@ -24,9 +24,11 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
             var embed = await ExecuteHealAsync(userRepository, inventoryRepository, combatSessions, Context.User.Id);
             await FollowupAsync(embed: embed);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
+            // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot — pero
+            // logueamos la excepción real (antes se tragaba en silencio, imposible de diagnosticar).
+            Console.WriteLine($"[EXCEPCIÓN /heal] {ex}");
             await FollowupAsync("¡Upa! No pude procesar la curación, intentá de nuevo en un momento.", ephemeral: true);
         }
     }
