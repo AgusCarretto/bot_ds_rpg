@@ -15,35 +15,43 @@ public class LeaderboardModule(IUserRepository userRepository) : InteractionModu
 
         try
         {
-            var topPlayers = await userRepository.GetTopPlayersAsync(TopPlayersCount);
-
-            var embed = new EmbedBuilder()
-                .WithTitle("🏆 Líderes de Asado y Acero RPG")
-                .WithColor(Color.Gold)
-                .WithCurrentTimestamp();
-
-            if (topPlayers.Count == 0)
-            {
-                embed.WithDescription("Todavía no hay ningún aventurero registrado.");
-            }
-            else
-            {
-                var lines = topPlayers.Select((player, index) =>
-                {
-                    string rank = index < RankEmojis.Length ? RankEmojis[index] : $"{index + 1}.";
-                    return $"{rank} <@{player.DiscordId}> — Nivel **{player.Level}** ({player.Class})";
-                });
-
-                embed.WithDescription(string.Join('\n', lines))
-                    .WithFooter("El ranking ordena por nivel; el XP de cada nivel solo desempata.");
-            }
-
-            await FollowupAsync(embed: embed.Build());
+            var embed = await BuildLeaderboardEmbedAsync(userRepository);
+            await FollowupAsync(embed: embed);
         }
         catch (Exception)
         {
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
             await FollowupAsync("No pude cargar el ranking ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
         }
+    }
+
+    // Estático (sin dependencia de Context) para que Modules/TextCommandModule.cs arme el mismo
+    // embed en "aa leaderboard".
+    public static async Task<Embed> BuildLeaderboardEmbedAsync(IUserRepository userRepository)
+    {
+        var topPlayers = await userRepository.GetTopPlayersAsync(TopPlayersCount);
+
+        var embed = new EmbedBuilder()
+            .WithTitle("🏆 Líderes de Asado y Acero RPG")
+            .WithColor(Color.Gold)
+            .WithCurrentTimestamp();
+
+        if (topPlayers.Count == 0)
+        {
+            embed.WithDescription("Todavía no hay ningún aventurero registrado.");
+        }
+        else
+        {
+            var lines = topPlayers.Select((player, index) =>
+            {
+                string rank = index < RankEmojis.Length ? RankEmojis[index] : $"{index + 1}.";
+                return $"{rank} <@{player.DiscordId}> — Nivel **{player.Level}** ({player.Class})";
+            });
+
+            embed.WithDescription(string.Join('\n', lines))
+                .WithFooter("El ranking ordena por nivel; el XP de cada nivel solo desempata.");
+        }
+
+        return embed.Build();
     }
 }

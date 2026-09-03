@@ -1,27 +1,31 @@
 namespace BotDsRpg.GameData;
 
-public sealed record MonsterTemplate(string Name, string Emoji);
+// MinHp/MaxHp y MinDamage/MaxDamage se sortean una vez al iniciar el combate (ver
+// Services/AdventureCombatStarter.cs) y quedan fijos para toda la pelea.
+// DropItemNames: nombres exactos (tabla items) de lo que este monstruo puede soltar al ganar
+// /hunt — nunca madera/piedra, eso es exclusivo de /chop y /mine (ver
+// Database/seed_class_gear_and_monster_drops.sql y Modules/AdventureModule.ResolveDroppedItemAsync).
+// Vacío para los monstruos de /travel, que todavía usan el drop por rareza sorteada (type
+// 'Material', cualquiera del catálogo) en vez de una lista fija por monstruo.
+public sealed record MonsterTemplate(string Name, string Emoji, int MinHp, int MaxHp, int MinDamage, int MaxDamage, IReadOnlyList<string> DropItemNames);
 
-// Enemigos de sabor narrativo para /hunt (comunes) y /travel (más duros).
-// Las estadísticas de combate en sí las calcula CombatService; esto es solo flavor text.
 public static class MonsterCatalog
 {
     public static readonly IReadOnlyList<MonsterTemplate> HuntMonsters =
     [
-        new("Jabalí salvaje", "🐗"),
-        new("Lobo hambriento", "🐺"),
-        new("Rata gigante", "🐀"),
-        new("Bandido novato", "🗡️"),
-        new("Serpiente venenosa", "🐍"),
+        new("Jabalí Rabioso", "🐗", 28, 42, 6, 13, ["Cuero Grueso", "Colmillo de Jabalí"]),
+        new("Lobisón de las Cenizas", "🐺", 30, 48, 7, 15, ["Garra Maldita", "Pelaje Oscuro"]),
+        new("Gólem de Escoria", "🗿", 35, 55, 5, 12, ["Núcleo Ígneo", "Piedra Caliente"]),
+        new("Cuatrero No-Muerto", "💀", 25, 40, 6, 14, ["Hueso Añejo", "Tela Rasgada"]),
     ];
 
     public static readonly IReadOnlyList<MonsterTemplate> TravelMonsters =
     [
-        new("Orco guerrero", "👹"),
-        new("Ogro de las cavernas", "🧌"),
-        new("Bandido élite", "🏴"),
-        new("Araña gigante", "🕷️"),
-        new("Espectro errante", "👻"),
+        new("Orco guerrero", "👹", 50, 90, 12, 24, []),
+        new("Ogro de las cavernas", "🧌", 50, 90, 12, 24, []),
+        new("Bandido élite", "🏴", 50, 90, 12, 24, []),
+        new("Araña gigante", "🕷️", 50, 90, 12, 24, []),
+        new("Espectro errante", "👻", 50, 90, 12, 24, []),
     ];
 
     public static MonsterTemplate RollFrom(IReadOnlyList<MonsterTemplate> pool) =>

@@ -1,7 +1,6 @@
 using System.Data;
 using System.Data.Common;
 using BotDsRpg.Data;
-using BotDsRpg.GameData;
 using BotDsRpg.Models;
 using Dapper;
 
@@ -62,51 +61,6 @@ public sealed class UserRepository(IDbConnectionFactory connectionFactory) : IUs
         return await connection.QuerySingleAsync<User>(command);
     }
 
-    public async Task<LevelUpOutcome> AddXpAsync(ulong discordId, int xpGained, CancellationToken cancellationToken = default)
-    {
-        using DbConnection connection = connectionFactory.CreateConnection();
-        await connection.OpenAsync(cancellationToken);
-        using DbTransaction transaction = await connection.BeginTransactionAsync(cancellationToken);
-
-        try
-        {
-            // FOR UPDATE: bloquea la fila hasta el commit para que otra operación concurrente
-            // sobre el mismo usuario (ej. /heal o un /hunt en simultáneo) no pise este cálculo.
-            string selectSql = $"""
-                SELECT {UserSql.SelectColumns}
-                FROM users
-                WHERE discord_id = @DiscordId
-                FOR UPDATE;
-                """;
-
-            var current = await connection.QuerySingleAsync<User>(new CommandDefinition(
-                selectSql, new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
-
-            var leveling = LevelingCalculator.ApplyXpGain(current.Level, current.Xp, current.MaxHp, current.CurrentHp, xpGained);
-
-            string updateSql = $"""
-                UPDATE users
-                SET level = @Level, xp = @Xp, max_hp = @MaxHp, current_hp = @CurrentHp
-                WHERE discord_id = @DiscordId
-                RETURNING {UserSql.SelectColumns};
-                """;
-
-            var updated = await connection.QuerySingleAsync<User>(new CommandDefinition(
-                updateSql,
-                new { DiscordId = (long)discordId, Level = leveling.Level, Xp = leveling.Xp, MaxHp = leveling.MaxHp, CurrentHp = leveling.CurrentHp },
-                transaction: transaction,
-                cancellationToken: cancellationToken));
-
-            await transaction.CommitAsync(cancellationToken);
-            return new LevelUpOutcome(updated, leveling.LevelsGained);
-        }
-        catch
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            throw;
-        }
-    }
-
     public async Task<User?> HealAsync(ulong discordId, int goldCost, int hpRestored, CancellationToken cancellationToken = default)
     {
         // Update guardado: si no le alcanza el oro, el WHERE bloquea la actualización y no
@@ -125,6 +79,25 @@ public sealed class UserRepository(IDbConnectionFactory connectionFactory) : IUs
             new { DiscordId = (long)discordId, GoldCost = goldCost, HpRestored = hpRestored },
             cancellationToken: cancellationToken);
         return await connection.QuerySingleOrDefaultAsync<User>(command);
+    }
+
+    public async Task<User> RestoreHpAsync(ulong discordId, int hpRestored, CancellationToken cancellationToken = default)
+    {
+        // Sin costo de oro ni guarda de "alcanza o no": el llamador (/use) ya validó y descontó
+        // el consumible del inventario antes de llegar acá, así que esto siempre aplica.
+        string sql = $"""
+            UPDATE users
+            SET current_hp = LEAST(max_hp, current_hp + @HpRestored)
+            WHERE discord_id = @DiscordId
+            RETURNING {UserSql.SelectColumns};
+            """;
+
+        using IDbConnection connection = connectionFactory.CreateConnection();
+        var command = new CommandDefinition(
+            sql,
+            new { DiscordId = (long)discordId, HpRestored = hpRestored },
+            cancellationToken: cancellationToken);
+        return await connection.QuerySingleAsync<User>(command);
     }
 
     public Task<User> EquipWeaponAsync(ulong discordId, int itemId, CancellationToken cancellationToken = default) =>
@@ -152,71 +125,6 @@ public sealed class UserRepository(IDbConnectionFactory connectionFactory) : IUs
         return await connection.QuerySingleAsync<User>(command);
     }
 
-    public async Task<DailyClaimOutcome> ClaimDailyAsync(ulong discordId, CancellationToken cancellationToken = default)
-    {
-        using DbConnection connection = connectionFactory.CreateConnection();
-        await connection.OpenAsync(cancellationToken);
-        using DbTransaction transaction = await connection.BeginTransactionAsync(cancellationToken);
-
-        try
-        {
-            // FOR UPDATE: bloquea la fila hasta el commit para que otra operación concurrente
-            // sobre el mismo usuario no pise este cálculo (ej. doble click en /daily).
-            string selectSql = $"""
-                SELECT {UserSql.SelectColumns}
-                FROM users
-                WHERE discord_id = @DiscordId
-                FOR UPDATE;
-                """;
-
-            var current = await connection.QuerySingleAsync<User>(new CommandDefinition(
-                selectSql, new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
-
-            var now = DateTime.UtcNow;
-            var calculation = DailyRewardCalculator.Evaluate(current.LastDailyClaim, current.DailyStreak, now);
-
-            if (calculation.Status == DailyClaimStatus.TooSoon)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                return new DailyClaimOutcome(calculation, null);
-            }
-
-            var leveling = LevelingCalculator.ApplyXpGain(current.Level, current.Xp, current.MaxHp, current.CurrentHp, calculation.XpReward);
-
-            string updateSql = $"""
-                UPDATE users
-                SET gold = gold + @Gold, level = @Level, xp = @Xp, max_hp = @MaxHp, current_hp = @CurrentHp,
-                    daily_streak = @Streak, last_daily_claim = @Now
-                WHERE discord_id = @DiscordId
-                RETURNING {UserSql.SelectColumns};
-                """;
-
-            var updated = await connection.QuerySingleAsync<User>(new CommandDefinition(
-                updateSql,
-                new
-                {
-                    DiscordId = (long)discordId,
-                    Gold = calculation.GoldReward,
-                    Level = leveling.Level,
-                    Xp = leveling.Xp,
-                    MaxHp = leveling.MaxHp,
-                    CurrentHp = leveling.CurrentHp,
-                    Streak = calculation.NewStreak,
-                    Now = now,
-                },
-                transaction: transaction,
-                cancellationToken: cancellationToken));
-
-            await transaction.CommitAsync(cancellationToken);
-            return new DailyClaimOutcome(calculation, new LevelUpOutcome(updated, leveling.LevelsGained));
-        }
-        catch
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            throw;
-        }
-    }
-
     public async Task<IReadOnlyList<LeaderboardEntry>> GetTopPlayersAsync(int limit, CancellationToken cancellationToken = default)
     {
         const string sql = """
@@ -230,5 +138,48 @@ public sealed class UserRepository(IDbConnectionFactory connectionFactory) : IUs
         var command = new CommandDefinition(sql, new { Limit = limit }, cancellationToken: cancellationToken);
         var rows = await connection.QueryAsync<LeaderboardEntry>(command);
         return rows.AsList();
+    }
+
+    public async Task<User> ApplyCombatHpDeltaAsync(ulong discordId, int hpDelta, CancellationToken cancellationToken = default)
+    {
+        using DbConnection connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        using DbTransaction transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            // FOR UPDATE: bloquea la fila hasta el commit para que el delta se aplique sobre el
+            // HP más reciente en base (no sobre el snapshot en memoria que tenía el combate al
+            // arrancar), y ninguna operación concurrente sobre la misma fila lo pise.
+            string selectSql = $"""
+                SELECT {UserSql.SelectColumns}
+                FROM users
+                WHERE discord_id = @DiscordId
+                FOR UPDATE;
+                """;
+
+            var current = await connection.QuerySingleAsync<User>(new CommandDefinition(
+                selectSql, new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
+
+            int newHp = Math.Clamp(current.CurrentHp + hpDelta, 0, current.MaxHp);
+
+            string updateSql = $"""
+                UPDATE users
+                SET current_hp = @CurrentHp
+                WHERE discord_id = @DiscordId
+                RETURNING {UserSql.SelectColumns};
+                """;
+
+            var updated = await connection.QuerySingleAsync<User>(new CommandDefinition(
+                updateSql, new { DiscordId = (long)discordId, CurrentHp = newHp }, transaction: transaction, cancellationToken: cancellationToken));
+
+            await transaction.CommitAsync(cancellationToken);
+            return updated;
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
     }
 }

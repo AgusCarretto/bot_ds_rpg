@@ -2,8 +2,9 @@ namespace BotDsRpg.GameData;
 
 public sealed record LevelingResult(int Level, int Xp, int MaxHp, int CurrentHp, int LevelsGained);
 
-// Cálculo puro de nivelado (sin acceso a datos), compartido por UserRepository.AddXpAsync
-// y AdventureRepository.ApplyRewardAsync para que ambos apliquen exactamente la misma fórmula.
+// Cálculo puro de nivelado (sin acceso a datos), compartido por UserRepository.AddXpAsync,
+// UserRepository.ClaimDailyAsync y AdventureRepository.ApplyVictoryAsync para que los tres
+// apliquen exactamente la misma fórmula.
 public static class LevelingCalculator
 {
     private const int HpGainedPerLevel = 15;

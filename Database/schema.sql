@@ -7,6 +7,10 @@
 
 BEGIN;
 
+-- unaccent(): permite buscar ítems por nombre sin distinguir tildes (ej. "Jabali" encuentra
+-- "Jabalí"), usado en ItemRepository.GetByNameAsync.
+CREATE EXTENSION IF NOT EXISTS unaccent;
+
 -- ---------------------------------------------------------
 -- items: catálogo de armas, materiales y objetos del juego
 -- ---------------------------------------------------------
@@ -21,8 +25,30 @@ CREATE TABLE IF NOT EXISTS items (
     buy_price   INTEGER NOT NULL DEFAULT 0 CHECK (buy_price >= sell_price), -- lo que cobra la tienda al comprar
     -- Familia del arma (solo aplica cuando type = 'Weapon'): define la sinergia de clase en combate,
     -- ver GameData/ClassCatalog.cs (WeaponType) y GameData/ClassWeaponSynergy.cs.
-    weapon_family TEXT CHECK (weapon_family IN ('Espadas', 'Dagas', 'Arcos', 'Grimorios'))
+    weapon_family TEXT CHECK (weapon_family IN ('Espadas', 'Dagas', 'Arcos', 'Grimorios')),
+    -- Clase exclusiva para equipar/forjar este ítem (ver Modules/EquipModule.cs y
+    -- Modules/ForgeModule.cs). NULL = disponible para cualquier clase.
+    class_requirement TEXT CHECK (class_requirement IN ('Guerrero', 'Ninja', 'Arquero', 'Hechicero'))
 );
+
+-- ---------------------------------------------------------
+-- recipes / recipe_ingredients: recetas del herrero (ver Modules/ForgeModule.cs). Un ítem
+-- resultado tiene como máximo una receta (UNIQUE); una receta puede tener varios ingredientes.
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS recipes (
+    recipe_id       INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    result_item_id  INTEGER NOT NULL UNIQUE REFERENCES items (item_id) ON DELETE CASCADE,
+    gold_cost       INTEGER NOT NULL DEFAULT 0 CHECK (gold_cost >= 0)
+);
+
+CREATE TABLE IF NOT EXISTS recipe_ingredients (
+    recipe_id  INTEGER NOT NULL REFERENCES recipes (recipe_id) ON DELETE CASCADE,
+    item_id    INTEGER NOT NULL REFERENCES items (item_id) ON DELETE CASCADE,
+    quantity   INTEGER NOT NULL CHECK (quantity > 0),
+    PRIMARY KEY (recipe_id, item_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_recipe_ingredients_recipe_id ON recipe_ingredients (recipe_id);
 
 -- ---------------------------------------------------------
 -- users: perfil de cada jugador, una fila por discord_id

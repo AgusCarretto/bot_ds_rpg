@@ -15,25 +15,29 @@ public interface IUserRepository
     // (permite re-elegir clase desde /class en cualquier momento).
     Task<User> SetClassAsync(ulong discordId, string className, CancellationToken cancellationToken = default);
 
-    // Suma XP y aplica la fórmula de nivelado (puede subir varios niveles de una), devolviendo
-    // el jugador actualizado y cuántos niveles subió. Al subir de nivel, max_hp +15 y cura al máximo.
-    Task<LevelUpOutcome> AddXpAsync(ulong discordId, int xpGained, CancellationToken cancellationToken = default);
-
     // Gasta oro para restaurar HP (tope: max_hp). Devuelve null si no le alcanza el oro
-    // (no aplica ningún cambio en ese caso).
+    // (no aplica ningún cambio en ese caso). Bloqueado durante combate por TavernModule
+    // (no se puede gastar oro en pleno combate, ver /use para curación desde el inventario).
     Task<User?> HealAsync(ulong discordId, int goldCost, int hpRestored, CancellationToken cancellationToken = default);
+
+    // Restaura HP sin costo de oro (tope: max_hp) — usado por /use fuera de combate, el consumible
+    // ya se descontó del inventario antes de llamar acá (ver IInventoryRepository.TryConsumeAsync).
+    Task<User> RestoreHpAsync(ulong discordId, int hpRestored, CancellationToken cancellationToken = default);
 
     // Equipa un arma/amuleto ya validado como poseído por el llamador (EquipModule verifica el
     // inventario antes de llamar). No descuenta nada del inventario, solo actualiza el puntero.
     Task<User> EquipWeaponAsync(ulong discordId, int itemId, CancellationToken cancellationToken = default);
     Task<User> EquipAmuletAsync(ulong discordId, int itemId, CancellationToken cancellationToken = default);
 
-    // Evalúa y aplica /daily de forma atómica (ver GameData/DailyRewardCalculator): si todavía
-    // no pasaron 24h, no aplica ningún cambio y Result queda en null.
-    Task<DailyClaimOutcome> ClaimDailyAsync(ulong discordId, CancellationToken cancellationToken = default);
-
     // Top jugadores por progreso (nivel, y XP dentro del nivel actual como desempate).
     // "xp" es el progreso hacia el próximo nivel (resetea al subir), no un total histórico,
     // por eso el orden real es por nivel primero.
     Task<IReadOnlyList<LeaderboardEntry>> GetTopPlayersAsync(int limit, CancellationToken cancellationToken = default);
+
+    // Aplica el delta neto de HP (daño - curación) acumulado en memoria durante un combate por
+    // turnos (huida, derrota o timeout: ver CombatState.PlayerStartingHp) sobre el HP REAL más
+    // reciente en base, no sobre un snapshot — así una curación con /use a mitad de combate no se
+    // pierde si el HP en base cambió por otra vía mientras la pelea seguía abierta. Transaccional
+    // con FOR UPDATE para que no se pise con una operación concurrente sobre la misma fila.
+    Task<User> ApplyCombatHpDeltaAsync(ulong discordId, int hpDelta, CancellationToken cancellationToken = default);
 }

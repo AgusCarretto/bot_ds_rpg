@@ -7,25 +7,10 @@ namespace BotDsRpg.Repositories;
 
 public sealed class ItemRepository(IDbConnectionFactory connectionFactory) : IItemRepository
 {
-    public async Task<Item?> GetRandomByRarityAsync(string rarity, CancellationToken cancellationToken = default)
+    public async Task<Item?> GetRandomByTypeAndRarityAsync(string type, string rarity, CancellationToken cancellationToken = default)
     {
         // ORDER BY random() es aceptable acá porque el catálogo de ítems es chico;
         // no usar este patrón sobre tablas grandes.
-        string sql = $"""
-            SELECT {ItemSql.SelectColumns}
-            FROM items
-            WHERE rarity = @Rarity
-            ORDER BY random()
-            LIMIT 1;
-            """;
-
-        using IDbConnection connection = connectionFactory.CreateConnection();
-        var command = new CommandDefinition(sql, new { Rarity = rarity }, cancellationToken: cancellationToken);
-        return await connection.QuerySingleOrDefaultAsync<Item>(command);
-    }
-
-    public async Task<Item?> GetRandomByTypeAndRarityAsync(string type, string rarity, CancellationToken cancellationToken = default)
-    {
         string sql = $"""
             SELECT {ItemSql.SelectColumns}
             FROM items
@@ -41,12 +26,15 @@ public sealed class ItemRepository(IDbConnectionFactory connectionFactory) : IIt
 
     public async Task<Item?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
     {
-        // Igualdad exacta sin distinguir mayúsculas: NO usar ILIKE acá, porque el nombre lo
-        // escribe el usuario y podría contener '%' o '_' (comodines de LIKE) sin querer decir eso.
+        // Igualdad exacta sin distinguir mayúsculas NI tildes (requiere la extensión unaccent,
+        // ver Database/add_unaccent_extension.sql): "jabali" tiene que encontrar "Jabalí" sin
+        // que el jugador tenga que escribir el acento desde el celular. NO usar ILIKE acá,
+        // porque el nombre lo escribe el usuario y podría contener '%' o '_' (comodines de LIKE)
+        // sin querer decir eso.
         string sql = $"""
             SELECT {ItemSql.SelectColumns}
             FROM items
-            WHERE LOWER(name) = LOWER(@Name)
+            WHERE unaccent(LOWER(name)) = unaccent(LOWER(@Name))
             LIMIT 1;
             """;
 

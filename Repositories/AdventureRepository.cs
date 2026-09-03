@@ -1,6 +1,6 @@
+using System.Data;
 using System.Data.Common;
 using BotDsRpg.Data;
-using BotDsRpg.GameData;
 using BotDsRpg.Models;
 using Dapper;
 
@@ -8,13 +8,34 @@ namespace BotDsRpg.Repositories;
 
 public sealed class AdventureRepository(IDbConnectionFactory connectionFactory) : IAdventureRepository
 {
-    public async Task<LevelUpOutcome?> ApplyRewardAsync(
+    public async Task<bool> TryClaimCooldownAsync(ulong discordId, string commandName, TimeSpan cooldownDuration, CancellationToken cancellationToken = default)
+    {
+        // Mismo upsert "guardado" que CooldownGuard (Repositories/TransactionalHelpers.cs), pero
+        // standalone: acá no hace falta una transacción explícita, la sentencia ya es atómica.
+        const string sql = """
+            INSERT INTO cooldowns (discord_id, command_name, last_executed_at)
+            VALUES (@DiscordId, @CommandName, now())
+            ON CONFLICT (discord_id, command_name) DO UPDATE
+                SET last_executed_at = EXCLUDED.last_executed_at
+                WHERE cooldowns.last_executed_at <= now() - @CooldownInterval
+            RETURNING last_executed_at;
+            """;
+
+        using IDbConnection connection = connectionFactory.CreateConnection();
+        var command = new CommandDefinition(
+            sql,
+            new { DiscordId = (long)discordId, CommandName = commandName, CooldownInterval = cooldownDuration },
+            cancellationToken: cancellationToken);
+
+        DateTime? applied = await connection.QuerySingleOrDefaultAsync<DateTime?>(command);
+        return applied is not null;
+    }
+
+    public async Task<LevelUpOutcome> ApplyVictoryAsync(
         ulong discordId,
-        string commandName,
-        TimeSpan cooldownDuration,
         int goldReward,
         int xpReward,
-        int hpLost,
+        int hpDelta,
         int? droppedItemId,
         int droppedItemQuantity,
         CancellationToken cancellationToken = default)
@@ -25,15 +46,8 @@ public sealed class AdventureRepository(IDbConnectionFactory connectionFactory) 
 
         try
         {
-            bool claimed = await CooldownGuard.TryClaimAsync(connection, transaction, discordId, commandName, cooldownDuration, cancellationToken);
-            if (!claimed)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                return null;
-            }
-
             // FOR UPDATE: bloquea la fila hasta el commit para que otra operación concurrente
-            // sobre el mismo usuario (ej. /heal en simultáneo) no pise este cálculo.
+            // sobre el mismo usuario no pise este cálculo.
             string selectSql = $"""
                 SELECT {UserSql.SelectColumns}
                 FROM users
@@ -44,31 +58,19 @@ public sealed class AdventureRepository(IDbConnectionFactory connectionFactory) 
             var current = await connection.QuerySingleAsync<User>(new CommandDefinition(
                 selectSql, new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
 
-            // El daño del combate se aplica antes del cálculo de nivel: si subir de nivel cura
-            // al máximo, esa curación debe ganarle al golpe que acaba de recibir, no al revés.
-            int hpAfterDamage = Math.Max(0, current.CurrentHp - hpLost);
-            var leveling = LevelingCalculator.ApplyXpGain(current.Level, current.Xp, current.MaxHp, hpAfterDamage, xpReward);
+            var leveled = await LevelingApplier.ApplyAsync(connection, transaction, current, xpReward, hpDelta, cancellationToken);
 
-            string updateSql = $"""
+            // Segunda UPDATE solo para el oro (no es parte del nivelado): mantiene LevelingApplier
+            // genérico y reusable por ProgressionRepository, que no reparte oro.
+            string updateGoldSql = $"""
                 UPDATE users
-                SET gold = gold + @Gold, level = @Level, xp = @Xp, max_hp = @MaxHp, current_hp = @CurrentHp
+                SET gold = gold + @Gold
                 WHERE discord_id = @DiscordId
                 RETURNING {UserSql.SelectColumns};
                 """;
 
-            var updated = await connection.QuerySingleAsync<User>(new CommandDefinition(
-                updateSql,
-                new
-                {
-                    DiscordId = (long)discordId,
-                    Gold = goldReward,
-                    Level = leveling.Level,
-                    Xp = leveling.Xp,
-                    MaxHp = leveling.MaxHp,
-                    CurrentHp = leveling.CurrentHp,
-                },
-                transaction: transaction,
-                cancellationToken: cancellationToken));
+            var finalUser = await connection.QuerySingleAsync<User>(new CommandDefinition(
+                updateGoldSql, new { DiscordId = (long)discordId, Gold = goldReward }, transaction: transaction, cancellationToken: cancellationToken));
 
             if (droppedItemId is not null)
             {
@@ -76,7 +78,7 @@ public sealed class AdventureRepository(IDbConnectionFactory connectionFactory) 
             }
 
             await transaction.CommitAsync(cancellationToken);
-            return new LevelUpOutcome(updated, leveling.LevelsGained);
+            return new LevelUpOutcome(finalUser, leveled.LevelsGained);
         }
         catch
         {

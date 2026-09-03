@@ -13,44 +13,73 @@ public class EquipModule(IUserRepository userRepository, IItemRepository itemRep
 
         try
         {
-            var item = await itemRepository.GetByNameAsync(itemName);
-            if (item is null)
+            var result = await ExecuteEquipAsync(userRepository, itemRepository, inventoryRepository, Context.User.Id, itemName);
+
+            if (result.PlainMessage is not null)
             {
-                await FollowupAsync($"No encontré ningún ítem llamado **{itemName}**.", ephemeral: true);
-                return;
+                await FollowupAsync(result.PlainMessage, ephemeral: true);
             }
-
-            if (item.Type is not ("Weapon" or "Amulet"))
+            else
             {
-                await FollowupAsync($"**{item.Name}** es de tipo `{item.Type}` y no se puede equipar (solo Armas o Amuletos).", ephemeral: true);
-                return;
+                await FollowupAsync(embed: result.Embed);
             }
-
-            int owned = await inventoryRepository.GetQuantityAsync(Context.User.Id, item.ItemId);
-            if (owned <= 0)
-            {
-                await FollowupAsync($"No tenés **{item.Name}** en tu inventario.", ephemeral: true);
-                return;
-            }
-
-            bool isWeapon = item.Type == "Weapon";
-            var player = isWeapon
-                ? await userRepository.EquipWeaponAsync(Context.User.Id, item.ItemId)
-                : await userRepository.EquipAmuletAsync(Context.User.Id, item.ItemId);
-
-            string slot = isWeapon ? "arma" : "amuleto";
-            string emoji = isWeapon ? "🗡️" : "📿";
-
-            await FollowupAsync(embed: new EmbedBuilder()
-                .WithTitle($"{emoji} ¡Equipado!")
-                .WithDescription($"Ahora tenés equipada/o **{item.Name}** como {slot} ({item.Rarity}, +{item.StatValue}).")
-                .WithColor(Color.Green)
-                .Build());
         }
         catch (Exception)
         {
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
             await FollowupAsync("¡Upa! No pude equipar ese ítem, intentá de nuevo en un momento.", ephemeral: true);
         }
+    }
+
+    // Estático (sin dependencia de Context) para que Modules/TextCommandModule.cs comparta
+    // exactamente la misma lógica en "aa equip". Exactamente uno de los dos campos del resultado
+    // viene con valor.
+    public sealed record EquipResult(string? PlainMessage, Embed? Embed);
+
+    public static async Task<EquipResult> ExecuteEquipAsync(
+        IUserRepository userRepository, IItemRepository itemRepository, IInventoryRepository inventoryRepository, ulong discordId, string itemName)
+    {
+        var item = await itemRepository.GetByNameAsync(itemName);
+        if (item is null)
+        {
+            return new EquipResult($"No encontré ningún ítem llamado **{itemName}**.", null);
+        }
+
+        if (item.Type is not ("Weapon" or "Amulet"))
+        {
+            return new EquipResult($"**{item.Name}** es de tipo `{item.Type}` y no se puede equipar (solo Armas o Amuletos).", null);
+        }
+
+        int owned = await inventoryRepository.GetQuantityAsync(discordId, item.ItemId);
+        if (owned <= 0)
+        {
+            return new EquipResult($"No tenés **{item.Name}** en tu inventario.", null);
+        }
+
+        // Solo pedimos al jugador si el ítem tiene una clase exclusiva — evita una lectura de más
+        // para el caso común (equipo genérico, class_requirement NULL).
+        if (item.ClassRequirement is not null)
+        {
+            var currentPlayer = await userRepository.GetOrCreateUserAsync(discordId);
+            if (!string.Equals(item.ClassRequirement, currentPlayer.Class, StringComparison.OrdinalIgnoreCase))
+            {
+                return new EquipResult(
+                    $"**{item.Name}** es exclusivo de la clase **{item.ClassRequirement}** — vos sos **{currentPlayer.Class}**.", null);
+            }
+        }
+
+        bool isWeapon = item.Type == "Weapon";
+        var player = isWeapon
+            ? await userRepository.EquipWeaponAsync(discordId, item.ItemId)
+            : await userRepository.EquipAmuletAsync(discordId, item.ItemId);
+
+        string slot = isWeapon ? "arma" : "amuleto";
+        string emoji = isWeapon ? "🗡️" : "📿";
+
+        return new EquipResult(null, new EmbedBuilder()
+            .WithTitle($"{emoji} ¡Equipado!")
+            .WithDescription($"Ahora tenés equipada/o **{item.Name}** como {slot} ({item.Rarity}, +{item.StatValue}).")
+            .WithColor(Color.Green)
+            .Build());
     }
 }

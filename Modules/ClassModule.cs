@@ -3,28 +3,44 @@ using BotDsRpg.Repositories;
 using Discord;
 using Discord.Interactions;
 
+// Requiere estar registrado (chequeo centralizado en Program.cs): /start es la única forma
+// de crear la cuenta la primera vez, /class queda para re-elegir clase una vez que ya existís.
 public class ClassModule(IUserRepository userRepository) : InteractionModuleBase<SocketInteractionContext>
 {
     // Comando barra: /class
     [SlashCommand("class", "Elegí tu clase en Asado y Acero RPG.")]
-    public async Task HandleClassCommandAsync()
+    public Task HandleClassCommandAsync() =>
+        // Ephemeral: solo lo ve quien ejecutó el comando, así varios jugadores pueden
+        // usar /class en el mismo canal sin pisarse los botones entre ellos.
+        RespondAsync(embed: BuildPromptEmbed(), components: BuildPromptButtons(), ephemeral: true);
+
+    // Públicos (sin dependencia de Context) para que Modules/TextCommandModule.cs arme el mismo
+    // mensaje en "aa class".
+    public static Embed BuildPromptEmbed()
     {
         var embed = new EmbedBuilder()
             .WithTitle("🎭 Elegí tu clase")
             .WithColor(Color.Gold)
             .WithDescription("Cada clase usa un arma exclusiva y define tu estilo de combate. Tocá un botón para elegir.");
 
+        foreach (var classDef in ClassCatalog.All)
+        {
+            embed.AddField($"{classDef.Emoji} {classDef.Name} — {classDef.WeaponType}", classDef.Description);
+        }
+
+        return embed.Build();
+    }
+
+    public static MessageComponent BuildPromptButtons()
+    {
         var components = new ComponentBuilder();
 
         foreach (var classDef in ClassCatalog.All)
         {
-            embed.AddField($"{classDef.Emoji} {classDef.Name} — {classDef.WeaponType}", classDef.Description);
             components.WithButton(classDef.Name, $"class-select:{classDef.Name}", ButtonStyle.Primary, new Emoji(classDef.Emoji));
         }
 
-        // Ephemeral: solo lo ve quien ejecutó el comando, así varios jugadores pueden
-        // usar /class en el mismo canal sin pisarse los botones entre ellos.
-        await RespondAsync(embed: embed.Build(), components: components.Build(), ephemeral: true);
+        return components.Build();
     }
 
     // Se dispara al tocar cualquiera de los botones de arriba (custom ID "class-select:<Clase>")

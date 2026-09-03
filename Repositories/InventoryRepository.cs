@@ -1,4 +1,5 @@
 using System.Data;
+using System.Data.Common;
 using BotDsRpg.Data;
 using BotDsRpg.Models;
 using Dapper;
@@ -38,5 +39,52 @@ public sealed class InventoryRepository(IDbConnectionFactory connectionFactory) 
         var command = new CommandDefinition(sql, new { DiscordId = (long)discordId, ItemId = itemId }, cancellationToken: cancellationToken);
         // QuerySingleOrDefaultAsync<int> devuelve 0 (default) si no hay fila, que es exactamente "no lo tiene".
         return await connection.QuerySingleOrDefaultAsync<int>(command);
+    }
+
+    public async Task<bool> TryConsumeAsync(ulong discordId, int itemId, int quantity, CancellationToken cancellationToken = default)
+    {
+        using DbConnection connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        using DbTransaction transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            // Update guardado: si no tiene esa cantidad, el WHERE bloquea la actualización
+            // y no devuelve fila (mismo patrón que ShopRepository.SellItemAsync).
+            const string deductSql = """
+                UPDATE inventory
+                SET quantity = quantity - @Quantity
+                WHERE discord_id = @DiscordId AND item_id = @ItemId AND quantity >= @Quantity
+                RETURNING quantity;
+                """;
+
+            int? remaining = await connection.QuerySingleOrDefaultAsync<int?>(new CommandDefinition(
+                deductSql,
+                new { DiscordId = (long)discordId, ItemId = itemId, Quantity = quantity },
+                transaction: transaction,
+                cancellationToken: cancellationToken));
+
+            if (remaining is null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return false;
+            }
+
+            if (remaining == 0)
+            {
+                // Limpiamos la fila para no acumular basura (y que no aparezca como "x0" en /inventory).
+                const string cleanupSql = "DELETE FROM inventory WHERE discord_id = @DiscordId AND item_id = @ItemId AND quantity <= 0;";
+                await connection.ExecuteAsync(new CommandDefinition(
+                    cleanupSql, new { DiscordId = (long)discordId, ItemId = itemId }, transaction: transaction, cancellationToken: cancellationToken));
+            }
+
+            await transaction.CommitAsync(cancellationToken);
+            return true;
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
     }
 }

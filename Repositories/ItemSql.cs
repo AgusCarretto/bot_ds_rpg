@@ -11,6 +11,7 @@ internal static class ItemSql
         stat_value  AS "StatValue",
         sell_price  AS "SellPrice",
         buy_price   AS "BuyPrice",
-        weapon_family AS "WeaponFamily"
+        weapon_family AS "WeaponFamily",
+        class_requirement AS "ClassRequirement"
         """;
 }

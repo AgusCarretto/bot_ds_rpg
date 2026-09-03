@@ -67,7 +67,8 @@ public class GatheringModule(
         }
     }
 
-    private static Embed BuildCooldownEmbed(CooldownDefinition definition, TimeSpan remaining)
+    // Públicos para que Modules/TextCommandModule.cs arme los mismos embeds en "aa chop"/"aa mine".
+    public static Embed BuildCooldownEmbed(CooldownDefinition definition, TimeSpan remaining)
     {
         return new EmbedBuilder()
             .WithTitle($"⏳ {definition.Emoji} {definition.DisplayName}: todavía no podés")
@@ -76,7 +77,7 @@ public class GatheringModule(
             .Build();
     }
 
-    private static Embed BuildResultEmbed(CooldownDefinition definition, Item item)
+    public static Embed BuildResultEmbed(CooldownDefinition definition, Item item)
     {
         return new EmbedBuilder()
             .WithTitle($"{definition.Emoji} ¡{definition.DisplayName} exitoso!")
@@ -86,7 +87,7 @@ public class GatheringModule(
             .Build();
     }
 
-    private static Color RarityColor(string rarity) => rarity switch
+    public static Color RarityColor(string rarity) => rarity switch
     {
         "Común" => Color.LightGrey,
         "Raro" => Color.Blue,

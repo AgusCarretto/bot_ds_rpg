@@ -1,0 +1,17 @@
+using BotDsRpg.GameData;
+
+namespace BotDsRpg.Services;
+
+public enum CombatStartStatus { Started, AlreadyInCombat, OnCooldown, NoHp, RaceLost }
+
+// CooldownRemaining: solo si Status == OnCooldown. State: solo si Status == Started.
+public sealed record CombatStartOutcome(CombatStartStatus Status, TimeSpan? CooldownRemaining, CombatState? State);
+
+// Toda la lógica de negocio para arrancar un /hunt o /travel (validaciones, reclamo de cooldown,
+// resolución de arma/sinergia/defensa, sorteo de monstruo) en un solo lugar, para que el módulo
+// de slash commands y el de comandos de texto ("aa hunt") no dupliquen absolutamente nada de
+// esto — cada uno solo se encarga de cómo enviar la respuesta.
+public interface IAdventureCombatStarter
+{
+    Task<CombatStartOutcome> PrepareAsync(ulong discordId, CooldownDefinition definition, IReadOnlyList<MonsterTemplate> monsterPool, CancellationToken cancellationToken = default);
+}

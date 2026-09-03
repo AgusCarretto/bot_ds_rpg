@@ -1,4 +1,5 @@
 using BotDsRpg.GameData;
+using BotDsRpg.Models;
 using BotDsRpg.Repositories;
 using Discord;
 using Discord.Interactions;
@@ -18,31 +19,36 @@ public partial class ShopModule
         try
         {
             var items = await itemRepository.GetAllByTypeAsync("Consumable");
-
-            var embed = new EmbedBuilder()
-                .WithTitle("🏪 Tienda de Consumibles")
-                .WithColor(Color.Gold);
-
-            if (items.Count == 0)
-            {
-                embed.WithDescription("No hay consumibles cargados en la tienda todavía.");
-            }
-            else
-            {
-                foreach (var item in items.OrderBy(i => RarityCatalog.RankOf(i.Rarity)).ThenBy(i => i.Name))
-                {
-                    embed.AddField(
-                        $"[{item.Rarity}] {item.Name}",
-                        $"❤️ Cura: {item.StatValue} HP | 💰 Compra: {item.BuyPrice} Oro | 💸 Venta: {item.SellPrice} Oro");
-                }
-            }
-
-            await FollowupAsync(embed: embed.Build());
+            await FollowupAsync(embed: BuildViewEmbed(items));
         }
         catch (Exception)
         {
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
             await FollowupAsync("No pude cargar la tienda ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
         }
+    }
+
+    // Público para que Modules/TextCommandModule.cs arme el mismo embed en "aa shop view".
+    public static Embed BuildViewEmbed(IReadOnlyList<Item> items)
+    {
+        var embed = new EmbedBuilder()
+            .WithTitle("🏪 Tienda de Consumibles")
+            .WithColor(Color.Gold);
+
+        if (items.Count == 0)
+        {
+            embed.WithDescription("No hay consumibles cargados en la tienda todavía.");
+        }
+        else
+        {
+            foreach (var item in items.OrderBy(i => RarityCatalog.RankOf(i.Rarity)).ThenBy(i => i.Name))
+            {
+                embed.AddField(
+                    $"[{item.Rarity}] {item.Name}",
+                    $"❤️ Cura: {item.StatValue} HP | 💰 Compra: {item.BuyPrice} Oro | 💸 Venta: {item.SellPrice} Oro");
+            }
+        }
+
+        return embed.Build();
     }
 }

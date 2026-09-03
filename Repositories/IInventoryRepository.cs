@@ -9,4 +9,9 @@ public interface IInventoryRepository
 
     // Cuánto tiene el jugador de un ítem puntual (0 si no lo tiene, no null).
     Task<int> GetQuantityAsync(ulong discordId, int itemId, CancellationToken cancellationToken = default);
+
+    // Descuenta "quantity" de un ítem de forma atómica (guarda: si no tiene esa cantidad, no
+    // aplica ningún cambio y devuelve false). Limpia la fila si llega a 0. Usado por /use para
+    // gastar un consumible del inventario.
+    Task<bool> TryConsumeAsync(ulong discordId, int itemId, int quantity, CancellationToken cancellationToken = default);
 }
