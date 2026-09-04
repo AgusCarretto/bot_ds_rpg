@@ -14,7 +14,7 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
     : InteractionModuleBase<SocketInteractionContext>
 {
     // Comando barra: /heal
-    [SlashCommand("heal", "Comé un consumible de tu inventario para recuperar HP (comprado antes en /shop). No funciona en combate.")]
+    [SlashCommand("heal", "Comé un consumible de tu inventario para recuperar HP (comprado en /shop). No funciona en combate.")]
     public async Task HandleHealAsync()
     {
         await DeferAsync();
