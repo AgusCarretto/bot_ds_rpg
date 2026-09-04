@@ -48,7 +48,7 @@ public sealed class AdventureCombatStarter(
         // equipo — ver GameData/CombatStats.cs.
         int playerDamage = CombatStats.TotalAttack(player.Level, weaponDamage);
         int defense = CombatStats.TotalDefense(player.Level, amulet?.StatValue ?? 0);
-
+//ACA CAMBIAR
         // Pasivas de clase (ver GameData/ClassPassives.cs), resueltas una sola vez acá. El HP
         // Máximo/Actual de COMBATE se escala por MaxHpMultiplier (Guerrero ×1.2) preservando el
         // % de vida real del jugador — CombatState.ToDbHpDelta se encarga de "destraducir" el
