@@ -16,7 +16,11 @@ CREATE EXTENSION IF NOT EXISTS unaccent;
 -- ---------------------------------------------------------
 CREATE TABLE IF NOT EXISTS items (
     item_id     INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name        TEXT NOT NULL,
+    -- UNIQUE a propósito: ItemRepository.GetByNameAsync resuelve con LIMIT 1 sin ORDER BY, así que
+    -- un nombre duplicado hace que /equip, /shop buy y /forge make resuelvan a cualquiera de las
+    -- copias de forma inconsistente entre ejecuciones. También hace que el "ON CONFLICT DO NOTHING"
+    -- que ya usan todos los seeds empiece a funcionar de verdad si se re-corren por error.
+    name        TEXT NOT NULL UNIQUE,
     type        TEXT NOT NULL,                 -- ej: 'Espada', 'Daga', 'Arco', 'Grimorio', 'Madera', 'Mineral'
     rarity      TEXT NOT NULL DEFAULT 'Común'
                     CHECK (rarity IN ('Común', 'Raro', 'Épico', 'Legendario', 'Mítico')),

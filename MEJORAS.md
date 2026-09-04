@@ -2,6 +2,23 @@
 
 _Última revisión: 2026-09-03 (loot separado por fuente + equipo por clase)_
 
+## Pendiente de acción tuya (2026-09-03, tarde)
+
+- **Correr `Database/dedupe_items_and_add_unique_name.sql` contra tu base real.** `items` nunca
+  tuvo `UNIQUE(name)`, así que con el tiempo se duplicaron 3 nombres (`Espada de Madera`,
+  `Hacha de Hierro MK3`, `Hoja de Acero Puro` — estos dos últimos con los nombres CRUZADOS entre
+  sus dos copias) y quedaron 5 ítems huérfanos de una era anterior del proyecto
+  (`Cuero de Jabalí`, `Colmillo de Lobo`, `Núcleo de Golem`, `Medalla del Náutico`,
+  `Sello de Forja MK3`) sin receta ni drop que los referencie hoy. El script los limpia (con los
+  `item_id` reales, confirmados por vos) y agrega la constraint. `Database/schema.sql` ya la tiene
+  para instalaciones nuevas.
+- Antes de esto, corría un riesgo real y no solo estético: `ItemRepository.GetByNameAsync` usa
+  `LIMIT 1` sin `ORDER BY`, así que un nombre duplicado podía hacer que `/equip`, `/shop buy` o
+  `/forge make` resolvieran a cualquiera de las copias de forma inconsistente entre ejecuciones.
+- **Correr `Database/remove_legacy_consumables.sql`** (después de `seed_consumables_and_base_swords.sql`
+  si todavía no lo corriste) para sacar los 3 Consumibles viejos sin trackear (`Mate (Canarias
+  Suave)`, `Refuerzo de Milanesa`, `Tira de Asado`) que dispararon el reporte original de precios rotos.
+
 ## Rework de /heal + emojis de ítems + rebalance de Consumibles (2026-09-03)
 
 - **`items.emoji`** (columna nueva, `Database/add_item_emoji.sql`): emoji personalizado de Discord
