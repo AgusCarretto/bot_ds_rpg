@@ -4,6 +4,12 @@ _Última revisión: 2026-09-03 (loot separado por fuente + equipo por clase)_
 
 ## Pendiente de acción tuya (2026-09-03, tarde)
 
+- **Correr `Database/update_item_emojis.sql`.** Reemplaza a `add_item_emoji.sql` +
+  `update_item_emojis_batch1_materiales.sql` + `update_item_emojis_batch2_minerales.sql` (los tres
+  se borraron) — a pedido, de acá en más los emojis van TODOS en este único archivo, que se sigue
+  editando en el lugar cada vez que hay códigos nuevos en vez de crear un `batchN` por tanda. Ya
+  trae los 11 de Madera+Mineral (completo) y agrega la columna `emoji` sola si esta base todavía
+  no la tiene (pasó: no todas las máquinas corrieron la migración vieja).
 - **Correr `Database/dedupe_items_and_add_unique_name.sql` contra tu base real.** `items` nunca
   tuvo `UNIQUE(name)`, así que con el tiempo se duplicaron 3 nombres (`Espada de Madera`,
   `Hacha de Hierro MK3`, `Hoja de Acero Puro` — estos dos últimos con los nombres CRUZADOS entre
@@ -21,12 +27,12 @@ _Última revisión: 2026-09-03 (loot separado por fuente + equipo por clase)_
 
 ## Rework de /heal + emojis de ítems + rebalance de Consumibles (2026-09-03)
 
-- **`items.emoji`** (columna nueva, `Database/add_item_emoji.sql`): emoji personalizado de Discord
-  por ítem ("<:nombre:id>"), mostrado en todo lugar que muestre nombres de ítems (`/profile`,
+- **`items.emoji`** (columna nueva, ahora dentro de `Database/update_item_emojis.sql` — ver arriba):
+  emoji personalizado de Discord por ítem ("<:nombre:id>"), mostrado en todo lugar que muestre nombres de ítems (`/profile`,
   `/inventory`, `/shop`, `/forge recipes`/`make`, `/equip`, `/use`, drops de `/hunt`/`/travel`/
-  `/autohunt`/`/chop`/`/mine`) vía `GameData/ItemDisplay.Format`. Cargá los códigos por nombre
-  (`Database/update_item_emojis_batch1_materiales.sql` ya tiene los 4 de Madera reales, el resto
-  en placeholder) — no por `item_id`, que puede variar entre instalaciones.
+  `/autohunt`/`/chop`/`/mine`) vía `GameData/ItemDisplay.Format`. Los códigos se cargan por nombre
+  (no por `item_id`, que puede variar entre instalaciones) en `Database/update_item_emojis.sql`
+  (Madera+Mineral completo, 11/58 — el resto sigue en `NULL`, cae a mostrar solo el nombre).
 - **`/heal` reworkeado:** ya no gasta oro directo. Ahora consume automáticamente el Consumable más
   barato que el jugador tenga en inventario (tiene que haberlo comprado antes en `/shop buy`); si
   no tiene ninguno, te manda a la tienda. `IUserRepository.HealAsync` (el viejo, a oro) se borró —
