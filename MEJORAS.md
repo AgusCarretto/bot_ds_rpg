@@ -4,6 +4,11 @@ _Última revisión: 2026-09-03 (loot separado por fuente + equipo por clase)_
 
 ## Pendiente de acción tuya (2026-09-03, tarde)
 
+- **Correr `Database/finalize_consumable_catalog.sql`.** El pase de arte de Consumibles definió
+  una escala sin Legendario (Común x2, Raro x1 — solo la Empanada —, Épico x4 — Choripán y Cordero
+  Patagónico subieron/bajaron de rareza —, Mítico x2). "Matambre Arrollado" quedó sin escalón y se
+  saca del catálogo. Los precios de Choripán/Cordero NO se tocaron (quedaron con los de su rareza
+  vieja) — avisame si querés que también seas rebalanceen a la progresión de Épico.
 - **Correr `Database/update_item_emojis.sql`.** Reemplaza a `add_item_emoji.sql` +
   `update_item_emojis_batch1_materiales.sql` + `update_item_emojis_batch2_minerales.sql` (los tres
   se borraron) — a pedido, de acá en más los emojis van TODOS en este único archivo, que se sigue

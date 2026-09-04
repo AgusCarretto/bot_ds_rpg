@@ -30,8 +30,19 @@ UPDATE items SET emoji = '<:ORO_EPICO:1545413475462021160>'         WHERE name =
 UPDATE items SET emoji = '<:ZAFIRO_LEGENDARIO:1545413533657866280>' WHERE name = 'Gema de Zafiro';
 UPDATE items SET emoji = '<:METEORITO_MITICO:1545413451487117412>'  WHERE name = 'Fragmento de Meteorito';
 
+-- 🍖 Consumable (9/9 completo — "Matambre Arrollado" se sacó del catálogo, ver
+-- Database/finalize_consumable_catalog.sql: sin escalón Legendario no tenía dónde encajar).
+UPDATE items SET emoji = '<:mate_comun:1545473051347521596>'      WHERE name = 'Mate Amargo';
+UPDATE items SET emoji = '<:pan_comun:1545473080019652708>'       WHERE name = 'Pan Casero';
+UPDATE items SET emoji = '<:empanada_raro1:1545473013385011220>'  WHERE name = 'Empanada de Carne';
+UPDATE items SET emoji = '<:chori_epicos:1545472900889448448>'    WHERE name = 'Choripán';
+UPDATE items SET emoji = '<:fileteasado_epico:1545472954400247908>' WHERE name = 'Vacío al Disco';
+UPDATE items SET emoji = '<:asado_epico:1545472928009949184>'     WHERE name = 'Asado de Tira';
+UPDATE items SET emoji = '<:cordero_epico:1545472980996456589>'   WHERE name = 'Cordero Patagónico';
+UPDATE items SET emoji = '<:asado_mitico:1545472835537866853>'    WHERE name = 'Asado Completo del Domingo en Familia';
+UPDATE items SET emoji = '<:mate_mitico:1545472874863665214>'     WHERE name = 'Mate Dulce de la Abuela';
+
 -- 🩸 Material — drops de monstruo (0/8, pendiente)
--- 🍖 Consumable (0/10, pendiente)
 -- ⚔️ Weapon base + de clase (0/20, pendiente)
 -- 📿 Amulet (0/9, pendiente)
 
