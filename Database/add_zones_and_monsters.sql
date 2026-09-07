@@ -41,10 +41,13 @@ CREATE INDEX IF NOT EXISTS idx_monster_drops_monster_id ON monster_drops (monste
 
 -- Placeholder momentáneo: la zona 1 recién queda con nombre real cuando corra el seed de abajo.
 -- Sin esto, agregar la columna con DEFAULT 1 fallaría en una base que ya tiene jugadores (violaría
--- la FK antes de que exista ninguna fila en zones).
-INSERT INTO zones (zone_id, name, description, min_level, emoji)
-VALUES (1, 'Praderas del Mate', 'Cargando...', 1, '🌾')
-ON CONFLICT (zone_id) DO NOTHING;
+-- la FK antes de que exista ninguna fila en zones). Sin especificar zone_id a propósito: "zones"
+-- se acaba de crear arriba en esta misma transacción, así que esta es su primera fila — la
+-- identity le asigna 1 sola, sin necesitar OVERRIDING SYSTEM VALUE (zone_id es GENERATED ALWAYS,
+-- rechaza valores explícitos) ni resincronizar la secuencia después.
+INSERT INTO zones (name, description, min_level, emoji)
+VALUES ('Praderas del Mate', 'Cargando...', 1, '🌾')
+ON CONFLICT (name) DO NOTHING;
 
 ALTER TABLE users ADD COLUMN IF NOT EXISTS current_zone_id INTEGER NOT NULL DEFAULT 1 REFERENCES zones (zone_id);
 
