@@ -58,6 +58,45 @@ CREATE TABLE IF NOT EXISTS recipe_ingredients (
 CREATE INDEX IF NOT EXISTS idx_recipe_ingredients_recipe_id ON recipe_ingredients (recipe_id);
 
 -- ---------------------------------------------------------
+-- zones / monsters / monster_drops: mundo dividido en zonas de dificultad creciente (ver
+-- Modules/ZoneModule.cs y Database/seed_zones_and_monsters.sql). /hunt solo caza monstruos de la
+-- zona ACTUAL del jugador (users.current_zone_id) — /travel sigue con su pool fijo en código
+-- (GameData/MonsterCatalog.TravelMonsters), sin relación con zonas.
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS zones (
+    zone_id     INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name        TEXT NOT NULL UNIQUE,
+    description TEXT NOT NULL DEFAULT '',
+    min_level   INTEGER NOT NULL DEFAULT 1 CHECK (min_level >= 1),
+    emoji       TEXT
+);
+
+CREATE TABLE IF NOT EXISTS monsters (
+    monster_id  INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    zone_id     INTEGER NOT NULL REFERENCES zones (zone_id) ON DELETE CASCADE,
+    name        TEXT NOT NULL UNIQUE,
+    emoji       TEXT,
+    min_hp      INTEGER NOT NULL CHECK (min_hp > 0),
+    max_hp      INTEGER NOT NULL CHECK (max_hp >= min_hp),
+    min_damage  INTEGER NOT NULL CHECK (min_damage >= 0),
+    max_damage  INTEGER NOT NULL CHECK (max_damage >= min_damage),
+    -- Bonus FIJO que este monstruo suma a la recompensa base de /hunt (ver
+    -- GameData/CombatRewardCalculator.RollHuntReward) — no reemplaza la fórmula existente, la
+    -- complementa, así que un monstruo de Zona 1 con 0/0 no cambia nada respecto a lo que ya había.
+    gold_reward INTEGER NOT NULL DEFAULT 0 CHECK (gold_reward >= 0),
+    xp_reward   INTEGER NOT NULL DEFAULT 0 CHECK (xp_reward >= 0)
+);
+
+CREATE TABLE IF NOT EXISTS monster_drops (
+    monster_id INTEGER NOT NULL REFERENCES monsters (monster_id) ON DELETE CASCADE,
+    item_id    INTEGER NOT NULL REFERENCES items (item_id) ON DELETE CASCADE,
+    PRIMARY KEY (monster_id, item_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_monsters_zone_id ON monsters (zone_id);
+CREATE INDEX IF NOT EXISTS idx_monster_drops_monster_id ON monster_drops (monster_id);
+
+-- ---------------------------------------------------------
 -- users: perfil de cada jugador, una fila por discord_id
 -- ---------------------------------------------------------
 CREATE TABLE IF NOT EXISTS users (
@@ -73,6 +112,10 @@ CREATE TABLE IF NOT EXISTS users (
     amulet_id         INTEGER REFERENCES items (item_id) ON DELETE SET NULL,
     daily_streak      INTEGER NOT NULL DEFAULT 0 CHECK (daily_streak >= 0),
     last_daily_claim  TIMESTAMPTZ, -- NULL = todavía no reclamó ningún /daily
+    -- Zona donde caza /hunt (ver arriba). Default 1 = "Praderas del Mate": tiene que existir ANTES
+    -- de que cualquier jugador corra /start (Database/seed_zones_and_monsters.sql debe correr
+    -- antes de que haya jugadores nuevos, o el INSERT de un /start viola esta FK).
+    current_zone_id   INTEGER NOT NULL DEFAULT 1 REFERENCES zones (zone_id),
     CONSTRAINT chk_current_hp_within_max CHECK (current_hp <= max_hp)
 );
 

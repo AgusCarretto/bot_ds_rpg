@@ -162,4 +162,21 @@ public sealed class UserRepository(IDbConnectionFactory connectionFactory) : IUs
             throw;
         }
     }
+
+    public async Task<User> ChangeZoneAsync(ulong discordId, int zoneId, CancellationToken cancellationToken = default)
+    {
+        string sql = $"""
+            UPDATE users
+            SET current_zone_id = @ZoneId
+            WHERE discord_id = @DiscordId
+            RETURNING {UserSql.SelectColumns};
+            """;
+
+        using IDbConnection connection = connectionFactory.CreateConnection();
+        var command = new CommandDefinition(
+            sql,
+            new { DiscordId = (long)discordId, ZoneId = zoneId },
+            cancellationToken: cancellationToken);
+        return await connection.QuerySingleAsync<User>(command);
+    }
 }

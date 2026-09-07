@@ -1,4 +1,5 @@
 using BotDsRpg.GameData;
+using BotDsRpg.Models;
 using BotDsRpg.Repositories;
 
 namespace BotDsRpg.Services;
@@ -8,10 +9,25 @@ public sealed class AdventureCombatStarter(
     IAdventureRepository adventureRepository,
     IUserRepository userRepository,
     IItemRepository itemRepository,
+    IMonsterRepository monsterRepository,
     ICombatSessionService combatSessions) : IAdventureCombatStarter
 {
-    public async Task<CombatStartOutcome> PrepareAsync(
-        ulong discordId, CooldownDefinition definition, IReadOnlyList<MonsterTemplate> monsterPool, CancellationToken cancellationToken = default)
+    public Task<CombatStartOutcome> PrepareAsync(
+        ulong discordId, CooldownDefinition definition, IReadOnlyList<MonsterTemplate> monsterPool, CancellationToken cancellationToken = default) =>
+        PrepareInternalAsync(discordId, definition, _ => Task.FromResult(monsterPool), cancellationToken);
+
+    public Task<CombatStartOutcome> PrepareHuntAsync(ulong discordId, CancellationToken cancellationToken = default) =>
+        PrepareInternalAsync(
+            discordId,
+            CooldownCatalog.Hunt,
+            player => monsterRepository.GetMonstersByZoneAsync(player.CurrentZoneId, cancellationToken),
+            cancellationToken);
+
+    private async Task<CombatStartOutcome> PrepareInternalAsync(
+        ulong discordId,
+        CooldownDefinition definition,
+        Func<User, Task<IReadOnlyList<MonsterTemplate>>> resolvePool,
+        CancellationToken cancellationToken)
     {
         if (combatSessions.Peek(discordId) is not null)
         {
@@ -32,6 +48,14 @@ public sealed class AdventureCombatStarter(
             return new CombatStartOutcome(CombatStartStatus.NoHp, null, null);
         }
 
+        // Antes de cobrar el cooldown: si la zona actual todavía no tiene monstruos cargados, es un
+        // problema de contenido, no del jugador — no le quememos el intento por eso.
+        var monsterPool = await resolvePool(player);
+        if (monsterPool.Count == 0)
+        {
+            return new CombatStartOutcome(CombatStartStatus.NoMonstersInZone, null, null);
+        }
+
         // El cooldown se cobra ACÁ, al iniciar el combate: si el jugador lo abandona o se le
         // acaba el tiempo de respuesta, igual "gastó" el intento (no puede reintentar gratis).
         bool claimed = await adventureRepository.TryClaimCooldownAsync(discordId, definition.CommandName, definition.Duration, cancellationToken);
@@ -48,7 +72,7 @@ public sealed class AdventureCombatStarter(
         // equipo — ver GameData/CombatStats.cs.
         int playerDamage = CombatStats.TotalAttack(player.Level, weaponDamage);
         int defense = CombatStats.TotalDefense(player.Level, amulet?.StatValue ?? 0);
-//ACA CAMBIAR
+
         // Pasivas de clase (ver GameData/ClassPassives.cs), resueltas una sola vez acá. El HP
         // Máximo/Actual de COMBATE se escala por MaxHpMultiplier (Guerrero ×1.2) preservando el
         // % de vida real del jugador — CombatState.ToDbHpDelta se encarga de "destraducir" el
@@ -69,6 +93,8 @@ public sealed class AdventureCombatStarter(
             MonsterCurrentHp: monsterMaxHp,
             MonsterDamage: monsterDamage,
             MonsterDropItemNames: monster.DropItemNames,
+            MonsterGoldBonus: monster.GoldBonus,
+            MonsterXpBonus: monster.XpBonus,
             PlayerMaxHp: combatMaxHp,
             PlayerCurrentHp: combatCurrentHp,
             PlayerStartingHp: combatCurrentHp,

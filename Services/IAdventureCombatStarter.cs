@@ -2,7 +2,7 @@ using BotDsRpg.GameData;
 
 namespace BotDsRpg.Services;
 
-public enum CombatStartStatus { Started, AlreadyInCombat, OnCooldown, NoHp, RaceLost }
+public enum CombatStartStatus { Started, AlreadyInCombat, OnCooldown, NoHp, RaceLost, NoMonstersInZone }
 
 // CooldownRemaining: solo si Status == OnCooldown. State: solo si Status == Started.
 public sealed record CombatStartOutcome(CombatStartStatus Status, TimeSpan? CooldownRemaining, CombatState? State);
@@ -13,5 +13,10 @@ public sealed record CombatStartOutcome(CombatStartStatus Status, TimeSpan? Cool
 // esto — cada uno solo se encarga de cómo enviar la respuesta.
 public interface IAdventureCombatStarter
 {
+    // /travel: pool fijo (GameData/MonsterCatalog.TravelMonsters), no depende de zona.
     Task<CombatStartOutcome> PrepareAsync(ulong discordId, CooldownDefinition definition, IReadOnlyList<MonsterTemplate> monsterPool, CancellationToken cancellationToken = default);
+
+    // /hunt: el pool depende de la zona ACTUAL del jugador (users.current_zone_id), así que se
+    // resuelve internamente después de conocerlo — ver Repositories/IMonsterRepository.cs.
+    Task<CombatStartOutcome> PrepareHuntAsync(ulong discordId, CancellationToken cancellationToken = default);
 }

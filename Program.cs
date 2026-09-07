@@ -319,6 +319,8 @@ public static class ServiceProviderBuilder
             .AddSingleton<IProgressionRepository, ProgressionRepository>()
             .AddSingleton<ICooldownRepository, CooldownRepository>()
             .AddSingleton<IAdventureRepository, AdventureRepository>()
+            .AddSingleton<IZoneRepository, ZoneRepository>()
+            .AddSingleton<IMonsterRepository, MonsterRepository>()
             .AddSingleton<IGatheringRepository, GatheringRepository>()
             .AddSingleton<IItemRepository, ItemRepository>()
             .AddSingleton<IInventoryRepository, InventoryRepository>()

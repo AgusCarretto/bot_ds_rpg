@@ -15,4 +15,5 @@ public sealed class User
     public int? AmuletId { get; init; }
     public int DailyStreak { get; init; }
     public DateTime? LastDailyClaim { get; init; }
+    public int CurrentZoneId { get; init; }
 }

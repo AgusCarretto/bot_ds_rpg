@@ -36,4 +36,8 @@ public interface IUserRepository
     // pierde si el HP en base cambió por otra vía mientras la pelea seguía abierta. Transaccional
     // con FOR UPDATE para que no se pise con una operación concurrente sobre la misma fila.
     Task<User> ApplyCombatHpDeltaAsync(ulong discordId, int hpDelta, CancellationToken cancellationToken = default);
+
+    // Cambia la zona actual del jugador (/zona ya validó min_level antes de llamar acá) — a partir
+    // de esto, /hunt caza monstruos de la nueva zona (ver Repositories/IMonsterRepository.cs).
+    Task<User> ChangeZoneAsync(ulong discordId, int zoneId, CancellationToken cancellationToken = default);
 }

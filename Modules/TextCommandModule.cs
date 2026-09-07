@@ -1,6 +1,8 @@
 using BotDsRpg.Repositories;
 using BotDsRpg.Services;
+using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 
 // Puente de comandos de texto tradicionales (prefijo "aa ", ver Program.cs) para quienes no
 // puedan usar cómodamente el selector de slash commands (ej. desde el celular). Ninguno de estos
@@ -26,7 +28,8 @@ public partial class TextCommandModule(
     ICombatSessionService combatSessions,
     IAdventureCombatStarter combatStarter,
     IAdventureRepository adventureRepository,
-    IProgressionRepository progressionRepository) : ModuleBase<SocketCommandContext>
+    IProgressionRepository progressionRepository,
+    IZoneRepository zoneRepository) : ModuleBase<SocketCommandContext>
 {
     // ---- Onboarding / clase ----
 
@@ -76,38 +79,56 @@ public partial class TextCommandModule(
 
     // ---- Perfil ----
 
-    // "aa profile" / "aa p" — misma lógica que GameModule.HandleProfileAsync.
+    // "aa profile" / "aa p" — misma lógica que GameModule.HandleProfileAsync, incluyendo poder
+    // consultar a otro jugador mencionándolo: "aa p @alguien".
     [Command("profile")]
     [Alias("p")]
-    [Summary("Mostrá tu estado actual, nivel y estadísticas.")]
-    public async Task ProfileAsync()
+    [Summary("Mostrá tu estado actual, nivel y estadísticas (o los de otro jugador: \"aa p @alguien\").")]
+    public async Task ProfileAsync([Remainder] SocketGuildUser? targetUser = null)
     {
+        IUser target = targetUser ?? Context.User;
+
         try
         {
-            string avatarUrl = Context.User.GetAvatarUrl() ?? Context.User.GetDefaultAvatarUrl();
-            var embed = await GameModule.BuildProfileEmbedAsync(userRepository, itemRepository, Context.User.Id, Context.User.Username, avatarUrl);
+            if (target.Id != Context.User.Id && await userRepository.GetByDiscordIdAsync(target.Id) is null)
+            {
+                await ReplyAsync(GameModule.BuildNotRegisteredMessage(GameModule.GetDisplayName(target)));
+                return;
+            }
+
+            string avatarUrl = target.GetAvatarUrl() ?? target.GetDefaultAvatarUrl();
+            var embed = await GameModule.BuildProfileEmbedAsync(userRepository, itemRepository, target.Id, GameModule.GetDisplayName(target), avatarUrl);
             await ReplyAsync(embed: embed);
         }
         catch (Exception)
         {
-            await ReplyAsync("¡Upa! No pude acceder a tu perfil ahora mismo, intentá de nuevo en un momento.");
+            await ReplyAsync("¡Upa! No pude acceder a ese perfil ahora mismo, intentá de nuevo en un momento.");
         }
     }
 
-    // "aa inventory" / "aa i" — misma lógica que GameModule.HandleInventoryAsync.
+    // "aa inventory" / "aa i" — misma lógica que GameModule.HandleInventoryAsync, incluyendo poder
+    // consultar a otro jugador mencionándolo: "aa i @alguien".
     [Command("inventory")]
     [Alias("i")]
-    [Summary("Mostrá los materiales que tenés guardados.")]
-    public async Task InventoryAsync()
+    [Summary("Mostrá los materiales que tenés guardados (o los de otro jugador: \"aa i @alguien\").")]
+    public async Task InventoryAsync([Remainder] SocketGuildUser? targetUser = null)
     {
+        IUser target = targetUser ?? Context.User;
+
         try
         {
-            var embed = await GameModule.BuildInventoryEmbedAsync(inventoryRepository, Context.User.Id, Context.User.Username);
+            if (target.Id != Context.User.Id && await userRepository.GetByDiscordIdAsync(target.Id) is null)
+            {
+                await ReplyAsync(GameModule.BuildNotRegisteredMessage(GameModule.GetDisplayName(target)));
+                return;
+            }
+
+            var embed = await GameModule.BuildInventoryEmbedAsync(inventoryRepository, target.Id, GameModule.GetDisplayName(target));
             await ReplyAsync(embed: embed);
         }
         catch (Exception)
         {
-            await ReplyAsync("No pude consultar tu inventario ahora mismo, intentá de nuevo en un momento.");
+            await ReplyAsync("No pude consultar ese inventario ahora mismo, intentá de nuevo en un momento.");
         }
     }
 

@@ -11,13 +11,13 @@ public partial class TextCommandModule
     [Command("hunt")]
     [Alias("h")]
     [Summary("Salí a cazar monstruos cercanos (cooldown de 1 minuto).")]
-    public Task HuntAsync() => StartCombatAsync(CooldownCatalog.Hunt, MonsterCatalog.HuntMonsters);
+    public Task HuntAsync() => StartCombatAsync(CooldownCatalog.Hunt, () => combatStarter.PrepareHuntAsync(Context.User.Id));
 
     // "aa travel" / "aa t" — misma lógica que AdventureModule.HandleTravelAsync.
     [Command("travel")]
     [Alias("t")]
     [Summary("Emprendé un viaje de exploración: más difícil, mejores recompensas (cooldown de 10 minutos).")]
-    public Task TravelAsync() => StartCombatAsync(CooldownCatalog.Travel, MonsterCatalog.TravelMonsters);
+    public Task TravelAsync() => StartCombatAsync(CooldownCatalog.Travel, () => combatStarter.PrepareAsync(Context.User.Id, CooldownCatalog.Travel, MonsterCatalog.TravelMonsters));
 
     // "aa autohunt" / "aa ah" — misma lógica que AutoHuntModule.HandleAutoHuntAsync. Sin botones:
     // resuelve toda la pelea de una y comparte el cooldown de /hunt (no de "aa hunt" en particular,
@@ -38,11 +38,11 @@ public partial class TextCommandModule
         }
     }
 
-    private async Task StartCombatAsync(CooldownDefinition definition, IReadOnlyList<MonsterTemplate> monsterPool)
+    private async Task StartCombatAsync(CooldownDefinition definition, Func<Task<CombatStartOutcome>> prepare)
     {
         try
         {
-            var outcome = await combatStarter.PrepareAsync(Context.User.Id, definition, monsterPool);
+            var outcome = await prepare();
 
             switch (outcome.Status)
             {
@@ -54,6 +54,9 @@ public partial class TextCommandModule
                     return;
                 case CombatStartStatus.NoHp:
                     await ReplyAsync(embed: AdventureModule.BuildNoHpEmbed());
+                    return;
+                case CombatStartStatus.NoMonstersInZone:
+                    await ReplyAsync(embed: AdventureModule.BuildNoMonstersInZoneEmbed());
                     return;
                 case CombatStartStatus.RaceLost:
                     await ReplyAsync("Justo se te adelantó otra ejecución de este comando, probá de nuevo en un toque.");

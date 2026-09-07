@@ -57,7 +57,7 @@ public class AutoHuntModule(
         // Misma preparación que /hunt: mismo cooldown (CooldownCatalog.Hunt → "hunt" en la tabla
         // cooldowns), mismo chequeo de "ya en combate" y de HP, misma resolución de
         // arma/sinergia/defensa/monstruo. Reclama el cooldown acá adentro.
-        var outcome = await combatStarter.PrepareAsync(discordId, CooldownCatalog.Hunt, MonsterCatalog.HuntMonsters);
+        var outcome = await combatStarter.PrepareHuntAsync(discordId);
 
         switch (outcome.Status)
         {
@@ -67,6 +67,8 @@ public class AutoHuntModule(
                 return new AutoHuntResult(null, AdventureModule.BuildCooldownEmbed(CooldownCatalog.Hunt, outcome.CooldownRemaining!.Value));
             case CombatStartStatus.NoHp:
                 return new AutoHuntResult(null, AdventureModule.BuildNoHpEmbed());
+            case CombatStartStatus.NoMonstersInZone:
+                return new AutoHuntResult(null, AdventureModule.BuildNoMonstersInZoneEmbed());
             case CombatStartStatus.RaceLost:
                 return new AutoHuntResult("Justo se te adelantó otra ejecución de este comando, probá de nuevo en un toque.", null);
         }
@@ -136,7 +138,7 @@ public class AutoHuntModule(
 
         if (monsterHp <= 0)
         {
-            var reward = CombatRewardCalculator.RollHuntReward(state.PlayerLevel);
+            var reward = CombatRewardCalculator.RollHuntReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus);
             Item? droppedItem = await AdventureModule.ResolveDroppedItemAsync(itemRepository, state, reward);
 
             // Delta (no snapshot absoluto): igual que en /hunt por turnos, así compone bien con

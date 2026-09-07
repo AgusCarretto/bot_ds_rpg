@@ -9,10 +9,14 @@ public sealed record CombatReward(int Gold, int Xp, bool DroppedSomething);
 // resolución instantánea, ahora aplicados una sola vez al derrotar al monstruo).
 public static class CombatRewardCalculator
 {
-    public static CombatReward RollHuntReward(int playerLevel)
+    // monsterGoldBonus/monsterXpBonus: bonus fijo del monstruo (ver GameData/MonsterCatalog.cs y
+    // Repositories/IMonsterRepository.cs) que se SUMA a la fórmula de siempre, no la reemplaza —
+    // así un monstruo de Zona 1 con bonus 0/0 da exactamente lo mismo que antes de que existieran
+    // las Zonas, y solo las zonas más difíciles (Bosque de Cenizas en adelante) suben la recompensa.
+    public static CombatReward RollHuntReward(int playerLevel, int monsterGoldBonus = 0, int monsterXpBonus = 0)
     {
-        int gold = Random.Shared.Next(5, 16) + (playerLevel * 2);
-        int xp = Random.Shared.Next(8, 21) + playerLevel;
+        int gold = Random.Shared.Next(5, 16) + (playerLevel * 2) + monsterGoldBonus;
+        int xp = Random.Shared.Next(8, 21) + playerLevel + monsterXpBonus;
 
         // 30% de probabilidad de dropear un material del monstruo al ganar.
         bool droppedSomething = Random.Shared.Next(100) < 30;

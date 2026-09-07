@@ -15,6 +15,10 @@ public sealed record CombatState(
     // /travel, que todavía resuelve su drop por rareza sorteada. Ver GameData/MonsterCatalog.cs y
     // Modules/AdventureModule.ResolveDroppedItemAsync.
     IReadOnlyList<string> MonsterDropItemNames,
+    // Bonus fijo de oro/XP que este monstruo suma a la recompensa de /hunt (0 para /travel, que
+    // sigue sin zona) — ver GameData/CombatRewardCalculator.RollHuntReward.
+    int MonsterGoldBonus,
+    int MonsterXpBonus,
     // PlayerMaxHp/PlayerCurrentHp/PlayerStartingHp ya vienen escalados por Passives.MaxHpMultiplier
     // (Guerrero ×1.2) si corresponde — ver Services/AdventureCombatStarter.cs y ToDbHpDelta abajo.
     int PlayerMaxHp,

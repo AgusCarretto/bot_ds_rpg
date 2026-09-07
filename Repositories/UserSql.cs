@@ -16,6 +16,7 @@ internal static class UserSql
         weapon_id        AS "WeaponId",
         amulet_id        AS "AmuletId",
         daily_streak     AS "DailyStreak",
-        last_daily_claim AS "LastDailyClaim"
+        last_daily_claim AS "LastDailyClaim",
+        current_zone_id  AS "CurrentZoneId"
         """;
 }

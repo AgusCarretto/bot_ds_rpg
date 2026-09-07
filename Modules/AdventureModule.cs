@@ -14,13 +14,13 @@ public class AdventureModule(
 {
     [SlashCommand("hunt", "Salí a cazar monstruos cercanos (cooldown de 1 minuto).")]
     public Task HandleHuntAsync() =>
-        StartCombatAsync(CooldownCatalog.Hunt, MonsterCatalog.HuntMonsters);
+        StartCombatAsync(CooldownCatalog.Hunt, () => combatStarter.PrepareHuntAsync(Context.User.Id));
 
     [SlashCommand("travel", "Emprendé un viaje de exploración: más difícil, mejores recompensas (cooldown de 10 minutos).")]
     public Task HandleTravelAsync() =>
-        StartCombatAsync(CooldownCatalog.Travel, MonsterCatalog.TravelMonsters);
+        StartCombatAsync(CooldownCatalog.Travel, () => combatStarter.PrepareAsync(Context.User.Id, CooldownCatalog.Travel, MonsterCatalog.TravelMonsters));
 
-    private async Task StartCombatAsync(CooldownDefinition definition, IReadOnlyList<MonsterTemplate> monsterPool)
+    private async Task StartCombatAsync(CooldownDefinition definition, Func<Task<CombatStartOutcome>> prepare)
     {
         // El chequeo de cooldown + la preparación pueden superar los 3s que da Discord antes de
         // que la interacción expire.
@@ -29,8 +29,9 @@ public class AdventureModule(
         try
         {
             // Toda la lógica de negocio vive en IAdventureCombatStarter: la comparte "aa hunt"
-            // (Modules/TextCommandModule.cs) sin duplicar nada.
-            var outcome = await combatStarter.PrepareAsync(Context.User.Id, definition, monsterPool);
+            // (Modules/TextCommandModule.cs) sin duplicar nada. /hunt resuelve su propio pool según
+            // la zona actual del jugador (PrepareHuntAsync); /travel sigue con un pool fijo.
+            var outcome = await prepare();
 
             switch (outcome.Status)
             {
@@ -42,6 +43,9 @@ public class AdventureModule(
                     return;
                 case CombatStartStatus.NoHp:
                     await FollowupAsync(embed: BuildNoHpEmbed(), ephemeral: true);
+                    return;
+                case CombatStartStatus.NoMonstersInZone:
+                    await FollowupAsync(embed: BuildNoMonstersInZoneEmbed(), ephemeral: true);
                     return;
                 case CombatStartStatus.RaceLost:
                     await FollowupAsync("Justo se te adelantó otra ejecución de este comando, probá de nuevo en un toque.", ephemeral: true);
@@ -129,7 +133,7 @@ public class AdventureModule(
             if (monsterHpAfter <= 0)
             {
                 var reward = state.CommandName == "hunt"
-                    ? CombatRewardCalculator.RollHuntReward(state.PlayerLevel)
+                    ? CombatRewardCalculator.RollHuntReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus)
                     : CombatRewardCalculator.RollTravelReward(state.PlayerLevel);
 
                 Item? droppedItem = await ResolveDroppedItemAsync(itemRepository, state, reward);
@@ -286,6 +290,15 @@ public class AdventureModule(
             .WithTitle("💀 Estás sin fuerzas")
             .WithDescription("Te quedaste sin HP. Usá **/heal** para recuperarte antes de volver a intentarlo.")
             .WithColor(Color.DarkRed)
+            .Build();
+    }
+
+    public static Embed BuildNoMonstersInZoneEmbed()
+    {
+        return new EmbedBuilder()
+            .WithTitle("🗺️ Zona sin monstruos")
+            .WithDescription("Todavía no hay monstruos cargados en tu zona actual. Probá **/zona** para viajar a otra, o avisale al staff.")
+            .WithColor(Color.DarkGrey)
             .Build();
     }
 

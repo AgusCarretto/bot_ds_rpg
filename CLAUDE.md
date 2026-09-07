@@ -32,7 +32,7 @@ extension currently in use). Run in this exact order against an empty database:
 
 ```
 schema.sql → seed.sql → add_weapon_family.sql → seed_class_gear_and_monster_drops.sql
-  → seed_recipes.sql → seed_consumables_and_base_swords.sql
+  → seed_recipes.sql → seed_consumables_and_base_swords.sql → seed_zones_and_monsters.sql
 ```
 
 The other `Database/add_*.sql` / `cleanup_*.sql` / `fix_*.sql` files are historical incremental
@@ -90,6 +90,14 @@ Weapon/Amulet), `/shop` only lists/sells `type = 'Consumable'`, weapon damage ge
 multiplier only when `weapon_family` matches the player's class. Forge recipes also live in the
 database (`recipes` + `recipe_ingredients`, referencing `items` by id), not in code — there used to
 be a `GameData/CraftingCatalog.cs`, it was deleted in favor of `Repositories/RecipeRepository.cs`.
+
+**Zones**: the world is split into difficulty-scaled zones (`zones` table, `Repositories/IZoneRepository.cs`).
+Each player has `users.current_zone_id` (default 1); `/zona [id]` moves them after validating
+`zones.min_level`, `/zonas` lists them. `/hunt` is zone-scoped — its monster pool now lives in the
+DB (`monsters` + `monster_drops`, `Repositories/IMonsterRepository.cs`, resolved by
+`IAdventureCombatStarter.PrepareHuntAsync` from the player's current zone) instead of the old
+hardcoded `MonsterCatalog.HuntMonsters`. `/travel` is intentionally NOT zone-scoped — it keeps its
+own fixed pool in `GameData/MonsterCatalog.TravelMonsters`, unrelated to zones.
 
 **Combat is stateful and in-memory, not per-command**: `/hunt` and `/travel` start a turn-based
 fight tracked by `ICombatSessionService` (in-process, keyed by discord id — not persisted). The

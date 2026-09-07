@@ -1,6 +1,39 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-09-03 (loot separado por fuente + equipo por clase)_
+_Última revisión: 2026-09-07 (Sistema de Zonas)_
+
+## Sistema de Zonas (2026-09-07)
+
+- **Tablas nuevas**: `zones` (id, name, description, min_level, emoji) y `monsters`/`monster_drops`
+  (`Database/schema.sql` para instalaciones nuevas, `Database/add_zones_and_monsters.sql` para tu
+  base actual). `users.current_zone_id` (default 1, FK a `zones`) define en qué zona caza `/hunt`.
+- **Los monstruos de /hunt se mudaron de código a base**: `GameData/MonsterCatalog.HuntMonsters` se
+  borró — ahora viven en `monsters`/`monster_drops` (`Repositories/IMonsterRepository.cs`), mismo
+  patrón que ya se usó para migrar las recetas (`CraftingCatalog.cs` → `RecipeRepository`).
+  `/hunt` (y `aa hunt`/`aa autohunt`) resuelve su pool por la zona ACTUAL del jugador vía
+  `IAdventureCombatStarter.PrepareHuntAsync`. **`/travel` NO se tocó a propósito** — sigue con su
+  pool fijo en código (`MonsterCatalog.TravelMonsters`), decisión explícita para no chocar con el
+  comando ya existente (ver más abajo).
+- **`Database/seed_zones_and_monsters.sql`**: carga las 5 zonas (Praderas del Mate Nv.1, Bosque de
+  Cenizas Nv.5, Minas del Yunque Nv.10, Cordillera del Fuego Nv.15, Cráter de la Escoria Nv.20) +
+  14 monstruos (los 4 que ya existían en código, migrados a Zona 1 con los mismos stats/drops de
+  siempre, + 10 nuevos — 2 por zona, con 20 materiales nuevos tipo `Material`). Los monstruos de
+  Zona 5 pegan 140-220 de daño, capaz de matar de un golpe a un jugador de nivel bajo — es la zona
+  de riesgo real, pensada para equipo top de `/forge`. Totalmente re-ejecutable (`ON CONFLICT`).
+- **`/zona [id]`** (y `aa zona <id>`) cambia de zona validando `min_level`; **`/zonas`** (y
+  `aa zonas`) lista todas con nivel requerido y marca dónde estás parado. Nombrado `/zona` (no
+  `/travel`) porque `/travel` YA es un comando de combate existente y muy distinto (viaje difícil,
+  cooldown de 10 min) — reusar el nombre iba a chocar, así que se armó un comando nuevo en vez de
+  reinterpretarlo.
+- **Recompensa de `/hunt` ahora tiene un componente por zona**: `monsters.gold_reward`/`xp_reward`
+  es un bonus FIJO que se SUMA a la fórmula de siempre (`CombatRewardCalculator.RollHuntReward`),
+  no la reemplaza — los monstruos de Zona 1 quedaron en bonus 0/0 a propósito (cero cambio de
+  balance para el contenido que ya existía), y el bonus escala en zonas 2 a 5 (+15/+12 hasta
+  +130/+100 de oro/XP) para que viajar a una zona más difícil realmente convenga.
+- **Pendiente de tu lado**: correr `Database/add_zones_and_monsters.sql` y después
+  `Database/seed_zones_and_monsters.sql` contra tu base real (este segundo necesita que
+  `seed_class_gear_and_monster_drops.sql` ya haya corrido antes, porque los 4 monstruos migrados
+  referencian sus drops por nombre). Sin esto, cualquier `/hunt` real fallará (la tabla no existe).
 
 ## Pendiente de acción tuya (2026-09-03, tarde)
 

@@ -8,27 +8,44 @@ using Discord.WebSocket;
 public class GameModule(IUserRepository userRepository, IInventoryRepository inventoryRepository, IItemRepository itemRepository)
     : InteractionModuleBase<SocketInteractionContext>
 {
-    // Comando barra: /profile
-    [SlashCommand("profile", "Muestra tu estado actual, nivel y estadísticas en Asado y Acero RPG.")]
-    public async Task HandleProfileAsync()
+    // Comando barra: /profile [jugador]
+    [SlashCommand("profile", "Mostrá tu estado actual, nivel y estadísticas (o los de otro jugador del server).")]
+    public async Task HandleProfileAsync(
+        [Summary("jugador", "Opcional: de qué jugador del server querés ver el perfil.")] SocketGuildUser? targetUser = null)
     {
         // Difuminamos la respuesta: la consulta a la base puede superar el límite de 3s
         // que impone Discord antes de que la interacción expire.
         await DeferAsync();
 
-        var user = Context.User;
+        IUser target = targetUser ?? Context.User;
 
         try
         {
-            var embed = await BuildProfileEmbedAsync(userRepository, itemRepository, user.Id, user.Username, user.GetAvatarUrl() ?? user.GetDefaultAvatarUrl());
+            // Solo chequeamos existencia cuando se consulta a OTRO jugador: para uno mismo
+            // conservamos el alta automática de siempre (ver BuildProfileEmbedAsync).
+            if (target.Id != Context.User.Id && await userRepository.GetByDiscordIdAsync(target.Id) is null)
+            {
+                await FollowupAsync(BuildNotRegisteredMessage(GetDisplayName(target)));
+                return;
+            }
+
+            var embed = await BuildProfileEmbedAsync(userRepository, itemRepository, target.Id, GetDisplayName(target), target.GetAvatarUrl() ?? target.GetDefaultAvatarUrl());
             await FollowupAsync(embed: embed);
         }
         catch (Exception)
         {
             // Si la base falla o está saturada, avisamos sin tirar abajo el bot.
-            await FollowupAsync("¡Upa! No pude acceder a tu perfil ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync("¡Upa! No pude acceder a ese perfil ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
         }
     }
+
+    // Nombre a mostrar: apodo del server si lo tiene, sino el username — usado tanto acá como en
+    // Modules/TextCommandModule.cs para que "aa p @alguien" se vea igual que "/profile jugador:".
+    public static string GetDisplayName(IUser user) => user is IGuildUser guildUser ? (guildUser.Nickname ?? guildUser.Username) : user.Username;
+
+    // Mensaje cuando se consulta el perfil/inventario de alguien que nunca corrió /start.
+    public static string BuildNotRegisteredMessage(string displayName) =>
+        $"🚫 **{displayName}** todavía no arrancó su aventura en Asado y Acero. ¡Decile que pruebe `/start`!";
 
     // Estático (sin dependencia de Context) para que Modules/TextCommandModule.cs arme el mismo
     // embed en "aa profile" — acá vive tanto la lectura de datos como el embed.
@@ -70,20 +87,29 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
             .Build();
     }
 
-    // Comando barra: /inventory
-    [SlashCommand("inventory", "Mostrá los materiales que tenés guardados.")]
-    public async Task HandleInventoryAsync()
+    // Comando barra: /inventory [jugador]
+    [SlashCommand("inventory", "Mostrá los materiales que tenés guardados (o los de otro jugador del server).")]
+    public async Task HandleInventoryAsync(
+        [Summary("jugador", "Opcional: de qué jugador del server querés ver el inventario.")] SocketGuildUser? targetUser = null)
     {
         await DeferAsync();
 
+        IUser target = targetUser ?? Context.User;
+
         try
         {
-            var embed = await BuildInventoryEmbedAsync(inventoryRepository, Context.User.Id, Context.User.Username);
+            if (target.Id != Context.User.Id && await userRepository.GetByDiscordIdAsync(target.Id) is null)
+            {
+                await FollowupAsync(BuildNotRegisteredMessage(GetDisplayName(target)));
+                return;
+            }
+
+            var embed = await BuildInventoryEmbedAsync(inventoryRepository, target.Id, GetDisplayName(target));
             await FollowupAsync(embed: embed);
         }
         catch (Exception)
         {
-            await FollowupAsync("No pude consultar tu inventario ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync("No pude consultar ese inventario ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
         }
     }
 
