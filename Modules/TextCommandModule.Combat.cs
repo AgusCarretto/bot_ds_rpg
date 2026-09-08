@@ -66,6 +66,9 @@ public partial class TextCommandModule
                 case CombatStartStatus.NoBossInZone:
                     await ReplyAsync(embed: AdventureModule.BuildNoBossInZoneEmbed());
                     return;
+                case CombatStartStatus.NotLeveledForBoss:
+                    await ReplyAsync(embed: AdventureModule.BuildNotLeveledForBossEmbed(outcome.RequiredLevel!.Value));
+                    return;
                 case CombatStartStatus.RaceLost:
                     await ReplyAsync("Justo se te adelantó otra ejecución de este comando, probá de nuevo en un toque.");
                     return;

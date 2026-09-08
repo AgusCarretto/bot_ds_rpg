@@ -35,7 +35,7 @@ public sealed class InventoryRepository(IDbConnectionFactory connectionFactory) 
             FROM inventory inv
             JOIN items i ON i.item_id = inv.item_id
             WHERE inv.discord_id = @DiscordId AND i.type = @Type
-            ORDER BY i.buy_price;
+            ORDER BY i.stat_value, i.buy_price;
             """;
 
         using IDbConnection connection = connectionFactory.CreateConnection();

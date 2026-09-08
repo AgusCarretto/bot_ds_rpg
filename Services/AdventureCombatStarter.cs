@@ -10,11 +10,12 @@ public sealed class AdventureCombatStarter(
     IUserRepository userRepository,
     IItemRepository itemRepository,
     IMonsterRepository monsterRepository,
+    IZoneRepository zoneRepository,
     ICombatSessionService combatSessions) : IAdventureCombatStarter
 {
     public Task<CombatStartOutcome> PrepareAsync(
         ulong discordId, CooldownDefinition definition, IReadOnlyList<MonsterTemplate> monsterPool, CancellationToken cancellationToken = default) =>
-        PrepareInternalAsync(discordId, definition, _ => Task.FromResult(monsterPool), CombatStartStatus.NoMonstersInZone, isBossFight: false, cancellationToken);
+        PrepareInternalAsync(discordId, definition, _ => Task.FromResult(monsterPool), CombatStartStatus.NoMonstersInZone, isBossFight: false, extraGate: null, cancellationToken);
 
     public Task<CombatStartOutcome> PrepareHuntAsync(ulong discordId, CancellationToken cancellationToken = default) =>
         PrepareInternalAsync(
@@ -23,6 +24,7 @@ public sealed class AdventureCombatStarter(
             player => monsterRepository.GetMonstersByZoneAsync(player.CurrentZoneId, cancellationToken),
             CombatStartStatus.NoMonstersInZone,
             isBossFight: false,
+            extraGate: null,
             cancellationToken);
 
     public Task<CombatStartOutcome> PrepareBossAsync(ulong discordId, CancellationToken cancellationToken = default) =>
@@ -36,6 +38,27 @@ public sealed class AdventureCombatStarter(
             },
             CombatStartStatus.NoBossInZone,
             isBossFight: true,
+            extraGate: async player =>
+            {
+                // El jefe solo se puede desafiar una vez que el jugador ya está al nivel mínimo
+                // de la PRÓXIMA zona (a lo que ganarle te deja avanzar) — no antes. Se compara por
+                // POSICIÓN en la lista ordenada por min_level, no por zone_id crudo (mismo criterio
+                // que el gate de /zona, ver Modules/ZoneModule.ExecuteTravelAsync).
+                var orderedZones = (await zoneRepository.GetAllAsync(cancellationToken)).OrderBy(z => z.MinLevel).ToList();
+                int currentRank = orderedZones.FindIndex(z => z.ZoneId == player.CurrentZoneId);
+
+                if (currentRank < 0 || currentRank + 1 >= orderedZones.Count)
+                {
+                    // Última zona conocida (o zona no encontrada, no debería pasar): no hay
+                    // "próxima zona" cuyo nivel exigirle, así que no hay gate extra que aplicar.
+                    return null;
+                }
+
+                int requiredLevel = orderedZones[currentRank + 1].MinLevel;
+                return player.Level < requiredLevel
+                    ? new CombatStartOutcome(CombatStartStatus.NotLeveledForBoss, null, null, requiredLevel)
+                    : null;
+            },
             cancellationToken);
 
     private async Task<CombatStartOutcome> PrepareInternalAsync(
@@ -44,6 +67,7 @@ public sealed class AdventureCombatStarter(
         Func<User, Task<IReadOnlyList<MonsterTemplate>>> resolvePool,
         CombatStartStatus emptyPoolStatus,
         bool isBossFight,
+        Func<User, Task<CombatStartOutcome?>>? extraGate,
         CancellationToken cancellationToken)
     {
         if (combatSessions.Peek(discordId) is not null)
@@ -63,6 +87,15 @@ public sealed class AdventureCombatStarter(
         if (player.CurrentHp <= 0)
         {
             return new CombatStartOutcome(CombatStartStatus.NoHp, null, null);
+        }
+
+        if (extraGate is not null)
+        {
+            var blocked = await extraGate(player);
+            if (blocked is not null)
+            {
+                return blocked;
+            }
         }
 
         // Antes de cobrar el cooldown: si la zona actual todavía no tiene monstruos (o jefe)

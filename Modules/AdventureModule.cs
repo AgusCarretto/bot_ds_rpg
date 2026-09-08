@@ -54,6 +54,9 @@ public class AdventureModule(
                 case CombatStartStatus.NoBossInZone:
                     await FollowupAsync(embed: BuildNoBossInZoneEmbed(), ephemeral: true);
                     return;
+                case CombatStartStatus.NotLeveledForBoss:
+                    await FollowupAsync(embed: BuildNotLeveledForBossEmbed(outcome.RequiredLevel!.Value), ephemeral: true);
+                    return;
                 case CombatStartStatus.RaceLost:
                     await FollowupAsync("Justo se te adelantó otra ejecución de este comando, probá de nuevo en un toque.", ephemeral: true);
                     return;
@@ -319,6 +322,15 @@ public class AdventureModule(
         return new EmbedBuilder()
             .WithTitle("👑 Esta zona no tiene Jefe")
             .WithDescription("Tu zona actual todavía no tiene un Jefe de Zona cargado — probá `/hunt` mientras tanto.")
+            .WithColor(Color.DarkGrey)
+            .Build();
+    }
+
+    public static Embed BuildNotLeveledForBossEmbed(int requiredLevel)
+    {
+        return new EmbedBuilder()
+            .WithTitle("👑 Todavía no estás listo para este Jefe")
+            .WithDescription($"Necesitás ser **nivel {requiredLevel}** (el nivel de la próxima zona) para desafiarlo. Seguí subiendo con `/hunt`.")
             .WithColor(Color.DarkGrey)
             .Build();
     }

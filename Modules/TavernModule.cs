@@ -5,11 +5,11 @@ using Discord;
 using Discord.Interactions;
 
 // /heal ya no cuesta oro directo: rework a pedido para que curarse SIEMPRE dependa de tener algo
-// comprado en la tienda (ver Modules/ShopModule.cs). Consume automáticamente el Consumable más
-// barato que el jugador tenga en inventario (para no desperdiciar uno caro en una curación chica)
-// — si no tiene ninguno, lo manda a comprar primero. Sigue bloqueado en combate por la misma razón
-// de siempre: comer tranquilo no debería ser gratis en pleno combate, para eso está /use (cede el
-// turno al monstruo, ver Modules/UseModule.cs).
+// comprado en la tienda (ver Modules/ShopModule.cs). Consume automáticamente el Consumable que
+// MENOS HP restaura de los que el jugador tenga en inventario (para no desperdiciar uno de
+// curación grande en una herida chica) — si no tiene ninguno, lo manda a comprar primero. Sigue
+// bloqueado en combate por la misma razón de siempre: comer tranquilo no debería ser gratis en
+// pleno combate, para eso está /use (cede el turno al monstruo, ver Modules/UseModule.cs).
 public class TavernModule(IUserRepository userRepository, IInventoryRepository inventoryRepository, ICombatSessionService combatSessions)
     : InteractionModuleBase<SocketInteractionContext>
 {
@@ -58,8 +58,9 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
                 .Build();
         }
 
-        // Ordenado por buy_price ascendente (ver InventoryRepository.GetOwnedByTypeAsync): el
-        // primero es el más barato que tiene, así una curación chica no gasta el consumible caro.
+        // Ordenado por stat_value ascendente (ver InventoryRepository.GetOwnedByTypeAsync): el
+        // primero es el que MENOS cura de los que tiene, así una herida chica no gasta el
+        // consumible que más HP restaura.
         var owned = await inventoryRepository.GetOwnedByTypeAsync(discordId, "Consumable");
 
         if (owned.Count == 0)

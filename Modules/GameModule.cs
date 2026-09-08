@@ -1,11 +1,13 @@
+using System.Text;
 using BotDsRpg.GameData;
+using BotDsRpg.Models;
 using BotDsRpg.Repositories;
 using Discord;
 using Discord.Interactions;
 using Discord.Rest;
 using Discord.WebSocket;
 
-public class GameModule(IUserRepository userRepository, IInventoryRepository inventoryRepository, IItemRepository itemRepository)
+public class GameModule(IUserRepository userRepository, IInventoryRepository inventoryRepository, IItemRepository itemRepository, IZoneRepository zoneRepository)
     : InteractionModuleBase<SocketInteractionContext>
 {
     // Comando barra: /profile [jugador]
@@ -29,7 +31,7 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
                 return;
             }
 
-            var embed = await BuildProfileEmbedAsync(userRepository, itemRepository, target.Id, GetDisplayName(target), target.GetAvatarUrl() ?? target.GetDefaultAvatarUrl());
+            var embed = await BuildProfileEmbedAsync(userRepository, itemRepository, zoneRepository, target.Id, GetDisplayName(target), target.GetAvatarUrl() ?? target.GetDefaultAvatarUrl());
             await FollowupAsync(embed: embed);
         }
         catch (Exception)
@@ -49,11 +51,13 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
 
     // Estático (sin dependencia de Context) para que Modules/TextCommandModule.cs arme el mismo
     // embed en "aa profile" — acá vive tanto la lectura de datos como el embed.
-    public static async Task<Embed> BuildProfileEmbedAsync(IUserRepository userRepository, IItemRepository itemRepository, ulong discordId, string username, string avatarUrl)
+    public static async Task<Embed> BuildProfileEmbedAsync(
+        IUserRepository userRepository, IItemRepository itemRepository, IZoneRepository zoneRepository, ulong discordId, string username, string avatarUrl)
     {
         // Si es la primera vez que este usuario ejecuta un comando, se crea acá
         // automáticamente con los valores por defecto (Nivel 1, 0 EXP, 50 de oro, 100/100 HP, Guerrero).
         var player = await userRepository.GetOrCreateUserAsync(discordId);
+        var zone = await zoneRepository.GetByIdAsync(player.CurrentZoneId);
 
         var weapon = player.WeaponId is int weaponId ? await itemRepository.GetByIdAsync(weaponId) : null;
         var amulet = player.AmuletId is int amuletId ? await itemRepository.GetByIdAsync(amuletId) : null;
@@ -82,6 +86,7 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
             .AddField("🗡️ Arma", weapon is null ? "_Ninguna_" : $"{ItemDisplay.Format(weapon.Emoji, weapon.Name)} (+{weapon.StatValue})", true)
             .AddField("📿 Amuleto", amulet is null ? "_Ninguno_" : $"{ItemDisplay.Format(amulet.Emoji, amulet.Name)} (+{amulet.StatValue})", true)
             .AddField("🎁 Racha diaria", player.DailyStreak > 0 ? $"Día {player.DailyStreak}" : "_Sin racha_", true)
+            .AddField("🗺️ Zona actual", zone is null ? "_Desconocida_" : $"{zone.Emoji} Zona {zone.ZoneId}: {zone.Name}", true)
             .WithFooter("Asado y Acero RPG • Preparando las brasas...")
             .WithCurrentTimestamp()
             .Build();
@@ -114,7 +119,11 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
     }
 
     // Estático (sin dependencia de Context) para que Modules/TextCommandModule.cs arme el mismo
-    // embed en "aa inventory".
+    // embed en "aa inventory". Agrupado por categoría (Equipo/Consumibles/Drops de Monstruo/
+    // Materiales) en vez de una sola lista plana — más fácil de escanear a medida que crece el
+    // catálogo. El type "Material" de items.type ES, por diseño de todo el juego, exactamente
+    // "lo que dropean los monstruos" (nunca madera/piedra, ver Database/seed_class_gear_and_monster_
+    // drops.sql) — por eso alcanza con filtrar por ese type para la categoría de drops.
     public static async Task<Embed> BuildInventoryEmbedAsync(IInventoryRepository inventoryRepository, ulong discordId, string username)
     {
         var entries = await inventoryRepository.GetByDiscordIdAsync(discordId);
@@ -127,17 +136,61 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
         if (entries.Count == 0)
         {
             embed.WithDescription("Todavía no tenés ningún material. ¡Probá /chop, /mine o /travel!");
+            return embed.Build();
         }
-        else
-        {
-            var lines = entries
-                .OrderBy(e => RarityCatalog.RankOf(e.Rarity))
-                .ThenBy(e => e.ItemName)
-                .Select(e => $"**{ItemDisplay.Format(e.Emoji, e.ItemName)}** ×{e.Quantity} _({e.Rarity})_");
 
-            embed.WithDescription(string.Join('\n', lines));
-        }
+        AddInventoryGroup(embed, "🗡️ Equipo", entries, e => e.Type is "Weapon" or "Amulet");
+        AddInventoryGroup(embed, "🍖 Consumibles", entries, e => e.Type == "Consumable");
+        AddInventoryGroup(embed, "🩸 Drops de Monstruo", entries, e => e.Type == "Material");
+        AddInventoryGroup(embed, "🪵 Materiales", entries, e => e.Type is "Madera" or "Mineral");
 
         return embed.Build();
+    }
+
+    // Los campos de embed de Discord tienen un límite de 1024 caracteres — con el catálogo de
+    // Materiales de Zonas ya en ~30 ítems distintos, un jugador completista podría superarlo en un
+    // solo grupo. Si pasa, se parte en más de un campo en vez de que /inventory reviente.
+    private static void AddInventoryGroup(EmbedBuilder embed, string title, IReadOnlyList<InventoryEntry> entries, Func<InventoryEntry, bool> matches)
+    {
+        const int maxFieldLength = 1024;
+
+        var lines = entries
+            .Where(matches)
+            .OrderBy(e => RarityCatalog.RankOf(e.Rarity))
+            .ThenBy(e => e.ItemName)
+            .Select(e => $"**{ItemDisplay.Format(e.Emoji, e.ItemName)}** ×{e.Quantity} _({e.Rarity})_")
+            .ToList();
+
+        if (lines.Count == 0)
+        {
+            return;
+        }
+
+        var chunks = new List<string>();
+        var current = new StringBuilder();
+
+        foreach (var line in lines)
+        {
+            if (current.Length > 0 && current.Length + 1 + line.Length > maxFieldLength)
+            {
+                chunks.Add(current.ToString());
+                current.Clear();
+            }
+
+            if (current.Length > 0)
+            {
+                current.Append('\n');
+            }
+
+            current.Append(line);
+        }
+
+        chunks.Add(current.ToString());
+
+        for (int i = 0; i < chunks.Count; i++)
+        {
+            string fieldTitle = chunks.Count > 1 ? $"{title} ({i + 1}/{chunks.Count})" : title;
+            embed.AddField(fieldTitle, chunks[i], false);
+        }
     }
 }

@@ -11,9 +11,9 @@ public interface IInventoryRepository
     Task<int> GetQuantityAsync(ulong discordId, int itemId, CancellationToken cancellationToken = default);
 
     // Ítems en inventario filtrados por tipo, con el Item completo resuelto y ordenados por
-    // buy_price ascendente — para /heal, que necesita StatValue de cada uno para elegir
-    // automáticamente el consumible más barato que el jugador tenga (no desperdiciar uno caro
-    // en una curación chica). Lista vacía si no tiene ninguno de ese tipo.
+    // stat_value ascendente (a igual stat_value, por buy_price) — para /heal, que necesita elegir
+    // automáticamente el consumible que MENOS cura de los que tiene (no desperdiciar uno de
+    // curación grande en una herida chica). Lista vacía si no tiene ninguno de ese tipo.
     Task<IReadOnlyList<OwnedItem>> GetOwnedByTypeAsync(ulong discordId, string type, CancellationToken cancellationToken = default);
 
     // Descuenta "quantity" de un ítem de forma atómica (guarda: si no tiene esa cantidad, no

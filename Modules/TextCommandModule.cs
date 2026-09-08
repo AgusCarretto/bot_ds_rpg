@@ -98,7 +98,7 @@ public partial class TextCommandModule(
             }
 
             string avatarUrl = target.GetAvatarUrl() ?? target.GetDefaultAvatarUrl();
-            var embed = await GameModule.BuildProfileEmbedAsync(userRepository, itemRepository, target.Id, GameModule.GetDisplayName(target), avatarUrl);
+            var embed = await GameModule.BuildProfileEmbedAsync(userRepository, itemRepository, zoneRepository, target.Id, GameModule.GetDisplayName(target), avatarUrl);
             await ReplyAsync(embed: embed);
         }
         catch (Exception)
