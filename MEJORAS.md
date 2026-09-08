@@ -1,6 +1,29 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-09-07 (Sistema de Zonas)_
+_Última revisión: 2026-09-08 (Jefes de Zona + auditoría económica)_
+
+## Jefes de Zona + fix de exploit económico (2026-09-08)
+
+- **Pendiente de tu lado**: correr `Database/seed_zone_bosses.sql` (necesita que `add_zones_and_monsters.sql`
+  + `seed_zones_and_monsters.sql` ya hayan corrido) y `Database/fix_hacha_hierro_mk3_price.sql`
+  contra tu base real. Sin el primero, `/boss` no tiene nada para pelear en ninguna zona.
+- **`/boss`** (y `aa boss`) enfrenta al jefe de la zona actual (Rey Jabalí en Zona 1, Lobisón Alfa
+  en Zona 2, Capataz de Hierro en Zona 3 — Zona 4 y 5 todavía no tienen jefe). Cooldown de 30 min,
+  separado del de `/hunt`. Nunca sale al azar en un `/hunt` normal.
+- **`/zona` ahora exige haber derrotado al jefe anterior** para avanzar más de un escalón
+  (`users.highest_zone_cleared`). El gate se desactiva solo para zonas sin jefe cargado (4 y 5 por
+  ahora), así nadie queda trabado permanentemente por contenido que todavía no existe — cuando
+  cargues jefes ahí, el gate se activa automáticamente sin tocar código.
+- **Exploit real encontrado y arreglado**: "Hacha de Hierro MK3" costaba 150 de oro forjarla y
+  vendía por 500 — +350 de oro garantizado por ciclo, sin cooldown en `/forge make`, con
+  materiales comunes. Bajada a sell 60 / buy 78. Causa: dos escalas de precio (armas base sin
+  receta vs. equipo de clase) conviviendo sin coordinarse — si agregás una receta nueva a un ítem
+  que ya tenía precio fijado en la escala vieja (20/150/500), volvé a chequear este invariante:
+  `sell_price ≤ 0.5 × gold_cost` de su receta.
+- **Auditoría de `/shop`/`/forge`**: la parte transaccional está sólida (guarded UPDATE + `FOR
+  UPDATE`, no hay forma de vender lo que no tenés ni de forjar sin materiales). El punto flojo es
+  que `ShopModule.ExecuteSellAsync` no restringe por `type` — cualquier ítem con receta nueva
+  necesita el chequeo manual de arriba, no hay nada automático que lo fuerce.
 
 ## Sistema de Zonas (2026-09-07)
 
