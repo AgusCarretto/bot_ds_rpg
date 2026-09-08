@@ -33,15 +33,27 @@ extension currently in use). Run in this exact order against an empty database:
 ```
 schema.sql → seed.sql → add_weapon_family.sql → seed_class_gear_and_monster_drops.sql
   → seed_recipes.sql → seed_consumables_and_base_swords.sql → seed_zones_and_monsters.sql
+  → finalize_consumable_catalog.sql → remove_legacy_consumables.sql → update_item_emojis.sql
 ```
+
+`Database/run_fresh_install.sql` runs all ten in this exact order in one shot via `psql` (or
+pgAdmin's "PSQL Tool", NOT its plain Query Tool — both need real `psql`, since it uses the `\ir`
+meta-command) — **only against a genuinely empty database**, never against one with existing data
+(see below, several of these are not safe to re-run).
 
 The other `Database/add_*.sql` / `cleanup_*.sql` / `fix_*.sql` files are historical incremental
 migrations for databases that predate `schema.sql` catching up to include everything inline —
 **do not run them against a fresh install**, `schema.sql` already has their end state. They matter
 only if you're patching an old, already-running database that hasn't been recreated from scratch.
 
-Only `seed_recipes.sql` and `seed_consumables_and_base_swords.sql` are safe to re-run (they upsert
-via `ON CONFLICT`). The others insert unconditionally and will duplicate rows if run twice.
+`seed.sql`, `add_weapon_family.sql`, and `seed_class_gear_and_monster_drops.sql` insert
+unconditionally and will duplicate rows if run twice against a database that already has their
+data (their own header comments predate `items.name UNIQUE`, so they undersell it — with that
+constraint now in schema.sql, their `ON CONFLICT DO NOTHING` inserts are actually idempotent too,
+but don't rely on that for the `UPDATE`/data-shape parts). Everything else in the order above
+(`seed_recipes.sql`, `seed_consumables_and_base_swords.sql`, `seed_zones_and_monsters.sql`,
+`finalize_consumable_catalog.sql`, `remove_legacy_consumables.sql`, `update_item_emojis.sql`) is
+safe to re-run.
 
 **Known recurring problem**: catalog items have repeatedly been added by hand directly to a
 Postgres instance on one machine and never captured in a script, so a fresh install on another
