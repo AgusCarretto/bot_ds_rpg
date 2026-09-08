@@ -12,7 +12,7 @@ public partial class TextCommandModule
     {
         try
         {
-            var (message, embed) = await ZoneModule.ExecuteTravelAsync(userRepository, zoneRepository, Context.User.Id, zoneId);
+            var (message, embed) = await ZoneModule.ExecuteTravelAsync(userRepository, zoneRepository, monsterRepository, Context.User.Id, zoneId);
             await ReplyAsync(message, embed: embed);
         }
         catch (Exception)

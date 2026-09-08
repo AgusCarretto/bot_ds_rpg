@@ -25,4 +25,18 @@ public interface IAdventureRepository
         int? droppedItemId,
         int droppedItemQuantity,
         CancellationToken cancellationToken = default);
+
+    // Igual que ApplyVictoryAsync, pero para derrotar a un jefe de zona: en la MISMA transacción
+    // también sube users.highest_zone_cleared a clearedZoneId (nunca lo baja — GREATEST — así
+    // repetir el jefe de una zona ya superada no hace nada raro). clearedZoneId viene de
+    // CombatState.BossZoneId, capturado al arrancar el combate, no de leer la zona actual de nuevo.
+    Task<LevelUpOutcome> ApplyBossVictoryAsync(
+        ulong discordId,
+        int goldReward,
+        int xpReward,
+        int hpDelta,
+        int? droppedItemId,
+        int droppedItemQuantity,
+        int clearedZoneId,
+        CancellationToken cancellationToken = default);
 }

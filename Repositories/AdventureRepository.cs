@@ -31,14 +31,36 @@ public sealed class AdventureRepository(IDbConnectionFactory connectionFactory) 
         return applied is not null;
     }
 
-    public async Task<LevelUpOutcome> ApplyVictoryAsync(
+    public Task<LevelUpOutcome> ApplyVictoryAsync(
         ulong discordId,
         int goldReward,
         int xpReward,
         int hpDelta,
         int? droppedItemId,
         int droppedItemQuantity,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        ApplyVictoryInternalAsync(discordId, goldReward, xpReward, hpDelta, droppedItemId, droppedItemQuantity, clearedZoneId: null, cancellationToken);
+
+    public Task<LevelUpOutcome> ApplyBossVictoryAsync(
+        ulong discordId,
+        int goldReward,
+        int xpReward,
+        int hpDelta,
+        int? droppedItemId,
+        int droppedItemQuantity,
+        int clearedZoneId,
+        CancellationToken cancellationToken = default) =>
+        ApplyVictoryInternalAsync(discordId, goldReward, xpReward, hpDelta, droppedItemId, droppedItemQuantity, clearedZoneId, cancellationToken);
+
+    private async Task<LevelUpOutcome> ApplyVictoryInternalAsync(
+        ulong discordId,
+        int goldReward,
+        int xpReward,
+        int hpDelta,
+        int? droppedItemId,
+        int droppedItemQuantity,
+        int? clearedZoneId,
+        CancellationToken cancellationToken)
     {
         using DbConnection connection = connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
@@ -61,16 +83,25 @@ public sealed class AdventureRepository(IDbConnectionFactory connectionFactory) 
             var leveled = await LevelingApplier.ApplyAsync(connection, transaction, current, xpReward, hpDelta, cancellationToken);
 
             // Segunda UPDATE solo para el oro (no es parte del nivelado): mantiene LevelingApplier
-            // genérico y reusable por ProgressionRepository, que no reparte oro.
+            // genérico y reusable por ProgressionRepository, que no reparte oro. Si es un jefe
+            // (clearedZoneId no nulo), la MISMA sentencia sube highest_zone_cleared con GREATEST
+            // (nunca lo baja) — atómico con el resto, sin una tercera ida a la base.
             string updateGoldSql = $"""
                 UPDATE users
-                SET gold = gold + @Gold
+                SET gold = gold + @Gold,
+                    highest_zone_cleared = CASE
+                        WHEN @ClearedZoneId IS NOT NULL THEN GREATEST(highest_zone_cleared, @ClearedZoneId)
+                        ELSE highest_zone_cleared
+                    END
                 WHERE discord_id = @DiscordId
                 RETURNING {UserSql.SelectColumns};
                 """;
 
             var finalUser = await connection.QuerySingleAsync<User>(new CommandDefinition(
-                updateGoldSql, new { DiscordId = (long)discordId, Gold = goldReward }, transaction: transaction, cancellationToken: cancellationToken));
+                updateGoldSql,
+                new { DiscordId = (long)discordId, Gold = goldReward, ClearedZoneId = clearedZoneId },
+                transaction: transaction,
+                cancellationToken: cancellationToken));
 
             if (droppedItemId is not null)
             {

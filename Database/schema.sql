@@ -84,7 +84,11 @@ CREATE TABLE IF NOT EXISTS monsters (
     -- GameData/CombatRewardCalculator.RollHuntReward) — no reemplaza la fórmula existente, la
     -- complementa, así que un monstruo de Zona 1 con 0/0 no cambia nada respecto a lo que ya había.
     gold_reward INTEGER NOT NULL DEFAULT 0 CHECK (gold_reward >= 0),
-    xp_reward   INTEGER NOT NULL DEFAULT 0 CHECK (xp_reward >= 0)
+    xp_reward   INTEGER NOT NULL DEFAULT 0 CHECK (xp_reward >= 0),
+    -- Jefe de zona (ver Modules/AdventureModule.cs, comando /boss): a lo sumo uno por zona,
+    -- EXCLUIDO del pool aleatorio de /hunt (Repositories/MonsterRepository.GetMonstersByZoneAsync)
+    -- — solo se enfrenta a propósito con /boss. Derrotarlo sube users.highest_zone_cleared.
+    is_boss     BOOLEAN NOT NULL DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS monster_drops (
@@ -116,6 +120,11 @@ CREATE TABLE IF NOT EXISTS users (
     -- de que cualquier jugador corra /start (Database/seed_zones_and_monsters.sql debe correr
     -- antes de que haya jugadores nuevos, o el INSERT de un /start viola esta FK).
     current_zone_id   INTEGER NOT NULL DEFAULT 1 REFERENCES zones (zone_id),
+    -- Rango (zone_id) de la zona MÁS DIFÍCIL cuyo jefe ya derrotó, 0 = ninguno todavía. Compara por
+    -- posición en la lista de zonas ordenada por min_level, no por zone_id crudo (ver
+    -- Modules/ZoneModule.ExecuteTravelAsync) — así no depende de que los zone_id sigan siendo
+    -- consecutivos en orden de dificultad para siempre.
+    highest_zone_cleared INTEGER NOT NULL DEFAULT 0 CHECK (highest_zone_cleared >= 0),
     CONSTRAINT chk_current_hp_within_max CHECK (current_hp <= max_hp)
 );
 

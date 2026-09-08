@@ -14,19 +14,36 @@ public sealed class AdventureCombatStarter(
 {
     public Task<CombatStartOutcome> PrepareAsync(
         ulong discordId, CooldownDefinition definition, IReadOnlyList<MonsterTemplate> monsterPool, CancellationToken cancellationToken = default) =>
-        PrepareInternalAsync(discordId, definition, _ => Task.FromResult(monsterPool), cancellationToken);
+        PrepareInternalAsync(discordId, definition, _ => Task.FromResult(monsterPool), CombatStartStatus.NoMonstersInZone, isBossFight: false, cancellationToken);
 
     public Task<CombatStartOutcome> PrepareHuntAsync(ulong discordId, CancellationToken cancellationToken = default) =>
         PrepareInternalAsync(
             discordId,
             CooldownCatalog.Hunt,
             player => monsterRepository.GetMonstersByZoneAsync(player.CurrentZoneId, cancellationToken),
+            CombatStartStatus.NoMonstersInZone,
+            isBossFight: false,
+            cancellationToken);
+
+    public Task<CombatStartOutcome> PrepareBossAsync(ulong discordId, CancellationToken cancellationToken = default) =>
+        PrepareInternalAsync(
+            discordId,
+            CooldownCatalog.Boss,
+            async player =>
+            {
+                var boss = await monsterRepository.GetBossByZoneAsync(player.CurrentZoneId, cancellationToken);
+                return boss is null ? [] : new[] { boss };
+            },
+            CombatStartStatus.NoBossInZone,
+            isBossFight: true,
             cancellationToken);
 
     private async Task<CombatStartOutcome> PrepareInternalAsync(
         ulong discordId,
         CooldownDefinition definition,
         Func<User, Task<IReadOnlyList<MonsterTemplate>>> resolvePool,
+        CombatStartStatus emptyPoolStatus,
+        bool isBossFight,
         CancellationToken cancellationToken)
     {
         if (combatSessions.Peek(discordId) is not null)
@@ -48,12 +65,12 @@ public sealed class AdventureCombatStarter(
             return new CombatStartOutcome(CombatStartStatus.NoHp, null, null);
         }
 
-        // Antes de cobrar el cooldown: si la zona actual todavía no tiene monstruos cargados, es un
-        // problema de contenido, no del jugador — no le quememos el intento por eso.
+        // Antes de cobrar el cooldown: si la zona actual todavía no tiene monstruos (o jefe)
+        // cargado, es un problema de contenido, no del jugador — no le quememos el intento por eso.
         var monsterPool = await resolvePool(player);
         if (monsterPool.Count == 0)
         {
-            return new CombatStartOutcome(CombatStartStatus.NoMonstersInZone, null, null);
+            return new CombatStartOutcome(emptyPoolStatus, null, null);
         }
 
         // El cooldown se cobra ACÁ, al iniciar el combate: si el jugador lo abandona o se le
@@ -95,6 +112,7 @@ public sealed class AdventureCombatStarter(
             MonsterDropItemNames: monster.DropItemNames,
             MonsterGoldBonus: monster.GoldBonus,
             MonsterXpBonus: monster.XpBonus,
+            BossZoneId: isBossFight ? player.CurrentZoneId : null,
             PlayerMaxHp: combatMaxHp,
             PlayerCurrentHp: combatCurrentHp,
             PlayerStartingHp: combatCurrentHp,

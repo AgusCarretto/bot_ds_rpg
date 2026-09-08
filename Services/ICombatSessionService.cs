@@ -5,7 +5,7 @@ namespace BotDsRpg.Services;
 // Estado de un combate por turnos en curso. Vive solo en memoria (ConcurrentDictionary en
 // CombatSessionService) — la base de datos recién se toca cuando el combate termina.
 public sealed record CombatState(
-    string CommandName, // "hunt" o "travel": define qué tabla de recompensas aplica al ganar
+    string CommandName, // "hunt", "travel" o "boss": define qué tabla de recompensas aplica al ganar
     string MonsterName,
     string MonsterEmoji,
     int MonsterMaxHp,
@@ -19,6 +19,11 @@ public sealed record CombatState(
     // sigue sin zona) — ver GameData/CombatRewardCalculator.RollHuntReward.
     int MonsterGoldBonus,
     int MonsterXpBonus,
+    // Solo para CommandName == "boss": la zona de la que este jefe es guardián, capturada al
+    // arrancar el combate (no se vuelve a leer users.current_zone_id al ganar, así un cambio de
+    // zona a mitad de pelea nunca desincroniza qué zona se marca como superada). Null en
+    // hunt/travel — ver IAdventureRepository.ApplyBossVictoryAsync.
+    int? BossZoneId,
     // PlayerMaxHp/PlayerCurrentHp/PlayerStartingHp ya vienen escalados por Passives.MaxHpMultiplier
     // (Guerrero ×1.2) si corresponde — ver Services/AdventureCombatStarter.cs y ToDbHpDelta abajo.
     int PlayerMaxHp,

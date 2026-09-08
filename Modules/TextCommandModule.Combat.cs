@@ -19,6 +19,11 @@ public partial class TextCommandModule
     [Summary("Emprendé un viaje de exploración: más difícil, mejores recompensas (cooldown de 10 minutos).")]
     public Task TravelAsync() => StartCombatAsync(CooldownCatalog.Travel, () => combatStarter.PrepareAsync(Context.User.Id, CooldownCatalog.Travel, MonsterCatalog.TravelMonsters));
 
+    // "aa boss" — misma lógica que AdventureModule.HandleBossAsync.
+    [Command("boss")]
+    [Summary("Enfrentá al Jefe de tu zona actual (cooldown de 30 minutos).")]
+    public Task BossAsync() => StartCombatAsync(CooldownCatalog.Boss, () => combatStarter.PrepareBossAsync(Context.User.Id));
+
     // "aa autohunt" / "aa ah" — misma lógica que AutoHuntModule.HandleAutoHuntAsync. Sin botones:
     // resuelve toda la pelea de una y comparte el cooldown de /hunt (no de "aa hunt" en particular,
     // literalmente la misma entrada de la tabla cooldowns).
@@ -57,6 +62,9 @@ public partial class TextCommandModule
                     return;
                 case CombatStartStatus.NoMonstersInZone:
                     await ReplyAsync(embed: AdventureModule.BuildNoMonstersInZoneEmbed());
+                    return;
+                case CombatStartStatus.NoBossInZone:
+                    await ReplyAsync(embed: AdventureModule.BuildNoBossInZoneEmbed());
                     return;
                 case CombatStartStatus.RaceLost:
                     await ReplyAsync("Justo se te adelantó otra ejecución de este comando, probá de nuevo en un toque.");

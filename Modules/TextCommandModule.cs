@@ -29,7 +29,8 @@ public partial class TextCommandModule(
     IAdventureCombatStarter combatStarter,
     IAdventureRepository adventureRepository,
     IProgressionRepository progressionRepository,
-    IZoneRepository zoneRepository) : ModuleBase<SocketCommandContext>
+    IZoneRepository zoneRepository,
+    IMonsterRepository monsterRepository) : ModuleBase<SocketCommandContext>
 {
     // ---- Onboarding / clase ----
 

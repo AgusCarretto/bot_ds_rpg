@@ -20,6 +20,10 @@ public class AdventureModule(
     public Task HandleTravelAsync() =>
         StartCombatAsync(CooldownCatalog.Travel, () => combatStarter.PrepareAsync(Context.User.Id, CooldownCatalog.Travel, MonsterCatalog.TravelMonsters));
 
+    [SlashCommand("boss", "Enfrentá al Jefe de tu zona actual: derrotarlo te deja avanzar de zona (cooldown de 30 minutos).")]
+    public Task HandleBossAsync() =>
+        StartCombatAsync(CooldownCatalog.Boss, () => combatStarter.PrepareBossAsync(Context.User.Id));
+
     private async Task StartCombatAsync(CooldownDefinition definition, Func<Task<CombatStartOutcome>> prepare)
     {
         // El chequeo de cooldown + la preparación pueden superar los 3s que da Discord antes de
@@ -46,6 +50,9 @@ public class AdventureModule(
                     return;
                 case CombatStartStatus.NoMonstersInZone:
                     await FollowupAsync(embed: BuildNoMonstersInZoneEmbed(), ephemeral: true);
+                    return;
+                case CombatStartStatus.NoBossInZone:
+                    await FollowupAsync(embed: BuildNoBossInZoneEmbed(), ephemeral: true);
                     return;
                 case CombatStartStatus.RaceLost:
                     await FollowupAsync("Justo se te adelantó otra ejecución de este comando, probá de nuevo en un toque.", ephemeral: true);
@@ -132,7 +139,7 @@ public class AdventureModule(
 
             if (monsterHpAfter <= 0)
             {
-                var reward = state.CommandName == "hunt"
+                var reward = state.CommandName is "hunt" or "boss"
                     ? CombatRewardCalculator.RollHuntReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus)
                     : CombatRewardCalculator.RollTravelReward(state.PlayerLevel);
 
@@ -155,9 +162,14 @@ public class AdventureModule(
 
                 // Delta desde PlayerStartingHp (no un snapshot absoluto), por la misma razón que en
                 // la huida: compone bien con cualquier curación aplicada en memoria durante la pelea.
-                var outcome = await adventureRepository.ApplyVictoryAsync(
-                    Context.User.Id, reward.Gold, reward.Xp,
-                    finalState.ToDbHpDelta(finalState.PlayerCurrentHp - finalState.PlayerStartingHp), droppedItem?.ItemId, droppedItemQuantity: 1);
+                // Si es un jefe, ApplyBossVictoryAsync además sube highest_zone_cleared a
+                // BossZoneId (capturado al arrancar el combate, no la zona actual "de nuevo").
+                int hpDelta = finalState.ToDbHpDelta(finalState.PlayerCurrentHp - finalState.PlayerStartingHp);
+                var outcome = finalState.CommandName == "boss"
+                    ? await adventureRepository.ApplyBossVictoryAsync(
+                        Context.User.Id, reward.Gold, reward.Xp, hpDelta, droppedItem?.ItemId, droppedItemQuantity: 1, finalState.BossZoneId!.Value)
+                    : await adventureRepository.ApplyVictoryAsync(
+                        Context.User.Id, reward.Gold, reward.Xp, hpDelta, droppedItem?.ItemId, droppedItemQuantity: 1);
 
                 await ModifyOriginalResponseAsync(props =>
                 {
@@ -248,7 +260,7 @@ public class AdventureModule(
             return null;
         }
 
-        if (state.CommandName == "hunt")
+        if (state.CommandName is "hunt" or "boss")
         {
             if (state.MonsterDropItemNames.Count == 0)
             {
@@ -302,9 +314,23 @@ public class AdventureModule(
             .Build();
     }
 
+    public static Embed BuildNoBossInZoneEmbed()
+    {
+        return new EmbedBuilder()
+            .WithTitle("👑 Esta zona no tiene Jefe")
+            .WithDescription("Tu zona actual todavía no tiene un Jefe de Zona cargado — probá `/hunt` mientras tanto.")
+            .WithColor(Color.DarkGrey)
+            .Build();
+    }
+
     public static Embed BuildEncounterEmbed(CombatState state)
     {
-        string title = state.CommandName == "hunt" ? "🏹 ¡Encuentro en la caza!" : "🗺️ ¡Encuentro en el viaje!";
+        string title = state.CommandName switch
+        {
+            "hunt" => "🏹 ¡Encuentro en la caza!",
+            "boss" => "👑 ¡Encuentro con el Jefe de Zona!",
+            _ => "🗺️ ¡Encuentro en el viaje!",
+        };
 
         return new EmbedBuilder()
             .WithTitle(title)
@@ -351,6 +377,11 @@ public class AdventureModule(
         if (outcome.LevelsGained > 0)
         {
             embed.AddField("🎉 ¡Subiste de nivel!", $"Ahora sos nivel **{player.Level}** (vida máxima: {player.MaxHp}).", false);
+        }
+
+        if (state.CommandName == "boss")
+        {
+            embed.AddField("👑 ¡Jefe de Zona derrotado!", "Ya podés avanzar a la próxima zona con `/zona`.", false);
         }
 
         return embed.Build();

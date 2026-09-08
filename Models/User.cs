@@ -16,4 +16,5 @@ public sealed class User
     public int DailyStreak { get; init; }
     public DateTime? LastDailyClaim { get; init; }
     public int CurrentZoneId { get; init; }
+    public int HighestZoneCleared { get; init; }
 }

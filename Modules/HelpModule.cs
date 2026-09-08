@@ -67,7 +67,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 false)
             .AddField(
                 "⚔️ Aventura",
-                "`/hunt` / `aa ah` — Pelear en tu zona actual (manual/automático)\n`/travel` — Viaje más difícil, mejores recompensas\n`/zona` — Viajar a otra zona del mundo\n`/zonas` — Ver todas las zonas y sus niveles\n`/chop` — Recolectar madera\n`/mine` — Recolectar piedra/minerales",
+                "`/hunt` / `aa ah` — Pelear en tu zona actual (manual/automático)\n`/travel` — Viaje más difícil, mejores recompensas\n`/boss` — Enfrentar al Jefe de tu zona actual\n`/zona` — Viajar a otra zona del mundo\n`/zonas` — Ver todas las zonas y sus niveles\n`/chop` — Recolectar madera\n`/mine` — Recolectar piedra/minerales",
                 false)
             .AddField(
                 "📈 Progresión",
