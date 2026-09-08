@@ -44,14 +44,31 @@ class Program
         // 2. Configuramos los permisos del bot (Gateway Intents)
         //    MessageContent ya estaba habilitado (lo usa Discord.Net para leer el contenido de
         //    los mensajes normales), imprescindible para los comandos de texto "aa ...".
+        //    GuildMembers (privilegiado) hace falta para que "/profile jugador:" y "aa p @alguien"
+        //    puedan resolver a OTRO usuario del server: Discord.Net.Commands.UserTypeReader busca
+        //    con CacheMode.CacheOnly, y sin este intent la caché de miembros del bot solo tiene a
+        //    quien mandó el mensaje (nunca al roster completo) — cualquier otro usuario devuelve
+        //    CommandError.ObjectNotFound (que Program.cs muestra como "Faltan parámetros", un
+        //    mensaje engañoso para este caso puntual). REQUIERE activar "Server Members Intent" en
+        //    el Discord Developer Portal (Bot > Privileged Gateway Intents) para esta aplicación —
+        //    sin ese toggle, el gateway rechaza la conexión entera ("Disallowed intent(s)").
+        //    AlwaysDownloadUsers ayuda a que la caché de miembros esté más completa apenas el bot
+        //    entra a un server, pero Discord.Net avisa en su propia documentación que igual puede
+        //    no alcanzar a tiempo — por eso además reemplazamos el TypeReader de usuario para
+        //    comandos de texto por GuildUserTypeReader (ver Services/GuildUserTypeReader.cs), que
+        //    cae a un pedido REST si la caché no lo tiene, en vez de depender solo de ella.
         var config = new DiscordSocketConfig
         {
-            GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent
+            GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent | GatewayIntents.GuildMembers,
+            AlwaysDownloadUsers = true
         };
 
         _client = new DiscordSocketClient(config);
         _commands = new InteractionService(_client.Rest);
         _textCommands = new CommandService(new CommandServiceConfig { CaseSensitiveCommands = false });
+        // Tiene que registrarse ANTES de AddModulesAsync (más abajo, en ReadyAsync) para que los
+        // comandos con parámetro IUser (ej. "aa p"/"aa i @alguien") queden atados a este reader.
+        _textCommands.AddTypeReader<IUser>(new GuildUserTypeReader(), true);
 
         // 3. Inyectamos dependencias
         _services = ServiceProviderBuilder.BuildServiceProvider(_client, _commands, configuration);

@@ -84,7 +84,7 @@ public partial class TextCommandModule(
     [Command("profile")]
     [Alias("p")]
     [Summary("Mostrá tu estado actual, nivel y estadísticas (o los de otro jugador: \"aa p @alguien\").")]
-    public async Task ProfileAsync([Remainder] SocketGuildUser? targetUser = null)
+    public async Task ProfileAsync([Remainder] IUser? targetUser = null)
     {
         IUser target = targetUser ?? Context.User;
 
@@ -111,7 +111,7 @@ public partial class TextCommandModule(
     [Command("inventory")]
     [Alias("i")]
     [Summary("Mostrá los materiales que tenés guardados (o los de otro jugador: \"aa i @alguien\").")]
-    public async Task InventoryAsync([Remainder] SocketGuildUser? targetUser = null)
+    public async Task InventoryAsync([Remainder] IUser? targetUser = null)
     {
         IUser target = targetUser ?? Context.User;
 
