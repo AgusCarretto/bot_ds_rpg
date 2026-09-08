@@ -33,9 +33,13 @@ public partial class TextCommandModule
         }
     }
 
-    // "aa shop view" / "aa sv" — misma lógica que ShopModule.HandleViewAsync ("/shop view").
+    // "aa shop view" / "aa sv" / "aa shop" a secas — misma lógica que ShopModule.HandleViewAsync
+    // ("/shop view"). El alias "shop" sin nada más existe porque a diferencia de /shop (que en
+    // Discord SIEMPRE obliga a elegir un subcomando antes de poder mandarlo), "aa shop" solo no
+    // matchea ningún [Command] y devuelve "no reconozco ese comando" — con este alias, escribir
+    // "aa shop" a secas ahora sí hace algo razonable (mostrar la tienda) en vez de nada.
     [Command("shop view")]
-    [Alias("sv")]
+    [Alias("sv", "shop")]
     [Summary("Mostrá el catálogo de consumibles en venta.")]
     public async Task ShopViewAsync()
     {

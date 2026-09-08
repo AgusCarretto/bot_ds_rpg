@@ -13,7 +13,7 @@ public sealed class ItemRepository(IDbConnectionFactory connectionFactory) : IIt
         // no usar este patrón sobre tablas grandes.
         string sql = $"""
             SELECT {ItemSql.SelectColumns}
-            FROM items
+            FROM items i
             WHERE type = @Type AND rarity = @Rarity
             ORDER BY random()
             LIMIT 1;
@@ -33,7 +33,7 @@ public sealed class ItemRepository(IDbConnectionFactory connectionFactory) : IIt
         // sin querer decir eso.
         string sql = $"""
             SELECT {ItemSql.SelectColumns}
-            FROM items
+            FROM items i
             WHERE unaccent(LOWER(name)) = unaccent(LOWER(@Name))
             LIMIT 1;
             """;
@@ -47,7 +47,7 @@ public sealed class ItemRepository(IDbConnectionFactory connectionFactory) : IIt
     {
         string sql = $"""
             SELECT {ItemSql.SelectColumns}
-            FROM items
+            FROM items i
             WHERE item_id = @ItemId;
             """;
 
@@ -60,7 +60,7 @@ public sealed class ItemRepository(IDbConnectionFactory connectionFactory) : IIt
     {
         string sql = $"""
             SELECT {ItemSql.SelectColumns}
-            FROM items
+            FROM items i
             WHERE type = @Type
             ORDER BY name;
             """;
