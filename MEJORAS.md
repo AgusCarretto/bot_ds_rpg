@@ -1,12 +1,13 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-09-08 (Jefes de Zona + auditoría económica)_
+_Última revisión: 2026-09-29 (fix de exploit confirmado corrido en producción)_
 
-## Jefes de Zona + fix de exploit económico (2026-09-08)
+## Jefes de Zona + fix de exploit económico (2026-09-08, cerrado 2026-09-29)
 
-- **Pendiente de tu lado**: correr `Database/seed_zone_bosses.sql` (necesita que `add_zones_and_monsters.sql`
-  + `seed_zones_and_monsters.sql` ya hayan corrido) y `Database/fix_hacha_hierro_mk3_price.sql`
-  contra tu base real. Sin el primero, `/boss` no tiene nada para pelear en ninguna zona.
+- ✅ **Ya corrido contra la base real** (verificado en vivo el 2026-09-29): `Database/seed_zone_bosses.sql`
+  (los 3 jefes están cargados y correctamente mapeados a su zona por nombre) y
+  `Database/fix_hacha_hierro_mk3_price.sql` (sell_price/buy_price quedaron en 60/78, seguros contra
+  el gold_cost de 150 de su receta). No queda nada pendiente de esta tanda.
 - **`/boss`** (y `aa boss`) enfrenta al jefe de la zona actual (Rey Jabalí en Zona 1, Lobisón Alfa
   en Zona 2, Capataz de Hierro en Zona 3 — Zona 4 y 5 todavía no tienen jefe). Cooldown de 30 min,
   separado del de `/hunt`. Nunca sale al azar en un `/hunt` normal.
