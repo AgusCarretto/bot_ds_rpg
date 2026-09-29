@@ -30,7 +30,8 @@ public partial class TextCommandModule(
     IAdventureRepository adventureRepository,
     IProgressionRepository progressionRepository,
     IZoneRepository zoneRepository,
-    IMonsterRepository monsterRepository) : ModuleBase<SocketCommandContext>
+    IMonsterRepository monsterRepository,
+    IRaidSessionService raidSessions) : ModuleBase<SocketCommandContext>
 {
     // ---- Onboarding / clase ----
 

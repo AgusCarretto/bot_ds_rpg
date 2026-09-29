@@ -11,7 +11,8 @@ public sealed class AdventureCombatStarter(
     IItemRepository itemRepository,
     IMonsterRepository monsterRepository,
     IZoneRepository zoneRepository,
-    ICombatSessionService combatSessions) : IAdventureCombatStarter
+    ICombatSessionService combatSessions,
+    IRaidSessionService raidSessions) : IAdventureCombatStarter
 {
     public Task<CombatStartOutcome> PrepareAsync(
         ulong discordId, CooldownDefinition definition, IReadOnlyList<MonsterTemplate> monsterPool, CancellationToken cancellationToken = default) =>
@@ -41,21 +42,13 @@ public sealed class AdventureCombatStarter(
             extraGate: async player =>
             {
                 // El jefe solo se puede desafiar una vez que el jugador ya está al nivel mínimo
-                // de la PRÓXIMA zona (a lo que ganarle te deja avanzar) — no antes. Se compara por
-                // POSICIÓN en la lista ordenada por min_level, no por zone_id crudo (mismo criterio
-                // que el gate de /zona, ver Modules/ZoneModule.ExecuteTravelAsync).
-                var orderedZones = (await zoneRepository.GetAllAsync(cancellationToken)).OrderBy(z => z.MinLevel).ToList();
-                int currentRank = orderedZones.FindIndex(z => z.ZoneId == player.CurrentZoneId);
+                // de la PRÓXIMA zona (a lo que ganarle te deja avanzar) — no antes. Ver
+                // GameData/ZoneRanking.cs (también la usa Modules/RaidModule.cs para el mismo gate
+                // en los jefes cooperativos, y Modules/ZoneModule.cs para el gate de /zona).
+                var orderedZones = ZoneRanking.OrderByDifficulty(await zoneRepository.GetAllAsync(cancellationToken));
+                int? requiredLevel = ZoneRanking.RequiredLevelForBoss(orderedZones, player.CurrentZoneId);
 
-                if (currentRank < 0 || currentRank + 1 >= orderedZones.Count)
-                {
-                    // Última zona conocida (o zona no encontrada, no debería pasar): no hay
-                    // "próxima zona" cuyo nivel exigirle, así que no hay gate extra que aplicar.
-                    return null;
-                }
-
-                int requiredLevel = orderedZones[currentRank + 1].MinLevel;
-                return player.Level < requiredLevel
+                return requiredLevel is not null && player.Level < requiredLevel
                     ? new CombatStartOutcome(CombatStartStatus.NotLeveledForBoss, null, null, requiredLevel)
                     : null;
             },
@@ -70,7 +63,9 @@ public sealed class AdventureCombatStarter(
         Func<User, Task<CombatStartOutcome?>>? extraGate,
         CancellationToken cancellationToken)
     {
-        if (combatSessions.Peek(discordId) is not null)
+        // También cuenta un jefe cooperativo activo (Modules/RaidModule.cs) — nadie puede estar en
+        // dos combates a la vez, sea solitario o de raid.
+        if (combatSessions.Peek(discordId) is not null || raidSessions.IsInAnyRaid(discordId))
         {
             return new CombatStartOutcome(CombatStartStatus.AlreadyInCombat, null, null);
         }
@@ -117,19 +112,11 @@ public sealed class AdventureCombatStarter(
 
         var weapon = player.WeaponId is int weaponId ? await itemRepository.GetByIdAsync(weaponId, cancellationToken) : null;
         var amulet = player.AmuletId is int amuletId ? await itemRepository.GetByIdAsync(amuletId, cancellationToken) : null;
-        int weaponDamage = ClassWeaponSynergy.ApplyBonus(weapon?.StatValue ?? 0, player.Class, weapon?.WeaponFamily);
-        // El nivel pesa en combate por sí solo (Ataque/Defensa Base = Nivel), no solo a través del
-        // equipo — ver GameData/CombatStats.cs.
-        int playerDamage = CombatStats.TotalAttack(player.Level, weaponDamage);
-        int defense = CombatStats.TotalDefense(player.Level, amulet?.StatValue ?? 0);
-
-        // Pasivas de clase (ver GameData/ClassPassives.cs), resueltas una sola vez acá. El HP
-        // Máximo/Actual de COMBATE se escala por MaxHpMultiplier (Guerrero ×1.2) preservando el
-        // % de vida real del jugador — CombatState.ToDbHpDelta se encarga de "destraducir" el
-        // delta de vuelta a unidades reales al persistir (ver Modules/AdventureModule.cs).
-        var passives = ClassPassives.For(player.Class);
-        int combatMaxHp = (int)Math.Round(player.MaxHp * passives.MaxHpMultiplier);
-        int combatCurrentHp = (int)Math.Round(player.CurrentHp * passives.MaxHpMultiplier);
+        // Nivel + equipo + pasivas de clase, misma cuenta que usa Modules/RaidModule.cs para los
+        // participantes de un jefe cooperativo — ver GameData/PlayerCombatProfileCalculator.cs.
+        // CombatState.ToDbHpDelta se encarga de "destraducir" el HP de combate (escalado si
+        // corresponde) de vuelta a unidades reales al persistir (ver Modules/AdventureModule.cs).
+        var profile = PlayerCombatProfileCalculator.Resolve(player, weapon, amulet);
 
         var monster = MonsterCatalog.RollFrom(monsterPool);
         int monsterMaxHp = Random.Shared.Next(monster.MinHp, monster.MaxHp + 1);
@@ -146,13 +133,13 @@ public sealed class AdventureCombatStarter(
             MonsterGoldBonus: monster.GoldBonus,
             MonsterXpBonus: monster.XpBonus,
             BossZoneId: isBossFight ? player.CurrentZoneId : null,
-            PlayerMaxHp: combatMaxHp,
-            PlayerCurrentHp: combatCurrentHp,
-            PlayerStartingHp: combatCurrentHp,
-            PlayerDamage: playerDamage,
-            PlayerDefense: defense,
+            PlayerMaxHp: profile.CombatMaxHp,
+            PlayerCurrentHp: profile.CombatCurrentHp,
+            PlayerStartingHp: profile.CombatCurrentHp,
+            PlayerDamage: profile.Damage,
+            PlayerDefense: profile.Defense,
             PlayerLevel: player.Level,
-            Passives: passives);
+            Passives: profile.Passives);
 
         return new CombatStartOutcome(CombatStartStatus.Started, null, state);
     }

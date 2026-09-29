@@ -1,6 +1,33 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-09-29 (fix de exploit confirmado corrido en producción)_
+_Última revisión: 2026-09-29 (Jefes de Zona cooperativos: `/raid`)_
+
+## Jefes de Zona cooperativos — `/raid` (2026-09-29)
+
+- **Qué hace**: `/raid` (y `aa raid`) abre un lobby de 60s para 2 a 6 jugadores contra el jefe de tu
+  zona actual. Cada jugador ataca a su propio ritmo (sin rondas sincronizadas) contra un HP de jefe
+  compartido; el jefe contraataca solo a quien le pegó. Al ganar, **cada participante que pegó al
+  menos un golpe y no huyó cobra la recompensa COMPLETA** (no se reparte) y sube su
+  `highest_zone_cleared`. Mismo gate de nivel (nivel de la próxima zona) y mismo cooldown de 30 min
+  que `/boss`, por jugador, reclamado recién cuando el raid arranca (un lobby cancelado no gasta
+  cooldown de nadie). **Sin cambios de esquema ni migraciones nuevas** — todo vive en memoria.
+- **Verificado con un arnés de concurrencia** (reflection contra el `.dll` real, 3000 raids × 12
+  hilos): encontró un bug propio antes de shippear — el raid se marcaba `Resolved` *después* de
+  soltar el lock, así que clicks simultáneos disparaban victorias múltiples (hasta ×7 recompensas).
+  Corregido moviendo la transición de fase adentro del lock; también se cerró la carrera entre
+  "Empezar ya" y el timeout del lobby (fase transitoria `Activating`). Ambas pruebas fallan sin el
+  fix y pasan con él.
+- **NO probado en Discord de verdad**: no hay forma de simular varias cuentas de usuario desde acá.
+  Lo que sí falta probar a mano con 2+ cuentas: el flujo de botones (Unirse → Empezar ya → Atacar →
+  Huir), que el mensaje compartido se edita bien con clicks de gente distinta, y el caso de texto
+  (`aa raid`). Riesgo conocido y aceptado: entre que `aa raid` manda el mensaje y registra la sesión
+  hay una ventana de milisegundos donde un click devuelve "ese raid ya no existe" (mismo patrón que
+  `aa hunt`).
+- **Decisiones de diseño que tomé sin preguntar** (fáciles de cambiar): tope de 6 jugadores; huir
+  renuncia a la recompensa; el que se une no necesita estar en la misma zona que el jefe (sí cumplir
+  el gate de nivel); un jugador derribado antes de que caiga el jefe igual cobra si ya había pegado.
+- **Refactor de paso**: `GameData/ZoneRanking.cs` y `GameData/PlayerCombatProfileCalculator.cs`
+  sacan lógica que estaba duplicada entre `/boss`, `/zona` y el raid.
 
 ## Jefes de Zona + fix de exploit económico (2026-09-08, cerrado 2026-09-29)
 

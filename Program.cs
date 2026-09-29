@@ -347,6 +347,7 @@ public static class ServiceProviderBuilder
             .AddSingleton<ICasinoRepository, CasinoRepository>()
             .AddSingleton<ICasinoService, CasinoService>()
             .AddSingleton<ICombatSessionService, CombatSessionService>()
+            .AddSingleton<IRaidSessionService, RaidSessionService>()
             .AddSingleton<IAdventureCombatStarter, AdventureCombatStarter>()
             .BuildServiceProvider();
     }

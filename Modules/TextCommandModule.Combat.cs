@@ -24,6 +24,46 @@ public partial class TextCommandModule
     [Summary("Enfrentá al Jefe de tu zona actual (cooldown de 30 minutos).")]
     public Task BossAsync() => StartCombatAsync(CooldownCatalog.Boss, () => combatStarter.PrepareBossAsync(Context.User.Id));
 
+    // "aa raid" — misma lógica que RaidModule.HandleRaidAsync. Solo ARRANCA el lobby: los botones
+    // (Unirse / Empezar ya / Atacar / Huir) siempre llegan como interacción de componente, sin
+    // importar si el mensaje nació de un slash command o de este comando de texto.
+    [Command("raid")]
+    [Summary("Jefe de zona cooperativo: varios jugadores atacan al mismo jefe (mín. 2, cooldown de 30 minutos).")]
+    public async Task RaidAsync()
+    {
+        try
+        {
+            var rejection = await RaidModule.ValidateStartAsync(
+                userRepository, itemRepository, monsterRepository, zoneRepository, combatSessions, raidSessions, Context.User.Id);
+
+            if (rejection is not null)
+            {
+                await ReplyAsync(rejection.PlainMessage, embed: rejection.Embed);
+                return;
+            }
+
+            var session = await RaidModule.BuildSessionAsync(
+                userRepository, monsterRepository, zoneRepository, Context.User.Id, GameModule.GetDisplayName(Context.User));
+
+            // Igual que StartCombatAsync más abajo: el reply target necesita el mensaje ya enviado
+            // para poder editarlo después, así que primero se manda y recién ahí se registra.
+            var message = await ReplyAsync(embed: RaidModule.BuildLobbyEmbed(session), components: RaidModule.BuildLobbyButtons(session.RaidId));
+            session.ReplyTarget = new MessageCombatReplyTarget(message);
+
+            if (!raidSessions.TryAdd(session) || !raidSessions.TryRegisterParticipant(Context.User.Id, session.RaidId))
+            {
+                await ReplyAsync("Justo se te adelantó otra acción, probá de nuevo en un toque.");
+                return;
+            }
+
+            RaidModule.ScheduleLobbyTimeout(session, raidSessions, adventureRepository);
+        }
+        catch (Exception)
+        {
+            await ReplyAsync("¡Upa! No pude armar el raid ahora mismo, intentá de nuevo en un momento.");
+        }
+    }
+
     // "aa autohunt" / "aa ah" — misma lógica que AutoHuntModule.HandleAutoHuntAsync. Sin botones:
     // resuelve toda la pelea de una y comparte el cooldown de /hunt (no de "aa hunt" en particular,
     // literalmente la misma entrada de la tabla cooldowns).

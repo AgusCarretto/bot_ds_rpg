@@ -111,6 +111,21 @@ DB (`monsters` + `monster_drops`, `Repositories/IMonsterRepository.cs`, resolved
 hardcoded `MonsterCatalog.HuntMonsters`. `/travel` is intentionally NOT zone-scoped — it keeps its
 own fixed pool in `GameData/MonsterCatalog.TravelMonsters`, unrelated to zones.
 
+**Co-op zone bosses (`/raid`)**: `Modules/RaidModule.cs` + `Services/RaidSessionService.cs`. Same
+in-memory philosophy as solo combat, but a *different concurrency model on purpose*: solo combat's
+`ICombatSessionService.TryAdvance` is a compare-and-swap that **rejects** the loser of a race — right
+for one player double-clicking, wrong for a raid where several different players clicking "Atacar" at
+once is the normal case. So a `RaidSession` is mutable and every mutation happens under
+`RaidSession.Lock` (plain `lock`, so **no `await` inside it** — do the I/O after releasing).
+Rules that must keep holding: (1) the phase flips to `Resolved`/`Activating` *inside the same lock*
+that decides the outcome — doing it afterwards let a concurrent click trigger a second victory and
+double rewards; (2) HP is persisted exactly once per participant (on flee, or at raid resolution),
+never incrementally, or the delta gets applied twice; (3) fleeing forfeits the reward, like solo.
+Nobody can be in a solo fight and a raid at once (`AdventureCombatStarter` and `RaidModule` check
+both `ICombatSessionService` and `IRaidSessionService`). Shared helpers extracted for reuse:
+`GameData/ZoneRanking.cs` (zone order by `min_level`, never raw `zone_id`) and
+`GameData/PlayerCombatProfileCalculator.cs` (level + gear + class passives → combat stats).
+
 **Combat is stateful and in-memory, not per-command**: `/hunt` and `/travel` start a turn-based
 fight tracked by `ICombatSessionService` (in-process, keyed by discord id — not persisted). The
 database is only touched once, when the fight resolves (victory/defeat/flee/timeout), via a single

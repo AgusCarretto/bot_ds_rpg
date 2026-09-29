@@ -1,3 +1,4 @@
+using BotDsRpg.GameData;
 using BotDsRpg.Models;
 using BotDsRpg.Repositories;
 using Discord;
@@ -72,8 +73,8 @@ public class ZoneModule(IUserRepository userRepository, IZoneRepository zoneRepo
         // zone_id crudo — ver users.highest_zone_cleared en Database/schema.sql). Si la zona
         // inmediatamente anterior todavía no tiene un jefe cargado, no bloqueamos: no seria justo
         // trabar el avance por contenido que todavía no existe.
-        var orderedZones = (await zoneRepository.GetAllAsync()).OrderBy(z => z.MinLevel).ToList();
-        int targetRank = orderedZones.FindIndex(z => z.ZoneId == zone.ZoneId) + 1;
+        var orderedZones = ZoneRanking.OrderByDifficulty(await zoneRepository.GetAllAsync());
+        int targetRank = ZoneRanking.RankOf(orderedZones, zone.ZoneId);
 
         if (targetRank > 1)
         {
@@ -84,7 +85,7 @@ public class ZoneModule(IUserRepository userRepository, IZoneRepository zoneRepo
             {
                 int clearedRank = player.HighestZoneCleared == 0
                     ? 0
-                    : orderedZones.FindIndex(z => z.ZoneId == player.HighestZoneCleared) + 1;
+                    : ZoneRanking.RankOf(orderedZones, player.HighestZoneCleared);
 
                 if (targetRank > clearedRank + 1)
                 {
