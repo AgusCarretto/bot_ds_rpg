@@ -10,11 +10,12 @@ using Discord.Interactions;
 // vez de en código: como sus item_id son Foreign Keys reales, nunca puede haber una receta
 // apuntando a un ingrediente o resultado que no exista.
 [Group("forge", "La herrería: forjá armas y amuletos con oro y materiales.")]
-public class ForgeModule(IUserRepository userRepository, IRecipeRepository recipeRepository, ICraftingRepository craftingRepository)
+public class ForgeModule(
+    IUserRepository userRepository, IRecipeRepository recipeRepository, ICraftingRepository craftingRepository, IZoneRepository zoneRepository)
     : InteractionModuleBase<SocketInteractionContext>
 {
     // Comando barra: /forge recipes
-    [SlashCommand("recipes", "Mostrá las recetas de forja disponibles (las de tu clase primero).")]
+    [SlashCommand("recipes", "Mostrá las recetas de forja de tu zona actual, con lo que suma cada ítem (+ATQ / +DEF).")]
     public async Task HandleRecipesAsync()
     {
         await DeferAsync();
@@ -23,7 +24,7 @@ public class ForgeModule(IUserRepository userRepository, IRecipeRepository recip
         {
             // Si es la primera vez que este usuario ejecuta un comando, se crea acá con los valores por defecto.
             var player = await userRepository.GetOrCreateUserAsync(Context.User.Id);
-            await FollowupAsync(embed: await BuildRecipesEmbed(recipeRepository, player.Class));
+            await FollowupAsync(embed: await BuildRecipesEmbed(recipeRepository, zoneRepository, player.Class, player.CurrentZoneId));
         }
         catch (Exception)
         {
@@ -34,7 +35,9 @@ public class ForgeModule(IUserRepository userRepository, IRecipeRepository recip
 
     // Comando barra: /forge make
     [SlashCommand("make", "Pagale al herrero para forjar un ítem de las recetas conocidas.")]
-    public async Task HandleMakeAsync([Summary("item", "Nombre de lo que querés forjar (ver /forge recipes).")] string itemName)
+    public async Task HandleMakeAsync(
+        [Summary("item", "Elegí de la lista qué forjar (✅ = ya tenés el oro y los materiales).")]
+        [Autocomplete(typeof(ForgeAutocompleteHandler))] string itemName)
     {
         await DeferAsync();
 
@@ -61,13 +64,17 @@ public class ForgeModule(IUserRepository userRepository, IRecipeRepository recip
     // Todo lo que sigue es estático (sin dependencia de Context) para que
     // Modules/TextCommandModule.cs comparta exactamente la misma lógica en "aa forge recipes"/"aa forge make".
     //
-    // La clase requerida de cada receta se lee del class_requirement de su ítem resultado: las
-    // recetas de la clase del jugador se muestran primero, las genéricas (class_requirement NULL)
-    // después, y las de OTRAS clases se ocultan del todo — no le sirve a un Arquero ver la receta
-    // exclusiva del Hechicero que nunca va a poder forjar.
-    public static async Task<Embed> BuildRecipesEmbed(IRecipeRepository recipeRepository, string playerClass)
+    // Muestra SOLO las recetas de la zona actual del jugador (o, si esa todavía no tiene ninguna, la anterior
+    // más cercana que sí — ver GameData/RecipeCatalog.cs), de esas las que le corresponden: su arma de afinidad,
+    // las armas generales y los amuletos. Son 5 líneas, así que entra sobrado en los límites de Discord (un
+    // campo de embed admite 1024 caracteres y el embed entero 6000; Build() tira excepción si se pasa) — por
+    // eso el molde de 8 recetas por zona y ver solo la propia. Cada línea dice cuánto suma el resultado ("+15
+    // ATQ" un arma, "+20 DEF" un amuleto; con ⭐ y el valor real si es de la familia de la clase del jugador).
+    public static async Task<Embed> BuildRecipesEmbed(
+        IRecipeRepository recipeRepository, IZoneRepository zoneRepository, string playerClass, int currentZoneId)
     {
         var recipes = await recipeRepository.GetAllAsync();
+        var zones = await zoneRepository.GetAllAsync();
 
         var embed = new EmbedBuilder()
             .WithTitle("⚒️ Recetas del Herrero")
@@ -79,40 +86,60 @@ public class ForgeModule(IUserRepository userRepository, IRecipeRepository recip
             return embed.Build();
         }
 
-        var classLines = new List<string>();
-        var generalLines = new List<string>();
-
-        foreach (var recipe in recipes)
+        var view = RecipeCatalog.ViewFor(recipes, zones, playerClass, currentZoneId);
+        if (view.Zone is null)
         {
-            string ingredients = string.Join(" + ", recipe.Ingredients.Select(i => $"{i.Quantity}x {ItemDisplay.Format(i.Emoji, i.ItemName)}"));
-            string line = $"**{ItemDisplay.Format(recipe.ResultItem.Emoji, recipe.ResultItem.Name)}**: {recipe.GoldCost} Oro + {ingredients}";
-
-            if (recipe.ResultItem.ClassRequirement is null)
-            {
-                generalLines.Add(line);
-            }
-            else if (string.Equals(recipe.ResultItem.ClassRequirement, playerClass, StringComparison.OrdinalIgnoreCase))
-            {
-                classLines.Add(line);
-            }
+            embed.WithDescription("Todavía no hay recetas para tu zona.");
+            return embed.Build();
         }
 
-        if (classLines.Count > 0)
+        string zoneName = $"{view.Zone.Emoji ?? "🗺️"} **Zona {view.Zone.ZoneId}: {view.Zone.Name}**";
+        string fallbackNote = view.IsFallback
+            ? "\n_Tu zona actual todavía no tiene recetas propias: te muestro las de la última zona que sí._"
+            : string.Empty;
+
+        if (view.Recipes.Count == 0)
         {
-            embed.AddField($"🎯 Recetas de {playerClass}", string.Join('\n', classLines), false);
+            embed.WithDescription($"{zoneName}{fallbackNote}\nNo hay recetas para vos en esta zona todavía.");
+            return embed.Build();
         }
 
-        if (generalLines.Count > 0)
-        {
-            embed.AddField("📦 Recetas generales", string.Join('\n', generalLines), false);
-        }
+        embed.WithDescription(
+            $"{zoneName}{fallbackNote}\nAl lado de cada ítem, cuánto suma. Para forjar usá `/forge make` " +
+            "(la lista te marca ✅ lo que ya podés hacer).");
 
-        if (classLines.Count == 0 && generalLines.Count == 0)
-        {
-            embed.WithDescription("Todavía no hay recetas disponibles para vos.");
-        }
+        AddRecipeGroup(embed, $"🎯 Tu arma de clase ({playerClass})", view.Recipes, RecipeGroup.ClassWeapon, playerClass);
+        AddRecipeGroup(embed, "⚔️ Armas generales", view.Recipes, RecipeGroup.GeneralWeapon, playerClass);
+        AddRecipeGroup(embed, "📿 Amuletos (sirven para cualquier clase)", view.Recipes, RecipeGroup.Amulet, playerClass);
+        AddRecipeGroup(embed, "📦 Otras", view.Recipes, RecipeGroup.Other, playerClass);
 
         return embed.Build();
+    }
+
+    private static void AddRecipeGroup(
+        EmbedBuilder embed, string title, IEnumerable<RecipeDetails> recipes, RecipeGroup group, string playerClass)
+    {
+        var lines = recipes
+            .Where(r => RecipeCatalog.GroupOf(r) == group)
+            .OrderBy(r => r.ResultItem.StatValue)
+            .ThenBy(r => r.ResultItem.Name, StringComparer.Ordinal)
+            .Select(r =>
+            {
+                string ingredients = string.Join(" + ", r.Ingredients.Select(i => $"{i.Quantity}x {ItemDisplay.Format(i.Emoji, i.ItemName)}"));
+                string stat = ItemStatLabel.FormatFor(r.ResultItem, playerClass) ?? r.ResultItem.Type;
+                return $"**{ItemDisplay.Format(r.ResultItem.Emoji, r.ResultItem.Name)}** ({stat}) — {r.GoldCost} oro + {ingredients}";
+            })
+            .ToList();
+
+        if (lines.Count == 0)
+        {
+            return;
+        }
+
+        // Defensa: con el molde de 8 recetas por zona nunca pasa, pero un campo de más de 1024 caracteres
+        // haría reventar todo el mensaje.
+        string value = string.Join('\n', lines);
+        embed.AddField(title, value.Length <= 1024 ? value : value[..1023] + "…", false);
     }
 
     // Exactamente uno de los dos campos viene con valor: PlainMessage para los rechazos simples

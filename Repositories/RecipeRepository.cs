@@ -16,7 +16,7 @@ public sealed class RecipeRepository(IDbConnectionFactory connectionFactory) : I
         // una vez por ingrediente (y el remapeo manual que eso implicaría) — el catálogo es chico,
         // no vale la pena la complejidad de una sola query con GROUP BY/agregación en JSON.
         string headersSql = $"""
-            SELECT r.recipe_id AS "RecipeId", r.gold_cost AS "GoldCost", {ItemSql.SelectColumns}
+            SELECT r.recipe_id AS "RecipeId", r.gold_cost AS "GoldCost", r.zone_id AS "ZoneId", r.affinity AS "Affinity", {ItemSql.SelectColumns}
             FROM recipes r
             JOIN items i ON i.item_id = r.result_item_id
             ORDER BY i.name;
@@ -45,7 +45,9 @@ public sealed class RecipeRepository(IDbConnectionFactory connectionFactory) : I
                 header.GoldCost,
                 ingredientsByRecipe[header.RecipeId]
                     .Select(i => new RecipeIngredientDetails(i.ItemId, i.ItemName, i.Quantity, i.Emoji))
-                    .ToList()))
+                    .ToList(),
+                header.ZoneId,
+                header.Affinity))
             .ToList();
     }
 
@@ -61,7 +63,7 @@ public sealed class RecipeRepository(IDbConnectionFactory connectionFactory) : I
             string.Equals(TextNormalization.RemoveDiacritics(recipe.ResultItem.Name), normalized, StringComparison.OrdinalIgnoreCase));
     }
 
-    private sealed record RecipeHeaderRow(int RecipeId, int GoldCost)
+    private sealed record RecipeHeaderRow(int RecipeId, int GoldCost, int? ZoneId, bool Affinity)
     {
         public Item? ResultItem { get; init; }
     }

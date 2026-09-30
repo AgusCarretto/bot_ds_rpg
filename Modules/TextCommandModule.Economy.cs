@@ -113,17 +113,17 @@ public partial class TextCommandModule
         }
     }
 
-    // "aa forge recipes" / "aa fr" — misma lógica que /forge recipes.
+    // "aa forge recipes" / "aa fr" — misma lógica que /forge recipes: las recetas de tu zona actual.
     [Command("forge recipes")]
     [Alias("fr")]
-    [Summary("Mostrá las recetas de forja disponibles.")]
+    [Summary("Mostrá las recetas de forja de tu zona actual.")]
     public async Task ForgeRecipesAsync()
     {
         try
         {
             // Si es la primera vez que este usuario ejecuta un comando, se crea acá con los valores por defecto.
             var player = await userRepository.GetOrCreateUserAsync(Context.User.Id);
-            await ReplyAsync(embed: await ForgeModule.BuildRecipesEmbed(recipeRepository, player.Class));
+            await ReplyAsync(embed: await ForgeModule.BuildRecipesEmbed(recipeRepository, zoneRepository, player.Class, player.CurrentZoneId));
         }
         catch (Exception)
         {

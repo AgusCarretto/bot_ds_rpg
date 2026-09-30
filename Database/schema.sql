@@ -71,6 +71,15 @@ CREATE TABLE IF NOT EXISTS zones (
     emoji       TEXT
 );
 
+-- recipes.zone_id: a qué zona pertenece la receta (de dónde salen sus materiales y contra qué se
+-- balancea); /forge recipes muestra solo las de la zona en la que está el jugador. NULL = sin zona
+-- (no se muestra). Va acá y no dentro de CREATE TABLE recipes porque zones se crea DESPUÉS de recipes.
+-- recipes.affinity: true = arma de afinidad de una clase (la de la familia de su clase; solo la ve un
+-- jugador de esa clase); false = arma general o amuleto. Molde por zona: 4 de afinidad (una por
+-- clase) + 2 armas generales + 2 amuletos (los amuletos siempre son generales).
+ALTER TABLE recipes ADD COLUMN IF NOT EXISTS zone_id INTEGER REFERENCES zones (zone_id) ON DELETE SET NULL;
+ALTER TABLE recipes ADD COLUMN IF NOT EXISTS affinity BOOLEAN NOT NULL DEFAULT false;
+
 CREATE TABLE IF NOT EXISTS monsters (
     monster_id  INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     zone_id     INTEGER NOT NULL REFERENCES zones (zone_id) ON DELETE CASCADE,

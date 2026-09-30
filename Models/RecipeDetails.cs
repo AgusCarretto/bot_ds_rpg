@@ -6,4 +6,10 @@ public sealed record RecipeIngredientDetails(int ItemId, string ItemName, int Qu
 
 // Una receta completa (recipes + recipe_ingredients + su ítem resultado, ya resueltos en una sola
 // consulta) — ver Repositories/IRecipeRepository.cs.
-public sealed record RecipeDetails(int RecipeId, Item ResultItem, int GoldCost, IReadOnlyList<RecipeIngredientDetails> Ingredients);
+// ZoneId: a qué zona pertenece la receta (recipes.zone_id) — /forge recipes muestra solo las de la zona del
+// jugador. Null = sin zona asignada. Affinity: es el arma de afinidad de una clase en esa zona (la de la
+// familia de su clase; solo la ve un jugador de esa clase) — false para armas generales y amuletos. Ver
+// GameData/RecipeCatalog.cs.
+public sealed record RecipeDetails(
+    int RecipeId, Item ResultItem, int GoldCost, IReadOnlyList<RecipeIngredientDetails> Ingredients,
+    int? ZoneId = null, bool Affinity = false);
