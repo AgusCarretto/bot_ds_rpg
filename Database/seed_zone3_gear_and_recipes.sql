@@ -52,40 +52,43 @@ INSERT INTO z3_recipes VALUES
 ('Casco de Capataz',          450, false),
 ('Peto de Escoria Templada',  650, false);
 
+-- Materiales de RECOLECCIÓN (Madera, Piedra, Hierro, Carbón, Oro Puro): las cantidades son ~3x (Común) y ~2x (Raro/Épico)
+-- lo de antes porque /chop y /mine ahora dan varias unidades por acción (GameData/GatheringYield: Común 1-5, Raro/Épico
+-- 1-3, Legendario/Mítico 1); el ritmo de la run 1 no cambió. Los Legendarios/Míticos de recolección siguen en 1.
 CREATE TEMP TABLE z3_ingredients (result_name TEXT, ingredient_name TEXT, quantity INTEGER);
 INSERT INTO z3_ingredients VALUES
 -- Mazo de Escoria: Hierro de la mina, un mango de Nogal, yunques fragmentados y 2 Escoria Metálica Densa (~100 min)
-('Mazo de Escoria',           'Hierro',                  5),
-('Mazo de Escoria',           'Madera de Nogal',         2),
+('Mazo de Escoria',           'Hierro',                  10),
+('Mazo de Escoria',           'Madera de Nogal',         4),
 ('Mazo de Escoria',           'Yunque Fragmentado',      5),
 ('Mazo de Escoria',           'Escoria Metálica Densa',  2),
 -- Dagas de Garra Maldita: hojas de Hierro con gemas en bruto, un trozo de yunque para el filo y 2 Escoria
-('Dagas de Garra Maldita',    'Hierro',                  4),
+('Dagas de Garra Maldita',    'Hierro',                  8),
 ('Dagas de Garra Maldita',    'Gema en Bruto',           3),
 ('Dagas de Garra Maldita',    'Yunque Fragmentado',      2),
 ('Dagas de Garra Maldita',    'Escoria Metálica Densa',  2),
 -- Boleadoras de Escoria: Nogal, yunque fragmentado y gemas para las bolas, y 2 Escoria
-('Boleadoras de Escoria',     'Madera de Nogal',         4),
+('Boleadoras de Escoria',     'Madera de Nogal',         8),
 ('Boleadoras de Escoria',     'Yunque Fragmentado',      3),
 ('Boleadoras de Escoria',     'Gema en Bruto',           2),
 ('Boleadoras de Escoria',     'Escoria Metálica Densa',  2),
 -- Báculo de Tizón: Nogal, gemas en bruto, yunque fragmentado y 2 Escoria
-('Báculo de Tizón',           'Madera de Nogal',         3),
+('Báculo de Tizón',           'Madera de Nogal',         6),
 ('Báculo de Tizón',           'Gema en Bruto',           3),
 ('Báculo de Tizón',           'Yunque Fragmentado',      2),
 ('Báculo de Tizón',           'Escoria Metálica Densa',  2),
 -- Pico de Minero Reforzado (general +28): Hierro, Oro Puro y solo drops de /hunt (4 + 4, ~80 min), sin /travel ni jefe
-('Pico de Minero Reforzado',  'Hierro',                  4),
-('Pico de Minero Reforzado',  'Oro Puro',                1),
+('Pico de Minero Reforzado',  'Hierro',                  8),
+('Pico de Minero Reforzado',  'Oro Puro',                2),
 ('Pico de Minero Reforzado',  'Yunque Fragmentado',      4),
 ('Pico de Minero Reforzado',  'Gema en Bruto',           4),
 -- Casco de Capataz (amuleto +30): Hierro, 5 + 5 de /hunt y 1 Escoria (~100 min)
-('Casco de Capataz',          'Hierro',                  3),
+('Casco de Capataz',          'Hierro',                  6),
 ('Casco de Capataz',          'Yunque Fragmentado',      5),
 ('Casco de Capataz',          'Gema en Bruto',           5),
 ('Casco de Capataz',          'Escoria Metálica Densa',  1),
 -- Peto de Escoria Templada (amuleto +38): el yunque del jefe (~200 min) + 3 Escoria + Oro Puro
-('Peto de Escoria Templada',  'Oro Puro',                2),
+('Peto de Escoria Templada',  'Oro Puro',                4),
 ('Peto de Escoria Templada',  'Yunque del Capataz',      1),
 ('Peto de Escoria Templada',  'Escoria Metálica Densa',  3),
 ('Peto de Escoria Templada',  'Yunque Fragmentado',      3);

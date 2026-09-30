@@ -63,32 +63,35 @@ INSERT INTO z1_recipes VALUES
 ('Amuleto del Levantador',   150, false),
 ('Hombreras de Cuero Grueso', 200, false);
 
+-- Materiales de RECOLECCIÓN (Madera, Piedra, Hierro, Carbón, Oro Puro): las cantidades son ~3x (Común) y ~2x (Raro/Épico)
+-- lo de antes porque /chop y /mine ahora dan varias unidades por acción (GameData/GatheringYield: Común 1-5, Raro/Épico
+-- 1-3, Legendario/Mítico 1); el ritmo de la run 1 no cambió. Los Legendarios/Míticos de recolección siguen en 1.
 CREATE TEMP TABLE z1_ingredients (result_name TEXT, ingredient_name TEXT, quantity INTEGER);
 INSERT INTO z1_ingredients VALUES
 -- Espada de Madera: solo recolección
-('Espada de Madera',          'Madera de Pino',        3),
-('Espada de Madera',          'Hierro',                1),
+('Espada de Madera',          'Madera de Pino',        9),
+('Espada de Madera',          'Hierro',                2),
 -- Daga Oxidada: la hoja de Hierro, Piedra para afilarla y un Colmillo de Cimarrón como punta (hunt, ~30 min)
-('Daga Oxidada',              'Hierro',                1),
-('Daga Oxidada',              'Piedra',                2),
+('Daga Oxidada',              'Hierro',                2),
+('Daga Oxidada',              'Piedra',                6),
 ('Daga Oxidada',              'Colmillo de Cimarrón',  1),
 -- Arco Corto de Sauce: Madera de Pino + una Pluma de Ñandú (la pluma de las flechas; hunt, ~30 min)
-('Arco Corto de Sauce',       'Madera de Pino',        3),
+('Arco Corto de Sauce',       'Madera de Pino',        9),
 ('Arco Corto de Sauce',       'Pluma de Ñandú',        1),
 -- Grimorio Desgastado: las tapas de Madera y una Pluma de Ñandú para escribir (hunt, ~30 min)
-('Grimorio Desgastado',       'Madera de Pino',        2),
+('Grimorio Desgastado',       'Madera de Pino',        6),
 ('Grimorio Desgastado',       'Pluma de Ñandú',        1),
 -- Hoja de Acero Puro (Raro +15): Hierro + empuñadura de Madera + el filo de 2 Colmillos de Jabalí (hunt, ~60 min)
-('Hoja de Acero Puro',        'Hierro',                3),
-('Hoja de Acero Puro',        'Madera de Pino',        2),
+('Hoja de Acero Puro',        'Hierro',                6),
+('Hoja de Acero Puro',        'Madera de Pino',        6),
 ('Hoja de Acero Puro',        'Colmillo de Jabalí',    2),
 -- Amuleto del Levantador (+10): Piedra + 1 Colmillo de Jabalí (hunt, ~30 min; 3 con la Hoja = ~90 min)
-('Amuleto del Levantador',    'Piedra',                5),
+('Amuleto del Levantador',    'Piedra',                15),
 ('Amuleto del Levantador',    'Colmillo de Jabalí',    1),
 -- Hombreras de Cuero Grueso (Raro +16 DEF; antes Legendario +20): el amuleto "de fondo" de la zona. Bajó de 20 a 16
 -- para que los amuletos de Zona 2 (+18 y +24) sean nominalmente MAYORES (escalera de zonas). Es la que lleva el drop
 -- del jefe (Colmillo del Rey Jabalí, ~200 min) más 2 Cuero Grueso del Toro Bravo de /travel (~100 min).
-('Hombreras de Cuero Grueso', 'Piedra',                3),
+('Hombreras de Cuero Grueso', 'Piedra',                9),
 ('Hombreras de Cuero Grueso', 'Cuero Grueso',          2),
 ('Hombreras de Cuero Grueso', 'Colmillo del Rey Jabalí', 1);
 

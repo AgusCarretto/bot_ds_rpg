@@ -50,43 +50,46 @@ INSERT INTO z4_recipes VALUES
 ('Coraza de Escamas Ígneas',  700, false),
 ('Talismán del Volcán',      1000, false);
 
+-- Materiales de RECOLECCIÓN (Madera, Piedra, Hierro, Carbón, Oro Puro): las cantidades son ~3x (Común) y ~2x (Raro/Épico)
+-- lo de antes porque /chop y /mine ahora dan varias unidades por acción (GameData/GatheringYield: Común 1-5, Raro/Épico
+-- 1-3, Legendario/Mítico 1); el ritmo de la run 1 no cambió. Los Legendarios/Míticos de recolección siguen en 1.
 CREATE TEMP TABLE z4_ingredients (result_name TEXT, ingredient_name TEXT, quantity INTEGER);
 INSERT INTO z4_ingredients VALUES
 -- Facón de Hueso Añejo: Hierro, una Gema de Zafiro, núcleos y escamas para el filo y 2 Aliento de Fuego Eterno
-('Facón de Hueso Añejo',      'Hierro',                   4),
+('Facón de Hueso Añejo',      'Hierro',                   8),
 ('Facón de Hueso Añejo',      'Gema de Zafiro',           1),
 ('Facón de Hueso Añejo',      'Núcleo de Magma',          3),
 ('Facón de Hueso Añejo',      'Escama Ígnea',             3),
 ('Facón de Hueso Añejo',      'Aliento de Fuego Eterno',  2),
 -- Cuchillos de Ceniza: Hierro, escamas ígneas, núcleos y aliento de fuego eterno (~100 min)
-('Cuchillos de Ceniza',       'Hierro',                   3),
+('Cuchillos de Ceniza',       'Hierro',                   6),
 ('Cuchillos de Ceniza',       'Escama Ígnea',             4),
 ('Cuchillos de Ceniza',       'Núcleo de Magma',          2),
 ('Cuchillos de Ceniza',       'Aliento de Fuego Eterno',  2),
 -- Arco de Caza Mayor: Ébano y Nogal para el arco, escamas, núcleos y aliento de fuego eterno para la cuerda
 ('Arco de Caza Mayor',        'Madera de Ébano',          1),
-('Arco de Caza Mayor',        'Madera de Nogal',          3),
+('Arco de Caza Mayor',        'Madera de Nogal',          6),
 ('Arco de Caza Mayor',        'Escama Ígnea',             3),
 ('Arco de Caza Mayor',        'Núcleo de Magma',          3),
 ('Arco de Caza Mayor',        'Aliento de Fuego Eterno',  2),
 -- Códice de las Brasas: núcleos de magma y escamas ígneas, tapas de Nogal y aliento de fuego eterno
-('Códice de las Brasas',      'Madera de Nogal',          2),
+('Códice de las Brasas',      'Madera de Nogal',          4),
 ('Códice de las Brasas',      'Núcleo de Magma',          3),
 ('Códice de las Brasas',      'Escama Ígnea',             3),
 ('Códice de las Brasas',      'Aliento de Fuego Eterno',  2),
 -- Lanza de Magma (general +44): Hierro, Oro Puro y solo drops de /hunt (4 + 4, ~80 min), sin /travel ni jefe
-('Lanza de Magma',            'Hierro',                   4),
-('Lanza de Magma',            'Oro Puro',                 1),
+('Lanza de Magma',            'Hierro',                   8),
+('Lanza de Magma',            'Oro Puro',                 2),
 ('Lanza de Magma',            'Escama Ígnea',             4),
 ('Lanza de Magma',            'Núcleo de Magma',          4),
 -- Coraza de Escamas Ígneas (amuleto +46): Oro Puro, 5 + 5 de /hunt y 1 Aliento de Fuego Eterno
-('Coraza de Escamas Ígneas',  'Oro Puro',                 2),
+('Coraza de Escamas Ígneas',  'Oro Puro',                 4),
 ('Coraza de Escamas Ígneas',  'Escama Ígnea',             5),
 ('Coraza de Escamas Ígneas',  'Núcleo de Magma',          5),
 ('Coraza de Escamas Ígneas',  'Aliento de Fuego Eterno',  1),
 -- Talismán del Volcán (amuleto +60): la brasa eterna del jefe (~200 min) + 3 Aliento de Fuego Eterno
 ('Talismán del Volcán',       'Gema de Zafiro',           1),
-('Talismán del Volcán',       'Oro Puro',                 2),
+('Talismán del Volcán',       'Oro Puro',                 4),
 ('Talismán del Volcán',       'Brasa Eterna',             1),
 ('Talismán del Volcán',       'Aliento de Fuego Eterno',  3),
 ('Talismán del Volcán',       'Escama Ígnea',             3);

@@ -58,17 +58,20 @@ INSERT INTO z5_recipes VALUES
 ('Égida del Devorador',         1100, false),
 ('Corazón de Titán Engarzado',  1500, false);
 
+-- Materiales de RECOLECCIÓN (Madera, Piedra, Hierro, Carbón, Oro Puro): las cantidades son ~3x (Común) y ~2x (Raro/Épico)
+-- lo de antes porque /chop y /mine ahora dan varias unidades por acción (GameData/GatheringYield: Común 1-5, Raro/Épico
+-- 1-3, Legendario/Mítico 1); el ritmo de la run 1 no cambió. Los Legendarios/Míticos de recolección siguen en 1.
 CREATE TEMP TABLE z5_ingredients (result_name TEXT, ingredient_name TEXT, quantity INTEGER);
 INSERT INTO z5_ingredients VALUES
 -- Espada del Abismo: Hierro, fragmentos de alma y corazones de titán, 2 Ceniza del Abismo, y UN fragmento de meteorito
 -- (Mítico de /mine)
-('Espada del Abismo',           'Hierro',                       4),
+('Espada del Abismo',           'Hierro',                       8),
 ('Espada del Abismo',           'Fragmento de Alma',            2),
 ('Espada del Abismo',           'Corazón de Titán',             3),
 ('Espada del Abismo',           'Ceniza del Abismo',            2),
 ('Espada del Abismo',           'Fragmento de Meteorito',       1),
 -- Colmillo del Cráter: Hierro, fragmentos de alma y corazones de titán, 2 Ceniza del Abismo, y UN fragmento de meteorito
-('Colmillo del Cráter',         'Hierro',                       4),
+('Colmillo del Cráter',         'Hierro',                       8),
 ('Colmillo del Cráter',         'Fragmento de Alma',            3),
 ('Colmillo del Cráter',         'Corazón de Titán',             2),
 ('Colmillo del Cráter',         'Ceniza del Abismo',            2),
@@ -88,13 +91,13 @@ INSERT INTO z5_ingredients VALUES
 ('Báculo del Árbol de Vida',    'Ceniza del Abismo',            2),
 ('Báculo del Árbol de Vida',    'Corteza del Árbol de Vida',    1),
 -- Martillo del Titán (general +70): Hierro, Zafiro y solo drops de /hunt (4 + 4, ~80 min), sin /travel ni jefe
-('Martillo del Titán',          'Hierro',                       4),
+('Martillo del Titán',          'Hierro',                       8),
 ('Martillo del Titán',          'Gema de Zafiro',               1),
 ('Martillo del Titán',          'Fragmento de Alma',            4),
 ('Martillo del Titán',          'Corazón de Titán',             4),
 -- Égida del Devorador (amuleto +75): Oro Puro, Zafiro, 5 + 5 de /hunt y 1 Ceniza del Abismo
 ('Égida del Devorador',         'Gema de Zafiro',               1),
-('Égida del Devorador',         'Oro Puro',                     2),
+('Égida del Devorador',         'Oro Puro',                     4),
 ('Égida del Devorador',         'Fragmento de Alma',            5),
 ('Égida del Devorador',         'Corazón de Titán',             5),
 ('Égida del Devorador',         'Ceniza del Abismo',            1),

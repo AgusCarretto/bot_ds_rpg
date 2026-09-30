@@ -63,39 +63,42 @@ INSERT INTO z2_recipes VALUES
 ('Mate Tallado en Cenizas',      300, false),
 ('Talismán de Ceniza Bendita',   400, false);
 
+-- Materiales de RECOLECCIÓN (Madera, Piedra, Hierro, Carbón, Oro Puro): las cantidades son ~3x (Común) y ~2x (Raro/Épico)
+-- lo de antes porque /chop y /mine ahora dan varias unidades por acción (GameData/GatheringYield: Común 1-5, Raro/Épico
+-- 1-3, Legendario/Mítico 1); el ritmo de la run 1 no cambió. Los Legendarios/Míticos de recolección siguen en 1.
 CREATE TEMP TABLE z2_ingredients (result_name TEXT, ingredient_name TEXT, quantity INTEGER);
 INSERT INTO z2_ingredients VALUES
 -- Hacha de Hierro MK3: la hoja de Hierro, el mango de Roble, garras del bosque y 2 Ceniza Bendita (~100 min)
-('Hacha de Hierro MK3',          'Hierro',                    5),
-('Hacha de Hierro MK3',          'Madera de Roble',           2),
+('Hacha de Hierro MK3',          'Hierro',                    10),
+('Hacha de Hierro MK3',          'Madera de Roble',           4),
 ('Hacha de Hierro MK3',          'Garra de Puma Cenizo',      5),
 ('Hacha de Hierro MK3',          'Ceniza Bendita',            2),
 -- Colmillo Nocturno: Hierro, garras y esencia espectral para el filo que no se ve, y 2 Ceniza Bendita
-('Colmillo Nocturno',            'Hierro',                    4),
+('Colmillo Nocturno',            'Hierro',                    8),
 ('Colmillo Nocturno',            'Garra de Puma Cenizo',      3),
 ('Colmillo Nocturno',            'Esencia Espectral',         3),
 ('Colmillo Nocturno',            'Ceniza Bendita',            2),
 -- Arco Élfico Ancestral: la madera noble, un hilo espectral y 2 Ceniza Bendita
-('Arco Élfico Ancestral',        'Madera de Roble',           4),
+('Arco Élfico Ancestral',        'Madera de Roble',           8),
 ('Arco Élfico Ancestral',        'Esencia Espectral',         5),
 ('Arco Élfico Ancestral',        'Ceniza Bendita',            2),
 -- Grimorio de las Tormentas: tapas de Roble, esencia espectral y la ceniza bendita como tinta
-('Grimorio de las Tormentas',    'Madera de Roble',           3),
+('Grimorio de las Tormentas',    'Madera de Roble',           6),
 ('Grimorio de las Tormentas',    'Esencia Espectral',         5),
 ('Grimorio de las Tormentas',    'Ceniza Bendita',            2),
 -- Cuchilla de Cenizas (general +18): Hierro y Carbón, y solo drops de /hunt (4 + 4, ~80 min), sin /travel ni jefe
-('Cuchilla de Cenizas',          'Hierro',                    3),
-('Cuchilla de Cenizas',          'Carbón',                    2),
+('Cuchilla de Cenizas',          'Hierro',                    6),
+('Cuchilla de Cenizas',          'Carbón',                    4),
 ('Cuchilla de Cenizas',          'Garra de Puma Cenizo',      4),
 ('Cuchilla de Cenizas',          'Esencia Espectral',         4),
 -- Mate Tallado en Cenizas (amuleto +18): Carbón y Roble, 5 + 5 de /hunt y 1 Ceniza Bendita (~100 min)
-('Mate Tallado en Cenizas',      'Carbón',                    3),
-('Mate Tallado en Cenizas',      'Madera de Roble',           2),
+('Mate Tallado en Cenizas',      'Carbón',                    6),
+('Mate Tallado en Cenizas',      'Madera de Roble',           4),
 ('Mate Tallado en Cenizas',      'Garra de Puma Cenizo',      5),
 ('Mate Tallado en Cenizas',      'Esencia Espectral',         5),
 ('Mate Tallado en Cenizas',      'Ceniza Bendita',            1),
 -- Talismán de Ceniza Bendita (amuleto +24): el pelaje plateado del jefe (~200 min) + 3 Ceniza Bendita + Oro Puro
-('Talismán de Ceniza Bendita',   'Oro Puro',                  1),
+('Talismán de Ceniza Bendita',   'Oro Puro',                  2),
 ('Talismán de Ceniza Bendita',   'Pelaje Plateado del Alfa',  1),
 ('Talismán de Ceniza Bendita',   'Ceniza Bendita',            3),
 ('Talismán de Ceniza Bendita',   'Garra de Puma Cenizo',      3);

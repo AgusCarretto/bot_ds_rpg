@@ -9,7 +9,7 @@
 --   - El "PSQL Tool" de pgAdmin (el ícono de terminal, NO el "Query Tool" — ese último solo manda
 --     SQL crudo al servidor y no entiende \ir, va a tirar error de sintaxis).
 --   - DBeaver u otros clientes: probablemente NO sirve — correlos a mano, uno por uno, en el orden
---     de abajo (son los mismos 17 archivos, en esta carpeta).
+--     de abajo (son los mismos 18 archivos, en esta carpeta).
 --
 -- USAR SOLO CONTRA UNA BASE VACÍA. seed.sql, add_weapon_family.sql y
 -- seed_class_gear_and_monster_drops.sql NO son idempotentes (duplican filas si la base ya tiene
@@ -48,6 +48,8 @@
 \ir seed_zone5_gear_and_recipes.sql
 \ir finalize_consumable_catalog.sql
 \ir remove_legacy_consumables.sql
+-- Precio de las comidas: sube más rápido que la curación (una sola curación por pelea en /travel y /boss).
+\ir rebalance_consumable_prices.sql
 \ir update_item_emojis.sql
 
 \echo 'Listo — base cargada completa: esquema, items, recetas, zonas/monstruos, catálogo final de consumibles y emojis.'
