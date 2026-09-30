@@ -356,13 +356,16 @@ public class RaidModule(
     {
         var player = await userRepository.GetOrCreateUserAsync(starterId);
         var boss = (await monsterRepository.GetBossByZoneAsync(player.CurrentZoneId))!; // ValidateStartAsync ya confirmó que existe
-        var zone = await zoneRepository.GetByIdAsync(player.CurrentZoneId);
+        var zones = await zoneRepository.GetAllAsync();
+        var zone = zones.FirstOrDefault(z => z.ZoneId == player.CurrentZoneId);
+        // Posición de la zona por dificultad (no zone_id crudo): los multiplicadores del raid dependen de ella.
+        int zoneRank = ZoneRanking.RankOf(ZoneRanking.OrderByDifficulty(zones), player.CurrentZoneId);
 
         int bossBaseHp = Random.Shared.Next(boss.MinHp, boss.MaxHp + 1);
         int bossBaseDamage = Random.Shared.Next(boss.MinDamage, boss.MaxDamage + 1);
         // El HP del jefe de raid depende de cuántos jugadores terminan entrando: acá se deja el valor
         // para 1 y se recalcula al arrancar (TryActivateAsync). Ver GameData/RaidDifficulty.cs.
-        int bossMaxHp = RaidDifficulty.BossHp(bossBaseHp, 1);
+        int bossMaxHp = RaidDifficulty.BossHp(bossBaseHp, 1, zoneRank);
 
         var session = new RaidSession
         {
@@ -371,11 +374,12 @@ public class RaidModule(
             BossEmoji = boss.Emoji,
             BossBaseHp = bossBaseHp,
             BossMaxHp = bossMaxHp,
-            BossDamage = RaidDifficulty.BossDamage(bossBaseDamage),
+            BossDamage = RaidDifficulty.BossDamage(bossBaseDamage, zoneRank),
             BossDropItemNames = boss.DropItemNames,
             BossGoldBonus = boss.GoldBonus,
             BossXpBonus = boss.XpBonus,
             ZoneId = player.CurrentZoneId,
+            ZoneRank = zoneRank,
             ZoneName = zone?.Name ?? "?",
             StarterId = starterId,
             BossCurrentHp = bossMaxHp,
@@ -498,7 +502,7 @@ public class RaidModule(
                 // Recién acá se sabe cuántos jugadores pelean de verdad (los que no pudieron reclamar
                 // el cooldown ya salieron): el HP del jefe crece con cada uno. Va antes de pasar a
                 // Active, dentro del mismo lock, así ningún click ve un jefe a medio escalar.
-                session.BossMaxHp = RaidDifficulty.BossHp(session.BossBaseHp, session.Participants.Count);
+                session.BossMaxHp = RaidDifficulty.BossHp(session.BossBaseHp, session.Participants.Count, session.ZoneRank);
                 session.BossCurrentHp = session.BossMaxHp;
                 session.Phase = RaidPhase.Active;
             }

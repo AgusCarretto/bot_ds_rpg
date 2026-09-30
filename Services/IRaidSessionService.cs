@@ -61,6 +61,10 @@ public sealed class RaidSession
     // (RaidModule.TryActivateAsync, con la lista ya definitiva) — por eso tiene setter. Mientras el
     // lobby está abierto, BossMaxHp es el valor para 1 jugador y el embed del lobby no lo muestra.
     public required int BossBaseHp { get; init; }
+
+    // Posición de la zona del jefe por dificultad (1 = la primera): los multiplicadores del raid dependen de
+    // ella (GameData/RaidDifficulty.cs), y hay que recalcular el HP con la MISMA posición al arrancar.
+    public required int ZoneRank { get; init; }
     public required int BossMaxHp { get; set; }
     public required int BossDamage { get; init; }
     public required IReadOnlyList<string> BossDropItemNames { get; init; }
