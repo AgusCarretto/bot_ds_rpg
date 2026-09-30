@@ -152,9 +152,11 @@ public class ForgeModule(
         var recipe = await recipeRepository.GetByResultItemNameAsync(itemName);
         if (recipe is null)
         {
-            var allRecipes = await recipeRepository.GetAllAsync();
-            string available = string.Join(", ", allRecipes.Select(r => ItemDisplay.Format(r.ResultItem.Emoji, r.ResultItem.Name)));
-            return new ForgeMakeResult($"El herrero no conoce esa receta. Las disponibles son: {available}.", null);
+            // No se listan todas las recetas: con 8 por zona y 5 zonas (40), el nombre con el emoji de cada una pasaría
+            // el límite de 2000 caracteres de un mensaje de Discord y el comando fallaría justo cuando el jugador
+            // se equivoca de nombre. Se lo manda a las listas, que ya muestran solo lo de su zona.
+            return new ForgeMakeResult(
+                "El herrero no conoce esa receta. Usá `/forge recipes` para ver las de tu zona, o elegí de la lista al escribir `/forge make`.", null);
         }
 
         // Si es la primera vez que este usuario ejecuta un comando, se crea acá con los valores por defecto.
