@@ -22,8 +22,9 @@ public class RaidModule(
     ICombatSessionService combatSessions,
     IRaidSessionService raidSessions) : InteractionModuleBase<SocketInteractionContext>
 {
-    private const int MinParticipantsToStart = 2;
-    private const int MaxParticipants = 6;
+    // Ver Services/RaidSettings.cs: el mínimo es configurable (2 por defecto).
+    private static int MinParticipantsToStart => RaidSettings.MinParticipants;
+    private const int MaxParticipants = RaidSettings.MaxParticipants;
     private static readonly TimeSpan LobbyDuration = TimeSpan.FromSeconds(60);
 
     [SlashCommand("raid", "Jefe de zona cooperativo: varios jugadores atacan al mismo jefe (mín. 2, cooldown de 30 min).")]
@@ -40,7 +41,7 @@ public class RaidModule(
                 return;
             }
 
-            var session = await BuildSessionAsync(userRepository, monsterRepository, zoneRepository, Context.User.Id, GameModule.GetDisplayName(Context.User));
+            var session = await BuildSessionAsync(userRepository, itemRepository, monsterRepository, zoneRepository, Context.User.Id, GameModule.GetDisplayName(Context.User));
 
             if (!raidSessions.TryAdd(session) || !raidSessions.TryRegisterParticipant(Context.User.Id, session.RaidId))
             {
@@ -73,6 +74,20 @@ public class RaidModule(
             }
 
             ulong discordId = Context.User.Id;
+
+            // Va antes de ValidateJoinAsync: quien ya está adentro (ej. quien arrancó el lobby) figura
+            // como "ocupado" y recibiría el mensaje engañoso de "ya estás en medio de un combate".
+            bool alreadyIn;
+            lock (session.Lock)
+            {
+                alreadyIn = session.Participants.Any(p => p.DiscordId == discordId);
+            }
+
+            if (alreadyIn)
+            {
+                await FollowupAsync("Ya estás anotado en este raid.", ephemeral: true);
+                return;
+            }
 
             var rejection = await ValidateJoinAsync(userRepository, itemRepository, zoneRepository, combatSessions, raidSessions, session, discordId);
             if (rejection is not null)
@@ -149,7 +164,7 @@ public class RaidModule(
 
             if (count < MinParticipantsToStart)
             {
-                await FollowupAsync($"Hace falta un mínimo de {MinParticipantsToStart} jugadores para arrancar — todavía no se sumó nadie más.", ephemeral: true);
+                await FollowupAsync($"Hace falta un mínimo de {MinParticipantsToStart} jugadores para arrancar — por ahora hay {count}.", ephemeral: true);
                 return;
             }
 
@@ -162,7 +177,15 @@ public class RaidModule(
     }
 
     [ComponentInteraction("raid_attack:*")]
-    public async Task HandleAttackAsync(string raidIdRaw)
+    public Task HandleAttackAsync(string raidIdRaw) => ResolveClickAsync(raidIdRaw, useAbility: false);
+
+    // Botón genérico "Habilidad": el mensaje del raid es compartido por todos los participantes,
+    // así que no puede llevar una etiqueta distinta por jugador — cuál habilidad se ejecuta depende
+    // de la clase de quien clickea (el estado de cada uno se ve en el roster del embed).
+    [ComponentInteraction("raid_ability:*")]
+    public Task HandleAbilityAsync(string raidIdRaw) => ResolveClickAsync(raidIdRaw, useAbility: true);
+
+    private async Task ResolveClickAsync(string raidIdRaw, bool useAbility)
     {
         await DeferAsync();
 
@@ -190,7 +213,7 @@ public class RaidModule(
                     {
                         null => new AttackOutcome(AttackOutcomeKind.NotAParticipant),
                         { IsActive: false } => new AttackOutcome(AttackOutcomeKind.ParticipantInactive),
-                        _ => ResolveParticipantTurn(session, participant),
+                        _ => ResolveParticipantTurn(session, participant, useAbility),
                     };
                 }
             }
@@ -205,6 +228,9 @@ public class RaidModule(
                     return;
                 case AttackOutcomeKind.ParticipantInactive:
                     await FollowupAsync("Ya no podés seguir peleando en este raid (te derribaron o te retiraste).", ephemeral: true);
+                    return;
+                case AttackOutcomeKind.AbilityUnavailable:
+                    await FollowupAsync(outcome.LogLine!, ephemeral: true);
                     return;
                 case AttackOutcomeKind.Continues:
                     await session.ReplyTarget.UpdateAsync(BuildCombatEmbed(session, outcome.LogLine!), BuildCombatButtons(raidId));
@@ -321,23 +347,31 @@ public class RaidModule(
         return null;
     }
 
+    // Quien arranca el raid queda ANOTADO desde el primer momento (no hace falta que clickee
+    // "Unirse" en su propio lobby — antes no lo estaba, pero sí figuraba como "ocupado" en el índice
+    // del servicio, así que no podía sumarse y "Empezar ya" decía que no había nadie).
     public static async Task<RaidSession> BuildSessionAsync(
-        IUserRepository userRepository, IMonsterRepository monsterRepository, IZoneRepository zoneRepository, ulong starterId, string starterDisplayName)
+        IUserRepository userRepository, IItemRepository itemRepository, IMonsterRepository monsterRepository,
+        IZoneRepository zoneRepository, ulong starterId, string starterDisplayName)
     {
         var player = await userRepository.GetOrCreateUserAsync(starterId);
         var boss = (await monsterRepository.GetBossByZoneAsync(player.CurrentZoneId))!; // ValidateStartAsync ya confirmó que existe
         var zone = await zoneRepository.GetByIdAsync(player.CurrentZoneId);
 
-        int bossMaxHp = Random.Shared.Next(boss.MinHp, boss.MaxHp + 1);
-        int bossDamage = Random.Shared.Next(boss.MinDamage, boss.MaxDamage + 1);
+        int bossBaseHp = Random.Shared.Next(boss.MinHp, boss.MaxHp + 1);
+        int bossBaseDamage = Random.Shared.Next(boss.MinDamage, boss.MaxDamage + 1);
+        // El HP del jefe de raid depende de cuántos jugadores terminan entrando: acá se deja el valor
+        // para 1 y se recalcula al arrancar (TryActivateAsync). Ver GameData/RaidDifficulty.cs.
+        int bossMaxHp = RaidDifficulty.BossHp(bossBaseHp, 1);
 
         var session = new RaidSession
         {
             RaidId = Guid.NewGuid(),
             BossName = boss.Name,
             BossEmoji = boss.Emoji,
+            BossBaseHp = bossBaseHp,
             BossMaxHp = bossMaxHp,
-            BossDamage = bossDamage,
+            BossDamage = RaidDifficulty.BossDamage(bossBaseDamage),
             BossDropItemNames = boss.DropItemNames,
             BossGoldBonus = boss.GoldBonus,
             BossXpBonus = boss.XpBonus,
@@ -346,6 +380,10 @@ public class RaidModule(
             StarterId = starterId,
             BossCurrentHp = bossMaxHp,
         };
+
+        // La sesión todavía no la ve ningún otro hilo (recién se publica en IRaidSessionService.TryAdd),
+        // así que agregar sin lock es seguro.
+        session.Participants.Add(await BuildParticipantAsync(itemRepository, player, starterDisplayName));
 
         return session;
     }
@@ -378,20 +416,23 @@ public class RaidModule(
     }
 
     private static async Task<RaidParticipant> BuildParticipantAsync(
-        IUserRepository userRepository, IItemRepository itemRepository, ulong discordId, string displayName)
+        IUserRepository userRepository, IItemRepository itemRepository, ulong discordId, string displayName) =>
+        await BuildParticipantAsync(itemRepository, await userRepository.GetOrCreateUserAsync(discordId), displayName);
+
+    private static async Task<RaidParticipant> BuildParticipantAsync(IItemRepository itemRepository, User player, string displayName)
     {
-        var player = await userRepository.GetOrCreateUserAsync(discordId);
         var weapon = player.WeaponId is int weaponId ? await itemRepository.GetByIdAsync(weaponId) : null;
         var amulet = player.AmuletId is int amuletId ? await itemRepository.GetByIdAsync(amuletId) : null;
         var profile = PlayerCombatProfileCalculator.Resolve(player, weapon, amulet);
 
         return new RaidParticipant
         {
-            DiscordId = discordId,
+            DiscordId = (ulong)player.DiscordId,
             DisplayName = displayName,
             Damage = profile.Damage,
             Defense = profile.Defense,
             Level = player.Level,
+            PlayerClass = player.Class,
             Passives = profile.Passives,
             MaxHp = profile.CombatMaxHp,
             StartingHp = profile.CombatCurrentHp,
@@ -419,46 +460,80 @@ public class RaidModule(
             snapshot = session.Participants.ToList();
         }
 
-        var confirmed = new List<RaidParticipant>();
-        var dropped = new List<RaidParticipant>();
-
-        foreach (var participant in snapshot)
+        try
         {
-            bool claimed = await adventureRepository.TryClaimCooldownAsync(participant.DiscordId, CooldownCatalog.Boss.CommandName, CooldownCatalog.Boss.Duration);
-            if (claimed)
+            var confirmed = new List<RaidParticipant>();
+            var dropped = new List<RaidParticipant>();
+
+            foreach (var participant in snapshot)
             {
-                confirmed.Add(participant);
+                bool claimed = await adventureRepository.TryClaimCooldownAsync(participant.DiscordId, CooldownCatalog.Boss.CommandName, CooldownCatalog.Boss.Duration);
+                if (claimed)
+                {
+                    confirmed.Add(participant);
+                }
+                else
+                {
+                    dropped.Add(participant);
+                    raidSessions.UnregisterParticipant(participant.DiscordId);
+                }
             }
-            else
+
+            if (confirmed.Count < MinParticipantsToStart)
             {
-                dropped.Add(participant);
-                raidSessions.UnregisterParticipant(participant.DiscordId);
+                lock (session.Lock)
+                {
+                    session.Phase = RaidPhase.Resolved;
+                }
+
+                raidSessions.Remove(session.RaidId);
+                await session.ReplyTarget.UpdateAsync(BuildCancelledEmbed(session, confirmed.Count), new ComponentBuilder().Build());
+                return;
             }
+
+            lock (session.Lock)
+            {
+                session.Participants.RemoveAll(dropped.Contains);
+
+                // Recién acá se sabe cuántos jugadores pelean de verdad (los que no pudieron reclamar
+                // el cooldown ya salieron): el HP del jefe crece con cada uno. Va antes de pasar a
+                // Active, dentro del mismo lock, así ningún click ve un jefe a medio escalar.
+                session.BossMaxHp = RaidDifficulty.BossHp(session.BossBaseHp, session.Participants.Count);
+                session.BossCurrentHp = session.BossMaxHp;
+                session.Phase = RaidPhase.Active;
+            }
+
+            string startLine = dropped.Count > 0
+                ? $"¡El jefe entra en combate! ({dropped.Count} jugador(es) no pudo(pudieron) sumarse por tener el cooldown de Jefe ocupado.)"
+                : "¡El jefe entra en combate!";
+
+            await session.ReplyTarget.UpdateAsync(BuildCombatEmbed(session, startLine), BuildCombatButtons(session.RaidId));
         }
-
-        if (confirmed.Count < MinParticipantsToStart)
+        catch
         {
+            // Si la activación explota a la mitad (la base no responde, el mensaje ya no se puede
+            // editar) la sesión quedaría en Activating para siempre con todos los anotados
+            // registrados como "en un raid": sin poder cazar ni viajar hasta reiniciar el bot. Se
+            // cierra el raid completo y se vuelve a lanzar la excepción para que el llamador avise.
             lock (session.Lock)
             {
                 session.Phase = RaidPhase.Resolved;
             }
 
             raidSessions.Remove(session.RaidId);
-            await session.ReplyTarget.UpdateAsync(BuildCancelledEmbed(session, confirmed.Count), new ComponentBuilder().Build());
-            return;
+
+            try
+            {
+                await session.ReplyTarget.UpdateAsync(BuildFailedEmbed(session), new ComponentBuilder().Build());
+            }
+            catch
+            {
+                // Si tampoco se puede editar el mensaje no hay nada más que hacer; lo importante (soltar
+                // a los jugadores) ya quedó hecho arriba.
+            }
+
+            throw;
         }
-
-        lock (session.Lock)
-        {
-            session.Participants.RemoveAll(dropped.Contains);
-            session.Phase = RaidPhase.Active;
-        }
-
-        string startLine = dropped.Count > 0
-            ? $"¡El jefe entra en combate! ({dropped.Count} jugador(es) no pudo(pudieron) sumarse por tener el cooldown de Jefe ocupado.)"
-            : "¡El jefe entra en combate!";
-
-        await session.ReplyTarget.UpdateAsync(BuildCombatEmbed(session, startLine), BuildCombatButtons(session.RaidId));
     }
 
     public static void ScheduleLobbyTimeout(RaidSession session, IRaidSessionService raidSessions, IAdventureRepository adventureRepository)
@@ -489,61 +564,89 @@ public class RaidModule(
         }, cts.Token);
     }
 
-    private enum AttackOutcomeKind { NotActive, NotAParticipant, ParticipantInactive, Continues, Victory, Wipe }
+    private enum AttackOutcomeKind { NotActive, NotAParticipant, ParticipantInactive, AbilityUnavailable, Continues, Victory, Wipe }
 
     private sealed record AttackOutcome(AttackOutcomeKind Kind, string? LogLine = null);
 
     // Se llama SIEMPRE bajo session.Lock — pura matemática en memoria, nada de I/O acá adentro.
-    private static AttackOutcome ResolveParticipantTurn(RaidSession session, RaidParticipant participant)
+    private static AttackOutcome ResolveParticipantTurn(RaidSession session, RaidParticipant participant, bool useAbility)
     {
-        var hit = CombatMath.ResolvePlayerHit(participant.Damage, participant.Passives.CritChanceBonus);
-        session.BossCurrentHp = Math.Max(0, session.BossCurrentHp - hit.Damage);
-        participant.TurnsTaken++;
-        participant.TotalDamageDealt += hit.Damage;
-        participant.Contributed = true;
-        if (hit.Critical)
+        // Habilidad pedida pero no disponible (enfriamiento, o clase sin habilidad): se rechaza sin
+        // gastar el turno ni tocar nada.
+        if (useAbility && CombatTurnResolver.CheckAbility(participant.PlayerClass, participant.Ability) != AbilityAvailability.Ready)
         {
-            participant.CritCount++;
+            int wait = participant.Ability.CooldownRemaining;
+            return new AttackOutcome(
+                AttackOutcomeKind.AbilityUnavailable,
+                wait > 0 ? $"Tu habilidad está en enfriamiento ({wait} turno(s))." : "Tu clase no tiene habilidad.");
         }
 
-        // Sifón de Almas (Hechicero): mismo criterio que combate solitario, cura ANTES del
-        // contraataque — ver Modules/AdventureModule.ResolveTurnAsync.
-        int healed = CombatMath.RollLifesteal(hit.Damage, participant.Passives.LifestealChance, participant.Passives.LifestealRatio);
-        participant.CurrentHp = Math.Min(participant.MaxHp, participant.CurrentHp + healed);
+        // Golpe, Sifón de Almas y contraataque los resuelve el mismo código que el combate solitario
+        // y el autohunt (GameData/CombatTurnResolver.cs) — acá solo se aplica el resultado al estado
+        // compartido, bajo el lock del llamador.
+        var turn = CombatTurnResolver.ResolveTurn(
+            new CombatantProfile(participant.Damage, participant.Defense, participant.PlayerClass, participant.Passives),
+            participant.Ability,
+            useAbility ? PlayerAction.Ability : PlayerAction.Attack,
+            participant.CurrentHp, participant.MaxHp, session.BossCurrentHp, session.BossDamage);
 
-        string critText = hit.Critical ? "💥 ¡GOLPE CRÍTICO! " : string.Empty;
-        string healText = healed > 0 ? $" 🔮 Sifón de Almas curó {healed} HP." : string.Empty;
+        session.BossCurrentHp = turn.MonsterHpAfter;
+        participant.CurrentHp = turn.PlayerHpAfter;
+        participant.Ability = turn.StatusAfter;
+        participant.TurnsTaken++;
+        participant.TotalDamageDealt += turn.DamageDealt;
+        participant.CritCount += turn.CritCount;
 
-        if (session.BossCurrentHp <= 0)
+        // Solo cuenta como "contribuyó" quien efectivamente pegó — desaparecer con Sombra no pega.
+        if (turn.DamageDealt > 0)
+        {
+            participant.Contributed = true;
+        }
+
+        string who = $"**{participant.DisplayName}**";
+        string actionText = turn.AbilityUsed is { } ability
+            ? $"{ability.Emoji} {who} usó **{ability.Name}**. "
+            : turn.Ambush ? $"🥷 {who} emboscó desde las sombras. " : string.Empty;
+        string critText = turn.CritCount switch
+        {
+            <= 0 => string.Empty,
+            1 => "💥 ¡GOLPE CRÍTICO! ",
+            _ => $"💥 ¡{turn.CritCount} GOLPES CRÍTICOS! ",
+        };
+        string healText = turn.LifestealHeal > 0 ? $" 🔮 Sifón de Almas curó {turn.LifestealHeal} HP." : string.Empty;
+
+        if (turn.MonsterDefeated)
         {
             // Resolved DENTRO del mismo lock que decide el resultado (no después, en
             // ResolveVictoryAsync): si no, entre soltar el lock y marcarlo, otro click
             // simultáneo vería la fase todavía Active y dispararía una segunda victoria
             // (recompensas duplicadas).
             session.Phase = RaidPhase.Resolved;
-            return new AttackOutcome(AttackOutcomeKind.Victory, $"{critText}**{participant.DisplayName}** le dio el golpe final a **{session.BossName}**.{healText}");
+            return new AttackOutcome(AttackOutcomeKind.Victory, $"{actionText}{critText}{who} le dio el golpe final a **{session.BossName}**.{healText}");
         }
 
-        var monsterHit = CombatMath.ResolveMonsterHit(session.BossDamage, participant.Defense, participant.Passives.DodgeChanceBonus, participant.Passives.DamageTakenMultiplier);
+        var monsterHit = turn.MonsterHit!; // el jefe sigue vivo => contraatacó
         string monsterLine;
 
         if (monsterHit.Dodged)
         {
             participant.DodgeCount++;
-            monsterLine = $"💨 **{participant.DisplayName}** esquivó el contraataque.";
+            monsterLine = $"💨 {who} esquivó el contraataque.";
         }
         else
         {
-            participant.CurrentHp = Math.Max(0, participant.CurrentHp - monsterHit.Damage);
             participant.TotalDamageTaken += monsterHit.Damage;
-            monsterLine = $"El jefe le devolvió **{monsterHit.Damage}** a **{participant.DisplayName}**.";
+            monsterLine = $"El jefe le devolvió **{monsterHit.Damage}** a {who}.";
             if (participant.IsKnockedOut)
             {
-                monsterLine += $" 💀 **{participant.DisplayName}** quedó derribado.";
+                monsterLine += $" 💀 {who} quedó derribado.";
             }
         }
 
-        string logLine = $"{critText}**{participant.DisplayName}** le hizo **{hit.Damage}** de daño al jefe.{healText} {monsterLine}";
+        string strikeText = turn.DamageDealt > 0
+            ? $"{critText}{who} le hizo **{turn.DamageDealt}** de daño al jefe.{healText} "
+            : string.Empty;
+        string logLine = $"{actionText}{strikeText}{monsterLine}";
 
         bool allInactive = session.Participants.All(p => !p.IsActive);
         if (allInactive)
@@ -626,9 +729,11 @@ public class RaidModule(
             .WithTitle($"👑 Raid: {session.BossName} {session.BossEmoji}")
             .WithColor(Color.Purple)
             .WithDescription(
-                $"Jefe de **{session.ZoneName}**. Clickeá **Unirse** para sumarte — se cierra en " +
-                $"{(int)LobbyDuration.TotalSeconds}s o cuando quien lo arrancó clickee **Empezar ya**.\n" +
-                $"Mínimo {MinParticipantsToStart}, máximo {MaxParticipants} jugadores.")
+                $"Jefe de **{session.ZoneName}**. Quien arrancó el raid ya está adentro; el resto clickea " +
+                $"**Unirse** — se cierra en {(int)LobbyDuration.TotalSeconds}s o cuando quien lo arrancó clickee **Empezar ya**.\n" +
+                $"Mínimo {MinParticipantsToStart}, máximo {MaxParticipants} jugadores (si no llegan al mínimo, se cancela).\n" +
+                "💪 Es un jefe de raid: mucho más duro que **/boss**, y su vida crece con cada jugador que se suma. " +
+                "Ir con arma equipada casi es obligatorio.")
             .AddField($"👥 Anotados ({participants.Count}/{MaxParticipants})", roster, false)
             .Build();
     }
@@ -654,7 +759,9 @@ public class RaidModule(
         string roster = string.Join('\n', participants.Select(p =>
         {
             string status = p.HasFled ? "🏃" : p.IsKnockedOut ? "💀" : "✅";
-            return $"{status} **{p.DisplayName}** — {HpLine(p.CurrentHp, p.MaxHp)}";
+            // Estado de la habilidad de cada uno (el botón "Habilidad" es compartido y genérico).
+            string abilityLine = p.IsActive ? "\n" + AdventureModule.BuildAbilityStatusLine(p.PlayerClass, p.Ability) : string.Empty;
+            return $"{status} **{p.DisplayName}** — {HpLine(p.CurrentHp, p.MaxHp)}{abilityLine}";
         }));
 
         return new EmbedBuilder()
@@ -670,6 +777,7 @@ public class RaidModule(
     {
         return new ComponentBuilder()
             .WithButton("Atacar", $"raid_attack:{raidId}", ButtonStyle.Primary, new Emoji("⚔️"))
+            .WithButton("Habilidad", $"raid_ability:{raidId}", ButtonStyle.Success, new Emoji("✨"))
             .WithButton("Huir", $"raid_flee:{raidId}", ButtonStyle.Danger, new Emoji("🏃"))
             .Build();
     }
@@ -725,6 +833,15 @@ public class RaidModule(
             .WithTitle($"👑 Raid contra {session.BossName} {session.BossEmoji} cancelado")
             .WithColor(Color.DarkGrey)
             .WithDescription($"No se juntaron los {MinParticipantsToStart} jugadores mínimos a tiempo ({confirmedCount} confirmado(s)).")
+            .Build();
+    }
+
+    private static Embed BuildFailedEmbed(RaidSession session)
+    {
+        return new EmbedBuilder()
+            .WithTitle($"👑 Raid contra {session.BossName} {session.BossEmoji} cancelado")
+            .WithColor(Color.DarkGrey)
+            .WithDescription("Algo falló al arrancar el raid. Probá de nuevo con **/raid** en un momento.")
             .Build();
     }
 

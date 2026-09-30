@@ -33,6 +33,7 @@ public sealed record CombatState(
     int PlayerDamage,
     int PlayerDefense,
     int PlayerLevel,
+    string PlayerClass, // qué habilidad activa le toca (ver GameData/ClassAbilities.cs)
     ClassPassiveProfile Passives, // pasivas de la clase del jugador, resueltas una sola vez al iniciar el combate (ver GameData/ClassPassives.cs)
     // Acumulados de toda la pelea (no de este turno), para el resumen final al terminar el
     // combate (victoria, derrota o huida) — ver Modules/AdventureModule.BuildCombatSummaryLine.
@@ -42,7 +43,10 @@ public sealed record CombatState(
     int CritCount = 0,
     int TotalDamageDealt = 0,
     int TotalDamageTaken = 0,
-    int TotalHealed = 0)
+    int TotalHealed = 0,
+    // Enfriamiento y efecto activo de la habilidad de clase (default == lista para usar, sin efectos).
+    // Lo actualiza GameData/CombatTurnResolver.cs en cada turno.
+    AbilityState Ability = default)
 {
     // Convierte un delta de HP en unidades de COMBATE (ya escaladas por Passives.MaxHpMultiplier)
     // a unidades reales de base de datos, para pasarlo a IUserRepository.ApplyCombatHpDeltaAsync /

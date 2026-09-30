@@ -139,6 +139,7 @@ public sealed class AdventureCombatStarter(
             PlayerDamage: profile.Damage,
             PlayerDefense: profile.Defense,
             PlayerLevel: player.Level,
+            PlayerClass: player.Class,
             Passives: profile.Passives);
 
         return new CombatStartOutcome(CombatStartStatus.Started, null, state);

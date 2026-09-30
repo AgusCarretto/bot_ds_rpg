@@ -70,7 +70,7 @@ public class AdventureModule(
                 return;
             }
 
-            await FollowupAsync(embed: BuildEncounterEmbed(state), components: BuildCombatButtons());
+            await FollowupAsync(embed: BuildEncounterEmbed(state), components: BuildCombatButtons(state));
         }
         catch (Exception)
         {
@@ -80,12 +80,17 @@ public class AdventureModule(
     }
 
     [ComponentInteraction("btn_attack")]
-    public Task HandleAttackAsync() => ResolveTurnAsync(fled: false);
+    public Task HandleAttackAsync() => ResolveTurnAsync(fled: false, useAbility: false);
+
+    // Habilidad de clase (ver GameData/ClassAbilities.cs): un botón por combate, el mismo custom id
+    // para todas las clases — cuál se ejecuta depende de state.PlayerClass, no del botón.
+    [ComponentInteraction("btn_ability")]
+    public Task HandleAbilityAsync() => ResolveTurnAsync(fled: false, useAbility: true);
 
     [ComponentInteraction("btn_flee")]
-    public Task HandleFleeAsync() => ResolveTurnAsync(fled: true);
+    public Task HandleFleeAsync() => ResolveTurnAsync(fled: true, useAbility: false);
 
-    private async Task ResolveTurnAsync(bool fled)
+    private async Task ResolveTurnAsync(bool fled, bool useAbility)
     {
         // DeferAsync en una interacción de componente edita el mensaje original una vez resuelto,
         // en vez de crear uno nuevo. Los clicks de botón SIEMPRE llegan como interacción de
@@ -126,21 +131,32 @@ public class AdventureModule(
                 return;
             }
 
-            // --- Golpe del jugador ---
-            var playerHitOutcome = CombatMath.ResolvePlayerHit(state.PlayerDamage, state.Passives.CritChanceBonus);
-            int playerHit = playerHitOutcome.Damage;
-            int monsterHpAfter = Math.Max(0, state.MonsterCurrentHp - playerHit);
-            int turnsElapsed = state.TurnsElapsed + 1;
-            int critCount = state.CritCount + (playerHitOutcome.Critical ? 1 : 0);
-            int totalDamageDealt = state.TotalDamageDealt + playerHit;
+            // Click sobre una habilidad que ya no está disponible (mensaje viejo, doble click, clase
+            // sin habilidad): se rechaza sin gastar el turno.
+            if (useAbility && CombatTurnResolver.CheckAbility(state.PlayerClass, state.Ability) != AbilityAvailability.Ready)
+            {
+                await FollowupAsync("Tu habilidad todavía está en enfriamiento.", ephemeral: true);
+                return;
+            }
 
-            // Sifón de Almas (Hechicero): cura al atacar, killing blow incluido, antes de que el
-            // monstruo (si sigue vivo) tenga la chance de contraatacar.
-            int lifestealHeal = CombatMath.RollLifesteal(playerHit, state.Passives.LifestealChance, state.Passives.LifestealRatio);
-            int playerHpAfterLifesteal = Math.Min(state.PlayerMaxHp, state.PlayerCurrentHp + lifestealHeal);
+            // --- Turno del jugador: golpe, Sifón de Almas y contraataque, todo en un único lugar
+            // compartido con el raid y el autohunt (ver GameData/CombatTurnResolver.cs). ---
+            var turn = CombatTurnResolver.ResolveTurn(
+                new CombatantProfile(state.PlayerDamage, state.PlayerDefense, state.PlayerClass, state.Passives),
+                state.Ability,
+                useAbility ? PlayerAction.Ability : PlayerAction.Attack,
+                state.PlayerCurrentHp, state.PlayerMaxHp, state.MonsterCurrentHp, state.MonsterDamage);
+
+            int playerHit = turn.DamageDealt;
+            int monsterHpAfter = turn.MonsterHpAfter;
+            int turnsElapsed = state.TurnsElapsed + 1;
+            int critCount = state.CritCount + turn.CritCount;
+            int totalDamageDealt = state.TotalDamageDealt + playerHit;
+            int lifestealHeal = turn.LifestealHeal;
+            int playerHpAfterLifesteal = turn.PlayerHpAfterStrike;
             int totalHealed = state.TotalHealed + lifestealHeal;
 
-            if (monsterHpAfter <= 0)
+            if (turn.MonsterDefeated)
             {
                 var reward = state.CommandName is "hunt" or "boss"
                     ? CombatRewardCalculator.RollHuntReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus)
@@ -176,17 +192,17 @@ public class AdventureModule(
 
                 await ModifyOriginalResponseAsync(props =>
                 {
-                    props.Embed = BuildVictoryEmbed(finalState, playerHit, playerHitOutcome.Critical, lifestealHeal, reward, droppedItem, outcome);
+                    props.Embed = BuildVictoryEmbed(finalState, turn, reward, droppedItem, outcome);
                     props.Components = new ComponentBuilder().Build();
                 });
                 return;
             }
 
-            // --- Golpe del monstruo (el jugador atacó pero no lo derribó) ---
-            var monsterHitOutcome = CombatMath.ResolveMonsterHit(
-                state.MonsterDamage, state.PlayerDefense, state.Passives.DodgeChanceBonus, state.Passives.DamageTakenMultiplier);
+            // --- Contraataque del monstruo (el jugador no lo derribó): ya resuelto arriba por el
+            // resolver, con los efectos de habilidad activos (Aguante / Sombra) aplicados. ---
+            var monsterHitOutcome = turn.MonsterHit!;
             int monsterHit = monsterHitOutcome.Damage;
-            int playerHpAfter = Math.Max(0, playerHpAfterLifesteal - monsterHit);
+            int playerHpAfter = turn.PlayerHpAfter;
             int dodgeCount = state.DodgeCount + (monsterHitOutcome.Dodged ? 1 : 0);
             int totalDamageTaken = state.TotalDamageTaken + monsterHit;
 
@@ -214,7 +230,7 @@ public class AdventureModule(
 
                 await ModifyOriginalResponseAsync(props =>
                 {
-                    props.Embed = BuildDefeatEmbed(finalState, playerHit, playerHitOutcome.Critical, lifestealHeal, monsterHit, monsterHpAfter);
+                    props.Embed = BuildDefeatEmbed(finalState, turn);
                     props.Components = new ComponentBuilder().Build();
                 });
                 return;
@@ -231,6 +247,7 @@ public class AdventureModule(
                 TotalDamageDealt = totalDamageDealt,
                 TotalDamageTaken = totalDamageTaken,
                 TotalHealed = totalHealed,
+                Ability = turn.StatusAfter,
             };
 
             if (!combatSessions.TryAdvance(Context.User.Id, session, nextState, new InteractionCombatReplyTarget(Context.Interaction)))
@@ -241,8 +258,8 @@ public class AdventureModule(
 
             await ModifyOriginalResponseAsync(props =>
             {
-                props.Embed = BuildOngoingEmbed(nextState, playerHit, playerHitOutcome.Critical, lifestealHeal, monsterHit, monsterHitOutcome.Dodged);
-                props.Components = BuildCombatButtons();
+                props.Embed = BuildOngoingEmbed(nextState, turn);
+                props.Components = BuildCombatButtons(nextState);
             });
         }
         catch (Exception)
@@ -282,12 +299,49 @@ public class AdventureModule(
     public static string BuildAlreadyInCombatMessage() =>
         "Ya estás en medio de un combate. Terminalo (atacando o huyendo) antes de iniciar otro.";
 
-    public static MessageComponent BuildCombatButtons()
+    // Atacar / [habilidad de clase] / Huir. El botón de habilidad lleva el nombre de la habilidad de
+    // la clase del jugador y, mientras está en enfriamiento, los turnos que faltan y queda
+    // deshabilitado. Una clase sin habilidad (no debería pasar) simplemente no lo muestra.
+    public static MessageComponent BuildCombatButtons(CombatState state)
     {
-        return new ComponentBuilder()
-            .WithButton("Atacar", "btn_attack", ButtonStyle.Primary, new Emoji("⚔️"))
+        var builder = new ComponentBuilder()
+            .WithButton("Atacar", "btn_attack", ButtonStyle.Primary, new Emoji("⚔️"));
+
+        var ability = ClassAbilities.For(state.PlayerClass);
+        if (ability is not null)
+        {
+            int cooldown = state.Ability.CooldownRemaining;
+            string label = cooldown > 0 ? $"{ability.Name} ({cooldown})" : ability.Name;
+            builder.WithButton(label, "btn_ability", ButtonStyle.Success, new Emoji(ability.Emoji), disabled: cooldown > 0);
+        }
+
+        return builder
             .WithButton("Huir", "btn_flee", ButtonStyle.Danger, new Emoji("🏃"))
             .Build();
+    }
+
+    // "🔥 Bola de Fuego: lista" / "⏳ en 2 turno(s)" + el efecto activo si lo hay ("🛡️ Aguante activo
+    // (1 turno)"). Vacío si la clase no tiene habilidad.
+    public static string BuildAbilityStatusLine(string playerClass, AbilityState status)
+    {
+        var ability = ClassAbilities.For(playerClass);
+        if (ability is null)
+        {
+            return string.Empty;
+        }
+
+        string readiness = status.CooldownRemaining > 0 ? $"⏳ en {status.CooldownRemaining} turno(s)" : "lista";
+        string effect = status.EffectTurnsRemaining > 0 && ability.EffectLabel is not null
+            ? $" · {ability.EffectLabel} ({status.EffectTurnsRemaining} turno(s))"
+            : string.Empty;
+
+        return $"{ability.Emoji} {ability.Name}: {readiness}{effect}";
+    }
+
+    private static EmbedBuilder WithAbilityField(EmbedBuilder embed, CombatState state)
+    {
+        string line = BuildAbilityStatusLine(state.PlayerClass, state.Ability);
+        return line.Length > 0 ? embed.AddField("✨ Habilidad", line, false) : embed;
     }
 
     public static Embed BuildCooldownEmbed(CooldownDefinition definition, TimeSpan remaining)
@@ -344,38 +398,42 @@ public class AdventureModule(
             _ => "🗺️ ¡Encuentro en el viaje!",
         };
 
-        return new EmbedBuilder()
+        var embed = new EmbedBuilder()
             .WithTitle(title)
             .WithColor(Color.Orange)
             .WithDescription($"¡Un **{state.MonsterName}** {state.MonsterEmoji} salvaje aparece!")
             .AddField("❤️ Tu HP", HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
-            .AddField($"{state.MonsterEmoji} HP de {state.MonsterName}", HpLine(state.MonsterCurrentHp, state.MonsterMaxHp), true)
-            .Build();
+            .AddField($"{state.MonsterEmoji} HP de {state.MonsterName}", HpLine(state.MonsterCurrentHp, state.MonsterMaxHp), true);
+
+        return WithAbilityField(embed, state).Build();
     }
 
-    private static Embed BuildOngoingEmbed(CombatState state, int playerHit, bool playerCritical, int lifestealHeal, int monsterHit, bool monsterDodged)
+    private static Embed BuildOngoingEmbed(CombatState state, TurnResult turn)
     {
-        string monsterLine = monsterDodged
+        var monsterHit = turn.MonsterHit!; // el combate sigue => el monstruo contraatacó
+        string monsterLine = monsterHit.Dodged
             ? $"💨 ¡Esquivaste el ataque del **{state.MonsterName}**!"
-            : $"El **{state.MonsterName}** te hizo **{monsterHit}** de daño.";
+            : $"El **{state.MonsterName}** te hizo **{monsterHit.Damage}** de daño.";
+        string playerLine = turn.DamageDealt > 0 ? $"Le hiciste **{turn.DamageDealt}** de daño." : "No atacaste este turno.";
 
-        return new EmbedBuilder()
+        var embed = new EmbedBuilder()
             .WithTitle($"⚔️ Combate contra {state.MonsterName} {state.MonsterEmoji}")
             .WithColor(Color.Gold)
-            .WithDescription($"{CritPrefix(playerCritical)}Le hiciste **{playerHit}** de daño. {monsterLine}{LifestealSuffix(lifestealHeal)}")
+            .WithDescription($"{turn.ActionFlavor}{CritPrefix(turn.CritCount)}{playerLine} {monsterLine}{LifestealSuffix(turn.LifestealHeal)}")
             .AddField("❤️ Tu HP", HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
-            .AddField($"{state.MonsterEmoji} HP de {state.MonsterName}", HpLine(state.MonsterCurrentHp, state.MonsterMaxHp), true)
-            .Build();
+            .AddField($"{state.MonsterEmoji} HP de {state.MonsterName}", HpLine(state.MonsterCurrentHp, state.MonsterMaxHp), true);
+
+        return WithAbilityField(embed, state).Build();
     }
 
-    private static Embed BuildVictoryEmbed(CombatState state, int playerHit, bool playerCritical, int lifestealHeal, CombatReward reward, Item? droppedItem, LevelUpOutcome outcome)
+    private static Embed BuildVictoryEmbed(CombatState state, TurnResult turn, CombatReward reward, Item? droppedItem, LevelUpOutcome outcome)
     {
         var player = outcome.Player;
 
         var embed = new EmbedBuilder()
             .WithTitle($"🏆 ¡Victoria contra {state.MonsterName} {state.MonsterEmoji}!")
             .WithColor(Color.Green)
-            .WithDescription($"{CritPrefix(playerCritical)}Le hiciste **{playerHit}** de daño y lo derrotaste.{LifestealSuffix(lifestealHeal)}")
+            .WithDescription($"{turn.ActionFlavor}{CritPrefix(turn.CritCount)}Le hiciste **{turn.DamageDealt}** de daño y lo derrotaste.{LifestealSuffix(turn.LifestealHeal)}")
             .AddField("💰 Oro ganado", reward.Gold.ToString(), true)
             .AddField("📊 EXP ganada", reward.Xp.ToString(), true)
             .AddField("❤️ Tu HP", HpLine(player.CurrentHp, player.MaxHp), true)
@@ -402,22 +460,30 @@ public class AdventureModule(
     // state.PlayerCurrentHp ya viene con el resultado final aplicado (ver ResolveTurnAsync) — no
     // hace falta un HP "real" aparte de la base: al mostrar en unidades de combate (posiblemente
     // escaladas por un Guerrero) evitamos mezclar una cifra real de la base con un Máximo escalado.
-    private static Embed BuildDefeatEmbed(CombatState state, int playerHit, bool playerCritical, int lifestealHeal, int monsterHit, int monsterHpAfter)
+    private static Embed BuildDefeatEmbed(CombatState state, TurnResult turn)
     {
+        string playerLine = turn.DamageDealt > 0 ? $"Le hiciste **{turn.DamageDealt}** de daño, pero el" : "Pero el";
+
         return new EmbedBuilder()
             .WithTitle($"💀 Derrota contra {state.MonsterName} {state.MonsterEmoji}")
             .WithColor(Color.DarkRed)
             .WithDescription(
-                $"{CritPrefix(playerCritical)}Le hiciste **{playerHit}** de daño, pero el **{state.MonsterName}** te devolvió **{monsterHit}** " +
-                $"y te dejó fuera de combate. Usá **/heal** para recuperarte.{LifestealSuffix(lifestealHeal)}")
+                $"{turn.ActionFlavor}{CritPrefix(turn.CritCount)}{playerLine} **{state.MonsterName}** te devolvió **{turn.MonsterHit!.Damage}** " +
+                $"y te dejó fuera de combate. Usá **/heal** para recuperarte.{LifestealSuffix(turn.LifestealHeal)}")
             .AddField("❤️ Tu HP", HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
-            .AddField($"{state.MonsterEmoji} HP de {state.MonsterName}", HpLine(monsterHpAfter, state.MonsterMaxHp), true)
+            .AddField($"{state.MonsterEmoji} HP de {state.MonsterName}", HpLine(turn.MonsterHpAfter, state.MonsterMaxHp), true)
             .AddField("📋 Resumen del combate", BuildCombatSummaryLine(state), false)
             .Build();
     }
 
-    // "💥 ¡GOLPE CRÍTICO! " antepuesto a la línea de daño del jugador, o nada si no fue crítico.
-    private static string CritPrefix(bool critical) => critical ? "💥 ¡GOLPE CRÍTICO! " : string.Empty;
+    // "💥 ¡GOLPE CRÍTICO! " antepuesto a la línea de daño del jugador (o "¡N GOLPES CRÍTICOS!" si la
+    // Lluvia de Flechas acertó varios), o nada si no hubo crítico.
+    private static string CritPrefix(int critCount) => critCount switch
+    {
+        <= 0 => string.Empty,
+        1 => "💥 ¡GOLPE CRÍTICO! ",
+        _ => $"💥 ¡{critCount} GOLPES CRÍTICOS! ",
+    };
 
     // "🔮 Sifón de Almas te curó X HP." agregado al log si el Hechicero curó algo este turno.
     private static string LifestealSuffix(int healed) => healed > 0 ? $"\n🔮 Sifón de Almas te curó **{healed}** HP." : string.Empty;

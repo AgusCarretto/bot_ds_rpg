@@ -43,7 +43,7 @@ public partial class TextCommandModule
             }
 
             var session = await RaidModule.BuildSessionAsync(
-                userRepository, monsterRepository, zoneRepository, Context.User.Id, GameModule.GetDisplayName(Context.User));
+                userRepository, itemRepository, monsterRepository, zoneRepository, Context.User.Id, GameModule.GetDisplayName(Context.User));
 
             // Igual que StartCombatAsync más abajo: el reply target necesita el mensaje ya enviado
             // para poder editarlo después, así que primero se manda y recién ahí se registra.
@@ -120,7 +120,7 @@ public partial class TextCommandModule
             // armar el "reply target" (necesita el IUserMessage ya enviado para poder editarlo
             // después) — los botones que dispare esta pelea funcionan igual que los de /hunt,
             // porque un click de botón siempre llega como interacción sin importar el origen.
-            var message = await ReplyAsync(embed: AdventureModule.BuildEncounterEmbed(state), components: AdventureModule.BuildCombatButtons());
+            var message = await ReplyAsync(embed: AdventureModule.BuildEncounterEmbed(state), components: AdventureModule.BuildCombatButtons(state));
 
             if (!combatSessions.TryStart(Context.User.Id, state, new MessageCombatReplyTarget(message)))
             {

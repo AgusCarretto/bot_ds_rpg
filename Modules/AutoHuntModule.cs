@@ -87,42 +87,35 @@ public class AutoHuntModule(
         int totalDamageTaken = 0;
         int totalHealed = 0;
 
+        // Mismo resolver de turno que /hunt por botones y que el raid (GameData/CombatTurnResolver.cs),
+        // pero SIEMPRE con ataque básico: el autohunt NO usa la habilidad de clase, a propósito. Es
+        // para farmear bichos débiles estando AFK; si querés pelear fuerte tenés que jugar la pelea
+        // manual (curarte, usar la habilidad). Por eso el estado de habilidad queda siempre en default.
+        var profile = new CombatantProfile(state.PlayerDamage, state.PlayerDefense, state.PlayerClass, state.Passives);
+
         for (int round = 0; round < MaxRounds && playerHp > 0 && monsterHp > 0; round++)
         {
             roundsElapsed++;
 
-            var playerHitOutcome = CombatMath.ResolvePlayerHit(state.PlayerDamage, state.Passives.CritChanceBonus);
-            if (playerHitOutcome.Critical)
+            var turn = CombatTurnResolver.ResolveTurn(
+                profile, default, PlayerAction.Attack, playerHp, state.PlayerMaxHp, monsterHp, state.MonsterDamage);
+
+            critCount += turn.CritCount;
+            totalDamageDealt += turn.DamageDealt;
+            totalHealed += turn.LifestealHeal;
+            monsterHp = turn.MonsterHpAfter;
+            playerHp = turn.PlayerHpAfter;
+
+            // MonsterHit es null si el golpe mató al monstruo (no hay contraataque).
+            if (turn.MonsterHit is { } monsterHit)
             {
-                critCount++;
+                if (monsterHit.Dodged)
+                {
+                    dodgeCount++;
+                }
+
+                totalDamageTaken += monsterHit.Damage;
             }
-
-            totalDamageDealt += playerHitOutcome.Damage;
-            monsterHp = Math.Max(0, monsterHp - playerHitOutcome.Damage);
-
-            // Sifón de Almas (Hechicero): igual que en /hunt por turnos, procede al atacar (killing
-            // blow incluido) antes de que el monstruo, si sigue vivo, tenga la chance de contraatacar.
-            int lifestealHeal = CombatMath.RollLifesteal(playerHitOutcome.Damage, state.Passives.LifestealChance, state.Passives.LifestealRatio);
-            totalHealed += lifestealHeal;
-            playerHp = Math.Min(state.PlayerMaxHp, playerHp + lifestealHeal);
-
-            if (monsterHp <= 0)
-            {
-                break;
-            }
-
-            var monsterHitOutcome = CombatMath.ResolveMonsterHit(
-                state.MonsterDamage, state.PlayerDefense, state.Passives.DodgeChanceBonus, state.Passives.DamageTakenMultiplier);
-            if (monsterHitOutcome.Dodged)
-            {
-                dodgeCount++;
-            }
-            else
-            {
-                totalDamageTaken += monsterHitOutcome.Damage;
-            }
-
-            playerHp = Math.Max(0, playerHp - monsterHitOutcome.Damage);
         }
 
         var finalState = state with

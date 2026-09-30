@@ -20,10 +20,16 @@ public sealed class RaidParticipant
     public required int Damage { get; init; }
     public required int Defense { get; init; }
     public required int Level { get; init; }
+    public required string PlayerClass { get; init; } // qué habilidad activa le toca, ver GameData/ClassAbilities.cs
     public required ClassPassiveProfile Passives { get; init; }
     public required int MaxHp { get; init; } // ya escalado por Passives.MaxHpMultiplier, ver PlayerCombatProfileCalculator
     public required int StartingHp { get; init; } // HP de combate al unirse — nunca cambia, es la base del delta al persistir
     public int CurrentHp { get; set; }
+
+    // Estado de la habilidad de clase de ESTE participante (cada uno tiene el suyo, se actualiza
+    // bajo RaidSession.Lock junto con el resto) — ver GameData/CombatTurnResolver.cs.
+    public AbilityState Ability { get; set; }
+
     public bool HasFled { get; set; }
     public bool Contributed { get; set; } // pegó al menos un golpe — si el jefe cae, esto decide si cobra recompensa aunque ya lo hayan derribado antes
     public int TurnsTaken { get; set; }
@@ -50,7 +56,12 @@ public sealed class RaidSession
     public required Guid RaidId { get; init; }
     public required string BossName { get; init; }
     public required string BossEmoji { get; init; }
-    public required int BossMaxHp { get; init; }
+    // BossBaseHp: HP sorteado del jefe SIN escalar (tal cual está en la base). BossMaxHp es el HP real
+    // del raid, que depende de cuántos jugadores terminan entrando: se calcula de nuevo al arrancar
+    // (RaidModule.TryActivateAsync, con la lista ya definitiva) — por eso tiene setter. Mientras el
+    // lobby está abierto, BossMaxHp es el valor para 1 jugador y el embed del lobby no lo muestra.
+    public required int BossBaseHp { get; init; }
+    public required int BossMaxHp { get; set; }
     public required int BossDamage { get; init; }
     public required IReadOnlyList<string> BossDropItemNames { get; init; }
     public required int BossGoldBonus { get; init; }
@@ -102,8 +113,8 @@ public interface IRaidSessionService
 
     RaidSession? Peek(Guid raidId);
 
-    // Termina el raid: lo saca del índice principal y libera a TODOS sus participantes actuales
-    // (UnregisterParticipant de cada uno). Se llama al resolver (victoria/wipe/abandono/lobby
-    // cancelado).
+    // Termina el raid: lo saca del índice principal y libera a TODOS los jugadores registrados en
+    // él (según el índice jugador -> raid, no según session.Participants). Se llama al resolver
+    // (victoria/wipe/abandono/lobby cancelado).
     void Remove(Guid raidId);
 }

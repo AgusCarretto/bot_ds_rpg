@@ -27,17 +27,18 @@ public sealed class RaidSessionService : IRaidSessionService
         session.TimeoutCts?.Cancel();
         session.TimeoutCts?.Dispose();
 
-        // Copia de la lista: UnregisterParticipant no toca Participants, pero por las dudas no
-        // queremos enumerar sobre una colección que otro hilo pudiera estar tocando bajo el lock.
-        List<ulong> participantIds;
-        lock (session.Lock)
+        // Se libera por el ÍNDICE (jugador -> raid), no por session.Participants: si algún día un
+        // jugador queda registrado sin figurar en la lista (le pasaba a quien arrancaba el lobby),
+        // recorrer la lista lo dejaría "en un raid" para siempre — sin poder cazar ni viajar hasta
+        // reiniciar el bot. Remove(KeyValuePair) solo saca la entrada si TODAVÍA apunta a este raid,
+        // así que no pisa el registro de alguien que ya se metió en otro.
+        var index = (ICollection<KeyValuePair<ulong, Guid>>)_playerRaid;
+        foreach (var entry in _playerRaid)
         {
-            participantIds = session.Participants.Select(p => p.DiscordId).ToList();
-        }
-
-        foreach (ulong discordId in participantIds)
-        {
-            UnregisterParticipant(discordId);
+            if (entry.Value == raidId)
+            {
+                index.Remove(entry);
+            }
         }
     }
 }

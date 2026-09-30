@@ -71,6 +71,7 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
         int defense = CombatStats.TotalDefense(player.Level, amuletDefense);
 
         var classDef = ClassCatalog.All.FirstOrDefault(c => c.Name == player.Class);
+        var ability = ClassAbilities.For(player.Class);
         int requiredXp = LevelingCalculator.RequiredXpForLevel(player.Level);
 
         return new EmbedBuilder()
@@ -87,6 +88,12 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
             .AddField("📿 Amuleto", amulet is null ? "_Ninguno_" : $"{ItemDisplay.Format(amulet.Emoji, amulet.Name)} (+{amulet.StatValue})", true)
             .AddField("🎁 Racha diaria", player.DailyStreak > 0 ? $"Día {player.DailyStreak}" : "_Sin racha_", true)
             .AddField("🗺️ Zona actual", zone is null ? "_Desconocida_" : $"{zone.Emoji} Zona {zone.ZoneId}: {zone.Name}", true)
+            .AddField(
+                "✨ Habilidad",
+                ability is null
+                    ? "_Ninguna_"
+                    : $"{ability.Emoji} **{ability.Name}** (enfriamiento: {ability.CooldownTurns} turnos)\n{ability.Description}",
+                false)
             .WithFooter("Asado y Acero RPG • Preparando las brasas...")
             .WithCurrentTimestamp()
             .Build();

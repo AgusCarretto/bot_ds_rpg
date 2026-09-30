@@ -105,8 +105,15 @@ public class UseModule(
         }
 
         int healedHp = Math.Min(state.PlayerMaxHp, state.PlayerCurrentHp + item.StatValue);
-        var monsterHitOutcome = CombatMath.ResolveMonsterHit(
-            state.MonsterDamage, state.PlayerDefense, state.Passives.DodgeChanceBonus, state.Passives.DamageTakenMultiplier);
+
+        // Curarse cede el turno: el monstruo contraataca igual, con los efectos de habilidad que
+        // haya activos (Aguante / Sombra) aplicados, y el turno cuenta para el enfriamiento (ver
+        // GameData/CombatTurnResolver.ResolveCounterTurn).
+        var counter = CombatTurnResolver.ResolveCounterTurn(
+            new CombatantProfile(state.PlayerDamage, state.PlayerDefense, state.PlayerClass, state.Passives),
+            state.Ability,
+            state.MonsterDamage);
+        var monsterHitOutcome = counter.Hit;
         int monsterHit = monsterHitOutcome.Damage;
         int playerHpAfter = Math.Max(0, healedHp - monsterHit);
         int turnsElapsed = state.TurnsElapsed + 1;
@@ -145,6 +152,7 @@ public class UseModule(
             TurnsElapsed = turnsElapsed,
             DodgeCount = dodgeCount,
             TotalDamageTaken = totalDamageTaken,
+            Ability = counter.Status,
         };
 
         if (!combatSessions.TryAdvance(discordId, session, nextState, session.ReplyTarget))
@@ -152,7 +160,7 @@ public class UseModule(
             return new UseResult("Justo se resolvió tu combate por otra vía, revisá el mensaje.", null);
         }
 
-        await session.ReplyTarget.UpdateAsync(BuildCombatOngoingEmbed(nextState, item, monsterHit, monsterHitOutcome.Dodged), AdventureModule.BuildCombatButtons());
+        await session.ReplyTarget.UpdateAsync(BuildCombatOngoingEmbed(nextState, item, monsterHit, monsterHitOutcome.Dodged), AdventureModule.BuildCombatButtons(nextState));
 
         string resultDescription = monsterHitOutcome.Dodged
             ? $"Usaste **{ItemDisplay.Format(item.Emoji, item.Name)}** y recuperaste HP. El **{state.MonsterName}** {state.MonsterEmoji} intentó golpearte, ¡pero esquivaste el ataque! 💨"

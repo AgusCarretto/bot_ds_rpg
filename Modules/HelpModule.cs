@@ -46,7 +46,12 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             .WithDescription("El loop básico del juego, en 4 pasos:")
             .AddField("🪓 Recolección", "Usá `/chop` o `/mine` para conseguir recursos básicos.", false)
             .AddField("⚒️ Herrería", "Usá `/forge` para ver recetas y crear armas más fuertes.", false)
-            .AddField("⚔️ Combate", "Usá `/hunt` (manual) o `aa ah` (automático) para ganar Oro, XP y drops de monstruos.", false)
+            .AddField(
+                "⚔️ Combate",
+                "Usá `/hunt` (manual) o `aa ah` (automático) para ganar Oro, XP y drops de monstruos. " +
+                "En la pelea manual cada clase tiene una habilidad especial (botón verde, ver `/profile`); " +
+                "el modo automático solo ataca normal.",
+                false)
             .AddField(
                 "🥩 Supervivencia",
                 "Usá `/shop` para comprar comida y `/heal` para curarte (¡cuidado, curarte en combate le da un turno extra al enemigo!).",
