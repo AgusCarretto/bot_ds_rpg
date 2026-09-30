@@ -21,6 +21,22 @@ public partial class TextCommandModule
         }
     }
 
+    // "aa drops" — misma lógica que DropsModule.HandleDropsAsync.
+    [Command("drops")]
+    [Summary("Mirá qué suelta cada monstruo de cada zona (cazar, viajar y jefe) y con qué chance.")]
+    public async Task DropsAsync()
+    {
+        try
+        {
+            var embed = await DropsModule.BuildDropsEmbedAsync(userRepository, zoneRepository, monsterRepository, itemRepository, Context.User.Id);
+            await ReplyAsync(embed: embed);
+        }
+        catch (Exception)
+        {
+            await ReplyAsync("No pude consultar los drops ahora mismo, intentá de nuevo en un momento.");
+        }
+    }
+
     // "aa zonas" — misma lógica que ZoneModule.HandleZonasAsync.
     [Command("zonas")]
     [Summary("Mostrá todas las zonas del mundo y sus niveles requeridos.")]

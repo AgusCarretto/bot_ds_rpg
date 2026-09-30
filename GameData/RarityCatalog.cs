@@ -5,15 +5,6 @@ namespace BotDsRpg.GameData;
 // Mítico en /chop y /mine sin usar decimales en el roll.
 public static class RarityCatalog
 {
-    private static readonly (string Rarity, int Weight)[] TravelWeights =
-    [
-        ("Común", 550),
-        ("Raro", 250),
-        ("Épico", 120),
-        ("Legendario", 60),
-        ("Mítico", 20),
-    ];
-
     private static readonly (string Rarity, int Weight)[] GatheringWeights =
     [
         ("Común", 600),
@@ -27,9 +18,6 @@ public static class RarityCatalog
 
     // Orden de menor a mayor rareza, para listados (ej. /inventory). -1 si la rareza no se reconoce.
     public static int RankOf(string rarity) => Array.IndexOf(Order, rarity);
-
-    // Usado por /travel para el drop ocasional de materiales al ganar un combate.
-    public static string RollTravelRarity() => Roll(TravelWeights);
 
     // Usado por /chop y /mine: Común 60% / Raro 25% / Épico 10% / Legendario 4.5% / Mítico 0.5%.
     public static string RollGatheringRarity() => Roll(GatheringWeights);

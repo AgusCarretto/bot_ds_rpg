@@ -14,9 +14,19 @@ public sealed class AdventureCombatStarter(
     ICombatSessionService combatSessions,
     IRaidSessionService raidSessions) : IAdventureCombatStarter
 {
-    public Task<CombatStartOutcome> PrepareAsync(
-        ulong discordId, CooldownDefinition definition, IReadOnlyList<MonsterTemplate> monsterPool, CancellationToken cancellationToken = default) =>
-        PrepareInternalAsync(discordId, definition, _ => Task.FromResult(monsterPool), CombatStartStatus.NoMonstersInZone, isBossFight: false, extraGate: null, cancellationToken);
+    public Task<CombatStartOutcome> PrepareTravelAsync(ulong discordId, CancellationToken cancellationToken = default) =>
+        PrepareInternalAsync(
+            discordId,
+            CooldownCatalog.Travel,
+            async player =>
+            {
+                var travelMonster = await monsterRepository.GetTravelMonsterByZoneAsync(player.CurrentZoneId, cancellationToken);
+                return travelMonster is null ? [] : new[] { travelMonster };
+            },
+            CombatStartStatus.NoMonstersInZone,
+            isBossFight: false,
+            extraGate: null,
+            cancellationToken);
 
     public Task<CombatStartOutcome> PrepareHuntAsync(ulong discordId, CancellationToken cancellationToken = default) =>
         PrepareInternalAsync(

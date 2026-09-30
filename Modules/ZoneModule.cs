@@ -6,9 +6,9 @@ using Discord.Interactions;
 
 // Sistema de Zonas: /zona cambia la zona actual del jugador (valida min_level y, desde el Sistema
 // de Jefes de Zona, que ya hayas derrotado al jefe de la zona anterior), /zonas lista todas las
-// zonas disponibles con su nivel requerido. A partir de acá, /hunt caza exclusivamente monstruos de
-// la zona actual (ver Services/AdventureCombatStarter.cs) — /travel no se ve afectado a propósito,
-// sigue con su propio pool fijo (ver GameData/MonsterCatalog.TravelMonsters).
+// zonas disponibles con su nivel requerido. A partir de acá, /hunt, /travel y /boss enfrentan
+// exclusivamente monstruos de la zona actual (ver Services/AdventureCombatStarter.cs): un pool para
+// /hunt, un monstruo dedicado para /travel (Database/seed_travel_monsters.sql) y el jefe para /boss.
 public class ZoneModule(IUserRepository userRepository, IZoneRepository zoneRepository, IMonsterRepository monsterRepository)
     : InteractionModuleBase<SocketInteractionContext>
 {

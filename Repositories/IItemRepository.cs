@@ -5,8 +5,8 @@ namespace BotDsRpg.Repositories;
 public interface IItemRepository
 {
     // Elige al azar un ítem del catálogo de un tipo y rareza dados (ej. "Madera" para /chop,
-    // "Mineral" para /mine, "Material" para el drop de rareza sorteada de /travel — ver
-    // Modules/AdventureModule.ResolveDroppedItemAsync). Devuelve null si todavía no hay ítems
+    // "Mineral" para /mine — ver Modules/GatheringModule.cs; los drops de monstruos NO pasan por
+    // acá, salen de la lista de cada monstruo). Devuelve null si todavía no hay ítems
     // cargados para esa combinación tipo+rareza.
     Task<Item?> GetRandomByTypeAndRarityAsync(string type, string rarity, CancellationToken cancellationToken = default);
 

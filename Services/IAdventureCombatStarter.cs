@@ -15,8 +15,11 @@ public sealed record CombatStartOutcome(CombatStartStatus Status, TimeSpan? Cool
 // de esto — cada uno solo se encarga de cómo enviar la respuesta.
 public interface IAdventureCombatStarter
 {
-    // /travel: pool fijo (GameData/MonsterCatalog.TravelMonsters), no depende de zona.
-    Task<CombatStartOutcome> PrepareAsync(ulong discordId, CooldownDefinition definition, IReadOnlyList<MonsterTemplate> monsterPool, CancellationToken cancellationToken = default);
+    // /travel: enfrenta ESPECÍFICAMENTE al monstruo dedicado de la zona actual del jugador (uno por
+    // zona, separado del pool de /hunt — ver IMonsterRepository.GetTravelMonsterByZoneAsync), que
+    // suelta uno de SUS drops y paga la recompensa de /hunt x10 (CombatRewardCalculator.RollTravelReward).
+    // CombatStartStatus.NoMonstersInZone si esa zona todavía no tiene uno cargado.
+    Task<CombatStartOutcome> PrepareTravelAsync(ulong discordId, CancellationToken cancellationToken = default);
 
     // /hunt: el pool depende de la zona ACTUAL del jugador (users.current_zone_id), así que se
     // resuelve internamente después de conocerlo — ver Repositories/IMonsterRepository.cs.

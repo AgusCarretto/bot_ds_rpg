@@ -16,8 +16,8 @@ public partial class TextCommandModule
     // "aa travel" / "aa t" — misma lógica que AdventureModule.HandleTravelAsync.
     [Command("travel")]
     [Alias("t")]
-    [Summary("Emprendé un viaje de exploración: más difícil, mejores recompensas (cooldown de 10 minutos).")]
-    public Task TravelAsync() => StartCombatAsync(CooldownCatalog.Travel, () => combatStarter.PrepareAsync(Context.User.Id, CooldownCatalog.Travel, MonsterCatalog.TravelMonsters));
+    [Summary("Enfrentá al monstruo élite de tu zona: más difícil, recompensa x10 (cooldown de 10 minutos).")]
+    public Task TravelAsync() => StartCombatAsync(CooldownCatalog.Travel, () => combatStarter.PrepareTravelAsync(Context.User.Id));
 
     // "aa boss" — misma lógica que AdventureModule.HandleBossAsync.
     [Command("boss")]

@@ -1,40 +1,54 @@
 namespace BotDsRpg.GameData;
 
 // DroppedSomething: si hay que entregar algún material al ganar — QUÉ ítem exactamente se
-// resuelve aparte (ver Modules/AdventureModule.ResolveDroppedItemAsync), porque depende de si es
-// /hunt (drop fijo del monstruo, ver MonsterCatalog) o /travel (rareza sorteada).
+// resuelve aparte (ver Modules/AdventureModule.ResolveDroppedItemAsync): el ÚNICO drop del monstruo
+// que se enfrentó (ver MonsterCatalog y Database/finalize_monster_roster.sql).
 public sealed record CombatReward(int Gold, int Xp, bool DroppedSomething);
 
 // Recompensa al ganar un combate (mismos rangos que tenía el viejo CombatService de
 // resolución instantánea, ahora aplicados una sola vez al derrotar al monstruo).
 public static class CombatRewardCalculator
 {
+    // CHANCE DE DROP de cada tipo de pelea (% de ganar y llevarse el material del monstruo). Son los valores de la
+    // run 1: están bajos A PROPÓSITO porque si no avanzar es demasiado fácil, y el reset que se desbloquea al
+    // terminar la Zona 5 los va a ir subiendo. Las cantidades de las recetas (Database/seed_recipes.sql,
+    // seed_zoneN_gear_and_recipes.sql) están calibradas contra ESTOS números: si se tocan acá, hay que recalcular
+    // los minutos de farmeo de cada receta (ver MEJORAS.md). Los muestra /drops, así que no se desincronizan.
+    public const int HuntDropChancePercent = 10;
+    public const int TravelDropChancePercent = 20;
+    // El jefe (solitario y de raid) antes usaba la misma fórmula que /hunt y, con UN solo drop por monstruo, cada
+    // ítem del jefe salía el doble de seguido que antes; 15% mantiene el ritmo de siempre (~200 min por unidad).
+    public const int BossDropChancePercent = 15;
+
     // monsterGoldBonus/monsterXpBonus: bonus fijo del monstruo (ver GameData/MonsterCatalog.cs y
     // Repositories/IMonsterRepository.cs) que se SUMA a la fórmula de siempre, no la reemplaza —
     // así un monstruo de Zona 1 con bonus 0/0 da exactamente lo mismo que antes de que existieran
     // las Zonas, y solo las zonas más difíciles (Bosque de Cenizas en adelante) suben la recompensa.
-    public static CombatReward RollHuntReward(int playerLevel, int monsterGoldBonus = 0, int monsterXpBonus = 0)
+    public static CombatReward RollHuntReward(int playerLevel, int monsterGoldBonus = 0, int monsterXpBonus = 0) =>
+        Roll(playerLevel, monsterGoldBonus, monsterXpBonus, multiplier: 1, HuntDropChancePercent);
+
+    // Jefe de zona (/boss y /raid): la misma fórmula de oro/XP que /hunt, con su propia chance de drop.
+    public static CombatReward RollBossReward(int playerLevel, int monsterGoldBonus = 0, int monsterXpBonus = 0) =>
+        Roll(playerLevel, monsterGoldBonus, monsterXpBonus, multiplier: 1, BossDropChancePercent);
+
+    // /travel tiene 10 minutos de cooldown (10 veces el de /hunt) y enfrenta a un monstruo élite (HP
+    // x1.25 / daño x1.1 de los comunes de la zona, ver Database/seed_travel_monsters.sql): la
+    // recompensa tiene que hacerlo valer. Antes era un monto fijo que NO seguía a la zona (~150 oro /
+    // ~155 XP a nivel 5), así que en Zona 4-5 rendía mucho menos que UNA cacería común (~217 / ~168 y
+    // ~377 / ~285) y nadie lo usaba. Ahora es la fórmula entera de /hunt (nivel + bonus del monstruo)
+    // x10 — lo que diez cacerías darían en ese cooldown — así que escala con la zona igual que ellas.
+    // En Zona 1 (bonus 0/0) queda casi igual que antes (~120 oro / ~150 XP a nivel 1).
+    public const int TravelRewardMultiplier = 10;
+
+    public static CombatReward RollTravelReward(int playerLevel, int monsterGoldBonus = 0, int monsterXpBonus = 0) =>
+        Roll(playerLevel, monsterGoldBonus, monsterXpBonus, TravelRewardMultiplier, TravelDropChancePercent);
+
+    private static CombatReward Roll(int playerLevel, int monsterGoldBonus, int monsterXpBonus, int multiplier, int dropChancePercent)
     {
-        int gold = Random.Shared.Next(5, 16) + (playerLevel * 2) + monsterGoldBonus;
-        int xp = Random.Shared.Next(8, 21) + playerLevel + monsterXpBonus;
+        int gold = (Random.Shared.Next(5, 16) + (playerLevel * 2) + monsterGoldBonus) * multiplier;
+        int xp = (Random.Shared.Next(8, 21) + playerLevel + monsterXpBonus) * multiplier;
 
-        // 30% de probabilidad de dropear un material del monstruo al ganar.
-        bool droppedSomething = Random.Shared.Next(100) < 30;
-
-        return new CombatReward(gold, xp, droppedSomething);
-    }
-
-    // /travel tiene 10 minutos de cooldown (10 veces el de /hunt) y sus monstruos son más duros que
-    // los de zona 1: la recompensa tiene que hacerlo valer. Con los valores anteriores (30-60 oro /
-    // 30-55 XP) rendía MENOS XP por minuto que farmear /hunt, así que nadie lo usaba salvo por el
-    // drop. Ahora paga ~2.5x en oro y ~3x en XP (a nivel 5: ~150 oro / ~155 XP contra ~65 / ~52).
-    public static CombatReward RollTravelReward(int playerLevel)
-    {
-        int gold = Random.Shared.Next(90, 151) + (playerLevel * 6);
-        int xp = Random.Shared.Next(100, 151) + (playerLevel * 6);
-
-        // 50% de probabilidad de dropear un material al ganar.
-        bool droppedSomething = Random.Shared.Next(100) < 50;
+        bool droppedSomething = Random.Shared.Next(100) < dropChancePercent;
 
         return new CombatReward(gold, xp, droppedSomething);
     }

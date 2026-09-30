@@ -16,9 +16,9 @@ public class AdventureModule(
     public Task HandleHuntAsync() =>
         StartCombatAsync(CooldownCatalog.Hunt, () => combatStarter.PrepareHuntAsync(Context.User.Id));
 
-    [SlashCommand("travel", "Emprendé un viaje de exploración: más difícil, mejores recompensas (cooldown de 10 minutos).")]
+    [SlashCommand("travel", "Enfrentá al monstruo élite de tu zona: más difícil, recompensa x10 (cooldown de 10 minutos).")]
     public Task HandleTravelAsync() =>
-        StartCombatAsync(CooldownCatalog.Travel, () => combatStarter.PrepareAsync(Context.User.Id, CooldownCatalog.Travel, MonsterCatalog.TravelMonsters));
+        StartCombatAsync(CooldownCatalog.Travel, () => combatStarter.PrepareTravelAsync(Context.User.Id));
 
     [SlashCommand("boss", "Enfrentá al Jefe de tu zona actual: derrotarlo te deja avanzar de zona (cooldown de 30 minutos).")]
     public Task HandleBossAsync() =>
@@ -33,8 +33,9 @@ public class AdventureModule(
         try
         {
             // Toda la lógica de negocio vive en IAdventureCombatStarter: la comparte "aa hunt"
-            // (Modules/TextCommandModule.cs) sin duplicar nada. /hunt resuelve su propio pool según
-            // la zona actual del jugador (PrepareHuntAsync); /travel sigue con un pool fijo.
+            // (Modules/TextCommandModule.cs) sin duplicar nada. Cada comando resuelve su monstruo según
+            // la zona actual del jugador: /hunt un pool (PrepareHuntAsync), /travel su monstruo
+            // dedicado (PrepareTravelAsync), /boss el jefe (PrepareBossAsync).
             var outcome = await prepare();
 
             switch (outcome.Status)
@@ -158,9 +159,15 @@ public class AdventureModule(
 
             if (turn.MonsterDefeated)
             {
-                var reward = state.CommandName is "hunt" or "boss"
-                    ? CombatRewardCalculator.RollHuntReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus)
-                    : CombatRewardCalculator.RollTravelReward(state.PlayerLevel);
+                // Las tres recompensas salen de la MISMA fórmula (nivel + bonus del monstruo); /travel la
+                // multiplica y cada tipo de pelea tiene su chance de drop (ver GameData/CombatRewardCalculator.cs),
+                // así sube junto con la zona.
+                var reward = state.CommandName switch
+                {
+                    "travel" => CombatRewardCalculator.RollTravelReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus),
+                    "boss" => CombatRewardCalculator.RollBossReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus),
+                    _ => CombatRewardCalculator.RollHuntReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus),
+                };
 
                 Item? droppedItem = await ResolveDroppedItemAsync(itemRepository, state, reward);
 
@@ -269,29 +276,18 @@ public class AdventureModule(
         }
     }
 
-    // Público para que AutoHuntModule resuelva el drop exactamente igual. /hunt: drop fijo del
-    // monstruo (nunca madera/piedra/otro tipo, ver GameData/MonsterCatalog.cs). /travel: todavía
-    // por rareza sorteada, pero acotado a type = 'Material' (nunca el catálogo entero) para que
-    // tampoco pueda entregar un arma, amuleto o botín de recolección por error.
+    // Público para que AutoHuntModule resuelva el drop exactamente igual. Hunt, travel y jefe por
+    // igual: un ítem al azar de la lista de ESTE monstruo (nunca madera/piedra/otro tipo, ver
+    // GameData/MonsterCatalog.cs) — lo que cambia entre comandos es la chance (RollXReward), no de dónde sale.
     public static async Task<Item?> ResolveDroppedItemAsync(IItemRepository itemRepository, CombatState state, CombatReward reward)
     {
-        if (!reward.DroppedSomething)
+        if (!reward.DroppedSomething || state.MonsterDropItemNames.Count == 0)
         {
             return null;
         }
 
-        if (state.CommandName is "hunt" or "boss")
-        {
-            if (state.MonsterDropItemNames.Count == 0)
-            {
-                return null;
-            }
-
-            string dropName = state.MonsterDropItemNames[Random.Shared.Next(state.MonsterDropItemNames.Count)];
-            return await itemRepository.GetByNameAsync(dropName);
-        }
-
-        return await itemRepository.GetRandomByTypeAndRarityAsync("Material", RarityCatalog.RollTravelRarity());
+        string dropName = state.MonsterDropItemNames[Random.Shared.Next(state.MonsterDropItemNames.Count)];
+        return await itemRepository.GetByNameAsync(dropName);
     }
 
     // Todo lo que sigue es de solo presentación (sin dependencias de Context): público para que

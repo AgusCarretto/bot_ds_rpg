@@ -11,12 +11,11 @@ public sealed record CombatState(
     int MonsterMaxHp,
     int MonsterCurrentHp,
     int MonsterDamage,
-    // Nombres exactos (tabla items) de lo que este monstruo puede soltar al ganar — vacío para
-    // /travel, que todavía resuelve su drop por rareza sorteada. Ver GameData/MonsterCatalog.cs y
-    // Modules/AdventureModule.ResolveDroppedItemAsync.
+    // Nombres exactos (tabla items) de lo que este monstruo puede soltar al ganar (hunt, travel y
+    // jefe por igual). Ver GameData/MonsterCatalog.cs y Modules/AdventureModule.ResolveDroppedItemAsync.
     IReadOnlyList<string> MonsterDropItemNames,
-    // Bonus fijo de oro/XP que este monstruo suma a la recompensa de /hunt (0 para /travel, que
-    // sigue sin zona) — ver GameData/CombatRewardCalculator.RollHuntReward.
+    // Bonus fijo de oro/XP que este monstruo suma a la recompensa base — ver
+    // GameData/CombatRewardCalculator (RollHuntReward, y RollTravelReward que lo multiplica).
     int MonsterGoldBonus,
     int MonsterXpBonus,
     // Solo para CommandName == "boss": la zona de la que este jefe es guardián, capturada al

@@ -677,7 +677,7 @@ public class RaidModule(
         // transacción, tanto su HP final como el oro/XP/drop y el highest_zone_cleared.
         foreach (var participant in session.Participants.Where(p => p.Contributed && !p.HasFled))
         {
-            var reward = CombatRewardCalculator.RollHuntReward(participant.Level, session.BossGoldBonus, session.BossXpBonus);
+            var reward = CombatRewardCalculator.RollBossReward(participant.Level, session.BossGoldBonus, session.BossXpBonus);
 
             Item? drop = null;
             if (reward.DroppedSomething && session.BossDropItemNames.Count > 0)
