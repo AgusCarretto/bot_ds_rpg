@@ -39,8 +39,11 @@ public partial class TextCommandModule
                 return;
             }
 
+            // Cuántas unidades salen depende de la rareza: lo común a montones, lo mejor de a una (GatheringYield).
+            int quantity = GatheringYield.Roll(item.Rarity);
+
             bool applied = await gatheringRepository.ApplyGatheringRewardAsync(
-                Context.User.Id, definition.CommandName, definition.Duration, item.ItemId, quantity: 1);
+                Context.User.Id, definition.CommandName, definition.Duration, item.ItemId, quantity);
 
             if (!applied)
             {
@@ -48,7 +51,7 @@ public partial class TextCommandModule
                 return;
             }
 
-            await ReplyAsync(embed: GatheringModule.BuildResultEmbed(definition, item));
+            await ReplyAsync(embed: GatheringModule.BuildResultEmbed(definition, item, quantity));
         }
         catch (Exception)
         {

@@ -120,7 +120,9 @@ public partial class TextCommandModule
             // armar el "reply target" (necesita el IUserMessage ya enviado para poder editarlo
             // después) — los botones que dispare esta pelea funcionan igual que los de /hunt,
             // porque un click de botón siempre llega como interacción sin importar el origen.
-            var message = await ReplyAsync(embed: AdventureModule.BuildEncounterEmbed(state), components: AdventureModule.BuildCombatButtons(state));
+            var message = await ReplyAsync(
+                embed: AdventureModule.BuildEncounterEmbed(state),
+                components: AdventureModule.BuildCombatButtons(state, await AdventureModule.LoadHealOptionsAsync(inventoryRepository, Context.User.Id, state)));
 
             if (!combatSessions.TryStart(Context.User.Id, state, new MessageCombatReplyTarget(message)))
             {

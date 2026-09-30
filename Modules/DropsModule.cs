@@ -18,8 +18,8 @@ public class DropsModule(
 
         try
         {
-            var embed = await BuildDropsEmbedAsync(userRepository, zoneRepository, monsterRepository, itemRepository, Context.User.Id);
-            await FollowupAsync(embed: embed);
+            var message = await BuildDropsMessageAsync(userRepository, zoneRepository, monsterRepository, itemRepository, Context.User.Id);
+            await FollowupAsync(message.Text, embeds: message.Embeds);
         }
         catch (Exception)
         {
@@ -27,9 +27,16 @@ public class DropsModule(
         }
     }
 
+    // Un texto de cabecera + UN embed por zona (con su color, su título y un field por tipo de pelea) en vez de un
+    // solo embed con un bloque enorme por zona: cada zona se lee como una tarjeta aparte. Todos los embeds de un
+    // mensaje cuentan juntos para el límite de 6000 caracteres (son ~2500 con las 5 zonas).
+    public sealed record DropsMessage(string Text, Embed[] Embeds);
+
+    private static readonly Color[] ZoneColors = [Color.Green, Color.Orange, Color.Blue, Color.Red, Color.Purple];
+
     // Estático (sin Context) y público por el mismo motivo que ZoneModule.BuildZoneListEmbedAsync: lo reusa "aa drops".
     // GetByDiscordIdAsync y no GetOrCreateUserAsync: mirar esta lista no tiene que crear una cuenta.
-    public static async Task<Embed> BuildDropsEmbedAsync(
+    public static async Task<DropsMessage> BuildDropsMessageAsync(
         IUserRepository userRepository,
         IZoneRepository zoneRepository,
         IMonsterRepository monsterRepository,
@@ -42,20 +49,37 @@ public class DropsModule(
         var materials = (await itemRepository.GetAllByTypeAsync("Material"))
             .ToDictionary(item => item.Name, item => new DropItemInfo(item.Name, item.Rarity, item.Emoji));
 
-        var embed = new EmbedBuilder()
-            .WithTitle("🎁 Qué suelta cada monstruo")
-            .WithColor(Color.Gold)
-            .WithDescription(
-                "Cada monstruo suelta **un solo** material, y solo si ganás la pelea (con la chance de abajo). " +
-                "`/hunt` elige al azar entre los de **Cazar**; **Viajar** y **Jefe** son siempre el mismo.");
-
-        foreach (var zone in zones)
+        var embeds = new List<Embed>();
+        for (int i = 0; i < zones.Count; i++)
         {
-            string here = player is not null && zone.ZoneId == player.CurrentZoneId ? " 📍" : string.Empty;
-            string text = DropsCatalog.BuildZoneText(monsters.Where(m => m.ZoneId == zone.ZoneId), materials);
-            embed.AddField($"{zone.Emoji} Zona {zone.ZoneId}: {zone.Name}{here}", text, false);
+            var zone = zones[i];
+            string here = player is not null && zone.ZoneId == player.CurrentZoneId ? "  📍 _acá estás_" : string.Empty;
+
+            var embed = new EmbedBuilder()
+                .WithTitle($"{zone.Emoji} Zona {zone.ZoneId} · {zone.Name}")
+                .WithColor(ZoneColors[i % ZoneColors.Length]);
+
+            if (here.Length > 0)
+            {
+                embed.WithDescription(here.Trim());
+            }
+
+            var blocks = DropsCatalog.BuildZoneBlocks(monsters.Where(m => m.ZoneId == zone.ZoneId), materials);
+            if (blocks.Count == 0)
+            {
+                embed.AddField("Sin monstruos", "_Todavía no hay monstruos cargados en esta zona._", false);
+            }
+
+            foreach (var block in blocks)
+            {
+                embed.AddField(block.Title, block.Text, false);
+            }
+
+            embeds.Add(embed.Build());
         }
 
-        return embed.Build();
+        return new DropsMessage(
+            "🎁 **Qué suelta cada monstruo** — uno solo por monstruo, y solo si ganás la pelea (la chance va en cada bloque).",
+            embeds.ToArray());
     }
 }

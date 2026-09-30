@@ -45,7 +45,10 @@ public sealed record CombatState(
     int TotalHealed = 0,
     // Enfriamiento y efecto activo de la habilidad de clase (default == lista para usar, sin efectos).
     // Lo actualiza GameData/CombatTurnResolver.cs en cada turno.
-    AbilityState Ability = default)
+    AbilityState Ability = default,
+    // Ya se curó con el desplegable (o con /use) en esta pelea. Solo importa en /travel y /boss, donde se puede
+    // UNA vez por pelea (ver GameData/CombatHeal.cs).
+    bool HealUsed = false)
 {
     // Convierte un delta de HP en unidades de COMBATE (ya escaladas por Passives.MaxHpMultiplier)
     // a unidades reales de base de datos, para pasarlo a IUserRepository.ApplyCombatHpDeltaAsync /

@@ -76,7 +76,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 false)
             .AddField(
                 "📈 Progresión",
-                "`/forge` — Fabricar equipo\n`/equip` — Equipar arma/amuleto\n`/heal` — Curarte con un consumible del inventario (no en combate)\n`/use` — Curarte con un consumible (sí en combate)\n`/leaderboard` — Ranking del server",
+                "`/forge` — Fabricar equipo\n`/equip` — Equipar arma/amuleto\n`/heal` — Curarte con un consumible del inventario (no en combate)\n`/use` — Curarte con un consumible (en combate: en `/travel` y `/boss` una sola vez por pelea, también desde el desplegable)\n`/leaderboard` — Ranking del server",
                 false)
             .AddField(
                 "🛠️ Utilidad",

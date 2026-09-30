@@ -9,6 +9,7 @@ public class AdventureModule(
     IAdventureRepository adventureRepository,
     IUserRepository userRepository,
     IItemRepository itemRepository,
+    IInventoryRepository inventoryRepository,
     ICombatSessionService combatSessions,
     IAdventureCombatStarter combatStarter) : InteractionModuleBase<SocketInteractionContext>
 {
@@ -71,12 +72,59 @@ public class AdventureModule(
                 return;
             }
 
-            await FollowupAsync(embed: BuildEncounterEmbed(state), components: BuildCombatButtons(state));
+            await FollowupAsync(
+                embed: BuildEncounterEmbed(state),
+                components: BuildCombatButtons(state, await LoadHealOptionsAsync(inventoryRepository, Context.User.Id, state)));
         }
         catch (Exception)
         {
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
             await FollowupAsync("¡Upa! Algo falló iniciando tu aventura, intentá de nuevo en un momento.", ephemeral: true);
+        }
+    }
+
+    // Desplegable "Curar" (solo /travel y /boss, una vez por pelea — ver GameData/CombatHeal.cs). Elegir una comida
+    // pasa por EXACTAMENTE la misma lógica que /use en combate (UseModule.ExecuteUseAsync: gasta la comida, cura y le
+    // cede el turno al monstruo), que además ya actualiza el mensaje del combate; acá solo se avisan los rechazos.
+    [ComponentInteraction(CombatHeal.MenuCustomId)]
+    public async Task HandleHealAsync(string[] selected)
+    {
+        await DeferAsync();
+
+        try
+        {
+            var session = combatSessions.Peek(Context.User.Id);
+            if (session is null)
+            {
+                // Sin esta guarda, UseModule trataría el click como "curarse fuera de combate" y gastaría la comida
+                // con un mensaje viejo.
+                await FollowupAsync("No tenés ningún combate activo.", ephemeral: true);
+                return;
+            }
+
+            if (!CombatHeal.IsLimited(session.State.CommandName))
+            {
+                await FollowupAsync("Curarte con el desplegable solo se puede en /travel y /boss.", ephemeral: true);
+                return;
+            }
+
+            if (selected.Length == 0 || selected[0] == "none")
+            {
+                await FollowupAsync("No elegiste ninguna comida.", ephemeral: true);
+                return;
+            }
+
+            var result = await UseModule.ExecuteUseAsync(
+                userRepository, itemRepository, inventoryRepository, combatSessions, Context.User.Id, selected[0]);
+
+            if (result.PlainMessage is not null)
+            {
+                await FollowupAsync(result.PlainMessage, ephemeral: true);
+            }
+        }
+        catch (Exception)
+        {
+            await FollowupAsync("¡Upa! No pude usar esa comida, intentá de nuevo en un momento.", ephemeral: true);
         }
     }
 
@@ -263,10 +311,12 @@ public class AdventureModule(
                 return;
             }
 
+            // La comida se vuelve a leer en cada turno: lo que comprás o vendés a mitad de pelea se refleja.
+            var healOptions = await LoadHealOptionsAsync(inventoryRepository, Context.User.Id, nextState);
             await ModifyOriginalResponseAsync(props =>
             {
                 props.Embed = BuildOngoingEmbed(nextState, turn);
-                props.Components = BuildCombatButtons(nextState);
+                props.Components = BuildCombatButtons(nextState, healOptions);
             });
         }
         catch (Exception)
@@ -298,7 +348,9 @@ public class AdventureModule(
     // Atacar / [habilidad de clase] / Huir. El botón de habilidad lleva el nombre de la habilidad de
     // la clase del jugador y, mientras está en enfriamiento, los turnos que faltan y queda
     // deshabilitado. Una clase sin habilidad (no debería pasar) simplemente no lo muestra.
-    public static MessageComponent BuildCombatButtons(CombatState state)
+    // En /travel y /boss suma abajo el desplegable "Curar" con la comida que tenés (healOptions, ver
+    // LoadHealOptionsAsync): una curación por pelea, y una vez usada queda deshabilitado con el motivo.
+    public static MessageComponent BuildCombatButtons(CombatState state, IReadOnlyList<HealOption>? healOptions = null)
     {
         var builder = new ComponentBuilder()
             .WithButton("Atacar", "btn_attack", ButtonStyle.Primary, new Emoji("⚔️"));
@@ -311,9 +363,55 @@ public class AdventureModule(
             builder.WithButton(label, "btn_ability", ButtonStyle.Success, new Emoji(ability.Emoji), disabled: cooldown > 0);
         }
 
-        return builder
-            .WithButton("Huir", "btn_flee", ButtonStyle.Danger, new Emoji("🏃"))
-            .Build();
+        builder.WithButton("Huir", "btn_flee", ButtonStyle.Danger, new Emoji("🏃"));
+
+        if (CombatHeal.IsLimited(state.CommandName))
+        {
+            builder.WithSelectMenu(BuildHealMenu(state, healOptions), row: 1);
+        }
+
+        return builder.Build();
+    }
+
+    // La comida del jugador para el desplegable, o null si esta pelea no lo tiene o ya se curó (no hace falta leer
+    // el inventario). Público y estático para que "aa travel" / "aa boss" arme los mismos componentes.
+    public static async Task<IReadOnlyList<HealOption>?> LoadHealOptionsAsync(
+        IInventoryRepository inventoryRepository, ulong discordId, CombatState state)
+    {
+        if (!CombatHeal.IsLimited(state.CommandName) || state.HealUsed)
+        {
+            return null;
+        }
+
+        var owned = await inventoryRepository.GetOwnedByTypeAsync(discordId, "Consumable");
+        return CombatHeal.BuildOptions(owned.Select(o => new HealOption(o.Item.Name, o.Item.StatValue, o.Quantity)));
+    }
+
+    // Un desplegable de Discord no puede quedar sin opciones, así que los estados "sin comida" / "ya te curaste"
+    // llevan una opción de relleno y van deshabilitados: se ve el motivo en vez de que el control desaparezca.
+    private static SelectMenuBuilder BuildHealMenu(CombatState state, IReadOnlyList<HealOption>? options)
+    {
+        var menu = new SelectMenuBuilder().WithCustomId(CombatHeal.MenuCustomId).WithMinValues(1).WithMaxValues(1);
+
+        if (state.HealUsed)
+        {
+            return menu.WithPlaceholder("🍖 Ya te curaste en esta pelea").WithDisabled(true).AddOption("Curación usada", "none");
+        }
+
+        if (options is null || options.Count == 0)
+        {
+            return menu.WithPlaceholder("🍖 No tenés comida para curarte").WithDisabled(true).AddOption("Sin comida", "none");
+        }
+
+        menu.WithPlaceholder("🍖 Curarte con comida (1 vez por pelea)");
+        foreach (var option in options)
+        {
+            // Sin emoji en las opciones a propósito: si uno custom no le es accesible al bot, Discord rechaza el mensaje
+            // ENTERO y se caería el inicio de cada /travel y /boss. El nombre y los HP alcanzan.
+            menu.AddOption(option.Name, option.Name, CombatHeal.Describe(option));
+        }
+
+        return menu;
     }
 
     // "🔥 Bola de Fuego: lista" / "⏳ en 2 turno(s)" + el efecto activo si lo hay ("🛡️ Aguante activo
@@ -400,6 +498,11 @@ public class AdventureModule(
             .WithDescription($"¡Un **{state.MonsterName}** {state.MonsterEmoji} salvaje aparece!")
             .AddField("❤️ Tu HP", HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
             .AddField($"{state.MonsterEmoji} HP de {state.MonsterName}", HpLine(state.MonsterCurrentHp, state.MonsterMaxHp), true);
+
+        if (CombatHeal.IsLimited(state.CommandName))
+        {
+            embed.WithFooter("🍖 Podés curarte UNA vez en esta pelea con el desplegable de abajo.");
+        }
 
         return WithAbilityField(embed, state).Build();
     }

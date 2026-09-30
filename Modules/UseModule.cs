@@ -90,6 +90,14 @@ public class UseModule(
         // ilimitada sin ningún costo mientras dure el inventario). ---
         var state = session.State;
 
+        // En /travel y /boss te curás UNA sola vez por pelea, sea con el desplegable del combate (que pasa por acá) o
+        // escribiendo /use: los dos comparten el límite (ver GameData/CombatHeal.cs). En /hunt no hay límite.
+        bool healLimited = CombatHeal.IsLimited(state.CommandName);
+        if (healLimited && state.HealUsed)
+        {
+            return new UseResult("🍖 Ya te curaste en esta pelea: en /travel y /boss solo se puede **una vez** por combate.", null);
+        }
+
         if (state.PlayerCurrentHp >= state.PlayerMaxHp)
         {
             return new UseResult($"Ya estás al máximo de HP ({state.PlayerCurrentHp}/{state.PlayerMaxHp}), no hace falta usar **{ItemDisplay.Format(item.Emoji, item.Name)}** ahora.", null);
@@ -153,6 +161,8 @@ public class UseModule(
             DodgeCount = dodgeCount,
             TotalDamageTaken = totalDamageTaken,
             Ability = counter.Status,
+            // Gastó la curación de la pelea: el desplegable queda deshabilitado (AdventureModule.BuildCombatButtons).
+            HealUsed = state.HealUsed || healLimited,
         };
 
         if (!combatSessions.TryAdvance(discordId, session, nextState, session.ReplyTarget))

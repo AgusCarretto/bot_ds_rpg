@@ -28,8 +28,8 @@ public partial class TextCommandModule
     {
         try
         {
-            var embed = await DropsModule.BuildDropsEmbedAsync(userRepository, zoneRepository, monsterRepository, itemRepository, Context.User.Id);
-            await ReplyAsync(embed: embed);
+            var message = await DropsModule.BuildDropsMessageAsync(userRepository, zoneRepository, monsterRepository, itemRepository, Context.User.Id);
+            await ReplyAsync(message.Text, embeds: message.Embeds);
         }
         catch (Exception)
         {

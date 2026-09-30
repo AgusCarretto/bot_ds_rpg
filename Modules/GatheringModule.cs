@@ -48,8 +48,11 @@ public class GatheringModule(
                 return;
             }
 
+            // Cuántas unidades salen depende de la rareza: lo común a montones, lo mejor de a una (GatheringYield).
+            int quantity = GatheringYield.Roll(item.Rarity);
+
             bool applied = await gatheringRepository.ApplyGatheringRewardAsync(
-                Context.User.Id, definition.CommandName, definition.Duration, item.ItemId, quantity: 1);
+                Context.User.Id, definition.CommandName, definition.Duration, item.ItemId, quantity);
 
             if (!applied)
             {
@@ -58,7 +61,7 @@ public class GatheringModule(
                 return;
             }
 
-            await FollowupAsync(embed: BuildResultEmbed(definition, item));
+            await FollowupAsync(embed: BuildResultEmbed(definition, item, quantity));
         }
         catch (Exception)
         {
@@ -77,12 +80,12 @@ public class GatheringModule(
             .Build();
     }
 
-    public static Embed BuildResultEmbed(CooldownDefinition definition, Item item)
+    public static Embed BuildResultEmbed(CooldownDefinition definition, Item item, int quantity)
     {
         return new EmbedBuilder()
             .WithTitle($"{definition.Emoji} ¡{definition.DisplayName} exitoso!")
             .WithColor(RarityColor(item.Rarity))
-            .WithDescription($"Conseguiste **{ItemDisplay.Format(item.Emoji, item.Name)}**")
+            .WithDescription($"Conseguiste **{quantity}× {ItemDisplay.Format(item.Emoji, item.Name)}**")
             .AddField("Rareza", item.Rarity, true)
             .Build();
     }

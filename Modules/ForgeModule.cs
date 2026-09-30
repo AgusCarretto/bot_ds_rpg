@@ -66,10 +66,11 @@ public class ForgeModule(
     //
     // Muestra SOLO las recetas de la zona actual del jugador (o, si esa todavía no tiene ninguna, la anterior
     // más cercana que sí — ver GameData/RecipeCatalog.cs), de esas las que le corresponden: su arma de afinidad,
-    // las armas generales y los amuletos. Son 5 líneas, así que entra sobrado en los límites de Discord (un
-    // campo de embed admite 1024 caracteres y el embed entero 6000; Build() tira excepción si se pasa) — por
-    // eso el molde de 8 recetas por zona y ver solo la propia. Cada línea dice cuánto suma el resultado ("+15
-    // ATQ" un arma, "+20 DEF" un amuleto; con ⭐ y el valor real si es de la familia de la clase del jugador).
+    // el arma general y los amuletos. Son 4 recetas (2 armas y 2 amuletos), una por bloque, así que entra sobrado en
+    // los límites de Discord (un campo de embed admite 1024 caracteres y el embed entero 6000; Build() tira excepción
+    // si se pasa) — por eso el molde de 7 recetas por zona y ver solo la propia. Cada bloque dice cuánto suma el
+    // resultado ("+15 ATQ" un arma, "+20 DEF" un amuleto; con ⭐ y el valor real si es de la familia de la clase del
+    // jugador), el oro y los ingredientes uno por línea.
     public static async Task<Embed> BuildRecipesEmbed(
         IRecipeRepository recipeRepository, IZoneRepository zoneRepository, string playerClass, int currentZoneId)
     {
@@ -104,42 +105,40 @@ public class ForgeModule(
             return embed.Build();
         }
 
-        embed.WithDescription(
-            $"{zoneName}{fallbackNote}\nAl lado de cada ítem, cuánto suma. Para forjar usá `/forge make` " +
-            "(la lista te marca ✅ lo que ya podés hacer).");
+        embed.WithDescription($"{zoneName}{fallbackNote}\nForjá con `/forge make` (la lista te marca ✅ lo que ya podés hacer).")
+            .WithFooter("🎯 arma de tu clase  ·  ⚔️ arma general  ·  📿 amuleto");
 
-        AddRecipeGroup(embed, $"🎯 Tu arma de clase ({playerClass})", view.Recipes, RecipeGroup.ClassWeapon, playerClass);
-        AddRecipeGroup(embed, "⚔️ Armas generales", view.Recipes, RecipeGroup.GeneralWeapon, playerClass);
-        AddRecipeGroup(embed, "📿 Amuletos (sirven para cualquier clase)", view.Recipes, RecipeGroup.Amulet, playerClass);
-        AddRecipeGroup(embed, "📦 Otras", view.Recipes, RecipeGroup.Other, playerClass);
+        AddRecipes(embed, view.Recipes, RecipeGroup.ClassWeapon, "🎯", playerClass);
+        AddRecipes(embed, view.Recipes, RecipeGroup.GeneralWeapon, "⚔️", playerClass);
+        AddRecipes(embed, view.Recipes, RecipeGroup.Amulet, "📿", playerClass);
+        AddRecipes(embed, view.Recipes, RecipeGroup.Other, "📦", playerClass);
 
         return embed.Build();
     }
 
-    private static void AddRecipeGroup(
-        EmbedBuilder embed, string title, IEnumerable<RecipeDetails> recipes, RecipeGroup group, string playerClass)
+    // UNA receta por bloque (un field no en línea), en vez de una línea larga por receta: el título lleva el ítem, y
+    // abajo van lo que suma, el oro y cada ingrediente en su propia línea. Con las cantidades de la recolección (Hierro
+    // x10...) la línea única era una pared de texto.
+    private static void AddRecipes(
+        EmbedBuilder embed, IEnumerable<RecipeDetails> recipes, RecipeGroup group, string groupEmoji, string playerClass)
     {
-        var lines = recipes
+        var inGroup = recipes
             .Where(r => RecipeCatalog.GroupOf(r) == group)
             .OrderBy(r => r.ResultItem.StatValue)
-            .ThenBy(r => r.ResultItem.Name, StringComparer.Ordinal)
-            .Select(r =>
-            {
-                string ingredients = string.Join(" + ", r.Ingredients.Select(i => $"{i.Quantity}x {ItemDisplay.Format(i.Emoji, i.ItemName)}"));
-                string stat = ItemStatLabel.FormatFor(r.ResultItem, playerClass) ?? r.ResultItem.Type;
-                return $"**{ItemDisplay.Format(r.ResultItem.Emoji, r.ResultItem.Name)}** ({stat}) — {r.GoldCost} oro + {ingredients}";
-            })
-            .ToList();
+            .ThenBy(r => r.ResultItem.Name, StringComparer.Ordinal);
 
-        if (lines.Count == 0)
+        foreach (var recipe in inGroup)
         {
-            return;
-        }
+            string stat = ItemStatLabel.FormatFor(recipe.ResultItem, playerClass) ?? recipe.ResultItem.Type;
+            string ingredients = string.Join('\n', recipe.Ingredients.Select(i => $"• {i.Quantity}× {ItemDisplay.Format(i.Emoji, i.ItemName)}"));
+            string value = $"**{stat}** · 💰 {recipe.GoldCost} oro\n{ingredients}";
 
-        // Defensa: con el molde de 8 recetas por zona nunca pasa, pero un campo de más de 1024 caracteres
-        // haría reventar todo el mensaje.
-        string value = string.Join('\n', lines);
-        embed.AddField(title, value.Length <= 1024 ? value : value[..1023] + "…", false);
+            // Defensa: un campo de más de 1024 caracteres haría reventar todo el mensaje.
+            embed.AddField(
+                $"{groupEmoji} {ItemDisplay.Format(recipe.ResultItem.Emoji, recipe.ResultItem.Name)}",
+                value.Length <= 1024 ? value : value[..1023] + "…",
+                false);
+        }
     }
 
     // Exactamente uno de los dos campos viene con valor: PlainMessage para los rechazos simples
