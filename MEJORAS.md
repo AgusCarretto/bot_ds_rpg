@@ -1,6 +1,210 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-09-29 (Jefes de Zona cooperativos: `/raid`)_
+_Última revisión: 2026-09-30 (recetas: molde de 8 por zona, se ve solo la de tu zona)_
+
+## Recetas: molde de 8 por zona, y cada uno ve solo la de su zona (2026-09-30)
+
+- **Molde por zona** (decisión tuya): **4 armas de afinidad (1 por clase) + 2 armas generales + 2 amuletos
+  (siempre generales) = 8 recetas**. Cada jugador ve solo **5**: su arma de afinidad + las 2 generales + los 2
+  amuletos, y solo las de **su zona actual** — así el mensaje de `/forge recipes` mide ~900-970 caracteres de los
+  6000 que permite Discord (antes, con todas las zonas mezcladas, había un caso que reventaba el embed).
+- **Zona 1, tal como quedó** (en tu base real y en `seed_recipes.sql`):
+
+  | Grupo | Receta | Suma | Oro | Materiales |
+  |---|---|---|---|---|
+  | Afinidad (Guerrero) | Espada de Madera | +5 ATQ | 40 | 3 Madera de Pino + 1 Hierro |
+  | Afinidad (Ninja) | Daga Oxidada | +5 ATQ | 40 | 1 Hierro + 2 Piedra + 1 Colmillo de Cimarrón |
+  | Afinidad (Arquero) | Arco Corto de Sauce | +5 ATQ | 40 | 3 Madera de Pino + 1 Tela Rasgada (la "cuerda") |
+  | Afinidad (Hechicero) | Grimorio Desgastado | +5 ATQ | 40 | 2 Madera de Pino + 1 Pluma de Ñandú |
+  | General | Hoja de Acero Puro | +15 ATQ | 180 | 3 Hierro + 2 Madera de Pino + 1 Colmillo de Jabalí |
+  | General | Hacha de Hierro MK3 | +35 ATQ | 150 | 5 Hierro + 3 Cuero Grueso |
+  | Amuleto | Amuleto del Levantador | +10 DEF | 150 | 5 Piedra + 1 Colmillo de Jabalí |
+  | Amuleto | Hombreras de Cuero Grueso | +20 DEF | 200 | 5 Cuero Grueso + 3 Piedra Caliente |
+
+- **Qué muestra cada comando** (`GameData/RecipeCatalog.cs`, un solo lugar para los dos): `/forge recipes` (y
+  `aa fr`) dice la zona, agrupa en "🎯 Tu arma de clase / ⚔️ Armas generales / 📿 Amuletos" y pone al lado de
+  cada ítem cuánto suma (`+5 ATQ (+8 con tu clase ⭐)`, `+20 DEF`). La lista de `/forge make` muestra
+  exactamente las mismas 5, con ✅ las que ya podés hacer y ❌ qué te falta en las demás. **Si tu zona todavía no
+  tiene recetas propias** (hoy solo hay de Zona 1 — tu Hechicero está en la zona 2) te muestra las de la zona
+  anterior más cercana que sí, con un aviso, para no dejar sin herrería a quien ya avanzó. Forjar por nombre
+  sigue funcionando para cualquier receta (solo se limita lo que se *muestra*).
+- **Datos**: `recipes.zone_id` y `recipes.affinity` (`schema.sql`; `add_recipe_zone_and_affinity.sql` para bases
+  existentes). `affinity` es un dato explícito porque una arma **general** también tiene familia (la Hoja es de
+  Espadas) y no se podía deducir cuál es cuál mirando el ítem. Los 7 amuletos Legendarios de clase perdieron su
+  clase exclusiva (los amuletos son siempre generales).
+- **Lo que se sacó**: las 15 recetas Legendarias de clase (+45/+55) y las 8 de zonas 2 y 3 que había agregado.
+  Los ítems Legendarios de clase siguen en el catálogo, sin receta (las recetas están en el historial de git).
+  Los 8 ítems nuevos de zonas 2 y 3 (Arco de Ébano, Espadón de Zafiro, etc.) se **borraron** del catálogo — nadie
+  los tenía — pero el diseño quedó guardado como **borrador** en `Database/draft_zone2_3_gear_and_recipes.sql`
+  (NO se corre en la instalación) para rehacerlo con este molde (4 afinidad + 2 generales + 2 amuletos por zona).
+- **Migración de tu base real**: `add_recipe_zone_and_affinity.sql` → `trim_recipes_to_zone_template.sql` →
+  `seed_recipes.sql`, **ya corridos** (31 → 8 recetas). El trim borra ítems solo si nadie los tiene
+  (`inventory.item_id` es `ON DELETE CASCADE`, borraría inventarios en silencio): lo probé en una copia exacta de tu
+  base (con `pg_dump`) — con un jugador con el ítem **aborta** sin tocar nada, sin él corre y da el molde.
+- **`seed_recipes.sql` se verifica solo**: si falta un ítem o zona **falla en voz alta** nombrando cuál (antes una
+  receta con un ítem inexistente se omitía en silencio o se creaba sin ese ingrediente). Instalación limpia
+  probada con `run_fresh_install.sql`: 8 recetas, 4 de afinidad, 3 jefes (el script de jefes tampoco estaba en la
+  instalación; ya se agregó).
+- **Sobre el raid** (lo que te avisé antes): al salir las Legendarias +55 de las recetas, lo más fuerte que se puede
+  forjar hoy es el Hacha +35 (+52 con sinergia de Espadas). El raid difícil sigue fácil para niveles altos
+  (medido a nivel 8: con un +15 un jugador solo gana ~97%), porque su calibración es para nivel ~6 con un arma
+  +5. Si querés que aguante más nivel, la palanca es que el jefe escale con el nivel/poder del grupo.
+- **Sin probar en Discord**: cómo se ve el embed (las líneas con emojis de ingredientes son largas) y la lista
+  desplegable. Sí se verificó contra la base real con los repositorios de verdad (el mapeo de Dapper y el texto
+  exacto que ve cada clase).
+- **Idea chica, sin hacer**: en la lista de `/forge make`, marcar lo que ya tenés (hoy tu Hechicero se ofrece
+  forjar la Hoja de Acero Puro que ya tiene equipada).
+- **Zonas renumeradas 1, 2, 3, 4, 5** (pedido tuyo): tu base tenía los IDs **1, 4, 5, 6, 7** (una carga fallida vieja
+  gastó números de la secuencia), y `/zona`, `/zonas`, `/profile` y las recetas muestran ese ID, así que el Bosque
+  de Cenizas era la "Zona 4". `Database/renumber_zones_consecutively.sql` los renumera **de corrido en orden de
+  nivel** y actualiza todo lo que guarda un ID de zona en una sola transacción (`zones`, `monsters`, `recipes`,
+  `users.current_zone_id`, `users.highest_zone_cleared`), soltando y recreando idénticas las claves foráneas. Ya
+  aplicado en tu base (tu Hechicero pasó de zona 4 a zona 2, monstruos por zona intactos 7/3/3/2/2, sin
+  huérfanos, la próxima zona nueva sería la 6), tras ensayarlo en una copia con `pg_dump`. Es re-ejecutable (si ya
+  están consecutivas no hace nada). Una instalación limpia ya sale 1..5 sola.
+
+## Listas de zona y forja + 5 recetas de entrada (2026-09-30)
+
+> **Parcialmente superado** por la sección de arriba: las recetas quedaron recortadas al molde de 8 por zona
+> (las de entrada siguen, como armas de afinidad y generales). Lo de las listas desplegables de `/zona` y
+> `/forge make` sigue vigente. Lo del cuello de botella del Hierro (~12.5% por `/mine`) también.
+
+- **`/zona`**: lista todas las zonas en orden de dificultad, marcadas: 📍 estás acá / 🔒 te falta nivel /
+  🔒 derrotá a <jefe> / sin marca si podés entrar. Las bloqueadas se listan igual (elegirlas da el aviso
+  de siempre) porque sirve ver cuál sigue y qué falta. Se busca por nombre o por ID. La regla del
+  jefe-guardián estaba inline en `ZoneModule`; la saqué a `ZoneRanking.PendingGatekeeperZone` para que
+  `/zona` y la lista usen **una sola definición** (verificado: da lo mismo que la regla original en las
+  24 combinaciones zona × progreso).
+- **`/forge make`**: lista las recetas de tu clase con lo que **ya podés forjar arriba (✅ + costo)** y
+  debajo lo demás diciendo qué falta (❌ falta: 2 Hierro, 80 oro), ordenado de lo más cerca a lo más
+  lejos — sirve de guía de qué conseguir. Las exclusivas de otras clases no se ofrecen.
+- **Recetas de entrada (5 nuevas)**: las 4 armas Comunes +5 y la primera Rara +15 ya existían como
+  ítems pero **no tenían ninguna receta**, y las demás saltan directo a Legendarios (+45/+55). Casi todo
+  con recolección y **como mucho 1 unidad de 1 drop**: cada drop puntual sale ~2.5% por cacería
+  (30% de drop × 1 de 6 monstruos × 1 de 2 drops) o sea ~40 cacerías por unidad, así que pedir más de 1
+  vuelve la receta un suplicio.
+
+  | Receta | Oro | Materiales |
+  |---|---|---|
+  | Espada de Madera (+5) | 40 | 3 Madera de Pino + 1 Hierro |
+  | Arco Corto de Sauce (+5) | 40 | 3 Madera de Pino + 1 Tela Rasgada (la "cuerda") |
+  | Daga Oxidada (+5) | 40 | 1 Hierro + 2 Piedra + 1 Colmillo de Cimarrón |
+  | Grimorio Desgastado (+5) | 40 | 2 Madera de Pino + 1 Pluma de Ñandú |
+  | Hoja de Acero Puro (Raro +15) | 180 | 3 Hierro + 2 Madera de Pino + 1 Colmillo de Jabalí |
+
+  Oro por encima del precio de venta del resultado (20 / 150) más los materiales, para que forjar y
+  revender no sea negocio (el problema del Hacha MK3). Además bajé el **Amuleto del Levantador** de 3 a 1
+  Colmillo de Jabalí (3 eran ~2 horas de cazar) — su receta **no existía en tu base** (estaba en el seed
+  pero nunca se corrió), quedó repuesta. La base real pasó de 17 a 23 recetas.
+- **Cuello de botella que queda**: el **Hierro** sale ~12.5% por `/mine` (25% de rareza Rara × 1 de 2
+  minerales Raros) con 5 min de cooldown, o sea ~40 min por unidad. La Espada de Madera pide 1 y la Hoja
+  de Acero 3 (~2 h de minar). Si sigue siendo lento, la palanca es el peso del Hierro en el sorteo de
+  `/mine`, no las recetas.
+- **⚠️ Bug de orden en la instalación desde cero (encontrado y arreglado)**: `seed_recipes.sql` corría
+  *antes* de `seed_zones_and_monsters.sql` y `seed_consumables_and_base_swords.sql`, donde nacen ítems que
+  las recetas nuevas usan. Una receta cuyo ítem no existe se omite **en silencio** — o peor, se crea sin
+  ese ingrediente: la Daga quedaba sin Colmillo y el Grimorio sin Pluma (más fáciles de lo previsto, sin
+  ningún error). Reproducido en una base vacía descartable (21 recetas, 2 faltando, 2 incompletas) y
+  arreglado moviendo `seed_recipes.sql` al final de los seeds (`run_fresh_install.sql` y `CLAUDE.md`
+  actualizados): instalación limpia = **23 recetas, todas completas**. Ya está aplicado en tu base real.
+- **Deriva que noté, sin tocar**: el **Amuleto del Levantador** es *Común +10* en tu base real y *Épico +15*
+  en una instalación limpia desde los scripts. No sé cuál es el correcto; lo dejo para que decidas.
+- **Sin probar en Discord**: el look de los desplegables (mismas limitaciones que las de comprar/equipar).
+
+## Raid mucho más difícil + listas desplegables para comprar y equipar (2026-09-30)
+
+- **Raid, medido**: hasta ahora el jefe de raid era idéntico al de `/boss` con HP fijo. Un jugador solo
+  lo ganaba el **98%** de las veces y tres jugadores el **100%** en ~2 rondas (simulación con el
+  `CombatTurnResolver` real, 4 clases mezcladas, cada jugador con su vida y sin curaciones). Ahora el
+  jefe de raid tiene **HP ×2.2, daño ×1.35, y +50% del HP base por cada jugador extra** (se calcula al
+  arrancar, con el grupo ya definitivo; `GameData/RaidDifficulty.cs`, todo en constantes). Resultado,
+  nivel 6 con un arma +5 (la más barata): solo **20%**, de a dos **65%**, de a tres **79%**, de a
+  cuatro **91%**; con un arma +15 hasta uno solo gana ~75%. **Sin arma, nivel 6: solo 1%, de a dos
+  13%, de a cuatro 41%** — a propósito, el raid asume equipo. Ojo con probarlo solo (`Raid__MinParticipants=1`):
+  hace falta un arma equipada, y cuanto más fuerte mejor.
+- **Recompensa del raid sin tocar** (por participante, la misma que `/boss`, ×3 desde el rebalance de
+  arriba). Ahora que es varias veces más difícil, quizá convenga un multiplicador propio del raid; lo
+  dejé fuera porque toca la economía y no lo pediste.
+- **Listas para elegir** (autocompletado de Discord): `/shop buy` muestra los consumibles con cuánto
+  curan y cuestan (y "te falta oro" en los que no alcanzás a pagar), y `/equip` muestra solo lo que
+  tenés en el inventario, es un arma o amuleto y puede usar tu clase — armas primero, la más fuerte
+  arriba, con el daño ya con la sinergia de clase (⭐) y "equipado" en lo que llevás puesto. Escribir
+  filtra (sin importar mayúsculas ni tildes). Elegir de la lista no es obligatorio: tipear el nombre a
+  mano sigue andando. Código en `Modules/ItemAutocomplete.cs`; la lógica de armar las opciones está en
+  funciones estáticas puras (`ItemChoices`), sin Discord, y se verificó con un arnés (21 checks). Ese
+  arnés encontró un caso borde real: un nombre de ítem de más de 100 caracteres hacía explotar la lista
+  entera (Discord.Net tira excepción), así que ahora se omite.
+- **Limitaciones**: los comandos de texto (`aa shop buy`, `aa equip`) **no** pueden tener lista — Discord
+  no ofrece autocompletado para mensajes normales. `/shop sell`, `/use` y `/forge craft` también piden
+  un nombre y se les puede sumar la misma lista con pocas líneas (pediste comprar y equipar, no los toqué).
+  **No probado en Discord**: el look del desplegable (cada tecla dispara una consulta a la base; con
+  este catálogo chico no debería notarse, y Discord exige responder en menos de 3 s).
+
+## Fix del raid trabado + rebalance de Zona 1 y recompensas (2026-09-30)
+
+- **Bug grave, encontrado probando el raid**: quien arrancaba un `/raid` quedaba registrado como
+  "ocupado" en el índice jugador→raid pero NO figuraba en el roster del lobby. Resultado: "Unirse" le
+  contestaba "Ya estás en medio de un combate", "Empezar ya" decía que no había nadie (aun con
+  `Raid__MinParticipants=1`), y al vencer el lobby `RaidSessionService.Remove` liberaba solo a
+  `session.Participants` — o sea, a nadie — así que **quedaba bloqueado para `/hunt`, `/travel`,
+  `/autohunt` hasta reiniciar el bot**. Arreglo en tres capas: (1) `BuildSessionAsync` anota a quien
+  arranca desde el primer momento; (2) `Remove` libera por el índice, no por la lista (la clase de bug
+  entera, no solo este caso); (3) `TryActivateAsync` cierra el raid si explota a mitad (antes quedaba en
+  `Activating` para siempre con todos registrados). Verificado con un arnés contra el `.dll` real: **5
+  checks fallaban sin el fix, 7/7 pasan con él**, y el arnés de concurrencia del raid sigue en verde
+  (3000 raids × 12 hilos, 0 dobles; 2000 activaciones simultáneas, 0 fallos).
+- **⚠️ Sigue abierto (no lo toqué)**: un raid `Active` **no tiene timeout por inactividad**. Si todos
+  abandonan sin clickear "Huir" (cierran Discord a mitad de pelea), quedan registrados hasta reiniciar
+  el bot — mismo síntoma que el bug de arriba. El combate solitario sí tiene 30 s por turno. Habría que
+  sumar un timeout que se reinicie en cada click y persista el HP una vez por participante, bajo el
+  mismo lock (regla 2 de la sección del raid en `CLAUDE.md`). (El otro pendiente que anoté acá, que el
+  HP del jefe no escalaba con los participantes, ya está resuelto: ver la sección de abajo.)
+- **Rebalance de Zona 1** (medido con el `CombatTurnResolver` real, promedio de las 4 clases, sin
+  consumibles, arrancando con la vida llena): los bichos de `/hunt` pasan a tener HP ×2.0 y daño ×1.3 sobre los originales.
+  Antes un nivel 1 sin arma tardaba 3.5 turnos y perdía 16% de vida; con un arma +5 a nivel 3, el 90%
+  de las peleas eran de 1-2 clicks. Ahora: nivel 1 sin arma **6.5 turnos, ~48% de vida perdida, 4% de
+  derrota** (0.3% usando habilidad); nivel 3 con arma +5 **3.3 turnos** (16% de 1-2 clicks); nivel 5
+  sin arma 3.9 turnos. Un arma +15 (195 de oro) sigue aplastándolos (82% en ≤2 turnos): es el equipo
+  funcionando, y a ese punto ya toca la zona 2. Los valores viven en `seed_zones_and_monsters.sql`.
+- **Rey Jabalí** (jefe de zona 1): HP ×1.4 y daño ×1.15 (100-140 / 20-32 → 140-196 / 23-37). Nivel 6
+  sin arma: antes 5.8 turnos, 44% de vida y 0.1% de derrota; ahora 7.7 turnos, 75% de vida y ~18% de
+  derrota **solo atacando** (con habilidad: 53% de vida, ~2% de derrota). Con consumibles a mitad de
+  pelea (que el simulador no usa) se gana bien. Los jefes de zona 2 y 3 **no** cambiaron de dureza.
+- **Recompensas**: `/travel` ~2.5× de oro y ~3× de XP (a nivel 5: ~150 oro / ~155 XP contra ~65 / ~52) y
+  50% de drop en vez de 40% — antes rendía *menos* XP por minuto que farmear `/hunt`, con 10× el
+  cooldown. Los tres jefes existentes pagan ×3 de bonus oro/XP (~9-14% de un nivel por jefe, antes
+  ~3-6%); el raid cobra lo mismo por participante. Constantes en `CombatRewardCalculator.cs` y `seed_zone_bosses.sql`.
+- **Zona 2 no se tocó**, pero la brecha con la zona 1 nueva se achicó (a nivel 5 sin arma: zona 2 dura
+  4.1 turnos y saca 21% de vida; zona 1 ahora 3.9 turnos y 9%). Sigue siendo más dura, sobre todo en
+  daño, pero conviene una pasada de rebalance de las zonas 2-5 aparte.
+- **Base real**: `Database/rebalance_zone1_and_bosses.sql` **ya corrido** (2026-09-30, 9 filas). Las
+  instalaciones nuevas ya traen los valores en los seeds; no hace falta correr nada más.
+
+## Habilidades activas por clase (2026-09-30)
+
+- **Qué hay**: un botón de habilidad propio por clase en la pelea manual (`/hunt`, `/travel`, `/boss`,
+  y "Habilidad" genérico en `/raid`), cooldown de **3 turnos** para todas. 🛡️ **Aguante** (Guerrero):
+  ataca al 70% y recibe −60% de daño 2 turnos · 🔥 **Bola de Fuego** (Hechicero): golpe de 220% ·
+  🌑 **Sombra** (Ninja): no ataca, 2 turnos con 75% de esquive y la próxima emboscada es crítico
+  garantizado +25% · 🏹 **Lluvia de Flechas** (Arquero): 3 flechas al 60% con crítico individual.
+  Se ve en `/profile` (campo "Habilidad") y en la línea "✨ Habilidad" de cada pelea.
+- **`/autohunt` NO usa habilidades**, a propósito (decisión tuya: es para farmear bichos débiles AFK).
+- **Balance medido** (simulación, habilidad apenas está lista vs. solo atacar): Hechicero daño ×1.30,
+  Arquero ×1.20, Ninja ×1.07 (recibe ×0.66), Guerrero ×0.92 (recibe ×0.70). Los jefes ya estaban
+  afinados para ataque básico: quedan ~10–30% más fáciles con habilidades. Si hay que retocar, es una
+  constante en `AbilityTuning` (`GameData/ClassAbilities.cs`), no stats de jefes.
+- **Refactor grande de paso**: la lógica de turno (golpe → Sifón → contraataque) estaba copiada en
+  `AdventureModule`, `AutoHuntModule`, `UseModule` y `RaidModule`; ahora es una sola función pura,
+  `GameData/CombatTurnResolver.cs`. Ver `CLAUDE.md`.
+- **Verificado con arnés** (reflection/referencia directa al `.dll`, no a ojo): cooldown exacto
+  (indisponible 3 turnos, lista al 4º), efectos de duración exacta, multiplicadores de daño de cada
+  habilidad, esquive 75/75/20% de Sombra, **ataque básico equivalente a la lógica vieja en las 4
+  clases**, fuzz de invariantes (0 violaciones) y el arnés de concurrencia del raid con habilidades
+  mezcladas al azar (3000 raids, 0 fallos).
+- **NO probado en Discord**: el look de los botones (nombre + emoji + "(N)" de cooldown, verde) y los
+  textos del log. Se prueba con cualquier `/hunt`; el raid solo con `Raid__MinParticipants=1`.
+- **Próximo (anotado)**: explicar cada clase antes de elegirla y bloquear el cambio de clase hasta
+  resetear la run (futuro sistema de runs).
 
 ## Jefes de Zona cooperativos — `/raid` (2026-09-29)
 
