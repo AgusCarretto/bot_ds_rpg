@@ -74,13 +74,18 @@ ON CONFLICT (name) DO NOTHING;
 
 -- ---------------------------------------------------------
 -- 🐗 Zona 1: Praderas del Mate — los 4 monstruos que ya vivían en GameData/MonsterCatalog.cs,
--- ahora homeados acá (mismos stats/drops de siempre, gold_reward/xp_reward en 0 para que la
--- recompensa de /hunt no cambie ni un poco respecto a lo que ya había), + 2 nuevos.
+-- ahora homeados acá (mismos drops de siempre, gold_reward/xp_reward en 0 para que la recompensa
+-- de /hunt no cambie), + 2 nuevos.
+--
+-- BALANCE (medido con el CombatTurnResolver real, ver Database/rebalance_zone1_and_bosses.sql): los
+-- valores originales caían en ~2 golpes (con un arma +5, 1-2 clicks y a otra cosa). Ahora HP x2.0 y
+-- daño x1.3 sobre esos originales: un jugador nuevo sin arma tarda ~6 turnos y pierde ~45% de la
+-- vida (puede morir si nunca se cura), con arma +5 dura ~3 turnos.
 -- ---------------------------------------------------------
 
 WITH monster AS (
     INSERT INTO monsters (zone_id, name, emoji, min_hp, max_hp, min_damage, max_damage, gold_reward, xp_reward)
-    SELECT zone_id, 'Jabalí Rabioso', '🐗', 28, 42, 6, 13, 0, 0 FROM zones WHERE name = 'Praderas del Mate'
+    SELECT zone_id, 'Jabalí Rabioso', '🐗', 56, 84, 8, 17, 0, 0 FROM zones WHERE name = 'Praderas del Mate'
     ON CONFLICT (name) DO UPDATE SET zone_id = EXCLUDED.zone_id, emoji = EXCLUDED.emoji,
         min_hp = EXCLUDED.min_hp, max_hp = EXCLUDED.max_hp, min_damage = EXCLUDED.min_damage,
         max_damage = EXCLUDED.max_damage, gold_reward = EXCLUDED.gold_reward, xp_reward = EXCLUDED.xp_reward
@@ -94,7 +99,7 @@ ON CONFLICT DO NOTHING;
 
 WITH monster AS (
     INSERT INTO monsters (zone_id, name, emoji, min_hp, max_hp, min_damage, max_damage, gold_reward, xp_reward)
-    SELECT zone_id, 'Lobisón de las Cenizas', '🐺', 30, 48, 7, 15, 0, 0 FROM zones WHERE name = 'Praderas del Mate'
+    SELECT zone_id, 'Lobisón de las Cenizas', '🐺', 60, 96, 9, 20, 0, 0 FROM zones WHERE name = 'Praderas del Mate'
     ON CONFLICT (name) DO UPDATE SET zone_id = EXCLUDED.zone_id, emoji = EXCLUDED.emoji,
         min_hp = EXCLUDED.min_hp, max_hp = EXCLUDED.max_hp, min_damage = EXCLUDED.min_damage,
         max_damage = EXCLUDED.max_damage, gold_reward = EXCLUDED.gold_reward, xp_reward = EXCLUDED.xp_reward
@@ -108,7 +113,7 @@ ON CONFLICT DO NOTHING;
 
 WITH monster AS (
     INSERT INTO monsters (zone_id, name, emoji, min_hp, max_hp, min_damage, max_damage, gold_reward, xp_reward)
-    SELECT zone_id, 'Gólem de Escoria', '🗿', 35, 55, 5, 12, 0, 0 FROM zones WHERE name = 'Praderas del Mate'
+    SELECT zone_id, 'Gólem de Escoria', '🗿', 70, 110, 6, 16, 0, 0 FROM zones WHERE name = 'Praderas del Mate'
     ON CONFLICT (name) DO UPDATE SET zone_id = EXCLUDED.zone_id, emoji = EXCLUDED.emoji,
         min_hp = EXCLUDED.min_hp, max_hp = EXCLUDED.max_hp, min_damage = EXCLUDED.min_damage,
         max_damage = EXCLUDED.max_damage, gold_reward = EXCLUDED.gold_reward, xp_reward = EXCLUDED.xp_reward
@@ -122,7 +127,7 @@ ON CONFLICT DO NOTHING;
 
 WITH monster AS (
     INSERT INTO monsters (zone_id, name, emoji, min_hp, max_hp, min_damage, max_damage, gold_reward, xp_reward)
-    SELECT zone_id, 'Cuatrero No-Muerto', '💀', 25, 40, 6, 14, 0, 0 FROM zones WHERE name = 'Praderas del Mate'
+    SELECT zone_id, 'Cuatrero No-Muerto', '💀', 50, 80, 8, 18, 0, 0 FROM zones WHERE name = 'Praderas del Mate'
     ON CONFLICT (name) DO UPDATE SET zone_id = EXCLUDED.zone_id, emoji = EXCLUDED.emoji,
         min_hp = EXCLUDED.min_hp, max_hp = EXCLUDED.max_hp, min_damage = EXCLUDED.min_damage,
         max_damage = EXCLUDED.max_damage, gold_reward = EXCLUDED.gold_reward, xp_reward = EXCLUDED.xp_reward
@@ -136,7 +141,7 @@ ON CONFLICT DO NOTHING;
 
 WITH monster AS (
     INSERT INTO monsters (zone_id, name, emoji, min_hp, max_hp, min_damage, max_damage, gold_reward, xp_reward)
-    SELECT zone_id, 'Ñandú Salvaje', '🦤', 20, 32, 4, 9, 0, 0 FROM zones WHERE name = 'Praderas del Mate'
+    SELECT zone_id, 'Ñandú Salvaje', '🦤', 40, 64, 5, 12, 0, 0 FROM zones WHERE name = 'Praderas del Mate'
     ON CONFLICT (name) DO UPDATE SET zone_id = EXCLUDED.zone_id, emoji = EXCLUDED.emoji,
         min_hp = EXCLUDED.min_hp, max_hp = EXCLUDED.max_hp, min_damage = EXCLUDED.min_damage,
         max_damage = EXCLUDED.max_damage, gold_reward = EXCLUDED.gold_reward, xp_reward = EXCLUDED.xp_reward
@@ -150,7 +155,7 @@ ON CONFLICT DO NOTHING;
 
 WITH monster AS (
     INSERT INTO monsters (zone_id, name, emoji, min_hp, max_hp, min_damage, max_damage, gold_reward, xp_reward)
-    SELECT zone_id, 'Perro Cimarrón', '🐕', 22, 35, 5, 10, 0, 0 FROM zones WHERE name = 'Praderas del Mate'
+    SELECT zone_id, 'Perro Cimarrón', '🐕', 44, 70, 6, 13, 0, 0 FROM zones WHERE name = 'Praderas del Mate'
     ON CONFLICT (name) DO UPDATE SET zone_id = EXCLUDED.zone_id, emoji = EXCLUDED.emoji,
         min_hp = EXCLUDED.min_hp, max_hp = EXCLUDED.max_hp, min_damage = EXCLUDED.min_damage,
         max_damage = EXCLUDED.max_damage, gold_reward = EXCLUDED.gold_reward, xp_reward = EXCLUDED.xp_reward

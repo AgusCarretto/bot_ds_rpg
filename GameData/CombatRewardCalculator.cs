@@ -24,13 +24,17 @@ public static class CombatRewardCalculator
         return new CombatReward(gold, xp, droppedSomething);
     }
 
+    // /travel tiene 10 minutos de cooldown (10 veces el de /hunt) y sus monstruos son más duros que
+    // los de zona 1: la recompensa tiene que hacerlo valer. Con los valores anteriores (30-60 oro /
+    // 30-55 XP) rendía MENOS XP por minuto que farmear /hunt, así que nadie lo usaba salvo por el
+    // drop. Ahora paga ~2.5x en oro y ~3x en XP (a nivel 5: ~150 oro / ~155 XP contra ~65 / ~52).
     public static CombatReward RollTravelReward(int playerLevel)
     {
-        int gold = Random.Shared.Next(30, 61) + (playerLevel * 4);
-        int xp = Random.Shared.Next(30, 56) + (playerLevel * 2);
+        int gold = Random.Shared.Next(90, 151) + (playerLevel * 6);
+        int xp = Random.Shared.Next(100, 151) + (playerLevel * 6);
 
-        // 40% de probabilidad de dropear un material al ganar.
-        bool droppedSomething = Random.Shared.Next(100) < 40;
+        // 50% de probabilidad de dropear un material al ganar.
+        bool droppedSomething = Random.Shared.Next(100) < 50;
 
         return new CombatReward(gold, xp, droppedSomething);
     }
