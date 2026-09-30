@@ -60,8 +60,8 @@ CREATE INDEX IF NOT EXISTS idx_recipe_ingredients_recipe_id ON recipe_ingredient
 -- ---------------------------------------------------------
 -- zones / monsters / monster_drops: mundo dividido en zonas de dificultad creciente (ver
 -- Modules/ZoneModule.cs y Database/seed_zones_and_monsters.sql). /hunt solo caza monstruos de la
--- zona ACTUAL del jugador (users.current_zone_id) — /travel sigue con su pool fijo en código
--- (GameData/MonsterCatalog.TravelMonsters), sin relación con zonas.
+-- zona ACTUAL del jugador (users.current_zone_id), igual que /travel (su monstruo dedicado) y /boss.
+-- Cada monstruo suelta UN solo ítem (ver Database/finalize_monster_roster.sql).
 -- ---------------------------------------------------------
 CREATE TABLE IF NOT EXISTS zones (
     zone_id     INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -97,7 +97,12 @@ CREATE TABLE IF NOT EXISTS monsters (
     -- Jefe de zona (ver Modules/AdventureModule.cs, comando /boss): a lo sumo uno por zona,
     -- EXCLUIDO del pool aleatorio de /hunt (Repositories/MonsterRepository.GetMonstersByZoneAsync)
     -- — solo se enfrenta a propósito con /boss. Derrotarlo sube users.highest_zone_cleared.
-    is_boss     BOOLEAN NOT NULL DEFAULT false
+    is_boss     BOOLEAN NOT NULL DEFAULT false,
+    -- Monstruo DEDICADO de /travel (uno por zona, ver Database/seed_travel_monsters.sql): también
+    -- EXCLUIDO del pool de /hunt, y nunca es a la vez el jefe de la zona.
+    -- Repositories/MonsterRepository.GetTravelMonsterByZoneAsync.
+    is_travel   BOOLEAN NOT NULL DEFAULT false,
+    CONSTRAINT monsters_not_boss_and_travel CHECK (NOT (is_boss AND is_travel))
 );
 
 CREATE TABLE IF NOT EXISTS monster_drops (

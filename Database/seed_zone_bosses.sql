@@ -1,4 +1,7 @@
 -- =========================================================
+-- NOTA: cada jefe termina soltando UN solo ítem — lo fija Database/finalize_monster_roster.sql, que corre después y
+-- pisa las listas de dos drops de abajo (el segundo drop de cada jefe quedó sin fuente y las recetas ya no lo usan).
+--
 -- Asado y Acero RPG — Jefes de Zona (Bloqueo de Progresión): un jefe por cada una de las 5 zonas,
 -- marcado is_boss = true, EXCLUIDO del pool aleatorio de /hunt (solo se enfrenta a
 -- propósito con /boss — ver Repositories/MonsterRepository.GetMonstersByZoneAsync/GetBossByZoneAsync).

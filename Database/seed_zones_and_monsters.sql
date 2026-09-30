@@ -1,4 +1,9 @@
 -- =========================================================
+-- NOTA: los drops de cada monstruo (y qué monstruos de /hunt quedan en Zona 1) NO los decide este archivo: los
+-- fija Database/finalize_monster_roster.sql, que corre DESPUÉS y deja UN solo drop por monstruo (acá cada uno
+-- figura con dos, que es el punto de partida que ese script pisa) y 3 monstruos de /hunt en Zona 1 en vez de 6.
+-- Los stats y las recompensas de abajo sí siguen siendo los de acá.
+--
 -- Asado y Acero RPG — Sistema de Zonas: 5 zonas escalonadas + 14 monstruos de /hunt (4 migrados
 -- desde GameData/MonsterCatalog.cs, que ahora quedan homeados en Zona 1, + 10 nuevos, 2 por zona)
 -- + los 20 materiales nuevos que dropean los 10 monstruos nuevos.

@@ -9,7 +9,7 @@
 --   - El "PSQL Tool" de pgAdmin (el ícono de terminal, NO el "Query Tool" — ese último solo manda
 --     SQL crudo al servidor y no entiende \ir, va a tirar error de sintaxis).
 --   - DBeaver u otros clientes: probablemente NO sirve — correlos a mano, uno por uno, en el orden
---     de abajo (son los mismos 15 archivos, en esta carpeta).
+--     de abajo (son los mismos 17 archivos, en esta carpeta).
 --
 -- USAR SOLO CONTRA UNA BASE VACÍA. seed.sql, add_weapon_family.sql y
 -- seed_class_gear_and_monster_drops.sql NO son idempotentes (duplican filas si la base ya tiene
@@ -28,6 +28,11 @@
 -- Los jefes de zona (/boss, /raid y el bloqueo de progresión de /zona) y los ítems que dropean — antes
 -- faltaba en esta lista, así que una base nueva se quedaba sin ningún jefe.
 \ir seed_zone_bosses.sql
+-- El monstruo dedicado de /travel (uno por zona, is_travel = true): usa zonas y materiales que ya existen a esta altura.
+\ir seed_travel_monsters.sql
+-- El plantel final: 3 monstruos de /hunt en Zona 1 y UN solo drop por monstruo (pisa las listas de dos drops de los
+-- seeds de arriba). Va DESPUÉS de los tres que crean monstruos; las recetas de abajo se calibran contra estos drops.
+\ir finalize_monster_roster.sql
 -- seed_recipes.sql va DESPUÉS de los seeds de arriba a propósito: sus recetas usan ítems que nacen ahí
 -- (Espada de Madera / Hoja de Acero Puro en seed_consumables_and_base_swords.sql, Pluma de Ñandú /
 -- Colmillo de Cimarrón en seed_zones_and_monsters.sql). Una receta cuyo ítem todavía no existe se omitiría

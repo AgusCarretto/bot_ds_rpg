@@ -1,6 +1,7 @@
 -- =========================================================
 -- Asado y Acero RPG — Recetas del herrero de ZONA 2 (Bosque de Cenizas), con el molde de cada zona:
--- 4 armas de AFINIDAD (1 por clase) + 2 armas GENERALES + 2 amuletos (siempre generales) = 8 recetas.
+-- 4 armas de AFINIDAD (1 por clase) + 1 arma GENERAL + 2 amuletos (siempre generales) = 7 recetas (4 visibles por
+-- jugador: 2 armas y 2 amuletos). La segunda arma general (Alabarda del Alfa) se sacó al pasar a UN drop por monstruo.
 --
 -- ESCALERA DE ZONAS: el equipo de cada zona es un SALTO sobre el de la anterior (x1.6 por zona), y los monstruos
 -- están calibrados para que al entrar con el equipo viejo cueste y con el propio se vuelva cómodo — sin ser un
@@ -8,17 +9,24 @@
 -- Stats de la escalera (arma de afinidad · generales bajo/alto · amuletos bajo/alto):
 --
 --     Zona 1: +5 (inicial) / +15 general (Hoja)  · +10/+15   · +10/+16
---     Zona 2: +20                                · +18/+26   · +18/+24    <- ESTE archivo
---     Zona 3: +32 · +28/+40 · +30/+38      Zona 4: +50 · +44/+66 · +46/+60      Zona 5: +80 · +70/+105 · +75/+95
+--     Zona 2: +20                                · +18        · +18/+24    <- ESTE archivo
+--     Zona 3: +32 · +28 · +30/+38      Zona 4: +50 · +44 · +46/+60      Zona 5: +80 · +70 · +75/+95
+-- (Las generales "altas" +26/+40/+66/+105 —con drop de jefe— se sacaron; las afinidades de cada clase ya las superan.)
 --
 -- (Son MENOS que los primeros números que se habían puesto — +35/+55/+72/+85 —: con esos, al salir de cada zona
 -- la pelea común costaba 2-8% de la vida, un paseo; se bajaron y los monstruos se recalcularon encima.)
 -- Las 4 armas de afinidad son las Épicas que YA existían como ítems (una por familia: Hacha de Hierro MK3
 -- Espadas/Guerrero, Colmillo Nocturno Dagas/Ninja, Arco Élfico Ancestral Arcos/Arquero, Grimorio de las
--- Tormentas Grimorios/Hechicero) — no tenían receta ni este stat (eran +35). Las 2 generales y 1 amuleto son
--- ítems NUEVOS, sin familia (nadie tiene sinergia con ellas). Materiales: drops de la zona (~7.5% por cacería
--- cada uno, ~13 cacerías por unidad), Madera de Roble (25% por /chop), Hierro/Carbón (12.5% por /mine cada uno)
--- y, en las dos mejores, un drop del jefe de la zona (Lobisón Alfa). Ojo: los bonos de drop y de cantidad del
+-- Tormentas Grimorios/Hechicero) — no tenían receta ni este stat (eran +35). La general y 1 amuleto son
+-- ítems NUEVOS, sin familia (nadie tiene sinergia con ellas). Madera de Roble (25% por /chop), Hierro/Carbón (12.5%
+-- por /mine cada uno) y 4 drops de la zona, UNO por monstruo (finalize_monster_roster.sql, seed_travel_monsters.sql):
+--   · a granel (/hunt, 5% por cacería cada uno = ~20 cacerías por unidad): Garra de Puma Cenizo (Puma de las
+--     Cenizas) y Esencia Espectral (Espíritu del Monte);
+--   · escaso (/travel, 20% y un viaje cada 10 min = ~50 min por unidad): Ceniza Bendita (Ciervo Sagrado);
+--   · raro (el jefe, 15% y una pelea cada 30 min = ~200 min por unidad): Pelaje Plateado del Alfa (Lobisón Alfa).
+-- Las cantidades de abajo salen de esas tasas (hunt 10% / travel 20% / jefe 15%, ver CombatRewardCalculator): las
+-- armas de afinidad piden 2 Ceniza Bendita (~100 min), la general ~80 min de cazar, el amuleto bajo ~100 y el alto
+-- el drop del jefe (~200) — más o menos lo que tarda subir de nivel 5 a 10. Ojo: los bonos de drop y de cantidad del
 -- reset que se planean (se desbloquea al terminar la Zona 5) van a acelerar todo esto; se calibra contra las
 -- tasas BASE de la run 1.
 --
@@ -34,10 +42,9 @@ WHERE name IN ('Hacha de Hierro MK3', 'Colmillo Nocturno', 'Arco Élfico Ancestr
 UPDATE items SET rarity = 'Épico', stat_value = 18, sell_price = 108, buy_price = 140
 WHERE name = 'Mate Tallado en Cenizas';
 
--- Ítems nuevos (upsert por nombre): 2 armas generales sin familia + 1 amuleto.
+-- Ítems nuevos (upsert por nombre): 1 arma general sin familia + 1 amuleto.
 INSERT INTO items (name, type, rarity, stat_value, sell_price, buy_price) VALUES
 ('Cuchilla de Cenizas',        'Weapon', 'Épico', 18, 108, 140),
-('Alabarda del Alfa',          'Weapon', 'Épico', 26, 156, 203),
 ('Talismán de Ceniza Bendita', 'Amulet', 'Épico', 24, 144, 187)
 ON CONFLICT (name) DO UPDATE SET
     type = EXCLUDED.type, rarity = EXCLUDED.rarity, stat_value = EXCLUDED.stat_value,
@@ -50,47 +57,48 @@ INSERT INTO z2_recipes VALUES
 ('Colmillo Nocturno',            400, true),   -- Ninja (Dagas)
 ('Arco Élfico Ancestral',        400, true),   -- Arquero (Arcos)
 ('Grimorio de las Tormentas',    400, true),   -- Hechicero (Grimorios)
--- Armas generales
+-- Arma general
 ('Cuchilla de Cenizas',          300, false),
-('Alabarda del Alfa',            450, false),
 -- Amuletos (generales)
 ('Mate Tallado en Cenizas',      300, false),
 ('Talismán de Ceniza Bendita',   400, false);
 
 CREATE TEMP TABLE z2_ingredients (result_name TEXT, ingredient_name TEXT, quantity INTEGER);
 INSERT INTO z2_ingredients VALUES
--- Hacha de Hierro MK3: la hoja de Hierro, el mango de Roble y garras del bosque
+-- Hacha de Hierro MK3: la hoja de Hierro, el mango de Roble, garras del bosque y 2 Ceniza Bendita (~100 min)
 ('Hacha de Hierro MK3',          'Hierro',                    5),
-('Hacha de Hierro MK3',          'Garra de Puma Cenizo',      2),
 ('Hacha de Hierro MK3',          'Madera de Roble',           2),
--- Colmillo Nocturno: Hierro y esencia espectral para el filo que no se ve
+('Hacha de Hierro MK3',          'Garra de Puma Cenizo',      5),
+('Hacha de Hierro MK3',          'Ceniza Bendita',            2),
+-- Colmillo Nocturno: Hierro, garras y esencia espectral para el filo que no se ve, y 2 Ceniza Bendita
 ('Colmillo Nocturno',            'Hierro',                    4),
-('Colmillo Nocturno',            'Esencia Espectral',         2),
-('Colmillo Nocturno',            'Garra de Puma Cenizo',      1),
--- Arco Élfico Ancestral: la madera noble, ramas quemadas y un hilo espectral
+('Colmillo Nocturno',            'Garra de Puma Cenizo',      3),
+('Colmillo Nocturno',            'Esencia Espectral',         3),
+('Colmillo Nocturno',            'Ceniza Bendita',            2),
+-- Arco Élfico Ancestral: la madera noble, un hilo espectral y 2 Ceniza Bendita
 ('Arco Élfico Ancestral',        'Madera de Roble',           4),
-('Arco Élfico Ancestral',        'Rama Carbonizada',          2),
-('Arco Élfico Ancestral',        'Esencia Espectral',         1),
--- Grimorio de las Tormentas: tapas de Roble, ceniza bendita como tinta y esencia espectral
+('Arco Élfico Ancestral',        'Esencia Espectral',         5),
+('Arco Élfico Ancestral',        'Ceniza Bendita',            2),
+-- Grimorio de las Tormentas: tapas de Roble, esencia espectral y la ceniza bendita como tinta
 ('Grimorio de las Tormentas',    'Madera de Roble',           3),
+('Grimorio de las Tormentas',    'Esencia Espectral',         5),
 ('Grimorio de las Tormentas',    'Ceniza Bendita',            2),
-('Grimorio de las Tormentas',    'Esencia Espectral',         2),
--- Cuchilla de Cenizas (general +30): mucho Hierro y Carbón, sin drop de jefe
+-- Cuchilla de Cenizas (general +18): Hierro y Carbón, y solo drops de /hunt (4 + 4, ~80 min), sin /travel ni jefe
 ('Cuchilla de Cenizas',          'Hierro',                    3),
 ('Cuchilla de Cenizas',          'Carbón',                    2),
-('Cuchilla de Cenizas',          'Rama Carbonizada',          1),
--- Alabarda del Alfa (general +45): la garra del jefe (Lobisón Alfa) + garras del bosque
-('Alabarda del Alfa',            'Hierro',                    4),
-('Alabarda del Alfa',            'Garra del Alfa',            1),
-('Alabarda del Alfa',            'Garra de Puma Cenizo',      2),
--- Mate Tallado en Cenizas (amuleto +28): Carbón, ceniza bendita y Roble
+('Cuchilla de Cenizas',          'Garra de Puma Cenizo',      4),
+('Cuchilla de Cenizas',          'Esencia Espectral',         4),
+-- Mate Tallado en Cenizas (amuleto +18): Carbón y Roble, 5 + 5 de /hunt y 1 Ceniza Bendita (~100 min)
 ('Mate Tallado en Cenizas',      'Carbón',                    3),
-('Mate Tallado en Cenizas',      'Ceniza Bendita',            3),
 ('Mate Tallado en Cenizas',      'Madera de Roble',           2),
--- Talismán de Ceniza Bendita (amuleto +35): el pelaje plateado del jefe + ceniza bendita + Oro Puro
+('Mate Tallado en Cenizas',      'Garra de Puma Cenizo',      5),
+('Mate Tallado en Cenizas',      'Esencia Espectral',         5),
+('Mate Tallado en Cenizas',      'Ceniza Bendita',            1),
+-- Talismán de Ceniza Bendita (amuleto +24): el pelaje plateado del jefe (~200 min) + 3 Ceniza Bendita + Oro Puro
+('Talismán de Ceniza Bendita',   'Oro Puro',                  1),
 ('Talismán de Ceniza Bendita',   'Pelaje Plateado del Alfa',  1),
 ('Talismán de Ceniza Bendita',   'Ceniza Bendita',            3),
-('Talismán de Ceniza Bendita',   'Oro Puro',                  1);
+('Talismán de Ceniza Bendita',   'Garra de Puma Cenizo',      3);
 
 INSERT INTO recipes (result_item_id, gold_cost, zone_id, affinity)
 SELECT i.item_id, r.gold, z.zone_id, r.affinity
@@ -148,6 +156,6 @@ END $$;
 DROP TABLE z2_ingredients;
 DROP TABLE z2_recipes;
 
--- Chequeo rápido: 8 recetas en Zona 2 (4 de afinidad + 4 generales).
+-- Chequeo rápido: 7 recetas en Zona 2 (4 de afinidad + 1 general + 2 amuletos).
 -- SELECT i.name, r.gold_cost, r.affinity FROM recipes r JOIN items i ON i.item_id = r.result_item_id
 -- JOIN zones z ON z.zone_id = r.zone_id WHERE z.name = 'Bosque de Cenizas' ORDER BY r.affinity DESC, i.stat_value;

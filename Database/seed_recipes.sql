@@ -1,14 +1,21 @@
 -- =========================================================
 -- Asado y Acero RPG — Recetas del herrero de ZONA 1 (Praderas del Mate), con el molde de cada zona:
 --
---   4 armas de AFINIDAD (1 por clase: la de la familia de su clase)  +  2 armas GENERALES
---   +  2 amuletos (los amuletos son SIEMPRE generales, de cualquier clase)      = 8 recetas por zona
+--   4 armas de AFINIDAD (1 por clase: la de la familia de su clase)  +  1 arma GENERAL
+--   +  2 amuletos (los amuletos son SIEMPRE generales, de cualquier clase)      = 7 recetas por zona
 --
--- Cada jugador ve solo las 5 de su clase en su zona actual (su arma de afinidad + las 2 generales + los 2
--- amuletos), así el mensaje de /forge recipes entra sobrado en los límites de Discord.
+-- Cada jugador ve solo 4 en su zona actual: 2 armas (la de afinidad de su clase + la general) y 2 amuletos.
+-- (Antes eran 8 por zona / 5 visibles, con dos armas generales; con UN solo drop por monstruo — ver
+-- finalize_monster_roster.sql — no alcanzaban las fuentes para tantas, y la segunda general no le ganaba al arma
+-- de afinidad de nadie. Para una base que todavía las tiene: Database/remove_extra_general_recipes.sql.)
 --
--- Casi todo se arma con recolección (/chop, /mine) y, como mucho, 1 unidad de 1 drop de la zona: cada drop
--- puntual sale ~2.5% por cacería (~40 cacerías por unidad), así que pedir más lo vuelve un suplicio.
+-- Los drops de Zona 1 son 5, UNO por monstruo (finalize_monster_roster.sql, seed_travel_monsters.sql): Colmillo de
+-- Jabalí, Colmillo de Cimarrón y Pluma de Ñandú (los 3 monstruos de /hunt, 10% de drop y 1 de 3 monstruos =
+-- ~3.3% por cacería cada uno = ~30 cacerías por unidad), Cuero Grueso (/travel: 20%, un viaje cada 10 min =
+-- ~50 min por unidad) y Colmillo del Rey Jabalí (el jefe: 15%, una pelea cada 30 min = ~200 min por unidad).
+-- Las cantidades se calibraron contra esas tasas (ver MEJORAS.md): las tres armas iniciales piden 1 drop del
+-- hunt (~30 min), el equipo de entrada a Zona 2 (Hoja +15 y Levantador +10) 3 Colmillos de Jabalí en total
+-- (~90 min, parecido a lo que tarda subir de nivel 1 a 5) y las Hombreras (+16), que llevan el drop del jefe, ~200 min.
 -- El oro está por encima del precio de VENTA del resultado (más el valor de los materiales) para que forjar
 -- y revender no sea negocio.
 --
@@ -32,13 +39,11 @@ UPDATE items SET class_requirement = NULL WHERE type = 'Amulet' AND class_requir
 -- ESCALERA DE ZONAS: el equipo de Zona 1 llega hasta +15 (Hoja de Acero Puro). Antes el Hacha de Hierro MK3
 -- (+35) se forjaba acá y con ella la Zona 1 y la 2 quedaban triviales (a nivel 3, +35 mata todo en 1-2
 -- golpes); ahora es el arma de afinidad del Guerrero en Zona 2 (seed_zone2_gear_and_recipes.sql).
--- Machete de Chacra: el segundo arma general de la zona, sin familia (nadie tiene sinergia con él), un
--- escalón por debajo de la Hoja.
+-- (El Machete de Chacra, el segundo arma general de la zona, ya no existe: con un drop por monstruo sobraba.)
 -- Amuleto del Levantador: Común +10 (sell 100 / buy 130). Es lo que tiene la base real y con lo que se calibró la
 -- escalera (el amuleto barato con el que se entra a Zona 2); seed_class_gear_and_monster_drops.sql lo traía
 -- Épico +15 (60/78), y una instalación limpia y la base real quedaban distintas — ahora las dos convergen acá.
 INSERT INTO items (name, type, rarity, stat_value, sell_price, buy_price) VALUES
-('Machete de Chacra',      'Weapon', 'Raro',  10,  45,  58),
 ('Amuleto del Levantador', 'Amulet', 'Común', 10, 100, 130),
 ('Hombreras de Cuero Grueso', 'Amulet', 'Raro', 16, 96, 125)
 ON CONFLICT (name) DO UPDATE SET
@@ -52,9 +57,8 @@ INSERT INTO z1_recipes VALUES
 ('Daga Oxidada',              40, true),
 ('Arco Corto de Sauce',       40, true),
 ('Grimorio Desgastado',       40, true),
--- Armas generales
+-- Arma general
 ('Hoja de Acero Puro',       180, false),
-('Machete de Chacra',        100, false),
 -- Amuletos (generales)
 ('Amuleto del Levantador',   150, false),
 ('Hombreras de Cuero Grueso', 200, false);
@@ -64,31 +68,29 @@ INSERT INTO z1_ingredients VALUES
 -- Espada de Madera: solo recolección
 ('Espada de Madera',          'Madera de Pino',        3),
 ('Espada de Madera',          'Hierro',                1),
--- Daga Oxidada: la hoja de Hierro, Piedra para afilarla y un Colmillo de Cimarrón como punta
+-- Daga Oxidada: la hoja de Hierro, Piedra para afilarla y un Colmillo de Cimarrón como punta (hunt, ~30 min)
 ('Daga Oxidada',              'Hierro',                1),
 ('Daga Oxidada',              'Piedra',                2),
 ('Daga Oxidada',              'Colmillo de Cimarrón',  1),
--- Arco Corto de Sauce: Madera de Pino + Tela Rasgada (la "cuerda": hilo sacado de la tela)
+-- Arco Corto de Sauce: Madera de Pino + una Pluma de Ñandú (la pluma de las flechas; hunt, ~30 min)
 ('Arco Corto de Sauce',       'Madera de Pino',        3),
-('Arco Corto de Sauce',       'Tela Rasgada',          1),
--- Grimorio Desgastado: las tapas de Madera y una Pluma de Ñandú para escribir
+('Arco Corto de Sauce',       'Pluma de Ñandú',        1),
+-- Grimorio Desgastado: las tapas de Madera y una Pluma de Ñandú para escribir (hunt, ~30 min)
 ('Grimorio Desgastado',       'Madera de Pino',        2),
 ('Grimorio Desgastado',       'Pluma de Ñandú',        1),
--- Hoja de Acero Puro (Raro +15): Hierro + empuñadura de Madera + el filo de un Colmillo de Jabalí
+-- Hoja de Acero Puro (Raro +15): Hierro + empuñadura de Madera + el filo de 2 Colmillos de Jabalí (hunt, ~60 min)
 ('Hoja de Acero Puro',        'Hierro',                3),
 ('Hoja de Acero Puro',        'Madera de Pino',        2),
-('Hoja de Acero Puro',        'Colmillo de Jabalí',    1),
--- Machete de Chacra (Raro +10, general): Hierro, empuñadura de Madera y un Cuero Grueso para el agarre
-('Machete de Chacra',         'Hierro',                2),
-('Machete de Chacra',         'Madera de Pino',        2),
-('Machete de Chacra',         'Cuero Grueso',          1),
--- Amuleto del Levantador (+10): 1 colmillo, no 3 (3 eran ~2 horas de cazar solo eso)
+('Hoja de Acero Puro',        'Colmillo de Jabalí',    2),
+-- Amuleto del Levantador (+10): Piedra + 1 Colmillo de Jabalí (hunt, ~30 min; 3 con la Hoja = ~90 min)
 ('Amuleto del Levantador',    'Piedra',                5),
 ('Amuleto del Levantador',    'Colmillo de Jabalí',    1),
 -- Hombreras de Cuero Grueso (Raro +16 DEF; antes Legendario +20): el amuleto "de fondo" de la zona. Bajó de 20 a 16
--- para que los amuletos de Zona 2 (+18 y +24) sean nominalmente MAYORES (escalera de zonas).
-('Hombreras de Cuero Grueso', 'Cuero Grueso',          5),
-('Hombreras de Cuero Grueso', 'Piedra Caliente',       3);
+-- para que los amuletos de Zona 2 (+18 y +24) sean nominalmente MAYORES (escalera de zonas). Es la que lleva el drop
+-- del jefe (Colmillo del Rey Jabalí, ~200 min) más 2 Cuero Grueso del Toro Bravo de /travel (~100 min).
+('Hombreras de Cuero Grueso', 'Piedra',                3),
+('Hombreras de Cuero Grueso', 'Cuero Grueso',          2),
+('Hombreras de Cuero Grueso', 'Colmillo del Rey Jabalí', 1);
 
 INSERT INTO recipes (result_item_id, gold_cost, zone_id, affinity)
 SELECT i.item_id, r.gold, z.zone_id, r.affinity
@@ -147,6 +149,6 @@ END $$;
 DROP TABLE z1_ingredients;
 DROP TABLE z1_recipes;
 
--- Chequeo rápido: 8 recetas en Zona 1 (4 de afinidad + 4 generales).
+-- Chequeo rápido: 7 recetas en Zona 1 (4 de afinidad + 1 general + 2 amuletos).
 -- SELECT i.name, r.gold_cost, r.affinity FROM recipes r JOIN items i ON i.item_id = r.result_item_id
 -- JOIN zones z ON z.zone_id = r.zone_id WHERE z.name = 'Praderas del Mate' ORDER BY r.affinity DESC, i.stat_value;
