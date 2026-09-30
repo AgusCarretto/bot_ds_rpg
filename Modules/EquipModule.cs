@@ -8,7 +8,9 @@ public class EquipModule(IUserRepository userRepository, IItemRepository itemRep
 {
     // Comando barra: /equip
     [SlashCommand("equip", "Equipate un arma o amuleto que tengas en tu inventario.")]
-    public async Task HandleEquipAsync([Summary("item", "Nombre del arma o amuleto a equipar.")] string itemName)
+    public async Task HandleEquipAsync(
+        [Summary("item", "Elegí de la lista el arma o amuleto de tu inventario que querés equipar.")]
+        [Autocomplete(typeof(EquipItemAutocompleteHandler))] string itemName)
     {
         await DeferAsync();
 

@@ -13,7 +13,9 @@ public class ZoneModule(IUserRepository userRepository, IZoneRepository zoneRepo
     : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("zona", "Viajá a otra zona del mundo (usá /zonas para ver los IDs disponibles).")]
-    public async Task HandleZonaAsync([Summary("id", "ID de la zona a la que querés viajar (ver /zonas).")] int zoneId)
+    public async Task HandleZonaAsync(
+        [Summary("id", "Elegí de la lista la zona a la que querés viajar (ver /zonas).")]
+        [Autocomplete(typeof(ZoneAutocompleteHandler))] int zoneId)
     {
         await DeferAsync();
 
@@ -74,26 +76,18 @@ public class ZoneModule(IUserRepository userRepository, IZoneRepository zoneRepo
         // inmediatamente anterior todavía no tiene un jefe cargado, no bloqueamos: no seria justo
         // trabar el avance por contenido que todavía no existe.
         var orderedZones = ZoneRanking.OrderByDifficulty(await zoneRepository.GetAllAsync());
-        int targetRank = ZoneRanking.RankOf(orderedZones, zone.ZoneId);
+        var gatekeeperZone = ZoneRanking.PendingGatekeeperZone(orderedZones, zone.ZoneId, player.HighestZoneCleared);
 
-        if (targetRank > 1)
+        if (gatekeeperZone is not null)
         {
-            var gatekeeperZone = orderedZones[targetRank - 2];
             var gatekeeperBoss = await monsterRepository.GetBossByZoneAsync(gatekeeperZone.ZoneId);
 
             if (gatekeeperBoss is not null)
             {
-                int clearedRank = player.HighestZoneCleared == 0
-                    ? 0
-                    : ZoneRanking.RankOf(orderedZones, player.HighestZoneCleared);
-
-                if (targetRank > clearedRank + 1)
-                {
-                    return (
-                        $"🔒 Para viajar a **{zone.Name}** primero tenés que derrotar a **{gatekeeperBoss.Name}** {gatekeeperBoss.Emoji}, " +
-                        $"el Jefe de **{gatekeeperZone.Name}** — probá `/boss` estando ahí.",
-                        null);
-                }
+                return (
+                    $"🔒 Para viajar a **{zone.Name}** primero tenés que derrotar a **{gatekeeperBoss.Name}** {gatekeeperBoss.Emoji}, " +
+                    $"el Jefe de **{gatekeeperZone.Name}** — probá `/boss` estando ahí.",
+                    null);
             }
         }
 

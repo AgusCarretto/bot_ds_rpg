@@ -16,7 +16,8 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
     // Comando barra: /shop buy
     [SlashCommand("buy", "Comprá un consumible de la tienda.")]
     public async Task HandleBuyAsync(
-        [Summary("item", "Nombre del consumible que querés comprar.")] string itemName,
+        [Summary("item", "Elegí de la lista el consumible que querés comprar.")]
+        [Autocomplete(typeof(BuyItemAutocompleteHandler))] string itemName,
         [Summary("cantidad", "Cuántos querés comprar (por defecto 1).")] int quantity = 1)
     {
         await DeferAsync();

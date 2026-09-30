@@ -30,4 +30,22 @@ public static class ZoneRanking
     // 0 si la zona no está en la lista.
     public static int RankOf(IReadOnlyList<Zone> orderedZones, int zoneId) =>
         orderedZones.ToList().FindIndex(z => z.ZoneId == zoneId) + 1;
+
+    // La zona cuyo jefe todavía hay que derrotar para poder entrar a "targetZoneId", según hasta dónde
+    // llegó el jugador (users.highest_zone_cleared, 0 = ninguna), o null si la progresión no lo frena
+    // (es la primera zona, o ya despejó la anterior). No mira si esa zona TIENE un jefe cargado: si no
+    // lo tiene no hay a quién derrotar y el llamador no bloquea (no sería justo trabar el avance por
+    // contenido que todavía no existe). Es la ÚNICA definición de esta regla: /zona y la lista de zonas
+    // que se ofrece al escribirlo tienen que coincidir, si no la lista promete algo que /zona rechaza.
+    public static Zone? PendingGatekeeperZone(IReadOnlyList<Zone> orderedZones, int targetZoneId, int highestZoneCleared)
+    {
+        int targetRank = RankOf(orderedZones, targetZoneId);
+        if (targetRank <= 1)
+        {
+            return null;
+        }
+
+        int clearedRank = highestZoneCleared == 0 ? 0 : RankOf(orderedZones, highestZoneCleared);
+        return targetRank > clearedRank + 1 ? orderedZones[targetRank - 2] : null;
+    }
 }
