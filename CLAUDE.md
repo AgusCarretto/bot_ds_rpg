@@ -33,16 +33,17 @@ extension currently in use). Run in this exact order against an empty database:
 ```
 schema.sql → seed.sql → add_weapon_family.sql → seed_class_gear_and_monster_drops.sql
   → seed_consumables_and_base_swords.sql → seed_zones_and_monsters.sql → seed_zone_bosses.sql
-  → seed_recipes.sql
+  → seed_recipes.sql → seed_zone2_gear_and_recipes.sql → seed_zone3_gear_and_recipes.sql
+  → seed_zone4_gear_and_recipes.sql → seed_zone5_gear_and_recipes.sql
   → finalize_consumable_catalog.sql → remove_legacy_consumables.sql → update_item_emojis.sql
 ```
 
 `seed_recipes.sql` must come after every seed that creates items it uses: a recipe whose result or ingredient
 item doesn't exist yet would be silently skipped (or created *without* that ingredient), so the seed verifies
 itself and raises instead. (`seed_zone_bosses.sql` used to be missing from this list, so a fresh install had no
-zone bosses at all.) `draft_zone2_3_gear_and_recipes.sql` is a **draft** kept out of the install on purpose.
+zone bosses at all.)
 
-`Database/run_fresh_install.sql` runs all eleven in this exact order in one shot via `psql` (or
+`Database/run_fresh_install.sql` runs all fifteen in this exact order in one shot via `psql` (or
 pgAdmin's "PSQL Tool", NOT its plain Query Tool — both need real `psql`, since it uses the `\ir`
 meta-command) — **only against a genuinely empty database**, never against one with existing data
 (see below, several of these are not safe to re-run).
@@ -58,7 +59,7 @@ data (their own header comments predate `items.name UNIQUE`, so they undersell i
 constraint now in schema.sql, their `ON CONFLICT DO NOTHING` inserts are actually idempotent too,
 but don't rely on that for the `UPDATE`/data-shape parts). Everything else in the order above
 (`seed_consumables_and_base_swords.sql`, `seed_zones_and_monsters.sql`, `seed_zone_bosses.sql`,
-`seed_recipes.sql`, `finalize_consumable_catalog.sql`, `remove_legacy_consumables.sql`, `update_item_emojis.sql`) is
+`seed_recipes.sql`, `seed_zoneN_gear_and_recipes.sql` (N = 2..5), `finalize_consumable_catalog.sql`, `remove_legacy_consumables.sql`, `update_item_emojis.sql`) is
 safe to re-run.
 
 **Known recurring problem**: catalog items have repeatedly been added by hand directly to a
@@ -136,9 +137,12 @@ not the roster, so they couldn't join, couldn't start, and stayed locked out of 
 lobby expired), `Remove` releases players *by the index* (not by iterating `Participants`), and
 `TryActivateAsync` closes the raid if it throws midway. Known gap: an `Active` raid has no
 inactivity timeout (see `MEJORAS.md`). Raid difficulty is not the stored boss stats: the raid boss is
-`GameData/RaidDifficulty.cs` (HP ×2.2 and +50% per extra player, damage ×1.35) applied *at activation*
+`GameData/RaidDifficulty.cs` (HP +50% per extra player, plus per-zone multipliers) applied *at activation*
 once the roster is final (`RaidSession.BossBaseHp` keeps the unscaled roll), so the lobby's provisional
-`BossMaxHp` is meaningless until the phase flips to `Active`.
+`BossMaxHp` is meaningless until the phase flips to `Active`. The multipliers depend on the zone's **rank by
+difficulty** (`RaidSession.ZoneRank`): zone 1 keeps ×2.2 HP / ×1.35 damage (calibrated on its softer boss), zone 2+
+uses ×1.5 / ×1.1 because those bosses are already tuned to the zone ladder — stacking the zone-1 multipliers on a
+ladder boss made the raid impossible (0-3% win). Whenever a zone boss is retuned, re-measure its raid.
 Nobody can be in a solo fight and a raid at once (`AdventureCombatStarter` and `RaidModule` check
 both `ICombatSessionService` and `IRaidSessionService`). Shared helpers extracted for reuse:
 `GameData/ZoneRanking.cs` (zone order by `min_level`, never raw `zone_id`) and
@@ -158,6 +162,21 @@ request throws). Per-fight ability state (`AbilityState`) lives in `CombatState.
 `RaidParticipant.Ability`. In a raid the button is a generic "Habilidad" (the message is shared, so
 it can't be labelled per player).
 
+**Zone difficulty is a ladder, and it is calibrated, not guessed.** All 5 zones are loaded. Each zone needs a *jump*
+in gear, ×1.6 the previous one (affinity weapon stat: Z2 +20, Z3 +32, Z4 +50, Z5 +80; generals and amulets follow the
+same pace — the full table is in `MEJORAS.md` and each `seed_zoneN_gear_and_recipes.sql`), and its monsters are
+tuned so that **entering** with the previous zone's gear costs (~5 turns, ~47% of HP in a common fight), the zone's
+own gear leaves commons at 13-18% HP (comfortable, never a walkover), and the **boss** is the exam (67-87% defeat
+with the previous zone's gear, ~16% with its own). Numbers come from a simulation that drives the real
+`CombatTurnResolver`: fix a nominal, strictly increasing gear ladder, then bisect the monsters' HP and damage factors
+until the entry fight hits those targets (the scratchpad harness is not in the repo — rebuild it; the sensitivity to
+remember is that the "exit" target controls how fast the ladder inflates, because each zone is entered with the
+previous zone's exit gear). Never retune a zone's monsters without its gear (recipes) shipping with it, or it becomes
+a wall, and re-measure that zone's raid when its boss changes. The whole ladder is the **run-1 baseline**: a future
+post-Zone-5 reset will raise drop % and material quantities, so don't lower recipes for run 1 because they're slow.
+The per-zone recipe seeds (`seed_recipes.sql` = Zone 1, `seed_zone2..5_gear_and_recipes.sql`) own their recipes'
+ingredients (they delete the old ones before loading) so a moved/changed recipe never keeps stale rows.
+
 **Forge recipes: 8 per zone, and a player only sees their own zone's** (`recipes.zone_id` + `recipes.affinity`;
 `add_recipe_zone_and_affinity.sql` for old DBs). The per-zone template is **4 affinity weapons (one per class — the
 weapon family of that class) + 2 general weapons + 2 amulets (amulets are always general, never class-locked)**;
@@ -170,7 +189,7 @@ the class-synergy value for weapons). A Discord embed is capped at **6000 charac
 field) and `EmbedBuilder.Build()` *throws* past it — the template + single-zone view is what keeps it around 1000; any
 embed built from a growing catalog needs a similar cap. Recipe seeds verify themselves (`seed_recipes.sql` raises if
 an item/zone is missing — otherwise the row is silently dropped or created without that ingredient). Higher-zone
-gear is a **draft** (`Database/draft_zone2_3_gear_and_recipes.sql`, not in the install) to be redone with the template.
+gear for zones 3-5 follows the same template (`seed_zone3..5_gear_and_recipes.sql`).
 Deleting catalog items is dangerous: `inventory.item_id` is `ON DELETE CASCADE` (it silently wipes player inventories),
 so any script that deletes items must first abort if anyone holds them (see `trim_recipes_to_zone_template.sql`).
 

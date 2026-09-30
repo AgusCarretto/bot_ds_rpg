@@ -1,6 +1,82 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-09-30 (recetas: molde de 8 por zona, se ve solo la de tu zona)_
+_Última revisión: 2026-09-30 (escalera de zonas completa: las 5 zonas)_
+
+## Escalera de zonas: las 5 zonas con un salto de dificultad y de equipo cada una (2026-09-30)
+
+- **Diagnóstico medido** (simulación con el `CombatTurnResolver` real, 4 clases, sin consumibles): la dificultad
+  no subía pareja y el equipo de Zona 1 rompía todo. Sin ningún arma, un nivel 7 en Zona 2 la pasaba en 3 turnos
+  perdiendo 6% de vida; en Zona 3, 4.5 turnos y 18%; con el Hacha +35 (que se forjaba en Zona 1) hasta el jefe
+  de Zona 2 caía perdiendo 24%; y Zona 5 era una pared (93% de derrota sin arma).
+- **Principio de diseño**: cada zona pide un **salto de equipo**, y el equipo de cada zona es ×1.6 el de la
+  anterior. Los monstruos se calibran para que (1) al **entrar** con el equipo de la zona anterior una pelea común
+  dure ~5 turnos y cueste ~47% de la vida (~2% de derrota), (2) al **salir** con el equipo propio cueste 13-18%
+  (cómoda, nunca un paseo), (3) el **jefe** sea el examen: con el equipo de la zona anterior se pierde 67-87% de
+  las veces; con el de la zona, ~16% (con ~70% de la vida); con el amuleto alto que dropea el propio jefe, 4-7%.
+- **"Bajar el daño y la def de las cosas" (tu idea): sí, y fue lo correcto.** Mi primera escalera (+35 · +55 ·
+  +72 · +85) era demasiado fuerte: con ella la pelea común al salir de cada zona costaba 2-8% de la vida. Resolví
+  la escalera con el simulador en vez de inventarla: el objetivo de "salida" controla qué tan rápido se infla
+  (con ~8% de vida al salir el arma de Zona 5 pedía +160; con ~15% pide +80), y además fijé una escalera
+  **nominalmente creciente** (con el objetivo "libre" el arma de Zona 2 salía igual que la Hoja de Zona 1).
+- **La escalera** (arma de afinidad, ×1.5 por sinergia de clase · armas generales bajo/alto, sin familia ·
+  amuletos bajo/alto, siempre generales):
+
+  | Zona | Afinidad | Generales | Amuletos | Rareza |
+  |---|---|---|---|---|
+  | 1 Praderas | +5 (inicial) | +10 / +15 (Hoja) | +10 / +16 | Común-Raro |
+  | 2 Bosque de Cenizas | **+20** | +18 / +26 | +18 / +24 | Épico |
+  | 3 Minas del Yunque | **+32** | +28 / +40 | +30 / +38 | Legendario |
+  | 4 Cordillera del Fuego | **+50** | +44 / +66 | +46 / +60 | Legendario |
+  | 5 Cráter de la Escoria | **+80** | +70 / +105 | +75 / +95 | Mítico |
+
+  El "bajo" se forja sin drop de jefe; el "alto" lleva un drop del jefe de la zona (Garra del Alfa, Pelaje
+  Plateado del Alfa, Martillo/Yunque del Capataz, Colmillo del Señor del Volcán, Brasa Eterna, Corona de Escoria
+  Viva, Corazón del Soberano). Las 4 de afinidad de Zona 5 llevan además **1 material Mítico de recolección**
+  (Fragmento de Meteorito o Corteza del Árbol de Vida, ~0.5% por acción: ~17 h por unidad): el objetivo de largo
+  plazo de la run. Las recetas son `seed_zoneN_gear_and_recipes.sql` (N = 2 a 5; la de Zona 1 es
+  `seed_recipes.sql`): 8 por zona, **40 en total**, todas con el molde 4+2+2 y verificación en voz alta.
+- **Monstruos y jefes** (HP / daño; recompensa de los comunes ×2.5 la de antes, porque cada pelea cuesta vida):
+
+  | Zona | Comunes | Jefe (nivel al que se desafía) | Bonus comunes | Bonus jefe |
+  |---|---|---|---|---|
+  | 2 | 136-234 / 33-60 | Lobisón Alfa 499-635 / 54-79 (nv 10) | 38 oro / 30 XP | 300 / 255 |
+  | 3 | 250-397 / 55-95 | Capataz de Hierro 743-929 / 78-112 (nv 15) | 88 / 70 | 600 / 510 |
+  | 4 | 376-563 / 82-127 | **Señor del Volcán** (nuevo) 1072-1310 / 112-149 (nv 20) | 175 / 138 | 950 / 900 |
+  | 5 | 541-812 / 111-175 | **Soberano de la Escoria** (nuevo, el jefe FINAL de la run) 1540-1847 / 157-203 | 325 / 250 | 1500 / 1500 |
+
+  Los jefes de las zonas 4 y 5 no existían (el bloqueo de progresión se apagaba desde Zona 3); ahora hay uno por
+  zona, con 2 drops nuevos cada uno. El de Zona 5 no tiene zona siguiente, así que `/boss` no le pide nivel: el
+  filtro es el equipo. Zona 1 (incluido el Rey Jabalí) **no se tocó** salvo las Hombreras (+20 → +16, para que los
+  amuletos de Zona 2 sean nominalmente mayores).
+- **Verificado con los datos REALES de la base** (monstruos, jefes e ítems de verdad, sinergia real de cada arma
+  por clase, cálculo del bot): entrar con el equipo de la zona anterior = 4.7-5.0 turnos y 45-48% de vida (1-2% de
+  derrota); entrar **sin arma** = 40-79% de derrota (Z2 40%, Z3 54%, Z4 63%, Z5 79%); salir = 13-18%; jefe con el
+  equipo anterior 67-87% de derrota, con el de la zona 15-18%, con el amuleto alto 4-7%.
+- **Raid** (se mantienen ×1.5/×1.1 de la Zona 2 en adelante): con el equipo de la zona (afinidad + amuleto
+  bajo) da **solo 25-28%, de a dos 55-59%, de a tres 63-70%, de a cuatro 80-87%**, igual en las 4 zonas, así que
+  un solo multiplicador alcanza. (Antes de este rebalance el raid de Zona 2 había quedado imposible; ver
+  `RaidDifficulty`.)
+- **Aplicado hoy** (base real + seeds): `seed_zones_and_monsters.sql` → `seed_zone_bosses.sql` → `seed_recipes.sql` →
+  `seed_zone2..5_gear_and_recipes.sql`, **ya corridos**, ensayados antes en una copia con `pg_dump` (inventario y
+  equipados intactos). Instalación limpia probada con `run_fresh_install.sql` (15 scripts): 40 recetas, 5 jefes.
+  Se eliminó el borrador `draft_zone2_3_gear_and_recipes.sql` (obsoleto) y `rebalance_zone2.sql` (redundante: los
+  seeds son re-ejecutables y son la fuente de verdad).
+- **Bug latente que encontré y arreglé**: `/forge make` con un nombre mal escrito respondía con la lista de TODAS
+  las recetas; con 40 (y el emoji de cada una) pasaba el límite de 2000 caracteres de Discord y el comando
+  fallaba justo cuando te equivocabas. Ahora te manda a `/forge recipes` o a la lista desplegable.
+- **Lo que hay que tener en cuenta (decisiones que tomé)**: las Legendarias de afinidad de Zonas 3 y 4 ya existían
+  y son **exclusivas de su clase** (`class_requirement`), mientras que las de Zonas 1, 2 y 5 son por familia: no
+  cambia nada de lo que ve cada clase, pero es una inconsistencia; los nombres de esas Legendarias viejas
+  (Facón de Hueso Añejo, Cuchillos de Ceniza…) no combinan con sus zonas (Cordillera del Fuego) — si querés, se
+  renombran. Los materiales de las zonas altas salen del cuello de botella de siempre (Hierro ~12.5% por `/mine`;
+  Zafiro/Ébano ~4.5%; los Míticos 0.5%).
+- **Reset a futuro** (dicho por vos, sin implementar): se desbloquea al terminar la Zona 5 (derrotar al
+  Soberano) y da más % de drop y más cantidad de materiales. Todo está calibrado contra las tasas **base de la
+  run 1** (30% de drop por cacería, 1 material por drop, 1 por `/chop` o `/mine`). Para sumar zonas más allá de la
+  5: repetir el procedimiento (correr el simulador de escalera con el equipo de la zona anterior como entrada,
+  ×1.6 de arma por zona, y cargar monstruos + jefe + 8 recetas).
+- **Sin probar en Discord**: cómo se siente jugar cada zona. Las cifras salen de simulación (sin consumibles, con
+  habilidad apenas está lista), no del criterio de cada jugador; la curva real depende de cuánto se cure la gente.
 
 ## Recetas: molde de 8 por zona, y cada uno ve solo la de su zona (2026-09-30)
 
@@ -17,9 +93,9 @@ _Última revisión: 2026-09-30 (recetas: molde de 8 por zona, se ve solo la de t
   | Afinidad (Arquero) | Arco Corto de Sauce | +5 ATQ | 40 | 3 Madera de Pino + 1 Tela Rasgada (la "cuerda") |
   | Afinidad (Hechicero) | Grimorio Desgastado | +5 ATQ | 40 | 2 Madera de Pino + 1 Pluma de Ñandú |
   | General | Hoja de Acero Puro | +15 ATQ | 180 | 3 Hierro + 2 Madera de Pino + 1 Colmillo de Jabalí |
-  | General | Hacha de Hierro MK3 | +35 ATQ | 150 | 5 Hierro + 3 Cuero Grueso |
+  | General | Machete de Chacra | +10 ATQ | 100 | 2 Hierro + 2 Madera de Pino + 1 Cuero Grueso |
   | Amuleto | Amuleto del Levantador | +10 DEF | 150 | 5 Piedra + 1 Colmillo de Jabalí |
-  | Amuleto | Hombreras de Cuero Grueso | +20 DEF | 200 | 5 Cuero Grueso + 3 Piedra Caliente |
+  | Amuleto | Hombreras de Cuero Grueso | +16 DEF | 200 | 5 Cuero Grueso + 3 Piedra Caliente |
 
 - **Qué muestra cada comando** (`GameData/RecipeCatalog.cs`, un solo lugar para los dos): `/forge recipes` (y
   `aa fr`) dice la zona, agrupa en "🎯 Tu arma de clase / ⚔️ Armas generales / 📿 Amuletos" y pone al lado de
@@ -107,7 +183,7 @@ _Última revisión: 2026-09-30 (recetas: molde de 8 por zona, se ve solo la de t
   ningún error). Reproducido en una base vacía descartable (21 recetas, 2 faltando, 2 incompletas) y
   arreglado moviendo `seed_recipes.sql` al final de los seeds (`run_fresh_install.sql` y `CLAUDE.md`
   actualizados): instalación limpia = **23 recetas, todas completas**. Ya está aplicado en tu base real.
-- **Deriva que noté, sin tocar**: el **Amuleto del Levantador** es *Común +10* en tu base real y *Épico +15*
+- **Deriva que noté (RESUELTA: `seed_recipes.sql` fija Común +10, ver la escalera de zonas)**: el **Amuleto del Levantador** es *Común +10* en tu base real y *Épico +15*
   en una instalación limpia desde los scripts. No sé cuál es el correcto; lo dejo para que decidas.
 - **Sin probar en Discord**: el look de los desplegables (mismas limitaciones que las de comprar/equipar).
 
