@@ -36,7 +36,8 @@ schema.sql → seed.sql → add_weapon_family.sql → seed_class_gear_and_monste
   → seed_travel_monsters.sql → finalize_monster_roster.sql
   → seed_recipes.sql → seed_zone2_gear_and_recipes.sql → seed_zone3_gear_and_recipes.sql
   → seed_zone4_gear_and_recipes.sql → seed_zone5_gear_and_recipes.sql
-  → finalize_consumable_catalog.sql → remove_legacy_consumables.sql → update_item_emojis.sql
+  → finalize_consumable_catalog.sql → remove_legacy_consumables.sql → rebalance_consumable_prices.sql
+  → update_item_emojis.sql
 ```
 
 `seed_recipes.sql` must come after every seed that creates items it uses: a recipe whose result or ingredient
@@ -44,7 +45,7 @@ item doesn't exist yet would be silently skipped (or created *without* that ingr
 itself and raises instead. (`seed_zone_bosses.sql` used to be missing from this list, so a fresh install had no
 zone bosses at all.)
 
-`Database/run_fresh_install.sql` runs all seventeen in this exact order in one shot via `psql` (or
+`Database/run_fresh_install.sql` runs all eighteen in this exact order in one shot via `psql` (or
 pgAdmin's "PSQL Tool", NOT its plain Query Tool — both need real `psql`, since it uses the `\ir`
 meta-command) — **only against a genuinely empty database**, never against one with existing data
 (see below, several of these are not safe to re-run).
@@ -60,7 +61,7 @@ data (their own header comments predate `items.name UNIQUE`, so they undersell i
 constraint now in schema.sql, their `ON CONFLICT DO NOTHING` inserts are actually idempotent too,
 but don't rely on that for the `UPDATE`/data-shape parts). Everything else in the order above
 (`seed_consumables_and_base_swords.sql`, `seed_zones_and_monsters.sql`, `seed_zone_bosses.sql`,
-`seed_travel_monsters.sql`, `finalize_monster_roster.sql`, `seed_recipes.sql`, `seed_zoneN_gear_and_recipes.sql` (N = 2..5), `finalize_consumable_catalog.sql`, `remove_legacy_consumables.sql`, `update_item_emojis.sql`) is
+`seed_travel_monsters.sql`, `finalize_monster_roster.sql`, `seed_recipes.sql`, `seed_zoneN_gear_and_recipes.sql` (N = 2..5), `finalize_consumable_catalog.sql`, `remove_legacy_consumables.sql`, `rebalance_consumable_prices.sql`, `update_item_emojis.sql`) is
 safe to re-run.
 
 **Known recurring problem**: catalog items have repeatedly been added by hand directly to a
@@ -240,6 +241,28 @@ HP *delta* applied against whatever the player's real HP is at that moment (`IUs
 ApplyCombatHpDeltaAsync`), specifically so that a `/heal` or `/use` fired mid-fight isn't silently
 overwritten by a stale in-memory HP snapshot when the fight ends. `CombatState.PlayerStartingHp`
 is the anchor for that delta calculation.
+
+**Mid-fight healing is limited to ONE use per fight in `/travel` and `/boss`** (`GameData/CombatHeal.cs`,
+`CombatState.HealUsed`): the combat message gets a select menu ("🍖 Curarte con comida") with the food in the player's
+bag (re-read every turn, biggest heal first; `AdventureModule.HandleHealAsync`), and once used it stays on screen
+disabled. The menu and a typed `/use` are the **same code path** (`UseModule.ExecuteUseAsync`) and share the limit —
+otherwise the command would be a back door. `/hunt` has no menu and its `/use` is unchanged (unlimited); the raid has
+neither. Healing still costs the turn (the monster counterattacks). The menu options deliberately carry no custom
+emoji: if the bot can't access one, Discord rejects the WHOLE message, which would break starting every travel/boss.
+Food prices (`rebalance_consumable_prices.sql`) rise faster than the heal (~0.5 gold/HP for the smallest, ~3 for the
+biggest) because with one heal per fight the big one is worth much more.
+
+**`/chop` and `/mine` give several units per action** (`GameData/GatheringYield.cs`): Común 1–5, Raro/Épico 1–3,
+Legendario/Mítico 1, times `RunMultiplier` (1 in run 1; the post-Zone-5 reset is meant to raise it). The gathered
+ingredients in the recipe seeds are ~3× (Común) / ~2× (Raro/Épico) what they used to be so the pace didn't change —
+`Database/report_recipe_pacing.sql` measures it (it covers gathering too). Keep that in sync if the yields change.
+Known bottleneck, unchanged: Hierro (12.5% per `/mine`, cooldown 5 min) makes several zone 2–4 weapons take ~150–200 min
+of mining, more than their drop farming.
+
+**Readable embeds**: `/forge recipes` shows ONE recipe per field (item + stat, gold, one ingredient per line) and
+`/drops` sends one embed per zone (a field per fight type, two short lines per monster). Both were single walls of text
+before. Every embed built from a growing catalog must stay under Discord's 6000-character total (all embeds of a message
+count together).
 
 **Autoritative source for "how much SQL debt does this repo have right now"**: `MEJORAS.md` at the
 repo root. Read it before assuming the schema in `Database/schema.sql` is what's actually running

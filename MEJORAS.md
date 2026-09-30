@@ -1,6 +1,44 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-09-30 (un drop por monstruo, `/drops`, chances bajas)_
+_Última revisión: 2026-09-30 (recolección por cantidad, curar en combate, comidas más caras, pantallas más limpias)_
+
+## Recolección por cantidad, curar en combate, comidas más caras y pantallas más limpias (2026-09-30)
+
+- **`/chop` y `/mine` dan varias unidades** (`GameData/GatheringYield.cs`): **Común 1-5** (Madera de Pino, Piedra),
+  **Raro y Épico 1-3** (Roble, Carbón, Hierro, Nogal, Oro Puro) y **Legendario y Mítico 1** (Ébano, Zafiro, Corteza,
+  Meteorito). Hay un `RunMultiplier` (1 en la run 1) para que el reset post-Zona 5 lo suba sin reescribir nada. El
+  resultado dice la cantidad ("Conseguiste **4× Madera de Pino**").
+- **Recetas compensadas**: todo material de recolección pide ~3x (Común) o ~2x (Raro/Épico) lo de antes; los
+  Legendarios y Míticos no se tocaron. Medí los minutos con el reporte (ahora incluye recolección): el ritmo quedó
+  **igual** que antes (p. ej. Hacha de Hierro MK3: 5 Hierro a 1 por minada = 10 Hierro a ~2 por minada = 200 min).
+  Dato que salió de medir: **el Hierro ya era el cuello de botella** (12.5% por `/mine` cada 5 min) — varias armas de
+  zona 2-4 piden 150-200 min de minar contra ~100 de cazar drops, y las de Zona 5 llevan Meteorito/Corteza (~17 h).
+  No lo toqué porque pediste paridad; si querés aflojarlo hay que bajar cantidades de Hierro o subir su chance.
+- **Desplegable "Curar" en el combate, solo `/travel` y `/boss`** (`GameData/CombatHeal.cs`): un menú con la comida que
+  tenés (la que más cura primero, se vuelve a leer cada turno), **una vez por pelea**; al usarla queda deshabilitado
+  diciendo "Ya te curaste en esta pelea". En `/hunt` y en el raid no existe. Curarse sigue costando el turno (el
+  monstruo contraataca). Elegir una comida pasa por **la misma lógica que `/use`**.
+- **Decidí sin preguntar**: (1) el límite de 1 vale también para `/use` escrito en travel/boss (si no, el comando es una
+  puerta trasera); (2) en **`/hunt` el `/use` escrito sigue como estaba, sin límite** — me dijiste que el desplegable no
+  exista ahí, no que se prohíba curarse; si querés que tampoco se pueda, es una línea en `UseModule`; (3) **Épico entra
+  en "intermedia" (1-3)**, no en una escala propia; (4) las opciones del desplegable **no llevan emoji**: si el bot no
+  tiene acceso a un emoji custom, Discord rechaza el mensaje entero y se caería el inicio de cada travel/boss.
+- **Comidas más caras** (`rebalance_consumable_prices.sql`, en la instalación limpia): antes todas valían ~0.22 oro/HP
+  (la de 300 HP costaba 67 oro). Ahora compra ≈ 0.1·HP^1.6: **0.5 oro/HP la más chica y ~3 oro/HP la más grande** (Mate
+  Amargo 8, Pan 12, Empanada 36, Choripán 52, Vacío 110, Asado de Tira 160, Cordero 300, Asado Completo 700, Mate
+  Dulce 920); venta = 75%. Con una sola curación por pelea la que más cura pasó a valer bastante más, y con travel
+  pagando ×10 el oro sobraba.
+- **Pantallas más legibles**: `/forge recipes` muestra **una receta por bloque** (ítem y cuánto suma, el oro y cada
+  ingrediente en su línea, con 🎯/⚔️/📿 y una leyenda al pie) en vez de una línea larga por receta; `/drops` manda **una
+  tarjeta por zona** (color propio, un bloque por tipo de pelea, dos líneas cortas por monstruo) en vez de un bloque
+  enorme por zona. Medí con datos reales todas las zonas y clases: el embed de recetas más grande mide 1068 de 6000 y
+  `/drops` entero 1811.
+- **Migración de una base existente**: re-correr `seed_recipes.sql`, `seed_zone2..5_gear_and_recipes.sql` y
+  `rebalance_consumable_prices.sql` (idempotentes). Una instalación limpia (ahora 18 scripts) da el mismo resultado:
+  65 filas (21 monstruos con sus drops + 35 recetas con ingredientes + 9 comidas con precio) idénticas a la base real.
+- **Verificación**: arneses contra la base real con un usuario descartable (rendimientos, cantidades, precios, el
+  desplegable de punta a punta con `/use`, el límite en travel y boss, hunt sin límite, el tamaño de los embeds) y los de
+  raid, fugas y autocompletado de forja, todos OK. Lo que **no** pude probar desde acá: clickear el desplegable en Discord.
 
 ## Drops: un solo ítem por monstruo, chances bajas y `/drops` (2026-09-30)
 
@@ -56,17 +94,6 @@ _Última revisión: 2026-09-30 (un drop por monstruo, `/drops`, chances bajas)_
   `seed_recipes.sql`, `seed_zone2..5_gear_and_recipes.sql` y al final `remove_extra_general_recipes.sql`. Una
   instalación limpia (`run_fresh_install.sql`, ahora 17 scripts) da **exactamente** el mismo resultado: probado
   instalando en una base descartable y comparando fila por fila monstruos, drops, recetas e ingredientes.
-- **Pendiente que me pediste mirar más adelante**: un botón para curarte en plena pelea con un desplegable de la comida
-  que tenés (sin escribir `/use`), **una sola vez por pelea**. Mi opinión está abajo, en "Ideas para después".
-
-## Ideas para después
-
-- **Botón "Curar" en combate (pedido 2026-09-30)**: menú desplegable con los consumibles de la mochila, **1 uso por
-  pelea**. Recomendación: ponerlo en **`/travel` y `/boss`** (peleas caras, de a una cada 10/30 min, donde un error
-  cuesta) y **no en `/hunt`** (se farmea en cantidad y curarse entre peleas con comida es justo el ciclo de recursos
-  que querés). Ojo: el límite de 1 por pelea tiene que valer también para `/use` escrito en combate, si no se esquiva
-  usando el comando; por eso el estado "ya curé" va en `CombatState`, no en el botón. No aplica al raid (mensaje
-  compartido). Es solo UX sobre lo que `/use` ya hace.
 
 ## `/travel` sigue la escalera: un monstruo élite por zona y recompensa x10 (2026-09-30)
 
