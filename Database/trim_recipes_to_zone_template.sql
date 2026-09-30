@@ -6,7 +6,7 @@
 --   1) Borra toda receta que NO sea una de las 8 de Zona 1 (4 de afinidad + 2 armas generales + 2 amuletos,
 --      ver seed_recipes.sql): las 15 Legendarias de clase +45/+55 y las 8 de zonas 2 y 3.
 --      Los ÍTEMS Legendarios de clase siguen en el catálogo (solo pierden la receta).
---   2) Borra del catálogo los 8 ítems del borrador de zonas 2 y 3 (ver draft_zone2_3_gear_and_recipes.sql),
+--   2) Borra del catálogo los 8 ítems del borrador de zonas 2 y 3 (el borrador de zonas 2 y 3 de la vuelta anterior, ya reemplazado por seed_zoneN_gear_and_recipes.sql),
 --      que eran nuevos y ya no tienen receta.
 --
 -- SEGURO: los ítems se borran solo si NADIE los tiene. inventory.item_id es ON DELETE CASCADE (borraría el

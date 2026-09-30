@@ -9,7 +9,7 @@
 --   - El "PSQL Tool" de pgAdmin (el ícono de terminal, NO el "Query Tool" — ese último solo manda
 --     SQL crudo al servidor y no entiende \ir, va a tirar error de sintaxis).
 --   - DBeaver u otros clientes: probablemente NO sirve — correlos a mano, uno por uno, en el orden
---     de abajo (son los mismos 11 archivos, en esta carpeta).
+--     de abajo (son los mismos 15 archivos, en esta carpeta).
 --
 -- USAR SOLO CONTRA UNA BASE VACÍA. seed.sql, add_weapon_family.sql y
 -- seed_class_gear_and_monster_drops.sql NO son idempotentes (duplican filas si la base ya tiene
@@ -32,8 +32,15 @@
 -- (Espada de Madera / Hoja de Acero Puro en seed_consumables_and_base_swords.sql, Pluma de Ñandú /
 -- Colmillo de Cimarrón en seed_zones_and_monsters.sql). Una receta cuyo ítem todavía no existe se omitiría
 -- en SILENCIO, o peor, se crearía sin ese ingrediente — por eso este seed se verifica solo y FALLA en voz alta.
--- (Las recetas de las zonas 2 y 3 son un borrador, draft_zone2_3_gear_and_recipes.sql: NO se corre acá.)
 \ir seed_recipes.sql
+-- Recetas de Zona 2 (escalera de zonas): usa drops del jefe (seed_zone_bosses.sql) y le quita al Hacha su
+-- receta de Zona 1, así que va DESPUÉS de seed_recipes.sql. También se verifica sola.
+\ir seed_zone2_gear_and_recipes.sql
+-- Zonas 3, 4 y 5 (escalera de zonas): mismo molde. Cada una re-estatea las Legendarias que ya existían (las de
+-- seed_class_gear_and_monster_drops.sql), crea sus ítems nuevos y usa los drops de los jefes: van en orden.
+\ir seed_zone3_gear_and_recipes.sql
+\ir seed_zone4_gear_and_recipes.sql
+\ir seed_zone5_gear_and_recipes.sql
 \ir finalize_consumable_catalog.sql
 \ir remove_legacy_consumables.sql
 \ir update_item_emojis.sql

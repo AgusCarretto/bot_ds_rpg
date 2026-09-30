@@ -29,6 +29,22 @@
 -- Los amuletos son siempre generales: sin clase exclusiva (antes los Legendarios de clase la tenían).
 UPDATE items SET class_requirement = NULL WHERE type = 'Amulet' AND class_requirement IS NOT NULL;
 
+-- ESCALERA DE ZONAS: el equipo de Zona 1 llega hasta +15 (Hoja de Acero Puro). Antes el Hacha de Hierro MK3
+-- (+35) se forjaba acá y con ella la Zona 1 y la 2 quedaban triviales (a nivel 3, +35 mata todo en 1-2
+-- golpes); ahora es el arma de afinidad del Guerrero en Zona 2 (seed_zone2_gear_and_recipes.sql).
+-- Machete de Chacra: el segundo arma general de la zona, sin familia (nadie tiene sinergia con él), un
+-- escalón por debajo de la Hoja.
+-- Amuleto del Levantador: Común +10 (sell 100 / buy 130). Es lo que tiene la base real y con lo que se calibró la
+-- escalera (el amuleto barato con el que se entra a Zona 2); seed_class_gear_and_monster_drops.sql lo traía
+-- Épico +15 (60/78), y una instalación limpia y la base real quedaban distintas — ahora las dos convergen acá.
+INSERT INTO items (name, type, rarity, stat_value, sell_price, buy_price) VALUES
+('Machete de Chacra',      'Weapon', 'Raro',  10,  45,  58),
+('Amuleto del Levantador', 'Amulet', 'Común', 10, 100, 130),
+('Hombreras de Cuero Grueso', 'Amulet', 'Raro', 16, 96, 125)
+ON CONFLICT (name) DO UPDATE SET
+    type = EXCLUDED.type, rarity = EXCLUDED.rarity, stat_value = EXCLUDED.stat_value,
+    sell_price = EXCLUDED.sell_price, buy_price = EXCLUDED.buy_price;
+
 CREATE TEMP TABLE z1_recipes (result_name TEXT, gold INTEGER, affinity BOOLEAN);
 INSERT INTO z1_recipes VALUES
 -- Armas de afinidad: una por clase (Espadas = Guerrero, Dagas = Ninja, Arcos = Arquero, Grimorios = Hechicero)
@@ -38,7 +54,7 @@ INSERT INTO z1_recipes VALUES
 ('Grimorio Desgastado',       40, true),
 -- Armas generales
 ('Hoja de Acero Puro',       180, false),
-('Hacha de Hierro MK3',      150, false),
+('Machete de Chacra',        100, false),
 -- Amuletos (generales)
 ('Amuleto del Levantador',   150, false),
 ('Hombreras de Cuero Grueso', 200, false);
@@ -62,13 +78,15 @@ INSERT INTO z1_ingredients VALUES
 ('Hoja de Acero Puro',        'Hierro',                3),
 ('Hoja de Acero Puro',        'Madera de Pino',        2),
 ('Hoja de Acero Puro',        'Colmillo de Jabalí',    1),
--- Hacha de Hierro MK3 (Épico +35)
-('Hacha de Hierro MK3',       'Hierro',                5),
-('Hacha de Hierro MK3',       'Cuero Grueso',          3),
+-- Machete de Chacra (Raro +10, general): Hierro, empuñadura de Madera y un Cuero Grueso para el agarre
+('Machete de Chacra',         'Hierro',                2),
+('Machete de Chacra',         'Madera de Pino',        2),
+('Machete de Chacra',         'Cuero Grueso',          1),
 -- Amuleto del Levantador (+10): 1 colmillo, no 3 (3 eran ~2 horas de cazar solo eso)
 ('Amuleto del Levantador',    'Piedra',                5),
 ('Amuleto del Levantador',    'Colmillo de Jabalí',    1),
--- Hombreras de Cuero Grueso (Legendario +20 DEF): el amuleto "de fondo" de la zona
+-- Hombreras de Cuero Grueso (Raro +16 DEF; antes Legendario +20): el amuleto "de fondo" de la zona. Bajó de 20 a 16
+-- para que los amuletos de Zona 2 (+18 y +24) sean nominalmente MAYORES (escalera de zonas).
 ('Hombreras de Cuero Grueso', 'Cuero Grueso',          5),
 ('Hombreras de Cuero Grueso', 'Piedra Caliente',       3);
 
@@ -79,6 +97,14 @@ JOIN items i ON i.name = r.result_name
 CROSS JOIN (SELECT zone_id FROM zones WHERE name = 'Praderas del Mate') z
 ON CONFLICT (result_item_id) DO UPDATE SET
     gold_cost = EXCLUDED.gold_cost, zone_id = EXCLUDED.zone_id, affinity = EXCLUDED.affinity;
+
+-- Los ingredientes de estas recetas los define ESTE archivo: se borran los que tuvieran (si una receta cambió
+-- de ingredientes, el upsert solo agregaría los nuevos y dejaría los viejos colgados).
+DELETE FROM recipe_ingredients
+WHERE recipe_id IN (
+    SELECT rec.recipe_id FROM z1_recipes r
+    JOIN items i ON i.name = r.result_name
+    JOIN recipes rec ON rec.result_item_id = i.item_id);
 
 INSERT INTO recipe_ingredients (recipe_id, item_id, quantity)
 SELECT rec.recipe_id, ing.item_id, a.quantity

@@ -1,6 +1,6 @@
 -- =========================================================
--- Asado y Acero RPG — Jefes de Zona (Bloqueo de Progresión): un jefe por cada una de las primeras
--- 3 zonas, marcado is_boss = true, EXCLUIDO del pool aleatorio de /hunt (solo se enfrenta a
+-- Asado y Acero RPG — Jefes de Zona (Bloqueo de Progresión): un jefe por cada una de las 5 zonas,
+-- marcado is_boss = true, EXCLUIDO del pool aleatorio de /hunt (solo se enfrenta a
 -- propósito con /boss — ver Repositories/MonsterRepository.GetMonstersByZoneAsync/GetBossByZoneAsync).
 -- Stats muy por encima de los monstruos normales de su zona; derrotarlo sube
 -- users.highest_zone_cleared, que Modules/ZoneModule.ExecuteTravelAsync exige para avanzar de zona.
@@ -30,7 +30,13 @@ INSERT INTO items (name, type, rarity, stat_value, sell_price, buy_price) VALUES
 ('Pelaje Plateado del Alfa',     'Material', 'Épico', 0, 30, 39),
 -- Capataz de Hierro (Zona 3 — normal es Épico, el jefe dropea Legendario)
 ('Martillo del Capataz', 'Material', 'Legendario', 0, 100, 130),
-('Yunque del Capataz',   'Material', 'Legendario', 0, 100, 130)
+('Yunque del Capataz',   'Material', 'Legendario', 0, 100, 130),
+-- Señor del Volcán (Zona 4 — normal es Legendario, el jefe dropea Legendario también: no hay escalón entre Legendario y Mítico para un material de drop)
+('Colmillo del Señor del Volcán', 'Material', 'Legendario', 0, 100, 130),
+('Brasa Eterna',                  'Material', 'Legendario', 0, 100, 130),
+-- Soberano de la Escoria (Zona 5 — el jefe final: Mítico)
+('Corona de Escoria Viva', 'Material', 'Mítico', 0, 500, 650),
+('Corazón del Soberano',   'Material', 'Mítico', 0, 500, 650)
 ON CONFLICT (name) DO NOTHING;
 
 -- ---------------------------------------------------------
@@ -54,11 +60,15 @@ JOIN items ON items.name = drop.name
 ON CONFLICT DO NOTHING;
 
 -- ---------------------------------------------------------
--- 👑🐺 Zona 2: Lobisón Alfa — normal de la zona: HP 55-95, dmg 13-24, bonus 15/12.
+-- 👑🐺 Zona 2: Lobisón Alfa — normal de la zona: HP 136-234, dmg 33-60, bonus 38/30.
+-- ESCALERA DE ZONAS (el mismo criterio para los 5 jefes): se desafía con el nivel de la zona siguiente (10). Con
+-- el equipo PROPIO de la zona (afinidad +20, amuleto +18) dura ~8 turnos, cuesta ~70% de la vida y se pierde
+-- ~16% de las veces (sin consumibles); con el equipo de la zona anterior se pierde ~77% de las veces — hay que
+-- forjar antes. Antes: HP 220-280 / daño 40-58, que con el Hacha +35 de Zona 1 caía en 3 turnos.
 -- ---------------------------------------------------------
 WITH monster AS (
     INSERT INTO monsters (zone_id, name, emoji, min_hp, max_hp, min_damage, max_damage, gold_reward, xp_reward, is_boss)
-    SELECT zone_id, 'Lobisón Alfa', '👑🐺', 220, 280, 40, 58, 300, 255, true FROM zones WHERE name = 'Bosque de Cenizas'
+    SELECT zone_id, 'Lobisón Alfa', '👑🐺', 499, 635, 54, 79, 300, 255, true FROM zones WHERE name = 'Bosque de Cenizas'
     ON CONFLICT (name) DO UPDATE SET zone_id = EXCLUDED.zone_id, emoji = EXCLUDED.emoji,
         min_hp = EXCLUDED.min_hp, max_hp = EXCLUDED.max_hp, min_damage = EXCLUDED.min_damage,
         max_damage = EXCLUDED.max_damage, gold_reward = EXCLUDED.gold_reward, xp_reward = EXCLUDED.xp_reward,
@@ -72,11 +82,13 @@ JOIN items ON items.name = drop.name
 ON CONFLICT DO NOTHING;
 
 -- ---------------------------------------------------------
--- 👑⚒️ Zona 3: Capataz de Hierro — normal de la zona: HP 120-190, dmg 26-45, bonus 35/28.
+-- 👑⚒️ Zona 3: Capataz de Hierro — normal de la zona: HP 250-397, dmg 55-95, bonus 88/70.
+-- Se desafía con nivel 15. Con el equipo de la zona (afinidad +32, amuleto +30): ~8 turnos, ~70% de la vida,
+-- ~16% de derrota; con el de la zona anterior, ~69% de derrota. (Antes: HP 400-500 / daño 70-100.)
 -- ---------------------------------------------------------
 WITH monster AS (
     INSERT INTO monsters (zone_id, name, emoji, min_hp, max_hp, min_damage, max_damage, gold_reward, xp_reward, is_boss)
-    SELECT zone_id, 'Capataz de Hierro', '👑⚒️', 400, 500, 70, 100, 600, 510, true FROM zones WHERE name = 'Minas del Yunque'
+    SELECT zone_id, 'Capataz de Hierro', '👑⚒️', 743, 929, 78, 112, 600, 510, true FROM zones WHERE name = 'Minas del Yunque'
     ON CONFLICT (name) DO UPDATE SET zone_id = EXCLUDED.zone_id, emoji = EXCLUDED.emoji,
         min_hp = EXCLUDED.min_hp, max_hp = EXCLUDED.max_hp, min_damage = EXCLUDED.min_damage,
         max_damage = EXCLUDED.max_damage, gold_reward = EXCLUDED.gold_reward, xp_reward = EXCLUDED.xp_reward,
@@ -89,5 +101,48 @@ CROSS JOIN (VALUES ('Martillo del Capataz'), ('Yunque del Capataz')) AS drop(nam
 JOIN items ON items.name = drop.name
 ON CONFLICT DO NOTHING;
 
--- Chequeo rápido: 3 jefes cargados, cada uno con 2 drops.
+-- ---------------------------------------------------------
+-- 👑🌋 Zona 4: Señor del Volcán — NUEVO (antes el bloqueo de progresión se apagaba desde la Zona 3, que no tenía
+-- jefe propio más allá). Normal de la zona: HP 376-563, dmg 82-127, bonus 175/138. Se desafía con nivel 20.
+-- Con el equipo de la zona (afinidad +50, amuleto +46): ~8 turnos, ~70% de la vida, ~16% de derrota; con el de
+-- la zona anterior, ~76% de derrota. Premio x~6 el de un común (950 oro / 900 XP, ~10% de un nivel al 20).
+-- ---------------------------------------------------------
+WITH monster AS (
+    INSERT INTO monsters (zone_id, name, emoji, min_hp, max_hp, min_damage, max_damage, gold_reward, xp_reward, is_boss)
+    SELECT zone_id, 'Señor del Volcán', '👑🌋', 1072, 1310, 112, 149, 950, 900, true FROM zones WHERE name = 'Cordillera del Fuego'
+    ON CONFLICT (name) DO UPDATE SET zone_id = EXCLUDED.zone_id, emoji = EXCLUDED.emoji,
+        min_hp = EXCLUDED.min_hp, max_hp = EXCLUDED.max_hp, min_damage = EXCLUDED.min_damage,
+        max_damage = EXCLUDED.max_damage, gold_reward = EXCLUDED.gold_reward, xp_reward = EXCLUDED.xp_reward,
+        is_boss = EXCLUDED.is_boss
+    RETURNING monster_id
+)
+INSERT INTO monster_drops (monster_id, item_id)
+SELECT monster.monster_id, items.item_id FROM monster
+CROSS JOIN (VALUES ('Colmillo del Señor del Volcán'), ('Brasa Eterna')) AS drop(name)
+JOIN items ON items.name = drop.name
+ON CONFLICT DO NOTHING;
+
+-- ---------------------------------------------------------
+-- 👑☠️ Zona 5: Soberano de la Escoria — NUEVO: el jefe final de la run (derrotarlo es terminar las 5 zonas; ahí
+-- se desbloquea el reset a futuro). Normal de la zona: HP 541-812, dmg 111-175, bonus 325/250. No tiene una zona
+-- siguiente, así que /boss no le pide nivel mínimo (RequiredLevelForBoss devuelve null): el filtro es el equipo.
+-- Con el equipo de la zona (afinidad +80, amuleto +75): ~8 turnos, ~70% de la vida, ~16% de derrota; con el de
+-- la zona anterior, ~87% de derrota. Premio 1500 oro / 1500 XP (~12% de un nivel al 25).
+-- ---------------------------------------------------------
+WITH monster AS (
+    INSERT INTO monsters (zone_id, name, emoji, min_hp, max_hp, min_damage, max_damage, gold_reward, xp_reward, is_boss)
+    SELECT zone_id, 'Soberano de la Escoria', '👑☠️', 1540, 1847, 157, 203, 1500, 1500, true FROM zones WHERE name = 'Cráter de la Escoria'
+    ON CONFLICT (name) DO UPDATE SET zone_id = EXCLUDED.zone_id, emoji = EXCLUDED.emoji,
+        min_hp = EXCLUDED.min_hp, max_hp = EXCLUDED.max_hp, min_damage = EXCLUDED.min_damage,
+        max_damage = EXCLUDED.max_damage, gold_reward = EXCLUDED.gold_reward, xp_reward = EXCLUDED.xp_reward,
+        is_boss = EXCLUDED.is_boss
+    RETURNING monster_id
+)
+INSERT INTO monster_drops (monster_id, item_id)
+SELECT monster.monster_id, items.item_id FROM monster
+CROSS JOIN (VALUES ('Corona de Escoria Viva'), ('Corazón del Soberano')) AS drop(name)
+JOIN items ON items.name = drop.name
+ON CONFLICT DO NOTHING;
+
+-- Chequeo rápido: 5 jefes cargados, cada uno con 2 drops.
 -- SELECT name, zone_id, is_boss FROM monsters WHERE is_boss = true ORDER BY zone_id;
