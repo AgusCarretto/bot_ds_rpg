@@ -1,6 +1,113 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-09-30 (escalera de zonas completa: las 5 zonas)_
+_Última revisión: 2026-09-30 (un drop por monstruo, `/drops`, chances bajas)_
+
+## Drops: un solo ítem por monstruo, chances bajas y `/drops` (2026-09-30)
+
+- **Pedido**: un comando que liste por zona los monstruos y qué sueltan; que cada monstruo suelte **un** ítem y no
+  dos; bajar las chances porque avanzar era muy fácil (primero dijiste 20% hunt / 30% travel y después lo
+  dejaste en **10% hunt / 20% travel**); menos monstruos de `/hunt`; y recetas de modo que queden **2 armas y 2
+  amuletos**. Todo son valores de la run 1: el reset que se desbloquea al terminar la Zona 5 los va a ir subiendo.
+- **`/drops` y `aa drops`** (`Modules/DropsModule.cs`, armado puro en `GameData/DropsCatalog.cs`): una zona por
+  bloque con Cazar / Viajar / Jefe, la chance y `🐗 Jabalí Rabioso → Colmillo de Jabalí (Raro)` por monstruo; marca 📍
+  tu zona y no crea cuenta al mirarlo. Lee las chances de las mismas constantes que usa el combate.
+- **Plantel** (`finalize_monster_roster.sql`, fuente de verdad de los drops de hunt y jefe): Zona 1 pasa de 6 a **3
+  monstruos de `/hunt`** (Jabalí Rabioso, Perro Cimarrón, Ñandú Salvaje; se van Lobisón de las Cenizas, Gólem de
+  Escoria y Cuatrero No-Muerto) escalados ×1.15 HP / ×1.1 daño para que la zona cueste lo mismo (medido: 6.0 turnos
+  y 32% de la vida, contra 33% con los 6); zonas 2-5 siguen con 2. Más 1 de travel y 1 jefe por zona. **Cada uno suelta
+  exactamente 1 ítem**; los nombres de travel se ajustaron a lo que sueltan (Toro Bravo → Cuero Grueso, Ciervo
+  Sagrado → Ceniza Bendita, Mole de Escoria → Escoria Metálica Densa, Dragón de Lava → Aliento de Fuego Eterno,
+  Quimera del Abismo → Ceniza del Abismo). Cada zona tiene 4 materiales de drop: 2 "a granel" (hunt), 1 "escaso"
+  (travel) y 1 "raro" (jefe).
+- **Chances**: hunt **10%**, travel **20%**, y el **jefe 15%** (constante propia). El jefe no me lo habías pedido: hasta
+  ahora compartía la fórmula de hunt, y bajar hunt a 10% lo habría dejado en 10% sin que lo decidas; con un solo
+  ítem por jefe, 15% mantiene el ritmo de siempre (~200 min por unidad).
+- **La trampa que hubo que compensar**: con un ítem por monstruo cada ítem puntual cae **más seguido** que con dos
+  (zonas 2-5: de 7.5% a 5% por cacería con las chances nuevas, pero con las de 20/30 habría sido 10%), así que bajar
+  solo los porcentajes no hacía más lento el avance. Medí los minutos de farmeo de cada receta
+  (`Database/report_recipe_pacing.sql`, 1 cacería por minuto, 1 viaje cada 10, 1 jefe cada 30) y subí las cantidades:
+
+  | | Antes (30% / 50%, 2 ítems) | Ahora (10% / 20% / 15%, 1 ítem) |
+  |---|---|---|
+  | Zona 2-5: arma de afinidad | 20-40 min | **~100 min** (2 del drop de travel) |
+  | Zona 2-5: arma general / amuleto bajo | 10-40 min | **~80 / ~100 min** |
+  | Zona 2-5: amuleto alto (drop de jefe) | ~200 min | **~200 min** (igual) |
+  | Zona 1: armas iniciales / Hoja +15 / Levantador | 40 / 20 / 20 min | **30 / 60 / 30 min** |
+  | Zona 1: Hombreras (drop de jefe) | 120 min | **~200 min** |
+
+  La vara: el equipo de una zona tiene que costar más o menos lo que cuesta subir de nivel dentro de ella (~95-110 min
+  de juego seguido en las zonas 2-5: XP por nivel `100·L^1.5`, ~1000 XP cada 10 min con hunts + un travel).
+  Esos minutos son de juego SEGUIDO sin curarse: en la práctica son más.
+- **Recetas: 7 por zona (4 afinidad + 1 general + 2 amuletos), 35 en total; cada jugador ve 2 armas y 2 amuletos.**
+  Se sacó la segunda arma general de cada zona (Machete de Chacra, Alabarda del Alfa, Martillo de Fragua, Hacha de
+  Obsidiana, Guadaña de Almas): con un drop por monstruo no alcanzaban las fuentes y ninguna le ganaba al arma de
+  afinidad de nadie, así que el escalón de equipo (afinidad +20/+32/+50/+80) no cambia. Las recetas se reescribieron
+  contra los drops nuevos (los "a granel" van en cantidades grandes, el de travel x2 en cada arma de afinidad y el
+  del jefe x1 en el amuleto alto). **Todos los drops los usa alguna receta y todo material de receta tiene fuente**
+  (chequeado con la base).
+- **Sobrantes, sin tocar**: 17 materiales quedaron sin ningún monstruo que los suelte (Pelaje Oscuro, Garra Maldita,
+  Núcleo Ígneo, Hueso Añejo, Cuero Curtido de Pradera, Collar de Cuero Viejo, Tela Rasgada, Piedra Caliente, Corona de
+  Cerdas, Rama Carbonizada, Garra del Alfa, Polvo de Mina Sagrada, Martillo del Capataz, Roca Volcánica Pura, Colmillo
+  del Señor del Volcán, Escoria Pura del Cráter, Corona de Escoria Viva). No los borré: algunos están en mochilas
+  (Hueso Añejo x5, Piedra Caliente x3...) y `inventory.item_id` es `ON DELETE CASCADE`. Siguen vendiéndose; si querés
+  limpiar el catálogo es un script con guarda de inventario. Las 5 armas generales sacadas sí se borraron del
+  catálogo (nadie las tenía; `remove_extra_general_recipes.sql` lo chequea).
+- **Migración de una base existente**: re-correr `seed_travel_monsters.sql`, `finalize_monster_roster.sql`,
+  `seed_recipes.sql`, `seed_zone2..5_gear_and_recipes.sql` y al final `remove_extra_general_recipes.sql`. Una
+  instalación limpia (`run_fresh_install.sql`, ahora 17 scripts) da **exactamente** el mismo resultado: probado
+  instalando en una base descartable y comparando fila por fila monstruos, drops, recetas e ingredientes.
+- **Pendiente que me pediste mirar más adelante**: un botón para curarte en plena pelea con un desplegable de la comida
+  que tenés (sin escribir `/use`), **una sola vez por pelea**. Mi opinión está abajo, en "Ideas para después".
+
+## Ideas para después
+
+- **Botón "Curar" en combate (pedido 2026-09-30)**: menú desplegable con los consumibles de la mochila, **1 uso por
+  pelea**. Recomendación: ponerlo en **`/travel` y `/boss`** (peleas caras, de a una cada 10/30 min, donde un error
+  cuesta) y **no en `/hunt`** (se farmea en cantidad y curarse entre peleas con comida es justo el ciclo de recursos
+  que querés). Ojo: el límite de 1 por pelea tiene que valer también para `/use` escrito en combate, si no se esquiva
+  usando el comando; por eso el estado "ya curé" va en `CombatState`, no en el botón. No aplica al raid (mensaje
+  compartido). Es solo UX sobre lo que `/use` ya hace.
+
+## `/travel` sigue la escalera: un monstruo élite por zona y recompensa x10 (2026-09-30)
+
+_Reemplaza lo que dicen más abajo sobre `/travel` (pool fijo de 5 monstruos genéricos, drop por rareza sorteada,
+"mismo pool de `type = 'Material'`" y recompensa fija). Los drops y las chances de esta sección quedaron
+superados por la sección de arriba (1 ítem por monstruo, travel 20%)._
+
+- **Problema**: la escalera de zonas (monstruos, jefes y recetas) dejó afuera a `/travel`. Seguía con 5 monstruos
+  genéricos de 50-90 HP / 12-24 de daño **sin importar la zona** (en Zona 5 era un paseo: un común de ahí tiene
+  541-812 HP), una recompensa fija (~150 oro / ~155 XP a nivel 5 y `+6` por nivel) y un drop de material al azar
+  de cualquier zona. En Zona 5 una sola cacería común ya pagaba más (~377 oro / ~285 XP) que un `/travel`
+  entero, que encima tiene 10 minutos de cooldown contra 1.
+- **Un monstruo dedicado por zona** (`monsters.is_travel`, separado del pool de `/hunt` y del jefe; tu pedido:
+  "2-3 por zona para hunt y 1 para el travel"): Toro Bravo 🐂, Ciervo Sagrado 🦌, Mole de Escoria 🪨, Dragón de
+  Lava 🐉 y Quimera del Abismo 🦂. Se cargan con `seed_travel_monsters.sql` (migración para bases existentes:
+  `add_monster_is_travel.sql`). El pool de `/hunt` **no creció** (y después se recortó la Zona 1 a 3, ver arriba).
+- **Dificultad medida** con el `CombatTurnResolver` real (mismas 4 clases, equipos y niveles que la escalera): el
+  monstruo de travel es el promedio de los rangos de los comunes de su zona con **HP ×1.25 y daño ×1.1** —un
+  élite, no un jefe—. Al entrar con el equipo de la zona anterior cuesta ~62-68% de la vida (un común: ~47%) y se
+  pierde 12-16% de las veces (Zona 1, ~2%); con el equipo propio cuesta ~23-32% (un común: 13-18%) y casi nunca se
+  pierde. Se probó también ×1.35/×1.15 y ×1.5/×1.2: ya con el primero se pierde 22-31% al entrar, demasiado para
+  algo opcional. Huir lo cierra sin perder nada salvo la recompensa, como en cualquier pelea.
+- **Drop específico**: el travel suelta el ítem **de su propio monstruo** (primero eran 2 con 50% de chance; hoy es
+  1 con 20%, ver arriba). Son materiales que **ya existían** en la zona: no nacen ítems sin receta ni sin emoji.
+  Verificado en la base que **todos** los materiales tienen algún monstruo de origen, así que sacar el sorteo por
+  rareza (`RarityCatalog.RollTravelRarity`) no dejó nada sin fuente. Se borró también el pool fijo
+  `MonsterCatalog.TravelMonsters`.
+- **Recompensa**: la fórmula entera de `/hunt` (nivel + bonus del monstruo) **×10** (`TravelRewardMultiplier`),
+  que es lo que vale el cooldown de 10 minutos. Así sube sola con la zona y en Zona 1 queda casi igual que antes
+  (~120 oro / ~150 XP a nivel 1 contra ~126 / ~131). A nivel de entrada de cada zona: Z2 ~580 oro / ~490 XP,
+  Z3 ~1200 / ~950, Z4 ~2200 / ~1700, Z5 ~3800 / ~2850 (un nivel de XP cuesta 1118 / 3162 / 5809 / 8944).
+- **Decidí sin preguntar** (decime si querés otra cosa): (1) que el travel **reuse** materiales de la zona en vez
+  de inventar ítems exclusivos —los 10 ítems nuevos quedarían sin receta y sin emoji—; si querés drops exclusivos
+  de travel que entren en recetas, es un cambio chico en el seed; (2) el factor del élite y el ×10 (los dos son
+  una constante); (3) la Zona 1 seguía con 6 monstruos de `/hunt` (luego me pediste recortar y se hizo: ver arriba).
+- **A vigilar**: el oro de travel en Zona 4-5 (miles por viaje) es mucho más que antes —hoy el oro solo compra
+  consumibles y recetas (150-350), no es cuello de botella— y se hace más relevante si después se suma un sumidero
+  de oro o el reset post-Zona 5. Se ajusta en una sola constante.
+- **Verificación**: arnés contra la base real (monstruo por zona, fuera del pool de `/hunt`, rangos de recompensa
+  exactos, chance de drop, arranque de punta a punta con un usuario descartable, cooldown no cobrado si la zona no
+  tiene monstruo de travel) + los arneses previos de raid, fugas y autocompletado, todos OK.
 
 ## Escalera de zonas: las 5 zonas con un salto de dificultad y de equipo cada una (2026-09-30)
 
@@ -78,7 +185,7 @@ _Última revisión: 2026-09-30 (escalera de zonas completa: las 5 zonas)_
 - **Sin probar en Discord**: cómo se siente jugar cada zona. Las cifras salen de simulación (sin consumibles, con
   habilidad apenas está lista), no del criterio de cada jugador; la curva real depende de cuánto se cure la gente.
 
-## Recetas: molde de 8 por zona, y cada uno ve solo la de su zona (2026-09-30)
+## Recetas: molde de 8 por zona, y cada uno ve solo la de su zona (2026-09-30) — _hoy son 7 por zona (4+1+2), ver "Drops" arriba_
 
 - **Molde por zona** (decisión tuya): **4 armas de afinidad (1 por clase) + 2 armas generales + 2 amuletos
   (siempre generales) = 8 recetas**. Cada jugador ve solo **5**: su arma de afinidad + las 2 generales + los 2

@@ -33,6 +33,7 @@ extension currently in use). Run in this exact order against an empty database:
 ```
 schema.sql → seed.sql → add_weapon_family.sql → seed_class_gear_and_monster_drops.sql
   → seed_consumables_and_base_swords.sql → seed_zones_and_monsters.sql → seed_zone_bosses.sql
+  → seed_travel_monsters.sql → finalize_monster_roster.sql
   → seed_recipes.sql → seed_zone2_gear_and_recipes.sql → seed_zone3_gear_and_recipes.sql
   → seed_zone4_gear_and_recipes.sql → seed_zone5_gear_and_recipes.sql
   → finalize_consumable_catalog.sql → remove_legacy_consumables.sql → update_item_emojis.sql
@@ -43,7 +44,7 @@ item doesn't exist yet would be silently skipped (or created *without* that ingr
 itself and raises instead. (`seed_zone_bosses.sql` used to be missing from this list, so a fresh install had no
 zone bosses at all.)
 
-`Database/run_fresh_install.sql` runs all fifteen in this exact order in one shot via `psql` (or
+`Database/run_fresh_install.sql` runs all seventeen in this exact order in one shot via `psql` (or
 pgAdmin's "PSQL Tool", NOT its plain Query Tool — both need real `psql`, since it uses the `\ir`
 meta-command) — **only against a genuinely empty database**, never against one with existing data
 (see below, several of these are not safe to re-run).
@@ -59,7 +60,7 @@ data (their own header comments predate `items.name UNIQUE`, so they undersell i
 constraint now in schema.sql, their `ON CONFLICT DO NOTHING` inserts are actually idempotent too,
 but don't rely on that for the `UPDATE`/data-shape parts). Everything else in the order above
 (`seed_consumables_and_base_swords.sql`, `seed_zones_and_monsters.sql`, `seed_zone_bosses.sql`,
-`seed_recipes.sql`, `seed_zoneN_gear_and_recipes.sql` (N = 2..5), `finalize_consumable_catalog.sql`, `remove_legacy_consumables.sql`, `update_item_emojis.sql`) is
+`seed_travel_monsters.sql`, `finalize_monster_roster.sql`, `seed_recipes.sql`, `seed_zoneN_gear_and_recipes.sql` (N = 2..5), `finalize_consumable_catalog.sql`, `remove_legacy_consumables.sql`, `update_item_emojis.sql`) is
 safe to re-run.
 
 **Known recurring problem**: catalog items have repeatedly been added by hand directly to a
@@ -115,11 +116,35 @@ Zone IDs are shown to players ("Zona 2"), so they should be consecutive 1..N in 
 insert burns identity numbers and leaves gaps — `Database/renumber_zones_consecutively.sql` fixes an existing DB
 (it rewrites every column that stores a zone id, so any *new* column holding a zone id must be added to it).
 Each player has `users.current_zone_id` (default 1); `/zona [id]` moves them after validating
-`zones.min_level`, `/zonas` lists them. `/hunt` is zone-scoped — its monster pool now lives in the
-DB (`monsters` + `monster_drops`, `Repositories/IMonsterRepository.cs`, resolved by
-`IAdventureCombatStarter.PrepareHuntAsync` from the player's current zone) instead of the old
-hardcoded `MonsterCatalog.HuntMonsters`. `/travel` is intentionally NOT zone-scoped — it keeps its
-own fixed pool in `GameData/MonsterCatalog.TravelMonsters`, unrelated to zones.
+`zones.min_level`, `/zonas` lists them. `/hunt`, `/travel` and `/boss` are all zone-scoped, and every
+monster lives in the DB (`monsters` + `monster_drops`, `Repositories/IMonsterRepository.cs`; nothing is
+hardcoded in `MonsterCatalog` anymore). A zone has three *mutually exclusive* kinds of monster
+(`monsters.is_boss` / `monsters.is_travel`, `CHECK (NOT (is_boss AND is_travel))`): the `/hunt` pool
+(`PrepareHuntAsync`, **3 in zone 1 and 2 in zones 2–5**), the boss (`/boss`, `/raid`) and **one dedicated
+`/travel` monster per zone** (`PrepareTravelAsync`, `Database/seed_travel_monsters.sql`). The travel monster
+is the average of that zone's commons at HP ×1.25 / damage ×1.1 (an élite, not a boss — measured with the
+real `CombatTurnResolver`, see the seed header), and `CombatRewardCalculator.RollTravelReward` pays the
+**whole `/hunt` formula ×10** (`TravelRewardMultiplier` — what the 10-minute cooldown is worth in hunts). So
+travel rewards follow the zone ladder automatically: a new zone's travel payout is set by the
+`gold_reward`/`xp_reward` bonus of its monster, same as hunts. If you add a zone, add its travel monster or
+`/travel` answers "zona sin monstruos" (without charging the cooldown).
+
+**Drops: every monster drops exactly ONE item, and the chances are deliberately low.** Per zone there are 4 drop
+materials — one per `/hunt` monster ("a granel"), one from the travel monster ("escaso") and one from the boss
+("raro") — and `Database/finalize_monster_roster.sql` is the single source of truth for the hunt + boss drops (and for
+which Zone-1 hunt monsters exist; it runs after the seeds that create them, deletes the extras and raises if any
+monster doesn't end with exactly one drop or a monster is missing from its roster list); `seed_travel_monsters.sql`
+owns the travel drops. The chances live in `CombatRewardCalculator` and nowhere else: `HuntDropChancePercent` 10,
+`TravelDropChancePercent` 20, `BossDropChancePercent` 15 (the boss — solo and raid — has its own constant on purpose:
+it used to share the hunt formula, so lowering hunt would have silently changed it). `/drops` (`aa drops`,
+`Modules/DropsModule.cs` + the pure `GameData/DropsCatalog.cs`) lists every zone's monsters and drops from those same
+constants, so the list can't drift. These are **run-1 baseline values** — the reset unlocked after Zone 5 is meant to
+raise drop % and material quantity. **Recipe quantities are calibrated against these chances**, so changing a chance,
+a monster or a drop means re-running `Database/report_recipe_pacing.sql` (minutes of farming per recipe; pass the
+chances as `-v ph= -v pt= -v pb=`) and retuning the seeds. Note the trap this avoids: with one item per monster each
+specific item drops *more* often than with two, so lowering the percentages alone would have made progress faster,
+not slower. Target: a zone's gear ≈ as long as leveling through that zone (~100 min of continuous play), the
+boss-drop amulet ~200 min.
 
 **Co-op zone bosses (`/raid`)**: `Modules/RaidModule.cs` + `Services/RaidSessionService.cs`. Same
 in-memory philosophy as solo combat, but a *different concurrency model on purpose*: solo combat's
@@ -177,11 +202,13 @@ post-Zone-5 reset will raise drop % and material quantities, so don't lower reci
 The per-zone recipe seeds (`seed_recipes.sql` = Zone 1, `seed_zone2..5_gear_and_recipes.sql`) own their recipes'
 ingredients (they delete the old ones before loading) so a moved/changed recipe never keeps stale rows.
 
-**Forge recipes: 8 per zone, and a player only sees their own zone's** (`recipes.zone_id` + `recipes.affinity`;
+**Forge recipes: 7 per zone, and a player only sees their own zone's** (`recipes.zone_id` + `recipes.affinity`;
 `add_recipe_zone_and_affinity.sql` for old DBs). The per-zone template is **4 affinity weapons (one per class — the
-weapon family of that class) + 2 general weapons + 2 amulets (amulets are always general, never class-locked)**;
+weapon family of that class) + 1 general weapon + 2 amulets (amulets are always general, never class-locked)**
+(it used to be 2 generals; with one drop per monster the sources don't stretch that far, and the second general never
+beat anyone's affinity weapon — `remove_extra_general_recipes.sql` migrates an old DB);
 `affinity` is an explicit flag because a *general* weapon also has a family (Hoja de Acero Puro is Espadas), so it
-can't be inferred from the item. A player sees 5: their class's affinity weapon + the 2 generals + the 2 amulets, for
+can't be inferred from the item. A player sees 4: their class's affinity weapon + the general + the 2 amulets, for
 their **current zone** (falling back to the nearest earlier zone that has recipes, with a note). That view lives in
 one pure place, `GameData/RecipeCatalog.cs`, shared by `/forge recipes` and the `/forge make` autocomplete — they must
 show the same thing. Each line shows what the result adds via `GameData/ItemStatLabel.cs` ("+15 ATQ" / "+20 DEF", plus
