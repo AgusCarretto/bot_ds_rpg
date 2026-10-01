@@ -42,13 +42,12 @@ public partial class TextCommandModule
     // "aa shop" a secas ahora sí hace algo razonable (mostrar la tienda) en vez de nada.
     [Command("shop view")]
     [Alias("sv", "shop")]
-    [Summary("Mostrá el catálogo de consumibles en venta.")]
+    [Summary("Mostrá la tienda: comida y cajas en venta.")]
     public async Task ShopViewAsync()
     {
         try
         {
-            var items = await itemRepository.GetAllByTypeAsync("Consumable");
-            await ReplyAsync(embed: ShopModule.BuildViewEmbed(items));
+            await ReplyAsync(embed: ShopModule.BuildViewEmbed(await ShopModule.LoadShopItemsAsync(itemRepository)));
         }
         catch (Exception ex)
         {

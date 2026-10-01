@@ -100,9 +100,9 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
         }
 
         var item = await itemRepository.GetByNameAsync(itemName);
-        if (item is null || item.Type != "Consumable")
+        if (item is null || !ShopCatalog.IsForSale(item))
         {
-            return new ShopActionResult($"**{itemName}** no está disponible en la tienda (solo se venden consumibles).", null);
+            return new ShopActionResult($"**{itemName}** no está disponible en la tienda (se vende comida y cajas: mirá **/shop view**).", null);
         }
 
         // Si es la primera vez que este usuario ejecuta un comando, se crea acá con los valores por defecto.
@@ -137,6 +137,11 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
         if (item is null)
         {
             return new ShopActionResult($"No encontré ningún ítem llamado **{itemName}**.", null);
+        }
+
+        if (item.SellPrice <= 0)
+        {
+            return new ShopActionResult($"**{ItemDisplay.Format(item.Emoji, item.Name)}** no se puede vender: es un premio.", null);
         }
 
         int totalRefund = item.SellPrice * quantity;

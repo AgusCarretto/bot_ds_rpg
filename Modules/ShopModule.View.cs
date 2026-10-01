@@ -12,15 +12,14 @@ using BotDsRpg.Services;
 public partial class ShopModule
 {
     // Comando barra: /shop view
-    [SlashCommand("view", "Mostrá el catálogo de consumibles en venta.")]
+    [SlashCommand("view", "Mostrá la tienda: comida y cajas en venta.")]
     public async Task HandleViewAsync()
     {
         await DeferAsync();
 
         try
         {
-            var items = await itemRepository.GetAllByTypeAsync("Consumable");
-            await FollowupAsync(embed: BuildViewEmbed(items));
+            await FollowupAsync(embed: BuildViewEmbed(await LoadShopItemsAsync(itemRepository)));
         }
         catch (Exception ex)
         {
@@ -30,24 +29,41 @@ public partial class ShopModule
         }
     }
 
-    // Público para que Modules/TextCommandModule.cs arme el mismo embed en "aa shop view".
+    // Todo lo que se vende (comida y cajas con precio de compra), listo para mostrar. Compartido con "aa shop view".
+    public static async Task<IReadOnlyList<Item>> LoadShopItemsAsync(IItemRepository itemRepository)
+    {
+        var items = new List<Item>();
+        foreach (string type in ShopCatalog.SoldTypes)
+        {
+            items.AddRange(await itemRepository.GetAllByTypeAsync(type));
+        }
+
+        return items.Where(ShopCatalog.IsForSale).ToList();
+    }
+
+    // Público para que Modules/TextCommandModule.cs arme el mismo embed en "aa shop view". Primero la comida y después las cajas,
+    // cada grupo de menor a mayor rareza.
     public static Embed BuildViewEmbed(IReadOnlyList<Item> items)
     {
         var embed = new EmbedBuilder()
-            .WithTitle("🏪 Tienda de Consumibles")
+            .WithTitle("🏪 Tienda")
             .WithColor(Color.Gold);
 
         if (items.Count == 0)
         {
-            embed.WithDescription("No hay consumibles cargados en la tienda todavía.");
+            embed.WithDescription("No hay nada en la tienda todavía.");
         }
         else
         {
-            foreach (var item in items.OrderBy(i => RarityCatalog.RankOf(i.Rarity)).ThenBy(i => i.Name))
+            embed.WithDescription("🍖 **Comida** para curarte y 📦 **cajas** con premios sorpresa (abrilas con `/abrir`).");
+
+            foreach (var item in items.OrderBy(i => i.Type == "Caja" ? 1 : 0).ThenBy(i => RarityCatalog.RankOf(i.Rarity)).ThenBy(i => i.Name))
             {
-                embed.AddField(
-                    $"[{item.Rarity}] {ItemDisplay.Format(item.Emoji, item.Name)}",
-                    $"❤️ Cura: {item.StatValue} HP | 💰 Compra: {item.BuyPrice} Oro | 💸 Venta: {item.SellPrice} Oro");
+                string detail = item.Type == "Caja"
+                    ? $"🎲 Premios sorpresa | 💰 Compra: {item.BuyPrice} Oro | 💸 Venta: {item.SellPrice} Oro"
+                    : $"❤️ Cura: {item.StatValue} HP | 💰 Compra: {item.BuyPrice} Oro | 💸 Venta: {item.SellPrice} Oro";
+
+                embed.AddField($"[{item.Rarity}] {ItemDisplay.Format(item.Emoji, item.Name)}", detail);
             }
         }
 

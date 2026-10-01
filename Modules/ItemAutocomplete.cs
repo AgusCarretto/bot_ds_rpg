@@ -21,7 +21,7 @@ public static class ItemChoices
     public static IReadOnlyList<AutocompleteResult> ForBuy(IEnumerable<Item> catalog, int? playerGold, string typed)
     {
         return catalog
-            .Where(item => item.Type == "Consumable" && FitsAsValue(item) && Matches(item.Name, typed))
+            .Where(item => ShopCatalog.IsForSale(item) && FitsAsValue(item) && Matches(item.Name, typed))
             .OrderBy(item => Relevance(item.Name, typed))
             .ThenBy(item => item.BuyPrice)
             .ThenBy(item => item.Name, StringComparer.Ordinal)
@@ -29,8 +29,9 @@ public static class ItemChoices
             .Select(item =>
             {
                 string missingGold = playerGold is int gold && gold < item.BuyPrice ? " (te falta oro)" : string.Empty;
+                string what = item.Type == "Caja" ? $"caja {item.Rarity}" : $"cura {item.StatValue} HP";
                 return new AutocompleteResult(
-                    Truncate($"{item.Name} — cura {item.StatValue} HP · {item.BuyPrice} oro{missingGold}"), item.Name);
+                    Truncate($"{item.Name} — {what} · {item.BuyPrice} oro{missingGold}"), item.Name);
             })
             .ToList();
     }
@@ -67,6 +68,19 @@ public static class ItemChoices
     private static bool FitsAsValue(Item item) => AutocompleteText.FitsAsValue(item.Name);
 
     // Daño real del arma para esta clase (con la sinergia de familia); el amuleto no tiene sinergia.
+    // Solo las cajas que el jugador TIENE, con cuántas, de la más rara a la más común (lo que quiere abrir primero).
+    public static IReadOnlyList<AutocompleteResult> ForOwnedBoxes(IEnumerable<OwnedItem> owned, string typed)
+    {
+        return owned
+            .Where(o => o.Item.Type == "Caja" && o.Quantity > 0 && FitsAsValue(o.Item) && Matches(o.Item.Name, typed))
+            .OrderBy(o => Relevance(o.Item.Name, typed))
+            .ThenByDescending(o => RarityCatalog.RankOf(o.Item.Rarity))
+            .ThenBy(o => o.Item.Name, StringComparer.Ordinal)
+            .Take(MaxChoices)
+            .Select(o => new AutocompleteResult(Truncate($"📦 {o.Item.Name} — tenés {o.Quantity} · {o.Item.Rarity}"), o.Item.Name))
+            .ToList();
+    }
+
     private static int EffectiveStat(Item item, string playerClass) =>
         item.Type == "Weapon" ? ClassWeaponSynergy.ApplyBonus(item.StatValue, playerClass, item.WeaponFamily) : item.StatValue;
 }
@@ -79,7 +93,7 @@ public sealed class BuyItemAutocompleteHandler : AutocompleteHandler
     {
         string typed = autocompleteInteraction.Data.Current.Value?.ToString() ?? string.Empty;
 
-        var catalog = await services.GetRequiredService<IItemRepository>().GetAllByTypeAsync("Consumable");
+        var catalog = await ShopModule.LoadShopItemsAsync(services.GetRequiredService<IItemRepository>());
         // GetByDiscordIdAsync (no GetOrCreate): abrir una lista no tiene que crearle cuenta a nadie.
         var player = await services.GetRequiredService<IUserRepository>().GetByDiscordIdAsync(context.User.Id);
 
@@ -106,5 +120,18 @@ public sealed class EquipItemAutocompleteHandler : AutocompleteHandler
         var amulets = await inventory.GetOwnedByTypeAsync(context.User.Id, "Amulet");
 
         return AutocompletionResult.FromSuccess(ItemChoices.ForEquip(weapons.Concat(amulets), player, typed));
+    }
+}
+
+// Lista de /abrir: las cajas que el jugador TIENE, con cuántas.
+public sealed class BoxAutocompleteHandler : AutocompleteHandler
+{
+    public override async Task<AutocompletionResult> GenerateSuggestionsAsync(
+        IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+    {
+        string typed = autocompleteInteraction.Data.Current.Value?.ToString() ?? string.Empty;
+
+        var owned = await services.GetRequiredService<IInventoryRepository>().GetOwnedByTypeAsync(context.User.Id, "Caja");
+        return AutocompletionResult.FromSuccess(ItemChoices.ForOwnedBoxes(owned, typed));
     }
 }

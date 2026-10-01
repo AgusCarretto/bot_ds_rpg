@@ -191,4 +191,29 @@ CREATE TABLE IF NOT EXISTS player_stats (
     PRIMARY KEY (discord_id, stat_key)
 );
 
+-- ---------------------------------------------------------
+-- boxes / box_loot: cajas (items.type = 'Caja') y lo que pueden dar al abrirlas. Ver Database/add_boxes.sql (migración),
+-- Database/seed_boxes.sql y Modules/BoxModule.cs.
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS boxes (
+    box_item_id INTEGER PRIMARY KEY REFERENCES items (item_id) ON DELETE CASCADE,
+    rolls       INTEGER NOT NULL CHECK (rolls BETWEEN 1 AND 10)
+);
+
+CREATE TABLE IF NOT EXISTS box_loot (
+    loot_id     INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    box_item_id INTEGER NOT NULL REFERENCES boxes (box_item_id) ON DELETE CASCADE,
+    kind        TEXT NOT NULL CHECK (kind IN ('gold', 'item')),
+    item_id     INTEGER REFERENCES items (item_id) ON DELETE CASCADE,   -- NULL si es oro
+    weight      INTEGER NOT NULL CHECK (weight > 0),
+    min_qty     INTEGER NOT NULL CHECK (min_qty >= 1),
+    max_qty     INTEGER NOT NULL CHECK (max_qty >= min_qty),
+    CONSTRAINT box_loot_kind_item CHECK ((kind = 'gold' AND item_id IS NULL) OR (kind = 'item' AND item_id IS NOT NULL))
+);
+
+-- Una entrada por caja y por ítem (y una sola de oro por caja y rango no se repite: el rango distingue "común" de "jackpot").
+CREATE UNIQUE INDEX IF NOT EXISTS ux_box_loot_item ON box_loot (box_item_id, item_id) WHERE kind = 'item';
+CREATE UNIQUE INDEX IF NOT EXISTS ux_box_loot_gold ON box_loot (box_item_id, min_qty, max_qty) WHERE kind = 'gold';
+CREATE INDEX IF NOT EXISTS idx_box_loot_box ON box_loot (box_item_id);
+
 COMMIT;

@@ -33,6 +33,7 @@ public partial class TextCommandModule(
     IMonsterRepository monsterRepository,
     IRaidSessionService raidSessions,
     ITransferRepository transferRepository,
+    IBoxRepository boxRepository,
     IGameEvents gameEvents) : ModuleBase<SocketCommandContext>
 {
     // ---- Onboarding / clase ----

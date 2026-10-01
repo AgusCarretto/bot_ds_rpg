@@ -71,7 +71,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             .WithDescription("Todo comando de barra tiene su versión de texto con el prefijo `aa ` (ej. `aa hunt`). Usá `/tutorial` para el loop básico.")
             .AddField(
                 "💰 Economía y Suerte",
-                "`/daily` — Recompensa diaria\n`/shop` — Comprar/vender consumibles (view/buy/sell/sellall)\n`/play` — Casino (slots/coinflip)\n`/give` — Dale monedas a otro jugador (`aa give @jugador 100`)",
+                "`/daily` — Recompensa diaria\n`/shop` — Comprar comida y cajas, y vender (view/buy/sell/sellall)\n`/abrir` — Abrir cajas de tu inventario (`aa abrir <caja>`)\n`/play` — Casino (slots/coinflip)\n`/give` — Dale monedas a otro jugador (`aa give @jugador 100`)",
                 false)
             .AddField(
                 "⚔️ Aventura",
