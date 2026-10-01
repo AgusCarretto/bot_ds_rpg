@@ -49,6 +49,9 @@ la base real con usuarios descartables y recién ahí integrada a `develop`.
   heredan de `SafeAutocompleteHandler`: si armar la lista falla, queda en el log y se devuelve vacía en vez de romperse. (5) El nombre
   de un ítem ya no distingue mayúsculas, tildes **ni espacios sobrantes** (`"Mate Amargo "` fallaba). (6) Misiones y logros con una línea en
   blanco entre cada una.
+- **Inventario en columnas y recetas con "tenés X de Y"** (2026-10-01): `/inventory` ahora va en columnas con aire entre filas: Recolección (primero toda la madera y
+  después la piedra y los minerales, por tipo) junto a Drops de monstruo, después Armas | Amuletos y Comida | Cajas; sin la rareza escrita en cada renglón. `/forge
+  recipes` muestra por ingrediente cuánto tenés de cuánto hace falta (✅/❌) y el oro también.
 - **Personajes que hablan, `/blacksmith`, drop de `/hunt` y mensaje de jefe** (2026-10-01): (1) Todo lo que dicen el **herrero, el tendero, el tabernero** (`/heal`) y los
   **5 jefes** (al aparecer, al caer y al vencerte; también en el raid) sale de `GameData/NpcDialogue.cs`, con varias frases por situación elegidas al azar. (2)
   **`/blacksmith`** (`aa herrero`): escena del herrero con su imagen (opcional: URL en `Images__Blacksmith` del `.env`), te pregunta qué necesitás y elegís de un

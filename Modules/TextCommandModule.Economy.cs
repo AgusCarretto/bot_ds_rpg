@@ -131,7 +131,9 @@ public partial class TextCommandModule
         {
             // Si es la primera vez que este usuario ejecuta un comando, se crea acá con los valores por defecto.
             var player = await userRepository.GetOrCreateUserAsync(Context.User.Id);
-            await ReplyAsync(embed: await ForgeModule.BuildRecipesEmbed(recipeRepository, zoneRepository, player.Class, player.CurrentZoneId));
+            await ReplyAsync(embed: await ForgeModule.BuildRecipesEmbed(
+                recipeRepository, zoneRepository, player.Class, player.CurrentZoneId,
+                (await inventoryRepository.GetByDiscordIdAsync(Context.User.Id)).ToDictionary(e => e.ItemName, e => e.Quantity), player.Gold));
         }
         catch (Exception ex)
         {

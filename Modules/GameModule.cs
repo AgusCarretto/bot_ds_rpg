@@ -131,12 +131,17 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
         }
     }
 
-    // Estático (sin dependencia de Context) para que Modules/TextCommandModule.cs arme el mismo
-    // embed en "aa inventory". Agrupado por categoría (Equipo/Consumibles/Drops de Monstruo/
-    // Materiales) en vez de una sola lista plana — más fácil de escanear a medida que crece el
-    // catálogo. El type "Material" de items.type ES, por diseño de todo el juego, exactamente
-    // "lo que dropean los monstruos" (nunca madera/piedra, ver Database/seed_class_gear_and_monster_
-    // drops.sql) — por eso alcanza con filtrar por ese type para la categoría de drops.
+    // Estático (sin dependencia de Context) para que Modules/TextCommandModule.cs arme el mismo embed en "aa inventory".
+    //
+    // La pantalla va en COLUMNAS (campos en línea de Discord), de dos en dos y con una fila en blanco entre filas, para que se lea de
+    // un vistazo y no sea una pared de texto:
+    //     🪵 Recolección (Madera y después Mineral)      🩸 Drops de monstruo
+    //     🗡️ Armas                                         📿 Amuletos
+    //     🍖 Comida                                        📦 Cajas
+    // "Recolección" es lo que dan /chop y /mine (items.type Madera y Mineral, agrupados POR TIPO: primero toda la madera y después la
+    // piedra y los minerales) y "Drops de monstruo" es otra columna: el type "Material" ES, por diseño de todo el juego, exactamente lo
+    // que sueltan los monstruos (nunca madera ni piedra, ver Database/seed_class_gear_and_monster_drops.sql). Cada línea es el nombre y
+    // la cantidad; la rareza se ve con el emoji del ítem (o un círculo de color si todavía no tiene), sin escribirla en cada renglón.
     public static async Task<Embed> BuildInventoryEmbedAsync(IInventoryRepository inventoryRepository, ulong discordId, string username)
     {
         var entries = await inventoryRepository.GetByDiscordIdAsync(discordId);
@@ -152,32 +157,87 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
             return embed.Build();
         }
 
-        AddInventoryGroup(embed, "🗡️ Equipo", entries, e => e.Type is "Weapon" or "Amulet");
-        AddInventoryGroup(embed, "🍖 Consumibles", entries, e => e.Type == "Consumable");
-        AddInventoryGroup(embed, "📦 Cajas (abrilas con /open)", entries, e => e.Type == "Caja");
-        AddInventoryGroup(embed, "🩸 Drops de Monstruo", entries, e => e.Type == "Material");
-        AddInventoryGroup(embed, "🪵 Materiales", entries, e => e.Type is "Madera" or "Mineral");
+        var rows = new[]
+        {
+            (Left: GatheredColumn(entries), Right: Column("🩸 Drops de monstruo", entries, e => e.Type == "Material")),
+            (Left: Column("🗡️ Armas", entries, e => e.Type == "Weapon"), Right: Column("📿 Amuletos", entries, e => e.Type == "Amulet")),
+            (Left: Column("🍖 Comida", entries, e => e.Type == "Consumable"), Right: Column("📦 Cajas", entries, e => e.Type == "Caja")),
+        };
+
+        bool first = true;
+        foreach (var (left, right) in rows)
+        {
+            if (left.Count == 0 && right.Count == 0)
+            {
+                continue;
+            }
+
+            // Una fila en blanco entre fila y fila: es lo que "despega" los bloques.
+            if (!first)
+            {
+                embed.AddField(Blank, Blank, false);
+            }
+
+            first = false;
+
+            // Dos columnas lado a lado; si una está vacía, la otra ocupa todo el ancho (no queda un hueco a la derecha).
+            bool inline = left.Count > 0 && right.Count > 0;
+            for (int i = 0; i < Math.Max(left.Count, right.Count); i++)
+            {
+                if (left.Count > 0)
+                {
+                    var (title, text) = i < left.Count ? left[i] : (Blank, Blank);
+                    embed.AddField(title, text, inline);
+                }
+
+                if (right.Count > 0)
+                {
+                    var (title, text) = i < right.Count ? right[i] : (Blank, Blank);
+                    embed.AddField(title, text, inline);
+                }
+            }
+        }
+
+        if (entries.Any(e => e.Type == "Caja"))
+        {
+            embed.WithFooter("📦 Abrí tus cajas con /open");
+        }
 
         return embed.Build();
     }
 
-    // Los campos de embed de Discord tienen un límite de 1024 caracteres — con el catálogo de
-    // Materiales de Zonas ya en ~30 ítems distintos, un jugador completista podría superarlo en un
-    // solo grupo. Si pasa, se parte en más de un campo en vez de que /inventory reviente.
-    private static void AddInventoryGroup(EmbedBuilder embed, string title, IReadOnlyList<InventoryEntry> entries, Func<InventoryEntry, bool> matches)
+    // Espacio de ancho cero (U+200B): Discord no deja campos con el texto vacío y así se arma una columna o una fila en blanco.
+    private static readonly string Blank = ((char)0x200B).ToString();
+
+    // La columna de recolección: primero toda la Madera y después los Minerales (piedra, hierro...). Dentro de cada tipo, de lo más
+    // común a lo más raro (que es, de paso, el orden en que se van consiguiendo).
+    private static List<(string Title, string Text)> GatheredColumn(IReadOnlyList<InventoryEntry> entries)
+    {
+        var sections = new List<string>();
+
+        foreach (var (type, heading) in new[] { ("Madera", "🪵 **Madera**"), ("Mineral", "⛏️ **Mineral**") })
+        {
+            var lines = Lines(entries.Where(e => e.Type == type));
+            if (lines.Count > 0)
+            {
+                sections.Add($"{heading}\n{string.Join('\n', lines)}");
+            }
+        }
+
+        // Solo hay unas pocas decenas de ítems de recolección: entra siempre en un campo (1024 caracteres), no hace falta partirlo.
+        return sections.Count == 0 ? [] : [("⛏️ Recolección", string.Join("\n\n", sections))];
+    }
+
+    // Una columna simple de un grupo de ítems. Los campos de embed de Discord admiten 1024 caracteres: si un grupo (por ejemplo los
+    // drops, que son ~40 ítems distintos) se pasa, se parte en "(1/2)", "(2/2)" en vez de que /inventory reviente.
+    private static List<(string Title, string Text)> Column(string title, IReadOnlyList<InventoryEntry> entries, Func<InventoryEntry, bool> matches)
     {
         const int maxFieldLength = 1024;
 
-        var lines = entries
-            .Where(matches)
-            .OrderBy(e => RarityCatalog.RankOf(e.Rarity))
-            .ThenBy(e => e.ItemName)
-            .Select(e => $"**{ItemDisplay.Format(e.Emoji, e.ItemName)}** ×{e.Quantity} _({e.Rarity})_")
-            .ToList();
-
+        var lines = Lines(entries.Where(matches));
         if (lines.Count == 0)
         {
-            return;
+            return [];
         }
 
         var chunks = new List<string>();
@@ -201,10 +261,25 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
 
         chunks.Add(current.ToString());
 
-        for (int i = 0; i < chunks.Count; i++)
-        {
-            string fieldTitle = chunks.Count > 1 ? $"{title} ({i + 1}/{chunks.Count})" : title;
-            embed.AddField(fieldTitle, chunks[i], false);
-        }
+        return chunks.Select((text, i) => (chunks.Count > 1 ? $"{title} ({i + 1}/{chunks.Count})" : title, text)).ToList();
     }
+
+    // "Madera de Roble ×3": de lo más común a lo más raro y por nombre dentro de la misma rareza.
+    private static List<string> Lines(IEnumerable<InventoryEntry> entries) =>
+        entries
+            .OrderBy(e => RarityCatalog.RankOf(e.Rarity))
+            .ThenBy(e => e.ItemName, StringComparer.Ordinal)
+            .Select(e => $"{(e.Emoji is null ? $"{RarityDot(e.Rarity)} {e.ItemName}" : ItemDisplay.Format(e.Emoji, e.ItemName))} ×{e.Quantity}")
+            .ToList();
+
+    // El color de la rareza como círculo: lo mismo que usa el juego en los embeds de cada rareza.
+    private static string RarityDot(string rarity) => rarity switch
+    {
+        "Común" => "⚪",
+        "Raro" => "🔵",
+        "Épico" => "🟣",
+        "Legendario" => "🟡",
+        "Mítico" => "🔴",
+        _ => "⚫",
+    };
 }

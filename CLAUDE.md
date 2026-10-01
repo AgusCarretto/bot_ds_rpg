@@ -270,7 +270,10 @@ table, `RarityCatalog.GatheringWeights` (per mille): Común 68 / Raro 21 / Épic
 bottleneck: Hierro (10.5% per `/mine`, cooldown 5 min — it shares the Raro pool with Carbón) makes several zone 2–4 weapons take
 ~190–290 min of mining, more than their drop farming.
 
-**Readable embeds**: `/forge recipes` shows ONE recipe per field (item + stat, gold, one ingredient per line) and
+**Readable embeds** (the owner's rule: spaced out, not crowded — use blank lines and columns, not walls of text): `/inventory` is two inline columns per row
+(Recolección = Madera first, then Mineral, grouped by TYPE; next to it Drops de monstruo, i.e. `items.type = 'Material'`), then Armas | Amuletos, then
+Comida | Cajas, with a blank spacer field between rows and no rarity text per line (the item emoji, or a coloured dot, carries it);
+`/forge recipes` shows "have/need" per ingredient (✅/❌) when given the player's inventory. `/forge recipes` shows ONE recipe per field (item + stat, gold, one ingredient per line) and
 `/drops` sends one embed per zone (a field per fight type, two short lines per monster). Both were single walls of text
 before. Every embed built from a growing catalog must stay under Discord's 6000-character total (all embeds of a message
 count together).

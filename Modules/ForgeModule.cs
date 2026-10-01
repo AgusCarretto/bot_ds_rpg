@@ -13,7 +13,7 @@ using BotDsRpg.Services;
 [Group("forge", "La herrería: forjá armas y amuletos con oro y materiales.")]
 public class ForgeModule(
     IUserRepository userRepository, IRecipeRepository recipeRepository, ICraftingRepository craftingRepository, IZoneRepository zoneRepository,
-    IGameEvents gameEvents)
+    IInventoryRepository inventoryRepository, IGameEvents gameEvents)
     : InteractionModuleBase<SocketInteractionContext>
 {
     // Comando barra: /forge recipes
@@ -26,7 +26,9 @@ public class ForgeModule(
         {
             // Si es la primera vez que este usuario ejecuta un comando, se crea acá con los valores por defecto.
             var player = await userRepository.GetOrCreateUserAsync(Context.User.Id);
-            await FollowupAsync(embed: await BuildRecipesEmbed(recipeRepository, zoneRepository, player.Class, player.CurrentZoneId));
+            await FollowupAsync(embed: await BuildRecipesEmbed(
+                recipeRepository, zoneRepository, player.Class, player.CurrentZoneId,
+                (await inventoryRepository.GetByDiscordIdAsync(Context.User.Id)).ToDictionary(e => e.ItemName, e => e.Quantity), player.Gold));
         }
         catch (Exception ex)
         {
@@ -76,7 +78,8 @@ public class ForgeModule(
     // resultado ("+15 ATQ" un arma, "+20 DEF" un amuleto; con ⭐ y el valor real si es de la familia de la clase del
     // jugador), el oro y los ingredientes uno por línea.
     public static async Task<Embed> BuildRecipesEmbed(
-        IRecipeRepository recipeRepository, IZoneRepository zoneRepository, string playerClass, int currentZoneId)
+        IRecipeRepository recipeRepository, IZoneRepository zoneRepository, string playerClass, int currentZoneId,
+        IReadOnlyDictionary<string, int>? owned = null, int? playerGold = null)
     {
         var recipes = await recipeRepository.GetAllAsync();
         var zones = await zoneRepository.GetAllAsync();
@@ -112,10 +115,10 @@ public class ForgeModule(
         embed.WithDescription($"{zoneName}{fallbackNote}\nForjá con `/forge make` (la lista te marca ✅ lo que ya podés hacer).")
             .WithFooter("🎯 arma de tu clase  ·  ⚔️ arma general  ·  📿 amuleto");
 
-        AddRecipes(embed, view.Recipes, RecipeGroup.ClassWeapon, "🎯", playerClass);
-        AddRecipes(embed, view.Recipes, RecipeGroup.GeneralWeapon, "⚔️", playerClass);
-        AddRecipes(embed, view.Recipes, RecipeGroup.Amulet, "📿", playerClass);
-        AddRecipes(embed, view.Recipes, RecipeGroup.Other, "📦", playerClass);
+        AddRecipes(embed, view.Recipes, RecipeGroup.ClassWeapon, "🎯", playerClass, owned, playerGold);
+        AddRecipes(embed, view.Recipes, RecipeGroup.GeneralWeapon, "⚔️", playerClass, owned, playerGold);
+        AddRecipes(embed, view.Recipes, RecipeGroup.Amulet, "📿", playerClass, owned, playerGold);
+        AddRecipes(embed, view.Recipes, RecipeGroup.Other, "📦", playerClass, owned, playerGold);
 
         return embed.Build();
     }
@@ -124,7 +127,8 @@ public class ForgeModule(
     // abajo van lo que suma, el oro y cada ingrediente en su propia línea. Con las cantidades de la recolección (Hierro
     // x10...) la línea única era una pared de texto.
     private static void AddRecipes(
-        EmbedBuilder embed, IEnumerable<RecipeDetails> recipes, RecipeGroup group, string groupEmoji, string playerClass)
+        EmbedBuilder embed, IEnumerable<RecipeDetails> recipes, RecipeGroup group, string groupEmoji, string playerClass,
+        IReadOnlyDictionary<string, int>? owned, int? playerGold)
     {
         var inGroup = recipes
             .Where(r => RecipeCatalog.GroupOf(r) == group)
@@ -134,8 +138,16 @@ public class ForgeModule(
         foreach (var recipe in inGroup)
         {
             string stat = ItemStatLabel.FormatFor(recipe.ResultItem, playerClass) ?? recipe.ResultItem.Type;
-            string ingredients = string.Join('\n', recipe.Ingredients.Select(i => $"• {i.Quantity}× {ItemDisplay.Format(i.Emoji, i.ItemName)}"));
-            string value = $"**{stat}** · 💰 {recipe.GoldCost} oro\n{ingredients}";
+            // Con el inventario a mano cada ingrediente dice cuánto tenés de cuánto hace falta (✅ / ❌) y el oro también; sin él, la
+            // lista de siempre. Una línea en blanco separa el resumen de los ingredientes para que no quede apretado.
+            string ingredients = string.Join('\n', recipe.Ingredients.Select(i =>
+                owned is null
+                    ? $"• {i.Quantity}× {ItemDisplay.Format(i.Emoji, i.ItemName)}"
+                    : $"{(owned.GetValueOrDefault(i.ItemName) >= i.Quantity ? "✅" : "❌")} {ItemDisplay.Format(i.Emoji, i.ItemName)} — {owned.GetValueOrDefault(i.ItemName)}/{i.Quantity}"));
+            string goldText = playerGold is int gold
+                ? $"{(gold >= recipe.GoldCost ? "✅" : "❌")} 💰 {recipe.GoldCost} oro (tenés {gold})"
+                : $"💰 {recipe.GoldCost} oro";
+            string value = $"**{stat}**\n{goldText}\n\n{ingredients}";
 
             // Defensa: un campo de más de 1024 caracteres haría reventar todo el mensaje.
             embed.AddField(
