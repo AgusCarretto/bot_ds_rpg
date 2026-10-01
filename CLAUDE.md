@@ -374,7 +374,7 @@ for players using the text command.
 situation for the blacksmith, the shopkeeper, the innkeeper (`/heal`) and the five zone bosses (intro / when it falls / when it beats you,
 keyed by the boss name in the DB; a boss without its own lines gets generic ones, so adding a boss never leaves it mute). A line is picked
 at random from its table (inject a `Random` to test), always formatted `emoji **Name:** «line»`. To add dialogue, add lines to a table;
-a new character is an enum + a table. Every table must keep ≥2 distinct lines (a test checks it). `/blacksmith` (`aa herrero`,
+a new character is an enum + a table. Every table must keep ≥2 distinct lines (a test checks it). `/forge` (`aa herrero`; the slash `/forge` has NO subcommands — `/forge make|recipes` were removed, `ForgeModule` is now only static logic, while `aa forge make|recipes` still exist for text users and parse unambiguously next to the `aa forge` alias),
 `Modules/BlacksmithModule.cs`) is a scene: the blacksmith greets (with his picture if `Images__Blacksmith` is set in the `.env` to a public
 image URL — the bot hosts no files — otherwise text only; see "NPC images ship with the bot" below) and a select menu lists the player's zone recipes (✅ craftable / ❌ what's
 missing, the same `ForgeChoices` the `/forge make` autocomplete uses); picking one runs EXACTLY `ForgeModule.ExecuteMakeAsync`, so
@@ -385,7 +385,7 @@ announces the next zone opens; every later kill says "¡Volviste a ganarle!" and
 
 **"What should I farm?" advice (`GameData/FarmAdvisor.cs`, `Services/FarmAdviceService.cs`)** — after `/chop`, `/mine` and every `/hunt`, `/travel` and `/boss`
 victory the result embed gets a "💡 Para tu próxima forja" field: of the recipes the player sees (same `RecipeCatalog.ViewFor` as the blacksmith) it
-picks the most advanced one (or says "you can forge X now" and points at `/blacksmith`), lists at most 2 missing ingredients and the command that
+picks the most advanced one (or says "you can forge X now" and points at `/forge`), lists at most 2 missing ingredients and the command that
 yields each (`/chop`, `/mine`, or `/hunt`/`/travel`/`/boss` according to which monster of that zone drops it) and the gold shortfall. The choice is pure
 (`FarmAdvisor.Choose`); the service only gathers data and caches the near-static parts (recipes, zones, monsters, gatherable item names) for 5 minutes. It
 NEVER throws (an advice is an extra: any failure returns null). Skipped in `/autohunt` on purpose (it would spam).
@@ -397,6 +397,12 @@ came loose / a traveller's pocket tore" with a "¡Juntar!" button; whoever click
 Same concurrency idea as the raid: state mutated under a lock with no `await`, the window closes inside the lock (no late joins, no double pay), payment
 (`IMiniEventRepository.PayAsync`, one transaction per participant) happens outside it; in-memory, a restart just makes the button say "ya terminó".
 Tunable by env vars (`MiniEvent__ChancePercent`, `MiniEvent__ChannelCooldownMinutes`, `MiniEvent__JoinSeconds`); to test it set chance 100 and cooldown 0.
+
+**The tavern (`/taberna`, `aa taberna`, `Modules/TabernaModule.cs`)** — the shopkeeper IS the innkeeper ("El Tabernero", one character; there is no "Tendero" any more): a scene with his photo, the
+price list (two inline columns Comida | Cajas, `ShopModule.BuildViewEmbed`) and four select menus, one per row — eat something from your bag, buy food, buy a box, sell something.
+Every pick is ONE unit and runs exactly the existing logic (`ShopModule.ExecuteBuyAsync/ExecuteSellAsync`, `UseModule.ExecuteUseAsync`: same validations, atomic charge, box cooldown and
+game events), then the scene is rebuilt with the innkeeper's answer and your fresh gold. Each menu's custom id carries the owner id. `/shop` (view/buy/sell/sellall) remains as the direct
+shortcut for quantities and for text commands; `/shop view` carries no photo on purpose (an `attachment://` thumbnail without its file would make Discord reject the message).
 
 **NPC images ship with the bot**: `Assets/npc/blacksmith.jpg` and `innkeeper.jpg` (256x256, ~25 KB; `Assets/**` is copied to the output and the publish)
 are attached to the message as `attachment://file.jpg` (the embed's thumbnail), so nothing has to be hosted; an `Images__*` URL in the `.env` wins if set.

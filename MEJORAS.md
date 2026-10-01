@@ -49,6 +49,10 @@ la base real con usuarios descartables y recién ahí integrada a `develop`.
   heredan de `SafeAutocompleteHandler`: si armar la lista falla, queda en el log y se devuelve vacía en vez de romperse. (5) El nombre
   de un ítem ya no distingue mayúsculas, tildes **ni espacios sobrantes** (`"Mate Amargo "` fallaba). (6) Misiones y logros con una línea en
   blanco entre cada una.
+- **`/forge` solo y `/taberna`** (2026-10-01): (1) `/forge` ya no tiene subcomandos: abre la herrería (foto del herrero + desplegable de recetas); `/forge make`, `/forge recipes` y
+  `/blacksmith` se sacaron (en texto siguen `aa herrero`, `aa forge`, `aa forge make` y `aa forge recipes`). (2) **`/taberna`** (`aa taberna`): el tendero pasó a ser el tabernero (una sola taberna):
+  su foto, la carta en dos columnas y cuatro desplegables para **comer** algo de tu mochila, **comprar comida**, **comprar una caja** (una por hora) y **vender**; cada elección es de
+  una unidad y el tabernero contesta con su charla y tu oro actualizado. `/shop` queda como atajo directo (para cantidades). Si querés sacar `/shop` del todo, es borrar un módulo.
 - **Cajas más difíciles, cofres con emoji y tienda más limpia** (2026-10-01): (1) Se recortó a la mitad la chance de lo mejor de cada caja (jackpots de oro, materiales Épicos y
   Legendarios, trofeos) y se subió el peso del oro común. Medido con el sorteo real: el **Cofre de Oro** trae algún material Legendario en ~36 % de las aperturas (antes ~64 %), el
   **Arcón de Hierro** uno Épico en ~50 % (antes ~70 %), y que una caja devuelva más de lo que costó pasó de 11-16 % a 6-9 %; el valor esperado quedó en 52-60 % del precio (antes

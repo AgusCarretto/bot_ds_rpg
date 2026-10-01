@@ -2,7 +2,6 @@ using BotDsRpg.GameData;
 using BotDsRpg.Models;
 using BotDsRpg.Repositories;
 using Discord;
-using Discord.Interactions;
 using BotDsRpg.Services;
 
 // El Herrero: separado de la Tienda (/shop) por diseño de juego. La Tienda vende consumibles
@@ -10,63 +9,8 @@ using BotDsRpg.Services;
 // Las recetas viven en la base (tablas "recipes"/"recipe_ingredients", ver IRecipeRepository) en
 // vez de en código: como sus item_id son Foreign Keys reales, nunca puede haber una receta
 // apuntando a un ingrediente o resultado que no exista.
-[Group("forge", "La herrería: forjá armas y amuletos con oro y materiales.")]
-public class ForgeModule(
-    IUserRepository userRepository, IRecipeRepository recipeRepository, ICraftingRepository craftingRepository, IZoneRepository zoneRepository,
-    IInventoryRepository inventoryRepository, IGameEvents gameEvents)
-    : InteractionModuleBase<SocketInteractionContext>
+public static class ForgeModule
 {
-    // Comando barra: /forge recipes
-    [SlashCommand("recipes", "Mostrá las recetas de forja de tu zona actual, con lo que suma cada ítem (+ATQ / +DEF).")]
-    public async Task HandleRecipesAsync()
-    {
-        await DeferAsync();
-
-        try
-        {
-            // Si es la primera vez que este usuario ejecuta un comando, se crea acá con los valores por defecto.
-            var player = await userRepository.GetOrCreateUserAsync(Context.User.Id);
-            await FollowupAsync(embed: await BuildRecipesEmbed(
-                recipeRepository, zoneRepository, player.Class, player.CurrentZoneId,
-                (await inventoryRepository.GetByDiscordIdAsync(Context.User.Id)).ToDictionary(e => e.ItemName, e => e.Quantity), player.Gold));
-        }
-        catch (Exception ex)
-        {
-            BotLog.Error(ex);
-            // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
-            await FollowupAsync("No pude cargar las recetas ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
-        }
-    }
-
-    // Comando barra: /forge make
-    [SlashCommand("make", "Pagale al herrero para forjar un ítem de las recetas conocidas.")]
-    public async Task HandleMakeAsync(
-        [Summary("item", "Elegí de la lista qué forjar (✅ = ya tenés el oro y los materiales).")]
-        [Autocomplete(typeof(ForgeAutocompleteHandler))] string itemName)
-    {
-        await DeferAsync();
-
-        try
-        {
-            var result = await ExecuteMakeAsync(userRepository, recipeRepository, craftingRepository, gameEvents, Context.User.Id, itemName);
-
-            if (result.PlainMessage is not null)
-            {
-                await FollowupAsync(result.PlainMessage, ephemeral: true);
-            }
-            else
-            {
-                await FollowupAsync(embed: result.Embed);
-            }
-        }
-        catch (Exception ex)
-        {
-            BotLog.Error(ex);
-            // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
-            await FollowupAsync("¡Upa! Algo falló en la herrería, intentá de nuevo en un momento.", ephemeral: true);
-        }
-    }
-
     // Todo lo que sigue es estático (sin dependencia de Context) para que
     // Modules/TextCommandModule.cs comparta exactamente la misma lógica en "aa forge recipes"/"aa forge make".
     //
@@ -172,7 +116,7 @@ public class ForgeModule(
             // el límite de 2000 caracteres de un mensaje de Discord y el comando fallaría justo cuando el jugador
             // se equivoca de nombre. Se lo manda a las listas, que ya muestran solo lo de su zona.
             return new ForgeMakeResult(
-                $"{NpcDialogue.Blacksmith(BlacksmithLine.UnknownRecipe)}\n(Mirá las recetas de tu zona con `/blacksmith` o `/forge recipes`.)", null);
+                $"{NpcDialogue.Blacksmith(BlacksmithLine.UnknownRecipe)}\n(Mirá las recetas de tu zona con `/forge`.)", null);
         }
 
         // Si es la primera vez que este usuario ejecuta un comando, se crea acá con los valores por defecto.

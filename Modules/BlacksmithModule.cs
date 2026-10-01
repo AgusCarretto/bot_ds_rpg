@@ -7,7 +7,7 @@ using Discord.Interactions;
 // AttachmentPath: el archivo de la imagen del herrero que hay que adjuntar al mensaje (null si no hay imagen o es una URL).
 public sealed record BlacksmithScene(Embed Embed, MessageComponent? Components, string? AttachmentPath = null);
 
-// /blacksmith (aa blacksmith / aa herrero): hablás con el herrero en una escena en vez de tipear comandos. Aparece con su imagen
+// /forge (aa forge / aa herrero): hablás con el herrero en una escena en vez de tipear comandos. Aparece con su imagen
 // (si hay una configurada, ver NpcImages) y te pregunta qué necesitás; elegís de la lista desplegable (✅ = ya tenés todo, ❌ = te falta
 // algo, diciendo qué) y te contesta: forjado, o "andá a farmear". La lista se vuelve a armar después de cada pedido, así podés seguir
 // pidiendo. Por debajo es EXACTAMENTE la misma forja de /forge make (ForgeModule.ExecuteMakeAsync): mismas validaciones, mismo
@@ -19,7 +19,7 @@ public class BlacksmithModule(
 {
     private const string MenuPrefix = "blacksmith_pick";
 
-    [SlashCommand("blacksmith", "Hablá con el herrero: elegí de la lista qué querés que te forje.")]
+    [SlashCommand("forge", "Pasá por la herrería: elegí de la lista qué querés que te forje.")]
     public async Task HandleBlacksmithAsync()
     {
         await DeferAsync();
@@ -53,7 +53,7 @@ public class BlacksmithModule(
         {
             if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
             {
-                await FollowupAsync("Esa charla es de otra persona: hablá con el herrero con **/blacksmith**.", ephemeral: true);
+                await FollowupAsync("Esa charla es de otra persona: hablá con el herrero con **/forge**.", ephemeral: true);
                 return;
             }
 
@@ -75,7 +75,7 @@ public class BlacksmithModule(
     }
 
     // La escena: el saludo (o, si "after" trae lo que pasó con el último pedido, la respuesta del herrero) y la lista de recetas de la zona.
-    // Pública y sin Context para que "aa blacksmith" muestre exactamente lo mismo.
+    // Pública y sin Context para que "aa herrero" muestre exactamente lo mismo.
     public static async Task<BlacksmithScene> BuildSceneAsync(
         IUserRepository userRepository, IRecipeRepository recipeRepository, IZoneRepository zoneRepository,
         IInventoryRepository inventoryRepository, ulong discordId, ForgeModule.ForgeMakeResult? after)

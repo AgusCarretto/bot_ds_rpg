@@ -115,7 +115,8 @@ public static class NpcDialogue
         ],
     };
 
-    public static string Shopkeeper(ShopkeeperLine line, Random? rng = null) => Say("El Tendero", "🛒", Pick(ShopkeeperLines[line], rng));
+    // El que atiende la tienda ES el tabernero (una sola taberna, un solo personaje).
+    public static string Shopkeeper(ShopkeeperLine line, Random? rng = null) => Say("El Tabernero", "🍺", Pick(ShopkeeperLines[line], rng));
 
     // ---------------- El Tabernero (/heal) ----------------
     private static readonly Dictionary<InnkeeperLine, string[]> InnkeeperLines = new()
@@ -212,8 +213,7 @@ public static class NpcDialogue
 // del mismo mensaje (LocalPath = el archivo a adjuntar).
 public sealed record NpcImage(string Reference, string? LocalPath);
 
-// Imágenes de los personajes. De dónde salen, en este orden: (1) una URL en el .env (Images__Blacksmith / Images__Innkeeper /
-// Images__Shopkeeper = https://...), que gana si está; (2) el archivo que viene con el bot en Assets/npc/ (blacksmith.jpg, innkeeper.jpg),
+// Imágenes de los personajes. De dónde salen, en este orden: (1) una URL en el .env (Images__Blacksmith / Images__Innkeeper = https://...), que gana si está; (2) el archivo que viene con el bot en Assets/npc/ (blacksmith.jpg, innkeeper.jpg),
 // que se ADJUNTA al mensaje: así no hace falta hospedar nada (los links de adjuntos de Discord vencen al día o dos, por eso no sirven
 // como URL). Sin ninguna de las dos el personaje se muestra igual, solo con su texto. Son chicas (256x256) para que cada mensaje suba
 // unos 25 KB.
@@ -221,7 +221,6 @@ public static class NpcImages
 {
     public static NpcImage? Blacksmith => Find("Images__Blacksmith", "blacksmith.jpg");
     public static NpcImage? Innkeeper => Find("Images__Innkeeper", "innkeeper.jpg");
-    public static NpcImage? Shopkeeper => Find("Images__Shopkeeper", null);
 
     private static NpcImage? Find(string urlKey, string? fileName)
     {
@@ -253,7 +252,7 @@ public static class NpcImages
             return null;
         }
 
-        return new[] { Blacksmith, Innkeeper, Shopkeeper }.FirstOrDefault(image => image?.Reference == url)?.LocalPath;
+        return new[] { Blacksmith, Innkeeper }.FirstOrDefault(image => image?.Reference == url)?.LocalPath;
     }
 
     // Manda el embed al canal, con su imagen adjunta si la tiene (comandos de texto).

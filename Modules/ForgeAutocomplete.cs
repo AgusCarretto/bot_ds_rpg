@@ -70,23 +70,3 @@ public static class ForgeChoices
         }
     }
 }
-
-public sealed class ForgeAutocompleteHandler : SafeAutocompleteHandler
-{
-    protected override async Task<IReadOnlyList<AutocompleteResult>> BuildAsync(ulong userId, string typed, IServiceProvider services)
-    {
-        // GetByDiscordIdAsync (no GetOrCreate): abrir una lista no tiene que crearle cuenta a nadie.
-        var player = await services.GetRequiredService<IUserRepository>().GetByDiscordIdAsync(userId);
-        if (player is null)
-        {
-            return [];
-        }
-
-        var recipes = await services.GetRequiredService<IRecipeRepository>().GetAllAsync();
-        var zones = await services.GetRequiredService<IZoneRepository>().GetAllAsync();
-        var inventory = await services.GetRequiredService<IInventoryRepository>().GetByDiscordIdAsync(userId);
-        var owned = inventory.ToDictionary(entry => entry.ItemName, entry => entry.Quantity);
-
-        return ForgeChoices.For(recipes, zones, player, owned, typed);
-    }
-}

@@ -46,10 +46,12 @@ public partial class ShopModule
     // Limpio a propósito: dos columnas (Comida | Cajas), cada ítem con SU emoji si lo tiene y el nombre, y debajo qué hace y cuánto cuesta, con
     // una línea en blanco entre ítems. Sin la rareza escrita ("[Común]"), sin emojis de adorno en cada dato y sin el precio de venta (para
     // saber a cuánto se vende algo está la lista de /shop sell, que lo dice por cada ítem que tenés).
-    public static Embed BuildViewEmbed(IReadOnlyList<Item> items, IReadOnlyDictionary<int, ItemBuff>? buffs = null)
+    // talk: lo que dice el tabernero (por defecto, el saludo); gold: tu oro, si se quiere mostrar.
+    public static Embed BuildViewEmbed(
+        IReadOnlyList<Item> items, IReadOnlyDictionary<int, ItemBuff>? buffs = null, string? talk = null, int? gold = null)
     {
         var embed = new EmbedBuilder()
-            .WithTitle("🏪 Tienda")
+            .WithTitle("🍺 La Taberna")
             .WithColor(Color.Gold);
 
         if (items.Count == 0)
@@ -58,14 +60,15 @@ public partial class ShopModule
             return embed.Build();
         }
 
+        string goldLine = gold is int g ? $"\n\nTu oro: **{g}**" : string.Empty;
         embed.WithDescription(
-            $"{NpcDialogue.Shopkeeper(ShopkeeperLine.Greeting)}\n\n" +
+            $"{talk ?? NpcDialogue.Shopkeeper(ShopkeeperLine.Greeting)}{goldLine}\n\n" +
             "Las cajas se compran **de a una y una vez por hora**; abrilas con `/open`.");
 
         AddColumn(embed, "Comida", items.Where(i => i.Type != "Caja"), i => $"Cura {i.StatValue} HP{BuffText(i, buffs)} · {i.BuyPrice} oro");
         AddColumn(embed, "Cajas", items.Where(i => i.Type == "Caja"), i => $"{i.BuyPrice} oro");
 
-        return NpcImages.Decorate(embed.Build(), NpcImages.Shopkeeper);
+        return embed.Build();
     }
 
     // " · +15% ATQ 30 min" para los banquetes, nada para el resto de la comida.

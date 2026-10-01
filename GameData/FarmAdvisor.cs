@@ -71,7 +71,7 @@ public static class FarmAdvisor
 
         if (advice.CraftableNow)
         {
-            return ("💡 ¡Ya podés forjar algo!", $"**{recipe}** está lista: pasá por `/blacksmith`.");
+            return ("💡 ¡Ya podés forjar algo!", $"**{recipe}** está lista: pasá por `/forge`.");
         }
 
         var lines = new List<string> { $"**{recipe}**" };

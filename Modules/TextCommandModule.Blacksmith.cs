@@ -5,9 +5,9 @@ using Discord.Commands;
 // Parte de TextCommandModule (ver el comentario en TextCommandModule.cs): hablar con el herrero.
 public partial class TextCommandModule
 {
-    // "aa herrero" / "aa blacksmith" — misma escena que /blacksmith (con el desplegable de recetas).
+    // "aa herrero" / "aa forge" — misma escena que /forge (con el desplegable de recetas).
     [Command("blacksmith")]
-    [Alias("herrero")]
+    [Alias("herrero", "forge")]
     [Summary("Hablá con el herrero y elegí de la lista qué querés que te forje: \"aa herrero\".")]
     public async Task BlacksmithAsync()
     {
