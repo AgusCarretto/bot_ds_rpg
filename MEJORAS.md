@@ -49,6 +49,15 @@ la base real con usuarios descartables y recién ahí integrada a `develop`.
   heredan de `SafeAutocompleteHandler`: si armar la lista falla, queda en el log y se devuelve vacía en vez de romperse. (5) El nombre
   de un ítem ya no distingue mayúsculas, tildes **ni espacios sobrantes** (`"Mate Amargo "` fallaba). (6) Misiones y logros con una línea en
   blanco entre cada una.
+- **Jefe que paga, nivel que se festeja, `/tips`, recetas por zona y respuestas aparte** (2026-10-01): (1) **El jefe pagaba menos que un `/travel`** (en Zona 2: ~280 XP contra ~520, una pelea dura con
+  30 min de cooldown rendía la mitad que una de 10): ahora es la fórmula de `/hunt` con el bono grande del jefe **x6** (`CombatRewardCalculator.BossRewardMultiplier`) = ~3,2 veces un viaje de su
+  zona (oro y XP; ~70 % de un nivel por jefe en zonas 2-5). Vale para `/boss` y `/raid` (cada participante cobra entero). Ojo con el ritmo: quien juega cazar + viajar + jefe en cada cooldown sube
+  de nivel ~40 % más rápido; si hay que frenarlo, se baja esa constante. (2) **Subir de nivel es un mensaje propio** ("🎉 ¡SUBISTE DE NIVEL! 🎉", dorado y público): quién subió, `Nivel 6 ➜ Nivel 7`,
+  +15 de vida máxima por nivel, vida curada, un aviso si el nivel nuevo alcanza una zona, y una frase al azar. Sale del evento `level_up` que ya registraban todos los comandos, así que sirve para combate,
+  `/daily`, misiones y logros sin tocar cada módulo (en un raid solo lo recibe en el acto quien dio el golpe final; el resto lo ve en el mensaje del raid, y el aviso vence a los 2 minutos).
+  (3) **El consejo de "qué farmear" salió de `/chop`, `/mine` y las victorias**: ahora es el comando **`/tips`** (`aa tips`, `aa consejo`; en slash solo lo ves vos), y esos mensajes quedan más cortos. (4) **Las
+  recetas vuelven a verse por zona**: la herrería (`/forge`) tiene una segunda lista, "📜 Ver las recetas de una zona", que cambia la escena a las recetas de esa zona (con lo que tenés de cada material y
+  un 🔒 si todavía no llegás al nivel); en texto, `aa forge recipes [zona]`. (5) **La respuesta del tabernero y la del herrero salen en un mensaje aparte**, debajo de la escena, en vez de pisar su texto.
 - **`/forge` solo y `/taberna`** (2026-10-01): (1) `/forge` ya no tiene subcomandos: abre la herrería (foto del herrero + desplegable de recetas); `/forge make`, `/forge recipes` y
   `/blacksmith` se sacaron (en texto siguen `aa herrero`, `aa forge`, `aa forge make` y `aa forge recipes`). (2) **`/taberna`** (`aa taberna`): el tendero pasó a ser el tabernero (una sola taberna):
   su foto, la carta en dos columnas y cuatro desplegables para **comer** algo de tu mochila, **comprar comida**, **comprar una caja** (una por hora) y **vender**; cada elección es de

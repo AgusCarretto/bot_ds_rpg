@@ -15,7 +15,8 @@
 -- Re-ejecutable (mismo patrón WITH...ON CONFLICT que seed_zones_and_monsters.sql).
 --
 -- gold_reward / xp_reward de un jefe son un BONUS que se suma a la fórmula normal de /hunt
--- (GameData/CombatRewardCalculator.RollHuntReward). Triplicados respecto de los originales: un jefe
+-- (GameData/CombatRewardCalculator.RollHuntReward), y el total se multiplica x6 (CombatRewardCalculator.BossRewardMultiplier: desde la v0.6.0 el
+-- jefe paga ~3,2 veces un /travel de su zona; con x1 pagaba la mitad). Triplicados respecto de los originales: un jefe
 -- paga ~9-14% de un nivel de XP al nivel en que se lo enfrenta (antes ~3-6%, casi lo mismo que una
 -- cacería común pese a ser una pelea mucho más dura con cooldown de 30 min).
 -- =========================================================

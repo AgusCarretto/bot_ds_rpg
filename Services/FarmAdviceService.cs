@@ -17,7 +17,7 @@ public sealed class FarmAdviceService(
     IZoneRepository zoneRepository, IItemRepository itemRepository, IMonsterRepository monsterRepository) : IFarmAdvisor
 {
     // Las recetas, las zonas, los monstruos y sus drops casi no cambian (solo cuando se corre un seed), así que se guardan unos minutos:
-    // cada /chop, /mine y victoria pide un consejo y no tiene sentido releer todo eso cada vez. Lo único que se lee siempre es lo del jugador.
+    // cada /tips pide un consejo y no tiene sentido releer todo eso cada vez. Lo único que se lee siempre es lo del jugador.
     private static readonly TimeSpan CacheLifetime = TimeSpan.FromMinutes(5);
 
     private sealed record Statics(

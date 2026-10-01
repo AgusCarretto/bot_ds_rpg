@@ -10,8 +10,7 @@ public class GatheringModule(
     IGatheringRepository gatheringRepository,
     IUserRepository userRepository,
     IItemRepository itemRepository,
-    IGameEvents gameEvents,
-    IFarmAdvisor farmAdvisor) : InteractionModuleBase<SocketInteractionContext>
+    IGameEvents gameEvents) : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("chop", "Talá madera cercana (cooldown de 5 minutos).")]
     public Task HandleChopAsync() =>
@@ -66,7 +65,7 @@ public class GatheringModule(
 
             await GatheringEvents.RecordAsync(gameEvents, Context.User.Id, definition, item, quantity);
 
-            await FollowupAsync(embed: BuildResultEmbed(definition, item, quantity, await farmAdvisor.AdviceAsync(Context.User.Id)));
+            await FollowupAsync(embed: BuildResultEmbed(definition, item, quantity));
         }
         catch (Exception ex)
         {
@@ -86,20 +85,13 @@ public class GatheringModule(
             .Build();
     }
 
-    // advice: el consejo de qué farmear a continuación (GameData/FarmAdvisor.cs), o null si no hay.
-    public static Embed BuildResultEmbed(CooldownDefinition definition, Item item, int quantity, FarmAdvice? advice = null)
+    public static Embed BuildResultEmbed(CooldownDefinition definition, Item item, int quantity)
     {
         var embed = new EmbedBuilder()
             .WithTitle($"{definition.Emoji} ¡{definition.DisplayName} exitoso!")
             .WithColor(RarityColor(item.Rarity))
             .WithDescription($"Conseguiste **{quantity}× {ItemDisplay.Format(item.Emoji, item.Name)}**")
             .AddField("Rareza", item.Rarity, true);
-
-        if (advice is not null)
-        {
-            var (title, value) = FarmAdvisor.ToField(advice);
-            embed.AddField(title, value, false);
-        }
 
         return embed.Build();
     }

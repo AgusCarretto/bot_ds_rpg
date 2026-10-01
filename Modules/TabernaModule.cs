@@ -11,7 +11,8 @@ public sealed record TabernaScene(Embed Embed, MessageComponent? Components, str
 // /taberna (aa taberna): la taberna como una escena, igual que la herrería. Aparece el tabernero con su foto (si hay una, ver NpcImages), te
 // saluda y muestra la carta (comida y cajas con su precio) y debajo van listas desplegables para: comer algo de tu mochila, comprar comida,
 // comprar una caja y vender algo. Cada elección es de a UNA unidad (para más cantidad están los comandos directos de /shop), el tabernero
-// contesta y la escena se vuelve a armar con tu oro y tus cosas al día. Por debajo es EXACTAMENTE la misma lógica de siempre
+// contesta y la escena se vuelve a armar con tu oro y tus cosas al día. La respuesta del tabernero NO reemplaza el texto de la escena (se perdía
+// entre la carta y las listas): sale como un mensaje APARTE, justo debajo, con lo que pasó con lo que elegiste. Por debajo es EXACTAMENTE la misma lógica de siempre
 // (ShopModule.ExecuteBuyAsync / ExecuteSellAsync y UseModule.ExecuteUseAsync): mismas validaciones, mismo cobro atómico, el cooldown de
 // las cajas, los eventos para misiones y logros... Nada se reimplementa acá.
 public class TabernaModule(
@@ -79,13 +80,16 @@ public class TabernaModule(
                 action, userRepository, itemRepository, inventoryRepository, shopRepository, buffRepository, combatSessions, gameEvents,
                 Context.User.Id, selected.FirstOrDefault() ?? string.Empty);
 
-            var scene = await BuildSceneAsync(userRepository, itemRepository, inventoryRepository, buffRepository, Context.User.Id, talk);
+            // La escena se refresca (tu oro y tus listas al día) y la respuesta va en un mensaje aparte.
+            var scene = await BuildSceneAsync(userRepository, itemRepository, inventoryRepository, buffRepository, Context.User.Id, null);
 
             await ModifyOriginalResponseAsync(p =>
             {
                 p.Embed = scene.Embed;
                 p.Components = scene.Components ?? new ComponentBuilder().Build();
             });
+
+            await FollowupAsync(embed: BuildAnswerEmbed(talk));
         }
         catch (Exception ex)
         {
@@ -93,6 +97,13 @@ public class TabernaModule(
             await FollowupAsync("¡Upa! No pude pasarle el pedido al tabernero, intentá de nuevo en un momento.", ephemeral: true);
         }
     }
+
+    // La respuesta del tabernero como mensaje propio: su frase y lo que pasó (compraste, vendiste, te curaste, te faltó oro...).
+    public static Embed BuildAnswerEmbed(string talk) =>
+        new EmbedBuilder()
+            .WithColor(Color.Gold)
+            .WithDescription(string.IsNullOrWhiteSpace(talk) ? "🍺" : talk.Length <= 4000 ? talk : talk[..3999] + "…")
+            .Build();
 
     // Lo que contesta el tabernero a lo que elegiste. Estático y sin Context para probarlo sin Discord.
     public static async Task<string> ExecuteActionAsync(

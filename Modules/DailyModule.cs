@@ -49,10 +49,10 @@ public class DailyModule(IUserRepository userRepository, IProgressionRepository 
             .Build();
     }
 
+    // result ya no se usa para armar el mensaje (la subida de nivel sale aparte, ver GameData/LevelUpCard.cs); se conserva en la firma porque
+    // la llaman el slash y el texto con el mismo resultado.
     public static Embed BuildResultEmbed(DailyClaimCalculation calculation, LevelUpOutcome result)
     {
-        var player = result.Player;
-
         var embed = new EmbedBuilder()
             .WithTitle("🎁 ¡Recompensa diaria reclamada!")
             .WithColor(calculation.Status == DailyClaimStatus.StreakReset ? Color.Orange : Color.Gold)
@@ -63,11 +63,6 @@ public class DailyModule(IUserRepository userRepository, IProgressionRepository 
         if (calculation.Status == DailyClaimStatus.StreakReset)
         {
             embed.WithDescription("⚠️ ¡Perdiste tu racha! Volvemos al Día 1.");
-        }
-
-        if (result.LevelsGained > 0)
-        {
-            embed.AddField("🎉 ¡Subiste de nivel!", $"Ahora sos nivel **{player.Level}**.", false);
         }
 
         return embed.Build();

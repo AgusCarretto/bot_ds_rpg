@@ -170,11 +170,6 @@ public class AutoHuntModule(
             embed.AddField("🎁 Material obtenido", $"{ItemDisplay.Format(droppedItem.Emoji, droppedItem.Name)} ({droppedItem.Rarity})", false);
         }
 
-        if (outcome.LevelsGained > 0)
-        {
-            embed.AddField("🎉 ¡Subiste de nivel!", $"Ahora sos nivel **{player.Level}** (vida máxima: {player.MaxHp}).", false);
-        }
-
         return embed.Build();
     }
 

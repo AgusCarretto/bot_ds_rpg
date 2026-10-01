@@ -7,7 +7,8 @@ public sealed record LevelingResult(int Level, int Xp, int MaxHp, int CurrentHp,
 // apliquen exactamente la misma fórmula.
 public static class LevelingCalculator
 {
-    private const int HpGainedPerLevel = 15;
+    // Vida máxima que suma cada nivel (también la usa GameData/LevelUpCard.cs para decirlo).
+    public const int HpGainedPerLevel = 15;
 
     // XP necesaria para pasar del nivel actual al siguiente.
     public static int RequiredXpForLevel(int level) => (int)(100 * Math.Pow(level, 1.5));

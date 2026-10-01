@@ -248,11 +248,7 @@ public class MissionsModule(
             .WithDescription($"{string.Join('\n', lines)}\n\n**Total:** {totals.Describe()}")
             .AddField("💰 Tu oro ahora", totals.GoldAfter.ToString(), true);
 
-        if (totals.LevelsGained > 0)
-        {
-            embed.AddField("🆙 ¡Subiste de nivel!", $"Ahora sos nivel **{totals.NewLevel}**.", true);
-        }
-
+        // La subida de nivel sale como mensaje propio (GameData/LevelUpCard.cs), no como una línea más acá.
         return embed.Build();
     }
 

@@ -64,7 +64,7 @@ public static class FarmAdvisor
         return new FarmAdvice(best.Recipe.ResultItem.Name, best.Recipe.ResultItem.Emoji, false, best.GoldShort, pieces);
     }
 
-    // El campo del embed (título y texto), corto y con aire: la receta, y una línea por cosa que falta con el comando para conseguirla.
+    // El título y el texto del consejo que muestra /tips (Modules/TipsModule.cs), cortos y con aire: la receta, y una línea por cosa que falta con el comando para conseguirla.
     public static (string Title, string Value) ToField(FarmAdvice advice)
     {
         string recipe = ItemDisplay.Format(advice.RecipeEmoji, advice.RecipeName);

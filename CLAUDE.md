@@ -133,7 +133,10 @@ real `CombatTurnResolver`, see the seed header), and `CombatRewardCalculator.Rol
 **whole `/hunt` formula ×10** (`TravelRewardMultiplier` — what the 10-minute cooldown is worth in hunts). So
 travel rewards follow the zone ladder automatically: a new zone's travel payout is set by the
 `gold_reward`/`xp_reward` bonus of its monster, same as hunts. If you add a zone, add its travel monster or
-`/travel` answers "zona sin monstruos" (without charging the cooldown).
+`/travel` answers "zona sin monstruos" (without charging the cooldown). **A boss pays more than a travel**: `RollBossReward` is the `/hunt` formula (plus the boss's own big gold/XP bonus,
+`seed_zone_bosses.sql`) ×6 (`BossRewardMultiplier`), i.e. ~3.2× a travel of its zone in zones 2–5 (it was ×1 until v0.6.0 and paid HALF a travel — the 30-minute exam paid less than a
+10-minute fight). That is about what its 30-minute cooldown is worth in travels (3) plus a premium for the risk of losing; every raid participant gets the full amount. It speeds up
+leveling (a player cycling hunt + travel + boss on cooldown levels ~40% faster than with ×1), so if pacing needs to slow down, lower this one constant.
 
 **Drops: every monster drops exactly ONE item, and the chances are deliberately low.** Per zone there are 4 drop
 materials — one per `/hunt` monster ("a granel"), one from the travel monster ("escaso") and one from the boss
@@ -273,7 +276,7 @@ bottleneck: Hierro (10.5% per `/mine`, cooldown 5 min — it shares the Raro poo
 **Readable embeds** (the owner's rule: spaced out, not crowded — use blank lines and columns, not walls of text): `/inventory` is two inline columns per row
 (Recolección = Madera first, then Mineral, grouped by TYPE; next to it Drops de monstruo, i.e. `items.type = 'Material'`), then Armas | Amuletos, then
 Comida | Cajas, with a blank spacer field between rows and no rarity text per line (the item emoji, or a coloured dot, carries it);
-`/shop view` is two inline columns (Comida | Cajas), each item with ITS OWN emoji and a one-line detail, no rarity text and no decorative emojis; `/forge recipes` shows "have/need" per ingredient (✅/❌) when given the player's inventory. `/forge recipes` shows ONE recipe per field (item + stat, gold, one ingredient per line) and
+`/shop view` is two inline columns (Comida | Cajas), each item with ITS OWN emoji and a one-line detail, no rarity text and no decorative emojis; the recipes page (`/forge` zone picker, `aa forge recipes [zone]`) shows "have/need" per ingredient (✅/❌) when given the player's inventory. it shows ONE recipe per field (item + stat, gold, one ingredient per line) and
 `/drops` sends one embed per zone (a field per fight type, two short lines per monster). Both were single walls of text
 before. Every embed built from a growing catalog must stay under Discord's 6000-character total (all embeds of a message
 count together).
@@ -378,17 +381,29 @@ a new character is an enum + a table. Every table must keep ≥2 distinct lines 
 `Modules/BlacksmithModule.cs`) is a scene: the blacksmith greets (with his picture if `Images__Blacksmith` is set in the `.env` to a public
 image URL — the bot hosts no files — otherwise text only; see "NPC images ship with the bot" below) and a select menu lists the player's zone recipes (✅ craftable / ❌ what's
 missing, the same `ForgeChoices` the `/forge make` autocomplete uses); picking one runs EXACTLY `ForgeModule.ExecuteMakeAsync`, so
-validations, the atomic charge and the craft event are shared, and the menu is rebuilt after each order. `/forge make|recipes` stay as the
-direct commands. The select menu's custom id carries the owner id so nobody else can use your conversation. Boss victory text depends on
+validations, the atomic charge and the craft event are shared, and the menu is rebuilt after each order. the blacksmith's answer goes in a SEPARATE message right below (`BlacksmithModule.BuildAnswerEmbed`, same as the tavern's) so it doesn't get lost, and the scene is rebuilt after each order. A second select menu
+("📜 Ver las recetas de una zona", `blacksmith_zone:{owner}`) switches the scene to that zone's recipes page (`ForgeModule.RenderRecipesEmbed`, the old `/forge recipes` view: have/need ✅/❌ per
+ingredient, a 🔒 note for zones above the player's level, the picked zone stays marked); it is view-only — the forge menu still lists the player's own zone. `aa forge recipes [zone]` is the
+text equivalent. Each menu's custom id carries the owner id so nobody else can use your conversation. Boss victory text depends on
 whether it was the FIRST clear of that zone's boss (`highest_zone_cleared` is read *before* applying the victory): the first time it
 announces the next zone opens; every later kill says "¡Volviste a ganarle!" and never claims an advance.
 
-**"What should I farm?" advice (`GameData/FarmAdvisor.cs`, `Services/FarmAdviceService.cs`)** — after `/chop`, `/mine` and every `/hunt`, `/travel` and `/boss`
-victory the result embed gets a "💡 Para tu próxima forja" field: of the recipes the player sees (same `RecipeCatalog.ViewFor` as the blacksmith) it
-picks the most advanced one (or says "you can forge X now" and points at `/forge`), lists at most 2 missing ingredients and the command that
-yields each (`/chop`, `/mine`, or `/hunt`/`/travel`/`/boss` according to which monster of that zone drops it) and the gold shortfall. The choice is pure
-(`FarmAdvisor.Choose`); the service only gathers data and caches the near-static parts (recipes, zones, monsters, gatherable item names) for 5 minutes. It
-NEVER throws (an advice is an extra: any failure returns null). Skipped in `/autohunt` on purpose (it would spam).
+**"What should I farm?" advice (`/tips`, `aa tips` / `aa consejo`, `Modules/TipsModule.cs`; logic in `GameData/FarmAdvisor.cs`, `Services/FarmAdviceService.cs`)** — of the recipes the
+player sees (same `RecipeCatalog.ViewFor` as the blacksmith) it picks the most advanced one (or says "you can forge X now" and points at `/forge`), lists at most 2 missing
+ingredients and the command that yields each (`/chop`, `/mine`, or `/hunt`/`/travel`/`/boss` according to which monster of that zone drops it) and the gold shortfall. It used
+to be a "💡 Para tu próxima forja" field glued to the end of `/chop`, `/mine` and every combat victory, which made messages that were already full even longer, so it is now its
+**own command** (ephemeral in slash) and those embeds do not carry it any more — don't re-add the field (`GatheringModule.BuildResultEmbed` and `AdventureModule.BuildVictoryEmbed`
+have no advice parameter). The choice is pure (`FarmAdvisor.Choose`); the service only gathers data and caches the near-static parts (recipes, zones, monsters, gatherable item
+names) for 5 minutes. It NEVER throws (an advice is an extra: any failure returns null, and `/tips` then says there is nothing to advise).
+
+**Level-up banner (`GameData/LevelUpCard.cs`, `Services/ProgressNotifier.cs`)** — leveling up used to be one small field ("Ahora sos nivel 7") inside victory/daily/receipt embeds that
+already had gold, XP, HP, summary, drop... and got lost. Now it is its own **public gold embed** ("🎉 ¡SUBISTE DE NIVEL! 🎉": mention, `Nivel 6 ➜ Nivel 7`, max HP +15 per level, "curada al
+máximo", a "zona nueva a tu alcance" line when the new level crosses a zone's `min_level`, and a random cheer in the footer). It comes out of the ONE place every XP source already
+goes through: they all record a `level_up` event (`GameEventExtensions.RecordVictoryAsync`, the mission/achievement claims), `ProgressNotifier` turns it into a `GameNotice` carrying the
+embed, and `Program.cs` delivers it right after the command (follow-up for slash and button interactions, channel message for text commands). So a new XP source gets the banner for free
+as long as it records `level_up`; the in-embed field was removed everywhere (a raid keeps its short per-player line in the shared victory embed, because only the player who landed
+the last blow is still "in" an interaction). `GameNotice.ExpiresUtc` (2 min for this one) drops notices that were never delivered, so another raid participant doesn't get a stale
+banner hours later glued to an unrelated command.
 
 **Mini-event (`Services/MiniEventService.cs`, `GameData/MiniEvents.cs`, `Modules/MiniEventModule.cs`)** — after a slash or text command in a guild channel, with
 a small chance (default 3%, at most one per channel every 30 min, one open at a time) the bot posts "a miner dropped a bag of stones / a woodcutter's bundle
@@ -401,7 +416,7 @@ Tunable by env vars (`MiniEvent__ChancePercent`, `MiniEvent__ChannelCooldownMinu
 **The tavern (`/taberna`, `aa taberna`, `Modules/TabernaModule.cs`)** — the shopkeeper IS the innkeeper ("El Tabernero", one character; there is no "Tendero" any more): a scene with his photo, the
 price list (two inline columns Comida | Cajas, `ShopModule.BuildViewEmbed`) and four select menus, one per row — eat something from your bag, buy food, buy a box, sell something.
 Every pick is ONE unit and runs exactly the existing logic (`ShopModule.ExecuteBuyAsync/ExecuteSellAsync`, `UseModule.ExecuteUseAsync`: same validations, atomic charge, box cooldown and
-game events), then the scene is rebuilt with the innkeeper's answer and your fresh gold. Each menu's custom id carries the owner id. `/shop` (view/buy/sell/sellall) remains as the direct
+game events), then the scene is rebuilt with your fresh gold and the innkeeper's answer goes in a SEPARATE message right below (`TabernaModule.BuildAnswerEmbed`: replacing the scene text made it get lost between the price list and the menus). Each menu's custom id carries the owner id. `/shop` (view/buy/sell/sellall) remains as the direct
 shortcut for quantities and for text commands; `/shop view` carries no photo on purpose (an `attachment://` thumbnail without its file would make Discord reject the message).
 
 **NPC images ship with the bot**: `Assets/npc/blacksmith.jpg` and `innkeeper.jpg` (256x256, ~25 KB; `Assets/**` is copied to the output and the publish)

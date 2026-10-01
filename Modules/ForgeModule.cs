@@ -21,13 +21,23 @@ public static class ForgeModule
     // si se pasa) — por eso el molde de 7 recetas por zona y ver solo la propia. Cada bloque dice cuánto suma el
     // resultado ("+15 ATQ" un arma, "+20 DEF" un amuleto; con ⭐ y el valor real si es de la familia de la clase del
     // jugador), el oro y los ingredientes uno por línea.
+    // playerLevel: si viene y la zona que se muestra pide más nivel, se avisa (🔒). currentZoneId es la zona A MOSTRAR: la del jugador en
+    // "aa forge recipes", o la que elija en el selector de zonas de /forge (ver Modules/BlacksmithModule.cs).
     public static async Task<Embed> BuildRecipesEmbed(
         IRecipeRepository recipeRepository, IZoneRepository zoneRepository, string playerClass, int currentZoneId,
-        IReadOnlyDictionary<string, int>? owned = null, int? playerGold = null)
+        IReadOnlyDictionary<string, int>? owned = null, int? playerGold = null, int? playerLevel = null)
     {
         var recipes = await recipeRepository.GetAllAsync();
         var zones = await zoneRepository.GetAllAsync();
+        return RenderRecipesEmbed(recipes, zones, playerClass, currentZoneId, owned, playerGold, playerLevel);
+    }
 
+    // Lo mismo sin tocar la base (el que ya tiene recetas y zonas cargadas, como la escena de la herrería, lo usa directo).
+    // forgeHint: la frase de cómo forjar; la escena de /forge pone la suya (ya estás en la lista), y el resto el comando de siempre.
+    public static Embed RenderRecipesEmbed(
+        IReadOnlyList<RecipeDetails> recipes, IReadOnlyList<Zone> zones, string playerClass, int currentZoneId,
+        IReadOnlyDictionary<string, int>? owned = null, int? playerGold = null, int? playerLevel = null, string? forgeHint = null)
+    {
         var embed = new EmbedBuilder()
             .WithTitle("⚒️ Recetas del Herrero")
             .WithColor(Color.DarkGrey);
@@ -49,14 +59,17 @@ public static class ForgeModule
         string fallbackNote = view.IsFallback
             ? "\n_Tu zona actual todavía no tiene recetas propias: te muestro las de la última zona que sí._"
             : string.Empty;
+        string lockNote = playerLevel is int level && view.Zone.MinLevel > level
+            ? $"\n🔒 _Esta zona pide nivel {view.Zone.MinLevel} (vos sos nivel {level}): mirá qué te espera._"
+            : string.Empty;
 
         if (view.Recipes.Count == 0)
         {
-            embed.WithDescription($"{zoneName}{fallbackNote}\nNo hay recetas para vos en esta zona todavía.");
+            embed.WithDescription($"{zoneName}{fallbackNote}{lockNote}\nNo hay recetas para vos en esta zona todavía.");
             return embed.Build();
         }
 
-        embed.WithDescription($"{zoneName}{fallbackNote}\nForjá con `/forge make` (la lista te marca ✅ lo que ya podés hacer).")
+        embed.WithDescription($"{zoneName}{fallbackNote}{lockNote}\n{forgeHint ?? "Forjá con `/forge` (o `aa forge make <nombre>`): la lista te marca ✅ lo que ya podés hacer."}")
             .WithFooter("🎯 arma de tu clase  ·  ⚔️ arma general  ·  📿 amuleto");
 
         AddRecipes(embed, view.Recipes, RecipeGroup.ClassWeapon, "🎯", playerClass, owned, playerGold);

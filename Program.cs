@@ -245,13 +245,13 @@ class Program
 
     // Entrega los avisos pendientes de un jugador (ver Services/IGameEvents.cs). Un aviso que no se pueda mandar (el canal ya no
     // existe, el token venció) se registra y se descarta: nunca tira abajo el comando que ya salió bien.
-    private static async Task DeliverNoticesAsync(ulong userId, Func<string, bool, Task> send)
+    private static async Task DeliverNoticesAsync(ulong userId, Func<GameNotice, Task> send)
     {
         foreach (var notice in _services.GetRequiredService<IGameEvents>().TakeNotices(userId))
         {
             try
             {
-                await send(notice.Text, notice.Public);
+                await send(notice);
             }
             catch (Exception ex)
             {
@@ -288,7 +288,8 @@ class Program
             {
                 await DeliverNoticesAsync(
                     interaction.User.Id,
-                    async (text, isPublic) => await interaction.FollowupAsync(text, ephemeral: !isPublic));
+                    async notice => await interaction.FollowupAsync(
+                        string.IsNullOrEmpty(notice.Text) ? null : notice.Text, embed: notice.Embed, ephemeral: !notice.Public));
             }
 
             // Con poca probabilidad, después de un comando en un servidor puede aparecer un minievento en ese canal (ver Services/MiniEventService.cs).
@@ -357,7 +358,9 @@ class Program
             }
 
             // Los avisos que dejó el comando (misión completada, logro): en texto no hay mensajes privados, salen en el canal.
-            await DeliverNoticesAsync(message.Author.Id, async (text, _) => await message.Channel.SendMessageAsync(text));
+            await DeliverNoticesAsync(
+                message.Author.Id,
+                async notice => await message.Channel.SendMessageAsync(string.IsNullOrEmpty(notice.Text) ? null : notice.Text, embed: notice.Embed));
 
             if (message.Channel is SocketGuildChannel)
             {

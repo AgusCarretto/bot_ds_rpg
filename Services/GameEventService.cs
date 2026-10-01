@@ -20,7 +20,7 @@ public sealed class GameEventService(IGameEventRepository eventRepository, IProg
             // El evento YA está guardado: lo que falle desde acá (calcular un aviso) no lo deshace, solo se pierde el cartelito.
             if (progressNotifier is not null)
             {
-                foreach (var notice in await progressNotifier.OnEventAsync(discordId, kind, amount, newTotal, DateTime.UtcNow))
+                foreach (var notice in await progressNotifier.OnEventAsync(discordId, kind, amount, newTotal, DateTime.UtcNow, detail))
                 {
                     Enqueue(discordId, notice);
                 }
@@ -41,8 +41,15 @@ public sealed class GameEventService(IGameEventRepository eventRepository, IProg
         }
 
         var taken = new List<GameNotice>();
+        var now = DateTime.UtcNow;
         while (queue.TryDequeue(out var notice))
         {
+            // Los avisos que vencieron (ver GameNotice.ExpiresUtc) se descartan: no se le entregan a nadie.
+            if (notice.ExpiresUtc is { } expires && expires < now)
+            {
+                continue;
+            }
+
             taken.Add(notice);
         }
 

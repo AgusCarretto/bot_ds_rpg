@@ -48,7 +48,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             .WithColor(OnboardingModule.BrandColor)
             .WithDescription("El loop básico del juego, en 5 pasos:")
             .AddField("🪓 Recolección", "Usá `/chop` o `/mine` para conseguir recursos básicos.", false)
-            .AddField("⚒️ Herrería", "Usá `/forge` para ver recetas y crear armas más fuertes.", false)
+            .AddField("⚒️ Herrería", "Usá `/forge` para ver las recetas de cada zona y crear armas más fuertes. ¿No sabés qué farmear? `/tips` te dice qué te falta.", false)
             .AddField(
                 "⚔️ Combate",
                 "Usá `/hunt` (manual) o `aa ah` (automático) para ganar Oro, XP y drops de monstruos. " +
@@ -88,7 +88,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 false)
             .AddField(
                 "🛠️ Utilidad",
-                "`/start` — Empezar tu aventura\n`/class` — Elegir/cambiar de clase\n`/profile` — Ver tu ficha\n`/inventory` — Ver tu inventario\n`/cd` — Ver tus cooldowns\n`/tutorial` — Este loop básico\n`/info` — Esta lista de comandos",
+                "`/start` — Empezar tu aventura\n`/class` — Elegir/cambiar de clase\n`/profile` — Ver tu ficha\n`/inventory` — Ver tu inventario\n`/cd` — Ver tus cooldowns\n`/tips` — Qué te falta para tu próxima forja y de dónde sacarlo\n`/tutorial` — Este loop básico\n`/info` — Esta lista de comandos",
                 false)
             .WithFooter($"Asado y Acero RPG v{BotVersion.Current}")
             .Build();

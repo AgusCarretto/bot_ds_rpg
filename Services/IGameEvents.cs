@@ -1,9 +1,12 @@
+using Discord;
+
 namespace BotDsRpg.Services;
 
-// Un aviso para el jugador que salió de registrar un evento (una misión que se completó, un logro que se desbloqueó).
-// Public = se muestra en el canal (los logros se festejan); si no, solo lo ve el jugador (slash) o igual en el canal (texto,
-// que no tiene mensajes privados).
-public sealed record GameNotice(string Text, bool Public);
+// Un aviso para el jugador que salió de registrar un evento (una misión que se completó, un logro que se desbloqueó, un nivel nuevo).
+// Public = se muestra en el canal (los logros y los niveles se festejan); si no, solo lo ve el jugador (slash) o igual en el canal (texto,
+// que no tiene mensajes privados). Embed: si viene, el aviso es ese mensaje vistoso (Text puede quedar vacío). ExpiresUtc: pasado ese
+// momento el aviso se descarta en vez de entregarse (un festejo que llega tarde, de otro comando, no tiene sentido); null = no vence.
+public sealed record GameNotice(string Text, bool Public, Embed? Embed = null, DateTime? ExpiresUtc = null);
 
 // Punto único donde el bot cuenta lo que pasa en el juego. Los comandos registran sus eventos acá (RecordAsync) y no se
 // ocupan de nada más: el servicio los guarda, actualiza los contadores y — desde que existen las misiones y los logros —

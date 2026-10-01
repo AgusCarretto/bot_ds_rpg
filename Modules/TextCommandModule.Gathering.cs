@@ -54,7 +54,7 @@ public partial class TextCommandModule
 
             await GatheringEvents.RecordAsync(gameEvents, Context.User.Id, definition, item, quantity);
 
-            await ReplyAsync(embed: GatheringModule.BuildResultEmbed(definition, item, quantity, await farmAdvisor.AdviceAsync(Context.User.Id)));
+            await ReplyAsync(embed: GatheringModule.BuildResultEmbed(definition, item, quantity));
         }
         catch (Exception ex)
         {

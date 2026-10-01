@@ -1,24 +1,42 @@
 using BotDsRpg.GameData;
+using BotDsRpg.Models;
 using BotDsRpg.Repositories;
+using Discord;
 
 namespace BotDsRpg.Services;
 
-// Convierte un evento recién guardado en los avisos que le tocan al jugador: "¡Misión completada!" y "¡Logro desbloqueado!".
+// Convierte un evento recién guardado en los avisos que le tocan al jugador: "¡Misión completada!", "¡Logro desbloqueado!" y "¡Subiste de nivel!".
 public interface IProgressNotifier
 {
     // kind/amount: el evento. newTotal: cómo quedó el contador del jugador para ese tipo (lo devuelve el registro de eventos).
-    // utcNow se pasa de afuera para poder probarlo en cualquier instante.
-    Task<IReadOnlyList<GameNotice>> OnEventAsync(ulong discordId, string kind, long amount, long newTotal, DateTime utcNow);
+    // utcNow se pasa de afuera para poder probarlo en cualquier instante. detail: el detalle del evento tal como se registró (en "level_up",
+    // el nivel al que llegó).
+    Task<IReadOnlyList<GameNotice>> OnEventAsync(ulong discordId, string kind, long amount, long newTotal, DateTime utcNow, string? detail = null);
 }
 
 // Avisa JUSTO cuando se cruza la meta ("antes no llegaba, ahora sí"), no cada vez que se suma algo estando por encima, y sin
 // guardar nada: el aviso sale de comparar el valor de antes con el de ahora. Si el bot se reinicia entre el evento y el aviso, solo
 // se pierde el cartelito (el progreso ya está en la base y se ve en /missions y /achievements).
-public sealed class ProgressNotifier(IMissionRepository missionRepository) : IProgressNotifier
+//
+// La subida de nivel NO es una misión ni un logro, pero sigue el mismo camino: todo lo que da XP ya registra un evento "level_up" (con el
+// nivel nuevo como detalle y los niveles subidos como cantidad), así que un solo lugar alcanza para que TODOS los comandos (combate, /daily,
+// reclamar misiones y logros, raid) la festejen igual, sin que cada uno arme su propio mensaje. zoneRepository es opcional: sin él, la
+// tarjeta simplemente no avisa de zonas nuevas.
+public sealed class ProgressNotifier(IMissionRepository missionRepository, IZoneRepository? zoneRepository = null) : IProgressNotifier
 {
-    public async Task<IReadOnlyList<GameNotice>> OnEventAsync(ulong discordId, string kind, long amount, long newTotal, DateTime utcNow)
+    // Cuánto vive el aviso de nivel en la cola. En un raid solo recibe el aviso en el acto quien dio el golpe final (el resto lo ve en el
+    // mensaje del raid): si no vence, otro jugador lo recibiría horas después, pegado a un comando que no tiene nada que ver.
+    private static readonly TimeSpan LevelUpNoticeLifetime = TimeSpan.FromMinutes(2);
+
+    public async Task<IReadOnlyList<GameNotice>> OnEventAsync(
+        ulong discordId, string kind, long amount, long newTotal, DateTime utcNow, string? detail = null)
     {
         var notices = new List<GameNotice>();
+
+        if (kind == GameEventKinds.LevelUp && int.TryParse(detail, out int newLevel) && amount > 0)
+        {
+            notices.Add(await BuildLevelUpNoticeAsync(discordId, newLevel, (int)amount, utcNow));
+        }
 
         // Logros: salen del contador de toda la vida, que ya viene calculado (sin consultar la base).
         foreach (var (achievement, tier) in AchievementCatalog.Crossed(kind, newTotal - amount, newTotal))
@@ -48,5 +66,37 @@ public sealed class ProgressNotifier(IMissionRepository missionRepository) : IPr
         }
 
         return notices;
+    }
+
+    // La tarjeta de subida de nivel (GameData/LevelUpCard.cs) como un mensaje público y con vencimiento.
+    private async Task<GameNotice> BuildLevelUpNoticeAsync(ulong discordId, int newLevel, int levelsGained, DateTime utcNow)
+    {
+        IReadOnlyList<Zone> zones = [];
+        if (zoneRepository is not null)
+        {
+            try
+            {
+                zones = await zoneRepository.GetAllAsync();
+            }
+            catch (Exception ex)
+            {
+                // Las zonas son un extra de la tarjeta: sin ellas, igual se festeja el nivel.
+                BotLog.Warn(ex);
+            }
+        }
+
+        var card = LevelUpCard.Compose(discordId, newLevel, levelsGained, zones);
+
+        var embed = new EmbedBuilder()
+            .WithTitle(card.Title)
+            .WithColor(Color.Gold)
+            .WithDescription(card.Description)
+            .WithFooter(card.Footer);
+        foreach (var field in card.Fields)
+        {
+            embed.AddField(field.Name, field.Value, field.Inline);
+        }
+
+        return new GameNotice(string.Empty, Public: true, embed.Build(), utcNow + LevelUpNoticeLifetime);
     }
 }
