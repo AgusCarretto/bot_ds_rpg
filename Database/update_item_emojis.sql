@@ -47,7 +47,10 @@ UPDATE items SET emoji = '<:cofre_epico:1555258210649374831>'      WHERE name = 
 UPDATE items SET emoji = '<:cofre_legendario:1555258185357590709>' WHERE name = 'Cofre de Oro';
 UPDATE items SET emoji = '<:cofre_mitico:1555258258191548526>'     WHERE name = 'Arca del Soberano';
 
--- 🩸 Material (0/38, pendiente): 21 son drops de monstruos que entran en recetas y 17 son "trofeos" que solo salen de cajas.
+-- 🩸 Material (2/38): 21 son drops de monstruos que entran en recetas y 17 son "trofeos" que solo salen de cajas.
+UPDATE items SET emoji = '<:drop_comunes_colmillo:1546927649635700808>' WHERE name = 'Colmillo de Cimarrón';
+UPDATE items SET emoji = '<:Drops_comunes_cuero:1546927605221949440>'   WHERE name = 'Cuero Grueso';
+
 -- ⚔️ Weapon (0/29, pendiente)
 -- 📿 Amulet (0/16, pendiente; 6 de ellos no se pueden conseguir hoy: no tienen receta ni están en cajas)
 
