@@ -243,6 +243,10 @@ public class AdventureModule(
                 // Si es un jefe, ApplyBossVictoryAsync además sube highest_zone_cleared a
                 // BossZoneId (capturado al arrancar el combate, no la zona actual "de nuevo").
                 int hpDelta = finalState.ToDbHpDelta(finalState.PlayerCurrentHp - finalState.PlayerStartingHp);
+                // Primera vez que cae el jefe de esta zona (la que abre la siguiente) o repetición: el mensaje es distinto.
+                // Se mira ANTES de aplicar la victoria, que es lo que sube highest_zone_cleared.
+                bool firstBossClear = finalState.CommandName == "boss" && finalState.BossZoneId is int clearedZone
+                    && ((await userRepository.GetByDiscordIdAsync(Context.User.Id))?.HighestZoneCleared ?? 0) < clearedZone;
                 var outcome = finalState.CommandName == "boss"
                     ? await adventureRepository.ApplyBossVictoryAsync(
                         Context.User.Id, reward.Gold, reward.Xp, hpDelta, droppedItem?.ItemId, droppedItemQuantity: 1, finalState.BossZoneId!.Value)
@@ -256,7 +260,7 @@ public class AdventureModule(
 
                 await ModifyOriginalResponseAsync(props =>
                 {
-                    props.Embed = BuildVictoryEmbed(finalState, turn, reward, droppedItem, outcome);
+                    props.Embed = BuildVictoryEmbed(finalState, turn, reward, droppedItem, outcome, firstBossClear);
                     props.Components = new ComponentBuilder().Build();
                 });
                 return;
@@ -509,7 +513,9 @@ public class AdventureModule(
         var embed = new EmbedBuilder()
             .WithTitle(title)
             .WithColor(Color.Orange)
-            .WithDescription($"¡Un **{state.MonsterName}** {state.MonsterEmoji} salvaje aparece!")
+            .WithDescription(state.CommandName == "boss"
+                ? $"¡Un **{state.MonsterName}** {state.MonsterEmoji} salvaje aparece!\n\n{NpcDialogue.Boss(state.MonsterName, state.MonsterEmoji, NpcDialogue.BossLine.Intro)}"
+                : $"¡Un **{state.MonsterName}** {state.MonsterEmoji} salvaje aparece!")
             .AddField("❤️ Tu HP", HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
             .AddField($"{state.MonsterEmoji} HP de {state.MonsterName}", HpLine(state.MonsterCurrentHp, state.MonsterMaxHp), true);
 
@@ -539,7 +545,8 @@ public class AdventureModule(
         return WithAbilityField(embed, state).Build();
     }
 
-    private static Embed BuildVictoryEmbed(CombatState state, TurnResult turn, CombatReward reward, Item? droppedItem, LevelUpOutcome outcome)
+    private static Embed BuildVictoryEmbed(
+        CombatState state, TurnResult turn, CombatReward reward, Item? droppedItem, LevelUpOutcome outcome, bool firstBossClear = true)
     {
         var player = outcome.Player;
 
@@ -564,7 +571,12 @@ public class AdventureModule(
 
         if (state.CommandName == "boss")
         {
-            embed.AddField("👑 ¡Jefe de Zona derrotado!", "Ya podés avanzar a la próxima zona con `/zona`.", false);
+            // El jefe se despide; y solo la PRIMERA vez que cae se anuncia que se abre la próxima zona. Las siguientes es "volviste a ganar":
+            // decir de nuevo "ya podés avanzar" sería mentira (esa zona ya estaba abierta).
+            string zoneLine = firstBossClear
+                ? "¡Se abrió el camino! Ya podés avanzar a la próxima zona con `/zona`."
+                : "¡Volviste a ganarle! El camino a la próxima zona ya lo tenías abierto.";
+            embed.AddField("👑 ¡Jefe de Zona derrotado!", $"{NpcDialogue.Boss(state.MonsterName, state.MonsterEmoji, NpcDialogue.BossLine.Defeated)}\n\n{zoneLine}", false);
         }
 
         return embed.Build();
@@ -582,7 +594,7 @@ public class AdventureModule(
             .WithColor(Color.DarkRed)
             .WithDescription(
                 $"{turn.ActionFlavor}{CritPrefix(turn.CritCount)}{playerLine} **{state.MonsterName}** te devolvió **{turn.MonsterHit!.Damage}** " +
-                $"y te dejó fuera de combate. Usá **/heal** para recuperarte.{LifestealSuffix(turn.LifestealHeal)}")
+                $"y te dejó fuera de combate. Usá **/heal** para recuperarte.{LifestealSuffix(turn.LifestealHeal)}{BossTaunt(state)}")
             .AddField("❤️ Tu HP", HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
             .AddField($"{state.MonsterEmoji} HP de {state.MonsterName}", HpLine(turn.MonsterHpAfter, state.MonsterMaxHp), true)
             .AddField("📋 Resumen del combate", BuildCombatSummaryLine(state), false)
@@ -621,6 +633,10 @@ public class AdventureModule(
         string healText = state.TotalHealed > 0 ? $" · 🔮 {state.TotalHealed} curados" : string.Empty;
         return $"⏱️ {state.TurnsElapsed} turno(s) · 🗡️ {state.TotalDamageDealt} de daño hecho · 🩸 {state.TotalDamageTaken} de daño recibido{critText}{dodgeText}{healText}";
     }
+
+    // Lo que dice el jefe cuando te vence (nada si no era un jefe).
+    private static string BossTaunt(CombatState state) =>
+        state.CommandName == "boss" ? "\n\n" + NpcDialogue.Boss(state.MonsterName, state.MonsterEmoji, NpcDialogue.BossLine.Victory) : string.Empty;
 
     private static string HpLine(int current, int max) => $"{ProgressBar.Render(current, max)}\n{current}/{max}";
 }

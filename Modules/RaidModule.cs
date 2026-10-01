@@ -806,7 +806,7 @@ public class RaidModule(
         var embed = new EmbedBuilder()
             .WithTitle($"🏆 ¡{session.BossName} {session.BossEmoji} derrotado!")
             .WithColor(Color.Green)
-            .WithDescription(logLine);
+            .WithDescription($"{logLine}\n\n{NpcDialogue.Boss(session.BossName, session.BossEmoji, NpcDialogue.BossLine.Defeated)}");
 
         if (results.Count == 0)
         {
@@ -832,7 +832,7 @@ public class RaidModule(
         return new EmbedBuilder()
             .WithTitle($"💀 El grupo cayó ante {session.BossName} {session.BossEmoji}")
             .WithColor(Color.DarkRed)
-            .WithDescription($"{logLine}\n\nSin recompensa esta vez. Usá **/heal** para recuperarte.")
+            .WithDescription($"{logLine}\n\n{NpcDialogue.Boss(session.BossName, session.BossEmoji, NpcDialogue.BossLine.Victory)}\n\nSin recompensa esta vez. Usá **/heal** para recuperarte.")
             .Build();
     }
 

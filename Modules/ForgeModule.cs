@@ -160,7 +160,7 @@ public class ForgeModule(
             // el límite de 2000 caracteres de un mensaje de Discord y el comando fallaría justo cuando el jugador
             // se equivoca de nombre. Se lo manda a las listas, que ya muestran solo lo de su zona.
             return new ForgeMakeResult(
-                "El herrero no conoce esa receta. Usá `/forge recipes` para ver las de tu zona, o elegí de la lista al escribir `/forge make`.", null);
+                $"{NpcDialogue.Blacksmith(BlacksmithLine.UnknownRecipe)}\n(Mirá las recetas de tu zona con `/blacksmith` o `/forge recipes`.)", null);
         }
 
         // Si es la primera vez que este usuario ejecuta un comando, se crea acá con los valores por defecto.
@@ -170,7 +170,7 @@ public class ForgeModule(
             && !string.Equals(recipe.ResultItem.ClassRequirement, player.Class, StringComparison.OrdinalIgnoreCase))
         {
             return new ForgeMakeResult(
-                $"**{ItemDisplay.Format(recipe.ResultItem.Emoji, recipe.ResultItem.Name)}** es exclusivo de la clase **{recipe.ResultItem.ClassRequirement}** — vos sos **{player.Class}**.", null);
+                $"{NpcDialogue.Blacksmith(BlacksmithLine.WrongClass)}\n**{ItemDisplay.Format(recipe.ResultItem.Emoji, recipe.ResultItem.Name)}** es exclusivo de la clase **{recipe.ResultItem.ClassRequirement}** — vos sos **{player.Class}**.", null);
         }
 
         // CraftAsync valida oro + cada ingrediente dentro de una única transacción SQL
@@ -182,7 +182,7 @@ public class ForgeModule(
         {
             return new ForgeMakeResult(null, new EmbedBuilder()
                 .WithTitle("⚒️ El herrero no pudo forjarlo")
-                .WithDescription($"🗣️ *No tenés lo suficiente, crack. Andá a farmear y después hablamo.*\n\nNo pudiste forjar **{ItemDisplay.Format(recipe.ResultItem.Emoji, recipe.ResultItem.Name)}**: {outcome.FailureReason}")
+                .WithDescription($"{NpcDialogue.Blacksmith(BlacksmithLine.NotEnough)}\n\nNo pudiste forjar **{ItemDisplay.Format(recipe.ResultItem.Emoji, recipe.ResultItem.Name)}**: {outcome.FailureReason}")
                 .WithColor(Color.Red)
                 .Build());
         }
@@ -191,7 +191,7 @@ public class ForgeModule(
 
         return new ForgeMakeResult(null, new EmbedBuilder()
             .WithTitle("⚒️ ¡Forjado con éxito!")
-            .WithDescription($"🗣️ *¡En camino, loco! Queda pronta.*\n\n¡El Herrero ha forjado **{ItemDisplay.Format(recipe.ResultItem.Emoji, recipe.ResultItem.Name)}** con éxito!\nOro restante: **{outcome.Player!.Gold}**.")
+            .WithDescription($"{NpcDialogue.Blacksmith(BlacksmithLine.Success)}\n\n¡El Herrero ha forjado **{ItemDisplay.Format(recipe.ResultItem.Emoji, recipe.ResultItem.Name)}** con éxito!\nOro restante: **{outcome.Player!.Gold}**.")
             .WithColor(Color.Green)
             .Build());
     }

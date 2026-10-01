@@ -14,7 +14,9 @@ public static class CombatRewardCalculator
     // terminar la Zona 5 los va a ir subiendo. Las cantidades de las recetas (Database/seed_recipes.sql,
     // seed_zoneN_gear_and_recipes.sql) están calibradas contra ESTOS números: si se tocan acá, hay que recalcular
     // los minutos de farmeo de cada receta (ver MEJORAS.md). Los muestra /drops, así que no se desincronizan.
-    public const int HuntDropChancePercent = 10;
+    // Era 10% hasta la v0.6.0: se bajó a 6% para que al llegar al nivel de una zona no sea tan fácil pasarla de largo, y haya que
+    // quedarse un rato a farmear el equipo (las recetas que dependen de drops de /hunt tardan ~1,7 veces más).
+    public const int HuntDropChancePercent = 6;
     public const int TravelDropChancePercent = 20;
     // El jefe (solitario y de raid) antes usaba la misma fórmula que /hunt y, con UN solo drop por monstruo, cada
     // ítem del jefe salía el doble de seguido que antes; 15% mantiene el ritmo de siempre (~200 min por unidad).

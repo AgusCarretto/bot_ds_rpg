@@ -43,7 +43,7 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
         {
             return new EmbedBuilder()
                 .WithTitle("⚔️ No podés comer tranquilo en pleno combate")
-                .WithDescription("Mientras estás peleando no podés parar a comer así nomás. Usá **/use <ítem>** para curarte con un consumible de tu inventario (te va a costar el turno).")
+                .WithDescription(NpcDialogue.Innkeeper(InnkeeperLine.InCombat) + "\n\nMientras estás peleando no podés parar a comer así nomás. Usá **/use <ítem>** para curarte con un consumible de tu inventario (te va a costar el turno).")
                 .WithColor(Color.DarkGrey)
                 .Build();
         }
@@ -54,7 +54,7 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
         {
             return new EmbedBuilder()
                 .WithTitle("❤️ Ya estás al máximo")
-                .WithDescription($"Tenés {player.CurrentHp}/{player.MaxHp} HP, no necesitás curarte todavía.")
+                .WithDescription($"{NpcDialogue.Innkeeper(InnkeeperLine.FullHp)}\n\nTenés {player.CurrentHp}/{player.MaxHp} HP, no necesitás curarte todavía.")
                 .WithColor(Color.Green)
                 .Build();
         }
@@ -73,7 +73,7 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
         {
             return new EmbedBuilder()
                 .WithTitle("🍽️ No tenés nada para comer")
-                .WithDescription("Para curarte primero tenés que comprar un consumible. Usá **/shop view** para ver el catálogo y **/shop buy <ítem>** para comprarlo.")
+                .WithDescription(NpcDialogue.Innkeeper(InnkeeperLine.NothingToEat) + "\n\nPara curarte primero tenés que comprar un consumible. Usá **/shop view** para ver el catálogo y **/shop buy <ítem>** para comprarlo.")
                 .WithColor(Color.Red)
                 .Build();
         }
@@ -95,7 +95,7 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
 
         return new EmbedBuilder()
             .WithTitle("🍖 ¡Buen provecho!")
-            .WithDescription($"Comiste **{ItemDisplay.Format(chosen.Emoji, chosen.Name)}** y recuperaste HP. Ahora tenés **{healed.CurrentHp}/{healed.MaxHp}** HP.")
+            .WithDescription($"{NpcDialogue.Innkeeper(InnkeeperLine.Healed)}\n\nComiste **{ItemDisplay.Format(chosen.Emoji, chosen.Name)}** y recuperaste HP. Ahora tenés **{healed.CurrentHp}/{healed.MaxHp}** HP.")
             .WithColor(Color.Green)
             .Build();
     }

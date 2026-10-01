@@ -1,7 +1,7 @@
 -- =========================================================
 -- REPORTE (solo lectura, NO forma parte de la instalación): cuántos minutos de farmeo piden las recetas.
 --
---   psql -U postgres -d asado-y-acero -P pager=off -v ph=0.10 -v pt=0.20 -v pb=0.15 -f report_recipe_pacing.sql
+--   psql -U postgres -d asado-y-acero -P pager=off -v ph=0.06 -v pt=0.20 -v pb=0.15 -f report_recipe_pacing.sql
 --
 -- wc / wr / we / wl / wm (opcionales) son las chances de rareza de /chop y /mine (Común, Raro, Épico, Legendario, Mítico) en
 -- fracción: por defecto las de GameData/RarityCatalog (hoy 0.680 / 0.210 / 0.070 / 0.035 / 0.005). Sirven para probar "qué pasa si

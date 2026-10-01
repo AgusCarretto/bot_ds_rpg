@@ -140,7 +140,7 @@ materials — one per `/hunt` monster ("a granel"), one from the travel monster 
 ("raro") — and `Database/finalize_monster_roster.sql` is the single source of truth for the hunt + boss drops (and for
 which Zone-1 hunt monsters exist; it runs after the seeds that create them, deletes the extras and raises if any
 monster doesn't end with exactly one drop or a monster is missing from its roster list); `seed_travel_monsters.sql`
-owns the travel drops. The chances live in `CombatRewardCalculator` and nowhere else: `HuntDropChancePercent` 10,
+owns the travel drops. The chances live in `CombatRewardCalculator` and nowhere else: `HuntDropChancePercent` 6 (it was 10 until v0.6.0: lowered so that reaching a zone's level is not enough to breeze through it — you have to stay and farm the gear),
 `TravelDropChancePercent` 20, `BossDropChancePercent` 15 (the boss — solo and raid — has its own constant on purpose:
 it used to share the hunt formula, so lowering hunt would have silently changed it). `/drops` (`aa drops`,
 `Modules/DropsModule.cs` + the pure `GameData/DropsCatalog.cs`) lists every zone's monsters and drops from those same
@@ -366,6 +366,19 @@ operations always in (player, item) order so crossed swaps (A→B and B→A) can
 quantity >= 1`. Commands are in English (`/open`, `/missions`, `/achievements`, `/trade`); the old Spanish names remain only as `aa` aliases.
 Every text command must record its game event too: `aa daily` once forgot `daily_claim`, so the "claim your daily" mission never completed
 for players using the text command.
+
+**NPC dialogue and the blacksmith scene** — everything a character says lives in ONE pure place, `GameData/NpcDialogue.cs`: tables of lines per
+situation for the blacksmith, the shopkeeper, the innkeeper (`/heal`) and the five zone bosses (intro / when it falls / when it beats you,
+keyed by the boss name in the DB; a boss without its own lines gets generic ones, so adding a boss never leaves it mute). A line is picked
+at random from its table (inject a `Random` to test), always formatted `emoji **Name:** «line»`. To add dialogue, add lines to a table;
+a new character is an enum + a table. Every table must keep ≥2 distinct lines (a test checks it). `/blacksmith` (`aa herrero`,
+`Modules/BlacksmithModule.cs`) is a scene: the blacksmith greets (with his picture if `Images__Blacksmith` is set in the `.env` to a public
+image URL — the bot hosts no files — otherwise text only) and a select menu lists the player's zone recipes (✅ craftable / ❌ what's
+missing, the same `ForgeChoices` the `/forge make` autocomplete uses); picking one runs EXACTLY `ForgeModule.ExecuteMakeAsync`, so
+validations, the atomic charge and the craft event are shared, and the menu is rebuilt after each order. `/forge make|recipes` stay as the
+direct commands. The select menu's custom id carries the owner id so nobody else can use your conversation. Boss victory text depends on
+whether it was the FIRST clear of that zone's boss (`highest_zone_cleared` is read *before* applying the victory): the first time it
+announces the next zone opens; every later kill says "¡Volviste a ganarle!" and never claims an advance.
 
 **Autoritative source for "how much SQL debt does this repo have right now"**: `MEJORAS.md` at the
 repo root. Read it before assuming the schema in `Database/schema.sql` is what's actually running

@@ -49,6 +49,14 @@ la base real con usuarios descartables y recién ahí integrada a `develop`.
   heredan de `SafeAutocompleteHandler`: si armar la lista falla, queda en el log y se devuelve vacía en vez de romperse. (5) El nombre
   de un ítem ya no distingue mayúsculas, tildes **ni espacios sobrantes** (`"Mate Amargo "` fallaba). (6) Misiones y logros con una línea en
   blanco entre cada una.
+- **Personajes que hablan, `/blacksmith`, drop de `/hunt` y mensaje de jefe** (2026-10-01): (1) Todo lo que dicen el **herrero, el tendero, el tabernero** (`/heal`) y los
+  **5 jefes** (al aparecer, al caer y al vencerte; también en el raid) sale de `GameData/NpcDialogue.cs`, con varias frases por situación elegidas al azar. (2)
+  **`/blacksmith`** (`aa herrero`): escena del herrero con su imagen (opcional: URL en `Images__Blacksmith` del `.env`), te pregunta qué necesitás y elegís de un
+  desplegable (✅ lo que podés forjar / ❌ lo que te falta); te responde "En camino, loco" o "No tenés lo suficiente, crack". `/forge make` y `/forge recipes`
+  se dejaron como atajo directo (si preferís sacarlos es borrar dos comandos). (3) **Drop de `/hunt`: 10 % → 6 %**. Medido: las recetas tardan ~11 % más en
+  promedio (Zona 2: 159 → 182 min) porque casi todas ya estaban limitadas por la minería (Hierro) y no por los drops; el tiempo de juntar los materiales de monstruo
+  sube ~40-70 %. Si querés más freno, bajar de nuevo la chance (o subir las cantidades de las recetas). (4) **Mensaje del jefe**: solo la PRIMERA vez que cae se
+  anuncia que se abre la próxima zona; las siguientes dice "¡Volviste a ganarle!".
 - **Tradeo, comandos en inglés y arreglos** (2026-10-01): (1) **`/trade`** (`aa trade @jugador "Madera de Roble" Hierro`): cambia 1 material por 1 de otro
   material **de la misma rareza** con otro jugador, solo de lo que dropean `/chop` y `/mine`. Uno propone, el otro acepta con un botón (2 minutos),
   y el cambio es atómico (probado con 40 cambios cruzados a la vez: no se traba y no se pierde ni se duplica nada). Si querías un cambio contra el
