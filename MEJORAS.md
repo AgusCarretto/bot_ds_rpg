@@ -1,6 +1,25 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-09-30 (recolección por cantidad, curar en combate, comidas más caras, pantallas más limpias)_
+_Última revisión: 2026-10-01 (v0.5.0: listo para desplegar en cualquier hosting)_
+
+## v0.5.0: listo para desplegar en cualquier hosting (2026-10-01)
+
+- **Decisión de hosting**: Railway queda descartado por ahora —el proyecto del truco ya consume ~US$3,5 de los US$5 que incluye
+  el plan, así que sumar este bot lo pasaría de largo—. Se dejó **independiente del proveedor**: `Dockerfile`,
+  `docker-compose.yml` (bot + Postgres, la base carga sola el esquema la primera vez) y `DEPLOY.md` con las opciones
+  (VPS con compose, otro hosting con Dockerfile, o tu PC) y una comparación de costos. **Todavía no está desplegado en ningún lado.**
+- **Errores registrados** (lo más importante para producción): los 52 `catch (Exception)` de los módulos le respondían
+  "¡Upa! Algo falló" al jugador y se tragaban la excepción; ahora cada uno hace `BotLog.Error(ex)` (archivo, método y stack).
+  Los dos temporizadores en segundo plano (abandono de combate y lobby del raid) tenían un `catch { }` pelado que ocultaba hasta
+  los errores de base; el de abandono de combate ahora separa "falló la base y el HP no se guardó" (error) de "ya no se puede
+  editar el mensaje" (aviso). También se registran las excepciones sin manejar.
+- **Arranque que falla rápido**: si la base no responde o está vacía corta con código 1 y un mensaje que dice qué hacer; si no
+  conecta a Discord en 90 s (token inválido o intent privilegiado sin activar) también —antes quedaba un proceso "vivo" que no
+  respondía—; apagado limpio con SIGTERM/Ctrl+C. Versión `0.5.0` en el log de arranque y en el pie de `/info`.
+- **Medido**: el bot usa ~84 MB de RAM y 1,7 s de CPU en su primer minuto (en Windows; en Linux puede variar), así que la base de
+  Postgres es lo que más pesa en el costo.
+- **No probado** (sin Docker en la PC de desarrollo): construir la imagen y el compose, el apagado por SIGTERM en Linux, y
+  clickear botones y desplegable en un Discord real. Está dicho en `DEPLOY.md`.
 
 ## Recolección por cantidad, curar en combate, comidas más caras y pantallas más limpias (2026-09-30)
 

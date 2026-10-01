@@ -264,6 +264,21 @@ of mining, more than their drop farming.
 before. Every embed built from a growing catalog must stay under Discord's 6000-character total (all embeds of a message
 count together).
 
+**Errors are logged, never swallowed.** Every `catch (Exception ex)` in a module calls `BotLog.Error(ex)` (`Services/BotLog.cs`;
+the file and method come from `[CallerFilePath]`/`[CallerMemberName]`, so it is one line per catch) *before* answering the
+player's "¡Upa!" message — in production the console is the only log there is, and 52 silent catches used to make every
+reported failure undiagnosable. Expected, harmless failures (a message that can no longer be edited) use `BotLog.Warn`.
+`Program.cs` also logs unhandled and unobserved task exceptions, fails fast (exit code 1) if the database is unreachable or
+empty (`EnsureDatabaseAsync`) or if Discord doesn't connect within 90 s (a bad token or a missing privileged intent otherwise
+leaves a zombie process that looks alive), and shuts down cleanly on SIGTERM/Ctrl+C.
+
+**Deployment is host-agnostic** (`DEPLOY.md`, `Dockerfile`, `docker-compose.yml`, `deploy/`): the bot is one process (no port)
+plus Postgres, config only through environment variables, a SEPARATE Discord token and database for production (the same
+token in two places makes both answer every command), one instance only (fights and raids live in memory). The Dockerfile
+must keep using the standard Debian images — `string.Normalize(FormD)` in the autocompletes needs ICU, which the chiseled and
+Alpine images don't ship. `<Version>` in the csproj is the bot version (`BotVersion.Current`, shown in `/info` and the startup
+log); releases are git tags (`v0.5.0`).
+
 **Autoritative source for "how much SQL debt does this repo have right now"**: `MEJORAS.md` at the
 repo root. Read it before assuming the schema in `Database/schema.sql` is what's actually running
 on any given machine's Postgres instance — they drift (see "known recurring problem" above).
