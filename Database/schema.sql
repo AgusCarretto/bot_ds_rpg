@@ -216,4 +216,23 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_box_loot_item ON box_loot (box_item_id, ite
 CREATE UNIQUE INDEX IF NOT EXISTS ux_box_loot_gold ON box_loot (box_item_id, min_qty, max_qty) WHERE kind = 'gold';
 CREATE INDEX IF NOT EXISTS idx_box_loot_box ON box_loot (box_item_id);
 
+-- ---------------------------------------------------------
+-- item_buffs / player_buffs: buffs temporales (el +% de ataque de los banquetes). Ver Database/add_buffs.sql (migración) y
+-- Database/rework_food_catalog.sql.
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS item_buffs (
+    item_id        INTEGER PRIMARY KEY REFERENCES items (item_id) ON DELETE CASCADE,
+    attack_percent INTEGER NOT NULL CHECK (attack_percent BETWEEN 1 AND 100),
+    minutes        INTEGER NOT NULL CHECK (minutes BETWEEN 1 AND 1440)
+);
+
+CREATE TABLE IF NOT EXISTS player_buffs (
+    discord_id BIGINT NOT NULL REFERENCES users (discord_id) ON DELETE CASCADE,
+    buff_key   TEXT   NOT NULL,                  -- hoy solo 'attack'
+    percent    INTEGER NOT NULL CHECK (percent BETWEEN 1 AND 100),
+    expires_at TIMESTAMPTZ NOT NULL,
+    source     TEXT,                             -- nombre del ítem que lo dio (para mostrarlo en /profile)
+    PRIMARY KEY (discord_id, buff_key)
+);
+
 COMMIT;

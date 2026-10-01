@@ -18,7 +18,8 @@ public static class ItemChoices
 {
     // Catálogo de la tienda (solo consumibles). playerGold == null si el jugador no existe todavía:
     // en ese caso simplemente no se marca qué puede pagar.
-    public static IReadOnlyList<AutocompleteResult> ForBuy(IEnumerable<Item> catalog, int? playerGold, string typed)
+    public static IReadOnlyList<AutocompleteResult> ForBuy(
+        IEnumerable<Item> catalog, int? playerGold, string typed, IReadOnlyDictionary<int, ItemBuff>? buffs = null)
     {
         return catalog
             .Where(item => ShopCatalog.IsForSale(item) && FitsAsValue(item) && Matches(item.Name, typed))
@@ -29,7 +30,9 @@ public static class ItemChoices
             .Select(item =>
             {
                 string missingGold = playerGold is int gold && gold < item.BuyPrice ? " (te falta oro)" : string.Empty;
-                string what = item.Type == "Caja" ? $"caja {item.Rarity}" : $"cura {item.StatValue} HP";
+                string what = item.Type == "Caja"
+                    ? $"caja {item.Rarity}"
+                    : buffs is not null && buffs.TryGetValue(item.ItemId, out var buff) ? $"cura {item.StatValue} HP y +{buff.AttackPercent}% ATQ" : $"cura {item.StatValue} HP";
                 return new AutocompleteResult(
                     Truncate($"{item.Name} — {what} · {item.BuyPrice} oro{missingGold}"), item.Name);
             })
@@ -97,7 +100,9 @@ public sealed class BuyItemAutocompleteHandler : AutocompleteHandler
         // GetByDiscordIdAsync (no GetOrCreate): abrir una lista no tiene que crearle cuenta a nadie.
         var player = await services.GetRequiredService<IUserRepository>().GetByDiscordIdAsync(context.User.Id);
 
-        return AutocompletionResult.FromSuccess(ItemChoices.ForBuy(catalog, player?.Gold, typed));
+        var buffs = await services.GetRequiredService<IBuffRepository>().GetItemBuffsAsync();
+
+        return AutocompletionResult.FromSuccess(ItemChoices.ForBuy(catalog, player?.Gold, typed, buffs));
     }
 }
 

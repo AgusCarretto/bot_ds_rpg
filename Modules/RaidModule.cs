@@ -21,7 +21,8 @@ public class RaidModule(
     IAdventureRepository adventureRepository,
     ICombatSessionService combatSessions,
     IRaidSessionService raidSessions,
-    IGameEvents gameEvents) : InteractionModuleBase<SocketInteractionContext>
+    IGameEvents gameEvents,
+    IBuffRepository buffRepository) : InteractionModuleBase<SocketInteractionContext>
 {
     // Ver Services/RaidSettings.cs: el mínimo es configurable (2 por defecto).
     private static int MinParticipantsToStart => RaidSettings.MinParticipants;
@@ -42,7 +43,7 @@ public class RaidModule(
                 return;
             }
 
-            var session = await BuildSessionAsync(userRepository, itemRepository, monsterRepository, zoneRepository, Context.User.Id, GameModule.GetDisplayName(Context.User));
+            var session = await BuildSessionAsync(userRepository, itemRepository, monsterRepository, zoneRepository, buffRepository, Context.User.Id, GameModule.GetDisplayName(Context.User));
 
             if (!raidSessions.TryAdd(session) || !raidSessions.TryRegisterParticipant(Context.User.Id, session.RaidId))
             {
@@ -98,7 +99,7 @@ public class RaidModule(
                 return;
             }
 
-            var participant = await BuildParticipantAsync(userRepository, itemRepository, discordId, GameModule.GetDisplayName(Context.User));
+            var participant = await BuildParticipantAsync(userRepository, itemRepository, buffRepository, discordId, GameModule.GetDisplayName(Context.User));
 
             bool joined;
             lock (session.Lock)
@@ -358,7 +359,7 @@ public class RaidModule(
     // del servicio, así que no podía sumarse y "Empezar ya" decía que no había nadie).
     public static async Task<RaidSession> BuildSessionAsync(
         IUserRepository userRepository, IItemRepository itemRepository, IMonsterRepository monsterRepository,
-        IZoneRepository zoneRepository, ulong starterId, string starterDisplayName)
+        IZoneRepository zoneRepository, IBuffRepository buffRepository, ulong starterId, string starterDisplayName)
     {
         var player = await userRepository.GetOrCreateUserAsync(starterId);
         var boss = (await monsterRepository.GetBossByZoneAsync(player.CurrentZoneId))!; // ValidateStartAsync ya confirmó que existe
@@ -393,7 +394,7 @@ public class RaidModule(
 
         // La sesión todavía no la ve ningún otro hilo (recién se publica en IRaidSessionService.TryAdd),
         // así que agregar sin lock es seguro.
-        session.Participants.Add(await BuildParticipantAsync(itemRepository, player, starterDisplayName));
+        session.Participants.Add(await BuildParticipantAsync(itemRepository, buffRepository, player, starterDisplayName));
 
         return session;
     }
@@ -426,14 +427,17 @@ public class RaidModule(
     }
 
     private static async Task<RaidParticipant> BuildParticipantAsync(
-        IUserRepository userRepository, IItemRepository itemRepository, ulong discordId, string displayName) =>
-        await BuildParticipantAsync(itemRepository, await userRepository.GetOrCreateUserAsync(discordId), displayName);
+        IUserRepository userRepository, IItemRepository itemRepository, IBuffRepository buffRepository, ulong discordId, string displayName) =>
+        await BuildParticipantAsync(itemRepository, buffRepository, await userRepository.GetOrCreateUserAsync(discordId), displayName);
 
-    private static async Task<RaidParticipant> BuildParticipantAsync(IItemRepository itemRepository, User player, string displayName)
+    private static async Task<RaidParticipant> BuildParticipantAsync(IItemRepository itemRepository, IBuffRepository buffRepository, User player, string displayName)
     {
         var weapon = player.WeaponId is int weaponId ? await itemRepository.GetByIdAsync(weaponId) : null;
         var amulet = player.AmuletId is int amuletId ? await itemRepository.GetByIdAsync(amuletId) : null;
-        var profile = PlayerCombatProfileCalculator.Resolve(player, weapon, amulet);
+        // El +% de ataque de un banquete activo vale en el raid desde el primer golpe. El ataque se fija al unirse: un banquete
+        // comido después no cuenta para ese raid, y si el buff vence a mitad de raid igual dura hasta que termina.
+        var buff = await buffRepository.GetActiveAttackAsync((ulong)player.DiscordId);
+        var profile = PlayerCombatProfileCalculator.Resolve(player, weapon, amulet, buff?.AttackPercent ?? 0);
 
         return new RaidParticipant
         {

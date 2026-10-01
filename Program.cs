@@ -479,6 +479,7 @@ public static class ServiceProviderBuilder
             .AddSingleton<IGameEventRepository, GameEventRepository>()
             .AddSingleton<ITransferRepository, TransferRepository>()
             .AddSingleton<IBoxRepository, BoxRepository>()
+            .AddSingleton<IBuffRepository, BuffRepository>()
             .AddSingleton<IGameEvents, GameEventService>()
             .AddSingleton<IShopRepository, ShopRepository>()
             .AddSingleton<ICraftingRepository, CraftingRepository>()

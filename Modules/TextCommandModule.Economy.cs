@@ -47,7 +47,7 @@ public partial class TextCommandModule
     {
         try
         {
-            await ReplyAsync(embed: ShopModule.BuildViewEmbed(await ShopModule.LoadShopItemsAsync(itemRepository)));
+            await ReplyAsync(embed: ShopModule.BuildViewEmbed(await ShopModule.LoadShopItemsAsync(itemRepository), await buffRepository.GetItemBuffsAsync()));
         }
         catch (Exception ex)
         {
@@ -181,7 +181,7 @@ public partial class TextCommandModule
     {
         try
         {
-            var embed = await TavernModule.ExecuteHealAsync(userRepository, inventoryRepository, combatSessions, Context.User.Id);
+            var embed = await TavernModule.ExecuteHealAsync(userRepository, inventoryRepository, combatSessions, buffRepository, Context.User.Id);
             await ReplyAsync(embed: embed);
         }
         catch (Exception ex)
@@ -200,7 +200,7 @@ public partial class TextCommandModule
     {
         try
         {
-            var result = await UseModule.ExecuteUseAsync(userRepository, itemRepository, inventoryRepository, combatSessions, Context.User.Id, item);
+            var result = await UseModule.ExecuteUseAsync(userRepository, itemRepository, inventoryRepository, combatSessions, buffRepository, Context.User.Id, item);
             await ReplyAsync(result.PlainMessage, embed: result.Embed);
         }
         catch (Exception ex)

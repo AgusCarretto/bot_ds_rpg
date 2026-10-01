@@ -12,7 +12,8 @@ public class UseModule(
     IUserRepository userRepository,
     IItemRepository itemRepository,
     IInventoryRepository inventoryRepository,
-    ICombatSessionService combatSessions) : InteractionModuleBase<SocketInteractionContext>
+    ICombatSessionService combatSessions,
+    IBuffRepository buffRepository) : InteractionModuleBase<SocketInteractionContext>
 {
     // Comando barra: /use
     [SlashCommand("use", "Usá un consumible de tu inventario para curar HP (funciona incluso en combate, sin gastar oro).")]
@@ -22,7 +23,7 @@ public class UseModule(
 
         try
         {
-            var result = await ExecuteUseAsync(userRepository, itemRepository, inventoryRepository, combatSessions, Context.User.Id, itemName);
+            var result = await ExecuteUseAsync(userRepository, itemRepository, inventoryRepository, combatSessions, buffRepository, Context.User.Id, itemName);
             await FollowupAsync(result.PlainMessage, embed: result.Embed, ephemeral: result.Embed is null);
         }
         catch (Exception ex)
@@ -43,6 +44,7 @@ public class UseModule(
         IItemRepository itemRepository,
         IInventoryRepository inventoryRepository,
         ICombatSessionService combatSessions,
+        IBuffRepository buffRepository,
         ulong discordId,
         string itemName)
     {
@@ -57,13 +59,17 @@ public class UseModule(
             return new UseResult($"**{ItemDisplay.Format(item.Emoji, item.Name)}** es de tipo `{item.Type}` y no se puede usar (solo Consumibles).", null);
         }
 
+        // Los banquetes (comida Mítica) además de curar dan un buff de ataque (item_buffs). Se usan aunque estés al máximo de HP:
+        // lo que importa es el buff.
+        var buff = await buffRepository.GetItemBuffAsync(item.ItemId);
+
         var session = combatSessions.Peek(discordId);
 
         // --- Fuera de combate: se comporta como un /heal gratuito, directo contra la base. ---
         if (session is null)
         {
             var player = await userRepository.GetOrCreateUserAsync(discordId);
-            if (player.CurrentHp >= player.MaxHp)
+            if (player.CurrentHp >= player.MaxHp && buff is null)
             {
                 return new UseResult(null, new EmbedBuilder()
                     .WithTitle("❤️ Ya estás al máximo")
@@ -78,10 +84,14 @@ public class UseModule(
             }
 
             var healed = await userRepository.RestoreHpAsync(discordId, item.StatValue);
+            if (buff is not null)
+            {
+                await buffRepository.ActivateAttackAsync(discordId, buff.AttackPercent, buff.Minutes, item.Name);
+            }
 
             return new UseResult(null, new EmbedBuilder()
                 .WithTitle("🍖 ¡Usaste un consumible!")
-                .WithDescription($"Usaste **{ItemDisplay.Format(item.Emoji, item.Name)}** y recuperaste HP. Ahora tenés **{healed.CurrentHp}/{healed.MaxHp}** HP.")
+                .WithDescription($"Usaste **{ItemDisplay.Format(item.Emoji, item.Name)}** y recuperaste HP. Ahora tenés **{healed.CurrentHp}/{healed.MaxHp}** HP." + BuffLine(buff))
                 .WithColor(Color.Green)
                 .Build());
         }
@@ -99,7 +109,7 @@ public class UseModule(
             return new UseResult("🍖 Ya te curaste en esta pelea: en /travel y /boss solo se puede **una vez** por combate.", null);
         }
 
-        if (state.PlayerCurrentHp >= state.PlayerMaxHp)
+        if (state.PlayerCurrentHp >= state.PlayerMaxHp && buff is null)
         {
             return new UseResult($"Ya estás al máximo de HP ({state.PlayerCurrentHp}/{state.PlayerMaxHp}), no hace falta usar **{ItemDisplay.Format(item.Emoji, item.Name)}** ahora.", null);
         }
@@ -162,6 +172,9 @@ public class UseModule(
             DodgeCount = dodgeCount,
             TotalDamageTaken = totalDamageTaken,
             Ability = counter.Status,
+            // Un banquete en plena pelea: el buff vale YA (se recalcula el ataque desde el que tenía sin buff, así no se apila).
+            PlayerDamage = buff is null ? state.PlayerDamage : AttackBuff.Rescale(state.PlayerDamage, state.AttackBuffPercent, buff.AttackPercent),
+            AttackBuffPercent = buff?.AttackPercent ?? state.AttackBuffPercent,
             // Gastó la curación de la pelea: el desplegable queda deshabilitado (AdventureModule.BuildCombatButtons).
             HealUsed = state.HealUsed || healLimited,
         };
@@ -171,11 +184,16 @@ public class UseModule(
             return new UseResult("Justo se resolvió tu combate por otra vía, revisá el mensaje.", null);
         }
 
+        if (buff is not null)
+        {
+            await buffRepository.ActivateAttackAsync(discordId, buff.AttackPercent, buff.Minutes, item.Name);
+        }
+
         await session.ReplyTarget.UpdateAsync(BuildCombatOngoingEmbed(nextState, item, monsterHit, monsterHitOutcome.Dodged), AdventureModule.BuildCombatButtons(nextState));
 
         string resultDescription = monsterHitOutcome.Dodged
-            ? $"Usaste **{ItemDisplay.Format(item.Emoji, item.Name)}** y recuperaste HP. El **{state.MonsterName}** {state.MonsterEmoji} intentó golpearte, ¡pero esquivaste el ataque! 💨"
-            : $"Usaste **{ItemDisplay.Format(item.Emoji, item.Name)}** y recuperaste HP, pero el **{state.MonsterName}** {state.MonsterEmoji} aprovechó para golpearte.";
+            ? $"Usaste **{ItemDisplay.Format(item.Emoji, item.Name)}** y recuperaste HP. El **{state.MonsterName}** {state.MonsterEmoji} intentó golpearte, ¡pero esquivaste el ataque! 💨" + BuffLine(buff)
+            : $"Usaste **{ItemDisplay.Format(item.Emoji, item.Name)}** y recuperaste HP, pero el **{state.MonsterName}** {state.MonsterEmoji} aprovechó para golpearte." + BuffLine(buff);
 
         return new UseResult(null, new EmbedBuilder()
             .WithTitle("🍖 ¡Usaste un consumible en combate!")
@@ -183,6 +201,10 @@ public class UseModule(
             .WithColor(Color.Gold)
             .Build());
     }
+
+    // "⚔️ +15% de ataque durante 30 minutos." (con salto de línea adelante), o nada si el ítem no da buff.
+    private static string BuffLine(ItemBuff? buff) =>
+        buff is null ? string.Empty : "\n⚔️ **+" + buff.AttackPercent + "% de ataque** durante " + buff.Minutes + " minutos.";
 
     private static Embed BuildCombatOngoingEmbed(CombatState state, Item item, int monsterHit, bool monsterDodged)
     {

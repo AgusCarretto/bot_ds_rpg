@@ -34,6 +34,7 @@ public partial class TextCommandModule(
     IRaidSessionService raidSessions,
     ITransferRepository transferRepository,
     IBoxRepository boxRepository,
+    IBuffRepository buffRepository,
     IGameEvents gameEvents) : ModuleBase<SocketCommandContext>
 {
     // ---- Onboarding / clase ----
@@ -103,7 +104,7 @@ public partial class TextCommandModule(
             }
 
             string avatarUrl = target.GetAvatarUrl() ?? target.GetDefaultAvatarUrl();
-            var embed = await GameModule.BuildProfileEmbedAsync(userRepository, itemRepository, zoneRepository, target.Id, GameModule.GetDisplayName(target), avatarUrl);
+            var embed = await GameModule.BuildProfileEmbedAsync(userRepository, itemRepository, zoneRepository, buffRepository, target.Id, GameModule.GetDisplayName(target), avatarUrl);
             await ReplyAsync(embed: embed);
         }
         catch (Exception ex)

@@ -10,7 +10,7 @@ using Discord.Interactions;
 // curación grande en una herida chica) — si no tiene ninguno, lo manda a comprar primero. Sigue
 // bloqueado en combate por la misma razón de siempre: comer tranquilo no debería ser gratis en
 // pleno combate, para eso está /use (cede el turno al monstruo, ver Modules/UseModule.cs).
-public class TavernModule(IUserRepository userRepository, IInventoryRepository inventoryRepository, ICombatSessionService combatSessions)
+public class TavernModule(IUserRepository userRepository, IInventoryRepository inventoryRepository, ICombatSessionService combatSessions, IBuffRepository buffRepository)
     : InteractionModuleBase<SocketInteractionContext>
 {
     // Comando barra: /heal
@@ -21,7 +21,7 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
 
         try
         {
-            var embed = await ExecuteHealAsync(userRepository, inventoryRepository, combatSessions, Context.User.Id);
+            var embed = await ExecuteHealAsync(userRepository, inventoryRepository, combatSessions, buffRepository, Context.User.Id);
             await FollowupAsync(embed: embed);
         }
         catch (Exception ex)
@@ -36,7 +36,8 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
     // Estático (sin dependencia de Context) para que Modules/TextCommandModule.cs comparta
     // exactamente la misma lógica en "aa heal".
     public static async Task<Embed> ExecuteHealAsync(
-        IUserRepository userRepository, IInventoryRepository inventoryRepository, ICombatSessionService combatSessions, ulong discordId)
+        IUserRepository userRepository, IInventoryRepository inventoryRepository, ICombatSessionService combatSessions,
+        IBuffRepository buffRepository, ulong discordId)
     {
         if (combatSessions.Peek(discordId) is not null)
         {
@@ -61,7 +62,12 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
         // Ordenado por stat_value ascendente (ver InventoryRepository.GetOwnedByTypeAsync): el
         // primero es el que MENOS cura de los que tiene, así una herida chica no gasta el
         // consumible que más HP restaura.
-        var owned = await inventoryRepository.GetOwnedByTypeAsync(discordId, "Consumable");
+        // Los banquetes (comida con buff de ataque) NO se gastan acá: /heal elige solo y su valor está en el buff, que se
+        // quiere activar a propósito (con /use) y no desperdiciarlo curando una herida chica.
+        var buffItems = await buffRepository.GetItemBuffsAsync();
+        var owned = (await inventoryRepository.GetOwnedByTypeAsync(discordId, "Consumable"))
+            .Where(o => !buffItems.ContainsKey(o.Item.ItemId))
+            .ToList();
 
         if (owned.Count == 0)
         {

@@ -26,13 +26,15 @@ INSERT INTO items (name, type, rarity, stat_value, sell_price, buy_price) VALUES
 ON CONFLICT DO NOTHING;
 
 -- ⛏️ Carbón: material de /mine que faltaba en el catálogo original (seed.sql), lo piden varias
--- recetas nuevas (Ninja/Hechicero). Común, NO Raro a propósito: RollGatheringRarity() sortea
--- primero la rareza y DESPUÉS un ítem al azar entre los que la tienen — poner a Carbón en Raro
--- junto a Hierro hubiera partido al medio la probabilidad de sacar Hierro (25% -> 12.5% por
--- /mine), rompiendo el balance de las 6 recetas que ya pedían Hierro. En Común comparte pool con
--- Piedra (que tiene mucho menos uso en recetas), sin tocar la tasa de Hierro.
+-- recetas nuevas (Ninja/Hechicero). RARO, igual que Hierro: RollGatheringRarity() sortea primero la
+-- rareza y DESPUÉS un ítem al azar entre los que la tienen, así que Carbón y Hierro se reparten el
+-- pool Raro (12,5% de Hierro por /mine — el cuello de botella conocido, ver CLAUDE.md) y las
+-- recetas de zonas 2-5 están calibradas contra eso (cantidades de Carbón múltiplos de 2, el factor
+-- de los Raros; ver GameData/GatheringYield.cs). Este seed lo creaba Común (2/3 de oro) y la base
+-- viva lo había pasado a Raro a mano sin capturarlo acá: una instalación nueva salía con Hierro
+-- al 25% y las recetas descalibradas (lo detectó la comparación de una base nueva vs la viva).
 INSERT INTO items (name, type, rarity, stat_value, sell_price, buy_price) VALUES
-('Carbón', 'Mineral', 'Común', 0, 2, 3)
+('Carbón', 'Mineral', 'Raro', 0, 10, 13)
 ON CONFLICT DO NOTHING;
 
 -- 🔨 "Amuleto del Levantador": recuperado del viejo CraftingCatalog.cs (ítem genérico, sin

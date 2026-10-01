@@ -43,7 +43,7 @@ public partial class TextCommandModule
             }
 
             var session = await RaidModule.BuildSessionAsync(
-                userRepository, itemRepository, monsterRepository, zoneRepository, Context.User.Id, GameModule.GetDisplayName(Context.User));
+                userRepository, itemRepository, monsterRepository, zoneRepository, buffRepository, Context.User.Id, GameModule.GetDisplayName(Context.User));
 
             // Igual que StartCombatAsync más abajo: el reply target necesita el mensaje ya enviado
             // para poder editarlo después, así que primero se manda y recién ahí se registra.
@@ -124,7 +124,7 @@ public partial class TextCommandModule
             // porque un click de botón siempre llega como interacción sin importar el origen.
             var message = await ReplyAsync(
                 embed: AdventureModule.BuildEncounterEmbed(state),
-                components: AdventureModule.BuildCombatButtons(state, await AdventureModule.LoadHealOptionsAsync(inventoryRepository, Context.User.Id, state)));
+                components: AdventureModule.BuildCombatButtons(state, await AdventureModule.LoadHealOptionsAsync(inventoryRepository, buffRepository, Context.User.Id, state)));
 
             if (!combatSessions.TryStart(Context.User.Id, state, new MessageCombatReplyTarget(message)))
             {

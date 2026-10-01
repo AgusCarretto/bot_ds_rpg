@@ -1,6 +1,36 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-01 (v0.5.0: listo para desplegar en cualquier hosting)_
+_Última revisión: 2026-10-01 (eventos y `/give`, cajas, comida reducida con banquetes)_
+
+## Eventos de juego, `/give`, cajas y banquetes (2026-10-01)
+
+Primer paquete de "más cosas en qué gastar el oro y más datos para decidir". Se hizo por etapas, cada una compilada, probada contra
+la base real con usuarios descartables y recién ahí integrada a `develop`.
+
+- **Registro de eventos** (etapa 1): tabla `game_events` + contadores `player_stats`, con un solo punto de entrada
+  (`IGameEvents.RecordAsync`, no tira nunca excepción). Se registran inicio, subida de nivel, victorias (hunt/travel/boss/raid), derrotas,
+  `/chop`, `/mine` (con unidades), forja, `/daily`, oro gastado/ganado en la tienda, oro dado/recibido y cajas abiertas.
+  `Database/report_game_events.sql` resume cuánto se juega de cada cosa. Es la base de las misiones y los logros (etapa 3).
+- **`/give`** (`aa give @jugador 100`): pasa monedas entre jugadores, atómico y sin posibilidad de trabarse aunque dos se den
+  mutuamente al mismo tiempo. Sin impuesto por ahora; si aparecen cuentas alternativas pasándose el `/daily`, se ve en los eventos y se
+  le pone tope o impuesto en un solo lugar.
+- **Cajas** (etapa 2a): cinco tiers (Cajón de Pino 150, Baúl de Roble 700, Arcón de Hierro 1.800, Cofre de Oro 3.500 y el Arca del
+  Soberano, que no se compra: es premio). `/abrir` (de 1 a 10 por vez) da oro, materiales de recolección, trofeos de monstruo que ya no
+  suelta nadie, comida y cajas de menor tier. **No dan** los drops de zona de las recetas (rompería el ritmo calibrado) y las metas
+  larguísimas (Corteza del Árbol de Vida, Fragmento de Meteorito) solo salen de la caja Mítica. Valor esperado de las de la tienda:
+  54–67 % del precio (sumidero de oro). La tienda ahora lista comida y cajas.
+- **Comida de 9 a 6 y banquetes** (etapa 2b): salen Pan Casero, Choripán y Vacío al Disco (quien los tuviera recibió su valor en
+  oro). Los dos Míticos pasaron a ser **banquetes**: cuestan ~3 veces más (2.100 y 2.800) y dan **+15 % de ataque por 30 minutos**
+  además de curar. Un banquete nuevo reemplaza al anterior (no se acumulan, tampoco en plena pelea). Se ve en `/profile`, `/shop view`,
+  la lista de `/shop buy` y el desplegable de curar; `/heal` nunca los gasta (el valor está en el buff) y `/use` los usa aunque estés
+  con la vida llena. El porcentaje y la duración están en la tabla `item_buffs`: se retocan con un UPDATE, sin redesplegar.
+- **Hallazgo al probar una instalación desde cero**: el seed creaba Carbón como Común y la base viva lo tenía Raro (cambiado a mano,
+  nunca capturado en un script). Una base nueva habría dado el doble de Hierro por `/mine` y recetas descalibradas. Corregido en
+  `seed_class_gear_and_monster_drops.sql`; la comparación base nueva vs viva quedó como práctica en CLAUDE.md.
+- **Pendiente de este paquete**: misiones (diarias y semanales) y logros (etapa 3). Anotado para después: mini-evento aleatorio
+  (bolsa de piedras en la mina), campeonato de PvP diario automático y, muy a futuro, membresía con cooldowns más cortos.
+- **Medido y por medir**: el +15 % de ataque no se simuló contra los jefes (el balance de zonas se calibró sin buff). A 2.100 de oro por
+  30 minutos es caro a propósito; si en la práctica facilita demasiado los jefes, se baja el porcentaje en `item_buffs`.
 
 ## v0.5.0: listo para desplegar en cualquier hosting (2026-10-01)
 

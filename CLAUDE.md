@@ -37,7 +37,7 @@ schema.sql → seed.sql → add_weapon_family.sql → seed_class_gear_and_monste
   → seed_recipes.sql → seed_zone2_gear_and_recipes.sql → seed_zone3_gear_and_recipes.sql
   → seed_zone4_gear_and_recipes.sql → seed_zone5_gear_and_recipes.sql
   → finalize_consumable_catalog.sql → remove_legacy_consumables.sql → rebalance_consumable_prices.sql
-  → update_item_emojis.sql
+  → rework_food_catalog.sql → seed_boxes.sql → update_item_emojis.sql
 ```
 
 `seed_recipes.sql` must come after every seed that creates items it uses: a recipe whose result or ingredient
@@ -45,7 +45,7 @@ item doesn't exist yet would be silently skipped (or created *without* that ingr
 itself and raises instead. (`seed_zone_bosses.sql` used to be missing from this list, so a fresh install had no
 zone bosses at all.)
 
-`Database/run_fresh_install.sql` runs all eighteen in this exact order in one shot via `psql` (or
+`Database/run_fresh_install.sql` runs all twenty in this exact order in one shot via `psql` (or
 pgAdmin's "PSQL Tool", NOT its plain Query Tool — both need real `psql`, since it uses the `\ir`
 meta-command) — **only against a genuinely empty database**, never against one with existing data
 (see below, several of these are not safe to re-run).
@@ -61,21 +61,26 @@ data (their own header comments predate `items.name UNIQUE`, so they undersell i
 constraint now in schema.sql, their `ON CONFLICT DO NOTHING` inserts are actually idempotent too,
 but don't rely on that for the `UPDATE`/data-shape parts). Everything else in the order above
 (`seed_consumables_and_base_swords.sql`, `seed_zones_and_monsters.sql`, `seed_zone_bosses.sql`,
-`seed_travel_monsters.sql`, `finalize_monster_roster.sql`, `seed_recipes.sql`, `seed_zoneN_gear_and_recipes.sql` (N = 2..5), `finalize_consumable_catalog.sql`, `remove_legacy_consumables.sql`, `rebalance_consumable_prices.sql`, `update_item_emojis.sql`) is
+`seed_travel_monsters.sql`, `finalize_monster_roster.sql`, `seed_recipes.sql`, `seed_zoneN_gear_and_recipes.sql` (N = 2..5), `finalize_consumable_catalog.sql`, `remove_legacy_consumables.sql`, `rebalance_consumable_prices.sql`, `rework_food_catalog.sql`, `seed_boxes.sql`, `update_item_emojis.sql`) is
 safe to re-run.
 
 **Known recurring problem**: catalog items have repeatedly been added by hand directly to a
 Postgres instance on one machine and never captured in a script, so a fresh install on another
 machine silently ends up missing items (this happened at least twice — weapons and the entire
-Consumable catalog). If you add/edit `items` rows by hand, write the INSERT into a new
-`Database/*.sql` file in the same session, or the next fresh install will be short again.
+Consumable catalog; and a third time with Carbón, hand-edited from Común to Raro on the live DB while the seed kept
+creating it Común, which on a fresh install would have doubled Hierro's `/mine` rate and unbalanced the recipes). If you
+add/edit `items` rows by hand, write the INSERT into a new `Database/*.sql` file in the same session, or the next fresh
+install will be short again. **Way to check, and worth doing after any catalog change**: create a scratch database, run
+`run_fresh_install.sql` against it, and diff a few `concat_ws(...)` summary queries (items, recipes, monsters, boxes, buffs)
+between it and the live one — they must be identical (that comparison is how the Carbón drift was found).
 
 ## Architecture
 
 **Layering**: `Modules/` (Discord command handlers) → `Repositories/` (Dapper + SQL, one per
 aggregate: `IUserRepository`, `IItemRepository`, `IInventoryRepository`, `IShopRepository`,
 `ICraftingRepository`, `IRecipeRepository`, `ICasinoRepository`, `IAdventureRepository`,
-`IGatheringRepository`, `ICooldownRepository`, `IProgressionRepository`) + `Services/` (stateful
+`IGatheringRepository`, `ICooldownRepository`, `IProgressionRepository`, `IGameEventRepository`, `ITransferRepository`,
+`IBoxRepository`, `IBuffRepository`) + `Services/` (stateful
 or pure-logic helpers that don't touch SQL directly) + `GameData/` (pure calculators/catalogs, no
 I/O — `LevelingCalculator`, `RarityCatalog`, `CombatMath`, `ClassPassives`, etc.). There is no
 "DatabaseService" god-object — each repository owns its own slice of the schema.
@@ -280,6 +285,42 @@ of `develop` into `main` plus a tag. The Dockerfile
 must keep using the standard Debian images — `string.Normalize(FormD)` in the autocompletes needs ICU, which the chiseled and
 Alpine images don't ship. `<Version>` in the csproj is the bot version (`BotVersion.Current`, shown in `/info` and the startup
 log); releases are git tags (`v0.5.0`).
+
+**Game events & stats (`game_events`, `player_stats`)** — ONE pipeline for "something happened": `IGameEvents.RecordAsync(discordId,
+kind, zoneId?, amount, detail?)` (`Services/GameEventService.cs`, kinds in `GameData/GameEventKinds.cs`, helpers in
+`Services/GameEventExtensions.cs`) appends a row to `game_events` and bumps the per-player counter in `player_stats`, both in one
+transaction (`Repositories/GameEventRepository.cs`). It **never throws** — a stats failure only logs a warning, it must not break
+a purchase or a fight — so call it *after* the real transaction committed, never inside it. Messages to show a player later
+(future mission/achievement unlocks) go into a notice queue (`TakeNotices`) that `Program.cs` delivers after every command
+(`DeliverNoticesAsync`). Missions and achievements plug into this same service, not into the modules.
+`Database/report_game_events.sql` summarizes the table. `/give` (`Modules/GiveModule.cs`, `ITransferRepository`) moves gold between
+players atomically: `SELECT ... FOR UPDATE` on both rows **ordered by discord_id** (two opposite transfers can't deadlock), then a
+guarded update each; no tax today — the events table is there to spot abuse, and `ExecuteGiveAsync` is the one place to add a cap.
+
+**Boxes (`items.type = 'Caja'`, `boxes`, `box_loot`)** — five tiers, one per rarity; four are sold in `/shop` (150 / 700 / 1800 /
+3500 gold) and the Mítica ("Arca del Soberano") is prize-only (`buy_price = 0`; `GameData/ShopCatalog.IsForSale` is the single
+definition of "sold in the shop" — food and boxes alike). `/abrir` / `aa abrir <caja> [n]` (`Modules/BoxModule.cs`, 1–10 at a time)
+consumes the box and pays the loot in ONE transaction (`Repositories/BoxRepository.OpenAsync`: guarded decrement, then gold + items),
+the roll itself is the pure `GameData/BoxLootRoller.cs`. Loot lives in the DB (`Database/seed_boxes.sql` is the source of truth and
+verifies itself): gold with a rare jackpot, gathering materials (Hierro from the cheapest box — it is the known bottleneck), "trophy"
+materials no monster drops anymore, food and lower boxes. Two rules that must keep holding: (1) shop boxes **never** give the zone
+drops used in recipes (Garra de Puma, Esencia Espectral...) — a 1000-gold box giving those would make buying ~5× faster than the
+farming the pacing was calibrated on; (2) Corteza del Árbol de Vida / Fragmento de Meteorito (the very-long-term goals) come only from
+the Mítica box, which can't be bought. Expected value of shop boxes is ~54–67% of price (a gold sink, not a business) —
+`Database/report_box_economy.sql` computes it; re-run it if weights or prices change.
+
+**Food: 6 items, and the two Mítica ones are "banquetes" with an attack buff** — the catalog was cut from 9 to 6 (Pan Casero, Choripán
+and Vacío al Disco removed by `Database/rework_food_catalog.sql`, which refunds their gold value to anyone holding them *before* the
+cascade delete). Banquetes (Asado Completo del Domingo en Familia 2100, Mate Dulce de la Abuela 2800 — ~3× the heal curve) also give
+**+15% attack for 30 minutes**: data in `item_buffs` (tunable by SQL, no redeploy), the active one in `player_buffs` (one row per
+player and buff key, **a new banquete REPLACES the old one, never stacks**; expiry is `now() + minutes` computed by the database and
+`GetActiveAttackAsync` simply doesn't return an expired row — no cleanup job). The pure math is `GameData/AttackBuff.cs`:
+`Apply` over the player's TOTAL attack (level + weapon with synergy, via `PlayerCombatProfileCalculator.Resolve(..., attackBuffPercent)`),
+and `Rescale` for eating one mid-fight (`CombatState.AttackBuffPercent` remembers what's already applied so a second banquete doesn't
+multiply twice). It is read at the start of a solo fight (`AdventureCombatStarter`) and when a raid participant is built (the attack is
+fixed when joining), and shown in `/profile`, `/shop view`, the shop autocomplete and the heal dropdown. `/use` is the only way to eat
+one — it works even at full HP because the buff is the point — and `/heal` (auto-pick) deliberately skips banquetes. In `/travel` and
+`/boss` it uses the one-heal-per-fight slot like any food.
 
 **Autoritative source for "how much SQL debt does this repo have right now"**: `MEJORAS.md` at the
 repo root. Read it before assuming the schema in `Database/schema.sql` is what's actually running

@@ -12,7 +12,8 @@ public class AdventureModule(
     IInventoryRepository inventoryRepository,
     ICombatSessionService combatSessions,
     IAdventureCombatStarter combatStarter,
-    IGameEvents gameEvents) : InteractionModuleBase<SocketInteractionContext>
+    IGameEvents gameEvents,
+    IBuffRepository buffRepository) : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("hunt", "Salí a cazar monstruos cercanos (cooldown de 1 minuto).")]
     public Task HandleHuntAsync() =>
@@ -75,7 +76,7 @@ public class AdventureModule(
 
             await FollowupAsync(
                 embed: BuildEncounterEmbed(state),
-                components: BuildCombatButtons(state, await LoadHealOptionsAsync(inventoryRepository, Context.User.Id, state)));
+                components: BuildCombatButtons(state, await LoadHealOptionsAsync(inventoryRepository, buffRepository, Context.User.Id, state)));
         }
         catch (Exception ex)
         {
@@ -117,7 +118,7 @@ public class AdventureModule(
             }
 
             var result = await UseModule.ExecuteUseAsync(
-                userRepository, itemRepository, inventoryRepository, combatSessions, Context.User.Id, selected[0]);
+                userRepository, itemRepository, inventoryRepository, combatSessions, buffRepository, Context.User.Id, selected[0]);
 
             if (result.PlainMessage is not null)
             {
@@ -322,7 +323,7 @@ public class AdventureModule(
             }
 
             // La comida se vuelve a leer en cada turno: lo que comprás o vendés a mitad de pelea se refleja.
-            var healOptions = await LoadHealOptionsAsync(inventoryRepository, Context.User.Id, nextState);
+            var healOptions = await LoadHealOptionsAsync(inventoryRepository, buffRepository, Context.User.Id, nextState);
             await ModifyOriginalResponseAsync(props =>
             {
                 props.Embed = BuildOngoingEmbed(nextState, turn);
@@ -387,7 +388,7 @@ public class AdventureModule(
     // La comida del jugador para el desplegable, o null si esta pelea no lo tiene o ya se curó (no hace falta leer
     // el inventario). Público y estático para que "aa travel" / "aa boss" arme los mismos componentes.
     public static async Task<IReadOnlyList<HealOption>?> LoadHealOptionsAsync(
-        IInventoryRepository inventoryRepository, ulong discordId, CombatState state)
+        IInventoryRepository inventoryRepository, IBuffRepository buffRepository, ulong discordId, CombatState state)
     {
         if (!CombatHeal.IsLimited(state.CommandName) || state.HealUsed)
         {
@@ -395,7 +396,9 @@ public class AdventureModule(
         }
 
         var owned = await inventoryRepository.GetOwnedByTypeAsync(discordId, "Consumable");
-        return CombatHeal.BuildOptions(owned.Select(o => new HealOption(o.Item.Name, o.Item.StatValue, o.Quantity)));
+        var buffs = await buffRepository.GetItemBuffsAsync();
+        return CombatHeal.BuildOptions(owned.Select(o => new HealOption(
+            o.Item.Name, o.Item.StatValue, o.Quantity, buffs.TryGetValue(o.Item.ItemId, out var buff) ? buff.AttackPercent : 0)));
     }
 
     // Un desplegable de Discord no puede quedar sin opciones, así que los estados "sin comida" / "ya te curaste"

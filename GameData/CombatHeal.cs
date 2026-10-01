@@ -1,7 +1,7 @@
 namespace BotDsRpg.GameData;
 
 // Una comida que el jugador tiene y puede usar para curarse en plena pelea (una opción del desplegable).
-public sealed record HealOption(string Name, int HealHp, int Quantity);
+public sealed record HealOption(string Name, int HealHp, int Quantity, int BuffPercent = 0);
 
 // Reglas PURAS de la curación en combate (el desplegable "Curar" y /use dentro de una pelea).
 //
@@ -30,5 +30,6 @@ public static class CombatHeal
              .ToList();
 
     // "+100 HP · tenés 3": la descripción de cada opción (Discord la limita a 100 caracteres).
-    public static string Describe(HealOption option) => $"+{option.HealHp} HP · tenés {option.Quantity}";
+    public static string Describe(HealOption option) =>
+        option.BuffPercent > 0 ? $"+{option.HealHp} HP y +{option.BuffPercent}% ATQ · tenés {option.Quantity}" : $"+{option.HealHp} HP · tenés {option.Quantity}";
 }

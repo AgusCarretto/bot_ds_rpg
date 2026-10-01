@@ -8,18 +8,20 @@
 -- regalado. Ahora: compra = ~0.1 x HP^1.6, redondeado (0.5 oro/HP la Mate Amargo, ~3 oro/HP la Mate Dulce de la
 -- Abuela), y venta = 75% de la compra.
 --
---   HP    compra  venta      (antes)
---    15        8      6       3 / 2
---    20       12      9       4 / 3
---    40       36     27       9 / 7
---    50       52     39      11 / 8
---    80      110     82      18 / 14
---   100      160    120      22 / 17
---   150      300    225      33 / 25
---   250      700    525      56 / 43
---   300      920    690      67 / 52
+-- Los dos BANQUETES Míticos (Asado Completo del Domingo en Familia y Mate Dulce de la Abuela) además dan un buff de ataque
+-- (+15% por 30 min, ver rework_food_catalog.sql): cuestan ~3 veces lo que da la curva (700 -> 2.100, 920 -> 2.800).
 --
--- Re-ejecutable (UPDATE por nombre), y FALLA EN VOZ ALTA si falta alguna de las 9 comidas. Ejecutar DESPUÉS de
+--   HP    compra  venta      (antes de todo)
+--    15        8      6       3 / 2     Mate Amargo
+--    40       36     27       9 / 7     Empanada de Carne
+--   100      160    120      22 / 17    Asado de Tira
+--   150      300    225      33 / 25    Cordero Patagónico
+--   250     2100   1575      56 / 43    Asado Completo del Domingo en Familia (banquete)
+--   300     2800   2100      67 / 52    Mate Dulce de la Abuela (banquete)
+--
+-- (Pan Casero, Choripán y Vacío al Disco ya no existen: los saca rework_food_catalog.sql.)
+--
+-- Re-ejecutable (UPDATE por nombre), y FALLA EN VOZ ALTA si falta alguna de las 6 comidas. Ejecutar DESPUÉS de
 -- seed_consumables_and_base_swords.sql / finalize_consumable_catalog.sql / remove_legacy_consumables.sql.
 -- =========================================================
 
@@ -30,15 +32,12 @@ DECLARE
 BEGIN
     FOR t IN
         SELECT * FROM (VALUES
-            ('Mate Amargo',                           8,   6),
-            ('Pan Casero',                           12,   9),
-            ('Empanada de Carne',                    36,  27),
-            ('Choripán',                             52,  39),
-            ('Vacío al Disco',                      110,  82),
-            ('Asado de Tira',                       160, 120),
-            ('Cordero Patagónico',                  300, 225),
-            ('Asado Completo del Domingo en Familia', 700, 525),
-            ('Mate Dulce de la Abuela',             920, 690)
+            ('Mate Amargo',                             8,    6),
+            ('Empanada de Carne',                      36,   27),
+            ('Asado de Tira',                         160,  120),
+            ('Cordero Patagónico',                    300,  225),
+            ('Asado Completo del Domingo en Familia', 2100, 1575),
+            ('Mate Dulce de la Abuela',               2800, 2100)
         ) AS v(name, buy_price, sell_price)
     LOOP
         UPDATE items SET buy_price = t.buy_price, sell_price = t.sell_price

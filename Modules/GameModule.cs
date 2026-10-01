@@ -8,7 +8,7 @@ using Discord.Rest;
 using Discord.WebSocket;
 using BotDsRpg.Services;
 
-public class GameModule(IUserRepository userRepository, IInventoryRepository inventoryRepository, IItemRepository itemRepository, IZoneRepository zoneRepository)
+public class GameModule(IUserRepository userRepository, IInventoryRepository inventoryRepository, IItemRepository itemRepository, IZoneRepository zoneRepository, IBuffRepository buffRepository)
     : InteractionModuleBase<SocketInteractionContext>
 {
     // Comando barra: /profile [jugador]
@@ -32,7 +32,7 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
                 return;
             }
 
-            var embed = await BuildProfileEmbedAsync(userRepository, itemRepository, zoneRepository, target.Id, GetDisplayName(target), target.GetAvatarUrl() ?? target.GetDefaultAvatarUrl());
+            var embed = await BuildProfileEmbedAsync(userRepository, itemRepository, zoneRepository, buffRepository, target.Id, GetDisplayName(target), target.GetAvatarUrl() ?? target.GetDefaultAvatarUrl());
             await FollowupAsync(embed: embed);
         }
         catch (Exception ex)
@@ -54,7 +54,8 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
     // Estático (sin dependencia de Context) para que Modules/TextCommandModule.cs arme el mismo
     // embed en "aa profile" — acá vive tanto la lectura de datos como el embed.
     public static async Task<Embed> BuildProfileEmbedAsync(
-        IUserRepository userRepository, IItemRepository itemRepository, IZoneRepository zoneRepository, ulong discordId, string username, string avatarUrl)
+        IUserRepository userRepository, IItemRepository itemRepository, IZoneRepository zoneRepository, IBuffRepository buffRepository,
+        ulong discordId, string username, string avatarUrl)
     {
         // Si es la primera vez que este usuario ejecuta un comando, se crea acá
         // automáticamente con los valores por defecto (Nivel 1, 0 EXP, 50 de oro, 100/100 HP, Guerrero).
@@ -69,7 +70,9 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
         // amuleto), misma fórmula que usa el combate real — ver GameData/CombatStats.cs.
         int weaponDamage = ClassWeaponSynergy.ApplyBonus(weapon?.StatValue ?? 0, player.Class, weapon?.WeaponFamily);
         int amuletDefense = amulet?.StatValue ?? 0;
-        int attack = CombatStats.TotalAttack(player.Level, weaponDamage);
+        // El banquete activo (si lo hay) suma a lo que se ve igual que en el combate real.
+        var buff = await buffRepository.GetActiveAttackAsync(discordId);
+        int attack = AttackBuff.Apply(CombatStats.TotalAttack(player.Level, weaponDamage), buff?.AttackPercent ?? 0);
         int defense = CombatStats.TotalDefense(player.Level, amuletDefense);
 
         var classDef = ClassCatalog.All.FirstOrDefault(c => c.Name == player.Class);
@@ -83,7 +86,7 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
             .WithThumbnailUrl(avatarUrl)
             .AddField("📊 Experiencia", $"{ProgressBar.Render(player.Xp, requiredXp)}\n{player.Xp} / {requiredXp} XP", false)
             .AddField("❤️ Vida", $"{ProgressBar.Render(player.CurrentHp, player.MaxHp)}\n{player.CurrentHp} / {player.MaxHp} HP", false)
-            .AddField("⚔️ Ataque", $"{attack} " + (hasSynergy ? " ⚡" : string.Empty), true)
+            .AddField("⚔️ Ataque", $"{attack} " + (hasSynergy ? " ⚡" : string.Empty) + (buff is null ? string.Empty : $" 🍖 +{buff.AttackPercent}% ({Math.Max(1, (int)Math.Ceiling(buff.Remaining.TotalMinutes))} min)"), true)
             .AddField("🛡️ Defensa", $"{defense} ", true)
             .AddField("💰 Oro", player.Gold.ToString(), true)
             .AddField("🗡️ Arma", weapon is null ? "_Ninguna_" : $"{ItemDisplay.Format(weapon.Emoji, weapon.Name)} (+{weapon.StatValue})", true)

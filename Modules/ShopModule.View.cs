@@ -19,7 +19,7 @@ public partial class ShopModule
 
         try
         {
-            await FollowupAsync(embed: BuildViewEmbed(await LoadShopItemsAsync(itemRepository)));
+            await FollowupAsync(embed: BuildViewEmbed(await LoadShopItemsAsync(itemRepository), await buffRepository.GetItemBuffsAsync()));
         }
         catch (Exception ex)
         {
@@ -28,6 +28,10 @@ public partial class ShopModule
             await FollowupAsync("No pude cargar la tienda ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
         }
     }
+
+    // " + ⚔️ +15% ATQ 30 min" para los banquetes, nada para el resto de la comida.
+    private static string BuffText(Item item, IReadOnlyDictionary<int, ItemBuff>? buffs) =>
+        buffs is not null && buffs.TryGetValue(item.ItemId, out var buff) ? $" + ⚔️ +{buff.AttackPercent}% ATQ {buff.Minutes} min" : string.Empty;
 
     // Todo lo que se vende (comida y cajas con precio de compra), listo para mostrar. Compartido con "aa shop view".
     public static async Task<IReadOnlyList<Item>> LoadShopItemsAsync(IItemRepository itemRepository)
@@ -43,7 +47,7 @@ public partial class ShopModule
 
     // Público para que Modules/TextCommandModule.cs arme el mismo embed en "aa shop view". Primero la comida y después las cajas,
     // cada grupo de menor a mayor rareza.
-    public static Embed BuildViewEmbed(IReadOnlyList<Item> items)
+    public static Embed BuildViewEmbed(IReadOnlyList<Item> items, IReadOnlyDictionary<int, ItemBuff>? buffs = null)
     {
         var embed = new EmbedBuilder()
             .WithTitle("🏪 Tienda")
@@ -61,7 +65,7 @@ public partial class ShopModule
             {
                 string detail = item.Type == "Caja"
                     ? $"🎲 Premios sorpresa | 💰 Compra: {item.BuyPrice} Oro | 💸 Venta: {item.SellPrice} Oro"
-                    : $"❤️ Cura: {item.StatValue} HP | 💰 Compra: {item.BuyPrice} Oro | 💸 Venta: {item.SellPrice} Oro";
+                    : $"❤️ Cura: {item.StatValue} HP{BuffText(item, buffs)} | 💰 Compra: {item.BuyPrice} Oro | 💸 Venta: {item.SellPrice} Oro";
 
                 embed.AddField($"[{item.Rarity}] {ItemDisplay.Format(item.Emoji, item.Name)}", detail);
             }

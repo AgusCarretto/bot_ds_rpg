@@ -48,7 +48,10 @@ public sealed record CombatState(
     AbilityState Ability = default,
     // Ya se curó con el desplegable (o con /use) en esta pelea. Solo importa en /travel y /boss, donde se puede
     // UNA vez por pelea (ver GameData/CombatHeal.cs).
-    bool HealUsed = false)
+    bool HealUsed = false,
+    // El +% de ataque de un banquete que YA está aplicado a PlayerDamage (de antes de la pelea o comido en medio): hace falta
+    // para no apilar un segundo banquete sobre el primero (ver GameData/AttackBuff.Rescale).
+    int AttackBuffPercent = 0)
 {
     // Convierte un delta de HP en unidades de COMBATE (ya escaladas por Passives.MaxHpMultiplier)
     // a unidades reales de base de datos, para pasarlo a IUserRepository.ApplyCombatHpDeltaAsync /

@@ -10,7 +10,7 @@ using Discord.Interactions;
 // que para poder separar archivos sin romper el grupo, ambos son la misma clase de C#.
 // Las recetas de forja viven en /forge (ForgeModule.cs), separadas de la Tienda por diseño de juego.
 [Group("shop", "Comprá objetos con tu oro.")]
-public partial class ShopModule(IUserRepository userRepository, IItemRepository itemRepository, IShopRepository shopRepository, ICombatSessionService combatSessions, IGameEvents gameEvents)
+public partial class ShopModule(IUserRepository userRepository, IItemRepository itemRepository, IShopRepository shopRepository, ICombatSessionService combatSessions, IGameEvents gameEvents, IBuffRepository buffRepository)
     : InteractionModuleBase<SocketInteractionContext>
 {
     // Comando barra: /shop buy

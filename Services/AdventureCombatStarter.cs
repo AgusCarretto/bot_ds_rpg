@@ -11,6 +11,7 @@ public sealed class AdventureCombatStarter(
     IItemRepository itemRepository,
     IMonsterRepository monsterRepository,
     IZoneRepository zoneRepository,
+    IBuffRepository buffRepository,
     ICombatSessionService combatSessions,
     IRaidSessionService raidSessions) : IAdventureCombatStarter
 {
@@ -126,7 +127,9 @@ public sealed class AdventureCombatStarter(
         // participantes de un jefe cooperativo — ver GameData/PlayerCombatProfileCalculator.cs.
         // CombatState.ToDbHpDelta se encarga de "destraducir" el HP de combate (escalado si
         // corresponde) de vuelta a unidades reales al persistir (ver Modules/AdventureModule.cs).
-        var profile = PlayerCombatProfileCalculator.Resolve(player, weapon, amulet);
+        // Si comió un banquete antes, su +% de ataque entra desde el primer golpe (vence solo: GetActiveAttackAsync no lo devuelve vencido).
+        var buff = await buffRepository.GetActiveAttackAsync(discordId, cancellationToken);
+        var profile = PlayerCombatProfileCalculator.Resolve(player, weapon, amulet, buff?.AttackPercent ?? 0);
 
         var monster = MonsterCatalog.RollFrom(monsterPool);
         int monsterMaxHp = Random.Shared.Next(monster.MinHp, monster.MaxHp + 1);
@@ -150,7 +153,8 @@ public sealed class AdventureCombatStarter(
             PlayerDefense: profile.Defense,
             PlayerLevel: player.Level,
             PlayerClass: player.Class,
-            Passives: profile.Passives);
+            Passives: profile.Passives,
+            AttackBuffPercent: profile.AttackBuffPercent);
 
         return new CombatStartOutcome(CombatStartStatus.Started, null, state);
     }
