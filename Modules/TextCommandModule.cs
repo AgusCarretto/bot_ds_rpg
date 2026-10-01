@@ -52,8 +52,9 @@ public partial class TextCommandModule(
 
             await ReplyAsync(embed: OnboardingModule.BuildWelcomeEmbed(), components: OnboardingModule.BuildClassButtons());
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await ReplyAsync("¡Upa! No pude iniciar tu registro ahora mismo, intentá de nuevo en un momento.");
         }
     }
@@ -102,8 +103,9 @@ public partial class TextCommandModule(
             var embed = await GameModule.BuildProfileEmbedAsync(userRepository, itemRepository, zoneRepository, target.Id, GameModule.GetDisplayName(target), avatarUrl);
             await ReplyAsync(embed: embed);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await ReplyAsync("¡Upa! No pude acceder a ese perfil ahora mismo, intentá de nuevo en un momento.");
         }
     }
@@ -128,8 +130,9 @@ public partial class TextCommandModule(
             var embed = await GameModule.BuildInventoryEmbedAsync(inventoryRepository, target.Id, GameModule.GetDisplayName(target));
             await ReplyAsync(embed: embed);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await ReplyAsync("No pude consultar ese inventario ahora mismo, intentá de nuevo en un momento.");
         }
     }
@@ -144,8 +147,9 @@ public partial class TextCommandModule(
             var embed = await CooldownModule.BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id);
             await ReplyAsync(embed: embed);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await ReplyAsync("No pude consultar tus cooldowns ahora mismo, intentá de nuevo en un momento.");
         }
     }
@@ -161,8 +165,9 @@ public partial class TextCommandModule(
             var embed = await LeaderboardModule.BuildLeaderboardEmbedAsync(userRepository);
             await ReplyAsync(embed: embed);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await ReplyAsync("No pude cargar el ranking ahora mismo, intentá de nuevo en un momento.");
         }
     }

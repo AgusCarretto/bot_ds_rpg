@@ -35,8 +35,9 @@ public class AutoHuntModule(
                 await FollowupAsync(embed: result.Embed);
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
             await FollowupAsync("¡Upa! Algo falló en la auto-cacería, intentá de nuevo en un momento.", ephemeral: true);
         }

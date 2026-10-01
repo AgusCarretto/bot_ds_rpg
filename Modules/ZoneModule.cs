@@ -3,6 +3,7 @@ using BotDsRpg.Models;
 using BotDsRpg.Repositories;
 using Discord;
 using Discord.Interactions;
+using BotDsRpg.Services;
 
 // Sistema de Zonas: /zona cambia la zona actual del jugador (valida min_level y, desde el Sistema
 // de Jefes de Zona, que ya hayas derrotado al jefe de la zona anterior), /zonas lista todas las
@@ -24,8 +25,9 @@ public class ZoneModule(IUserRepository userRepository, IZoneRepository zoneRepo
             var (message, embed) = await ExecuteTravelAsync(userRepository, zoneRepository, monsterRepository, Context.User.Id, zoneId);
             await FollowupAsync(message, embed: embed);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await FollowupAsync("¡Upa! No pude procesar el viaje ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
         }
     }
@@ -40,8 +42,9 @@ public class ZoneModule(IUserRepository userRepository, IZoneRepository zoneRepo
             var embed = await BuildZoneListEmbedAsync(userRepository, zoneRepository, Context.User.Id);
             await FollowupAsync(embed: embed);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await FollowupAsync("No pude consultar las zonas ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
         }
     }

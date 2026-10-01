@@ -1,5 +1,6 @@
 using BotDsRpg.GameData;
 using Discord.Commands;
+using BotDsRpg.Services;
 
 // Tercera parte de TextCommandModule (ver el comentario en TextCommandModule.cs): recolección.
 public partial class TextCommandModule
@@ -53,8 +54,9 @@ public partial class TextCommandModule
 
             await ReplyAsync(embed: GatheringModule.BuildResultEmbed(definition, item, quantity));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await ReplyAsync("¡Upa! Algo falló procesando la recolección, intentá de nuevo en un momento.");
         }
     }

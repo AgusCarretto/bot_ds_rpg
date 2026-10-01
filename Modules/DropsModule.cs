@@ -2,6 +2,7 @@ using BotDsRpg.GameData;
 using BotDsRpg.Repositories;
 using Discord;
 using Discord.Interactions;
+using BotDsRpg.Services;
 
 // /drops: qué suelta cada monstruo de cada zona, para saber dónde conseguir cada material. Cada monstruo suelta UN
 // solo ítem (ver Database/finalize_monster_roster.sql). Solo lectura: no crea cuentas ni toca nada.
@@ -21,8 +22,9 @@ public class DropsModule(
             var message = await BuildDropsMessageAsync(userRepository, zoneRepository, monsterRepository, itemRepository, Context.User.Id);
             await FollowupAsync(message.Text, embeds: message.Embeds);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await FollowupAsync("No pude consultar los drops ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
         }
     }

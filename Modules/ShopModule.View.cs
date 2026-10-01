@@ -3,6 +3,7 @@ using BotDsRpg.Models;
 using BotDsRpg.Repositories;
 using Discord;
 using Discord.Interactions;
+using BotDsRpg.Services;
 
 // Segunda mitad de ShopModule (ver el comentario en ShopModule.cs): acá van las consultas de
 // solo lectura del grupo "shop", separadas de las acciones (buy/sell/sellall) por claridad,
@@ -21,8 +22,9 @@ public partial class ShopModule
             var items = await itemRepository.GetAllByTypeAsync("Consumable");
             await FollowupAsync(embed: BuildViewEmbed(items));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
             await FollowupAsync("No pude cargar la tienda ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
         }

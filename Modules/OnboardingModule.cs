@@ -2,6 +2,7 @@ using BotDsRpg.GameData;
 using BotDsRpg.Repositories;
 using Discord;
 using Discord.Interactions;
+using BotDsRpg.Services;
 
 // Sin gate de registro: es el único comando que tiene que funcionar para alguien que todavía
 // no existe en la base (tanto en Program.cs para slash commands como para "aa start").
@@ -26,8 +27,9 @@ public class OnboardingModule(IUserRepository userRepository) : InteractionModul
 
             await FollowupAsync(embed: BuildWelcomeEmbed(), components: BuildClassButtons(), ephemeral: true);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
             await FollowupAsync("¡Upa! No pude iniciar tu registro ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
         }
@@ -73,8 +75,9 @@ public class OnboardingModule(IUserRepository userRepository) : InteractionModul
                 props.Components = new ComponentBuilder().Build();
             });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await FollowupAsync("¡Upa! No pude completar tu registro, intentá de nuevo en un momento.", ephemeral: true);
         }
     }

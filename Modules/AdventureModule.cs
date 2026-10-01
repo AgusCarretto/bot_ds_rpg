@@ -76,8 +76,9 @@ public class AdventureModule(
                 embed: BuildEncounterEmbed(state),
                 components: BuildCombatButtons(state, await LoadHealOptionsAsync(inventoryRepository, Context.User.Id, state)));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
             await FollowupAsync("¡Upa! Algo falló iniciando tu aventura, intentá de nuevo en un momento.", ephemeral: true);
         }
@@ -122,8 +123,9 @@ public class AdventureModule(
                 await FollowupAsync(result.PlainMessage, ephemeral: true);
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await FollowupAsync("¡Upa! No pude usar esa comida, intentá de nuevo en un momento.", ephemeral: true);
         }
     }
@@ -319,8 +321,9 @@ public class AdventureModule(
                 props.Components = BuildCombatButtons(nextState, healOptions);
             });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
             await FollowupAsync("¡Upa! Algo falló procesando el combate, intentá de nuevo en un momento.", ephemeral: true);
         }

@@ -25,8 +25,9 @@ public class UseModule(
             var result = await ExecuteUseAsync(userRepository, itemRepository, inventoryRepository, combatSessions, Context.User.Id, itemName);
             await FollowupAsync(result.PlainMessage, embed: result.Embed, ephemeral: result.Embed is null);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
             await FollowupAsync("¡Upa! No pude usar ese ítem, intentá de nuevo en un momento.", ephemeral: true);
         }

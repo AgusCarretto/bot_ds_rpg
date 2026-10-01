@@ -1,4 +1,5 @@
 using Discord.Commands;
+using BotDsRpg.Services;
 
 // Cuarta parte de TextCommandModule (ver el comentario en TextCommandModule.cs): comandos del
 // Sistema de Zonas. Sin [Group]/constructor propio — misma clase de C#, las dependencias
@@ -15,8 +16,9 @@ public partial class TextCommandModule
             var (message, embed) = await ZoneModule.ExecuteTravelAsync(userRepository, zoneRepository, monsterRepository, Context.User.Id, zoneId);
             await ReplyAsync(message, embed: embed);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await ReplyAsync("¡Upa! No pude procesar el viaje ahora mismo, intentá de nuevo en un momento.");
         }
     }
@@ -31,8 +33,9 @@ public partial class TextCommandModule
             var message = await DropsModule.BuildDropsMessageAsync(userRepository, zoneRepository, monsterRepository, itemRepository, Context.User.Id);
             await ReplyAsync(message.Text, embeds: message.Embeds);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await ReplyAsync("No pude consultar los drops ahora mismo, intentá de nuevo en un momento.");
         }
     }
@@ -47,8 +50,9 @@ public partial class TextCommandModule
             var embed = await ZoneModule.BuildZoneListEmbedAsync(userRepository, zoneRepository, Context.User.Id);
             await ReplyAsync(embed: embed);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await ReplyAsync("No pude consultar las zonas ahora mismo, intentá de nuevo en un momento.");
         }
     }

@@ -54,8 +54,9 @@ public class RaidModule(
 
             await FollowupAsync(embed: BuildLobbyEmbed(session), components: BuildLobbyButtons(session.RaidId));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await FollowupAsync("¡Upa! No pude armar el raid ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
         }
     }
@@ -131,8 +132,9 @@ public class RaidModule(
             await session.ReplyTarget.UpdateAsync(BuildLobbyEmbed(session), BuildLobbyButtons(raidId));
             await FollowupAsync($"Te sumaste al raid contra **{session.BossName}** {session.BossEmoji}.", ephemeral: true);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await FollowupAsync("¡Upa! No te pude sumar al raid, intentá de nuevo en un momento.", ephemeral: true);
         }
     }
@@ -170,8 +172,9 @@ public class RaidModule(
 
             await TryActivateAsync(session, raidSessions, adventureRepository);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await FollowupAsync("¡Upa! Algo falló arrancando el raid, intentá de nuevo en un momento.", ephemeral: true);
         }
     }
@@ -243,8 +246,9 @@ public class RaidModule(
                     return;
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await FollowupAsync("¡Upa! Algo falló procesando tu ataque, intentá de nuevo en un momento.", ephemeral: true);
         }
     }
@@ -300,8 +304,9 @@ public class RaidModule(
 
             await session.ReplyTarget.UpdateAsync(BuildCombatEmbed(session, $"🏃 **{participant.DisplayName}** se retiró del raid."), BuildCombatButtons(raidId));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await FollowupAsync("¡Upa! No te pude retirar del raid, intentá de nuevo en un momento.", ephemeral: true);
         }
     }
@@ -560,10 +565,12 @@ public class RaidModule(
             {
                 await TryActivateAsync(session, raidSessions, adventureRepository);
             }
-            catch
+            catch (Exception ex)
             {
                 // Si ya no se puede editar el mensaje (token vencido, mensaje borrado) no hay nada
-                // más que hacer — el raid igual queda marcado Resolved/sacado del índice arriba.
+                // más que hacer — el raid igual queda marcado Resolved/sacado del índice arriba. Se registra:
+                // acá también puede haber fallado la base al activar el raid.
+                BotLog.Error(ex);
             }
         }, cts.Token);
     }

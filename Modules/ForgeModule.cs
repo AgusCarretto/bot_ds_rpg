@@ -3,6 +3,7 @@ using BotDsRpg.Models;
 using BotDsRpg.Repositories;
 using Discord;
 using Discord.Interactions;
+using BotDsRpg.Services;
 
 // El Herrero: separado de la Tienda (/shop) por diseño de juego. La Tienda vende consumibles
 // con oro; la Herrería forja equipamiento con oro + materiales/MonsterDrops del inventario.
@@ -26,8 +27,9 @@ public class ForgeModule(
             var player = await userRepository.GetOrCreateUserAsync(Context.User.Id);
             await FollowupAsync(embed: await BuildRecipesEmbed(recipeRepository, zoneRepository, player.Class, player.CurrentZoneId));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
             await FollowupAsync("No pude cargar las recetas ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
         }
@@ -54,8 +56,9 @@ public class ForgeModule(
                 await FollowupAsync(embed: result.Embed);
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
             await FollowupAsync("¡Upa! Algo falló en la herrería, intentá de nuevo en un momento.", ephemeral: true);
         }

@@ -1,5 +1,6 @@
 using BotDsRpg.GameData;
 using Discord.Commands;
+using BotDsRpg.Services;
 
 // Cuarta parte de TextCommandModule (ver el comentario en TextCommandModule.cs): economía
 // (tienda, forja, curación/consumibles, casino) y recompensas.
@@ -27,8 +28,9 @@ public partial class TextCommandModule
 
             await ReplyAsync(embed: DailyModule.BuildResultEmbed(calculation, outcome.Result!));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await ReplyAsync("¡Upa! No pude procesar tu recompensa diaria, intentá de nuevo en un momento.");
         }
     }
@@ -48,8 +50,9 @@ public partial class TextCommandModule
             var items = await itemRepository.GetAllByTypeAsync("Consumable");
             await ReplyAsync(embed: ShopModule.BuildViewEmbed(items));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await ReplyAsync("No pude cargar la tienda ahora mismo, intentá de nuevo en un momento.");
         }
     }
@@ -69,8 +72,9 @@ public partial class TextCommandModule
             var result = await ShopModule.ExecuteBuyAsync(userRepository, itemRepository, shopRepository, combatSessions, Context.User.Id, item, cantidad);
             await ReplyAsync(result.PlainMessage, embed: result.Embed);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await ReplyAsync("¡Upa! No pude procesar la compra, intentá de nuevo en un momento.");
         }
     }
@@ -90,8 +94,9 @@ public partial class TextCommandModule
             var result = await ShopModule.ExecuteSellAsync(itemRepository, shopRepository, Context.User.Id, item, cantidad);
             await ReplyAsync(result.PlainMessage, embed: result.Embed);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await ReplyAsync("¡Upa! No pude procesar la venta, intentá de nuevo en un momento.");
         }
     }
@@ -107,8 +112,9 @@ public partial class TextCommandModule
             var result = await ShopModule.ExecuteSellAllAsync(shopRepository, Context.User.Id);
             await ReplyAsync(result.PlainMessage, embed: result.Embed);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await ReplyAsync("¡Upa! No pude procesar la venta, intentá de nuevo en un momento.");
         }
     }
@@ -125,8 +131,9 @@ public partial class TextCommandModule
             var player = await userRepository.GetOrCreateUserAsync(Context.User.Id);
             await ReplyAsync(embed: await ForgeModule.BuildRecipesEmbed(recipeRepository, zoneRepository, player.Class, player.CurrentZoneId));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await ReplyAsync("No pude cargar las recetas ahora mismo, intentá de nuevo en un momento.");
         }
     }
@@ -142,8 +149,9 @@ public partial class TextCommandModule
             var result = await ForgeModule.ExecuteMakeAsync(userRepository, recipeRepository, craftingRepository, Context.User.Id, item);
             await ReplyAsync(result.PlainMessage, embed: result.Embed);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await ReplyAsync("¡Upa! Algo falló en la herrería, intentá de nuevo en un momento.");
         }
     }
@@ -159,8 +167,9 @@ public partial class TextCommandModule
             var result = await EquipModule.ExecuteEquipAsync(userRepository, itemRepository, inventoryRepository, Context.User.Id, item);
             await ReplyAsync(result.PlainMessage, embed: result.Embed);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await ReplyAsync("¡Upa! No pude equipar ese ítem, intentá de nuevo en un momento.");
         }
     }
@@ -176,8 +185,9 @@ public partial class TextCommandModule
             var embed = await TavernModule.ExecuteHealAsync(userRepository, inventoryRepository, combatSessions, Context.User.Id);
             await ReplyAsync(embed: embed);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await ReplyAsync("¡Upa! No pude procesar la curación, intentá de nuevo en un momento.");
         }
     }
@@ -194,8 +204,9 @@ public partial class TextCommandModule
             var result = await UseModule.ExecuteUseAsync(userRepository, itemRepository, inventoryRepository, combatSessions, Context.User.Id, item);
             await ReplyAsync(result.PlainMessage, embed: result.Embed);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await ReplyAsync("¡Upa! No pude usar ese ítem, intentá de nuevo en un momento.");
         }
     }
@@ -211,8 +222,9 @@ public partial class TextCommandModule
             var result = await CasinoModule.ExecutePlayAsync(userRepository, casinoRepository, casinoService, Context.User.Id, game, apuesta, lado);
             await ReplyAsync(result.PlainMessage, embed: result.Embed);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await ReplyAsync("¡Upa! Algo falló en el casino, intentá de nuevo en un momento.");
         }
     }

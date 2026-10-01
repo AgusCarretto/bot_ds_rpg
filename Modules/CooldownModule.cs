@@ -2,6 +2,7 @@ using BotDsRpg.GameData;
 using BotDsRpg.Repositories;
 using Discord;
 using Discord.Interactions;
+using BotDsRpg.Services;
 
 public class CooldownModule(ICooldownRepository cooldownRepository, IUserRepository userRepository)
     : InteractionModuleBase<SocketInteractionContext>
@@ -16,8 +17,9 @@ public class CooldownModule(ICooldownRepository cooldownRepository, IUserReposit
             var embed = await BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id);
             await FollowupAsync(embed: embed, ephemeral: true);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
             await FollowupAsync("No pude consultar tus cooldowns ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
         }

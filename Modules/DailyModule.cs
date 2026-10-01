@@ -3,6 +3,7 @@ using BotDsRpg.Models;
 using BotDsRpg.Repositories;
 using Discord;
 using Discord.Interactions;
+using BotDsRpg.Services;
 
 public class DailyModule(IUserRepository userRepository, IProgressionRepository progressionRepository) : InteractionModuleBase<SocketInteractionContext>
 {
@@ -28,8 +29,9 @@ public class DailyModule(IUserRepository userRepository, IProgressionRepository 
 
             await FollowupAsync(embed: BuildResultEmbed(calculation, outcome.Result!));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
             await FollowupAsync("¡Upa! No pude procesar tu recompensa diaria, intentá de nuevo en un momento.", ephemeral: true);
         }

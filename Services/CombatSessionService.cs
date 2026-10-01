@@ -82,7 +82,17 @@ public sealed class CombatSessionService(IUserRepository userRepository) : IComb
                 // unidades reales de base — ver CombatState.ToDbHpDelta.
                 int hpDelta = session.State.ToDbHpDelta(session.State.PlayerCurrentHp - session.State.PlayerStartingHp);
                 await userRepository.ApplyCombatHpDeltaAsync(discordId, hpDelta);
+            }
+            catch (Exception ex)
+            {
+                // Falló la base: el HP perdido en la pelea NO quedó guardado. Esto sí es un error (antes se tragaba
+                // junto con el de editar el mensaje y nadie se enteraba).
+                BotLog.Error(ex);
+                return;
+            }
 
+            try
+            {
                 var embed = new EmbedBuilder()
                     .WithTitle("💨 Combate abandonado")
                     .WithDescription(
@@ -93,10 +103,11 @@ public sealed class CombatSessionService(IUserRepository userRepository) : IComb
 
                 await session.ReplyTarget.UpdateAsync(embed, new ComponentBuilder().Build());
             }
-            catch
+            catch (Exception ex)
             {
                 // Si ya no se puede editar el mensaje (token vencido, mensaje borrado, etc.)
                 // no hay nada más que hacer; el HP ya quedó persistido arriba en cualquier caso.
+                BotLog.Warn(ex);
             }
         }, token);
     }

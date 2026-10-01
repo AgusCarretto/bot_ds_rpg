@@ -8,6 +8,7 @@ using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 class Program
 {
@@ -20,6 +21,18 @@ class Program
 
     static async Task Main(string[] args)
     {
+        BotLog.Info($"Asado y Acero RPG v{BotVersion.Current} arrancando...");
+
+        // Red de seguridad: lo que no pasa por ningún try/catch (una tarea en segundo plano, un evento del gateway)
+        // se registra en vez de morir en silencio — en Railway los logs son lo único que hay para mirar.
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            BotLog.ErrorIn("Excepción sin manejar", e.ExceptionObject as Exception ?? new Exception(e.ExceptionObject?.ToString()));
+        TaskScheduler.UnobservedTaskException += (_, e) =>
+        {
+            BotLog.ErrorIn("Tarea en segundo plano con excepción sin observar", e.Exception);
+            e.SetObserved();
+        };
+
         // 1. Cargamos configuración: .env local (gitignored) -> User Secrets -> variables de entorno reales.
         //    Nunca hardcodear el token ni la cadena de conexión acá ni en ningún archivo trackeado por git.
         if (File.Exists(".env"))
@@ -81,6 +94,10 @@ class Program
         // 3. Inyectamos dependencias
         _services = ServiceProviderBuilder.BuildServiceProvider(_client, _commands, configuration);
 
+        // Falla rápido y claro si la base no está o no tiene el esquema: sin esto el bot se conecta a Discord igual y
+        // CADA comando responde "¡Upa! Algo falló" sin que se vea el motivo.
+        await EnsureDatabaseAsync();
+
         // 4. Registramos los eventos del sistema
         _client.Log += LogAsync;
         _commands.Log += LogAsync;
@@ -90,11 +107,92 @@ class Program
         _client.MessageReceived += HandleTextMessageAsync;
 
         // 5. Nos logueamos y arrancamos el bot
-        await _client.LoginAsync(TokenType.Bot, token);
-        await _client.StartAsync();
+        var connected = new TaskCompletionSource();
+        _client.Ready += () =>
+        {
+            connected.TrySetResult();
+            return Task.CompletedTask;
+        };
 
-        // Mantenemos la aplicación corriendo
-        await Task.Delay(Timeout.Infinite);
+        try
+        {
+            await _client.LoginAsync(TokenType.Bot, token);
+            await _client.StartAsync();
+        }
+        catch (Exception ex)
+        {
+            BotLog.ErrorIn("No pude iniciar sesión en Discord. Revisá Discord__Token", ex);
+            Environment.Exit(1);
+        }
+
+        // Con un token inválido o un intent privilegiado sin activar, Discord.Net solo loguea el error y se queda
+        // reintentando para siempre: el proceso parece vivo pero no responde. En un servidor eso es lo peor (nadie se
+        // entera), así que si no llegó a conectarse en 90 s se corta con un mensaje claro y el host lo muestra como caído.
+        if (await Task.WhenAny(connected.Task, Task.Delay(TimeSpan.FromSeconds(90))) != connected.Task)
+        {
+            BotLog.ErrorIn(
+                "El bot no llegó a conectarse a Discord en 90 segundos",
+                new TimeoutException(
+                    "Revisá Discord__Token y que estén activados los intents 'Message Content' y 'Server Members' " +
+                    "(Developer Portal > Bot > Privileged Gateway Intents)."));
+            Environment.Exit(1);
+        }
+
+        // Mantenemos la aplicación corriendo hasta que pidan apagarla: Ctrl+C en local o SIGTERM cuando Railway
+        // redespliega. Así el bot se desconecta de Discord prolijo (aparece offline al instante) en vez de que lo maten.
+        using var shutdown = new CancellationTokenSource();
+        Console.CancelKeyPress += (_, e) =>
+        {
+            e.Cancel = true;
+            shutdown.Cancel();
+        };
+        using var sigterm = PosixSignalRegistration.Create(PosixSignal.SIGTERM, context =>
+        {
+            context.Cancel = true;
+            shutdown.Cancel();
+        });
+
+        try
+        {
+            await Task.Delay(Timeout.Infinite, shutdown.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            // Pedido de apagado: seguimos para cerrar la sesión de Discord.
+        }
+
+        BotLog.Info("Apagando el bot...");
+        await _client.StopAsync();
+        await _client.LogoutAsync();
+    }
+
+    // La base tiene que estar accesible y con el esquema cargado (Database/run_fresh_install.sql); si no, se corta el
+    // arranque con un mensaje que dice qué hacer. Muestra host y base, nunca la contraseña.
+    private static async Task EnsureDatabaseAsync()
+    {
+        try
+        {
+            var factory = _services.GetRequiredService<IDbConnectionFactory>();
+            await using var connection = factory.CreateConnection();
+            await connection.OpenAsync();
+
+            await using var command = connection.CreateCommand();
+            command.CommandText = "SELECT COUNT(*) FROM zones";
+            int zones = Convert.ToInt32(await command.ExecuteScalarAsync());
+
+            BotLog.Info($"Base de datos OK ({connection.DataSource} / {connection.Database}), {zones} zonas cargadas.");
+            if (zones == 0)
+            {
+                BotLog.Info("ATENCIÓN: la base está vacía. Falta correr Database/run_fresh_install.sql (ver DEPLOY.md).");
+            }
+        }
+        catch (Exception ex)
+        {
+            BotLog.ErrorIn(
+                "No pude usar la base de datos al arrancar. Revisá Postgres__ConnectionString y que el esquema esté cargado " +
+                "(Database/run_fresh_install.sql, ver DEPLOY.md)", ex);
+            Environment.Exit(1);
+        }
     }
 
     private static Task LogAsync(LogMessage message)
@@ -163,7 +261,7 @@ class Program
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[EXCEPCIÓN] {ex.Message}");
+            BotLog.Error(ex);
             if (interaction.Type == InteractionType.ApplicationCommand)
             {
                 try
@@ -222,7 +320,7 @@ class Program
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[EXCEPCIÓN COMANDO DE TEXTO] {ex.Message}");
+            BotLog.Error(ex);
         }
     }
 

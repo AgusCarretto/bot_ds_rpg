@@ -1,5 +1,6 @@
 using Discord;
 using Discord.Interactions;
+using BotDsRpg.Services;
 
 // Contenido puramente informativo (sin DB, sin estado): /tutorial explica el core loop del juego
 // para retener a jugadores nuevos justo después de /start (ver OnboardingModule), /info es la
@@ -15,8 +16,9 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
         {
             await RespondAsync(embed: BuildTutorialEmbed());
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             // Si algo inesperado ocurre, avisamos sin tirar abajo el bot.
             await RespondAsync("No pude cargar el tutorial ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
         }
@@ -30,8 +32,9 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
         {
             await RespondAsync(embed: BuildInfoEmbed());
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await RespondAsync("No pude cargar la ayuda ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
         }
     }
@@ -82,6 +85,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "🛠️ Utilidad",
                 "`/start` — Empezar tu aventura\n`/class` — Elegir/cambiar de clase\n`/profile` — Ver tu ficha\n`/inventory` — Ver tu inventario\n`/cd` — Ver tus cooldowns\n`/tutorial` — Este loop básico\n`/info` — Esta lista de comandos",
                 false)
+            .WithFooter($"Asado y Acero RPG v{BotVersion.Current}")
             .Build();
     }
 }

@@ -2,6 +2,7 @@ using BotDsRpg.GameData;
 using BotDsRpg.Repositories;
 using Discord;
 using Discord.Interactions;
+using BotDsRpg.Services;
 
 public class EquipModule(IUserRepository userRepository, IItemRepository itemRepository, IInventoryRepository inventoryRepository)
     : InteractionModuleBase<SocketInteractionContext>
@@ -27,8 +28,9 @@ public class EquipModule(IUserRepository userRepository, IItemRepository itemRep
                 await FollowupAsync(embed: result.Embed);
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
             await FollowupAsync("¡Upa! No pude equipar ese ítem, intentá de nuevo en un momento.", ephemeral: true);
         }

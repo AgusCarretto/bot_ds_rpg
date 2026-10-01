@@ -58,8 +58,9 @@ public partial class TextCommandModule
 
             RaidModule.ScheduleLobbyTimeout(session, raidSessions, adventureRepository);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await ReplyAsync("¡Upa! No pude armar el raid ahora mismo, intentá de nuevo en un momento.");
         }
     }
@@ -77,8 +78,9 @@ public partial class TextCommandModule
             var result = await AutoHuntModule.ExecuteAsync(adventureRepository, userRepository, itemRepository, combatStarter, Context.User.Id);
             await ReplyAsync(result.PlainMessage, embed: result.Embed);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await ReplyAsync("¡Upa! Algo falló en la auto-cacería, intentá de nuevo en un momento.");
         }
     }
@@ -129,8 +131,9 @@ public partial class TextCommandModule
                 await ReplyAsync(AdventureModule.BuildAlreadyInCombatMessage());
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
             await ReplyAsync("¡Upa! Algo falló iniciando tu aventura, intentá de nuevo en un momento.");
         }

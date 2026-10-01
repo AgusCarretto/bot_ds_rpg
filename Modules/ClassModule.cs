@@ -2,6 +2,7 @@ using BotDsRpg.GameData;
 using BotDsRpg.Repositories;
 using Discord;
 using Discord.Interactions;
+using BotDsRpg.Services;
 
 // Requiere estar registrado (chequeo centralizado en Program.cs): /start es la única forma
 // de crear la cuenta la primera vez, /class queda para re-elegir clase una vez que ya existís.
@@ -74,8 +75,9 @@ public class ClassModule(IUserRepository userRepository) : InteractionModuleBase
                 props.Components = new ComponentBuilder().Build(); // saca los botones tras elegir
             });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             // Si la base falla, avisamos sin tirar abajo el bot.
             await FollowupAsync("No pude guardar tu clase, intentá de nuevo en un momento.", ephemeral: true);
         }

@@ -1,6 +1,7 @@
 using BotDsRpg.Repositories;
 using Discord;
 using Discord.Interactions;
+using BotDsRpg.Services;
 
 public class LeaderboardModule(IUserRepository userRepository) : InteractionModuleBase<SocketInteractionContext>
 {
@@ -18,8 +19,9 @@ public class LeaderboardModule(IUserRepository userRepository) : InteractionModu
             var embed = await BuildLeaderboardEmbedAsync(userRepository);
             await FollowupAsync(embed: embed);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
             await FollowupAsync("No pude cargar el ranking ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
         }

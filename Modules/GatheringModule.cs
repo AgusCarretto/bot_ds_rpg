@@ -3,6 +3,7 @@ using BotDsRpg.Models;
 using BotDsRpg.Repositories;
 using Discord;
 using Discord.Interactions;
+using BotDsRpg.Services;
 
 public class GatheringModule(
     ICooldownRepository cooldownRepository,
@@ -63,8 +64,9 @@ public class GatheringModule(
 
             await FollowupAsync(embed: BuildResultEmbed(definition, item, quantity));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
             await FollowupAsync("¡Upa! Algo falló procesando la recolección, intentá de nuevo en un momento.", ephemeral: true);
         }

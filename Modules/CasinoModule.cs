@@ -30,8 +30,9 @@ public class CasinoModule(IUserRepository userRepository, ICasinoRepository casi
             var result = await ExecutePlayAsync(userRepository, casinoRepository, casinoService, Context.User.Id, game, bet, lado);
             await FollowupAsync(result.PlainMessage, embed: result.Embed, ephemeral: result.Embed is null);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
             await FollowupAsync("¡Upa! Algo falló en el casino, intentá de nuevo en un momento.", ephemeral: true);
         }

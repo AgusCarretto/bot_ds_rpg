@@ -6,6 +6,7 @@ using Discord;
 using Discord.Interactions;
 using Discord.Rest;
 using Discord.WebSocket;
+using BotDsRpg.Services;
 
 public class GameModule(IUserRepository userRepository, IInventoryRepository inventoryRepository, IItemRepository itemRepository, IZoneRepository zoneRepository)
     : InteractionModuleBase<SocketInteractionContext>
@@ -34,8 +35,9 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
             var embed = await BuildProfileEmbedAsync(userRepository, itemRepository, zoneRepository, target.Id, GetDisplayName(target), target.GetAvatarUrl() ?? target.GetDefaultAvatarUrl());
             await FollowupAsync(embed: embed);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             // Si la base falla o está saturada, avisamos sin tirar abajo el bot.
             await FollowupAsync("¡Upa! No pude acceder a ese perfil ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
         }
@@ -119,8 +121,9 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
             var embed = await BuildInventoryEmbedAsync(inventoryRepository, target.Id, GetDisplayName(target));
             await FollowupAsync(embed: embed);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            BotLog.Error(ex);
             await FollowupAsync("No pude consultar ese inventario ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
         }
     }
