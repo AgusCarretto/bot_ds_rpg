@@ -71,6 +71,6 @@ public partial class ShopModule
             }
         }
 
-        return embed.Build();
+        return NpcImages.Decorate(embed.Build(), NpcImages.Shopkeeper);
     }
 }

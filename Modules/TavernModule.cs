@@ -37,6 +37,11 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
     // exactamente la misma lógica en "aa heal".
     public static async Task<Embed> ExecuteHealAsync(
         IUserRepository userRepository, IInventoryRepository inventoryRepository, ICombatSessionService combatSessions,
+        IBuffRepository buffRepository, ulong discordId) =>
+        NpcImages.Decorate(await ExecuteHealCoreAsync(userRepository, inventoryRepository, combatSessions, buffRepository, discordId), NpcImages.Innkeeper);
+
+    private static async Task<Embed> ExecuteHealCoreAsync(
+        IUserRepository userRepository, IInventoryRepository inventoryRepository, ICombatSessionService combatSessions,
         IBuffRepository buffRepository, ulong discordId)
     {
         if (combatSessions.Peek(discordId) is not null)

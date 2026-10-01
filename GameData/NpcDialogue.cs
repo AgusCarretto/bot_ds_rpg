@@ -209,10 +209,16 @@ public static class NpcDialogue
 }
 
 // Imágenes de los personajes. No se pueden guardar en el repo (el bot no hospeda archivos): se ponen como URL en el .env
-// (Images__Blacksmith=https://...). Sin URL el personaje se muestra igual, solo con su texto.
+// (Images__Blacksmith / Images__Innkeeper / Images__Shopkeeper = https://...). Sin URL el personaje se muestra igual, solo con su texto.
 public static class NpcImages
 {
     public static string? Blacksmith => Read("Images__Blacksmith");
+    public static string? Innkeeper => Read("Images__Innkeeper");
+    public static string? Shopkeeper => Read("Images__Shopkeeper");
+
+    // Le pone la imagen del personaje a un embed ya armado (como miniatura), o lo devuelve igual si no hay imagen configurada.
+    public static Discord.Embed Decorate(Discord.Embed embed, string? imageUrl) =>
+        imageUrl is null ? embed : Discord.EmbedBuilderExtensions.ToEmbedBuilder(embed).WithThumbnailUrl(imageUrl).Build();
 
     private static string? Read(string key)
     {
