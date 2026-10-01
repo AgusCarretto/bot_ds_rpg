@@ -1,4 +1,5 @@
 using BotDsRpg.GameData;
+using BotDsRpg.Models;
 using BotDsRpg.Repositories;
 using BotDsRpg.Services;
 using Discord;
@@ -39,7 +40,7 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
     // Comando barra: /shop sell
     [SlashCommand("sell", "Vendé ítems de tu inventario a cambio de oro.")]
     public async Task HandleSellAsync(
-        [Summary("item", "Nombre del ítem que querés vender.")] string itemName,
+        [Summary("item", "Elegí de la lista lo que querés vender.")] [Autocomplete(typeof(SellItemAutocompleteHandler))] string itemName,
         [Summary("cantidad", "Cuántos querés vender (por defecto 1).")] int quantity = 1)
     {
         await DeferAsync();
@@ -108,8 +109,37 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
         // Si es la primera vez que este usuario ejecuta un comando, se crea acá con los valores por defecto.
         await userRepository.GetOrCreateUserAsync(discordId);
 
+        // Las cajas se compran de a una y una vez por hora (CooldownCatalog.BoxBuy): un freno a cuántas entran al juego. Se avisa ANTES de
+        // tocar nada, así pedir 5 no gasta el cooldown. La comida no tiene límite.
+        if (item.Type == "Caja" && quantity > ShopCatalog.BoxesPerPurchase)
+        {
+            return new ShopActionResult(
+                $"Las cajas se compran **de a {ShopCatalog.BoxesPerPurchase}** y una compra por hora: pedí **{ItemDisplay.Format(item.Emoji, item.Name)}** con cantidad {ShopCatalog.BoxesPerPurchase}.", null);
+        }
+
         int totalCost = item.BuyPrice * quantity;
-        var buyer = await shopRepository.BuyItemAsync(discordId, item.ItemId, quantity, totalCost);
+        User? buyer;
+        if (item.Type == "Caja")
+        {
+            var cooldownDefinition = CooldownCatalog.BoxBuy;
+            var outcome = await shopRepository.BuyItemWithCooldownAsync(
+                discordId, item.ItemId, quantity, totalCost, cooldownDefinition.CommandName, cooldownDefinition.Duration);
+
+            if (outcome.CooldownRemaining is { } wait)
+            {
+                return new ShopActionResult(null, new EmbedBuilder()
+                    .WithTitle($"{cooldownDefinition.Emoji} Ya compraste una caja hace poco")
+                    .WithDescription($"Las cajas se compran de a una y **una vez por hora**. Te falta **{TimeFormat.Remaining(wait)}** para comprar otra.")
+                    .WithColor(Color.DarkGrey)
+                    .Build());
+            }
+
+            buyer = outcome.Buyer;
+        }
+        else
+        {
+            buyer = await shopRepository.BuyItemAsync(discordId, item.ItemId, quantity, totalCost);
+        }
 
         if (buyer is null)
         {

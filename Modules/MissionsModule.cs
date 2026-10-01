@@ -186,7 +186,7 @@ public class MissionsModule(
         {
             string left = UruguayCalendar.FormatRemaining(state.EndUtc - utcNow);
             string title = state.Period == MissionPeriod.Daily ? $"☀️ Diarias — se reinician en {left}" : $"📅 Semanales — se reinician en {left}";
-            embed.AddField(title, string.Join('\n', FieldLines(state)));
+            embed.AddField(title, string.Join("\n\n", FieldLines(state)));
         }
 
         int claimable = states.Sum(s => s.ClaimableCount);

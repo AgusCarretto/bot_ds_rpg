@@ -7,7 +7,7 @@ using BotDsRpg.Services;
 public class CooldownModule(ICooldownRepository cooldownRepository, IUserRepository userRepository)
     : InteractionModuleBase<SocketInteractionContext>
 {
-    [SlashCommand("cd", "Mostrá el estado de tus cooldowns (cazar, viajar, talar, minar y diario).")]
+    [SlashCommand("cd", "Mostrá el estado de tus cooldowns (cazar, viajar, talar, minar, comprar cajas y diario).")]
     public async Task HandleCooldownsAsync()
     {
         await DeferAsync(ephemeral: true);

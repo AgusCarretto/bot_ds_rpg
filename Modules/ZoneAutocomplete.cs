@@ -56,18 +56,15 @@ public static class ZoneChoices
         || (!string.IsNullOrWhiteSpace(typed) && zone.ZoneId.ToString().StartsWith(typed.Trim(), StringComparison.Ordinal));
 }
 
-public sealed class ZoneAutocompleteHandler : AutocompleteHandler
+public sealed class ZoneAutocompleteHandler : SafeAutocompleteHandler
 {
-    public override async Task<AutocompletionResult> GenerateSuggestionsAsync(
-        IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+    protected override async Task<IReadOnlyList<AutocompleteResult>> BuildAsync(ulong userId, string typed, IServiceProvider services)
     {
-        string typed = autocompleteInteraction.Data.Current.Value?.ToString() ?? string.Empty;
-
         // GetByDiscordIdAsync (no GetOrCreate): abrir una lista no tiene que crearle cuenta a nadie.
-        var player = await services.GetRequiredService<IUserRepository>().GetByDiscordIdAsync(context.User.Id);
+        var player = await services.GetRequiredService<IUserRepository>().GetByDiscordIdAsync(userId);
         if (player is null)
         {
-            return AutocompletionResult.FromSuccess([]);
+            return [];
         }
 
         var zones = await services.GetRequiredService<IZoneRepository>().GetAllAsync();
@@ -86,6 +83,6 @@ public sealed class ZoneAutocompleteHandler : AutocompleteHandler
             }
         }
 
-        return AutocompletionResult.FromSuccess(ZoneChoices.For(zones, player, bossNames, typed));
+        return ZoneChoices.For(zones, player, bossNames, typed);
     }
 }

@@ -146,12 +146,12 @@ public class AchievementsModule(
             .WithDescription("Cada logro tiene tres tramos. ✅ cobrado · 🎁 listo para reclamar · 🔒 todavía no. Cuentan desde que se activó el registro de eventos.");
 
         int half = (rows.Count + 1) / 2;
-        embed.AddField("Logros", string.Join('\n', rows.Take(half).Select(Line)));
+        embed.AddField("Logros", string.Join("\n\n", rows.Take(half).Select(Line)));
         if (rows.Count > half)
         {
             // Discord no deja un campo con el nombre vacío: se usa un espacio de ancho cero (U+200B) para que la segunda columna no
             // lleve título. Va como número y no escrito, porque ese carácter es invisible en el código.
-            embed.AddField(((char)0x200B).ToString(), string.Join('\n', rows.Skip(half).Select(Line)));
+            embed.AddField(((char)0x200B).ToString(), string.Join("\n\n", rows.Skip(half).Select(Line)));
         }
 
         int claimable = rows.Sum(r => r.ClaimableTiers.Count);

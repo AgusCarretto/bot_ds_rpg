@@ -48,6 +48,73 @@ public sealed class ShopRepository(IDbConnectionFactory connectionFactory) : ISh
         }
     }
 
+    public async Task<CooldownBuyOutcome> BuyItemWithCooldownAsync(
+        ulong discordId, int itemId, int quantity, int totalCost, string cooldownCommand, TimeSpan cooldownDuration,
+        CancellationToken cancellationToken = default)
+    {
+        using DbConnection connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        using DbTransaction transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            // El cooldown va PRIMERO: si todavía no se puede comprar, el jugador tiene que enterarse de eso (y no de que le falta oro).
+            // La guarda es el upsert de siempre: con el cooldown vigente no devuelve fila y no cambia nada.
+            if (!await CooldownGuard.TryClaimAsync(connection, transaction, discordId, cooldownCommand, cooldownDuration, cancellationToken))
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new CooldownBuyOutcome(null, await RemainingAsync(connection, discordId, cooldownCommand, cooldownDuration, cancellationToken));
+            }
+
+            string deductGoldSql = $"""
+                UPDATE users
+                SET gold = gold - @TotalCost
+                WHERE discord_id = @DiscordId AND gold >= @TotalCost
+                RETURNING {UserSql.SelectColumns};
+                """;
+
+            var buyer = await connection.QuerySingleOrDefaultAsync<User>(new CommandDefinition(
+                deductGoldSql,
+                new { DiscordId = (long)discordId, TotalCost = totalCost },
+                transaction: transaction,
+                cancellationToken: cancellationToken));
+
+            if (buyer is null)
+            {
+                // Sin oro: se descarta TODO, incluida la marca del cooldown que se acaba de reclamar.
+                await transaction.RollbackAsync(cancellationToken);
+                return new CooldownBuyOutcome(null, null);
+            }
+
+            await InventoryUpsert.AddItemAsync(connection, transaction, discordId, itemId, quantity, cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
+            return new CooldownBuyOutcome(buyer, null);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
+
+    // Cuánto falta para que venza el cooldown (null si ya venció). Se lee DESPUÉS del rollback, con la fila que dejó la compra anterior.
+    private static async Task<TimeSpan?> RemainingAsync(
+        DbConnection connection, ulong discordId, string commandName, TimeSpan duration, CancellationToken cancellationToken)
+    {
+        DateTime? last = await connection.QuerySingleOrDefaultAsync<DateTime?>(new CommandDefinition(
+            "SELECT last_executed_at FROM cooldowns WHERE discord_id = @DiscordId AND command_name = @CommandName;",
+            new { DiscordId = (long)discordId, CommandName = commandName }, cancellationToken: cancellationToken));
+
+        if (last is null)
+        {
+            return null;
+        }
+
+        var remaining = duration - (DateTime.UtcNow - DateTime.SpecifyKind(last.Value, DateTimeKind.Utc));
+        return remaining > TimeSpan.Zero ? remaining : TimeSpan.FromSeconds(1);
+    }
+
     public async Task<User?> SellItemAsync(ulong discordId, int itemId, int quantity, int totalRefund, CancellationToken cancellationToken = default)
     {
         using DbConnection connection = connectionFactory.CreateConnection();

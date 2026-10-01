@@ -3,6 +3,10 @@
 --
 --   psql -U postgres -d asado-y-acero -P pager=off -v ph=0.10 -v pt=0.20 -v pb=0.15 -f report_recipe_pacing.sql
 --
+-- wc / wr / we / wl / wm (opcionales) son las chances de rareza de /chop y /mine (Común, Raro, Épico, Legendario, Mítico) en
+-- fracción: por defecto las de GameData/RarityCatalog (hoy 0.680 / 0.210 / 0.070 / 0.035 / 0.005). Sirven para probar "qué pasa si
+-- cambio las probabilidades" antes de tocarlas: -v wc=0.60 -v wr=0.25 -v we=0.10 -v wl=0.045 -v wm=0.005 (las de hasta la v0.6.0).
+--
 -- ph / pt / pb son las chances de drop de /hunt, /travel y del jefe: tienen que ser las de
 -- GameData/CombatRewardCalculator (HuntDropChancePercent, TravelDropChancePercent, BossDropChancePercent) en
 -- fracción. Hay que correrlo CADA VEZ que se toque una de esas chances, un monstruo, un drop, el rendimiento de
@@ -18,6 +22,27 @@
 -- Referencia de la run 1 (hunt 10% / travel 20% / jefe 15%): armas de afinidad, amuletos bajos y general de zonas 2-5
 -- ~80-100 min de drops; amuleto alto (con drop de jefe) ~200.
 -- =========================================================
+\if :{?wc}
+\else
+    \set wc 0.680
+\endif
+\if :{?wr}
+\else
+    \set wr 0.210
+\endif
+\if :{?we}
+\else
+    \set we 0.070
+\endif
+\if :{?wl}
+\else
+    \set wl 0.035
+\endif
+\if :{?wm}
+\else
+    \set wm 0.005
+\endif
+
 WITH hunt_n AS (
     SELECT zone_id, COUNT(*) AS n FROM monsters WHERE NOT is_boss AND NOT is_travel GROUP BY zone_id
 ), src AS (
@@ -34,7 +59,7 @@ WITH hunt_n AS (
     FROM src s LEFT JOIN hunt_n h USING (zone_id) GROUP BY s.item_id
 ), weights (rarity, weight, avg_yield) AS (
     -- Mantener sincronizado con RarityCatalog.GatheringWeights y GameData/GatheringYield.
-    VALUES ('Común', 0.600, 3.0), ('Raro', 0.250, 2.0), ('Épico', 0.100, 2.0), ('Legendario', 0.045, 1.0), ('Mítico', 0.005, 1.0)
+    VALUES ('Común', :wc, 3.0), ('Raro', :wr, 2.0), ('Épico', :we, 2.0), ('Legendario', :wl, 1.0), ('Mítico', :wm, 1.0)
 ), gather_rate AS (
     -- Unidades por minuto de UN ítem de recolección (un /chop o /mine cada 5 min; el ítem sale con la probabilidad de
     -- su rareza repartida entre los ítems de esa rareza y ese tipo).

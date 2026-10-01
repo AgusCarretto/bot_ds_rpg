@@ -15,5 +15,10 @@ public static class CooldownCatalog
     // alguien quiere reintentar el loot, pero no gratis.
     public static readonly CooldownDefinition Boss = new("boss", "Jefe", "👑", TimeSpan.FromMinutes(30));
 
-    public static readonly IReadOnlyList<CooldownDefinition> All = [Hunt, Travel, Chop, Mine, Boss];
+    // Comprar una caja en /shop: una compra por hora, y cada compra es de UNA caja (ShopCatalog.BoxesPerPurchase). Es un freno al
+    // ritmo con que entran cajas al juego; el cooldown se cobra SOLO si la compra sale bien (si falta oro no se gasta). Para cambiar
+    // cada cuánto se puede comprar, la duración de acá abajo es el único lugar.
+    public static readonly CooldownDefinition BoxBuy = new("buybox", "Comprar caja", "📦", TimeSpan.FromHours(1));
+
+    public static readonly IReadOnlyList<CooldownDefinition> All = [Hunt, Travel, Chop, Mine, Boss, BoxBuy];
 }

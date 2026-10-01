@@ -15,7 +15,8 @@ public sealed class InventoryRepository(IDbConnectionFactory connectionFactory) 
                    i.type     AS "Type",
                    i.rarity   AS "Rarity",
                    inv.quantity AS "Quantity",
-                   i.emoji    AS "Emoji"
+                   i.emoji    AS "Emoji",
+                   i.sell_price AS "SellPrice"
             FROM inventory inv
             JOIN items i ON i.item_id = inv.item_id
             WHERE inv.discord_id = @DiscordId

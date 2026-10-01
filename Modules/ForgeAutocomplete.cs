@@ -71,25 +71,22 @@ public static class ForgeChoices
     }
 }
 
-public sealed class ForgeAutocompleteHandler : AutocompleteHandler
+public sealed class ForgeAutocompleteHandler : SafeAutocompleteHandler
 {
-    public override async Task<AutocompletionResult> GenerateSuggestionsAsync(
-        IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+    protected override async Task<IReadOnlyList<AutocompleteResult>> BuildAsync(ulong userId, string typed, IServiceProvider services)
     {
-        string typed = autocompleteInteraction.Data.Current.Value?.ToString() ?? string.Empty;
-
         // GetByDiscordIdAsync (no GetOrCreate): abrir una lista no tiene que crearle cuenta a nadie.
-        var player = await services.GetRequiredService<IUserRepository>().GetByDiscordIdAsync(context.User.Id);
+        var player = await services.GetRequiredService<IUserRepository>().GetByDiscordIdAsync(userId);
         if (player is null)
         {
-            return AutocompletionResult.FromSuccess([]);
+            return [];
         }
 
         var recipes = await services.GetRequiredService<IRecipeRepository>().GetAllAsync();
         var zones = await services.GetRequiredService<IZoneRepository>().GetAllAsync();
-        var inventory = await services.GetRequiredService<IInventoryRepository>().GetByDiscordIdAsync(context.User.Id);
+        var inventory = await services.GetRequiredService<IInventoryRepository>().GetByDiscordIdAsync(userId);
         var owned = inventory.ToDictionary(entry => entry.ItemName, entry => entry.Quantity);
 
-        return AutocompletionResult.FromSuccess(ForgeChoices.For(recipes, zones, player, owned, typed));
+        return ForgeChoices.For(recipes, zones, player, owned, typed);
     }
 }

@@ -36,6 +36,19 @@ la base real con usuarios descartables y recién ahí integrada a `develop`.
   Matajefes III y Coleccionista III. Cobrar es atómico: 20 cobros simultáneos de lo mismo pagan una sola vez. Los trofeos de las
   cajas pasaron a contar en una **colección** (distintos, no repetidos) que alimenta el logro Coleccionista, y `/abrir` avisa cuáles son nuevos.
   Los logros cuentan desde que se activó el registro de eventos, no antes.
+- **Ajustes después de probarlo** (2026-10-01): (1) **Probabilidades de `/chop` y `/mine`**: lo común sube de 60 % a 68 % y lo demás
+  baja (Raro 25 → 21, Épico 10 → 7, Legendario 4,5 → 3,5; el Mítico queda en 0,5). Están en una sola tabla, `RarityCatalog.GatheringWeights`
+  (en milésimos), y el reporte `report_recipe_pacing.sql` acepta `-v wc= wr= we= wl= wm=` para probar un escenario antes de aplicarlo.
+  **Costo medido**: 23 de las 35 recetas tardan más (el tiempo medio sube ~16 %, la que más 43 %) porque dependen de Hierro, Nogal,
+  Oro Puro, Ébano o Zafiro; las que dependen de drops de monstruo no cambian. El Hierro pasa de 12,5 % a 10,5 % por `/mine`
+  (el cuello de botella conocido ahora es ~19 % más lento: el Hacha de Hierro MK3 de ~200 a ~238 min). Si se siente muy lento, subir
+  Raro en esa tabla. (2) **Cajas: una por compra y una compra por hora** (`CooldownCatalog.BoxBuy`, `ShopCatalog.BoxesPerPurchase`); sale en
+  `/cd` y el cooldown solo se gasta si la compra sale bien (sin oro no se gasta); la comida no tiene límite. (3) **Tiempos con días y
+  horas** en `/cd` y en todos los avisos de cooldown (`TimeFormat.Remaining`: "2d 3h 5m", "1h 5m 10s", "4m 20s"). (4) **Listas
+  desplegables** también en `/shop sell` y `/use` (ya estaban en `/shop buy`, `/equip`, `/abrir`, `/forge make` y `/zona`), y todas
+  heredan de `SafeAutocompleteHandler`: si armar la lista falla, queda en el log y se devuelve vacía en vez de romperse. (5) El nombre
+  de un ítem ya no distingue mayúsculas, tildes **ni espacios sobrantes** (`"Mate Amargo "` fallaba). (6) Misiones y logros con una línea en
+  blanco entre cada una.
 - **A mirar jugando (calibración)**: las 3 diarias valen ~15 cacerías de oro + una caja de la zona y las 2 semanales ~90 + una caja
   mayor. A un jugador que juega poco le suma mucho (rinde más cuanto menos jugás: es a propósito, para que vuelvan) y a uno que juega horas
   le suma ~10-15%. Si el oro sobra de más, se bajan las unidades en `GameData/MissionCatalog.cs` (sin tocar la base).

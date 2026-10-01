@@ -30,7 +30,8 @@ public sealed class ItemRepository(IDbConnectionFactory connectionFactory) : IIt
         // ver Database/add_unaccent_extension.sql): "jabali" tiene que encontrar "Jabalí" sin
         // que el jugador tenga que escribir el acento desde el celular. NO usar ILIKE acá,
         // porque el nombre lo escribe el usuario y podría contener '%' o '_' (comodines de LIKE)
-        // sin querer decir eso.
+        // sin querer decir eso. Tampoco cuentan los espacios de los costados (Discord y el celular los
+        // dejan colar: "Mate Amargo " tiene que comprar igual que "Mate Amargo").
         string sql = $"""
             SELECT {ItemSql.SelectColumns}
             FROM items i
@@ -39,7 +40,7 @@ public sealed class ItemRepository(IDbConnectionFactory connectionFactory) : IIt
             """;
 
         using IDbConnection connection = connectionFactory.CreateConnection();
-        var command = new CommandDefinition(sql, new { Name = name }, cancellationToken: cancellationToken);
+        var command = new CommandDefinition(sql, new { Name = name.Trim() }, cancellationToken: cancellationToken);
         return await connection.QuerySingleOrDefaultAsync<Item>(command);
     }
 

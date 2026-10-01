@@ -84,59 +84,104 @@ public static class ItemChoices
             .ToList();
     }
 
+    // Lo que el jugador TIENE y se puede vender (los premios no: sell_price 0), lo que más plata deja arriba. "c/u" porque /shop sell
+    // vende por unidad y el jugador elige cuántas.
+    public static IReadOnlyList<AutocompleteResult> ForSell(IEnumerable<InventoryEntry> inventory, string typed)
+    {
+        return inventory
+            .Where(e => e.Quantity > 0 && e.SellPrice > 0 && AutocompleteText.FitsAsValue(e.ItemName) && Matches(e.ItemName, typed))
+            .OrderBy(e => Relevance(e.ItemName, typed))
+            .ThenByDescending(e => (long)e.SellPrice * e.Quantity)
+            .ThenBy(e => e.ItemName, StringComparer.Ordinal)
+            .Take(MaxChoices)
+            .Select(e => new AutocompleteResult(
+                Truncate($"{e.ItemName} — tenés {e.Quantity} · {e.SellPrice} oro c/u ({e.Rarity})"), e.ItemName))
+            .ToList();
+    }
+
+    // La comida que el jugador TIENE, la que más cura arriba (igual que el desplegable del combate). Los banquetes avisan su buff.
+    public static IReadOnlyList<AutocompleteResult> ForUse(
+        IEnumerable<OwnedItem> owned, IReadOnlyDictionary<int, ItemBuff>? buffs, string typed)
+    {
+        return owned
+            .Where(o => o.Item.Type == "Consumable" && o.Quantity > 0 && FitsAsValue(o.Item) && Matches(o.Item.Name, typed))
+            .OrderBy(o => Relevance(o.Item.Name, typed))
+            .ThenByDescending(o => o.Item.StatValue)
+            .ThenBy(o => o.Item.Name, StringComparer.Ordinal)
+            .Take(MaxChoices)
+            .Select(o =>
+            {
+                string buffText = buffs is not null && buffs.TryGetValue(o.Item.ItemId, out var buff) ? $" y +{buff.AttackPercent}% ATQ" : string.Empty;
+                return new AutocompleteResult(Truncate($"{o.Item.Name} — cura {o.Item.StatValue} HP{buffText} · tenés {o.Quantity}"), o.Item.Name);
+            })
+            .ToList();
+    }
+
     private static int EffectiveStat(Item item, string playerClass) =>
         item.Type == "Weapon" ? ClassWeaponSynergy.ApplyBonus(item.StatValue, playerClass, item.WeaponFamily) : item.StatValue;
 }
 
-// Lista de /shop buy: los consumibles de la tienda, con cuánto curan y cuánto cuestan.
-public sealed class BuyItemAutocompleteHandler : AutocompleteHandler
+// Lista de /shop buy: lo que se vende (comida y cajas), con cuánto cura / qué caja es y cuánto cuesta.
+public sealed class BuyItemAutocompleteHandler : SafeAutocompleteHandler
 {
-    public override async Task<AutocompletionResult> GenerateSuggestionsAsync(
-        IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+    protected override async Task<IReadOnlyList<AutocompleteResult>> BuildAsync(ulong userId, string typed, IServiceProvider services)
     {
-        string typed = autocompleteInteraction.Data.Current.Value?.ToString() ?? string.Empty;
-
         var catalog = await ShopModule.LoadShopItemsAsync(services.GetRequiredService<IItemRepository>());
         // GetByDiscordIdAsync (no GetOrCreate): abrir una lista no tiene que crearle cuenta a nadie.
-        var player = await services.GetRequiredService<IUserRepository>().GetByDiscordIdAsync(context.User.Id);
-
+        var player = await services.GetRequiredService<IUserRepository>().GetByDiscordIdAsync(userId);
         var buffs = await services.GetRequiredService<IBuffRepository>().GetItemBuffsAsync();
 
-        return AutocompletionResult.FromSuccess(ItemChoices.ForBuy(catalog, player?.Gold, typed, buffs));
+        return ItemChoices.ForBuy(catalog, player?.Gold, typed, buffs);
+    }
+}
+
+// Lista de /shop sell: lo que el jugador TIENE y se puede vender, con cuántos y a cuánto se paga cada uno.
+public sealed class SellItemAutocompleteHandler : SafeAutocompleteHandler
+{
+    protected override async Task<IReadOnlyList<AutocompleteResult>> BuildAsync(ulong userId, string typed, IServiceProvider services)
+    {
+        var inventory = await services.GetRequiredService<IInventoryRepository>().GetByDiscordIdAsync(userId);
+        return ItemChoices.ForSell(inventory, typed);
+    }
+}
+
+// Lista de /use: la comida que el jugador TIENE, con cuánto cura (y el buff de los banquetes) y cuántas le quedan.
+public sealed class UseItemAutocompleteHandler : SafeAutocompleteHandler
+{
+    protected override async Task<IReadOnlyList<AutocompleteResult>> BuildAsync(ulong userId, string typed, IServiceProvider services)
+    {
+        var owned = await services.GetRequiredService<IInventoryRepository>().GetOwnedByTypeAsync(userId, "Consumable");
+        var buffs = await services.GetRequiredService<IBuffRepository>().GetItemBuffsAsync();
+
+        return ItemChoices.ForUse(owned, buffs, typed);
     }
 }
 
 // Lista de /equip: las armas y amuletos del inventario que el jugador puede usar.
-public sealed class EquipItemAutocompleteHandler : AutocompleteHandler
+public sealed class EquipItemAutocompleteHandler : SafeAutocompleteHandler
 {
-    public override async Task<AutocompletionResult> GenerateSuggestionsAsync(
-        IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+    protected override async Task<IReadOnlyList<AutocompleteResult>> BuildAsync(ulong userId, string typed, IServiceProvider services)
     {
-        string typed = autocompleteInteraction.Data.Current.Value?.ToString() ?? string.Empty;
-
-        var player = await services.GetRequiredService<IUserRepository>().GetByDiscordIdAsync(context.User.Id);
+        var player = await services.GetRequiredService<IUserRepository>().GetByDiscordIdAsync(userId);
         if (player is null)
         {
-            return AutocompletionResult.FromSuccess([]);
+            return [];
         }
 
         var inventory = services.GetRequiredService<IInventoryRepository>();
-        var weapons = await inventory.GetOwnedByTypeAsync(context.User.Id, "Weapon");
-        var amulets = await inventory.GetOwnedByTypeAsync(context.User.Id, "Amulet");
+        var weapons = await inventory.GetOwnedByTypeAsync(userId, "Weapon");
+        var amulets = await inventory.GetOwnedByTypeAsync(userId, "Amulet");
 
-        return AutocompletionResult.FromSuccess(ItemChoices.ForEquip(weapons.Concat(amulets), player, typed));
+        return ItemChoices.ForEquip(weapons.Concat(amulets), player, typed);
     }
 }
 
 // Lista de /abrir: las cajas que el jugador TIENE, con cuántas.
-public sealed class BoxAutocompleteHandler : AutocompleteHandler
+public sealed class BoxAutocompleteHandler : SafeAutocompleteHandler
 {
-    public override async Task<AutocompletionResult> GenerateSuggestionsAsync(
-        IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+    protected override async Task<IReadOnlyList<AutocompleteResult>> BuildAsync(ulong userId, string typed, IServiceProvider services)
     {
-        string typed = autocompleteInteraction.Data.Current.Value?.ToString() ?? string.Empty;
-
-        var owned = await services.GetRequiredService<IInventoryRepository>().GetOwnedByTypeAsync(context.User.Id, "Caja");
-        return AutocompletionResult.FromSuccess(ItemChoices.ForOwnedBoxes(owned, typed));
+        var owned = await services.GetRequiredService<IInventoryRepository>().GetOwnedByTypeAsync(userId, "Caja");
+        return ItemChoices.ForOwnedBoxes(owned, typed);
     }
 }

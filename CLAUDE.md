@@ -236,6 +236,9 @@ can craft *now* first (✅) and says what's missing for the rest; the zone list 
 `ZoneRanking.PendingGatekeeperZone` (the one definition of the boss-gate rule, shared with `/zona`) or it
 would promise zones the command then rejects. Handlers resolve repositories via the `IServiceProvider` argument (not constructor injection) and
 must use `GetByDiscordIdAsync`, never `GetOrCreateUserAsync` — opening a list must not create accounts.
+Every list derives from `Modules/SafeAutocompleteHandler.cs`, which logs (`BotLog.Error`) and returns an empty list if building the list
+throws, instead of letting Discord show a silent "options failed to load"; lists exist for `/shop buy`, `/shop sell`, `/use`, `/equip`,
+`/abrir`, `/forge make` and `/zona`. Item lookup by name ignores case, accents and surrounding whitespace (`ItemRepository.GetByNameAsync`).
 Text commands ("aa ...") can't have autocomplete (a Discord limitation). Discord.Net throws if an option
 value exceeds 100 chars, hence the `FitsAsValue` guard.
 
@@ -261,8 +264,11 @@ biggest) because with one heal per fight the big one is worth much more.
 Legendario/Mítico 1, times `RunMultiplier` (1 in run 1; the post-Zone-5 reset is meant to raise it). The gathered
 ingredients in the recipe seeds are ~3× (Común) / ~2× (Raro/Épico) what they used to be so the pace didn't change —
 `Database/report_recipe_pacing.sql` measures it (it covers gathering too). Keep that in sync if the yields change.
-Known bottleneck, unchanged: Hierro (12.5% per `/mine`, cooldown 5 min) makes several zone 2–4 weapons take ~150–200 min
-of mining, more than their drop farming.
+The rarity odds of `/chop` and `/mine` (first the rarity is rolled, then a uniform item among those of that type+rarity) live in ONE
+table, `RarityCatalog.GatheringWeights` (per mille): Común 68 / Raro 21 / Épico 7 / Legendario 3.5 / Mítico 0.5 (it was 60 / 25 / 10 /
+4.5 / 0.5 until v0.6.0). `report_recipe_pacing.sql` takes `-v wc= wr= we= wl= wm=` to try a scenario before applying it. Known
+bottleneck: Hierro (10.5% per `/mine`, cooldown 5 min — it shares the Raro pool with Carbón) makes several zone 2–4 weapons take
+~190–290 min of mining, more than their drop farming.
 
 **Readable embeds**: `/forge recipes` shows ONE recipe per field (item + stat, gold, one ingredient per line) and
 `/drops` sends one embed per zone (a field per fight type, two short lines per monster). Both were single walls of text
@@ -338,7 +344,10 @@ RETURNING` the claim mark (concurrent claims pay once — tested with 20 paralle
 box in the same transaction; a reward that names a box that doesn't exist throws and rolls everything back instead of marking it
 paid. Rewards are `RewardSpec` units that scale with the claimer's zone rank (`GameData/MissionRewards.cs`: gold = N × the gold of one
 hunt in that zone — 14/58/118/215/375, the same unit the box prices use; XP = a % of the current level's requirement; boxes follow the
-zone ladder). The Mythic box (Arca del Soberano) is paid only by the tier-III achievements Matajefes and Coleccionista — it holds the
+zone ladder). Boxes are bought **one per purchase and one purchase per hour** (`CooldownCatalog.BoxBuy` in `/cd`, `ShopCatalog.BoxesPerPurchase`;
+`ShopRepository.BuyItemWithCooldownAsync` claims the cooldown, spends the gold and adds the box in ONE transaction, so a purchase that
+fails for lack of gold never burns the cooldown); food has no limit. Cooldown times are shown with days/hours/minutes
+(`GameData/TimeFormat.Remaining`, the one formatter for every cooldown message). The Mythic box (Arca del Soberano) is paid only by the tier-III achievements Matajefes and Coleccionista — it holds the
 very-long-term goals and must stay unbuyable. Achievements count from the day event tracking went live (v0.6), not before. The
 "¡Misión completada!" / "¡Logro desbloqueado!" notices come from `Services/ProgressNotifier.cs`, called by `GameEventService` right
 after each saved event: it compares the counter before and after the event, so it fires exactly when a goal is crossed and stores

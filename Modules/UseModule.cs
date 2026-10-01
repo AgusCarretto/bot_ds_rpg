@@ -17,7 +17,7 @@ public class UseModule(
 {
     // Comando barra: /use
     [SlashCommand("use", "Usá un consumible de tu inventario para curar HP (funciona incluso en combate, sin gastar oro).")]
-    public async Task HandleUseAsync([Summary("item", "Nombre del consumible que querés usar.")] string itemName)
+    public async Task HandleUseAsync([Summary("item", "Elegí de la lista la comida que querés usar.")] [Autocomplete(typeof(UseItemAutocompleteHandler))] string itemName)
     {
         await DeferAsync();
 
