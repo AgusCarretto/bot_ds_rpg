@@ -208,21 +208,65 @@ public static class NpcDialogue
     public static IReadOnlyCollection<string> KnownBosses => BossLines.Keys;
 }
 
-// Imágenes de los personajes. No se pueden guardar en el repo (el bot no hospeda archivos): se ponen como URL en el .env
-// (Images__Blacksmith / Images__Innkeeper / Images__Shopkeeper = https://...). Sin URL el personaje se muestra igual, solo con su texto.
+// La imagen de un personaje. Reference es lo que va en el embed: una URL, o "attachment://archivo.jpg" si la imagen viaja como adjunto
+// del mismo mensaje (LocalPath = el archivo a adjuntar).
+public sealed record NpcImage(string Reference, string? LocalPath);
+
+// Imágenes de los personajes. De dónde salen, en este orden: (1) una URL en el .env (Images__Blacksmith / Images__Innkeeper /
+// Images__Shopkeeper = https://...), que gana si está; (2) el archivo que viene con el bot en Assets/npc/ (blacksmith.jpg, innkeeper.jpg),
+// que se ADJUNTA al mensaje: así no hace falta hospedar nada (los links de adjuntos de Discord vencen al día o dos, por eso no sirven
+// como URL). Sin ninguna de las dos el personaje se muestra igual, solo con su texto. Son chicas (256x256) para que cada mensaje suba
+// unos 25 KB.
 public static class NpcImages
 {
-    public static string? Blacksmith => Read("Images__Blacksmith");
-    public static string? Innkeeper => Read("Images__Innkeeper");
-    public static string? Shopkeeper => Read("Images__Shopkeeper");
+    public static NpcImage? Blacksmith => Find("Images__Blacksmith", "blacksmith.jpg");
+    public static NpcImage? Innkeeper => Find("Images__Innkeeper", "innkeeper.jpg");
+    public static NpcImage? Shopkeeper => Find("Images__Shopkeeper", null);
 
-    // Le pone la imagen del personaje a un embed ya armado (como miniatura), o lo devuelve igual si no hay imagen configurada.
-    public static Discord.Embed Decorate(Discord.Embed embed, string? imageUrl) =>
-        imageUrl is null ? embed : Discord.EmbedBuilderExtensions.ToEmbedBuilder(embed).WithThumbnailUrl(imageUrl).Build();
-
-    private static string? Read(string key)
+    private static NpcImage? Find(string urlKey, string? fileName)
     {
-        string? value = Environment.GetEnvironmentVariable(key);
-        return !string.IsNullOrWhiteSpace(value) && Uri.IsWellFormedUriString(value, UriKind.Absolute) ? value : null;
+        string? url = Environment.GetEnvironmentVariable(urlKey);
+        if (!string.IsNullOrWhiteSpace(url) && Uri.IsWellFormedUriString(url, UriKind.Absolute))
+        {
+            return new NpcImage(url, null);
+        }
+
+        if (fileName is null)
+        {
+            return null;
+        }
+
+        string path = Path.Combine(AppContext.BaseDirectory, "Assets", "npc", fileName);
+        return File.Exists(path) ? new NpcImage($"attachment://{fileName}", path) : null;
+    }
+
+    // Le pone la imagen del personaje a un embed ya armado (como miniatura), o lo devuelve igual si no hay imagen.
+    public static Discord.Embed Decorate(Discord.Embed embed, NpcImage? image) =>
+        image is null ? embed : Discord.EmbedBuilderExtensions.ToEmbedBuilder(embed).WithThumbnailUrl(image.Reference).Build();
+
+    // Si el embed lleva una imagen local (attachment://), el archivo que hay que mandar JUNTO con el mensaje; null si no hace falta.
+    public static string? AttachmentPathFor(Discord.Embed embed)
+    {
+        string? url = embed.Thumbnail?.Url;
+        if (url is null || !url.StartsWith("attachment://", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        return new[] { Blacksmith, Innkeeper, Shopkeeper }.FirstOrDefault(image => image?.Reference == url)?.LocalPath;
+    }
+
+    // Manda el embed al canal, con su imagen adjunta si la tiene (comandos de texto).
+    public static async Task SendAsync(Discord.IMessageChannel channel, Discord.Embed embed, Discord.MessageComponent? components = null)
+    {
+        string? file = AttachmentPathFor(embed);
+        if (file is null)
+        {
+            await channel.SendMessageAsync(embed: embed, components: components);
+        }
+        else
+        {
+            await channel.SendFileAsync(file, embed: embed, components: components);
+        }
     }
 }

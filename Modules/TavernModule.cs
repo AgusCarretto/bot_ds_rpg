@@ -22,7 +22,14 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
         try
         {
             var embed = await ExecuteHealAsync(userRepository, inventoryRepository, combatSessions, buffRepository, Context.User.Id);
-            await FollowupAsync(embed: embed);
+            if (NpcImages.AttachmentPathFor(embed) is { } file)
+            {
+                await FollowupWithFileAsync(file, embed: embed);
+            }
+            else
+            {
+                await FollowupAsync(embed: embed);
+            }
         }
         catch (Exception ex)
         {

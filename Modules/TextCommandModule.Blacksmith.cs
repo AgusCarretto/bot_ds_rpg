@@ -1,3 +1,4 @@
+using BotDsRpg.GameData;
 using BotDsRpg.Services;
 using Discord.Commands;
 
@@ -13,7 +14,7 @@ public partial class TextCommandModule
         try
         {
             var scene = await BlacksmithModule.BuildSceneAsync(userRepository, recipeRepository, zoneRepository, inventoryRepository, Context.User.Id, null);
-            await ReplyAsync(embed: scene.Embed, components: scene.Components);
+            await NpcImages.SendAsync(Context.Channel, scene.Embed, scene.Components);
         }
         catch (Exception ex)
         {

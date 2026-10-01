@@ -187,7 +187,7 @@ public partial class TextCommandModule
         try
         {
             var embed = await TavernModule.ExecuteHealAsync(userRepository, inventoryRepository, combatSessions, buffRepository, Context.User.Id);
-            await ReplyAsync(embed: embed);
+            await NpcImages.SendAsync(Context.Channel, embed);
         }
         catch (Exception ex)
         {

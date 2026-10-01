@@ -10,6 +10,11 @@
     <Version>0.6.0</Version>
   </PropertyGroup>
 
+  <!-- Las imágenes de los personajes (Assets/npc) viajan con el bot, tanto en dotnet run como en el publish de Docker. -->
+  <ItemGroup>
+    <Content Include="Assets\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.79" />
     <PackageReference Include="Discord.Net" Version="3.20.1" />

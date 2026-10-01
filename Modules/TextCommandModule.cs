@@ -39,6 +39,7 @@ public partial class TextCommandModule(
     IAchievementRepository achievementRepository,
     ITradeOfferService tradeOffers,
     IGameEventRepository gameEventRepository,
+    IFarmAdvisor farmAdvisor,
     IGameEvents gameEvents) : ModuleBase<SocketCommandContext>
 {
     // ---- Onboarding / clase ----

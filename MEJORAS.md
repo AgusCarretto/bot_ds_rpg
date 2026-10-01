@@ -49,6 +49,13 @@ la base real con usuarios descartables y recién ahí integrada a `develop`.
   heredan de `SafeAutocompleteHandler`: si armar la lista falla, queda en el log y se devuelve vacía en vez de romperse. (5) El nombre
   de un ítem ya no distingue mayúsculas, tildes **ni espacios sobrantes** (`"Mate Amargo "` fallaba). (6) Misiones y logros con una línea en
   blanco entre cada una.
+- **Fotos del herrero y el tabernero, "qué farmear" y minieventos** (2026-10-01): (1) Las fotos (256x256, ~25 KB) viajan con el bot en `Assets/npc/` y se adjuntan al
+  mensaje como miniatura (`/blacksmith`, `/heal`): no hace falta hospedar nada; una URL en `Images__*` del `.env` gana si está. (2) **Consejo de qué farmear**: después de
+  `/chop`, `/mine` y de ganar un `/hunt`, `/travel` o `/boss`, un campo "💡 Para tu próxima forja" dice qué receta tenés más cerca, qué te falta (hasta 2 cosas) y con
+  qué comando se consigue; si ya podés forjar algo te manda al herrero. (3) **Minievento al azar**: después de un comando, con 3 % de chance (máximo uno cada 30
+  min por canal) aparece "a un minero se le cayó una bolsa de piedras" (o leña, o plata) con un botón; quienes lo tocan en 15 segundos se llevan una recompensa chica
+  que **crece con la cantidad de personas** (piedra/madera: 2 + 2 por persona, tope 10; plata: tantas cacerías de oro de tu zona como personas). Para probarlo:
+  `MiniEvent__ChancePercent=100` y `MiniEvent__ChannelCooldownMinutes=0` en el `.env` (aparece uno en cada comando).
 - **Inventario en columnas y recetas con "tenés X de Y"** (2026-10-01): `/inventory` ahora va en columnas con aire entre filas: Recolección (primero toda la madera y
   después la piedra y los minerales, por tipo) junto a Drops de monstruo, después Armas | Amuletos y Comida | Cajas; sin la rareza escrita en cada renglón. `/forge
   recipes` muestra por ingrediente cuánto tenés de cuánto hace falta (✅/❌) y el oro también.

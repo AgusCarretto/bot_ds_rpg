@@ -376,12 +376,30 @@ keyed by the boss name in the DB; a boss without its own lines gets generic ones
 at random from its table (inject a `Random` to test), always formatted `emoji **Name:** «line»`. To add dialogue, add lines to a table;
 a new character is an enum + a table. Every table must keep ≥2 distinct lines (a test checks it). `/blacksmith` (`aa herrero`,
 `Modules/BlacksmithModule.cs`) is a scene: the blacksmith greets (with his picture if `Images__Blacksmith` is set in the `.env` to a public
-image URL — the bot hosts no files — otherwise text only) and a select menu lists the player's zone recipes (✅ craftable / ❌ what's
+image URL — the bot hosts no files — otherwise text only; see "NPC images ship with the bot" below) and a select menu lists the player's zone recipes (✅ craftable / ❌ what's
 missing, the same `ForgeChoices` the `/forge make` autocomplete uses); picking one runs EXACTLY `ForgeModule.ExecuteMakeAsync`, so
 validations, the atomic charge and the craft event are shared, and the menu is rebuilt after each order. `/forge make|recipes` stay as the
 direct commands. The select menu's custom id carries the owner id so nobody else can use your conversation. Boss victory text depends on
 whether it was the FIRST clear of that zone's boss (`highest_zone_cleared` is read *before* applying the victory): the first time it
 announces the next zone opens; every later kill says "¡Volviste a ganarle!" and never claims an advance.
+
+**"What should I farm?" advice (`GameData/FarmAdvisor.cs`, `Services/FarmAdviceService.cs`)** — after `/chop`, `/mine` and every `/hunt`, `/travel` and `/boss`
+victory the result embed gets a "💡 Para tu próxima forja" field: of the recipes the player sees (same `RecipeCatalog.ViewFor` as the blacksmith) it
+picks the most advanced one (or says "you can forge X now" and points at `/blacksmith`), lists at most 2 missing ingredients and the command that
+yields each (`/chop`, `/mine`, or `/hunt`/`/travel`/`/boss` according to which monster of that zone drops it) and the gold shortfall. The choice is pure
+(`FarmAdvisor.Choose`); the service only gathers data and caches the near-static parts (recipes, zones, monsters, gatherable item names) for 5 minutes. It
+NEVER throws (an advice is an extra: any failure returns null). Skipped in `/autohunt` on purpose (it would spam).
+
+**Mini-event (`Services/MiniEventService.cs`, `GameData/MiniEvents.cs`, `Modules/MiniEventModule.cs`)** — after a slash or text command in a guild channel, with
+a small chance (default 3%, at most one per channel every 30 min, one open at a time) the bot posts "a miner dropped a bag of stones / a woodcutter's bundle
+came loose / a traveller's pocket tore" with a "¡Juntar!" button; whoever clicks within ~15 s joins once, then every participant gets a SMALL reward that
+**grows with the number of participants** (stones/wood: 2 units + 2 per extra person, cap 10 people; silver: N "hunts of gold" of the player's own zone).
+Same concurrency idea as the raid: state mutated under a lock with no `await`, the window closes inside the lock (no late joins, no double pay), payment
+(`IMiniEventRepository.PayAsync`, one transaction per participant) happens outside it; in-memory, a restart just makes the button say "ya terminó".
+Tunable by env vars (`MiniEvent__ChancePercent`, `MiniEvent__ChannelCooldownMinutes`, `MiniEvent__JoinSeconds`); to test it set chance 100 and cooldown 0.
+
+**NPC images ship with the bot**: `Assets/npc/blacksmith.jpg` and `innkeeper.jpg` (256x256, ~25 KB; `Assets/**` is copied to the output and the publish)
+are attached to the message as `attachment://file.jpg` (the embed's thumbnail), so nothing has to be hosted; an `Images__*` URL in the `.env` wins if set.
 
 **Autoritative source for "how much SQL debt does this repo have right now"**: `MEJORAS.md` at the
 repo root. Read it before assuming the schema in `Database/schema.sql` is what's actually running

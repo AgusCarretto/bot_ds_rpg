@@ -237,6 +237,12 @@ class Program
         }
     }
 
+    // Le da al servicio de minieventos la forma de publicar en este canal. No espera ni propaga errores (MaybeSpawnAsync ya los registra).
+    private static Task SpawnMiniEventAsync(IMessageChannel channel) =>
+        _services.GetRequiredService<IMiniEventService>().MaybeSpawnAsync(
+            channel.Id,
+            async (embed, buttons) => new DiscordEventAnnouncement(await channel.SendMessageAsync(embed: embed, components: buttons)));
+
     // Entrega los avisos pendientes de un jugador (ver Services/IGameEvents.cs). Un aviso que no se pueda mandar (el canal ya no
     // existe, el token venció) se registra y se descarta: nunca tira abajo el comando que ya salió bien.
     private static async Task DeliverNoticesAsync(ulong userId, Func<string, bool, Task> send)
@@ -283,6 +289,12 @@ class Program
                 await DeliverNoticesAsync(
                     interaction.User.Id,
                     async (text, isPublic) => await interaction.FollowupAsync(text, ephemeral: !isPublic));
+            }
+
+            // Con poca probabilidad, después de un comando en un servidor puede aparecer un minievento en ese canal (ver Services/MiniEventService.cs).
+            if (interaction is SocketSlashCommand && interaction.GuildId is not null && interaction.Channel is { } eventChannel)
+            {
+                _ = SpawnMiniEventAsync(eventChannel);
             }
         }
         catch (Exception ex)
@@ -346,6 +358,11 @@ class Program
 
             // Los avisos que dejó el comando (misión completada, logro): en texto no hay mensajes privados, salen en el canal.
             await DeliverNoticesAsync(message.Author.Id, async (text, _) => await message.Channel.SendMessageAsync(text));
+
+            if (message.Channel is SocketGuildChannel)
+            {
+                _ = SpawnMiniEventAsync(message.Channel);
+            }
         }
         catch (Exception ex)
         {
@@ -484,6 +501,9 @@ public static class ServiceProviderBuilder
             .AddSingleton<IAchievementRepository, AchievementRepository>()
             .AddSingleton<IProgressNotifier, ProgressNotifier>()
             .AddSingleton<ITradeOfferService, TradeOfferService>()
+            .AddSingleton<IFarmAdvisor, FarmAdviceService>()
+            .AddSingleton<IMiniEventRepository, MiniEventRepository>()
+            .AddSingleton<IMiniEventService, MiniEventService>()
             .AddSingleton<IGameEvents, GameEventService>()
             .AddSingleton<IShopRepository, ShopRepository>()
             .AddSingleton<ICraftingRepository, CraftingRepository>()

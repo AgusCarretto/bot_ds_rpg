@@ -4,7 +4,8 @@ using BotDsRpg.Services;
 using Discord;
 using Discord.Interactions;
 
-public sealed record BlacksmithScene(Embed Embed, MessageComponent? Components);
+// AttachmentPath: el archivo de la imagen del herrero que hay que adjuntar al mensaje (null si no hay imagen o es una URL).
+public sealed record BlacksmithScene(Embed Embed, MessageComponent? Components, string? AttachmentPath = null);
 
 // /blacksmith (aa blacksmith / aa herrero): hablás con el herrero en una escena en vez de tipear comandos. Aparece con su imagen
 // (si hay una configurada, ver NpcImages) y te pregunta qué necesitás; elegís de la lista desplegable (✅ = ya tenés todo, ❌ = te falta
@@ -26,7 +27,14 @@ public class BlacksmithModule(
         try
         {
             var scene = await BuildSceneAsync(userRepository, recipeRepository, zoneRepository, inventoryRepository, Context.User.Id, null);
-            await FollowupAsync(embed: scene.Embed, components: scene.Components);
+            if (scene.AttachmentPath is { } file)
+            {
+                await FollowupWithFileAsync(file, embed: scene.Embed, components: scene.Components);
+            }
+            else
+            {
+                await FollowupAsync(embed: scene.Embed, components: scene.Components);
+            }
         }
         catch (Exception ex)
         {
@@ -87,17 +95,13 @@ public class BlacksmithModule(
         var owned = inventory.ToDictionary(entry => entry.ItemName, entry => entry.Quantity);
         var choices = ForgeChoices.For(recipes, zones, player, owned, string.Empty);
 
-        string? imageUrl = NpcImages.Blacksmith;
+        var image = NpcImages.Blacksmith;
         EmbedBuilder embed;
 
         if (after?.Embed is { } result)
         {
             // La respuesta del herrero a lo último que le pediste (ya trae su frase: forjado, o "andá a farmear").
             embed = result.ToEmbedBuilder();
-            if (imageUrl is not null)
-            {
-                embed.WithThumbnailUrl(imageUrl);
-            }
         }
         else
         {
@@ -106,15 +110,18 @@ public class BlacksmithModule(
                     ? NpcDialogue.Blacksmith(BlacksmithLine.NoRecipes)
                     : $"{NpcDialogue.Blacksmith(BlacksmithLine.Greeting)}\n\n_✅ lo que ya podés forjar · ❌ lo que todavía te falta (te digo qué)_");
             embed = new EmbedBuilder().WithTitle("⚒️ La Herrería").WithColor(Color.Orange).WithDescription(talk);
-            if (imageUrl is not null)
-            {
-                embed.WithImageUrl(imageUrl);
-            }
+        }
+
+        // La foto del herrero va de miniatura en toda la charla (el mensaje conserva el adjunto cuando se edita).
+        if (image is not null)
+        {
+            embed.WithThumbnailUrl(image.Reference);
         }
 
         if (choices.Count == 0)
         {
-            return new BlacksmithScene(embed.Build(), null);
+            var plain = embed.Build();
+            return new BlacksmithScene(plain, null, NpcImages.AttachmentPathFor(plain));
         }
 
         embed.WithFooter("Elegí otra cosa de la lista cuando quieras.");
@@ -129,6 +136,7 @@ public class BlacksmithModule(
             menu.AddOption(choice.Name, choice.Value.ToString()!);
         }
 
-        return new BlacksmithScene(embed.Build(), new ComponentBuilder().WithSelectMenu(menu).Build());
+        var built = embed.Build();
+        return new BlacksmithScene(built, new ComponentBuilder().WithSelectMenu(menu).Build(), NpcImages.AttachmentPathFor(built));
     }
 }

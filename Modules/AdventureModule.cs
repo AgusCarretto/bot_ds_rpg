@@ -13,7 +13,8 @@ public class AdventureModule(
     ICombatSessionService combatSessions,
     IAdventureCombatStarter combatStarter,
     IGameEvents gameEvents,
-    IBuffRepository buffRepository) : InteractionModuleBase<SocketInteractionContext>
+    IBuffRepository buffRepository,
+    IFarmAdvisor farmAdvisor) : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("hunt", "Salí a cazar monstruos cercanos (cooldown de 1 minuto).")]
     public Task HandleHuntAsync() =>
@@ -258,9 +259,12 @@ public class AdventureModule(
                     finalState.CommandName switch { "travel" => GameEventKinds.TravelWin, "boss" => GameEventKinds.BossWin, _ => GameEventKinds.HuntWin },
                     outcome);
 
+                // Qué le conviene farmear a continuación (se calcula DESPUÉS de aplicar la victoria: ya cuenta lo que acaba de ganar).
+                var advice = await farmAdvisor.AdviceAsync(Context.User.Id);
+
                 await ModifyOriginalResponseAsync(props =>
                 {
-                    props.Embed = BuildVictoryEmbed(finalState, turn, reward, droppedItem, outcome, firstBossClear);
+                    props.Embed = BuildVictoryEmbed(finalState, turn, reward, droppedItem, outcome, firstBossClear, advice);
                     props.Components = new ComponentBuilder().Build();
                 });
                 return;
@@ -546,7 +550,8 @@ public class AdventureModule(
     }
 
     private static Embed BuildVictoryEmbed(
-        CombatState state, TurnResult turn, CombatReward reward, Item? droppedItem, LevelUpOutcome outcome, bool firstBossClear = true)
+        CombatState state, TurnResult turn, CombatReward reward, Item? droppedItem, LevelUpOutcome outcome, bool firstBossClear = true,
+        FarmAdvice? advice = null)
     {
         var player = outcome.Player;
 
@@ -577,6 +582,12 @@ public class AdventureModule(
                 ? "¡Se abrió el camino! Ya podés avanzar a la próxima zona con `/zona`."
                 : "¡Volviste a ganarle! El camino a la próxima zona ya lo tenías abierto.";
             embed.AddField("👑 ¡Jefe de Zona derrotado!", $"{NpcDialogue.Boss(state.MonsterName, state.MonsterEmoji, NpcDialogue.BossLine.Defeated)}\n\n{zoneLine}", false);
+        }
+
+        if (advice is not null)
+        {
+            var (adviceTitle, adviceValue) = FarmAdvisor.ToField(advice);
+            embed.AddField(adviceTitle, adviceValue, false);
         }
 
         return embed.Build();
