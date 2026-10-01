@@ -29,10 +29,6 @@ public partial class ShopModule
         }
     }
 
-    // " + ⚔️ +15% ATQ 30 min" para los banquetes, nada para el resto de la comida.
-    private static string BuffText(Item item, IReadOnlyDictionary<int, ItemBuff>? buffs) =>
-        buffs is not null && buffs.TryGetValue(item.ItemId, out var buff) ? $" + ⚔️ +{buff.AttackPercent}% ATQ {buff.Minutes} min" : string.Empty;
-
     // Todo lo que se vende (comida y cajas con precio de compra), listo para mostrar. Compartido con "aa shop view".
     public static async Task<IReadOnlyList<Item>> LoadShopItemsAsync(IItemRepository itemRepository)
     {
@@ -45,8 +41,11 @@ public partial class ShopModule
         return items.Where(ShopCatalog.IsForSale).ToList();
     }
 
-    // Público para que Modules/TextCommandModule.cs arme el mismo embed en "aa shop view". Primero la comida y después las cajas,
-    // cada grupo de menor a mayor rareza.
+    // Público para que Modules/TextCommandModule.cs arme el mismo embed en "aa shop view".
+    //
+    // Limpio a propósito: dos columnas (Comida | Cajas), cada ítem con SU emoji si lo tiene y el nombre, y debajo qué hace y cuánto cuesta, con
+    // una línea en blanco entre ítems. Sin la rareza escrita ("[Común]"), sin emojis de adorno en cada dato y sin el precio de venta (para
+    // saber a cuánto se vende algo está la lista de /shop sell, que lo dice por cada ítem que tenés).
     public static Embed BuildViewEmbed(IReadOnlyList<Item> items, IReadOnlyDictionary<int, ItemBuff>? buffs = null)
     {
         var embed = new EmbedBuilder()
@@ -56,21 +55,36 @@ public partial class ShopModule
         if (items.Count == 0)
         {
             embed.WithDescription("No hay nada en la tienda todavía.");
+            return embed.Build();
         }
-        else
-        {
-            embed.WithDescription(NpcDialogue.Shopkeeper(ShopkeeperLine.Greeting) + "\n\n🍖 **Comida** para curarte y 📦 **cajas** con premios sorpresa (abrilas con `/open`). Las cajas se compran **de a una y una vez por hora**.");
 
-            foreach (var item in items.OrderBy(i => i.Type == "Caja" ? 1 : 0).ThenBy(i => RarityCatalog.RankOf(i.Rarity)).ThenBy(i => i.Name))
-            {
-                string detail = item.Type == "Caja"
-                    ? $"🎲 Premios sorpresa | 💰 Compra: {item.BuyPrice} Oro | 💸 Venta: {item.SellPrice} Oro"
-                    : $"❤️ Cura: {item.StatValue} HP{BuffText(item, buffs)} | 💰 Compra: {item.BuyPrice} Oro | 💸 Venta: {item.SellPrice} Oro";
+        embed.WithDescription(
+            $"{NpcDialogue.Shopkeeper(ShopkeeperLine.Greeting)}\n\n" +
+            "Las cajas se compran **de a una y una vez por hora**; abrilas con `/open`.");
 
-                embed.AddField($"[{item.Rarity}] {ItemDisplay.Format(item.Emoji, item.Name)}", detail);
-            }
-        }
+        AddColumn(embed, "Comida", items.Where(i => i.Type != "Caja"), i => $"Cura {i.StatValue} HP{BuffText(i, buffs)} · {i.BuyPrice} oro");
+        AddColumn(embed, "Cajas", items.Where(i => i.Type == "Caja"), i => $"{i.BuyPrice} oro");
 
         return NpcImages.Decorate(embed.Build(), NpcImages.Shopkeeper);
+    }
+
+    // " · +15% ATQ 30 min" para los banquetes, nada para el resto de la comida.
+    private static string BuffText(Item item, IReadOnlyDictionary<int, ItemBuff>? buffs) =>
+        buffs is not null && buffs.TryGetValue(item.ItemId, out var buff) ? $" · +{buff.AttackPercent}% ATQ {buff.Minutes} min" : string.Empty;
+
+    // De lo más barato a lo más caro (que es también de lo más común a lo más raro).
+    private static void AddColumn(EmbedBuilder embed, string title, IEnumerable<Item> items, Func<Item, string> detail)
+    {
+        var lines = items
+            .OrderBy(i => i.BuyPrice)
+            .ThenBy(i => i.Name, StringComparer.Ordinal)
+            .Select(i => $"**{ItemDisplay.Format(i.Emoji, i.Name)}**\n{detail(i)}")
+            .ToList();
+
+        if (lines.Count > 0)
+        {
+            string text = string.Join("\n\n", lines);
+            embed.AddField(title, text.Length <= 1024 ? text : text[..1023] + "…", true);
+        }
     }
 }

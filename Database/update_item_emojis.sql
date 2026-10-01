@@ -42,6 +42,13 @@ UPDATE items SET emoji = '<:cordero_epico:1545472980996456589>'   WHERE name = '
 UPDATE items SET emoji = '<:asado_mitico:1545472835537866853>'    WHERE name = 'Asado Completo del Domingo en Familia';
 UPDATE items SET emoji = '<:mate_mitico:1545472874863665214>'     WHERE name = 'Mate Dulce de la Abuela';
 
+-- 📦 Cajas (5/5): un cofre por rareza
+UPDATE items SET emoji = '<:cofre_comun:1555258322842681404>'      WHERE name = 'Cajón de Pino';
+UPDATE items SET emoji = '<:cofre_raro:1555258292157161614>'       WHERE name = 'Baúl de Roble';
+UPDATE items SET emoji = '<:cofre_epico:1555258210649374831>'      WHERE name = 'Arcón de Hierro';
+UPDATE items SET emoji = '<:cofre_legendario:1555258185357590709>' WHERE name = 'Cofre de Oro';
+UPDATE items SET emoji = '<:cofre_mitico:1555258258191548526>'     WHERE name = 'Arca del Soberano';
+
 -- 🩸 Material — drops de monstruo (0/8, pendiente)
 -- ⚔️ Weapon base + de clase (0/20, pendiente)
 -- 📿 Amulet (0/9, pendiente)

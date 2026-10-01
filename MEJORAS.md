@@ -49,6 +49,12 @@ la base real con usuarios descartables y recién ahí integrada a `develop`.
   heredan de `SafeAutocompleteHandler`: si armar la lista falla, queda en el log y se devuelve vacía en vez de romperse. (5) El nombre
   de un ítem ya no distingue mayúsculas, tildes **ni espacios sobrantes** (`"Mate Amargo "` fallaba). (6) Misiones y logros con una línea en
   blanco entre cada una.
+- **Cajas más difíciles, cofres con emoji y tienda más limpia** (2026-10-01): (1) Se recortó a la mitad la chance de lo mejor de cada caja (jackpots de oro, materiales Épicos y
+  Legendarios, trofeos) y se subió el peso del oro común. Medido con el sorteo real: el **Cofre de Oro** trae algún material Legendario en ~36 % de las aperturas (antes ~64 %), el
+  **Arcón de Hierro** uno Épico en ~50 % (antes ~70 %), y que una caja devuelva más de lo que costó pasó de 11-16 % a 6-9 %; el valor esperado quedó en 52-60 % del precio (antes
+  54-67 %). El Arca del Soberano (premio) también bajó un poco. No se tocaron los precios: si todavía parece generoso, el siguiente paso es subirlos o recortar más (los pesos
+  están en `Database/seed_boxes.sql`, que es re-ejecutable). (2) Las 5 cajas tienen su cofre por rareza (`cofre_comun` ... `cofre_mitico`). (3) `/shop view`: dos columnas
+  (Comida | Cajas), cada ítem con su emoji y una línea de detalle; sin la rareza escrita, sin emojis de adorno y sin el precio de venta.
 - **Fotos del herrero y el tabernero, "qué farmear" y minieventos** (2026-10-01): (1) Las fotos (256x256, ~25 KB) viajan con el bot en `Assets/npc/` y se adjuntan al
   mensaje como miniatura (`/blacksmith`, `/heal`): no hace falta hospedar nada; una URL en `Images__*` del `.env` gana si está. (2) **Consejo de qué farmear**: después de
   `/chop`, `/mine` y de ganar un `/hunt`, `/travel` o `/boss`, un campo "💡 Para tu próxima forja" dice qué receta tenés más cerca, qué te falta (hasta 2 cosas) y con

@@ -273,7 +273,7 @@ bottleneck: Hierro (10.5% per `/mine`, cooldown 5 min — it shares the Raro poo
 **Readable embeds** (the owner's rule: spaced out, not crowded — use blank lines and columns, not walls of text): `/inventory` is two inline columns per row
 (Recolección = Madera first, then Mineral, grouped by TYPE; next to it Drops de monstruo, i.e. `items.type = 'Material'`), then Armas | Amuletos, then
 Comida | Cajas, with a blank spacer field between rows and no rarity text per line (the item emoji, or a coloured dot, carries it);
-`/forge recipes` shows "have/need" per ingredient (✅/❌) when given the player's inventory. `/forge recipes` shows ONE recipe per field (item + stat, gold, one ingredient per line) and
+`/shop view` is two inline columns (Comida | Cajas), each item with ITS OWN emoji and a one-line detail, no rarity text and no decorative emojis; `/forge recipes` shows "have/need" per ingredient (✅/❌) when given the player's inventory. `/forge recipes` shows ONE recipe per field (item + stat, gold, one ingredient per line) and
 `/drops` sends one embed per zone (a field per fight type, two short lines per monster). Both were single walls of text
 before. Every embed built from a growing catalog must stay under Discord's 6000-character total (all embeds of a message
 count together).
@@ -315,7 +315,7 @@ verifies itself): gold with a rare jackpot, gathering materials (Hierro from the
 materials no monster drops anymore, food and lower boxes. Two rules that must keep holding: (1) shop boxes **never** give the zone
 drops used in recipes (Garra de Puma, Esencia Espectral...) — a 1000-gold box giving those would make buying ~5× faster than the
 farming the pacing was calibrated on; (2) Corteza del Árbol de Vida / Fragmento de Meteorito (the very-long-term goals) come only from
-the Mítica box, which can't be bought. Expected value of shop boxes is ~54–67% of price (a gold sink, not a business) —
+the Mítica box, which can't be bought. Expected value of shop boxes is ~52–60% of price (a gold sink, not a business), and the best outcomes are deliberately rare (v0.6.0 tuning: the Cofre de Oro has a Legendary material in ~36% of openings, the Arcón de Hierro an Epic one in ~50%, and an opening that returns more than the box cost happens 6–9% of the time) —
 `Database/report_box_economy.sql` computes it; re-run it if weights or prices change.
 
 **Food: 6 items, and the two Mítica ones are "banquetes" with an attack buff** — the catalog was cut from 9 to 6 (Pan Casero, Choripán

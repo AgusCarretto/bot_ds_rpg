@@ -18,7 +18,12 @@
 --   · y la caja Mítica (solo premio) es la ÚNICA que da lo larguísimo (Corteza del Árbol de Vida, Fragmento de Meteorito), así
 --     que no hay forma de comprar con oro esos objetivos de largo plazo.
 --
--- CALIBRACIÓN: el valor esperado (oro + lo que valdrían los ítems vendidos) de las cajas de la tienda ronda el 55-67% de su
+-- AJUSTE DE SUERTE (2026-10-01, a pedido del dueño: "salía algo muy bueno demasiado seguido"): se recortó a la mitad la chance de lo
+-- mejor de cada caja (jackpots de oro, materiales Legendarios/Épicos, trofeos) y se subió el peso del oro común. Medido con una
+-- simulación de 100.000 aperturas por caja: el Cofre de Oro trae algo Legendario en ~36% de las aperturas (antes ~64%), el Arcón
+-- de Hierro algo Épico en ~50% (antes ~70%), y devolver MÁS de lo que costó la caja pasó de 11-16% a 6-9%.
+--
+-- CALIBRACIÓN: el valor esperado (oro + lo que valdrían los ítems vendidos) de las cajas de la tienda ronda el 52-60% de su
 -- precio — es un sumidero de oro, no un negocio — y lo calcula Database/report_box_economy.sql. Si se tocan pesos o precios,
 -- volver a correrlo. Los precios de las cajas de abajo se pensaron contra el oro por cacería de la zona de cada tier
 -- (Z1 ~14, Z2 ~58, Z3 ~118, Z4 ~215, Z5 ~375): ~10-15 cacerías de oro.
@@ -51,62 +56,62 @@ INSERT INTO box_defs VALUES
 CREATE TEMP TABLE box_entries (box_name TEXT, kind TEXT, item_name TEXT, weight INTEGER, min_qty INTEGER, max_qty INTEGER);
 INSERT INTO box_entries VALUES
 -- Cajón de Pino (Común): lo básico, con el Hierro como anzuelo y un jackpot chico
-('Cajón de Pino', 'gold', NULL, 36,  40,  90),
+('Cajón de Pino', 'gold', NULL, 80,  40,  90),
 ('Cajón de Pino', 'gold', NULL,  3, 160, 300),
-('Cajón de Pino', 'item', 'Madera de Pino',          12, 3, 6),
-('Cajón de Pino', 'item', 'Piedra',                  12, 3, 6),
+('Cajón de Pino', 'item', 'Madera de Pino',          26, 3, 6),
+('Cajón de Pino', 'item', 'Piedra',                  26, 3, 6),
 ('Cajón de Pino', 'item', 'Hierro',                   3, 1, 1),
-('Cajón de Pino', 'item', 'Mate Amargo',              6, 1, 1),
-('Cajón de Pino', 'item', 'Collar de Cuero Viejo',    2, 1, 1),
-('Cajón de Pino', 'item', 'Cuero Curtido de Pradera', 2, 1, 1),
-('Cajón de Pino', 'item', 'Pelaje Oscuro',            2, 1, 1),
-('Cajón de Pino', 'item', 'Piedra Caliente',          2, 1, 1),
-('Cajón de Pino', 'item', 'Tela Rasgada',             2, 1, 1),
+('Cajón de Pino', 'item', 'Mate Amargo',             12, 1, 1),
+('Cajón de Pino', 'item', 'Collar de Cuero Viejo',    3, 1, 1),
+('Cajón de Pino', 'item', 'Cuero Curtido de Pradera', 3, 1, 1),
+('Cajón de Pino', 'item', 'Pelaje Oscuro',            3, 1, 1),
+('Cajón de Pino', 'item', 'Piedra Caliente',          3, 1, 1),
+('Cajón de Pino', 'item', 'Tela Rasgada',             3, 1, 1),
 -- Baúl de Roble (Raro): materiales de zona 2, comida y la caja de abajo
-('Baúl de Roble', 'gold', NULL, 34,  120,  260),
-('Baúl de Roble', 'gold', NULL,  3,  700, 1200),
-('Baúl de Roble', 'item', 'Madera de Roble',  10, 2, 4),
-('Baúl de Roble', 'item', 'Carbón',            8, 2, 4),
-('Baúl de Roble', 'item', 'Hierro',            8, 2, 4),
-('Baúl de Roble', 'item', 'Empanada de Carne', 6, 1, 1),
-('Baúl de Roble', 'item', 'Cajón de Pino',     6, 1, 1),
-('Baúl de Roble', 'item', 'Corona de Cerdas',  2, 1, 1),
-('Baúl de Roble', 'item', 'Garra Maldita',     2, 1, 1),
-('Baúl de Roble', 'item', 'Hueso Añejo',       2, 1, 1),
-('Baúl de Roble', 'item', 'Rama Carbonizada',  2, 1, 1),
+('Baúl de Roble', 'gold', NULL, 80,  110,  240),
+('Baúl de Roble', 'gold', NULL,  3,  700, 1100),
+('Baúl de Roble', 'item', 'Madera de Roble',  14, 2, 4),
+('Baúl de Roble', 'item', 'Carbón',           10, 2, 4),
+('Baúl de Roble', 'item', 'Hierro',           10, 2, 4),
+('Baúl de Roble', 'item', 'Empanada de Carne', 8, 1, 1),
+('Baúl de Roble', 'item', 'Cajón de Pino',    14, 1, 1),
+('Baúl de Roble', 'item', 'Corona de Cerdas',  3, 1, 1),
+('Baúl de Roble', 'item', 'Garra Maldita',     3, 1, 1),
+('Baúl de Roble', 'item', 'Hueso Añejo',       3, 1, 1),
+('Baúl de Roble', 'item', 'Rama Carbonizada',  3, 1, 1),
 -- Arcón de Hierro (Épico)
-('Arcón de Hierro', 'gold', NULL, 34,  300,  700),
-('Arcón de Hierro', 'gold', NULL,  3, 1800, 3200),
-('Arcón de Hierro', 'item', 'Hierro',               8, 3, 6),
-('Arcón de Hierro', 'item', 'Madera de Nogal',      8, 2, 4),
-('Arcón de Hierro', 'item', 'Oro Puro',             6, 2, 3),
-('Arcón de Hierro', 'item', 'Asado de Tira',        5, 1, 1),
-('Arcón de Hierro', 'item', 'Baúl de Roble',        6, 1, 1),
-('Arcón de Hierro', 'item', 'Núcleo Ígneo',         2, 1, 1),
-('Arcón de Hierro', 'item', 'Garra del Alfa',       2, 1, 1),
-('Arcón de Hierro', 'item', 'Polvo de Mina Sagrada',2, 1, 1),
+('Arcón de Hierro', 'gold', NULL, 86,  260,  580),
+('Arcón de Hierro', 'gold', NULL,  3, 1800, 3000),
+('Arcón de Hierro', 'item', 'Hierro',                12, 3, 6),
+('Arcón de Hierro', 'item', 'Madera de Nogal',        9, 2, 4),
+('Arcón de Hierro', 'item', 'Oro Puro',               6, 2, 3),
+('Arcón de Hierro', 'item', 'Asado de Tira',          6, 1, 1),
+('Arcón de Hierro', 'item', 'Baúl de Roble',         16, 1, 1),
+('Arcón de Hierro', 'item', 'Núcleo Ígneo',           3, 1, 1),
+('Arcón de Hierro', 'item', 'Garra del Alfa',         3, 1, 1),
+('Arcón de Hierro', 'item', 'Polvo de Mina Sagrada',  3, 1, 1),
 -- Cofre de Oro (Legendario)
-('Cofre de Oro', 'gold', NULL, 34,  380,  850),
-('Cofre de Oro', 'gold', NULL,  3, 3200, 5200),
-('Cofre de Oro', 'item', 'Oro Puro',                      7, 3, 5),
-('Cofre de Oro', 'item', 'Madera de Ébano',               5, 1, 1),
-('Cofre de Oro', 'item', 'Gema de Zafiro',                5, 1, 1),
-('Cofre de Oro', 'item', 'Cordero Patagónico',            5, 1, 1),
-('Cofre de Oro', 'item', 'Arcón de Hierro',               6, 1, 1),
-('Cofre de Oro', 'item', 'Martillo del Capataz',          2, 1, 1),
-('Cofre de Oro', 'item', 'Roca Volcánica Pura',           2, 1, 1),
-('Cofre de Oro', 'item', 'Colmillo del Señor del Volcán', 2, 1, 1),
+('Cofre de Oro', 'gold', NULL, 84,  320,  700),
+('Cofre de Oro', 'gold', NULL,  3, 3200, 5000),
+('Cofre de Oro', 'item', 'Oro Puro',                      10, 3, 5),
+('Cofre de Oro', 'item', 'Madera de Ébano',                4, 1, 1),
+('Cofre de Oro', 'item', 'Gema de Zafiro',                 4, 1, 1),
+('Cofre de Oro', 'item', 'Cordero Patagónico',             8, 1, 1),
+('Cofre de Oro', 'item', 'Arcón de Hierro',               14, 1, 1),
+('Cofre de Oro', 'item', 'Martillo del Capataz',           2, 1, 1),
+('Cofre de Oro', 'item', 'Roca Volcánica Pura',            2, 1, 1),
+('Cofre de Oro', 'item', 'Colmillo del Señor del Volcán',  2, 1, 1),
 -- Arca del Soberano (Mítico, solo premio): lo único que da los objetivos de largo plazo
-('Arca del Soberano', 'gold', NULL, 30, 1500, 3500),
-('Arca del Soberano', 'item', 'Cofre de Oro',              10, 1, 1),
-('Arca del Soberano', 'item', 'Madera de Ébano',            8, 2, 3),
-('Arca del Soberano', 'item', 'Gema de Zafiro',             8, 2, 3),
-('Arca del Soberano', 'item', 'Escoria Pura del Cráter',    5, 1, 1),
-('Arca del Soberano', 'item', 'Corona de Escoria Viva',     5, 1, 1),
-('Arca del Soberano', 'item', 'Corteza del Árbol de Vida',  2, 1, 1),
-('Arca del Soberano', 'item', 'Fragmento de Meteorito',     2, 1, 1),
-('Arca del Soberano', 'item', 'Asado Completo del Domingo en Familia', 5, 1, 1),
-('Arca del Soberano', 'item', 'Mate Dulce de la Abuela',    5, 1, 1);
+('Arca del Soberano', 'gold', NULL, 80, 1500, 3500),
+('Arca del Soberano', 'item', 'Cofre de Oro',              14, 1, 1),
+('Arca del Soberano', 'item', 'Madera de Ébano',           12, 2, 3),
+('Arca del Soberano', 'item', 'Gema de Zafiro',            12, 2, 3),
+('Arca del Soberano', 'item', 'Escoria Pura del Cráter',    8, 1, 1),
+('Arca del Soberano', 'item', 'Corona de Escoria Viva',     8, 1, 1),
+('Arca del Soberano', 'item', 'Corteza del Árbol de Vida',  3, 1, 1),
+('Arca del Soberano', 'item', 'Fragmento de Meteorito',     3, 1, 1),
+('Arca del Soberano', 'item', 'Asado Completo del Domingo en Familia', 8, 1, 1),
+('Arca del Soberano', 'item', 'Mate Dulce de la Abuela',    8, 1, 1);
 
 -- Cargar: las cajas, y su botín desde cero (este archivo es la fuente de verdad).
 INSERT INTO boxes (box_item_id, rolls)
