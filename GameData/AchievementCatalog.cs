@@ -1,0 +1,77 @@
+namespace BotDsRpg.GameData;
+
+// Un tramo de un logro: al llegar a Threshold del contador del logro se desbloquea y se puede reclamar su premio.
+public sealed record AchievementTier(long Threshold, RewardSpec Reward);
+
+// Un logro por tramos (Cazador I, II, III). StatKind es el contador de player_stats que lo alimenta (el mismo vocabulario que
+// GameEventKinds): el logro no tiene estado propio, es "el contador llegó a tal número".
+public sealed record AchievementDefinition(
+    string Key, string Name, string Emoji, string StatKind, string Description, IReadOnlyList<AchievementTier> Tiers);
+
+// El catálogo de logros y las cuentas puras para saber qué tramos están desbloqueados.
+//
+// DESDE CUÁNDO CUENTAN: los contadores empezaron cuando se activó el registro de eventos (v0.6), no antes. Lo que jugó cada uno
+// hasta ese día no se sabe, así que los logros se miden desde ahí.
+//
+// PREMIOS: tramo I chico (oro y XP), II con una caja de su zona, III más grande. Se pagan según la zona del jugador AL RECLAMAR.
+// Dos tramos III dan el Arca del Soberano (la caja Mítica, la única con los objetivos larguísimos): son los más difíciles y los
+// únicos premios de esa caja, a propósito — no se compra y no hay otra forma de conseguirla.
+public static class AchievementCatalog
+{
+    // Cuántos trofeos hay (los materiales que ningún monstruo suelta y solo salen de las cajas, ver Database/seed_boxes.sql).
+    // Los tramos del coleccionista son contra este número: si se agrega o saca un trofeo hay que actualizarlo (lo chequea la prueba).
+    public const int TrophyTotal = 17;
+
+    private static readonly RewardSpec TierOne = new(12, 4);
+    private static readonly RewardSpec TierTwo = new(40, 8, BoxGrant.ZoneTier);
+    private static readonly RewardSpec TierThree = new(100, 15, BoxGrant.ZoneTierPlusOne);
+    private static readonly RewardSpec TierThreeMythic = new(100, 15, BoxGrant.Mythic);
+
+    private static IReadOnlyList<AchievementTier> Standard(long one, long two, long three, bool mythicTop = false) =>
+        [new(one, TierOne), new(two, TierTwo), new(three, mythicTop ? TierThreeMythic : TierThree)];
+
+    public static readonly IReadOnlyList<AchievementDefinition> All =
+    [
+        new("cazador",       "Cazador",       "🏹", GameEventKinds.HuntWin,       "Ganá cacerías con /hunt",                          Standard(25, 150, 600)),
+        new("viajero",       "Viajero",       "🗺️", GameEventKinds.TravelWin,     "Ganá viajes contra élites con /travel",            Standard(10, 50, 200)),
+        new("matajefes",     "Matajefes",     "👑", GameEventKinds.BossWin,       "Vencé a los jefes de zona con /boss",              Standard(1, 5, 20, mythicTop: true)),
+        new("recolector",    "Recolector",    "🪓", GameEventKinds.GatheredUnits, "Juntá materiales con /chop y /mine",               Standard(100, 600, 3000)),
+        new("herrero",       "Herrero",       "🔨", GameEventKinds.Craft,         "Forjá equipo en la herrería con /forge",           Standard(1, 10, 40)),
+        new("comerciante",   "Comerciante",   "🛒", GameEventKinds.ShopGoldSpent, "Gastá oro en la tienda (/shop)",                   Standard(1000, 25000, 250000)),
+        new("generoso",      "Generoso",      "🤝", GameEventKinds.GoldGiven,     "Regalá monedas a otros jugadores con /give",       Standard(500, 5000, 50000)),
+        new("abridor",       "Abridor",       "📦", GameEventKinds.BoxOpened,     "Abrí cajas con /abrir",                            Standard(5, 30, 150)),
+        new("coleccionista", "Coleccionista", "🏺", GameEventKinds.TrophyFound,   "Conseguí trofeos distintos en las cajas",          Standard(6, 12, TrophyTotal, mythicTop: true)),
+        new("constante",     "Constante",     "📅", GameEventKinds.DailyClaim,    "Reclamá tu recompensa diaria con /daily",          Standard(7, 30, 100)),
+    ];
+
+    public static AchievementDefinition? Find(string key) => All.FirstOrDefault(a => a.Key == key);
+
+    // Cuántos tramos (0..3) tiene desbloqueados con ese valor del contador.
+    public static int TiersReached(AchievementDefinition achievement, long value) =>
+        achievement.Tiers.Count(t => value >= t.Threshold);
+
+    // Los tramos que se cruzaron con un evento que llevó el contador de "previous" a "current" (lo usa el aviso de "¡Logro
+    // desbloqueado!": se avisa justo cuando se cruza, no cada vez que se suma algo estando por encima).
+    public static IReadOnlyList<(AchievementDefinition Achievement, int Tier)> Crossed(string statKind, long previous, long current)
+    {
+        var crossed = new List<(AchievementDefinition, int)>();
+
+        foreach (var achievement in All.Where(a => a.StatKind == statKind))
+        {
+            for (int i = 0; i < achievement.Tiers.Count; i++)
+            {
+                long threshold = achievement.Tiers[i].Threshold;
+                if (previous < threshold && threshold <= current)
+                {
+                    crossed.Add((achievement, i + 1));
+                }
+            }
+        }
+
+        return crossed;
+    }
+
+    public static string Roman(int tier) => tier switch { 1 => "I", 2 => "II", 3 => "III", 4 => "IV", 5 => "V", _ => tier.ToString() };
+
+    public static string TierName(AchievementDefinition achievement, int tier) => $"{achievement.Name} {Roman(tier)}";
+}

@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <UserSecretsId>d69ec704-0863-42b1-a8be-eb5f90b13a3c</UserSecretsId>
     <!-- Versión del bot: se muestra en /info y en el log de arranque (Services/BotVersion.cs). -->
-    <Version>0.5.0</Version>
+    <Version>0.6.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,8 +1,8 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-01 (eventos y `/give`, cajas, comida reducida con banquetes)_
+_Última revisión: 2026-10-01 (v0.6.0: eventos y `/give`, cajas, banquetes, misiones y logros)_
 
-## Eventos de juego, `/give`, cajas y banquetes (2026-10-01)
+## Eventos de juego, `/give`, cajas, banquetes, misiones y logros (v0.6.0, 2026-10-01)
 
 Primer paquete de "más cosas en qué gastar el oro y más datos para decidir". Se hizo por etapas, cada una compilada, probada contra
 la base real con usuarios descartables y recién ahí integrada a `develop`.
@@ -27,8 +27,24 @@ la base real con usuarios descartables y recién ahí integrada a `develop`.
 - **Hallazgo al probar una instalación desde cero**: el seed creaba Carbón como Común y la base viva lo tenía Raro (cambiado a mano,
   nunca capturado en un script). Una base nueva habría dado el doble de Hierro por `/mine` y recetas descalibradas. Corregido en
   `seed_class_gear_and_monster_drops.sql`; la comparación base nueva vs viva quedó como práctica en CLAUDE.md.
-- **Pendiente de este paquete**: misiones (diarias y semanales) y logros (etapa 3). Anotado para después: mini-evento aleatorio
-  (bolsa de piedras en la mina), campeonato de PvP diario automático y, muy a futuro, membresía con cooldowns más cortos.
+- **Misiones y logros** (etapa 3): 3 misiones diarias y 2 semanales (`/misiones`, `aa misiones`) que se reinician a medianoche hora de
+  Uruguay (las semanales el lunes), **iguales para todos** ese día, y 10 logros de 3 tramos (`/logros`: Cazador, Viajero, Matajefes,
+  Recolector, Herrero, Comerciante, Generoso, Abridor, Coleccionista y Constante). El progreso sale del registro de eventos (no se
+  guarda nada aparte, así no se puede desfasar); se cobra con un botón (`aa misiones reclamar` en texto) y el bot avisa apenas
+  cumplís una meta. Premios: oro que escala con tu zona (N "cacerías de oro" de esa zona), XP (un % de tu nivel) y cajas —completar
+  las 3 diarias da la caja de tu zona y las 2 semanales una más arriba—. El Arca del Soberano (la Mítica, que no se compra) solo sale de
+  Matajefes III y Coleccionista III. Cobrar es atómico: 20 cobros simultáneos de lo mismo pagan una sola vez. Los trofeos de las
+  cajas pasaron a contar en una **colección** (distintos, no repetidos) que alimenta el logro Coleccionista, y `/abrir` avisa cuáles son nuevos.
+  Los logros cuentan desde que se activó el registro de eventos, no antes.
+- **A mirar jugando (calibración)**: las 3 diarias valen ~15 cacerías de oro + una caja de la zona y las 2 semanales ~90 + una caja
+  mayor. A un jugador que juega poco le suma mucho (rinde más cuanto menos jugás: es a propósito, para que vuelvan) y a uno que juega horas
+  le suma ~10-15%. Si el oro sobra de más, se bajan las unidades en `GameData/MissionCatalog.cs` (sin tocar la base).
+- **Migración de una base existente (v0.5.0 -> v0.6.0)**, en este orden (todos re-ejecutables): `add_game_events_and_stats.sql`,
+  `add_boxes.sql`, `add_buffs.sql`, `add_missions_and_achievements.sql`, `rebalance_consumable_prices.sql`, `rework_food_catalog.sql` y
+  `seed_boxes.sql`. **Hacé un backup antes**: `rework_food_catalog.sql` borra 3 comidas (reembolsa su valor en oro a quien las tenga).
+- **Anotado para después** (ideas, no empezadas): un mini-evento aleatorio en el canal (una bolsa de piedras que se le cae a un
+  minero: un botón, ~10 segundos para sumarse y un premio chico), el campeonato de PvP diario que se juega solo y deja un premio al
+  ganador, y —muy a futuro— una membresía que baje los cooldowns (ojo: todo está calibrado por minuto, hay que re-medir antes).
 - **Medido y por medir**: el +15 % de ataque no se simuló contra los jefes (el balance de zonas se calibró sin buff). A 2.100 de oro por
   30 minutos es caro a propósito; si en la práctica facilita demasiado los jefes, se baja el porcentaje en `item_buffs`.
 

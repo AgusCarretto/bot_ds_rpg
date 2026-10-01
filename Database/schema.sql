@@ -235,4 +235,33 @@ CREATE TABLE IF NOT EXISTS player_buffs (
     PRIMARY KEY (discord_id, buff_key)
 );
 
+-- ---------------------------------------------------------
+-- mission_claims / achievement_claims / player_collection: lo que cobró cada jugador de misiones y logros, y los trofeos distintos
+-- que consiguió. El progreso NO se guarda acá: sale de game_events / player_stats. Ver Database/add_missions_and_achievements.sql
+-- (migración, con la explicación completa), GameData/MissionCatalog.cs y GameData/AchievementCatalog.cs.
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS mission_claims (
+    discord_id   BIGINT      NOT NULL REFERENCES users (discord_id) ON DELETE CASCADE,
+    period       TEXT        NOT NULL CHECK (period IN ('daily', 'weekly')),
+    period_start TIMESTAMPTZ NOT NULL,            -- el instante UTC en que empezó el día/semana de Uruguay
+    mission_key  TEXT        NOT NULL,            -- la clave de la misión, o '_bonus' (el premio por completar todas las del período)
+    claimed_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (discord_id, period, period_start, mission_key)
+);
+
+CREATE TABLE IF NOT EXISTS achievement_claims (
+    discord_id      BIGINT      NOT NULL REFERENCES users (discord_id) ON DELETE CASCADE,
+    achievement_key TEXT        NOT NULL,
+    tier            INTEGER     NOT NULL CHECK (tier >= 1),
+    claimed_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (discord_id, achievement_key, tier)
+);
+
+CREATE TABLE IF NOT EXISTS player_collection (
+    discord_id        BIGINT      NOT NULL REFERENCES users (discord_id) ON DELETE CASCADE,
+    item_id           INTEGER     NOT NULL REFERENCES items (item_id) ON DELETE CASCADE,
+    first_obtained_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (discord_id, item_id)
+);
+
 COMMIT;

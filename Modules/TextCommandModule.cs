@@ -35,6 +35,9 @@ public partial class TextCommandModule(
     ITransferRepository transferRepository,
     IBoxRepository boxRepository,
     IBuffRepository buffRepository,
+    IMissionRepository missionRepository,
+    IAchievementRepository achievementRepository,
+    IGameEventRepository gameEventRepository,
     IGameEvents gameEvents) : ModuleBase<SocketCommandContext>
 {
     // ---- Onboarding / clase ----

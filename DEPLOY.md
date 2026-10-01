@@ -99,6 +99,9 @@ Si la versión trae cambios de base, `MEJORAS.md` (sección "Migración de una b
 docker compose exec -T db psql -U postgres -d asado-y-acero -v ON_ERROR_STOP=1 -f /seed/<script>.sql
 ```
 
+Para pasar de v0.5.0 a v0.6.0 (eventos, cajas, banquetes, misiones y logros) el orden exacto de los 7 scripts está en la sección
+"Eventos de juego, /give, cajas, banquetes, misiones y logros" de `MEJORAS.md`; hacé backup antes (ver sección 6).
+
 La carpeta `Database/` del repo está montada en `/seed`, así que los scripts nuevos aparecen con el `git checkout`. Los seeds son
 re-ejecutables; **nunca** corras `run_fresh_install.sql` sobre una base con datos.
 

@@ -72,6 +72,7 @@ public class BoxModule(
         int goldAfter = 0;
         int opened = 0;
         var totalItems = new Dictionary<int, LootedItem>();
+        var newTrophies = new List<string>();
 
         for (int i = 0; i < quantity; i++)
         {
@@ -86,6 +87,7 @@ public class BoxModule(
             opened++;
             totalGold += loot.Gold;
             goldAfter = outcome.GoldAfter;
+            newTrophies.AddRange(outcome.NewTrophies ?? []);
 
             foreach (var looted in loot.Items)
             {
@@ -102,12 +104,19 @@ public class BoxModule(
 
         await gameEvents.RecordAsync(discordId, GameEventKinds.BoxOpened, amount: opened, detail: item.Name);
 
-        return new BoxActionResult(null, BuildOpenedEmbed(item, opened, quantity, totalGold, totalItems.Values, goldAfter));
+        // Trofeos que no tenía nunca: cuentan para el logro Coleccionista (distintos, no repetidos).
+        if (newTrophies.Count > 0)
+        {
+            await gameEvents.RecordAsync(discordId, GameEventKinds.TrophyFound, amount: newTrophies.Count, detail: string.Join(", ", newTrophies));
+        }
+
+        return new BoxActionResult(null, BuildOpenedEmbed(item, opened, quantity, totalGold, totalItems.Values, goldAfter, newTrophies));
     }
 
     // Público y puro: se prueba sin Discord. Lo mejor (rareza más alta) arriba, y un ✨ en lo Épico o mejor para que se note.
     public static Embed BuildOpenedEmbed(
-        Item box, int opened, int requested, int gold, IEnumerable<LootedItem> items, int goldAfter)
+        Item box, int opened, int requested, int gold, IEnumerable<LootedItem> items, int goldAfter,
+        IReadOnlyList<string>? newTrophies = null)
     {
         var lines = new List<string>();
 
@@ -136,6 +145,11 @@ public class BoxModule(
             .WithColor(GatheringModule.RarityColor(box.Rarity))
             .WithDescription(string.Join('\n', lines))
             .AddField("💰 Tu oro ahora", goldAfter.ToString(), true);
+
+        if (newTrophies is { Count: > 0 })
+        {
+            embed.AddField("🏺 ¡Nuevo en tu colección!", string.Join(", ", newTrophies));
+        }
 
         if (opened < requested)
         {

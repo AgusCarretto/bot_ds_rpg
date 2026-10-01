@@ -2,8 +2,9 @@ using BotDsRpg.GameData;
 
 namespace BotDsRpg.Repositories;
 
-// El oro del jugador DESPUÉS de abrir la caja.
-public sealed record BoxOpenOutcome(int GoldAfter);
+// El oro del jugador DESPUÉS de abrir la caja, y los trofeos que consiguió por PRIMERA vez en esta apertura (los que se suman a su
+// colección, ver player_collection; null o vacío si no hubo ninguno nuevo).
+public sealed record BoxOpenOutcome(int GoldAfter, IReadOnlyList<string>? NewTrophies = null);
 
 public interface IBoxRepository
 {

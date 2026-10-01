@@ -80,7 +80,7 @@ between it and the live one — they must be identical (that comparison is how t
 aggregate: `IUserRepository`, `IItemRepository`, `IInventoryRepository`, `IShopRepository`,
 `ICraftingRepository`, `IRecipeRepository`, `ICasinoRepository`, `IAdventureRepository`,
 `IGatheringRepository`, `ICooldownRepository`, `IProgressionRepository`, `IGameEventRepository`, `ITransferRepository`,
-`IBoxRepository`, `IBuffRepository`) + `Services/` (stateful
+`IBoxRepository`, `IBuffRepository`, `IMissionRepository`, `IAchievementRepository`) + `Services/` (stateful
 or pure-logic helpers that don't touch SQL directly) + `GameData/` (pure calculators/catalogs, no
 I/O — `LevelingCalculator`, `RarityCatalog`, `CombatMath`, `ClassPassives`, etc.). There is no
 "DatabaseService" god-object — each repository owns its own slice of the schema.
@@ -321,6 +321,30 @@ multiply twice). It is read at the start of a solo fight (`AdventureCombatStarte
 fixed when joining), and shown in `/profile`, `/shop view`, the shop autocomplete and the heal dropdown. `/use` is the only way to eat
 one — it works even at full HP because the buff is the point — and `/heal` (auto-pick) deliberately skips banquetes. In `/travel` and
 `/boss` it uses the one-heal-per-fight slot like any food.
+
+**Missions & achievements (`/misiones`, `/logros`)** — *progress is never stored*: a mission's progress is `SUM(game_events.amount)` of its
+kind since the period started, and an achievement is "the `player_stats` counter reached N", so the event pipeline stays the single
+source of truth and there is no assignment/progress row that can drift. The DB holds only what was **claimed** (`mission_claims`,
+`achievement_claims`) plus `player_collection` (distinct trophies — materials no monster drops, i.e. the ones only boxes give; it
+feeds the `trophy_found` counter of the Coleccionista achievement, and `AchievementCatalog.TrophyTotal` must match the real count).
+Which missions apply is a pure function of the period start (`GameData/MissionCatalog.ForPeriod`, seeded SplitMix64 — identical for
+everyone and across .NET versions; don't swap in `System.Random`, its seeded sequence is not guaranteed stable): 3 daily + 2 weekly,
+never two of the same event kind, and every pool entry must be doable by *any* player (so no boss missions — level-gated — and no
+fixed gold amounts — worth different per zone). Periods reset at **Uruguay midnight** (`GameData/UruguayCalendar.cs`; a fixed UTC−3
+offset on purpose: Uruguay has no DST since 2015 and this avoids the OS time-zone database, whose ids differ between Windows and
+Linux/Docker; weeks start Monday 00:00). Claiming (`MissionRepository`, `AchievementRepository`) is ONE transaction: lock the user row
+`FOR UPDATE`, re-check the goal against the DB (a stale button can't claim an unfinished mission), `INSERT ... ON CONFLICT DO NOTHING
+RETURNING` the claim mark (concurrent claims pay once — tested with 20 parallel), then `RewardPayer` pays gold + XP (with level-up) +
+box in the same transaction; a reward that names a box that doesn't exist throws and rolls everything back instead of marking it
+paid. Rewards are `RewardSpec` units that scale with the claimer's zone rank (`GameData/MissionRewards.cs`: gold = N × the gold of one
+hunt in that zone — 14/58/118/215/375, the same unit the box prices use; XP = a % of the current level's requirement; boxes follow the
+zone ladder). The Mythic box (Arca del Soberano) is paid only by the tier-III achievements Matajefes and Coleccionista — it holds the
+very-long-term goals and must stay unbuyable. Achievements count from the day event tracking went live (v0.6), not before. The
+"¡Misión completada!" / "¡Logro desbloqueado!" notices come from `Services/ProgressNotifier.cs`, called by `GameEventService` right
+after each saved event: it compares the counter before and after the event, so it fires exactly when a goal is crossed and stores
+nothing. Two gotchas that bit this feature: Postgres `SUM(bigint)` is `numeric` and Dapper won't read it as `long` (cast `::bigint`),
+and a reward's gold/XP/box are resolved from the claimer's zone and level *at claim time*, so unclaimed achievements pay more if you
+wait for a later zone (accepted).
 
 **Autoritative source for "how much SQL debt does this repo have right now"**: `MEJORAS.md` at the
 repo root. Read it before assuming the schema in `Database/schema.sql` is what's actually running

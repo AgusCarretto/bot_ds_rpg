@@ -46,7 +46,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
         return new EmbedBuilder()
             .WithTitle("📖 Cómo jugar Asado y Acero RPG")
             .WithColor(OnboardingModule.BrandColor)
-            .WithDescription("El loop básico del juego, en 4 pasos:")
+            .WithDescription("El loop básico del juego, en 5 pasos:")
             .AddField("🪓 Recolección", "Usá `/chop` o `/mine` para conseguir recursos básicos.", false)
             .AddField("⚒️ Herrería", "Usá `/forge` para ver recetas y crear armas más fuertes.", false)
             .AddField(
@@ -58,6 +58,11 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             .AddField(
                 "🥩 Supervivencia",
                 "Usá `/shop` para comprar comida y `/heal` para curarte (¡cuidado, curarte en combate le da un turno extra al enemigo!).",
+                false)
+            .AddField(
+                "📋 Misiones y logros",
+                "Cada día hay 3 misiones y cada semana 2 (`/misiones`), y hay logros por tramos (`/logros`). Se cuentan solas mientras jugás " +
+                "y dan oro, XP y cajas para abrir con `/abrir`. Las diarias se reinician a medianoche, hora de Uruguay.",
                 false)
             .WithFooter("Usá /info para ver la lista completa de comandos.")
             .Build();
@@ -79,7 +84,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 false)
             .AddField(
                 "📈 Progresión",
-                "`/forge` — Fabricar equipo\n`/equip` — Equipar arma/amuleto\n`/heal` — Curarte con un consumible del inventario (no en combate)\n`/use` — Curarte con un consumible (en combate: en `/travel` y `/boss` una sola vez por pelea, también desde el desplegable). Los banquetes Míticos suman +15% de ataque por 30 min\n`/leaderboard` — Ranking del server",
+                "`/forge` — Fabricar equipo\n`/equip` — Equipar arma/amuleto\n`/heal` — Curarte con un consumible del inventario (no en combate)\n`/use` — Curarte con un consumible (en combate: en `/travel` y `/boss` una sola vez por pelea, también desde el desplegable). Los banquetes Míticos suman +15% de ataque por 30 min\n`/misiones` — Misiones diarias y semanales (reclamás los premios ahí)\n`/logros` — Tus logros por tramos\n`/leaderboard` — Ranking del server",
                 false)
             .AddField(
                 "🛠️ Utilidad",

@@ -30,6 +30,9 @@ public static class GameEventKinds
     public const string GoldGiven = "gold_given";           // amount = oro que dio a otro jugador
     public const string GoldReceived = "gold_received";     // amount = oro que recibió de otro jugador
     public const string BoxOpened = "box_opened";           // detail = nombre de la caja
+    // Un trofeo (material que ningún monstruo suelta) que el jugador consigue por PRIMERA vez en una caja: amount = cuántos
+    // nuevos; detail = sus nombres. Es el contador del logro Coleccionista (distintos, no repetidos: ver player_collection).
+    public const string TrophyFound = "trophy_found";
 
     // Progreso de misiones y logros (los registra el propio sistema).
     public const string MissionClaimed = "mission_claimed"; // detail = clave de la misión

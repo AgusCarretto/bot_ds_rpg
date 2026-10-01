@@ -3,7 +3,9 @@ using BotDsRpg.Repositories;
 
 namespace BotDsRpg.Services;
 
-public sealed class GameEventService(IGameEventRepository eventRepository) : IGameEvents
+// progressNotifier es opcional a propósito: sin él esto es solo el registro (las pruebas del registro lo arman así); con él, cada
+// evento guardado también avanza las misiones y los logros y deja sus avisos en la cola.
+public sealed class GameEventService(IGameEventRepository eventRepository, IProgressNotifier? progressNotifier = null) : IGameEvents
 {
     // Avisos pendientes por jugador. En memoria a propósito: si el bot se reinicia entre el evento y el aviso, no pasa nada
     // (el progreso ya está guardado en la base; solo se pierde el cartelito).
@@ -13,7 +15,16 @@ public sealed class GameEventService(IGameEventRepository eventRepository) : IGa
     {
         try
         {
-            await eventRepository.RecordAsync(discordId, kind, zoneId, amount, detail);
+            long newTotal = await eventRepository.RecordAsync(discordId, kind, zoneId, amount, detail);
+
+            // El evento YA está guardado: lo que falle desde acá (calcular un aviso) no lo deshace, solo se pierde el cartelito.
+            if (progressNotifier is not null)
+            {
+                foreach (var notice in await progressNotifier.OnEventAsync(discordId, kind, amount, newTotal, DateTime.UtcNow))
+                {
+                    Enqueue(discordId, notice);
+                }
+            }
         }
         catch (Exception ex)
         {

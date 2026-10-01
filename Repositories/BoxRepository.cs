@@ -79,8 +79,27 @@ public sealed class BoxRepository(IDbConnectionFactory connectionFactory) : IBox
             await InventoryUpsert.AddItemAsync(connection, transaction, discordId, item.ItemId, item.Quantity, cancellationToken);
         }
 
+        // La colección de trofeos (materiales que ningún monstruo suelta, o sea los que solo salen de cajas): se anotan los que
+        // el jugador no tenía NUNCA, en la misma transacción que el botín. Alimenta el logro Coleccionista (GameData/AchievementCatalog).
+        var newTrophies = (await connection.QueryAsync<string>(new CommandDefinition(
+            """
+            WITH added AS (
+                INSERT INTO player_collection (discord_id, item_id)
+                SELECT @DiscordId, i.item_id
+                FROM items i
+                WHERE i.item_id = ANY(@ItemIds)
+                  AND i.type = 'Material'
+                  AND NOT EXISTS (SELECT 1 FROM monster_drops d WHERE d.item_id = i.item_id)
+                ON CONFLICT DO NOTHING
+                RETURNING item_id
+            )
+            SELECT i.name FROM added JOIN items i ON i.item_id = added.item_id ORDER BY i.name;
+            """,
+            new { DiscordId = (long)discordId, ItemIds = loot.Items.Select(i => i.ItemId).ToArray() },
+            transaction: transaction, cancellationToken: cancellationToken))).ToList();
+
         await transaction.CommitAsync(cancellationToken);
-        return new BoxOpenOutcome(goldAfter);
+        return new BoxOpenOutcome(goldAfter, newTrophies);
     }
 
     private sealed record BoxHeaderRow(int BoxItemId, string BoxName, int Rolls);
