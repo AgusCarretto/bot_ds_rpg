@@ -15,7 +15,7 @@ la base real con usuarios descartables y recién ahí integrada a `develop`.
   mutuamente al mismo tiempo. Sin impuesto por ahora; si aparecen cuentas alternativas pasándose el `/daily`, se ve en los eventos y se
   le pone tope o impuesto en un solo lugar.
 - **Cajas** (etapa 2a): cinco tiers (Cajón de Pino 150, Baúl de Roble 700, Arcón de Hierro 1.800, Cofre de Oro 3.500 y el Arca del
-  Soberano, que no se compra: es premio). `/abrir` (de 1 a 10 por vez) da oro, materiales de recolección, trofeos de monstruo que ya no
+  Soberano, que no se compra: es premio). `/open` (de 1 a 10 por vez) da oro, materiales de recolección, trofeos de monstruo que ya no
   suelta nadie, comida y cajas de menor tier. **No dan** los drops de zona de las recetas (rompería el ritmo calibrado) y las metas
   larguísimas (Corteza del Árbol de Vida, Fragmento de Meteorito) solo salen de la caja Mítica. Valor esperado de las de la tienda:
   54–67 % del precio (sumidero de oro). La tienda ahora lista comida y cajas.
@@ -27,14 +27,14 @@ la base real con usuarios descartables y recién ahí integrada a `develop`.
 - **Hallazgo al probar una instalación desde cero**: el seed creaba Carbón como Común y la base viva lo tenía Raro (cambiado a mano,
   nunca capturado en un script). Una base nueva habría dado el doble de Hierro por `/mine` y recetas descalibradas. Corregido en
   `seed_class_gear_and_monster_drops.sql`; la comparación base nueva vs viva quedó como práctica en CLAUDE.md.
-- **Misiones y logros** (etapa 3): 3 misiones diarias y 2 semanales (`/misiones`, `aa misiones`) que se reinician a medianoche hora de
-  Uruguay (las semanales el lunes), **iguales para todos** ese día, y 10 logros de 3 tramos (`/logros`: Cazador, Viajero, Matajefes,
+- **Misiones y logros** (etapa 3): 3 misiones diarias y 2 semanales (`/missions`, `aa missions`) que se reinician a medianoche hora de
+  Uruguay (las semanales el lunes), **iguales para todos** ese día, y 10 logros de 3 tramos (`/achievements`: Cazador, Viajero, Matajefes,
   Recolector, Herrero, Comerciante, Generoso, Abridor, Coleccionista y Constante). El progreso sale del registro de eventos (no se
-  guarda nada aparte, así no se puede desfasar); se cobra con un botón (`aa misiones reclamar` en texto) y el bot avisa apenas
+  guarda nada aparte, así no se puede desfasar); se cobra con un botón (`aa missions claim` en texto) y el bot avisa apenas
   cumplís una meta. Premios: oro que escala con tu zona (N "cacerías de oro" de esa zona), XP (un % de tu nivel) y cajas —completar
   las 3 diarias da la caja de tu zona y las 2 semanales una más arriba—. El Arca del Soberano (la Mítica, que no se compra) solo sale de
   Matajefes III y Coleccionista III. Cobrar es atómico: 20 cobros simultáneos de lo mismo pagan una sola vez. Los trofeos de las
-  cajas pasaron a contar en una **colección** (distintos, no repetidos) que alimenta el logro Coleccionista, y `/abrir` avisa cuáles son nuevos.
+  cajas pasaron a contar en una **colección** (distintos, no repetidos) que alimenta el logro Coleccionista, y `/open` avisa cuáles son nuevos.
   Los logros cuentan desde que se activó el registro de eventos, no antes.
 - **Ajustes después de probarlo** (2026-10-01): (1) **Probabilidades de `/chop` y `/mine`**: lo común sube de 60 % a 68 % y lo demás
   baja (Raro 25 → 21, Épico 10 → 7, Legendario 4,5 → 3,5; el Mítico queda en 0,5). Están en una sola tabla, `RarityCatalog.GatheringWeights`
@@ -45,10 +45,18 @@ la base real con usuarios descartables y recién ahí integrada a `develop`.
   Raro en esa tabla. (2) **Cajas: una por compra y una compra por hora** (`CooldownCatalog.BoxBuy`, `ShopCatalog.BoxesPerPurchase`); sale en
   `/cd` y el cooldown solo se gasta si la compra sale bien (sin oro no se gasta); la comida no tiene límite. (3) **Tiempos con días y
   horas** en `/cd` y en todos los avisos de cooldown (`TimeFormat.Remaining`: "2d 3h 5m", "1h 5m 10s", "4m 20s"). (4) **Listas
-  desplegables** también en `/shop sell` y `/use` (ya estaban en `/shop buy`, `/equip`, `/abrir`, `/forge make` y `/zona`), y todas
+  desplegables** también en `/shop sell` y `/use` (ya estaban en `/shop buy`, `/equip`, `/open`, `/forge make` y `/zona`), y todas
   heredan de `SafeAutocompleteHandler`: si armar la lista falla, queda en el log y se devuelve vacía en vez de romperse. (5) El nombre
   de un ítem ya no distingue mayúsculas, tildes **ni espacios sobrantes** (`"Mate Amargo "` fallaba). (6) Misiones y logros con una línea en
   blanco entre cada una.
+- **Tradeo, comandos en inglés y arreglos** (2026-10-01): (1) **`/trade`** (`aa trade @jugador "Madera de Roble" Hierro`): cambia 1 material por 1 de otro
+  material **de la misma rareza** con otro jugador, solo de lo que dropean `/chop` y `/mine`. Uno propone, el otro acepta con un botón (2 minutos),
+  y el cambio es atómico (probado con 40 cambios cruzados a la vez: no se traba y no se pierde ni se duplica nada). Si querías un cambio contra el
+  bot en vez de entre jugadores, es un cambio chico, pero ojo: convertiría Roble y Carbón en Hierro sin límite. (2) **Bug del daily**: `aa daily` no
+  registraba el evento, así que la misión del daily (y el logro Constante) no avanzaban para quien lo usa por texto; arreglado. (3) La misión semanal
+  de materiales pasó de 60 a **300** (y la de 120 a 500, para que no quede más fácil que la de 300). (4) Comandos en inglés: `/open`, `/missions`,
+  `/achievements` (`aa open`, `aa missions`, `aa achievements`; los nombres viejos siguen como alias de texto). (5) El herrero habla: sin materiales
+  dice "No tenés lo suficiente, crack. Andá a farmear y después hablamo", y al forjar "¡En camino, loco! Queda pronta".
 - **A mirar jugando (calibración)**: las 3 diarias valen ~15 cacerías de oro + una caja de la zona y las 2 semanales ~90 + una caja
   mayor. A un jugador que juega poco le suma mucho (rinde más cuanto menos jugás: es a propósito, para que vuelvan) y a uno que juega horas
   le suma ~10-15%. Si el oro sobra de más, se bajan las unidades en `GameData/MissionCatalog.cs` (sin tocar la base).

@@ -59,7 +59,7 @@ public partial class ShopModule
         }
         else
         {
-            embed.WithDescription("🍖 **Comida** para curarte y 📦 **cajas** con premios sorpresa (abrilas con `/abrir`). Las cajas se compran **de a una y una vez por hora**.");
+            embed.WithDescription("🍖 **Comida** para curarte y 📦 **cajas** con premios sorpresa (abrilas con `/open`). Las cajas se compran **de a una y una vez por hora**.");
 
             foreach (var item in items.OrderBy(i => i.Type == "Caja" ? 1 : 0).ThenBy(i => RarityCatalog.RankOf(i.Rarity)).ThenBy(i => i.Name))
             {

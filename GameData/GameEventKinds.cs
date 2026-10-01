@@ -33,6 +33,7 @@ public static class GameEventKinds
     // Un trofeo (material que ningún monstruo suelta) que el jugador consigue por PRIMERA vez en una caja: amount = cuántos
     // nuevos; detail = sus nombres. Es el contador del logro Coleccionista (distintos, no repetidos: ver player_collection).
     public const string TrophyFound = "trophy_found";
+    public const string Trade = "trade";                    // un cambio de materiales con otro jugador; detail = "lo que dio->lo que recibió"
 
     // Progreso de misiones y logros (los registra el propio sistema).
     public const string MissionClaimed = "mission_claimed"; // detail = clave de la misión

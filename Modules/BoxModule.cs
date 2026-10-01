@@ -5,7 +5,7 @@ using BotDsRpg.Services;
 using Discord;
 using Discord.Interactions;
 
-// /abrir: abrir las cajas del inventario (se compran en /shop o salen de misiones y logros). El botín de cada caja está en la
+// /open: abrir las cajas del inventario (se compran en /shop o salen de misiones y logros). El botín de cada caja está en la
 // base (box_loot), no en el código, y el sorteo es el puro GameData/BoxLoot.cs: acá solo se valida, se sortea, se aplica de forma
 // atómica (IBoxRepository.OpenAsync) y se muestra.
 public class BoxModule(
@@ -16,9 +16,9 @@ public class BoxModule(
 {
     public const int MaxOpenAtOnce = 10;
 
-    [SlashCommand("abrir", "Abrí cajas de tu inventario (hasta 10 juntas).")]
+    [SlashCommand("open", "Abrí cajas de tu inventario (hasta 10 juntas).")]
     public async Task HandleOpenAsync(
-        [Summary("caja", "Elegí la caja que querés abrir.")] [Autocomplete(typeof(BoxAutocompleteHandler))] string boxName,
+        [Summary("box", "Elegí la caja que querés abrir.")] [Autocomplete(typeof(BoxAutocompleteHandler))] string boxName,
         [Summary("cantidad", "Cuántas abrís (1 a 10, por defecto 1).")] [MinValue(1)] [MaxValue(MaxOpenAtOnce)] int quantity = 1)
     {
         await DeferAsync();
@@ -38,7 +38,7 @@ public class BoxModule(
     // Exactamente uno de los dos campos viene con valor (mismo patrón que ShopModule.ShopActionResult).
     public sealed record BoxActionResult(string? PlainMessage, Embed? Embed);
 
-    // Estático (sin Context) para que "aa abrir" comparta exactamente la misma lógica. rng: solo para poder probarlo con un
+    // Estático (sin Context) para que "aa open" comparta exactamente la misma lógica. rng: solo para poder probarlo con un
     // sorteo fijo; en el juego es el generador compartido.
     public static async Task<BoxActionResult> ExecuteOpenAsync(
         IItemRepository itemRepository, IBoxRepository boxRepository, ICombatSessionService combatSessions, IGameEvents gameEvents,

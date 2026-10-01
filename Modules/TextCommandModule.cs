@@ -37,6 +37,7 @@ public partial class TextCommandModule(
     IBuffRepository buffRepository,
     IMissionRepository missionRepository,
     IAchievementRepository achievementRepository,
+    ITradeOfferService tradeOffers,
     IGameEventRepository gameEventRepository,
     IGameEvents gameEvents) : ModuleBase<SocketCommandContext>
 {

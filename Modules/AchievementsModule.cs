@@ -18,7 +18,7 @@ public sealed record AchievementsView(Embed Embed, MessageComponent? Components,
 
 public sealed record AchievementClaimResult(string? PlainMessage, Embed? Embed);
 
-// /logros: los logros por tramos (Cazador I-III, Herrero, Coleccionista...) con el progreso hacia el próximo, y el botón para cobrar
+// /achievements: los logros por tramos (Cazador I-III, Herrero, Coleccionista...) con el progreso hacia el próximo, y el botón para cobrar
 // los que ya se desbloquearon. El logro no tiene estado propio: es "el contador de player_stats llegó a tal número"
 // (GameData/AchievementCatalog.cs), y lo único que se guarda es qué tramos ya se cobraron (achievement_claims).
 public class AchievementsModule(
@@ -26,7 +26,7 @@ public class AchievementsModule(
     IAchievementRepository achievementRepository, IGameEvents gameEvents)
     : InteractionModuleBase<SocketInteractionContext>
 {
-    [SlashCommand("logros", "Tus logros: cazador, herrero, coleccionista... con su progreso y premios.")]
+    [SlashCommand("achievements", "Tus logros: cazador, herrero, coleccionista... con su progreso y premios.")]
     public async Task HandleAchievementsAsync()
     {
         await DeferAsync();
@@ -53,7 +53,7 @@ public class AchievementsModule(
         {
             if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
             {
-                await FollowupAsync("Esos logros son de otra persona: usá **/logros** para ver los tuyos.", ephemeral: true);
+                await FollowupAsync("Esos logros son de otra persona: usá **/achievements** para ver los tuyos.", ephemeral: true);
                 return;
             }
 
@@ -74,7 +74,7 @@ public class AchievementsModule(
         }
     }
 
-    // ---- Lógica compartida con "aa logros" (sin Context) ----
+    // ---- Lógica compartida con "aa achievements" (sin Context) ----
 
     public static async Task<AchievementsView> BuildViewAsync(
         IGameEventRepository eventRepository, IAchievementRepository achievementRepository, ulong discordId)
@@ -115,7 +115,7 @@ public class AchievementsModule(
 
         if (totals.IsEmpty)
         {
-            return new AchievementClaimResult("No tenés logros listos para reclamar ahora. Mirá tu progreso con **/logros**.", null);
+            return new AchievementClaimResult("No tenés logros listos para reclamar ahora. Mirá tu progreso con **/achievements**.", null);
         }
 
         if (totals.LevelsGained > 0)

@@ -25,14 +25,14 @@ public sealed record MissionsView(Embed Embed, MessageComponent? Components, int
 
 public sealed record MissionClaimResult(string? PlainMessage, Embed? Embed);
 
-// /misiones: las misiones del día (3) y de la semana (2), y el botón para cobrar lo que ya completaste. Qué misiones tocan es una
+// /missions: las misiones del día (3) y de la semana (2), y el botón para cobrar lo que ya completaste. Qué misiones tocan es una
 // función pura del día (GameData/MissionCatalog.cs, las mismas para todos); el progreso sale del registro de eventos y lo único que
 // se guarda es qué ya se cobró (Repositories/MissionRepository.cs). Se reinician a medianoche hora de Uruguay.
 public class MissionsModule(
     IUserRepository userRepository, IZoneRepository zoneRepository, IMissionRepository missionRepository, IGameEvents gameEvents)
     : InteractionModuleBase<SocketInteractionContext>
 {
-    [SlashCommand("misiones", "Tus misiones del día y de la semana (se reinician a medianoche, hora de Uruguay).")]
+    [SlashCommand("missions", "Tus misiones del día y de la semana (se reinician a medianoche, hora de Uruguay).")]
     public async Task HandleMissionsAsync()
     {
         await DeferAsync();
@@ -59,7 +59,7 @@ public class MissionsModule(
         {
             if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
             {
-                await FollowupAsync("Esas misiones son de otra persona: usá **/misiones** para ver las tuyas.", ephemeral: true);
+                await FollowupAsync("Esas misiones son de otra persona: usá **/missions** para ver las tuyas.", ephemeral: true);
                 return;
             }
 
@@ -81,7 +81,7 @@ public class MissionsModule(
         }
     }
 
-    // ---- Lógica compartida con "aa misiones" (sin Context) ----
+    // ---- Lógica compartida con "aa missions" (sin Context) ----
 
     public static async Task<MissionsView> BuildViewAsync(
         IUserRepository userRepository, IZoneRepository zoneRepository, IMissionRepository missionRepository, ulong discordId, DateTime utcNow)
@@ -163,7 +163,7 @@ public class MissionsModule(
 
         if (totals.IsEmpty)
         {
-            return new MissionClaimResult("No tenés misiones listas para reclamar ahora. Mirá tu progreso con **/misiones**.", null);
+            return new MissionClaimResult("No tenés misiones listas para reclamar ahora. Mirá tu progreso con **/missions**.", null);
         }
 
         if (totals.LevelsGained > 0)

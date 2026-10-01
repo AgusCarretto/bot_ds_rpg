@@ -238,7 +238,7 @@ would promise zones the command then rejects. Handlers resolve repositories via 
 must use `GetByDiscordIdAsync`, never `GetOrCreateUserAsync` — opening a list must not create accounts.
 Every list derives from `Modules/SafeAutocompleteHandler.cs`, which logs (`BotLog.Error`) and returns an empty list if building the list
 throws, instead of letting Discord show a silent "options failed to load"; lists exist for `/shop buy`, `/shop sell`, `/use`, `/equip`,
-`/abrir`, `/forge make` and `/zona`. Item lookup by name ignores case, accents and surrounding whitespace (`ItemRepository.GetByNameAsync`).
+`/open`, `/forge make` and `/zona`. Item lookup by name ignores case, accents and surrounding whitespace (`ItemRepository.GetByNameAsync`).
 Text commands ("aa ...") can't have autocomplete (a Discord limitation). Discord.Net throws if an option
 value exceeds 100 chars, hence the `FitsAsValue` guard.
 
@@ -305,7 +305,7 @@ guarded update each; no tax today — the events table is there to spot abuse, a
 
 **Boxes (`items.type = 'Caja'`, `boxes`, `box_loot`)** — five tiers, one per rarity; four are sold in `/shop` (150 / 700 / 1800 /
 3500 gold) and the Mítica ("Arca del Soberano") is prize-only (`buy_price = 0`; `GameData/ShopCatalog.IsForSale` is the single
-definition of "sold in the shop" — food and boxes alike). `/abrir` / `aa abrir <caja> [n]` (`Modules/BoxModule.cs`, 1–10 at a time)
+definition of "sold in the shop" — food and boxes alike). `/open` / `aa open <caja> [n]` (`Modules/BoxModule.cs`, 1–10 at a time)
 consumes the box and pays the loot in ONE transaction (`Repositories/BoxRepository.OpenAsync`: guarded decrement, then gold + items),
 the roll itself is the pure `GameData/BoxLootRoller.cs`. Loot lives in the DB (`Database/seed_boxes.sql` is the source of truth and
 verifies itself): gold with a rare jackpot, gathering materials (Hierro from the cheapest box — it is the known bottleneck), "trophy"
@@ -328,7 +328,7 @@ fixed when joining), and shown in `/profile`, `/shop view`, the shop autocomplet
 one — it works even at full HP because the buff is the point — and `/heal` (auto-pick) deliberately skips banquetes. In `/travel` and
 `/boss` it uses the one-heal-per-fight slot like any food.
 
-**Missions & achievements (`/misiones`, `/logros`)** — *progress is never stored*: a mission's progress is `SUM(game_events.amount)` of its
+**Missions & achievements (`/missions`, `/achievements`)** — *progress is never stored*: a mission's progress is `SUM(game_events.amount)` of its
 kind since the period started, and an achievement is "the `player_stats` counter reached N", so the event pipeline stays the single
 source of truth and there is no assignment/progress row that can drift. The DB holds only what was **claimed** (`mission_claims`,
 `achievement_claims`) plus `player_collection` (distinct trophies — materials no monster drops, i.e. the ones only boxes give; it
@@ -354,6 +354,18 @@ after each saved event: it compares the counter before and after the event, so i
 nothing. Two gotchas that bit this feature: Postgres `SUM(bigint)` is `numeric` and Dapper won't read it as `long` (cast `::bigint`),
 and a reward's gold/XP/box are resolved from the claimer's zone and level *at claim time*, so unclaimed achievements pay more if you
 wait for a later zone (accepted).
+
+**Player trading (`/trade`, `aa trade @user "give" "get"`)** — a 1-for-1 swap of gathering materials between two players, and nothing else:
+the rules are pure (`GameData/TradeRules.cs`): both items must be `Madera`/`Mineral` (what `/chop` and `/mine` drop), **the same
+rarity**, and different items (so Roble↔Hierro↔Carbón, Pino↔Piedra, Nogal↔Oro Puro...). Do not loosen the rarity rule: a free converter
+inside the Raro pool would double the Hierro rate and break the calibrated pacing. Flow: the proposer picks player + give + get (autocomplete
+lists), `TradeModule.ExecuteOfferAsync` validates everything and posts a message with Accept/Decline buttons (only the target can accept;
+either side can cancel); pending offers live in memory (`Services/TradeOfferService.cs`, 2 minutes, one open offer per proposer,
+`TryTake` is atomic so concurrent clicks swap once). The swap itself is `ITransferRepository.SwapItemsAsync`: one transaction, four
+operations always in (player, item) order so crossed swaps (A→B and B→A) can't deadlock, each decrement a guarded `UPDATE ... WHERE
+quantity >= 1`. Commands are in English (`/open`, `/missions`, `/achievements`, `/trade`); the old Spanish names remain only as `aa` aliases.
+Every text command must record its game event too: `aa daily` once forgot `daily_claim`, so the "claim your daily" mission never completed
+for players using the text command.
 
 **Autoritative source for "how much SQL debt does this repo have right now"**: `MEJORAS.md` at the
 repo root. Read it before assuming the schema in `Database/schema.sql` is what's actually running

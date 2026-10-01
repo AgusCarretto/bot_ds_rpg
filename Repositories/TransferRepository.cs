@@ -6,6 +6,56 @@ namespace BotDsRpg.Repositories;
 
 public sealed class TransferRepository(IDbConnectionFactory connectionFactory) : ITransferRepository
 {
+    public async Task<SwapStatus> SwapItemsAsync(
+        ulong firstId, int firstGivesItemId, ulong secondId, int secondGivesItemId, CancellationToken cancellationToken = default)
+    {
+        await using DbConnection connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+        // Cada uno da 1 y recibe 1. Orden fijo (jugador, ítem): dos cambios cruzados toman las filas en el mismo orden y no se traban.
+        var operations = new List<(ulong Owner, int ItemId, int Delta, SwapStatus IfMissing)>
+        {
+            (firstId, firstGivesItemId, -1, SwapStatus.FirstMissing),
+            (secondId, secondGivesItemId, -1, SwapStatus.SecondMissing),
+            (firstId, secondGivesItemId, 1, SwapStatus.Ok),
+            (secondId, firstGivesItemId, 1, SwapStatus.Ok),
+        };
+
+        foreach (var (owner, itemId, delta, ifMissing) in operations.OrderBy(o => o.Owner).ThenBy(o => o.ItemId))
+        {
+            if (delta > 0)
+            {
+                await InventoryUpsert.AddItemAsync(connection, transaction, owner, itemId, 1, cancellationToken);
+                continue;
+            }
+
+            int? left = await connection.QuerySingleOrDefaultAsync<int?>(new CommandDefinition(
+                """
+                UPDATE inventory SET quantity = quantity - 1
+                WHERE discord_id = @DiscordId AND item_id = @ItemId AND quantity >= 1
+                RETURNING quantity;
+                """,
+                new { DiscordId = (long)owner, ItemId = itemId }, transaction: transaction, cancellationToken: cancellationToken));
+
+            if (left is null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return ifMissing;
+            }
+
+            if (left == 0)
+            {
+                await connection.ExecuteAsync(new CommandDefinition(
+                    "DELETE FROM inventory WHERE discord_id = @DiscordId AND item_id = @ItemId AND quantity = 0;",
+                    new { DiscordId = (long)owner, ItemId = itemId }, transaction: transaction, cancellationToken: cancellationToken));
+            }
+        }
+
+        await transaction.CommitAsync(cancellationToken);
+        return SwapStatus.Ok;
+    }
+
     public async Task<TransferOutcome> TransferGoldAsync(
         ulong fromDiscordId, ulong toDiscordId, int amount, CancellationToken cancellationToken = default)
     {

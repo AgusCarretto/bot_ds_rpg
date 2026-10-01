@@ -48,11 +48,11 @@ public static class MissionCatalog
         new("w_hunt150",   MissionPeriod.Weekly, GameEventKinds.HuntWin,       150, "Ganá 150 cacerías (/hunt)",                 new(65, 18)),
         new("w_travel8",   MissionPeriod.Weekly, GameEventKinds.TravelWin,     8,   "Ganá 8 viajes contra élites (/travel)",     new(45, 14)),
         new("w_travel15",  MissionPeriod.Weekly, GameEventKinds.TravelWin,     15,  "Ganá 15 viajes contra élites (/travel)",    new(75, 22)),
-        new("w_gather60",  MissionPeriod.Weekly, GameEventKinds.GatheredUnits, 60,  "Juntá 60 materiales talando y minando",     new(30, 10)),
-        new("w_gather120", MissionPeriod.Weekly, GameEventKinds.GatheredUnits, 120, "Juntá 120 materiales talando y minando",    new(55, 16)),
+        new("w_gather300", MissionPeriod.Weekly, GameEventKinds.GatheredUnits, 300, "Juntá 300 materiales talando y minando",    new(60, 16)),
+        new("w_gather500", MissionPeriod.Weekly, GameEventKinds.GatheredUnits, 500, "Juntá 500 materiales talando y minando",    new(95, 22)),
         new("w_craft1",    MissionPeriod.Weekly, GameEventKinds.Craft,         1,   "Forjá un ítem en la herrería (/forge make)", new(25, 10)),
         new("w_craft3",    MissionPeriod.Weekly, GameEventKinds.Craft,         3,   "Forjá 3 ítems en la herrería (/forge make)", new(60, 18)),
-        new("w_boxes3",    MissionPeriod.Weekly, GameEventKinds.BoxOpened,     3,   "Abrí 3 cajas (/abrir)",                      new(30, 10)),
+        new("w_boxes3",    MissionPeriod.Weekly, GameEventKinds.BoxOpened,     3,   "Abrí 3 cajas (/open)",                      new(30, 10)),
         new("w_daily5",    MissionPeriod.Weekly, GameEventKinds.DailyClaim,    5,   "Reclamá tu /daily 5 días",                   new(20, 10)),
     ];
 

@@ -13,7 +13,7 @@ public interface IProgressNotifier
 
 // Avisa JUSTO cuando se cruza la meta ("antes no llegaba, ahora sí"), no cada vez que se suma algo estando por encima, y sin
 // guardar nada: el aviso sale de comparar el valor de antes con el de ahora. Si el bot se reinicia entre el evento y el aviso, solo
-// se pierde el cartelito (el progreso ya está en la base y se ve en /misiones y /logros).
+// se pierde el cartelito (el progreso ya está en la base y se ve en /missions y /achievements).
 public sealed class ProgressNotifier(IMissionRepository missionRepository) : IProgressNotifier
 {
     public async Task<IReadOnlyList<GameNotice>> OnEventAsync(ulong discordId, string kind, long amount, long newTotal, DateTime utcNow)
@@ -24,7 +24,7 @@ public sealed class ProgressNotifier(IMissionRepository missionRepository) : IPr
         foreach (var (achievement, tier) in AchievementCatalog.Crossed(kind, newTotal - amount, newTotal))
         {
             notices.Add(new GameNotice(
-                $"🏆 **¡Logro desbloqueado!** {achievement.Emoji} **{AchievementCatalog.TierName(achievement, tier)}** — reclamá tu premio con `/logros`.",
+                $"🏆 **¡Logro desbloqueado!** {achievement.Emoji} **{AchievementCatalog.TierName(achievement, tier)}** — reclamá tu premio con `/achievements`.",
                 Public: true));
         }
 
@@ -43,7 +43,7 @@ public sealed class ProgressNotifier(IMissionRepository missionRepository) : IPr
 
             foreach (var mission in matching.Where(m => total - amount < m.Target && m.Target <= total))
             {
-                notices.Add(new GameNotice($"✅ **¡Misión completada!** {mission.Title} — reclamá el premio con `/misiones`.", Public: false));
+                notices.Add(new GameNotice($"✅ **¡Misión completada!** {mission.Title} — reclamá el premio con `/missions`.", Public: false));
             }
         }
 

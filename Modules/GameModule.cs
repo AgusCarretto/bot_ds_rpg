@@ -154,7 +154,7 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
 
         AddInventoryGroup(embed, "🗡️ Equipo", entries, e => e.Type is "Weapon" or "Amulet");
         AddInventoryGroup(embed, "🍖 Consumibles", entries, e => e.Type == "Consumable");
-        AddInventoryGroup(embed, "📦 Cajas (abrilas con /abrir)", entries, e => e.Type == "Caja");
+        AddInventoryGroup(embed, "📦 Cajas (abrilas con /open)", entries, e => e.Type == "Caja");
         AddInventoryGroup(embed, "🩸 Drops de Monstruo", entries, e => e.Type == "Material");
         AddInventoryGroup(embed, "🪵 Materiales", entries, e => e.Type is "Madera" or "Mineral");
 

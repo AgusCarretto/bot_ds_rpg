@@ -61,8 +61,8 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 false)
             .AddField(
                 "📋 Misiones y logros",
-                "Cada día hay 3 misiones y cada semana 2 (`/misiones`), y hay logros por tramos (`/logros`). Se cuentan solas mientras jugás " +
-                "y dan oro, XP y cajas para abrir con `/abrir`. Las diarias se reinician a medianoche, hora de Uruguay.",
+                "Cada día hay 3 misiones y cada semana 2 (`/missions`), y hay logros por tramos (`/achievements`). Se cuentan solas mientras jugás " +
+                "y dan oro, XP y cajas para abrir con `/open`. Las diarias se reinician a medianoche, hora de Uruguay.",
                 false)
             .WithFooter("Usá /info para ver la lista completa de comandos.")
             .Build();
@@ -76,7 +76,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             .WithDescription("Todo comando de barra tiene su versión de texto con el prefijo `aa ` (ej. `aa hunt`). Usá `/tutorial` para el loop básico.")
             .AddField(
                 "💰 Economía y Suerte",
-                "`/daily` — Recompensa diaria\n`/shop` — Comprar comida y cajas, y vender (view/buy/sell/sellall)\n`/abrir` — Abrir cajas de tu inventario (`aa abrir <caja>`)\n`/play` — Casino (slots/coinflip)\n`/give` — Dale monedas a otro jugador (`aa give @jugador 100`)",
+                "`/daily` — Recompensa diaria\n`/shop` — Comprar comida y cajas, y vender (view/buy/sell/sellall)\n`/open` — Abrir cajas de tu inventario (`aa open <caja>`)\n`/play` — Casino (slots/coinflip)\n`/give` — Dale monedas a otro jugador (`aa give @jugador 100`)",
                 false)
             .AddField(
                 "⚔️ Aventura",
@@ -84,7 +84,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 false)
             .AddField(
                 "📈 Progresión",
-                "`/forge` — Fabricar equipo\n`/equip` — Equipar arma/amuleto\n`/heal` — Curarte con un consumible del inventario (no en combate)\n`/use` — Curarte con un consumible (en combate: en `/travel` y `/boss` una sola vez por pelea, también desde el desplegable). Los banquetes Míticos suman +15% de ataque por 30 min\n`/misiones` — Misiones diarias y semanales (reclamás los premios ahí)\n`/logros` — Tus logros por tramos\n`/leaderboard` — Ranking del server",
+                "`/forge` — Fabricar equipo\n`/equip` — Equipar arma/amuleto\n`/heal` — Curarte con un consumible del inventario (no en combate)\n`/use` — Curarte con un consumible (en combate: en `/travel` y `/boss` una sola vez por pelea, también desde el desplegable). Los banquetes Míticos suman +15% de ataque por 30 min\n`/missions` — Misiones diarias y semanales (reclamás los premios ahí)\n`/achievements` — Tus logros por tramos\n`/trade` — Cambiá 1 material por 1 de la misma rareza con otro jugador\n`/leaderboard` — Ranking del server",
                 false)
             .AddField(
                 "🛠️ Utilidad",

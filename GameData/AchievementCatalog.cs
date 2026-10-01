@@ -39,7 +39,7 @@ public static class AchievementCatalog
         new("herrero",       "Herrero",       "🔨", GameEventKinds.Craft,         "Forjá equipo en la herrería con /forge",           Standard(1, 10, 40)),
         new("comerciante",   "Comerciante",   "🛒", GameEventKinds.ShopGoldSpent, "Gastá oro en la tienda (/shop)",                   Standard(1000, 25000, 250000)),
         new("generoso",      "Generoso",      "🤝", GameEventKinds.GoldGiven,     "Regalá monedas a otros jugadores con /give",       Standard(500, 5000, 50000)),
-        new("abridor",       "Abridor",       "📦", GameEventKinds.BoxOpened,     "Abrí cajas con /abrir",                            Standard(5, 30, 150)),
+        new("abridor",       "Abridor",       "📦", GameEventKinds.BoxOpened,     "Abrí cajas con /open",                            Standard(5, 30, 150)),
         new("coleccionista", "Coleccionista", "🏺", GameEventKinds.TrophyFound,   "Conseguí trofeos distintos en las cajas",          Standard(6, 12, TrophyTotal, mythicTop: true)),
         new("constante",     "Constante",     "📅", GameEventKinds.DailyClaim,    "Reclamá tu recompensa diaria con /daily",          Standard(7, 30, 100)),
     ];

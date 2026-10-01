@@ -4,11 +4,11 @@ using Discord.Commands;
 // Parte de TextCommandModule (ver el comentario en TextCommandModule.cs): misiones y logros.
 public partial class TextCommandModule
 {
-    // "aa misiones" muestra tus misiones (con el botón de reclamar); "aa misiones reclamar" cobra lo que esté listo.
-    // Misma lógica que /misiones.
-    [Command("misiones")]
-    [Alias("missions", "mision")]
-    [Summary("Tus misiones del día y de la semana: \"aa misiones\" para verlas, \"aa misiones reclamar\" para cobrar.")]
+    // "aa missions" muestra tus misiones (con el botón de reclamar); "aa missions claim" cobra lo que esté listo.
+    // Misma lógica que /missions.
+    [Command("missions")]
+    [Alias("misiones", "mision")]
+    [Summary("Tus misiones del día y de la semana: \"aa missions\" para verlas, \"aa missions claim\" para cobrar.")]
     public async Task MissionsAsync([Remainder] string accion = "")
     {
         try
@@ -31,10 +31,10 @@ public partial class TextCommandModule
         }
     }
 
-    // "aa logros" muestra tus logros; "aa logros reclamar" cobra los desbloqueados. Misma lógica que /logros.
-    [Command("logros")]
-    [Alias("achievements", "logro")]
-    [Summary("Tus logros: \"aa logros\" para verlos, \"aa logros reclamar\" para cobrar los que ya desbloqueaste.")]
+    // "aa achievements" muestra tus logros; "aa achievements claim" cobra los desbloqueados. Misma lógica que /achievements.
+    [Command("achievements")]
+    [Alias("logros", "logro")]
+    [Summary("Tus logros: \"aa achievements\" para verlos, \"aa achievements claim\" para cobrar los que ya desbloqueaste.")]
     public async Task AchievementsAsync([Remainder] string accion = "")
     {
         try

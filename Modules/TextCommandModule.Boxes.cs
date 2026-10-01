@@ -4,14 +4,14 @@ using Discord.Commands;
 // Parte de TextCommandModule (ver el comentario en TextCommandModule.cs): abrir cajas.
 public partial class TextCommandModule
 {
-    // "aa abrir <caja>" o "aa abrir <cantidad> <caja...>" (alias "aa open") — misma lógica que /abrir.
-    [Command("abrir")]
-    [Alias("open")]
-    [Summary("Abrí una caja de tu inventario: \"aa abrir <caja>\" o \"aa abrir <cantidad> <caja>\".")]
+    // "aa open <caja>" o "aa open <cantidad> <caja...>" (alias "aa open") — misma lógica que /open.
+    [Command("open")]
+    [Alias("abrir")]
+    [Summary("Abrí una caja de tu inventario: \"aa open <caja>\" o \"aa open <cantidad> <caja>\".")]
     public Task OpenBoxAsync([Remainder] string caja) => OpenBoxAsync(1, caja);
 
-    [Command("abrir")]
-    [Alias("open")]
+    [Command("open")]
+    [Alias("abrir")]
     public async Task OpenBoxAsync(int cantidad, [Remainder] string caja)
     {
         try

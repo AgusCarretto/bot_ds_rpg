@@ -483,6 +483,7 @@ public static class ServiceProviderBuilder
             .AddSingleton<IMissionRepository, MissionRepository>()
             .AddSingleton<IAchievementRepository, AchievementRepository>()
             .AddSingleton<IProgressNotifier, ProgressNotifier>()
+            .AddSingleton<ITradeOfferService, TradeOfferService>()
             .AddSingleton<IGameEvents, GameEventService>()
             .AddSingleton<IShopRepository, ShopRepository>()
             .AddSingleton<ICraftingRepository, CraftingRepository>()

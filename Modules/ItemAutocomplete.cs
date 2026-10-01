@@ -176,7 +176,7 @@ public sealed class EquipItemAutocompleteHandler : SafeAutocompleteHandler
     }
 }
 
-// Lista de /abrir: las cajas que el jugador TIENE, con cuántas.
+// Lista de /open: las cajas que el jugador TIENE, con cuántas.
 public sealed class BoxAutocompleteHandler : SafeAutocompleteHandler
 {
     protected override async Task<IReadOnlyList<AutocompleteResult>> BuildAsync(ulong userId, string typed, IServiceProvider services)

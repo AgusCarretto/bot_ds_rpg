@@ -182,7 +182,7 @@ public class ForgeModule(
         {
             return new ForgeMakeResult(null, new EmbedBuilder()
                 .WithTitle("⚒️ El herrero no pudo forjarlo")
-                .WithDescription($"No pudiste forjar **{ItemDisplay.Format(recipe.ResultItem.Emoji, recipe.ResultItem.Name)}**: {outcome.FailureReason}")
+                .WithDescription($"🗣️ *No tenés lo suficiente, crack. Andá a farmear y después hablamo.*\n\nNo pudiste forjar **{ItemDisplay.Format(recipe.ResultItem.Emoji, recipe.ResultItem.Name)}**: {outcome.FailureReason}")
                 .WithColor(Color.Red)
                 .Build());
         }
@@ -191,7 +191,7 @@ public class ForgeModule(
 
         return new ForgeMakeResult(null, new EmbedBuilder()
             .WithTitle("⚒️ ¡Forjado con éxito!")
-            .WithDescription($"¡El Herrero ha forjado **{ItemDisplay.Format(recipe.ResultItem.Emoji, recipe.ResultItem.Name)}** con éxito!\nOro restante: **{outcome.Player!.Gold}**.")
+            .WithDescription($"🗣️ *¡En camino, loco! Queda pronta.*\n\n¡El Herrero ha forjado **{ItemDisplay.Format(recipe.ResultItem.Emoji, recipe.ResultItem.Name)}** con éxito!\nOro restante: **{outcome.Player!.Gold}**.")
             .WithColor(Color.Green)
             .Build());
     }
