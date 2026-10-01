@@ -273,8 +273,10 @@ empty (`EnsureDatabaseAsync`) or if Discord doesn't connect within 90 s (a bad t
 leaves a zombie process that looks alive), and shuts down cleanly on SIGTERM/Ctrl+C.
 
 **Deployment is host-agnostic** (`DEPLOY.md`, `Dockerfile`, `docker-compose.yml`, `deploy/`): the bot is one process (no port)
-plus Postgres, config only through environment variables, a SEPARATE Discord token and database for production (the same
-token in two places makes both answer every command), one instance only (fights and raids live in memory). The Dockerfile
+plus Postgres, config only through environment variables, ONE instance running at a time (fights and raids live in memory, and
+the same Discord token on two machines makes both answer every command — the owner uses one bot for dev and play, so a second
+instance means a second bot). Branches: `main` is what runs/gets deployed, `develop` is where work happens; a release is a merge
+of `develop` into `main` plus a tag. The Dockerfile
 must keep using the standard Debian images — `string.Normalize(FormD)` in the autocompletes needs ICU, which the chiseled and
 Alpine images don't ship. `<Version>` in the csproj is the bot version (`BotVersion.Current`, shown in `/info` and the startup
 log); releases are git tags (`v0.5.0`).

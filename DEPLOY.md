@@ -4,9 +4,14 @@ El bot es **un solo proceso** que se conecta a Discord (no escucha ningún puert
 cualquier host que corra contenedores Docker; no está atado a ningún proveedor. Importante:
 
 - **Una sola instancia**: las peleas y los raids viven en memoria. No escalar a 2 réplicas.
-- **Un token distinto para producción**: con el mismo token en dos lugares (tu PC y el servidor) los dos responden cada
-  comando y se pisan. El bot de desarrollo (tu PC) y el de producción (el servidor) son aplicaciones de Discord distintas,
-  cada una con su base.
+- **Un solo bot, UNA instancia corriendo a la vez**: se puede usar el mismo bot (mismo token) para desarrollar y para jugar,
+  pero nunca dos copias prendidas al mismo tiempo (tu PC y el servidor): las dos responderían cada comando y se pisarían.
+  Si querés probar cambios en tu PC mientras el servidor sigue abierto para tus amigos, hace falta un bot aparte (o apagar el
+  del servidor un rato). Mientras todo corra en tu PC no hay problema.
+- **Una sola base = los datos de tus amigos son los de desarrollo.** Antes de probar un script de base nuevo, hacé un backup
+  (punto 6) y no corras cosas destructivas: los seeds son re-ejecutables, pero un experimento a medias lo sufren todos.
+- **Ramas**: `main` es lo que corre (y lo que se despliega); `develop` es donde se trabaja. Para liberar una versión: se
+  mergea `develop` en `main` y se le pone el tag (`v0.5.1`). El hosting siempre apunta a `main` o a un tag.
 - Cada actualización **corta las peleas y raids en curso** (están en memoria). La base no se pierde nada: el HP se guarda al
   resolver cada pelea. Avisá antes de actualizar.
 
