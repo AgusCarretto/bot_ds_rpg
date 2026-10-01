@@ -1,0 +1,18 @@
+# Nada de esto debe entrar a la imagen: sobre todo el .env (tiene el token del bot y la contraseña de la base).
+.env
+.env.*
+!.env.example
+secrets.json
+
+.git
+.gitignore
+.vs
+.vscode
+.claude
+
+bin/
+obj/
+
+# Scripts y documentación: el bot no los necesita en runtime.
+Database/
+*.md

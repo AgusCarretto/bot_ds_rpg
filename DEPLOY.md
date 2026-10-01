@@ -1,0 +1,144 @@
+# Cómo desplegar Asado y Acero RPG (v0.5)
+
+El bot es **un solo proceso** que se conecta a Discord (no escucha ningún puerto) y una **base de Postgres**. Sirve
+cualquier host que corra contenedores Docker; no está atado a ningún proveedor. Importante:
+
+- **Una sola instancia**: las peleas y los raids viven en memoria. No escalar a 2 réplicas.
+- **Un token distinto para producción**: con el mismo token en dos lugares (tu PC y el servidor) los dos responden cada
+  comando y se pisan. El bot de desarrollo (tu PC) y el de producción (el servidor) son aplicaciones de Discord distintas,
+  cada una con su base.
+- Cada actualización **corta las peleas y raids en curso** (están en memoria). La base no se pierde nada: el HP se guarda al
+  resolver cada pelea. Avisá antes de actualizar.
+
+## 1. Discord (una vez)
+
+En el [Developer Portal](https://discord.com/developers/applications):
+
+1. **New Application** → pestaña **Bot** → **Reset Token** (copialo, es el `DISCORD_TOKEN`; no se vuelve a mostrar).
+2. En esa misma pestaña, **Privileged Gateway Intents**: activá **Server Members Intent** y **Message Content Intent**.
+   Sin esos dos el bot no conecta (Discord lo rechaza) — el bot lo avisa en el log y se corta a los 90 s.
+3. **OAuth2 → URL Generator**: scopes `bot` y `applications.commands`; permisos: View Channels, Send Messages, Embed Links,
+   Read Message History, **Use External Emojis**. Abrí la URL y agregalo a tu servidor.
+4. Activá el **Modo Desarrollador** (Ajustes → Avanzado), click derecho al servidor → **Copiar ID** (`DISCORD_GUILD_ID`).
+   Con ese ID los comandos de barra aparecen al instante; sin él tardan hasta 1 hora.
+
+> Los emojis de los ítems son emojis custom (`<:nombre:id>`): se ven si el bot está en el servidor donde viven. Si el bot de
+> producción es una aplicación nueva, invitalo también a ese servidor y verificá que se vean.
+
+## 2. Opción A — un VPS con Docker Compose (recomendada)
+
+Cualquier VPS con Ubuntu y ~1 GB de RAM alcanza (el bot usa ~150 MB y Postgres ~150-250 MB).
+
+```bash
+# En el VPS (Docker y git instalados)
+git clone <url-del-repo> bot_ds_rpg && cd bot_ds_rpg
+git checkout v0.5.0                         # o la versión que quieras desplegar
+cp deploy/prod.env.example .env && nano .env   # completá DISCORD_TOKEN, DISCORD_GUILD_ID y POSTGRES_PASSWORD
+docker compose up -d --build
+docker compose logs -f bot
+```
+
+La primera vez, Postgres carga solo el esquema y todo el catálogo (`Database/run_fresh_install.sql`, 18 scripts). En el log
+del bot tenés que ver, en este orden:
+
+```
+[INFO] Asado y Acero RPG v0.5.0 arrancando...
+[INFO] Base de datos OK (tcp://db:5432 / asado-y-acero), 5 zonas cargadas.
+[ÉXITO] ¡Asado y Acero RPG (<nombre del bot>) está en línea!
+[INFO] Comandos de barra registrados en el servidor de pruebas (<id>).
+```
+
+- Si dice **"la base está vacía"**: la carga inicial falló. Mirá `docker compose logs db`, y para empezar de cero
+  (**borra los datos**): `docker compose down -v && docker compose up -d --build`.
+- Si el bot se corta con **"No pude usar la base de datos"**: revisá `POSTGRES_PASSWORD` (solo letras y números).
+- Si se corta con **"no llegó a conectarse a Discord en 90 segundos"**: token mal o intents sin activar (punto 1).
+- Reiniciar: `docker compose restart bot` · Apagar: `docker compose down` (conserva los datos; `-v` los borra).
+- Por si el servidor se reinicia, todo está con `restart: unless-stopped` y vuelve solo.
+
+## 3. Opción B — otro hosting con Dockerfile (Railway, Fly.io, Koyeb, etc.)
+
+Usan el `Dockerfile` del repo (servicio tipo *worker*, sin puerto ni healthcheck) y una base de Postgres del mismo
+proveedor. Variables del servicio:
+
+| Variable | Valor |
+|---|---|
+| `Discord__Token` | el token del bot de producción |
+| `Discord__TestGuildId` | el ID del servidor |
+| `Postgres__ConnectionString` | `Server=<host>;Port=<puerto>;Database=<base>;User Id=<usuario>;Password=<clave>` (formato clave=valor, no URL) |
+| `Raid__MinParticipants` | no la pongas (por defecto 2) |
+
+La base hay que cargarla **una vez desde tu PC** (necesita `psql`), parado en la carpeta `Database/`:
+
+```bash
+cd Database
+PGCLIENTENCODING=UTF8 psql "host=<host> port=<puerto> dbname=<base> user=<usuario> password=<clave>" -v ON_ERROR_STOP=1 -f run_fresh_install.sql
+```
+
+(En Windows/PowerShell: `$env:PGCLIENTENCODING="UTF8"` antes del comando.) **Solo contra una base vacía.**
+
+## 4. Opción C — tu PC mientras jugás (gratis)
+
+`dotnet run` con tu `.env` (Postgres local): el bot está online solo cuando tu PC está prendida y con internet. Sirve para
+arrancar, no para dejarlo todo el día. Si tus amigos juegan en un horario fijo, puede alcanzar.
+
+## 5. Actualizar a una versión nueva
+
+```bash
+git fetch --tags && git checkout v0.5.1       # la nueva versión
+docker compose up -d --build                  # reconstruye y reinicia el bot (la base no se toca)
+```
+
+Si la versión trae cambios de base, `MEJORAS.md` (sección "Migración de una base existente") dice qué scripts correr:
+
+```bash
+docker compose exec -T db psql -U postgres -d asado-y-acero -v ON_ERROR_STOP=1 -f /seed/<script>.sql
+```
+
+La carpeta `Database/` del repo está montada en `/seed`, así que los scripts nuevos aparecen con el `git checkout`. Los seeds son
+re-ejecutables; **nunca** corras `run_fresh_install.sql` sobre una base con datos.
+
+## 6. Backups (hacelos antes de cada actualización y una vez por semana)
+
+```bash
+docker compose exec -T db pg_dump -U postgres -F c asado-y-acero > backup-$(date +%F).dump
+# Restaurar (reemplaza lo que haya):
+docker compose exec -T db pg_restore -U postgres -d asado-y-acero --clean --if-exists < backup-AAAA-MM-DD.dump
+```
+
+Copiá el archivo **fuera del servidor** (a tu PC). Para automatizarlo: `crontab -e` con
+`0 4 * * 0 cd /ruta/bot_ds_rpg && docker compose exec -T db pg_dump -U postgres -F c asado-y-acero > /ruta/backups/$(date +\%F).dump`.
+
+## 7. Qué mirar en los logs
+
+Todo sale por la consola (`docker compose logs -f bot`): `[ERROR]` lleva el archivo y el método donde pasó y el stack completo
+(antes los errores de los comandos se respondían con "¡Upa!" y no quedaban registrados); `[AVISO]` son fallas esperables (un
+mensaje que ya no se puede editar); `[INFO]` es el arranque. Cuando un amigo reporte "me salió ¡Upa! Algo falló", buscá el
+`[ERROR]` de esa hora.
+
+## 8. Dónde alojarlo (precios consultados el 2026-10-01; verificá antes de contratar)
+
+| Opción | Costo aprox. | Notas |
+|---|---|---|
+| Tu PC | 0 | Solo online con la PC prendida. |
+| Oracle Cloud *Always Free* | 0 | Hoy 2 OCPU / 12 GB ([recortado a la mitad](https://terminalbytes.com/oracle-cloud-free-tier-changes-2026/)); registro exigente y a veces sin capacidad. |
+| VPS Hetzner CX23 (UE) | ~€6/mes | [2 vCPU, 4 GB](https://www.cloudhim.com/cloud-costs/hetzner-cx22-pricing-2026); en EE.UU. cuesta bastante más. Entran este bot **y** otros proyectos. |
+| Railway | US$5/mes + exceso | [Incluye US$5 de uso](https://docs.railway.com/reference/pricing/plans); bot + base ≈ US$4 estimados. |
+| Fly.io | desde ~US$2/mes la máquina | [Sin plan gratis para cuentas nuevas](https://www.saaspricepulse.com/blog/flyio-free-tier-2026); la base de Postgres aparte. |
+
+Con 4 jugadores el consumo casi no cambia: lo que se paga es tener el bot y la base prendidos, no la cantidad de gente.
+
+## 9. Estado de verificación (v0.5.0)
+
+Probado en la PC de desarrollo: arranque **solo con variables de entorno** (sin `.env`), chequeo de base (OK, y corte con código 1
+si falta o no responde), corte a los 90 s con token inválido, instalación limpia de los 18 scripts en una base nueva (idéntica a la
+real) y todas las pruebas de juego.
+**No se pudo probar** (no había Docker en esa PC): construir la imagen y el `docker-compose.yml`; el primer `docker compose up`
+es esa prueba. Tampoco el apagado limpio por SIGTERM ni clickear los botones y el desplegable en un Discord real.
+
+## 10. Checklist antes de invitar amigos
+
+- [ ] Bot de producción creado, intents activados, invitado al servidor.
+- [ ] El log muestra "Base de datos OK … 5 zonas cargadas" y "está en línea".
+- [ ] Probar `/start`, `/hunt`, `/travel` con el desplegable de curar, `/forge recipes`, `/drops`.
+- [ ] Un backup hecho. Anotado dónde está el token (solo en el `.env` del servidor).
+- [ ] `Raid__MinParticipants` sin tocar (2). Tus amigos arrancan con `/start`.

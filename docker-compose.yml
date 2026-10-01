@@ -1,0 +1,47 @@
+# Asado y Acero RPG — el bot + su base de Postgres en un solo comando, para cualquier VPS con Docker.
+# Guía completa y pasos: DEPLOY.md. Resumen:
+#   cp deploy/prod.env.example .env      (y completar token, servidor y contraseña)
+#   docker compose up -d --build
+#   docker compose logs -f bot
+#
+# La base NO publica ningún puerto: solo el bot (misma red de compose) puede hablarle. La primera vez que arranca con
+# el volumen vacío carga el esquema y el catálogo completo (Database/run_fresh_install.sql); las siguientes no toca nada.
+name: asado-y-acero
+
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Definí POSTGRES_PASSWORD en el .env (solo letras y números)}
+      POSTGRES_DB: asado-y-acero
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+      # Los scripts de la base, solo lectura, para la carga inicial (ver deploy/initdb/00-fresh-install.sql).
+      - ./Database:/seed:ro
+      - ./deploy/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d asado-y-acero"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  bot:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      Discord__Token: ${DISCORD_TOKEN:?Definí DISCORD_TOKEN en el .env}
+      # El ID de tu servidor: los comandos de barra aparecen al instante ahí (sin esto tardan hasta 1 hora).
+      Discord__TestGuildId: ${DISCORD_GUILD_ID:-}
+      Postgres__ConnectionString: Server=db;Port=5432;Database=asado-y-acero;User Id=postgres;Password=${POSTGRES_PASSWORD}
+      # Mínimo de jugadores para un /raid. 2 es lo normal; 1 solo sirve para probar sin otra cuenta.
+      Raid__MinParticipants: ${RAID_MIN_PARTICIPANTS:-2}
+    # Tiempo para que el bot se desconecte prolijo de Discord al apagarse o redesplegarse (SIGTERM).
+    stop_grace_period: 20s
+
+volumes:
+  dbdata:
