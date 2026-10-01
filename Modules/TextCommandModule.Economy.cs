@@ -69,7 +69,7 @@ public partial class TextCommandModule
     {
         try
         {
-            var result = await ShopModule.ExecuteBuyAsync(userRepository, itemRepository, shopRepository, combatSessions, Context.User.Id, item, cantidad);
+            var result = await ShopModule.ExecuteBuyAsync(userRepository, itemRepository, shopRepository, combatSessions, gameEvents, Context.User.Id, item, cantidad);
             await ReplyAsync(result.PlainMessage, embed: result.Embed);
         }
         catch (Exception ex)
@@ -91,7 +91,7 @@ public partial class TextCommandModule
     {
         try
         {
-            var result = await ShopModule.ExecuteSellAsync(itemRepository, shopRepository, Context.User.Id, item, cantidad);
+            var result = await ShopModule.ExecuteSellAsync(itemRepository, shopRepository, gameEvents, Context.User.Id, item, cantidad);
             await ReplyAsync(result.PlainMessage, embed: result.Embed);
         }
         catch (Exception ex)
@@ -109,7 +109,7 @@ public partial class TextCommandModule
     {
         try
         {
-            var result = await ShopModule.ExecuteSellAllAsync(shopRepository, Context.User.Id);
+            var result = await ShopModule.ExecuteSellAllAsync(shopRepository, gameEvents, Context.User.Id);
             await ReplyAsync(result.PlainMessage, embed: result.Embed);
         }
         catch (Exception ex)
@@ -146,7 +146,7 @@ public partial class TextCommandModule
     {
         try
         {
-            var result = await ForgeModule.ExecuteMakeAsync(userRepository, recipeRepository, craftingRepository, Context.User.Id, item);
+            var result = await ForgeModule.ExecuteMakeAsync(userRepository, recipeRepository, craftingRepository, gameEvents, Context.User.Id, item);
             await ReplyAsync(result.PlainMessage, embed: result.Embed);
         }
         catch (Exception ex)

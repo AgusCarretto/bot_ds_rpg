@@ -12,7 +12,8 @@ using BotDsRpg.Services;
 // apuntando a un ingrediente o resultado que no exista.
 [Group("forge", "La herrería: forjá armas y amuletos con oro y materiales.")]
 public class ForgeModule(
-    IUserRepository userRepository, IRecipeRepository recipeRepository, ICraftingRepository craftingRepository, IZoneRepository zoneRepository)
+    IUserRepository userRepository, IRecipeRepository recipeRepository, ICraftingRepository craftingRepository, IZoneRepository zoneRepository,
+    IGameEvents gameEvents)
     : InteractionModuleBase<SocketInteractionContext>
 {
     // Comando barra: /forge recipes
@@ -45,7 +46,7 @@ public class ForgeModule(
 
         try
         {
-            var result = await ExecuteMakeAsync(userRepository, recipeRepository, craftingRepository, Context.User.Id, itemName);
+            var result = await ExecuteMakeAsync(userRepository, recipeRepository, craftingRepository, gameEvents, Context.User.Id, itemName);
 
             if (result.PlainMessage is not null)
             {
@@ -149,7 +150,8 @@ public class ForgeModule(
     public sealed record ForgeMakeResult(string? PlainMessage, Embed? Embed);
 
     public static async Task<ForgeMakeResult> ExecuteMakeAsync(
-        IUserRepository userRepository, IRecipeRepository recipeRepository, ICraftingRepository craftingRepository, ulong discordId, string itemName)
+        IUserRepository userRepository, IRecipeRepository recipeRepository, ICraftingRepository craftingRepository, IGameEvents gameEvents,
+        ulong discordId, string itemName)
     {
         var recipe = await recipeRepository.GetByResultItemNameAsync(itemName);
         if (recipe is null)
@@ -184,6 +186,8 @@ public class ForgeModule(
                 .WithColor(Color.Red)
                 .Build());
         }
+
+        await gameEvents.RecordAsync(discordId, GameEventKinds.Craft, player.CurrentZoneId, detail: recipe.ResultItem.Name);
 
         return new ForgeMakeResult(null, new EmbedBuilder()
             .WithTitle("⚒️ ¡Forjado con éxito!")

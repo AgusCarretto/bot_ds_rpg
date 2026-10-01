@@ -9,7 +9,8 @@ public class GatheringModule(
     ICooldownRepository cooldownRepository,
     IGatheringRepository gatheringRepository,
     IUserRepository userRepository,
-    IItemRepository itemRepository) : InteractionModuleBase<SocketInteractionContext>
+    IItemRepository itemRepository,
+    IGameEvents gameEvents) : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("chop", "Talá madera cercana (cooldown de 5 minutos).")]
     public Task HandleChopAsync() =>
@@ -61,6 +62,8 @@ public class GatheringModule(
                 await FollowupAsync("Justo se te adelantó otra ejecución de este comando, probá de nuevo en un toque.", ephemeral: true);
                 return;
             }
+
+            await GatheringEvents.RecordAsync(gameEvents, Context.User.Id, definition, item, quantity);
 
             await FollowupAsync(embed: BuildResultEmbed(definition, item, quantity));
         }

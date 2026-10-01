@@ -10,7 +10,7 @@ using Discord.Interactions;
 // que para poder separar archivos sin romper el grupo, ambos son la misma clase de C#.
 // Las recetas de forja viven en /forge (ForgeModule.cs), separadas de la Tienda por diseño de juego.
 [Group("shop", "Comprá objetos con tu oro.")]
-public partial class ShopModule(IUserRepository userRepository, IItemRepository itemRepository, IShopRepository shopRepository, ICombatSessionService combatSessions)
+public partial class ShopModule(IUserRepository userRepository, IItemRepository itemRepository, IShopRepository shopRepository, ICombatSessionService combatSessions, IGameEvents gameEvents)
     : InteractionModuleBase<SocketInteractionContext>
 {
     // Comando barra: /shop buy
@@ -24,7 +24,7 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
 
         try
         {
-            var result = await ExecuteBuyAsync(userRepository, itemRepository, shopRepository, combatSessions, Context.User.Id, itemName, quantity);
+            var result = await ExecuteBuyAsync(userRepository, itemRepository, shopRepository, combatSessions, gameEvents, Context.User.Id, itemName, quantity);
             await FollowupAsync(result.PlainMessage, embed: result.Embed, ephemeral: result.Embed is null);
         }
         catch (Exception ex)
@@ -46,7 +46,7 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
 
         try
         {
-            var result = await ExecuteSellAsync(itemRepository, shopRepository, Context.User.Id, itemName, quantity);
+            var result = await ExecuteSellAsync(itemRepository, shopRepository, gameEvents, Context.User.Id, itemName, quantity);
             await FollowupAsync(result.PlainMessage, embed: result.Embed, ephemeral: result.Embed is null);
         }
         catch (Exception ex)
@@ -66,7 +66,7 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
 
         try
         {
-            var result = await ExecuteSellAllAsync(shopRepository, Context.User.Id);
+            var result = await ExecuteSellAllAsync(shopRepository, gameEvents, Context.User.Id);
             await FollowupAsync(result.PlainMessage, embed: result.Embed, ephemeral: result.Embed is null);
         }
         catch (Exception ex)
@@ -85,7 +85,7 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
 
     public static async Task<ShopActionResult> ExecuteBuyAsync(
         IUserRepository userRepository, IItemRepository itemRepository, IShopRepository shopRepository, ICombatSessionService combatSessions,
-        ulong discordId, string itemName, int quantity)
+        IGameEvents gameEvents, ulong discordId, string itemName, int quantity)
     {
         // No se puede ir de compras en pleno combate — mismo espíritu que el bloqueo de /heal
         // (Modules/TavernModule.cs): comprar no debería ser una salida gratuita en medio de una pelea.
@@ -116,6 +116,8 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
             return new ShopActionResult($"No te alcanza el oro: **{ItemDisplay.Format(item.Emoji, item.Name)}** x{quantity} cuesta **{totalCost}**.", null);
         }
 
+        await gameEvents.RecordAsync(discordId, GameEventKinds.ShopGoldSpent, amount: totalCost, detail: item.Name);
+
         return new ShopActionResult(null, new EmbedBuilder()
             .WithTitle("🛒 ¡Compra realizada!")
             .WithDescription($"Compraste **{ItemDisplay.Format(item.Emoji, item.Name)}** x{quantity} por **{totalCost}** de oro.\nOro restante: **{buyer.Gold}**.")
@@ -124,7 +126,7 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
     }
 
     public static async Task<ShopActionResult> ExecuteSellAsync(
-        IItemRepository itemRepository, IShopRepository shopRepository, ulong discordId, string itemName, int quantity)
+        IItemRepository itemRepository, IShopRepository shopRepository, IGameEvents gameEvents, ulong discordId, string itemName, int quantity)
     {
         if (quantity < 1)
         {
@@ -145,6 +147,8 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
             return new ShopActionResult($"No tenés {quantity}x **{ItemDisplay.Format(item.Emoji, item.Name)}** para vender.", null);
         }
 
+        await gameEvents.RecordAsync(discordId, GameEventKinds.ShopGoldEarned, amount: totalRefund, detail: item.Name);
+
         return new ShopActionResult(null, new EmbedBuilder()
             .WithTitle("💰 ¡Venta realizada!")
             .WithDescription($"Vendiste **{ItemDisplay.Format(item.Emoji, item.Name)}** x{quantity} por **{totalRefund}** de oro.\nOro total: **{seller.Gold}**.")
@@ -152,7 +156,7 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
             .Build());
     }
 
-    public static async Task<ShopActionResult> ExecuteSellAllAsync(IShopRepository shopRepository, ulong discordId)
+    public static async Task<ShopActionResult> ExecuteSellAllAsync(IShopRepository shopRepository, IGameEvents gameEvents, ulong discordId)
     {
         var outcome = await shopRepository.SellAllAsync(discordId);
 
@@ -160,6 +164,8 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
         {
             return new ShopActionResult("No tenés nada en tu inventario para vender.", null);
         }
+
+        await gameEvents.RecordAsync(discordId, GameEventKinds.ShopGoldEarned, amount: outcome.GoldEarned, detail: "sellall");
 
         return new ShopActionResult(null, new EmbedBuilder()
             .WithTitle("💰 ¡Inventario liquidado!")

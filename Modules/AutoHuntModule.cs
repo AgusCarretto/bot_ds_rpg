@@ -12,7 +12,8 @@ public class AutoHuntModule(
     IAdventureRepository adventureRepository,
     IUserRepository userRepository,
     IItemRepository itemRepository,
-    IAdventureCombatStarter combatStarter) : InteractionModuleBase<SocketInteractionContext>
+    IAdventureCombatStarter combatStarter,
+    IGameEvents gameEvents) : InteractionModuleBase<SocketInteractionContext>
 {
     private const int MaxRounds = 100; // tope defensivo; el HP del monstruo baja en cada golpe, así que en la práctica nunca se llega acá
 
@@ -24,7 +25,7 @@ public class AutoHuntModule(
 
         try
         {
-            var result = await ExecuteAsync(adventureRepository, userRepository, itemRepository, combatStarter, Context.User.Id);
+            var result = await ExecuteAsync(adventureRepository, userRepository, itemRepository, combatStarter, gameEvents, Context.User.Id);
 
             if (result.PlainMessage is not null)
             {
@@ -53,6 +54,7 @@ public class AutoHuntModule(
         IUserRepository userRepository,
         IItemRepository itemRepository,
         IAdventureCombatStarter combatStarter,
+        IGameEvents gameEvents,
         ulong discordId)
     {
         // Misma preparación que /hunt: mismo cooldown (CooldownCatalog.Hunt → "hunt" en la tabla
@@ -140,11 +142,14 @@ public class AutoHuntModule(
             var levelOutcome = await adventureRepository.ApplyVictoryAsync(
                 discordId, reward.Gold, reward.Xp, finalState.ToDbHpDelta(playerHp - state.PlayerStartingHp), droppedItem?.ItemId, droppedItemQuantity: 1);
 
+            await gameEvents.RecordVictoryAsync(discordId, GameEventKinds.HuntWin, levelOutcome);
+
             return new AutoHuntResult(null, BuildVictoryEmbed(finalState, levelOutcome, reward, droppedItem));
         }
 
         // Derrota: el jugador llegó a 0 HP antes de bajar al monstruo.
         await userRepository.ApplyCombatHpDeltaAsync(discordId, finalState.ToDbHpDelta(playerHp - state.PlayerStartingHp));
+        await gameEvents.RecordAsync(discordId, GameEventKinds.FightLost, detail: "hunt");
         return new AutoHuntResult(null, BuildDefeatEmbed(finalState));
     }
 

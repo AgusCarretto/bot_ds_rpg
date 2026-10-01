@@ -52,6 +52,8 @@ public partial class TextCommandModule
                 return;
             }
 
+            await GatheringEvents.RecordAsync(gameEvents, Context.User.Id, definition, item, quantity);
+
             await ReplyAsync(embed: GatheringModule.BuildResultEmbed(definition, item, quantity));
         }
         catch (Exception ex)

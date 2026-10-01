@@ -166,4 +166,29 @@ CREATE TABLE IF NOT EXISTS cooldowns (
 CREATE INDEX IF NOT EXISTS idx_inventory_discord_id ON inventory (discord_id);
 CREATE INDEX IF NOT EXISTS idx_cooldowns_discord_id ON cooldowns (discord_id);
 
+-- ---------------------------------------------------------
+-- game_events / player_stats: registro de eventos de juego (qué se usa, cuánto se tarda en avanzar) y contadores por
+-- jugador que leen las misiones y los logros. Ver Database/add_game_events_and_stats.sql (migración) y
+-- Services/GameEventService.cs. game_events no tiene FK a users a propósito: sobrevive al borrado de cuentas de prueba.
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS game_events (
+    event_id    BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    occurred_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    discord_id  BIGINT NOT NULL,
+    kind        TEXT NOT NULL,                  -- ver GameData/GameEventKinds.cs
+    zone_id     INTEGER,                        -- zona del jugador al momento (NULL si no aplica)
+    amount      BIGINT NOT NULL DEFAULT 1,      -- cuánto: 1 para "pasó una vez", o el oro / las unidades involucradas
+    detail      TEXT                            -- dato libre (nombre del ítem, tier de la caja, nivel nuevo...)
+);
+
+CREATE INDEX IF NOT EXISTS idx_game_events_kind_time ON game_events (kind, occurred_at);
+CREATE INDEX IF NOT EXISTS idx_game_events_player_time ON game_events (discord_id, occurred_at);
+
+CREATE TABLE IF NOT EXISTS player_stats (
+    discord_id BIGINT NOT NULL REFERENCES users (discord_id) ON DELETE CASCADE,
+    stat_key   TEXT   NOT NULL,                 -- mismo vocabulario que game_events.kind
+    value      BIGINT NOT NULL DEFAULT 0,
+    PRIMARY KEY (discord_id, stat_key)
+);
+
 COMMIT;

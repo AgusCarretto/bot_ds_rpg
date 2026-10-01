@@ -11,7 +11,8 @@ public class AdventureModule(
     IItemRepository itemRepository,
     IInventoryRepository inventoryRepository,
     ICombatSessionService combatSessions,
-    IAdventureCombatStarter combatStarter) : InteractionModuleBase<SocketInteractionContext>
+    IAdventureCombatStarter combatStarter,
+    IGameEvents gameEvents) : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("hunt", "Salí a cazar monstruos cercanos (cooldown de 1 minuto).")]
     public Task HandleHuntAsync() =>
@@ -247,6 +248,11 @@ public class AdventureModule(
                     : await adventureRepository.ApplyVictoryAsync(
                         Context.User.Id, reward.Gold, reward.Xp, hpDelta, droppedItem?.ItemId, droppedItemQuantity: 1);
 
+                await gameEvents.RecordVictoryAsync(
+                    Context.User.Id,
+                    finalState.CommandName switch { "travel" => GameEventKinds.TravelWin, "boss" => GameEventKinds.BossWin, _ => GameEventKinds.HuntWin },
+                    outcome);
+
                 await ModifyOriginalResponseAsync(props =>
                 {
                     props.Embed = BuildVictoryEmbed(finalState, turn, reward, droppedItem, outcome);
@@ -284,6 +290,8 @@ public class AdventureModule(
 
                 await userRepository.ApplyCombatHpDeltaAsync(
                     Context.User.Id, finalState.ToDbHpDelta(playerHpAfter - state.PlayerStartingHp));
+
+                await gameEvents.RecordAsync(Context.User.Id, GameEventKinds.FightLost, detail: finalState.CommandName);
 
                 await ModifyOriginalResponseAsync(props =>
                 {

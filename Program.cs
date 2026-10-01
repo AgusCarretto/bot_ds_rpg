@@ -237,6 +237,23 @@ class Program
         }
     }
 
+    // Entrega los avisos pendientes de un jugador (ver Services/IGameEvents.cs). Un aviso que no se pueda mandar (el canal ya no
+    // existe, el token venció) se registra y se descarta: nunca tira abajo el comando que ya salió bien.
+    private static async Task DeliverNoticesAsync(ulong userId, Func<string, bool, Task> send)
+    {
+        foreach (var notice in _services.GetRequiredService<IGameEvents>().TakeNotices(userId))
+        {
+            try
+            {
+                await send(notice.Text, notice.Public);
+            }
+            catch (Exception ex)
+            {
+                BotLog.Warn(ex);
+            }
+        }
+    }
+
     private static async Task HandleInteractionAsync(SocketInteraction interaction)
     {
         try
@@ -258,6 +275,15 @@ class Program
 
             if (!result.IsSuccess)
                 Console.WriteLine($"[ERROR DE COMANDO] {result.ErrorReason}");
+
+            // Los avisos que dejó el comando (una misión completada, un logro) salen apenas termina, con todo ya
+            // respondido. Los autocompletados no pueden recibir mensajes de seguimiento, así que ahí no se entrega nada.
+            if (interaction is SocketSlashCommand or SocketMessageComponent)
+            {
+                await DeliverNoticesAsync(
+                    interaction.User.Id,
+                    async (text, isPublic) => await interaction.FollowupAsync(text, ephemeral: !isPublic));
+            }
         }
         catch (Exception ex)
         {
@@ -317,6 +343,9 @@ class Program
             {
                 await HandleTextCommandFailureAsync(context, message, argPos, result);
             }
+
+            // Los avisos que dejó el comando (misión completada, logro): en texto no hay mensajes privados, salen en el canal.
+            await DeliverNoticesAsync(message.Author.Id, async (text, _) => await message.Channel.SendMessageAsync(text));
         }
         catch (Exception ex)
         {
@@ -447,6 +476,9 @@ public static class ServiceProviderBuilder
             .AddSingleton<IGatheringRepository, GatheringRepository>()
             .AddSingleton<IItemRepository, ItemRepository>()
             .AddSingleton<IInventoryRepository, InventoryRepository>()
+            .AddSingleton<IGameEventRepository, GameEventRepository>()
+            .AddSingleton<ITransferRepository, TransferRepository>()
+            .AddSingleton<IGameEvents, GameEventService>()
             .AddSingleton<IShopRepository, ShopRepository>()
             .AddSingleton<ICraftingRepository, CraftingRepository>()
             .AddSingleton<IRecipeRepository, RecipeRepository>()

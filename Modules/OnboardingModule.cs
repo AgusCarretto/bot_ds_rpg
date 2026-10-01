@@ -6,7 +6,7 @@ using BotDsRpg.Services;
 
 // Sin gate de registro: es el único comando que tiene que funcionar para alguien que todavía
 // no existe en la base (tanto en Program.cs para slash commands como para "aa start").
-public class OnboardingModule(IUserRepository userRepository) : InteractionModuleBase<SocketInteractionContext>
+public class OnboardingModule(IUserRepository userRepository, IGameEvents gameEvents) : InteractionModuleBase<SocketInteractionContext>
 {
     public static readonly Color BrandColor = new(0xE6, 0x51, 0x00); // Naranja oscuro / fuego
 
@@ -68,6 +68,7 @@ public class OnboardingModule(IUserRepository userRepository) : InteractionModul
 
             // Mismo upsert atómico que usa /class (Nivel 1, 0 EXP, 50 de oro, 100/100 HP).
             var player = await userRepository.SetClassAsync(Context.User.Id, classDef.Name);
+            await gameEvents.RecordAsync(Context.User.Id, GameEventKinds.Start, player.CurrentZoneId, detail: classDef.Name);
 
             await ModifyOriginalResponseAsync(props =>
             {

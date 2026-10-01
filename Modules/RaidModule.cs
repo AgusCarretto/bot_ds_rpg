@@ -20,7 +20,8 @@ public class RaidModule(
     IZoneRepository zoneRepository,
     IAdventureRepository adventureRepository,
     ICombatSessionService combatSessions,
-    IRaidSessionService raidSessions) : InteractionModuleBase<SocketInteractionContext>
+    IRaidSessionService raidSessions,
+    IGameEvents gameEvents) : InteractionModuleBase<SocketInteractionContext>
 {
     // Ver Services/RaidSettings.cs: el mínimo es configurable (2 por defecto).
     private static int MinParticipantsToStart => RaidSettings.MinParticipants;
@@ -239,7 +240,7 @@ public class RaidModule(
                     await session.ReplyTarget.UpdateAsync(BuildCombatEmbed(session, outcome.LogLine!), BuildCombatButtons(raidId));
                     return;
                 case AttackOutcomeKind.Victory:
-                    await ResolveVictoryAsync(session, outcome.LogLine!, userRepository, itemRepository, adventureRepository, raidSessions);
+                    await ResolveVictoryAsync(session, outcome.LogLine!, userRepository, itemRepository, adventureRepository, raidSessions, gameEvents);
                     return;
                 case AttackOutcomeKind.Wipe:
                     await ResolveWipeAsync(session, outcome.LogLine!, userRepository, raidSessions);
@@ -671,7 +672,7 @@ public class RaidModule(
 
     private static async Task ResolveVictoryAsync(
         RaidSession session, string logLine, IUserRepository userRepository, IItemRepository itemRepository,
-        IAdventureRepository adventureRepository, IRaidSessionService raidSessions)
+        IAdventureRepository adventureRepository, IRaidSessionService raidSessions, IGameEvents gameEvents)
     {
         // session.Phase ya quedó en Resolved dentro del lock de ResolveParticipantTurn.
         raidSessions.Remove(session.RaidId);
@@ -696,6 +697,8 @@ public class RaidModule(
             int hpDelta = participant.ToDbHpDelta(participant.CurrentHp - participant.StartingHp);
             var outcome = await adventureRepository.ApplyBossVictoryAsync(
                 participant.DiscordId, reward.Gold, reward.Xp, hpDelta, drop?.ItemId, droppedItemQuantity: 1, session.ZoneId);
+
+            await gameEvents.RecordVictoryAsync(participant.DiscordId, GameEventKinds.RaidWin, outcome);
 
             results.Add((participant, reward, drop, outcome));
         }
