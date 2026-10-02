@@ -27,8 +27,10 @@ En el [Developer Portal](https://discord.com/developers/applications):
 4. Activá el **Modo Desarrollador** (Ajustes → Avanzado), click derecho al servidor → **Copiar ID** (`DISCORD_GUILD_ID`).
    Con ese ID los comandos de barra aparecen al instante; sin él tardan hasta 1 hora.
 
-> Los emojis de los ítems son emojis custom (`<:nombre:id>`): se ven si el bot está en el servidor donde viven. Si el bot de
-> producción es una aplicación nueva, invitalo también a ese servidor y verificá que se vean.
+> Los emojis de los ítems son **emojis de la aplicación** (Developer Portal → tu aplicación → *Emojis*; `<:nombre:id>`): se ven en cualquier
+> servidor donde esté el bot, pero **pertenecen a la aplicación**. Si el bot de producción es una aplicación DISTINTA a la de desarrollo,
+> sus ids no existen ahí: hay que volver a subir las imágenes en esa aplicación y regenerar `Database/update_item_emojis.sql` con los ids nuevos
+> (con la misma aplicación para desarrollo y producción no hay que tocar nada). Las 4 maderas comunes siguen siendo emojis de servidor.
 
 ## 2. Opción A — un VPS con Docker Compose (recomendada)
 
