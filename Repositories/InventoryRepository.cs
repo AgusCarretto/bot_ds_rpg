@@ -60,6 +60,57 @@ public sealed class InventoryRepository(IDbConnectionFactory connectionFactory) 
         return await connection.QuerySingleOrDefaultAsync<int>(command);
     }
 
+    public async Task<User?> EatAndHealAsync(
+        ulong discordId, IReadOnlyList<(int ItemId, int Quantity)> foods, int hpToRestore, CancellationToken cancellationToken = default)
+    {
+        using DbConnection connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        using DbTransaction transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            foreach (var (itemId, quantity) in foods)
+            {
+                // La guarda de siempre (mismo patrón que TryConsumeAsync): si ya no tiene esa cantidad no devuelve fila y se revierte todo.
+                int? remaining = await connection.QuerySingleOrDefaultAsync<int?>(new CommandDefinition(
+                    """
+                    UPDATE inventory
+                    SET quantity = quantity - @Quantity
+                    WHERE discord_id = @DiscordId AND item_id = @ItemId AND quantity >= @Quantity
+                    RETURNING quantity;
+                    """,
+                    new { DiscordId = (long)discordId, ItemId = itemId, Quantity = quantity }, transaction: transaction, cancellationToken: cancellationToken));
+
+                if (remaining is null)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    return null;
+                }
+            }
+
+            await connection.ExecuteAsync(new CommandDefinition(
+                "DELETE FROM inventory WHERE discord_id = @DiscordId AND quantity <= 0;",
+                new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
+
+            var healed = await connection.QuerySingleAsync<User>(new CommandDefinition(
+                $"""
+                UPDATE users
+                SET current_hp = LEAST(max_hp, current_hp + @Hp)
+                WHERE discord_id = @DiscordId
+                RETURNING {UserSql.SelectColumns};
+                """,
+                new { DiscordId = (long)discordId, Hp = hpToRestore }, transaction: transaction, cancellationToken: cancellationToken));
+
+            await transaction.CommitAsync(cancellationToken);
+            return healed;
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
+
     public async Task<bool> TryConsumeAsync(ulong discordId, int itemId, int quantity, CancellationToken cancellationToken = default)
     {
         using DbConnection connection = connectionFactory.CreateConnection();

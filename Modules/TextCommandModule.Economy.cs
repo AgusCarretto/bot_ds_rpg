@@ -160,15 +160,15 @@ public partial class TextCommandModule
         }
     }
 
-    // "aa heal" / "aa he" — misma lógica que /heal. No funciona en combate.
+    // "aa heal [comida]" / "aa he" — misma lógica que /heal: se cura toda la vida de una con lo necesario de la mochila. No funciona en combate.
     [Command("heal")]
     [Alias("he")]
-    [Summary("Comé un consumible de tu inventario para recuperar HP (comprado antes en /shop). No funciona en combate.")]
-    public async Task HealAsync()
+    [Summary("Curate toda la vida de una comiendo lo necesario de tu mochila (o de la comida que elijas: \"aa heal Mate Amargo\"). No funciona en combate.")]
+    public async Task HealAsync([Remainder] string? food = null)
     {
         try
         {
-            var embed = await TavernModule.ExecuteHealAsync(userRepository, inventoryRepository, combatSessions, buffRepository, Context.User.Id);
+            var embed = await TavernModule.ExecuteHealAsync(userRepository, inventoryRepository, combatSessions, buffRepository, Context.User.Id, food);
             await NpcImages.SendAsync(Context.Channel, embed);
         }
         catch (Exception ex)
@@ -200,8 +200,8 @@ public partial class TextCommandModule
     // "aa play <coinflip|slots> <apuesta> [heads|tails]" / "aa pl ..." — misma lógica que /play.
     [Command("play")]
     [Alias("pl")]
-    [Summary("Apostá tu oro en el casino: \"aa play coinflip <apuesta> <heads|tails>\" o \"aa play slots <apuesta>\".")]
-    public async Task PlayAsync(string game, int apuesta, string? lado = null)
+    [Summary("Apostá tu oro en el casino: \"aa play coinflip <apuesta|all> <heads|tails>\" o \"aa play slots <apuesta|all>\".")]
+    public async Task PlayAsync(string game, string apuesta, string? lado = null)
     {
         try
         {

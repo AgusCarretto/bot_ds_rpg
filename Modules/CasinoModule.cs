@@ -16,9 +16,8 @@ public class CasinoModule(IUserRepository userRepository, ICasinoRepository casi
         [Choice("Coinflip", "coinflip")]
         [Choice("Slots", "slots")]
         string game,
-        [Summary("apuesta", "Cuánto oro querés apostar (mínimo 10).")]
-        [MinValue(MinBet)]
-        int bet,
+        [Summary("apuesta", "Cuánto oro querés apostar (mínimo 10), o all para apostar todo.")]
+        string bet,
         [Summary("lado", "Solo para Coinflip: elegí Heads o Tails.")]
         [Choice("Heads", "heads")]
         [Choice("Tails", "tails")]
@@ -44,6 +43,21 @@ public class CasinoModule(IUserRepository userRepository, ICasinoRepository casi
     // viene con valor. "game" y "lado" no distinguen mayúsculas (los slash commands sí lo
     // garantizan por el [Choice], acá lo normalizamos a mano).
     public sealed record PlayResult(string? PlainMessage, Embed? Embed);
+
+    // La apuesta como la escribió el jugador: un número o "all" (todo su oro). Lee el monto (GameData/AmountParser.cs) y sigue con la jugada de siempre.
+    public static async Task<PlayResult> ExecutePlayAsync(
+        IUserRepository userRepository, ICasinoRepository casinoRepository, ICasinoService casinoService,
+        ulong discordId, string game, string betText, string? lado, IGameEvents? gameEvents = null)
+    {
+        var player = await userRepository.GetOrCreateUserAsync(discordId);
+        var parsed = AmountParser.Parse(betText, player.Gold);
+        if (!parsed.Ok)
+        {
+            return new PlayResult(parsed.Error, null);
+        }
+
+        return await ExecutePlayAsync(userRepository, casinoRepository, casinoService, discordId, game, parsed.Amount, lado, gameEvents);
+    }
 
     public static async Task<PlayResult> ExecutePlayAsync(
         IUserRepository userRepository, ICasinoRepository casinoRepository, ICasinoService casinoService,

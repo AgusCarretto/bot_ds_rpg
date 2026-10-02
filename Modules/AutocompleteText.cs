@@ -18,6 +18,9 @@ public static class AutocompleteText
     public static bool Matches(string name, string typed) =>
         string.IsNullOrWhiteSpace(typed) || Normalize(name).Contains(Normalize(typed), StringComparison.Ordinal);
 
+    // Mismo nombre sin importar mayúsculas, tildes ni espacios de los costados ("cordero patagonico" == "Cordero Patagónico").
+    public static bool SameName(string a, string b) => Normalize(a) == Normalize(b);
+
     // Los que EMPIEZAN con lo escrito van antes que los que solo lo contienen.
     public static int Relevance(string name, string typed) =>
         !string.IsNullOrWhiteSpace(typed) && Normalize(name).StartsWith(Normalize(typed), StringComparison.Ordinal) ? 0 : 1;

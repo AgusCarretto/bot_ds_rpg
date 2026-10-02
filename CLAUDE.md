@@ -331,7 +331,7 @@ player and buff key, **a new banquete REPLACES the old one, never stacks**; expi
 and `Rescale` for eating one mid-fight (`CombatState.AttackBuffPercent` remembers what's already applied so a second banquete doesn't
 multiply twice). It is read at the start of a solo fight (`AdventureCombatStarter`) and when a raid participant is built (the attack is
 fixed when joining), and shown in `/profile`, `/shop view`, the shop autocomplete and the heal dropdown. `/use` is the only way to eat
-one — it works even at full HP because the buff is the point — and `/heal` (auto-pick) deliberately skips banquetes. In `/travel` and
+one — it works even at full HP because the buff is the point — and `/heal` deliberately skips banquetes (see the next paragraph). In `/travel` and
 `/boss` it uses the one-heal-per-fight slot like any food.
 
 **Missions & achievements (`/missions`, `/achievements`)** — *progress is never stored*: a mission's progress is `SUM(game_events.amount)` of its
@@ -441,6 +441,14 @@ and closing the day is ONE transaction: `UPDATE arena_days SET status='resolved'
 `RewardPayer` (15 hunts of gold of THEIR zone + 6% XP + a zone box, `ArenaRules.ChampionReward`). Fewer than 2 players = cancelled, no prize (so nobody farms the daily prize by joining alone). The result is
 NARRATED in the channel where the first player joined (or `Arena__ChannelId`), round by round: an opening message with the roster, one message per round (each fight gets a line from `GameData/ArenaNarrator.cs` — a crushing win, "by a hair" (the winner finished with <=15% HP), a very long fight — chosen deterministically from the fight, using the stored `arena_matches.winner_hp_pct`) and a closing message that pings the champion with the prize and the whole bracket; `ArenaModule.BuildBroadcast` builds the messages (pure) and the clock sends them with `ArenaScheduler.RoundPause` (4 s) between them. `/arena results` shows the full bracket any time, and `/history` (all games) and `/duels` (record + last rivals) show the PvP numbers — `/profile` deliberately does not. Tests must use synthetic past days (the harness uses 2020) and never call
 `ResolveDueAsync` on the real repository — it would pay real tournaments.
+
+**`/heal` is "heal to full": it eats whatever the bag needs** — `GameData/HealPlanner.cs` (pure) solves an exact bounded knapsack over the player's non-banquet food and picks the combination that overshoots the missing HP the LEAST (ties → fewer units); if the food does not
+cover it, the plan is ALL the food (and the message says how many HP are still missing). `/heal comida:<name>` (autocomplete list, `HealFoodAutocompleteHandler`) restricts it to one food; a banquet is refused there too (it is for `/use` — its value is the buff). The whole plan is paid in ONE transaction
+(`IInventoryRepository.EatAndHealAsync`: guarded decrements, any shortfall rolls everything back, then `LEAST(max_hp, hp + n)`), so concurrent heals never drive an item negative. Still blocked in combat. The tavern's eat menu gets a first option "🍖 Curarme del todo" (same code, `TavernModule.ExecuteHealCoreAsync`) when the player is hurt and has non-banquet food.
+
+**Raid cooldown = boss cooldown, now visible and checked up front**: `CooldownCatalog.Raid` has the same `CommandName` ("boss") and duration as `CooldownCatalog.Boss` (claiming either blocks the other), has its own line in `/cd`, and `RaidModule.ValidateStartAsync/ValidateJoinAsync` reject with the time left BEFORE building or joining a lobby (they used to only find out at activation and silently drop the player). The atomic claim in `TryActivateAsync` stays as the real guard.
+
+**Amounts accept `all` (`/play` bet, `/give` amount)**: the slash parameters are text now and `GameData/AmountParser.cs` reads a number ("500", "1.000") or all/todo/toda/max → the player's whole gold; `CasinoModule.ExecutePlayAsync` and `GiveModule.ExecuteGiveAsync` keep their numeric overloads and add a text one that parses and delegates.
 
 **Gear is EQUIPMENT, not inventory — there is no `/equip`.** Weapons and amulets are forged straight into `users.weapon_id` / `users.amulet_id` (`CraftingRepository.CraftAsync` looks at
 the result's `items.type`: Weapon/Amulet → equip, anything else → inventory) and never touch the bag, so `/inventory` has no weapons/amulets rows. To change gear you SELL the one you wear and forge

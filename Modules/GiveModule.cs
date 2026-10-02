@@ -13,7 +13,7 @@ public class GiveModule(IUserRepository userRepository, ITransferRepository tran
     [SlashCommand("give", "Dale monedas a otro jugador.")]
     public async Task HandleGiveAsync(
         [Summary("jugador", "A quién le das las monedas.")] IUser player,
-        [Summary("cantidad", "Cuántas monedas le das.")] [MinValue(1)] int amount)
+        [Summary("cantidad", "Cuántas monedas le das, o all para darle todo tu oro.")] string amount)
     {
         await DeferAsync();
 
@@ -31,6 +31,26 @@ public class GiveModule(IUserRepository userRepository, ITransferRepository tran
 
     // Exactamente uno de los dos campos viene con valor (mismo patrón que ShopModule.ShopActionResult).
     public sealed record GiveResult(string? PlainMessage, Embed? Embed);
+
+    // La cantidad como la escribió el jugador: un número o "all" (todo su oro). Lee el monto (GameData/AmountParser.cs) y sigue con la entrega de siempre.
+    public static async Task<GiveResult> ExecuteGiveAsync(
+        IUserRepository userRepository, ITransferRepository transferRepository, IGameEvents gameEvents,
+        ulong fromDiscordId, IUser recipient, string amountText)
+    {
+        var sender = await userRepository.GetByDiscordIdAsync(fromDiscordId);
+        if (sender is null)
+        {
+            return new GiveResult("Todavía no tenés cuenta: empezá con **/start**.", null);
+        }
+
+        var parsed = AmountParser.Parse(amountText, sender.Gold);
+        if (!parsed.Ok)
+        {
+            return new GiveResult(parsed.Error, null);
+        }
+
+        return await ExecuteGiveAsync(userRepository, transferRepository, gameEvents, fromDiscordId, recipient, parsed.Amount);
+    }
 
     // Estático (sin Context) para que "aa give" comparta exactamente la misma lógica.
     public static async Task<GiveResult> ExecuteGiveAsync(

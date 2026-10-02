@@ -7,7 +7,7 @@ using BotDsRpg.Services;
 public class CooldownModule(ICooldownRepository cooldownRepository, IUserRepository userRepository)
     : InteractionModuleBase<SocketInteractionContext>
 {
-    [SlashCommand("cd", "Mostrá el estado de tus cooldowns (cazar, viajar, talar, minar, comprar cajas y diario).")]
+    [SlashCommand("cd", "Mostrá el estado de tus cooldowns (cazar, viajar, talar, minar, jefe, raid, cajas y diario).")]
     public async Task HandleCooldownsAsync()
     {
         await DeferAsync(ephemeral: true);
@@ -54,6 +54,7 @@ public class CooldownModule(ICooldownRepository cooldownRepository, IUserReposit
             .WithTitle("⏱️ Tus cooldowns")
             .WithColor(Color.Teal)
             .WithDescription(string.Join('\n', lines))
+            .WithFooter("El Jefe y el Raid comparten el mismo cooldown.")
             .Build();
     }
 }

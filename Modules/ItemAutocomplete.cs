@@ -148,6 +148,18 @@ public sealed class UseItemAutocompleteHandler : SafeAutocompleteHandler
     }
 }
 
+// Lista de /heal: la comida que el jugador TIENE y sirve para curarse del todo (sin banquetes: esos se comen con /use).
+public sealed class HealFoodAutocompleteHandler : SafeAutocompleteHandler
+{
+    protected override async Task<IReadOnlyList<AutocompleteResult>> BuildAsync(ulong userId, string typed, IServiceProvider services)
+    {
+        var owned = await services.GetRequiredService<IInventoryRepository>().GetOwnedByTypeAsync(userId, "Consumable");
+        var buffs = await services.GetRequiredService<IBuffRepository>().GetItemBuffsAsync();
+
+        return ItemChoices.ForUse(owned.Where(o => !buffs.ContainsKey(o.Item.ItemId)), null, typed);
+    }
+}
+
 // Lista de /open: las cajas que el jugador TIENE, con cuántas.
 public sealed class BoxAutocompleteHandler : SafeAutocompleteHandler
 {

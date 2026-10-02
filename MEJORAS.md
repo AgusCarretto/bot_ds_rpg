@@ -49,6 +49,7 @@ la base real con usuarios descartables y recién ahí integrada a `develop`.
   heredan de `SafeAutocompleteHandler`: si armar la lista falla, queda en el log y se devuelve vacía en vez de romperse. (5) El nombre
   de un ítem ya no distingue mayúsculas, tildes **ni espacios sobrantes** (`"Mate Amargo "` fallaba). (6) Misiones y logros con una línea en
   blanco entre cada una.
+- **`/heal` cura todo de una, raid con su cooldown y `all` en oro** (2026-10-02): (1) **`/heal`** ahora llena la vida de una: come de la mochila **lo necesario** (la combinación que menos curación desperdicia; no toca los banquetes) y lo anota en un mensaje; si no alcanza la comida, se la come toda y dice cuánto te falta. Opcional: `/heal comida:<nombre>` (con lista) para usar solo esa. En la taberna, "Comer algo" suma arriba de todo "🍖 Curarme del todo". (2) **El raid figura en `/cd`** (comparte cooldown con el jefe, 30 min) y **se bloquea al arrancar y al unirse** si lo tenés ocupado, diciendo cuánto falta. (3) **`/play` y `/give` aceptan `all`** (también todo / toda / max) además de un número ("500" o "1.000"). Idea a futuro, anotada: `marriage` (ver abajo).
 - **El equipo se forja directo a equipamiento, nuevo perfil e historiales** (2026-10-02): (1) **Armas y amuletos ya no pasan por el inventario ni existe `/equip`**: al forjar quedan equipados solos; para cambiar hay que
   **vender el que llevás puesto** (en `/taberna` o con `/shop sell`) y después forjar el nuevo. Si el casillero está ocupado el herrero no cobra ni gasta nada y te avisa; la lista de la forja marca 🔁 "primero vendé tu arma"
   y 🟢 "ya la llevás". En la taberna, vender lo que llevás puesto sale primero en la lista con un ⚠️ y **pide confirmación** (un click de más te deja sin la pieza, y forjarla cuesta mucho más de lo que pagan).
@@ -833,6 +834,7 @@ Todo esto ya compila y bootea limpio contra Discord.
 
 ## Ideas a futuro (sin comprometerme a nada, para cuando quieran expandir)
 
+- **Casamiento (`marriage`)** — pedido por el dueño (2026-10-02), para más adelante: dos jugadores se casan (propuesta con aceptar/rechazar, como `/trade` y `/fight`) y pueden **compartir cosas** entre sí. Preguntas para cuando se encare: qué se comparte (¿oro común?, ¿cofre compartido?, ¿bonus al pelear juntos / en raid?, ¿cooldowns?), cómo se divorcia (y qué pasa con lo compartido), y cuidado con las cuentas alternativas: si se comparte algo con valor, el casamiento abre la misma puerta que `/give` (mismo tope o registro en `game_events`).
 - Sistema de armadura/defensa (hoy el daño recibido no depende de ningún stat defensivo).
 - Comandos de administrador (dar oro/ítems, resetear cooldowns) para moderar el server de pruebas.
 - PvP o eventos temporizados de servidor (boss compartido, etc.) — mencionado como "idle" en el

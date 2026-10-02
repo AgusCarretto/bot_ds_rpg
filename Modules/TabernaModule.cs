@@ -24,6 +24,8 @@ public class TabernaModule(
     private const string BuyFood = "taberna_buy";
     private const string BuyBox = "taberna_box";
     private const string Sell = "taberna_sell";
+    // El valor de la primera opción de "Comer algo": cura toda la vida de una (HealPlanner). No choca con ningún nombre de ítem.
+    private const string FullHeal = "__heal_full__";
     private const string GearYes = "taberna_gearyes";
     private const string GearNo = "taberna_gearno";
 
@@ -255,6 +257,13 @@ public class TabernaModule(
                     return NpcDialogue.Innkeeper(InnkeeperLine.InCombat);
                 }
 
+                // "Curarme del todo": la misma curación completa de /heal (come lo necesario de la mochila, sin banquetes).
+                if (itemName == FullHeal)
+                {
+                    var healed = await TavernModule.ExecuteHealCoreAsync(userRepository, inventoryRepository, combatSessions, buffRepository, discordId);
+                    return healed.Description;
+                }
+
                 var used = await UseModule.ExecuteUseAsync(userRepository, itemRepository, inventoryRepository, combatSessions, buffRepository, discordId, itemName);
                 if (used.Embed is null)
                 {
@@ -294,10 +303,18 @@ public class TabernaModule(
 
         if (foodItems.Count > 0)
         {
-            components.WithSelectMenu(Menu(
-                Eat, discordId, "Comer algo de tu mochila",
-                foodItems.OrderByDescending(o => o.Item.StatValue).Take(25).Select(o => (
-                    $"{o.Item.Name} ×{o.Quantity}", $"Cura {o.Item.StatValue} HP{BuffText(o.Item, buffs)}", o.Item.Name))), row++);
+            // Si estás herido y tenés comida común, arriba de todo va "Curarme del todo" (el resto de la lista sigue siendo de a UNA unidad).
+            var eatOptions = new List<(string Label, string Description, string Value)>();
+            int missingHp = player.MaxHp - player.CurrentHp;
+            if (missingHp > 0 && foodItems.Any(o => !buffs.ContainsKey(o.Item.ItemId)))
+            {
+                eatOptions.Add(("🍖 Curarme del todo", $"Come lo necesario de tu mochila · te faltan {missingHp} HP", FullHeal));
+            }
+
+            eatOptions.AddRange(foodItems.OrderByDescending(o => o.Item.StatValue).Take(25 - eatOptions.Count).Select(o => (
+                $"{o.Item.Name} ×{o.Quantity}", $"Cura {o.Item.StatValue} HP{BuffText(o.Item, buffs)}", o.Item.Name)));
+
+            components.WithSelectMenu(Menu(Eat, discordId, "Comer algo de tu mochila", eatOptions), row++);
         }
 
         var foodForSale = shopItems.Where(i => i.Type != "Caja").OrderBy(i => i.BuyPrice).Take(25).ToList();

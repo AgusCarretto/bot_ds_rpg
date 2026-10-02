@@ -34,7 +34,7 @@ public partial class TextCommandModule
         try
         {
             var rejection = await RaidModule.ValidateStartAsync(
-                userRepository, itemRepository, monsterRepository, zoneRepository, combatSessions, raidSessions, Context.User.Id);
+                userRepository, itemRepository, monsterRepository, zoneRepository, combatSessions, raidSessions, Context.User.Id, cooldownRepository);
 
             if (rejection is not null)
             {

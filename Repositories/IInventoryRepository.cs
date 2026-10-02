@@ -20,4 +20,10 @@ public interface IInventoryRepository
     // aplica ningún cambio y devuelve false). Limpia la fila si llega a 0. Usado por /use para
     // gastar un consumible del inventario.
     Task<bool> TryConsumeAsync(ulong discordId, int itemId, int quantity, CancellationToken cancellationToken = default);
+
+    // Come VARIAS comidas y se cura, todo en UNA transacción (/heal "curate del todo"): descuenta cada ítem con la guarda de siempre y, si alguno
+    // ya no alcanza (otra acción lo gastó justo antes), revierte TODO y devuelve null. Si salió bien suma "hpToRestore" a la vida (tope max_hp) y
+    // devuelve el jugador ya curado.
+    Task<User?> EatAndHealAsync(
+        ulong discordId, IReadOnlyList<(int ItemId, int Quantity)> foods, int hpToRestore, CancellationToken cancellationToken = default);
 }

@@ -22,7 +22,8 @@ public class RaidModule(
     ICombatSessionService combatSessions,
     IRaidSessionService raidSessions,
     IGameEvents gameEvents,
-    IBuffRepository buffRepository) : InteractionModuleBase<SocketInteractionContext>
+    IBuffRepository buffRepository,
+    ICooldownRepository cooldownRepository) : InteractionModuleBase<SocketInteractionContext>
 {
     // Ver Services/RaidSettings.cs: el mínimo es configurable (2 por defecto).
     private static int MinParticipantsToStart => RaidSettings.MinParticipants;
@@ -36,7 +37,8 @@ public class RaidModule(
 
         try
         {
-            var rejection = await ValidateStartAsync(userRepository, itemRepository, monsterRepository, zoneRepository, combatSessions, raidSessions, Context.User.Id);
+            var rejection = await ValidateStartAsync(
+                userRepository, itemRepository, monsterRepository, zoneRepository, combatSessions, raidSessions, Context.User.Id, cooldownRepository);
             if (rejection is not null)
             {
                 await FollowupAsync(rejection.PlainMessage, embed: rejection.Embed, ephemeral: true);
@@ -92,7 +94,7 @@ public class RaidModule(
                 return;
             }
 
-            var rejection = await ValidateJoinAsync(userRepository, itemRepository, zoneRepository, combatSessions, raidSessions, session, discordId);
+            var rejection = await ValidateJoinAsync(userRepository, itemRepository, zoneRepository, combatSessions, raidSessions, session, discordId, cooldownRepository);
             if (rejection is not null)
             {
                 await FollowupAsync(rejection.PlainMessage, embed: rejection.Embed, ephemeral: true);
@@ -323,11 +325,17 @@ public class RaidModule(
 
     public static async Task<RaidRejection?> ValidateStartAsync(
         IUserRepository userRepository, IItemRepository itemRepository, IMonsterRepository monsterRepository, IZoneRepository zoneRepository,
-        ICombatSessionService combatSessions, IRaidSessionService raidSessions, ulong discordId)
+        ICombatSessionService combatSessions, IRaidSessionService raidSessions, ulong discordId, ICooldownRepository? cooldownRepository = null)
     {
         if (combatSessions.Peek(discordId) is not null || raidSessions.IsInAnyRaid(discordId))
         {
             return new RaidRejection(AdventureModule.BuildAlreadyInCombatMessage(), null);
+        }
+
+        // El cooldown (el mismo del jefe) se mira ANTES de armar nada: sin él no se arma el lobby ni se puede unir.
+        if (await CooldownRejectionAsync(cooldownRepository, discordId) is { } onCooldown)
+        {
+            return onCooldown;
         }
 
         var player = await userRepository.GetOrCreateUserAsync(discordId);
@@ -401,11 +409,17 @@ public class RaidModule(
 
     public static async Task<RaidRejection?> ValidateJoinAsync(
         IUserRepository userRepository, IItemRepository itemRepository, IZoneRepository zoneRepository,
-        ICombatSessionService combatSessions, IRaidSessionService raidSessions, RaidSession session, ulong discordId)
+        ICombatSessionService combatSessions, IRaidSessionService raidSessions, RaidSession session, ulong discordId,
+        ICooldownRepository? cooldownRepository = null)
     {
         if (combatSessions.Peek(discordId) is not null || raidSessions.IsInAnyRaid(discordId))
         {
             return new RaidRejection(AdventureModule.BuildAlreadyInCombatMessage(), null);
+        }
+
+        if (await CooldownRejectionAsync(cooldownRepository, discordId) is { } onCooldown)
+        {
+            return onCooldown;
         }
 
         var player = await userRepository.GetOrCreateUserAsync(discordId);
@@ -425,6 +439,26 @@ public class RaidModule(
 
         return null;
     }
+
+    // Si el jugador tiene ocupado el cooldown del raid (que es el del jefe), el rechazo con cuánto le falta; si no, null. Sin repositorio no chequea
+    // (los llamadores viejos siguen funcionando: igual el cooldown se reclama de forma atómica al arrancar el raid, ver TryActivateAsync).
+    private static async Task<RaidRejection?> CooldownRejectionAsync(ICooldownRepository? cooldownRepository, ulong discordId)
+    {
+        if (cooldownRepository is null)
+        {
+            return null;
+        }
+
+        var remaining = await cooldownRepository.GetRemainingAsync(discordId, CooldownCatalog.Raid.CommandName, CooldownCatalog.Raid.Duration);
+        return remaining is null ? null : new RaidRejection(null, BuildRaidCooldownEmbed(remaining.Value));
+    }
+
+    public static Embed BuildRaidCooldownEmbed(TimeSpan remaining) =>
+        new EmbedBuilder()
+            .WithTitle($"⏳ {CooldownCatalog.Raid.Emoji} Raid: todavía no podés")
+            .WithDescription($"Te falta **{TimeFormat.Remaining(remaining)}** para entrar a un raid. El raid y el jefe (**/boss**) comparten el mismo cooldown.")
+            .WithColor(Color.DarkGrey)
+            .Build();
 
     private static async Task<RaidParticipant> BuildParticipantAsync(
         IUserRepository userRepository, IItemRepository itemRepository, IBuffRepository buffRepository, ulong discordId, string displayName) =>
@@ -481,7 +515,7 @@ public class RaidModule(
 
             foreach (var participant in snapshot)
             {
-                bool claimed = await adventureRepository.TryClaimCooldownAsync(participant.DiscordId, CooldownCatalog.Boss.CommandName, CooldownCatalog.Boss.Duration);
+                bool claimed = await adventureRepository.TryClaimCooldownAsync(participant.DiscordId, CooldownCatalog.Raid.CommandName, CooldownCatalog.Raid.Duration);
                 if (claimed)
                 {
                     confirmed.Add(participant);
