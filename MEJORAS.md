@@ -49,6 +49,7 @@ la base real con usuarios descartables y recién ahí integrada a `develop`.
   heredan de `SafeAutocompleteHandler`: si armar la lista falla, queda en el log y se devuelve vacía en vez de romperse. (5) El nombre
   de un ítem ya no distingue mayúsculas, tildes **ni espacios sobrantes** (`"Mate Amargo "` fallaba). (6) Misiones y logros con una línea en
   blanco entre cada una.
+- **Sin rareza en drops y equipo** (2026-10-02): en un drop de monstruo, y en las armas y amuletos de la forja, la rareza es lo mismo que la zona (1 a 1), así que el "(Raro)" solo ocupaba lugar: `/drops`, el mensaje de victoria, el de `/autohunt` y el de `/equip` ya no lo muestran. La columna `items.rarity` NO se toca: sigue mandando en lo que sí la usa de verdad (la tirada de `/chop` y `/mine`, las cajas, el canje `/trade` que exige igual rareza y el tier de la comida). Para el arte de los íconos de drops y armas, el color por zona sigue sirviendo igual (es lo que ya tienen).
 - **PvP: duelo amistoso y Arena diaria** (2026-10-02): (1) **`/fight @jugador`** (`aa fight @jugador`, también `aa duelo`): desafío con Aceptar/Rechazar y pelea por turnos con Atacar, la
   habilidad de la clase y Rendirse (60 s por turno; el que no juega pierde). Es solo por el honor: los dos arrancan con la vida completa y no se toca nada (ni vida, ni oro, ni XP). (2) **`/arena`**:
   `join` te anota en el torneo de hoy (máx. 32, mínimo 2), `listplayers` muestra quiénes van y `results` la llave del último. A las **00:00 de Uruguay** se arma una llave de eliminación directa con todos

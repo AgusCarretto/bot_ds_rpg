@@ -83,7 +83,7 @@ public class EquipModule(IUserRepository userRepository, IItemRepository itemRep
 
         return new EquipResult(null, new EmbedBuilder()
             .WithTitle($"{emoji} ¡Equipado!")
-            .WithDescription($"Ahora tenés equipada/o **{ItemDisplay.Format(item.Emoji, item.Name)}** como {slot} ({item.Rarity}, +{item.StatValue}).")
+            .WithDescription($"Ahora tenés equipada/o **{ItemDisplay.Format(item.Emoji, item.Name)}** como {slot} (+{item.StatValue}).")
             .WithColor(Color.Green)
             .Build());
     }

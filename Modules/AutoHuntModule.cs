@@ -167,7 +167,7 @@ public class AutoHuntModule(
 
         if (droppedItem is not null)
         {
-            embed.AddField("🎁 Material obtenido", $"{ItemDisplay.Format(droppedItem.Emoji, droppedItem.Name)} ({droppedItem.Rarity})", false);
+            embed.AddField("🎁 Material obtenido", ItemDisplay.Format(droppedItem.Emoji, droppedItem.Name), false);
         }
 
         return embed.Build();

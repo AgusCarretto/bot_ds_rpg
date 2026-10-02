@@ -56,9 +56,10 @@ public static class DropsCatalog
             text.Length <= FieldLimit ? text : text[..(FieldLimit - 1)] + "…"));
     }
 
-    // "{emoji} Nombre · Rareza"; un material que no está en el catálogo cargado se muestra solo por nombre.
+    // "{emoji} Nombre". Sin la rareza: en un drop de monstruo es lo mismo que la zona en la que se lo encuentra (el listado ya va por zona),
+    // así que solo ocupaba lugar. Un material que no está en el catálogo cargado se muestra solo por nombre.
     private static string DescribeItem(string name, IReadOnlyDictionary<string, DropItemInfo> items) =>
         items.TryGetValue(name, out var info)
-            ? $"{ItemDisplay.Format(info.Emoji, info.Name)} · _{info.Rarity}_"
+            ? ItemDisplay.Format(info.Emoji, info.Name)
             : name;
 }
