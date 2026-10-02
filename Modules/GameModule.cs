@@ -8,7 +8,7 @@ using Discord.Rest;
 using Discord.WebSocket;
 using BotDsRpg.Services;
 
-public class GameModule(IUserRepository userRepository, IInventoryRepository inventoryRepository, IItemRepository itemRepository, IZoneRepository zoneRepository, IBuffRepository buffRepository)
+public class GameModule(IUserRepository userRepository, IInventoryRepository inventoryRepository, IItemRepository itemRepository, IZoneRepository zoneRepository, IBuffRepository buffRepository, IGameEventRepository gameEventRepository)
     : InteractionModuleBase<SocketInteractionContext>
 {
     // Comando barra: /profile [jugador]
@@ -32,7 +32,9 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
                 return;
             }
 
-            var embed = await BuildProfileEmbedAsync(userRepository, itemRepository, zoneRepository, buffRepository, target.Id, GetDisplayName(target), target.GetAvatarUrl() ?? target.GetDefaultAvatarUrl());
+            var embed = await BuildProfileEmbedAsync(
+                userRepository, itemRepository, zoneRepository, buffRepository, target.Id, GetDisplayName(target),
+                target.GetAvatarUrl() ?? target.GetDefaultAvatarUrl(), gameEventRepository);
             await FollowupAsync(embed: embed);
         }
         catch (Exception ex)
@@ -55,7 +57,7 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
     // embed en "aa profile" — acá vive tanto la lectura de datos como el embed.
     public static async Task<Embed> BuildProfileEmbedAsync(
         IUserRepository userRepository, IItemRepository itemRepository, IZoneRepository zoneRepository, IBuffRepository buffRepository,
-        ulong discordId, string username, string avatarUrl)
+        ulong discordId, string username, string avatarUrl, IGameEventRepository? gameEventRepository = null)
     {
         // Si es la primera vez que este usuario ejecuta un comando, se crea acá
         // automáticamente con los valores por defecto (Nivel 1, 0 EXP, 50 de oro, 100/100 HP, Guerrero).
@@ -79,7 +81,7 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
         var ability = ClassAbilities.For(player.Class);
         int requiredXp = LevelingCalculator.RequiredXpForLevel(player.Level);
 
-        return new EmbedBuilder()
+        var builder = new EmbedBuilder()
             .WithAuthor(username, avatarUrl)
             .WithTitle($"{classDef?.Emoji ?? "🔥"} {player.Class} — Nivel {player.Level}")
             .WithColor(Color.Orange) // Color cálido acorde al asado
@@ -100,8 +102,25 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
                     : $"{ability.Emoji} **{ability.Name}** (enfriamiento: {ability.CooldownTurns} turnos)\n{ability.Description}",
                 false)
             .WithFooter("Asado y Acero RPG • Preparando las brasas...")
-            .WithCurrentTimestamp()
-            .Build();
+            .WithCurrentTimestamp();
+
+        // El resumen de PvP solo aparece si alguna vez peleó o se anotó en la Arena (GameData/PvpStats.cs). Es un extra: si falla la lectura, el perfil sale igual.
+        if (gameEventRepository is not null)
+        {
+            try
+            {
+                if (PvpStats.Describe(await gameEventRepository.GetStatsAsync(discordId)) is { } pvp)
+                {
+                    builder.AddField("⚔️ PvP", pvp, false);
+                }
+            }
+            catch (Exception ex)
+            {
+                BotLog.Warn(ex);
+            }
+        }
+
+        return builder.Build();
     }
 
     // Comando barra: /inventory [jugador]

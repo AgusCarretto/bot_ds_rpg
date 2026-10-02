@@ -140,11 +140,11 @@ public sealed class ArenaService(
         var bracket = ArenaBracket.Run(entrants, Random.Shared, (p1, p2) =>
         {
             var result = DuelEngine.Simulate(fighters[p1.DiscordId], fighters[p2.DiscordId]);
-            return new ArenaFightOutcome(result.Winner.Fighter.DiscordId, result.Actions);
+            return new ArenaFightOutcome(result.Winner.Fighter.DiscordId, result.Actions, (int)Math.Round(result.Winner.HpFraction * 100));
         });
 
         var rows = bracket.Matches
-            .Select(m => new ArenaMatchRow(m.Round, m.Slot, m.P1.DiscordId, m.P1.Name, m.P2?.DiscordId, m.P2?.Name, m.WinnerId, m.Actions))
+            .Select(m => new ArenaMatchRow(m.Round, m.Slot, m.P1.DiscordId, m.P1.Name, m.P2?.DiscordId, m.P2?.Name, m.WinnerId, m.Actions, m.WinnerHpPercent))
             .ToList();
 
         // El premio escala con la zona del campeón (igual que las misiones y los logros).

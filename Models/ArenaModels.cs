@@ -17,8 +17,9 @@ public sealed record ArenaDayInfo(
     DateOnly Day, string Status, ulong? ChannelId, ulong? WinnerId, string? WinnerName, int Participants, int Rounds,
     string? RewardText, DateTime? ResolvedAtUtc);
 
-// Una pelea de la llave tal como queda guardada. P2 null = pasó directo.
-public sealed record ArenaMatchRow(int Round, int Slot, ulong P1Id, string P1Name, ulong? P2Id, string? P2Name, ulong WinnerId, int Actions);
+// Una pelea de la llave tal como queda guardada. P2 null = pasó directo. WinnerHpPercent: con cuánta vida terminó el ganador (para narrarla).
+public sealed record ArenaMatchRow(
+    int Round, int Slot, ulong P1Id, string P1Name, ulong? P2Id, string? P2Name, ulong WinnerId, int Actions, int WinnerHpPercent = 100);
 
 // Resolved false = otro proceso ya había cerrado ese día (no se pagó nada de nuevo). Receipt null con Resolved true = el campeón ya no tenía cuenta.
 public sealed record ArenaResolveOutcome(bool Resolved, RewardReceipt? Receipt);

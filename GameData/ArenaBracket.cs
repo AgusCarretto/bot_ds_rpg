@@ -3,9 +3,10 @@ namespace BotDsRpg.GameData;
 public sealed record ArenaEntrant(ulong DiscordId, string Name);
 
 // P2 null = pasó directo (no tuvo rival en la primera ronda: pasa sin pelear). Actions: cuántas acciones duró la pelea (0 si pasó directo).
-public sealed record ArenaMatch(int Round, int Slot, ArenaEntrant P1, ArenaEntrant? P2, ulong WinnerId, int Actions);
+public sealed record ArenaMatch(int Round, int Slot, ArenaEntrant P1, ArenaEntrant? P2, ulong WinnerId, int Actions, int WinnerHpPercent = 100);
 
-public sealed record ArenaFightOutcome(ulong WinnerId, int Actions);
+// WinnerHpPercent: con qué porcentaje de su vida terminó el ganador (100 = ni lo tocaron). Sirve para narrar si fue paliza o por un pelo.
+public sealed record ArenaFightOutcome(ulong WinnerId, int Actions, int WinnerHpPercent = 100);
 
 public sealed record ArenaBracketResult(IReadOnlyList<ArenaMatch> Matches, int Rounds, ArenaEntrant Champion);
 
@@ -91,7 +92,7 @@ public static class ArenaBracket
             ? p2
             : throw new InvalidOperationException("La pelea devolvió un ganador que no peleó.");
 
-        matches.Add(new ArenaMatch(round, slot, p1, p2, winner.DiscordId, outcome.Actions));
+        matches.Add(new ArenaMatch(round, slot, p1, p2, winner.DiscordId, outcome.Actions, Math.Clamp(outcome.WinnerHpPercent, 0, 100)));
         return winner;
     }
 

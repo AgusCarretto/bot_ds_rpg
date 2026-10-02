@@ -119,7 +119,7 @@ public sealed class ArenaRepository(IDbConnectionFactory connectionFactory) : IA
         var rows = await connection.QueryAsync<MatchRow>(new CommandDefinition(
             """
             SELECT round AS Round, slot AS Slot, p1_id AS P1Id, p1_name AS P1Name, p2_id AS P2Id, p2_name AS P2Name,
-                   winner_id AS WinnerId, actions AS Actions
+                   winner_id AS WinnerId, actions AS Actions, winner_hp_pct AS WinnerHpPercent
             FROM arena_matches
             WHERE day = @Day::date
             ORDER BY round, slot;
@@ -127,7 +127,7 @@ public sealed class ArenaRepository(IDbConnectionFactory connectionFactory) : IA
             new { Day = Key(day) }, cancellationToken: cancellationToken));
 
         return rows
-            .Select(r => new ArenaMatchRow(r.Round, r.Slot, (ulong)r.P1Id, r.P1Name, r.P2Id is long p2 ? (ulong)p2 : null, r.P2Name, (ulong)r.WinnerId, r.Actions))
+            .Select(r => new ArenaMatchRow(r.Round, r.Slot, (ulong)r.P1Id, r.P1Name, r.P2Id is long p2 ? (ulong)p2 : null, r.P2Name, (ulong)r.WinnerId, r.Actions, r.WinnerHpPercent))
             .ToList();
     }
 
@@ -187,13 +187,13 @@ public sealed class ArenaRepository(IDbConnectionFactory connectionFactory) : IA
         {
             await connection.ExecuteAsync(new CommandDefinition(
                 """
-                INSERT INTO arena_matches (day, round, slot, p1_id, p1_name, p2_id, p2_name, winner_id, actions)
-                VALUES (@Day::date, @Round, @Slot, @P1Id, @P1Name, @P2Id, @P2Name, @WinnerId, @Actions);
+                INSERT INTO arena_matches (day, round, slot, p1_id, p1_name, p2_id, p2_name, winner_id, actions, winner_hp_pct)
+                VALUES (@Day::date, @Round, @Slot, @P1Id, @P1Name, @P2Id, @P2Name, @WinnerId, @Actions, @WinnerHpPercent);
                 """,
                 new
                 {
                     Day = Key(day), match.Round, match.Slot, P1Id = (long)match.P1Id, match.P1Name,
-                    P2Id = match.P2Id is ulong p2 ? (long?)p2 : null, match.P2Name, WinnerId = (long)match.WinnerId, match.Actions,
+                    P2Id = match.P2Id is ulong p2 ? (long?)p2 : null, match.P2Name, WinnerId = (long)match.WinnerId, match.Actions, match.WinnerHpPercent,
                 },
                 transaction: transaction, cancellationToken: cancellationToken));
         }
@@ -252,5 +252,6 @@ public sealed class ArenaRepository(IDbConnectionFactory connectionFactory) : IA
         public string? P2Name { get; init; }
         public long WinnerId { get; init; }
         public int Actions { get; init; }
+        public int WinnerHpPercent { get; init; }
     }
 }

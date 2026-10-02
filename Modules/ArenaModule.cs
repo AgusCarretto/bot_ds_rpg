@@ -191,11 +191,66 @@ public class ArenaModule(IArenaService arena) : InteractionModuleBase<SocketInte
                 $"No llegaron a {ArenaRules.MinPlayers} anotados, así que no hubo torneo. ¡Hoy arranca otro: anotate con **/arena join**!"));
         }
 
-        string? extra = resolution.LevelsGained > 0 ? $"🎉 ¡Y subió al nivel **{resolution.NewLevel}**!" : null;
+        var crown = resolution.Matches.Where(m => m.Round == resolution.Rounds && m.P2Id is not null).Select(ArenaNarrator.Crowning).FirstOrDefault();
+        string? levelUp = resolution.LevelsGained > 0 ? $"🎉 ¡Y subió al nivel **{resolution.NewLevel}**!" : null;
+        string? extra = string.Join("\n", new[] { crown, levelUp }.Where(x => x is not null)) is { Length: > 0 } joined ? joined : null;
         var embed = BuildResultsEmbed(
             resolution.Day, resolution.WinnerName, resolution.Participants, resolution.Rounds, resolution.RewardText, resolution.Matches, extra);
 
         return ($"🎉 ¡{MentionUtils.MentionUser(resolution.WinnerId!.Value)} es el campeón de la Arena!", embed);
+    }
+
+    // Un mensaje de la transmisión: texto opcional (la mención del campeón) + el embed.
+    public sealed record ArenaMessage(string? Content, Embed Embed);
+
+    // La Arena "narrada": en vez de tirar el resultado de golpe, el bot cuenta el torneo en el canal ronda por ronda (el reloj deja unos segundos
+    // entre mensaje y mensaje). Abre con quiénes pelean, sigue con cada ronda —cada pelea con su frase: paliza, por un pelo, batalla larga— y
+    // cierra con el campeón, su premio y la llave completa. Un torneo cancelado es un solo mensaje. Pura: devuelve los mensajes, no los manda.
+    public static IReadOnlyList<ArenaMessage> BuildBroadcast(ArenaResolution resolution)
+    {
+        var (content, closing) = BuildAnnouncement(resolution);
+        if (resolution.Cancelled)
+        {
+            return [new ArenaMessage(content, closing)];
+        }
+
+        string day = ArenaRules.Format(resolution.Day);
+        var messages = new List<ArenaMessage>();
+
+        var names = resolution.Matches
+            .Where(m => m.Round == 1)
+            .SelectMany(m => m.P2Name is null ? new[] { m.P1Name } : new[] { m.P1Name, m.P2Name })
+            .Select(n => Short(n, 18))
+            .ToList();
+        string roster = string.Join(", ", names);
+        if (roster.Length > 900)
+        {
+            roster = roster[..899] + "…";
+        }
+
+        messages.Add(new ArenaMessage(null, new EmbedBuilder()
+            .WithTitle($"🏟️ ¡Arranca la Arena del {day}!")
+            .WithColor(Color.Orange)
+            .WithDescription(
+                $"Se anotaron **{resolution.Participants}** peleadores y se juega por eliminación directa: **{resolution.Rounds}** ronda(s).\n\n" +
+                $"🥊 {roster}\n\n¡Que empiecen los combates!")
+            .Build()));
+
+        foreach (var round in resolution.Matches.GroupBy(m => m.Round).OrderBy(g => g.Key))
+        {
+            var fights = round.OrderBy(m => m.Slot).ToList();
+            int real = fights.Count(m => m.P2Id is not null);
+            bool isFinal = round.Key == resolution.Rounds;
+
+            messages.Add(new ArenaMessage(null, new EmbedBuilder()
+                .WithTitle($"{ArenaBracket.RoundName(round.Key, resolution.Rounds)} · {real} combate(s)")
+                .WithColor(isFinal ? Color.Gold : Color.DarkOrange)
+                .WithDescription(string.Join("\n", fights.Select(ArenaNarrator.Describe)))
+                .Build()));
+        }
+
+        messages.Add(new ArenaMessage(content, closing));
+        return messages;
     }
 
     private static string MatchLine(ArenaMatchRow match)

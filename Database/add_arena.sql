@@ -39,7 +39,11 @@ CREATE TABLE IF NOT EXISTS arena_matches (
     p2_name   TEXT,
     winner_id BIGINT  NOT NULL,
     actions   INTEGER NOT NULL DEFAULT 0,             -- cuántas acciones duró la pelea
+    winner_hp_pct INTEGER NOT NULL DEFAULT 100,       -- % de vida con el que terminó el ganador (para narrar si fue paliza o por un pelo)
     PRIMARY KEY (day, round, slot)
 );
+
+-- Para una base que ya había corrido la primera versión de este archivo (sin winner_hp_pct):
+ALTER TABLE arena_matches ADD COLUMN IF NOT EXISTS winner_hp_pct INTEGER NOT NULL DEFAULT 100;
 
 CREATE INDEX IF NOT EXISTS idx_arena_days_status ON arena_days (status, day);
