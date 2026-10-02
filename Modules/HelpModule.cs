@@ -48,7 +48,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             .WithColor(OnboardingModule.BrandColor)
             .WithDescription("El loop básico del juego, en 5 pasos:")
             .AddField("🪓 Recolección", "Usá `/chop` o `/mine` para conseguir recursos básicos.", false)
-            .AddField("⚒️ Herrería", "Usá `/forge` para ver las recetas de cada zona y crear armas más fuertes. ¿No sabés qué farmear? `/tips` te dice qué te falta.", false)
+            .AddField("⚒️ Herrería", "Usá `/forge` para ver las recetas de cada zona y crear armas y amuletos: se equipan solos (para cambiar, vendé el que llevás en `/taberna`). ¿No sabés qué farmear? `/tips` te dice qué te falta.", false)
             .AddField(
                 "⚔️ Combate",
                 "Usá `/hunt` (manual) o `aa ah` (automático) para ganar Oro, XP y drops de monstruos. " +
@@ -84,11 +84,11 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 false)
             .AddField(
                 "📈 Progresión",
-                "`/forge` (`aa herrero`) — Pasá por la herrería: elegí de la lista qué forjar\n`/taberna` — Comé, comprá comida y cajas y vendé con el tabernero\n`/equip` — Equipar arma/amuleto\n`/heal` — Curarte con un consumible del inventario (no en combate)\n`/use` — Curarte con un consumible (en combate: en `/travel` y `/boss` una sola vez por pelea, también desde el desplegable). Los banquetes Míticos suman +15% de ataque por 30 min\n`/missions` — Misiones diarias y semanales (reclamás los premios ahí)\n`/achievements` — Tus logros por tramos\n`/trade` — Cambiá 1 material por 1 de la misma rareza con otro jugador\n`/leaderboard` — Ranking del server",
+                "`/forge` (`aa herrero`) — Pasá por la herrería: forjá armas y amuletos (quedan equipados solos) y mirá las recetas de cada zona\n`/taberna` — Comé, comprá comida y cajas y vendé con el tabernero (también tu arma o amuleto equipados, para poder forjar otro)\n`/heal` — Curarte con un consumible del inventario (no en combate)\n`/use` — Curarte con un consumible (en combate: en `/travel` y `/boss` una sola vez por pelea, también desde el desplegable). Los banquetes Míticos suman +15% de ataque por 30 min\n`/missions` — Misiones diarias y semanales (reclamás los premios ahí)\n`/achievements` — Tus logros por tramos\n`/trade` — Cambiá 1 material por 1 de la misma rareza con otro jugador\n`/leaderboard` — Ranking del server",
                 false)
             .AddField(
                 "🛠️ Utilidad",
-                "`/start` — Empezar tu aventura\n`/class` — Elegir/cambiar de clase\n`/profile` — Ver tu ficha\n`/inventory` — Ver tu inventario\n`/cd` — Ver tus cooldowns\n`/tips` — Qué te falta para tu próxima forja y de dónde sacarlo\n`/tutorial` — Este loop básico\n`/info` — Esta lista de comandos",
+                "`/start` — Empezar tu aventura\n`/class` — Elegir/cambiar de clase\n`/profile` — Ver tu ficha\n`/history` — Tu historial por juego: cuántas veces jugaste, ganaste y perdiste\n`/duels` — Tu récord de duelos y los últimos rivales\n`/inventory` — Ver tu inventario\n`/cd` — Ver tus cooldowns\n`/tips` — Qué te falta para tu próxima forja y de dónde sacarlo\n`/tutorial` — Este loop básico\n`/info` — Esta lista de comandos",
                 false)
             .WithFooter($"Asado y Acero RPG v{BotVersion.Current}")
             .Build();

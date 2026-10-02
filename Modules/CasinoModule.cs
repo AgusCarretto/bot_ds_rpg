@@ -1,9 +1,10 @@
+using BotDsRpg.GameData;
 using BotDsRpg.Repositories;
 using BotDsRpg.Services;
 using Discord;
 using Discord.Interactions;
 
-public class CasinoModule(IUserRepository userRepository, ICasinoRepository casinoRepository, ICasinoService casinoService)
+public class CasinoModule(IUserRepository userRepository, ICasinoRepository casinoRepository, ICasinoService casinoService, IGameEvents gameEvents)
     : InteractionModuleBase<SocketInteractionContext>
 {
     public const int MinBet = 10;
@@ -27,7 +28,7 @@ public class CasinoModule(IUserRepository userRepository, ICasinoRepository casi
 
         try
         {
-            var result = await ExecutePlayAsync(userRepository, casinoRepository, casinoService, Context.User.Id, game, bet, lado);
+            var result = await ExecutePlayAsync(userRepository, casinoRepository, casinoService, Context.User.Id, game, bet, lado, gameEvents);
             await FollowupAsync(result.PlainMessage, embed: result.Embed, ephemeral: result.Embed is null);
         }
         catch (Exception ex)
@@ -46,7 +47,7 @@ public class CasinoModule(IUserRepository userRepository, ICasinoRepository casi
 
     public static async Task<PlayResult> ExecutePlayAsync(
         IUserRepository userRepository, ICasinoRepository casinoRepository, ICasinoService casinoService,
-        ulong discordId, string game, int bet, string? lado)
+        ulong discordId, string game, int bet, string? lado, IGameEvents? gameEvents = null)
     {
         game = game.Trim().ToLowerInvariant();
         lado = lado?.Trim().ToLowerInvariant();
@@ -87,6 +88,20 @@ public class CasinoModule(IUserRepository userRepository, ICasinoRepository casi
         if (updatedPlayer is null)
         {
             return new PlayResult($"No te alcanza el oro: la apuesta es **{bet}** y ya no tenés suficiente.", null);
+        }
+
+        // Para el historial (/history): cada jugada deja su evento DESPUÉS de que la apuesta quedó guardada. Ganar = el premio menos lo apostado (siempre
+        // positivo: el premio mínimo es el doble de la apuesta); perder = lo apostado.
+        if (gameEvents is not null)
+        {
+            if (result.Payout > 0)
+            {
+                await gameEvents.RecordAsync(discordId, GameEventKinds.CasinoWin, player.CurrentZoneId, result.Payout - bet, game);
+            }
+            else
+            {
+                await gameEvents.RecordAsync(discordId, GameEventKinds.CasinoLoss, player.CurrentZoneId, bet, game);
+            }
         }
 
         return new PlayResult(null, BuildResultEmbed(game, bet, lado, result, updatedPlayer.Gold));

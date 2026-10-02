@@ -32,6 +32,21 @@ public sealed class CraftingRepository(IDbConnectionFactory connectionFactory) :
             var user = await connection.QuerySingleAsync<User>(new CommandDefinition(
                 selectUserSql, new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
 
+            // Un arma o un amuleto se forja directo a equipamiento: si ese casillero ya está ocupado no se toca nada (hay que vender lo
+            // equipado antes). La fila del jugador está bloqueada, así que esto no puede cambiar hasta el commit.
+            string? resultType = await connection.QuerySingleOrDefaultAsync<string?>(new CommandDefinition(
+                "SELECT type FROM items WHERE item_id = @ItemId;",
+                new { ItemId = resultItemId }, transaction: transaction, cancellationToken: cancellationToken));
+            bool isWeapon = resultType == "Weapon";
+            bool isAmulet = resultType == "Amulet";
+
+            if ((isWeapon && user.WeaponId is not null) || (isAmulet && user.AmuletId is not null))
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new CraftOutcome(
+                    false, null, isWeapon ? "ya tenés un arma equipada: vendela primero." : "ya tenés un amuleto equipado: vendelo primero.", SlotOccupied: true);
+            }
+
             if (user.Gold < goldCost)
             {
                 await transaction.RollbackAsync(cancellationToken);
@@ -83,14 +98,24 @@ public sealed class CraftingRepository(IDbConnectionFactory connectionFactory) :
             await connection.ExecuteAsync(new CommandDefinition(
                 cleanupSql, new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
 
-            await InventoryUpsert.AddItemAsync(connection, transaction, discordId, resultItemId, 1, cancellationToken);
+            if (isWeapon || isAmulet)
+            {
+                // weapon_id / amulet_id son nombres fijos (nunca input de usuario): seguro interpolarlos.
+                string equipSql = $"UPDATE users SET {(isWeapon ? "weapon_id" : "amulet_id")} = @ItemId WHERE discord_id = @DiscordId;";
+                await connection.ExecuteAsync(new CommandDefinition(
+                    equipSql, new { DiscordId = (long)discordId, ItemId = resultItemId }, transaction: transaction, cancellationToken: cancellationToken));
+            }
+            else
+            {
+                await InventoryUpsert.AddItemAsync(connection, transaction, discordId, resultItemId, 1, cancellationToken);
+            }
 
             string selectUpdatedUserSql = $"SELECT {UserSql.SelectColumns} FROM users WHERE discord_id = @DiscordId;";
             var updated = await connection.QuerySingleAsync<User>(new CommandDefinition(
                 selectUpdatedUserSql, new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
 
             await transaction.CommitAsync(cancellationToken);
-            return new CraftOutcome(true, updated, null);
+            return new CraftOutcome(true, updated, null, isWeapon ? "weapon" : isAmulet ? "amulet" : null);
         }
         catch
         {

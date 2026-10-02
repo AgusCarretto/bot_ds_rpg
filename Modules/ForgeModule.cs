@@ -142,6 +142,20 @@ public static class ForgeModule
                 $"{NpcDialogue.Blacksmith(BlacksmithLine.WrongClass)}\n**{ItemDisplay.Format(recipe.ResultItem.Emoji, recipe.ResultItem.Name)}** es exclusivo de la clase **{recipe.ResultItem.ClassRequirement}** — vos sos **{player.Class}**.", null);
         }
 
+        // Un arma o un amuleto se forja directo a equipamiento (no hay /equip ni pasa por el inventario): si ese casillero ya tiene algo puesto,
+        // primero hay que vender lo equipado (en /taberna). Se avisa ANTES de tocar nada; CraftAsync lo vuelve a validar dentro de la transacción.
+        int? equippedId = recipe.ResultItem.Type switch { "Weapon" => player.WeaponId, "Amulet" => player.AmuletId, _ => null };
+        if (equippedId is int currentlyEquipped)
+        {
+            bool weaponSlot = recipe.ResultItem.Type == "Weapon";
+            string article = weaponSlot ? "a" : "o";
+            return currentlyEquipped == recipe.ResultItem.ItemId
+                ? new ForgeMakeResult(
+                    $"{NpcDialogue.Blacksmith(BlacksmithLine.AlreadyEquipped)}\n**{ItemDisplay.Format(recipe.ResultItem.Emoji, recipe.ResultItem.Name)}** ya es tu {(weaponSlot ? "arma" : "amuleto")} equipad{article}.", null)
+                : new ForgeMakeResult(
+                    $"{NpcDialogue.Blacksmith(BlacksmithLine.SlotTaken)}\nYa tenés {(weaponSlot ? "un arma equipada" : "un amuleto equipado")}: vendel{article} en **/taberna** (o con **/shop sell**) y volvé a pedírmelo.", null);
+        }
+
         // CraftAsync valida oro + cada ingrediente dentro de una única transacción SQL
         // (SELECT ... FOR UPDATE) y hace rollback completo si falta algo.
         var resolvedIngredients = recipe.Ingredients.Select(i => (i.ItemId, i.ItemName, i.Quantity)).ToList();
@@ -149,6 +163,12 @@ public static class ForgeModule
 
         if (!outcome.Success)
         {
+            if (outcome.SlotOccupied)
+            {
+                // Se ocupó el casillero entre el chequeo de arriba y la transacción (dos forjas a la vez): mismo aviso.
+                return new ForgeMakeResult($"{NpcDialogue.Blacksmith(BlacksmithLine.SlotTaken)}\nVendé lo que tenés equipado y volvé a pedírmelo.", null);
+            }
+
             return new ForgeMakeResult(null, new EmbedBuilder()
                 .WithTitle("⚒️ El herrero no pudo forjarlo")
                 .WithDescription($"{NpcDialogue.Blacksmith(BlacksmithLine.NotEnough)}\n\nNo pudiste forjar **{ItemDisplay.Format(recipe.ResultItem.Emoji, recipe.ResultItem.Name)}**: {outcome.FailureReason}")
@@ -158,9 +178,15 @@ public static class ForgeModule
 
         await gameEvents.RecordAsync(discordId, GameEventKinds.Craft, player.CurrentZoneId, detail: recipe.ResultItem.Name);
 
+        // Un arma o un amuleto ya queda puesto: se lo dice con lo que suma. Cualquier otra cosa (hoy no hay recetas así) va al inventario.
+        string itemText = ItemDisplay.Format(recipe.ResultItem.Emoji, recipe.ResultItem.Name);
+        string madeLine = outcome.EquippedSlot is null
+            ? $"¡El Herrero ha forjado **{itemText}** con éxito!"
+            : $"**{itemText}** ya quedó **equipad{(outcome.EquippedSlot == "weapon" ? "a" : "o")}** como {(outcome.EquippedSlot == "weapon" ? "arma" : "amuleto")} ({ItemStatLabel.FormatFor(recipe.ResultItem, player.Class) ?? recipe.ResultItem.Type}).";
+
         return new ForgeMakeResult(null, new EmbedBuilder()
-            .WithTitle("⚒️ ¡Forjado con éxito!")
-            .WithDescription($"{NpcDialogue.Blacksmith(BlacksmithLine.Success)}\n\n¡El Herrero ha forjado **{ItemDisplay.Format(recipe.ResultItem.Emoji, recipe.ResultItem.Name)}** con éxito!\nOro restante: **{outcome.Player!.Gold}**.")
+            .WithTitle(outcome.EquippedSlot is null ? "⚒️ ¡Forjado con éxito!" : "⚒️ ¡Forjado y equipado!")
+            .WithDescription($"{NpcDialogue.Blacksmith(BlacksmithLine.Success)}\n\n{madeLine}\nOro restante: **{outcome.Player!.Gold}**.")
             .WithColor(Color.Green)
             .Build());
     }

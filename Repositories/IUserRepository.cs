@@ -20,11 +20,6 @@ public interface IUserRepository
     // no existe una curación "a oro" directa: siempre hace falta tener un Consumable comprado.
     Task<User> RestoreHpAsync(ulong discordId, int hpRestored, CancellationToken cancellationToken = default);
 
-    // Equipa un arma/amuleto ya validado como poseído por el llamador (EquipModule verifica el
-    // inventario antes de llamar). No descuenta nada del inventario, solo actualiza el puntero.
-    Task<User> EquipWeaponAsync(ulong discordId, int itemId, CancellationToken cancellationToken = default);
-    Task<User> EquipAmuletAsync(ulong discordId, int itemId, CancellationToken cancellationToken = default);
-
     // Top jugadores por progreso (nivel, y XP dentro del nivel actual como desempate).
     // "xp" es el progreso hacia el próximo nivel (resetea al subir), no un total histórico,
     // por eso el orden real es por nivel primero.

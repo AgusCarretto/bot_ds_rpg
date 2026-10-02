@@ -3,7 +3,7 @@ using BotDsRpg.Models;
 namespace BotDsRpg.GameData;
 
 // Cómo se muestra lo que suma un ítem equipable: "+15 ATQ" en un arma (daño), "+20 DEF" en un amuleto
-// (defensa). Un solo lugar para que las recetas, las listas de forjar/equipar y lo que venga usen el
+// (defensa). Un solo lugar para que las recetas, las listas de forjar/vender y lo que venga usen el
 // mismo texto.
 public static class ItemStatLabel
 {

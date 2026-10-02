@@ -160,24 +160,6 @@ public partial class TextCommandModule
         }
     }
 
-    // "aa equip <item>" / "aa eq <item>" — misma lógica que /equip.
-    [Command("equip")]
-    [Alias("eq")]
-    [Summary("Equipate un arma o amuleto que tengas en tu inventario.")]
-    public async Task EquipAsync([Remainder] string item)
-    {
-        try
-        {
-            var result = await EquipModule.ExecuteEquipAsync(userRepository, itemRepository, inventoryRepository, Context.User.Id, item);
-            await ReplyAsync(result.PlainMessage, embed: result.Embed);
-        }
-        catch (Exception ex)
-        {
-            BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude equipar ese ítem, intentá de nuevo en un momento.");
-        }
-    }
-
     // "aa heal" / "aa he" — misma lógica que /heal. No funciona en combate.
     [Command("heal")]
     [Alias("he")]
@@ -223,7 +205,7 @@ public partial class TextCommandModule
     {
         try
         {
-            var result = await CasinoModule.ExecutePlayAsync(userRepository, casinoRepository, casinoService, Context.User.Id, game, apuesta, lado);
+            var result = await CasinoModule.ExecutePlayAsync(userRepository, casinoRepository, casinoService, Context.User.Id, game, apuesta, lado, gameEvents);
             await ReplyAsync(result.PlainMessage, embed: result.Embed);
         }
         catch (Exception ex)

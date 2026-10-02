@@ -10,7 +10,7 @@ public interface IItemRepository
     // cargados para esa combinación tipo+rareza.
     Task<Item?> GetRandomByTypeAndRarityAsync(string type, string rarity, CancellationToken cancellationToken = default);
 
-    // Búsqueda por nombre sin distinguir mayúsculas (usada por /shop, /craft y /equip,
+    // Búsqueda por nombre sin distinguir mayúsculas (usada por /shop, /forge y /taberna,
     // donde el nombre lo escribe el usuario). Devuelve null si no existe.
     Task<Item?> GetByNameAsync(string name, CancellationToken cancellationToken = default);
 

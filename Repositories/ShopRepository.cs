@@ -115,6 +115,24 @@ public sealed class ShopRepository(IDbConnectionFactory connectionFactory) : ISh
         return remaining > TimeSpan.Zero ? remaining : TimeSpan.FromSeconds(1);
     }
 
+    public async Task<User?> SellEquippedAsync(ulong discordId, int itemId, int refund, CancellationToken cancellationToken = default)
+    {
+        using DbConnection connection = connectionFactory.CreateConnection();
+
+        // Una sola sentencia con la guarda en el WHERE: si no lo tiene puesto (o ya lo vendió en otro click) no devuelve fila y no cambia nada.
+        string sql = $"""
+            UPDATE users
+            SET weapon_id = CASE WHEN weapon_id = @ItemId THEN NULL ELSE weapon_id END,
+                amulet_id = CASE WHEN amulet_id = @ItemId THEN NULL ELSE amulet_id END,
+                gold = gold + @Refund
+            WHERE discord_id = @DiscordId AND (weapon_id = @ItemId OR amulet_id = @ItemId)
+            RETURNING {UserSql.SelectColumns};
+            """;
+
+        return await connection.QuerySingleOrDefaultAsync<User>(new CommandDefinition(
+            sql, new { DiscordId = (long)discordId, ItemId = itemId, Refund = refund }, cancellationToken: cancellationToken));
+    }
+
     public async Task<User?> SellItemAsync(ulong discordId, int itemId, int quantity, int totalRefund, CancellationToken cancellationToken = default)
     {
         using DbConnection connection = connectionFactory.CreateConnection();

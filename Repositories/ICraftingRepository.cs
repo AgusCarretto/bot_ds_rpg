@@ -5,8 +5,9 @@ namespace BotDsRpg.Repositories;
 public interface ICraftingRepository
 {
     // Valida y aplica una forja de forma atómica: descuenta oro, descuenta cada ingrediente
-    // (elimina la fila de inventory si llega a 0) y suma el resultado. Si falta oro o algún
-    // ingrediente no aplica ningún cambio y devuelve Success=false con el motivo en
+    // (elimina la fila de inventory si llega a 0) y entrega el resultado: un arma o un amuleto queda EQUIPADO directo (no pasa por el
+    // inventario; si ese casillero ya estaba ocupado no se forja nada: SlotOccupied), cualquier otra cosa se suma al inventario. Si falta
+    // oro o algún ingrediente no aplica ningún cambio y devuelve Success=false con el motivo en
     // FailureReason. Precondición: el usuario ya debe existir (llamar antes a
     // IUserRepository.GetOrCreateUserAsync).
     Task<CraftOutcome> CraftAsync(

@@ -9,7 +9,9 @@ public enum FarmSource { Unknown, Chop, Mine, Hunt, Travel, Boss }
 public sealed record MissingPiece(string ItemName, string? Emoji, int Missing, FarmSource Source);
 
 // El consejo: qué receta le conviene tener en la mira (o que ya puede forjar una), qué le falta y de dónde sacarlo.
-public sealed record FarmAdvice(string RecipeName, string? RecipeEmoji, bool CraftableNow, int GoldShort, IReadOnlyList<MissingPiece> Missing);
+// SellFirst: si la receta que ya puede forjar es un arma o un amuleto y ese casillero está ocupado, qué tiene que vender antes ("tu arma equipada").
+public sealed record FarmAdvice(
+    string RecipeName, string? RecipeEmoji, bool CraftableNow, int GoldShort, IReadOnlyList<MissingPiece> Missing, string? SellFirst = null);
 
 // "¿Qué hago ahora?": mira las recetas que ve el jugador en su zona (las mismas que el herrero) y le dice qué le falta para la más
 // cercana y por qué comando se consigue. PURO (sin base ni Discord): el servicio (Services/FarmAdviceService.cs) le pasa los datos.
@@ -71,7 +73,9 @@ public static class FarmAdvisor
 
         if (advice.CraftableNow)
         {
-            return ("💡 ¡Ya podés forjar algo!", $"**{recipe}** está lista: pasá por `/forge`.");
+            return advice.SellFirst is null
+                ? ("💡 ¡Ya podés forjar algo!", $"**{recipe}** está lista: pasá por `/forge`.")
+                : ("💡 ¡Ya podés forjar algo!", $"**{recipe}** está lista, pero primero vendé {advice.SellFirst} en `/taberna` y después pasá por `/forge`.");
         }
 
         var lines = new List<string> { $"**{recipe}**" };

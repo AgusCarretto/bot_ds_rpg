@@ -7,12 +7,12 @@ using Microsoft.Extensions.DependencyInjection;
 using static AutocompleteText;
 
 // Listas desplegables de Discord (autocompletado) para los comandos que piden el nombre de un ítem:
-// al escribir "/shop buy" o "/equip" aparece arriba una lista para elegir, en vez de tener que
+// al escribir "/shop buy" o "/shop sell" aparece arriba una lista para elegir, en vez de tener que
 // recordar y tipear el nombre exacto. Solo aplica a los comandos de barra — los comandos de texto
 // ("aa shop buy ...") no tienen esa función en Discord.
 //
 // El valor de cada opción es el nombre EXACTO del ítem, así que la lógica de siempre
-// (ShopModule.ExecuteBuyAsync / EquipModule.ExecuteEquipAsync, que buscan por nombre) no cambia.
+// (ShopModule.ExecuteBuyAsync / ExecuteSellAsync, que buscan por nombre) no cambia.
 // Tampoco obliga a elegir de la lista: escribir el nombre a mano sigue funcionando.
 public static class ItemChoices
 {
@@ -39,38 +39,9 @@ public static class ItemChoices
             .ToList();
     }
 
-    // Solo lo que el jugador TIENE en el inventario, es un arma o amuleto, y puede usar su clase (un
-    // ítem exclusivo de otra clase no se puede equipar, así que ni se ofrece). Primero las armas y
-    // dentro de cada grupo lo más fuerte arriba; el daño que se muestra ya incluye la sinergia de clase.
-    public static IReadOnlyList<AutocompleteResult> ForEquip(IEnumerable<OwnedItem> owned, User player, string typed)
-    {
-        return owned
-            .Select(o => o.Item)
-            .Where(item => item.Type is "Weapon" or "Amulet"
-                && FitsAsValue(item)
-                && (item.ClassRequirement is null || string.Equals(item.ClassRequirement, player.Class, StringComparison.OrdinalIgnoreCase))
-                && Matches(item.Name, typed))
-            .OrderBy(item => Relevance(item.Name, typed))
-            .ThenBy(item => item.Type == "Weapon" ? 0 : 1)
-            .ThenByDescending(item => EffectiveStat(item, player.Class))
-            .ThenBy(item => item.Name, StringComparer.Ordinal)
-            .Take(MaxChoices)
-            .Select(item =>
-            {
-                bool equipped = item.ItemId == (item.Type == "Weapon" ? player.WeaponId : player.AmuletId);
-                string equippedTag = equipped ? " · equipado" : string.Empty;
-                string label = item.Type == "Weapon"
-                    ? $"🗡️ {item.Name} — +{EffectiveStat(item, player.Class)} ATQ{(ClassWeaponSynergy.Applies(player.Class, item.WeaponFamily) ? " ⭐" : string.Empty)}{equippedTag}"
-                    : $"📿 {item.Name} — +{item.StatValue} DEF{equippedTag}";
-                return new AutocompleteResult(Truncate(label), item.Name);
-            })
-            .ToList();
-    }
-
     // El nombre es el VALOR de la opción: ver AutocompleteText.FitsAsValue.
     private static bool FitsAsValue(Item item) => AutocompleteText.FitsAsValue(item.Name);
 
-    // Daño real del arma para esta clase (con la sinergia de familia); el amuleto no tiene sinergia.
     // Solo las cajas que el jugador TIENE, con cuántas, de la más rara a la más común (lo que quiere abrir primero).
     public static IReadOnlyList<AutocompleteResult> ForOwnedBoxes(IEnumerable<OwnedItem> owned, string typed)
     {
@@ -85,18 +56,25 @@ public static class ItemChoices
     }
 
     // Lo que el jugador TIENE y se puede vender (los premios no: sell_price 0), lo que más plata deja arriba. "c/u" porque /shop sell
-    // vende por unidad y el jugador elige cuántas.
-    public static IReadOnlyList<AutocompleteResult> ForSell(IEnumerable<InventoryEntry> inventory, string typed)
+    // vende por unidad y el jugador elige cuántas. equippedGear: su arma y su amuleto EQUIPADOS (no están en el inventario) — se ofrecen
+    // arriba de todo y avisan que son los puestos, porque venderlos te deja sin ellos.
+    public static IReadOnlyList<AutocompleteResult> ForSell(IEnumerable<InventoryEntry> inventory, string typed, IEnumerable<Item>? equippedGear = null)
     {
-        return inventory
+        var gear = (equippedGear ?? [])
+            .Where(i => i.SellPrice > 0 && AutocompleteText.FitsAsValue(i.Name) && Matches(i.Name, typed))
+            .OrderBy(i => i.Type == "Weapon" ? 0 : 1)
+            .Select(i => new AutocompleteResult(
+                Truncate($"⚠️ {i.Name} — tu {(i.Type == "Weapon" ? "arma" : "amuleto")} equipad{(i.Type == "Weapon" ? "a" : "o")} · {i.SellPrice} oro"), i.Name));
+
+        var stock = inventory
             .Where(e => e.Quantity > 0 && e.SellPrice > 0 && AutocompleteText.FitsAsValue(e.ItemName) && Matches(e.ItemName, typed))
             .OrderBy(e => Relevance(e.ItemName, typed))
             .ThenByDescending(e => (long)e.SellPrice * e.Quantity)
             .ThenBy(e => e.ItemName, StringComparer.Ordinal)
-            .Take(MaxChoices)
             .Select(e => new AutocompleteResult(
-                Truncate($"{e.ItemName} — tenés {e.Quantity} · {e.SellPrice} oro c/u ({e.Rarity})"), e.ItemName))
-            .ToList();
+                Truncate($"{e.ItemName} — tenés {e.Quantity} · {e.SellPrice} oro c/u ({e.Rarity})"), e.ItemName));
+
+        return gear.Concat(stock).Take(MaxChoices).ToList();
     }
 
     // La comida que el jugador TIENE, la que más cura arriba (igual que el desplegable del combate). Los banquetes avisan su buff.
@@ -117,8 +95,6 @@ public static class ItemChoices
             .ToList();
     }
 
-    private static int EffectiveStat(Item item, string playerClass) =>
-        item.Type == "Weapon" ? ClassWeaponSynergy.ApplyBonus(item.StatValue, playerClass, item.WeaponFamily) : item.StatValue;
 }
 
 // Lista de /shop buy: lo que se vende (comida y cajas), con cuánto cura / qué caja es y cuánto cuesta.
@@ -141,7 +117,22 @@ public sealed class SellItemAutocompleteHandler : SafeAutocompleteHandler
     protected override async Task<IReadOnlyList<AutocompleteResult>> BuildAsync(ulong userId, string typed, IServiceProvider services)
     {
         var inventory = await services.GetRequiredService<IInventoryRepository>().GetByDiscordIdAsync(userId);
-        return ItemChoices.ForSell(inventory, typed);
+
+        // El arma y el amuleto equipados no están en el inventario: se ofrecen aparte. GetByDiscordIdAsync (no GetOrCreate): abrir la lista no crea cuentas.
+        var equipped = new List<Item>();
+        if (await services.GetRequiredService<IUserRepository>().GetByDiscordIdAsync(userId) is { } player)
+        {
+            var items = services.GetRequiredService<IItemRepository>();
+            foreach (int? itemId in new[] { player.WeaponId, player.AmuletId })
+            {
+                if (itemId is int id && await items.GetByIdAsync(id) is { } gear)
+                {
+                    equipped.Add(gear);
+                }
+            }
+        }
+
+        return ItemChoices.ForSell(inventory, typed, equipped);
     }
 }
 
@@ -154,25 +145,6 @@ public sealed class UseItemAutocompleteHandler : SafeAutocompleteHandler
         var buffs = await services.GetRequiredService<IBuffRepository>().GetItemBuffsAsync();
 
         return ItemChoices.ForUse(owned, buffs, typed);
-    }
-}
-
-// Lista de /equip: las armas y amuletos del inventario que el jugador puede usar.
-public sealed class EquipItemAutocompleteHandler : SafeAutocompleteHandler
-{
-    protected override async Task<IReadOnlyList<AutocompleteResult>> BuildAsync(ulong userId, string typed, IServiceProvider services)
-    {
-        var player = await services.GetRequiredService<IUserRepository>().GetByDiscordIdAsync(userId);
-        if (player is null)
-        {
-            return [];
-        }
-
-        var inventory = services.GetRequiredService<IInventoryRepository>();
-        var weapons = await inventory.GetOwnedByTypeAsync(userId, "Weapon");
-        var amulets = await inventory.GetOwnedByTypeAsync(userId, "Amulet");
-
-        return ItemChoices.ForEquip(weapons.Concat(amulets), player, typed);
     }
 }
 

@@ -174,6 +174,26 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
             return new ShopActionResult($"{NpcDialogue.Shopkeeper(ShopkeeperLine.Unsellable)}\n**{ItemDisplay.Format(item.Emoji, item.Name)}** no se puede vender: es un premio.", null);
         }
 
+        // Un arma o un amuleto no vive en el inventario: se forja directo a equipamiento, así que lo que se vende es lo EQUIPADO (y es siempre de a
+        // uno). Si no es lo que tiene puesto, sigue el camino de siempre (una copia suelta en el inventario, de antes del cambio).
+        if (item.Type is "Weapon" or "Amulet" && quantity == 1)
+        {
+            var soldGear = await shopRepository.SellEquippedAsync(discordId, item.ItemId, item.SellPrice);
+            if (soldGear is not null)
+            {
+                await gameEvents.RecordAsync(discordId, GameEventKinds.ShopGoldEarned, amount: item.SellPrice, detail: item.Name);
+
+                string slotName = item.Type == "Weapon" ? "arma" : "amuleto";
+                return new ShopActionResult(null, new EmbedBuilder()
+                    .WithTitle("💰 ¡Venta realizada!")
+                    .WithDescription(
+                        $"{NpcDialogue.Shopkeeper(ShopkeeperLine.SellSuccess)}\n\nVendiste tu {slotName} equipad{(item.Type == "Weapon" ? "a" : "o")} **{ItemDisplay.Format(item.Emoji, item.Name)}** por **{item.SellPrice}** de oro.\n" +
+                        $"Oro total: **{soldGear.Gold}**.\n\n_Te quedaste sin {slotName}: forjá otr{(item.Type == "Weapon" ? "a" : "o")} en **/forge**._")
+                    .WithColor(Color.Green)
+                    .Build());
+            }
+        }
+
         int totalRefund = item.SellPrice * quantity;
         var seller = await shopRepository.SellItemAsync(discordId, item.ItemId, quantity, totalRefund);
 

@@ -24,6 +24,8 @@ public class TabernaModule(
     private const string BuyFood = "taberna_buy";
     private const string BuyBox = "taberna_box";
     private const string Sell = "taberna_sell";
+    private const string GearYes = "taberna_gearyes";
+    private const string GearNo = "taberna_gearno";
 
     [SlashCommand("taberna", "Pasá por la taberna: comé, comprá comida y cajas, y vendé con el tabernero.")]
     public async Task HandleTabernaAsync()
@@ -64,6 +66,68 @@ public class TabernaModule(
     [ComponentInteraction($"{Sell}:*")]
     public Task HandleSellAsync(string ownerRaw, string[] selected) => RunAsync(Sell, ownerRaw, selected);
 
+    // Vender el arma o el amuleto EQUIPADOS pide confirmación (un click de más te deja sin tu pieza, y forjarla vale más que lo que pagan).
+    [ComponentInteraction($"{GearYes}:*:*")]
+    public async Task HandleGearYesAsync(string ownerRaw, string itemIdRaw)
+    {
+        await DeferAsync();
+
+        try
+        {
+            if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
+            {
+                await FollowupAsync("Esa charla es de otra persona: pasá por la taberna con **/taberna**.", ephemeral: true);
+                return;
+            }
+
+            if (!int.TryParse(itemIdRaw, out int itemId) || await itemRepository.GetByIdAsync(itemId) is not { } item)
+            {
+                await FollowupAsync("No encuentro esa pieza: probá de nuevo desde la taberna.", ephemeral: true);
+                return;
+            }
+
+            string talk = await ExecuteActionAsync(
+                Sell, userRepository, itemRepository, inventoryRepository, shopRepository, buffRepository, combatSessions, gameEvents, Context.User.Id, item.Name);
+
+            await ModifyOriginalResponseAsync(p =>
+            {
+                p.Embed = BuildAnswerEmbed(talk);
+                p.Components = new ComponentBuilder().Build();
+            });
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            await FollowupAsync("¡Upa! No pude hacer la venta, intentá de nuevo en un momento.", ephemeral: true);
+        }
+    }
+
+    [ComponentInteraction($"{GearNo}:*")]
+    public async Task HandleGearNoAsync(string ownerRaw)
+    {
+        await DeferAsync();
+
+        try
+        {
+            if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
+            {
+                await FollowupAsync("Esa charla es de otra persona: pasá por la taberna con **/taberna**.", ephemeral: true);
+                return;
+            }
+
+            await ModifyOriginalResponseAsync(p =>
+            {
+                p.Embed = BuildAnswerEmbed(NpcDialogue.Shopkeeper(ShopkeeperLine.GearKept));
+                p.Components = new ComponentBuilder().Build();
+            });
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            await FollowupAsync("¡Upa! Algo falló, intentá de nuevo en un momento.", ephemeral: true);
+        }
+    }
+
     private async Task RunAsync(string action, string ownerRaw, string[] selected)
     {
         await DeferAsync();
@@ -73,6 +137,13 @@ public class TabernaModule(
             if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
             {
                 await FollowupAsync("Esa charla es de otra persona: pasá por la taberna con **/taberna**.", ephemeral: true);
+                return;
+            }
+
+            // Si lo que querés vender es lo que llevás puesto, antes de venderlo se te pregunta (solo lo ves vos).
+            if (action == Sell && await BuildGearSellConfirmationAsync(userRepository, itemRepository, Context.User.Id, selected.FirstOrDefault() ?? string.Empty) is { } confirm)
+            {
+                await FollowupAsync(embed: confirm.Embed, components: confirm.Components, ephemeral: true);
                 return;
             }
 
@@ -96,6 +167,58 @@ public class TabernaModule(
             BotLog.Error(ex);
             await FollowupAsync("¡Upa! No pude pasarle el pedido al tabernero, intentá de nuevo en un momento.", ephemeral: true);
         }
+    }
+
+    // Las piezas que el jugador lleva puestas (arma primero, después amuleto): no están en el inventario, así que la taberna las lista aparte.
+    private static async Task<IReadOnlyList<Item>> EquippedGearAsync(IItemRepository itemRepository, User player)
+    {
+        var gear = new List<Item>();
+        foreach (int? itemId in new[] { player.WeaponId, player.AmuletId })
+        {
+            if (itemId is int id && await itemRepository.GetByIdAsync(id) is { } item)
+            {
+                gear.Add(item);
+            }
+        }
+
+        return gear;
+    }
+
+    // Si "itemName" es justo el arma o el amuleto que el jugador lleva puestos, la pregunta de confirmación (con sus botones); si no, null y se
+    // vende directo como siempre. Pública y sin Context para probarla.
+    public static async Task<(Embed Embed, MessageComponent Components)?> BuildGearSellConfirmationAsync(
+        IUserRepository userRepository, IItemRepository itemRepository, ulong discordId, string itemName)
+    {
+        var item = await itemRepository.GetByNameAsync(itemName);
+        if (item is null || item.Type is not ("Weapon" or "Amulet") || item.SellPrice <= 0)
+        {
+            return null;
+        }
+
+        var player = await userRepository.GetByDiscordIdAsync(discordId);
+        if (player is null || (item.Type == "Weapon" ? player.WeaponId : player.AmuletId) != item.ItemId)
+        {
+            return null;
+        }
+
+        bool weapon = item.Type == "Weapon";
+        string slot = weapon ? "arma" : "amuleto";
+
+        var embed = new EmbedBuilder()
+            .WithTitle($"⚠️ ¿Vender tu {slot}?")
+            .WithColor(Color.Orange)
+            .WithDescription(
+                $"{NpcDialogue.Shopkeeper(ShopkeeperLine.GearConfirm)}\n\n" +
+                $"Vas a vender **{ItemDisplay.Format(item.Emoji, item.Name)}** ({ItemStatLabel.FormatFor(item, player.Class)}) por **{item.SellPrice}** de oro.\n" +
+                $"Te quedás sin {slot} hasta que forjes otr{(weapon ? "a" : "o")}, y forjarl{(weapon ? "a" : "o")} cuesta bastante más de lo que te pagan.")
+            .Build();
+
+        var buttons = new ComponentBuilder()
+            .WithButton("Sí, venderla", $"{GearYes}:{discordId}:{item.ItemId}", ButtonStyle.Danger, new Emoji("💰"))
+            .WithButton("No, me la quedo", $"{GearNo}:{discordId}", ButtonStyle.Secondary, new Emoji("🛡️"))
+            .Build();
+
+        return (embed, buttons);
     }
 
     // La respuesta del tabernero como mensaje propio: su frase y lo que pasó (compraste, vendiste, te curaste, te faltó oro...).
@@ -193,13 +316,16 @@ public class TabernaModule(
                 boxesForSale.Select(i => (i.Name, $"{i.BuyPrice} oro", i.Name))), row++);
         }
 
+        // Primero lo que llevás puesto (avisando que es lo equipado: vender eso te deja sin la pieza) y después lo de la mochila.
+        var equippedGear = (await EquippedGearAsync(itemRepository, player)).Where(i => i.SellPrice > 0 && AutocompleteText.FitsAsValue(i.Name)).ToList();
         var sellable = inventory.Where(e => e.Quantity > 0 && e.SellPrice > 0 && AutocompleteText.FitsAsValue(e.ItemName))
-            .OrderByDescending(e => (long)e.SellPrice * e.Quantity).ThenBy(e => e.ItemName, StringComparer.Ordinal).Take(25).ToList();
-        if (sellable.Count > 0)
+            .OrderByDescending(e => (long)e.SellPrice * e.Quantity).ThenBy(e => e.ItemName, StringComparer.Ordinal).Take(25 - equippedGear.Count).ToList();
+        if (equippedGear.Count + sellable.Count > 0)
         {
             components.WithSelectMenu(Menu(
                 Sell, discordId, "Vender algo (de a una unidad)",
-                sellable.Select(e => ($"{e.ItemName} ×{e.Quantity}", $"{e.SellPrice} oro c/u", e.ItemName))), row);
+                equippedGear.Select(i => ($"{(i.Type == "Weapon" ? "🗡️" : "📿")} {i.Name} (equipad{(i.Type == "Weapon" ? "a" : "o")})", $"⚠️ Lo que llevás puesto · {i.SellPrice} oro", i.Name))
+                    .Concat(sellable.Select(e => ($"{e.ItemName} ×{e.Quantity}", $"{e.SellPrice} oro c/u", e.ItemName)))), row);
         }
 
         return new TabernaScene(embed, components.Build(), NpcImages.AttachmentPathFor(embed));

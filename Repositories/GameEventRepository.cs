@@ -1,5 +1,6 @@
 using System.Data.Common;
 using BotDsRpg.Data;
+using BotDsRpg.Models;
 using Dapper;
 
 namespace BotDsRpg.Repositories;
@@ -46,5 +47,59 @@ public sealed class GameEventRepository(IDbConnectionFactory connectionFactory) 
         return rows.ToDictionary(r => r.StatKey, r => r.Value);
     }
 
+    public async Task<IReadOnlyList<EventTotal>> GetBreakdownAsync(
+        ulong discordId, IReadOnlyCollection<string> kinds, CancellationToken cancellationToken = default)
+    {
+        if (kinds.Count == 0)
+        {
+            return [];
+        }
+
+        await using DbConnection connection = connectionFactory.CreateConnection();
+
+        // SUM(bigint) es numeric: el ::bigint es para que Dapper lo lea como long (ver MissionRepository.GetProgressAsync).
+        var rows = await connection.QueryAsync<EventTotal>(new CommandDefinition(
+            """
+            SELECT kind AS Kind, detail AS Detail, COUNT(*)::bigint AS Count, COALESCE(SUM(amount), 0)::bigint AS Amount
+            FROM game_events
+            WHERE discord_id = @DiscordId AND kind = ANY(@Kinds)
+            GROUP BY kind, detail;
+            """,
+            new { DiscordId = (long)discordId, Kinds = kinds.ToArray() }, cancellationToken: cancellationToken));
+
+        return rows.ToList();
+    }
+
+    public async Task<IReadOnlyList<RecentEvent>> GetRecentAsync(
+        ulong discordId, IReadOnlyCollection<string> kinds, int limit, CancellationToken cancellationToken = default)
+    {
+        if (kinds.Count == 0 || limit <= 0)
+        {
+            return [];
+        }
+
+        await using DbConnection connection = connectionFactory.CreateConnection();
+
+        var rows = await connection.QueryAsync<RecentRow>(new CommandDefinition(
+            """
+            SELECT occurred_at AS OccurredAt, kind AS Kind, detail AS Detail, amount AS Amount
+            FROM game_events
+            WHERE discord_id = @DiscordId AND kind = ANY(@Kinds)
+            ORDER BY occurred_at DESC, event_id DESC
+            LIMIT @Limit;
+            """,
+            new { DiscordId = (long)discordId, Kinds = kinds.ToArray(), Limit = limit }, cancellationToken: cancellationToken));
+
+        return rows.Select(r => new RecentEvent(DateTime.SpecifyKind(r.OccurredAt, DateTimeKind.Utc), r.Kind, r.Detail, r.Amount)).ToList();
+    }
+
     private sealed record StatRow(string StatKey, long Value);
+
+    private sealed class RecentRow
+    {
+        public DateTime OccurredAt { get; init; }
+        public string Kind { get; init; } = string.Empty;
+        public string? Detail { get; init; }
+        public long Amount { get; init; }
+    }
 }

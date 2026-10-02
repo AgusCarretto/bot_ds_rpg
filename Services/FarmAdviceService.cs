@@ -47,6 +47,32 @@ public sealed class FarmAdviceService(
             var owned = (await inventoryRepository.GetByDiscordIdAsync(discordId, cancellationToken))
                 .ToDictionary(e => e.ItemName, e => e.Quantity);
 
+            // El arma y el amuleto no están en el inventario: se forjan directo a equipamiento. Lo que lleva puesto cuenta como "ya forjado" y solo
+            // se aconseja lo que lo MEJORA (una receta del mismo casillero con igual o menos ataque / defensa no tiene sentido para alguien que ya la pasó).
+            var weapon = player.WeaponId is int weaponId ? await itemRepository.GetByIdAsync(weaponId, cancellationToken) : null;
+            var amulet = player.AmuletId is int amuletId ? await itemRepository.GetByIdAsync(amuletId, cancellationToken) : null;
+            foreach (var worn in new[] { weapon, amulet })
+            {
+                if (worn is not null)
+                {
+                    owned[worn.Name] = 1;
+                }
+            }
+
+            int WeaponPower(Item item) => ClassWeaponSynergy.ApplyBonus(item.StatValue, player.Class, item.WeaponFamily);
+            var candidates = view.Recipes
+                .Where(r => r.ResultItem.Type switch
+                {
+                    "Weapon" when weapon is not null => WeaponPower(r.ResultItem) > WeaponPower(weapon),
+                    "Amulet" when amulet is not null => r.ResultItem.StatValue > amulet.StatValue,
+                    _ => true,
+                })
+                .ToList();
+            if (candidates.Count == 0)
+            {
+                return null;
+            }
+
             // De dónde sale cada ingrediente: madera y minerales de la recolección; el resto lo suelta un monstruo de la zona de la receta.
             var zoneMonsters = statics.Monsters.Where(m => m.ZoneId == view.Zone.ZoneId).ToList();
             FarmSource SourceOf(string itemName)
@@ -71,7 +97,22 @@ public sealed class FarmAdviceService(
                 };
             }
 
-            return FarmAdvisor.Choose(view.Recipes, owned, player.Gold, SourceOf);
+            var advice = FarmAdvisor.Choose(candidates, owned, player.Gold, SourceOf);
+
+            // Si ya puede forjarla pero ese casillero está ocupado, hay que decirle que primero venda lo equipado.
+            if (advice is { CraftableNow: true } && candidates.FirstOrDefault(r => r.ResultItem.Name == advice.RecipeName) is { } ready)
+            {
+                string? sellFirst = ready.ResultItem.Type switch
+                {
+                    "Weapon" when weapon is not null => "tu arma equipada",
+                    "Amulet" when amulet is not null => "tu amuleto equipado",
+                    _ => null,
+                };
+
+                advice = advice with { SellFirst = sellFirst };
+            }
+
+            return advice;
         }
         catch (Exception ex)
         {

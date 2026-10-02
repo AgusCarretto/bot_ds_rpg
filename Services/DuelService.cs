@@ -327,15 +327,16 @@ public sealed class DuelService(IGameEvents gameEvents) : IDuelService
 
         if (session.Winner is { } winner && session.Loser is { } loser)
         {
-            _ = RecordEndAsync(winner.Fighter.DiscordId, loser.Fighter.DiscordId);
+            _ = RecordEndAsync(winner.Fighter, loser.Fighter);
         }
     }
 
     // RecordAsync nunca tira excepción (ver IGameEvents), así que esto no puede romper el cierre del duelo.
-    private async Task RecordEndAsync(ulong winnerId, ulong loserId)
+    // El detalle del evento es el nombre del rival: es lo que muestra /duels.
+    private async Task RecordEndAsync(DuelFighter winner, DuelFighter loser)
     {
-        await gameEvents.RecordAsync(winnerId, GameEventKinds.DuelWin);
-        await gameEvents.RecordAsync(loserId, GameEventKinds.DuelLoss);
+        await gameEvents.RecordAsync(winner.DiscordId, GameEventKinds.DuelWin, detail: loser.Name);
+        await gameEvents.RecordAsync(loser.DiscordId, GameEventKinds.DuelLoss, detail: winner.Name);
     }
 
     private void PurgeChallenges()

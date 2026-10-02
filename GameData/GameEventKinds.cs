@@ -15,7 +15,7 @@ public static class GameEventKinds
     public const string TravelWin = "travel_win";
     public const string BossWin = "boss_win";
     public const string RaidWin = "raid_win";
-    public const string FightLost = "fight_lost";           // perdió una pelea (solitaria)
+    public const string FightLost = "fight_lost";           // perdió una pelea (cacería, viaje, jefe o raid); detail = cuál ("hunt", "travel", "boss", "raid")
 
     // Recolección y forja.
     public const string Chop = "chop";                      // un /chop exitoso
@@ -36,9 +36,13 @@ public static class GameEventKinds
     public const string MiniEvent = "mini_event";           // se sumó a un minievento y cobró; detail = el tipo (Stones / Wood / Silver)
     public const string Trade = "trade";                    // un cambio de materiales con otro jugador; detail = "lo que dio->lo que recibió"
 
+    // Casino: amount = el oro de la jugada (ganado neto en casino_win, perdido en casino_loss); detail = "slots" / "coinflip".
+    public const string CasinoWin = "casino_win";
+    public const string CasinoLoss = "casino_loss";
+
     // PvP.
-    public const string DuelWin = "duel_win";               // ganó un duelo amistoso
-    public const string DuelLoss = "duel_loss";             // perdió un duelo amistoso
+    public const string DuelWin = "duel_win";               // ganó un duelo amistoso; detail = el nombre del rival
+    public const string DuelLoss = "duel_loss";             // perdió un duelo amistoso; detail = el nombre del rival
     public const string ArenaJoin = "arena_join";           // se anotó en el torneo del día; detail = el día (yyyy-MM-dd)
     public const string ArenaWin = "arena_win";             // ganó el torneo del día; detail = el día
 

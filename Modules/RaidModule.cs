@@ -244,7 +244,7 @@ public class RaidModule(
                     await ResolveVictoryAsync(session, outcome.LogLine!, userRepository, itemRepository, adventureRepository, raidSessions, gameEvents);
                     return;
                 case AttackOutcomeKind.Wipe:
-                    await ResolveWipeAsync(session, outcome.LogLine!, userRepository, raidSessions);
+                    await ResolveWipeAsync(session, outcome.LogLine!, userRepository, raidSessions, gameEvents);
                     return;
             }
         }
@@ -710,7 +710,8 @@ public class RaidModule(
         await session.ReplyTarget.UpdateAsync(BuildVictoryEmbed(session, logLine, results), new ComponentBuilder().Build());
     }
 
-    private static async Task ResolveWipeAsync(RaidSession session, string logLine, IUserRepository userRepository, IRaidSessionService raidSessions)
+    private static async Task ResolveWipeAsync(
+        RaidSession session, string logLine, IUserRepository userRepository, IRaidSessionService raidSessions, IGameEvents gameEvents)
     {
         // session.Phase ya quedó en Resolved dentro del lock de ResolveParticipantTurn.
         raidSessions.Remove(session.RaidId);
@@ -721,6 +722,7 @@ public class RaidModule(
         {
             int hpDelta = participant.ToDbHpDelta(participant.CurrentHp - participant.StartingHp);
             await userRepository.ApplyCombatHpDeltaAsync(participant.DiscordId, hpDelta);
+            await gameEvents.RecordAsync(participant.DiscordId, GameEventKinds.FightLost, session.ZoneId, detail: "raid");
         }
 
         await session.ReplyTarget.UpdateAsync(BuildWipeEmbed(session, logLine), new ComponentBuilder().Build());

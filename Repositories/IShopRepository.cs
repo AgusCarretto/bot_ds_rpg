@@ -25,6 +25,10 @@ public interface IShopRepository
     // (no aplica ningún cambio en ese caso).
     Task<User?> SellItemAsync(ulong discordId, int itemId, int quantity, int totalRefund, CancellationToken cancellationToken = default);
 
-    // Vende TODO el inventario del jugador de una sola vez. Devuelve null si no tenía nada para vender.
+    // Vende el arma o el amuleto EQUIPADO: itemId tiene que ser justo lo que tiene puesto. Lo desequipa y le paga el reembolso en UNA sola
+    // sentencia (así un doble click no paga dos veces). Devuelve null si ese ítem no es lo que tiene equipado.
+    Task<User?> SellEquippedAsync(ulong discordId, int itemId, int refund, CancellationToken cancellationToken = default);
+
+    // Vende TODO el inventario del jugador de una sola vez (no toca lo equipado). Devuelve null si no tenía nada para vender.
     Task<SellAllOutcome?> SellAllAsync(ulong discordId, CancellationToken cancellationToken = default);
 }

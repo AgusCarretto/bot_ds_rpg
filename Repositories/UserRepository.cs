@@ -80,31 +80,6 @@ public sealed class UserRepository(IDbConnectionFactory connectionFactory) : IUs
         return await connection.QuerySingleAsync<User>(command);
     }
 
-    public Task<User> EquipWeaponAsync(ulong discordId, int itemId, CancellationToken cancellationToken = default) =>
-        SetEquippedSlotAsync(discordId, "weapon_id", itemId, cancellationToken);
-
-    public Task<User> EquipAmuletAsync(ulong discordId, int itemId, CancellationToken cancellationToken = default) =>
-        SetEquippedSlotAsync(discordId, "amulet_id", itemId, cancellationToken);
-
-    private async Task<User> SetEquippedSlotAsync(ulong discordId, string columnName, int itemId, CancellationToken cancellationToken)
-    {
-        // columnName viene fijo desde EquipWeaponAsync/EquipAmuletAsync (nunca de input de usuario),
-        // por eso es seguro interpolarlo directo en el SQL en vez de parametrizarlo.
-        string sql = $"""
-            UPDATE users
-            SET {columnName} = @ItemId
-            WHERE discord_id = @DiscordId
-            RETURNING {UserSql.SelectColumns};
-            """;
-
-        using IDbConnection connection = connectionFactory.CreateConnection();
-        var command = new CommandDefinition(
-            sql,
-            new { DiscordId = (long)discordId, ItemId = itemId },
-            cancellationToken: cancellationToken);
-        return await connection.QuerySingleAsync<User>(command);
-    }
-
     public async Task<IReadOnlyList<LeaderboardEntry>> GetTopPlayersAsync(int limit, CancellationToken cancellationToken = default)
     {
         const string sql = """

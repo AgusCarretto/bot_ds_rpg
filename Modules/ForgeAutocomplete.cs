@@ -10,6 +10,9 @@ using static AutocompleteText;
 // muestra /forge recipes), con las que YA podés forjar arriba (✅ tenés el oro y todos los materiales) y, debajo, las
 // que todavía no, diciendo qué falta (❌ falta: 2 Hierro, 30 oro) — sirve de guía de qué conseguir. El
 // valor es el nombre exacto del ítem resultado, así que ForgeModule.ExecuteMakeAsync no cambia.
+//
+// Como un arma o un amuleto se forja directo a equipamiento, hay dos casos más: si ese casillero ya tiene OTRA pieza puesta, la receta
+// aparece con 🔁 ("vendé tu arma primero", aunque tengas todo) después de las que se pueden forjar ya, y la que ya llevás puesta, con 🟢 al final.
 public static class ForgeChoices
 {
     // owned: cantidad que el jugador tiene de cada ítem, por nombre (los nombres de ítem son únicos).
@@ -20,8 +23,8 @@ public static class ForgeChoices
         // GameData/RecipeCatalog.cs) que le corresponden a su clase.
         return RecipeCatalog.ViewFor(recipes, zones, player.Class, player.CurrentZoneId).Recipes
             .Where(recipe => FitsAsValue(recipe.ResultItem.Name) && Matches(recipe.ResultItem.Name, typed))
-            .Select(recipe => new Candidate(recipe, player.Gold, owned))
-            .OrderBy(c => c.Craftable ? 0 : 1)
+            .Select(recipe => new Candidate(recipe, player, owned))
+            .OrderBy(c => c.Group)
             .ThenBy(c => Relevance(c.Recipe.ResultItem.Name, typed))
             .ThenBy(c => c.MissingUnits)
             .ThenByDescending(c => c.Recipe.ResultItem.StatValue)
@@ -37,10 +40,19 @@ public static class ForgeChoices
         public int GoldShort { get; }
         public IReadOnlyList<(string Name, int Short)> MissingIngredients { get; }
 
-        public Candidate(RecipeDetails recipe, int playerGold, IReadOnlyDictionary<string, int> owned)
+        // 0 = se puede forjar ya, 1 = tendría todo pero ese casillero está ocupado, 2 = falta algo, 3 = ya la llevás puesta.
+        public int Group => AlreadyEquipped ? 3 : SlotTaken ? 1 : Craftable ? 0 : 2;
+
+        // El casillero (arma / amuleto) de esta receta y qué tiene puesto el jugador ahí.
+        private readonly int? _equippedHere;
+        public bool AlreadyEquipped => _equippedHere == Recipe.ResultItem.ItemId;
+        public bool SlotTaken => _equippedHere is not null && !AlreadyEquipped;
+
+        public Candidate(RecipeDetails recipe, User player, IReadOnlyDictionary<string, int> owned)
         {
             Recipe = recipe;
-            GoldShort = Math.Max(0, recipe.GoldCost - playerGold);
+            _equippedHere = recipe.ResultItem.Type switch { "Weapon" => player.WeaponId, "Amulet" => player.AmuletId, _ => null };
+            GoldShort = Math.Max(0, recipe.GoldCost - player.Gold);
             MissingIngredients = recipe.Ingredients
                 .Select(i => (i.ItemName, Short: i.Quantity - (owned.TryGetValue(i.ItemName, out int have) ? have : 0)))
                 .Where(x => x.Short > 0)
@@ -55,6 +67,18 @@ public static class ForgeChoices
         public string Label()
         {
             var item = Recipe.ResultItem;
+            bool weapon = item.Type == "Weapon";
+
+            if (AlreadyEquipped)
+            {
+                return $"🟢 {item.Name} ({ItemStatLabel.Format(item) ?? item.Type}) — {(weapon ? "ya la llevás equipada" : "ya lo llevás equipado")}";
+            }
+
+            if (SlotTaken && Craftable)
+            {
+                return $"🔁 {item.Name} ({ItemStatLabel.Format(item) ?? item.Type}) — primero vendé tu {(weapon ? "arma" : "amuleto")} equipad{(weapon ? "a" : "o")}";
+            }
+
             if (Craftable)
             {
                 return $"✅ {item.Name} ({ItemStatLabel.Format(item) ?? item.Type}) — {Recipe.GoldCost} oro";

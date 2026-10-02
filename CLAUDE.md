@@ -230,7 +230,7 @@ Deleting catalog items is dangerous: `inventory.item_id` is `ON DELETE CASCADE` 
 so any script that deletes items must first abort if anyone holds them (see `trim_recipes_to_zone_template.sql`).
 
 **Name/ID slash parameters use Discord autocomplete** (`Modules/ItemAutocomplete.cs` for `/shop buy` and
-`/equip`, `ZoneAutocomplete.cs` for `/zona`, `ForgeAutocomplete.cs` for `/forge make`, shared limits and
+`/shop sell`, `ZoneAutocomplete.cs` for `/zona`, `ForgeAutocomplete.cs` for `/forge make`, shared limits and
 accent-insensitive filtering in `AutocompleteText.cs`): the parameter takes `[Autocomplete(typeof(...Handler))]`,
 and the handlers are thin — the option-building logic is in pure static `*Choices` classes (no Discord,
 testable). The option *value* is exactly what the command already accepted (item name / zone id), so
@@ -240,7 +240,7 @@ can craft *now* first (✅) and says what's missing for the rest; the zone list 
 would promise zones the command then rejects. Handlers resolve repositories via the `IServiceProvider` argument (not constructor injection) and
 must use `GetByDiscordIdAsync`, never `GetOrCreateUserAsync` — opening a list must not create accounts.
 Every list derives from `Modules/SafeAutocompleteHandler.cs`, which logs (`BotLog.Error`) and returns an empty list if building the list
-throws, instead of letting Discord show a silent "options failed to load"; lists exist for `/shop buy`, `/shop sell`, `/use`, `/equip`,
+throws, instead of letting Discord show a silent "options failed to load"; lists exist for `/shop buy`, `/shop sell`, `/use`,
 `/open`, `/forge make` and `/zona`. Item lookup by name ignores case, accents and surrounding whitespace (`ItemRepository.GetByNameAsync`).
 Text commands ("aa ...") can't have autocomplete (a Discord limitation). Discord.Net throws if an option
 value exceeds 100 chars, hence the `FitsAsValue` guard.
@@ -274,7 +274,7 @@ bottleneck: Hierro (10.5% per `/mine`, cooldown 5 min — it shares the Raro poo
 ~190–290 min of mining, more than their drop farming.
 
 **Readable embeds** (the owner's rule: spaced out, not crowded — use blank lines and columns, not walls of text): `/inventory` is two inline columns per row
-(Recolección = Madera first, then Mineral, grouped by TYPE; next to it Drops de monstruo, i.e. `items.type = 'Material'`), then Armas | Amuletos, then
+(Recolección = Madera first, then Mineral, grouped by TYPE; next to it Drops de monstruo, i.e. `items.type = 'Material'`), then
 Comida | Cajas, with a blank spacer field between rows and no rarity text per line (the item emoji, or a coloured dot, carries it);
 `/shop view` is two inline columns (Comida | Cajas), each item with ITS OWN emoji and a one-line detail, no rarity text and no decorative emojis; the recipes page (`/forge` zone picker, `aa forge recipes [zone]`) shows "have/need" per ingredient (✅/❌) when given the player's inventory. it shows ONE recipe per field (item + stat, gold, one ingredient per line) and
 `/drops` sends one embed per zone (a field per fight type, two short lines per monster). Both were single walls of text
@@ -439,8 +439,25 @@ one tournament per **Uruguay day**; people join during the day (max 32, min 2; j
 elimination (`GameData/ArenaBracket.cs`, pure: shuffled order, the first slots get byes when the count is not a power of two), fights are `DuelEngine.Simulate` with the stats the players have AT THAT MOMENT,
 and closing the day is ONE transaction: `UPDATE arena_days SET status='resolved' ... WHERE status='open'` (the guard — 20 concurrent closers pay once), the matches, and the champion's prize via
 `RewardPayer` (15 hunts of gold of THEIR zone + 6% XP + a zone box, `ArenaRules.ChampionReward`). Fewer than 2 players = cancelled, no prize (so nobody farms the daily prize by joining alone). The result is
-NARRATED in the channel where the first player joined (or `Arena__ChannelId`), round by round: an opening message with the roster, one message per round (each fight gets a line from `GameData/ArenaNarrator.cs` — a crushing win, "by a hair" (the winner finished with <=15% HP), a very long fight — chosen deterministically from the fight, using the stored `arena_matches.winner_hp_pct`) and a closing message that pings the champion with the prize and the whole bracket; `ArenaModule.BuildBroadcast` builds the messages (pure) and the clock sends them with `ArenaScheduler.RoundPause` (4 s) between them. `/arena results` shows the full bracket any time, and `/profile` gets a "⚔️ PvP" line (duels won/lost, championships; `GameData/PvpStats.cs`) only for players who ever fought. Tests must use synthetic past days (the harness uses 2020) and never call
+NARRATED in the channel where the first player joined (or `Arena__ChannelId`), round by round: an opening message with the roster, one message per round (each fight gets a line from `GameData/ArenaNarrator.cs` — a crushing win, "by a hair" (the winner finished with <=15% HP), a very long fight — chosen deterministically from the fight, using the stored `arena_matches.winner_hp_pct`) and a closing message that pings the champion with the prize and the whole bracket; `ArenaModule.BuildBroadcast` builds the messages (pure) and the clock sends them with `ArenaScheduler.RoundPause` (4 s) between them. `/arena results` shows the full bracket any time, and `/history` (all games) and `/duels` (record + last rivals) show the PvP numbers — `/profile` deliberately does not. Tests must use synthetic past days (the harness uses 2020) and never call
 `ResolveDueAsync` on the real repository — it would pay real tournaments.
+
+**Gear is EQUIPMENT, not inventory — there is no `/equip`.** Weapons and amulets are forged straight into `users.weapon_id` / `users.amulet_id` (`CraftingRepository.CraftAsync` looks at
+the result's `items.type`: Weapon/Amulet → equip, anything else → inventory) and never touch the bag, so `/inventory` has no weapons/amulets rows. To change gear you SELL the one you wear and forge
+the next: `ForgeModule.ExecuteMakeAsync` refuses (before charging anything) when that slot is taken, and `CraftAsync` re-checks it inside the transaction under the user-row lock (three concurrent
+forges → exactly one succeeds; `CraftOutcome.SlotOccupied`). Selling worn gear is `IShopRepository.SellEquippedAsync` — ONE guarded `UPDATE users SET weapon_id = NULL ... WHERE weapon_id = @item RETURNING`
+(a double click pays once) — reached through the normal `ShopModule.ExecuteSellAsync` (a gear item first tries the equipped path, then falls back to a loose inventory copy), so `/shop sell`, `aa shop sell`
+and the tavern all work; `/shop sellall` only sells the bag. The tavern's sell menu lists the worn pieces first with a ⚠️, and picking one asks for confirmation (ephemeral message with
+`taberna_gearyes:{owner}:{itemId}` / `taberna_gearno:{owner}` buttons) because forging it again costs far more than the sale pays. The forge menu labels each recipe by slot state (✅ forgeable now, 🔁 "sell
+your weapon first", ❌ missing something, 🟢 already worn; `ForgeChoices`), and `/tips` (`FarmAdviceService`) counts worn gear as already forged, only advises recipes that IMPROVE it (class synergy
+included) and says "sell first" when the ready recipe's slot is taken. `Database/move_gear_to_equipment.sql` migrated the players who had gear in the bag (the copy of the worn piece is dropped for free, a
+free slot gets the best usable piece, the rest is paid at `sell_price`; re-runnable). The profile shows the weapon under Attack and the amulet under Defense (`GameModule.BuildProfileEmbedAsync`).
+
+**Game history (`/history`, `aa history`; `/duels`, `aa duels`)** — no new table: it summarizes `game_events` (`IGameEventRepository.GetBreakdownAsync/GetRecentAsync`; pure builders in
+`GameData/GameHistory.cs`): per game, times played / won / lost / % (cacería, viaje, jefe, raid — losses are `fight_lost` with `detail` = hunt|travel|boss|raid, the raid wipe records it for every
+participant who didn't flee —, duelos, arena with tournaments joined and championships) and, for the two casino games, the gold won and lost and the balance (`casino_win`/`casino_loss`, `amount` =
+net gold won / gold bet, `detail` = slots|coinflip, recorded by `CasinoModule.ExecutePlayAsync` after the bet commits). It counts from when each game started being recorded (the footer says so);
+`duel_win`/`duel_loss` carry the rival's name in `detail`, which is what `/duels` lists (last 10 + streak). Both accept an optional player like `/profile`.
 
 **Autoritative source for "how much SQL debt does this repo have right now"**: `MEJORAS.md` at the
 repo root. Read it before assuming the schema in `Database/schema.sql` is what's actually running

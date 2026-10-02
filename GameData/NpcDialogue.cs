@@ -1,8 +1,8 @@
 namespace BotDsRpg.GameData;
 
-public enum BlacksmithLine { Greeting, Success, NotEnough, UnknownRecipe, WrongClass, NoRecipes }
+public enum BlacksmithLine { Greeting, Success, NotEnough, UnknownRecipe, WrongClass, NoRecipes, SlotTaken, AlreadyEquipped }
 
-public enum ShopkeeperLine { Greeting, BuySuccess, NoGold, BoxWait, SellSuccess, SellAll, NothingToSell, NotForSale, NotOwned, Unsellable }
+public enum ShopkeeperLine { Greeting, BuySuccess, NoGold, BoxWait, SellSuccess, SellAll, NothingToSell, NotForSale, NotOwned, Unsellable, GearConfirm, GearKept }
 
 public enum InnkeeperLine { Healed, NothingToEat, FullHp, InCombat }
 
@@ -46,6 +46,17 @@ public static class NpcDialogue
         [
             "Eso es para otro oficio, compa. A vos no te va a servir.",
             "Esa pieza se hace a medida para otra clase. Elegí otra.",
+        ],
+        [BlacksmithLine.SlotTaken] =
+        [
+            "Ya andás con una pieza puesta, compa. Vendésela al tabernero y hablamos.",
+            "No te puedo poner otra encima. Primero desprendete de la que traés y vuelvo a la fragua.",
+            "Una a la vez, che. Vendé la que tenés puesta y te forjo la nueva.",
+        ],
+        [BlacksmithLine.AlreadyEquipped] =
+        [
+            "Esa ya la llevás puesta, ¿qué más querés? Elegí otra cosa.",
+            "Pero si ya la tenés encima, crack. Pedime otra pieza.",
         ],
         [BlacksmithLine.NoRecipes] =
         [
@@ -107,6 +118,16 @@ public static class NpcDialogue
         [
             "No tenés eso para vender, che. Mirá bien la mochila.",
             "Eso no lo veo por ningún lado. No me hagas perder el tiempo.",
+        ],
+        [ShopkeeperLine.GearConfirm] =
+        [
+            "Ojo, que eso es lo que llevás puesto. ¿Seguro que querés desprenderte?",
+            "¿Vender lo que traés encima? Pensalo bien, que después hay que volver a forjarlo.",
+        ],
+        [ShopkeeperLine.GearKept] =
+        [
+            "Hacés bien, quedate con tu pieza. Cuando quieras cambiar, acá estoy.",
+            "Sensato. Mejor guardarla hasta tener la próxima lista.",
         ],
         [ShopkeeperLine.Unsellable] =
         [
