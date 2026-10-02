@@ -36,6 +36,12 @@ public static class GameEventKinds
     public const string MiniEvent = "mini_event";           // se sumó a un minievento y cobró; detail = el tipo (Stones / Wood / Silver)
     public const string Trade = "trade";                    // un cambio de materiales con otro jugador; detail = "lo que dio->lo que recibió"
 
+    // PvP.
+    public const string DuelWin = "duel_win";               // ganó un duelo amistoso
+    public const string DuelLoss = "duel_loss";             // perdió un duelo amistoso
+    public const string ArenaJoin = "arena_join";           // se anotó en el torneo del día; detail = el día (yyyy-MM-dd)
+    public const string ArenaWin = "arena_win";             // ganó el torneo del día; detail = el día
+
     // Progreso de misiones y logros (los registra el propio sistema).
     public const string MissionClaimed = "mission_claimed"; // detail = clave de la misión
     public const string AchievementUnlocked = "achievement_unlocked"; // detail = clave del logro

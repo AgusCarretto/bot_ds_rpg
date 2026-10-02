@@ -40,6 +40,8 @@ public partial class TextCommandModule(
     ITradeOfferService tradeOffers,
     IGameEventRepository gameEventRepository,
     IFarmAdvisor farmAdvisor,
+    IDuelService duelService,
+    IArenaService arenaService,
     IGameEvents gameEvents) : ModuleBase<SocketCommandContext>
 {
     // ---- Onboarding / clase ----

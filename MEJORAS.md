@@ -49,6 +49,14 @@ la base real con usuarios descartables y recién ahí integrada a `develop`.
   heredan de `SafeAutocompleteHandler`: si armar la lista falla, queda en el log y se devuelve vacía en vez de romperse. (5) El nombre
   de un ítem ya no distingue mayúsculas, tildes **ni espacios sobrantes** (`"Mate Amargo "` fallaba). (6) Misiones y logros con una línea en
   blanco entre cada una.
+- **PvP: duelo amistoso y Arena diaria** (2026-10-02): (1) **`/fight @jugador`** (`aa fight @jugador`, también `aa duelo`): desafío con Aceptar/Rechazar y pelea por turnos con Atacar, la
+  habilidad de la clase y Rendirse (60 s por turno; el que no juega pierde). Es solo por el honor: los dos arrancan con la vida completa y no se toca nada (ni vida, ni oro, ni XP). (2) **`/arena`**:
+  `join` te anota en el torneo de hoy (máx. 32, mínimo 2), `listplayers` muestra quiénes van y `results` la llave del último. A las **00:00 de Uruguay** se arma una llave de eliminación directa con todos
+  los anotados, las peleas se juegan solas (con tu nivel y tu equipo de ese momento; la habilidad se usa apenas está lista) y el **campeón** cobra 15 cacerías de oro de su zona + 6 % de XP + una caja de su zona.
+  El bot lo anuncia en el canal donde se anotó el primero (o en `Arena__ChannelId`) y arranca el torneo del día siguiente; si el bot estaba apagado a medianoche, lo juega apenas vuelve. (3) **Balance**:
+  midiendo 4000 duelos por cruce salió que el Guerrero le ganaba 74-85 % a todos y el Arquero perdía 80-85 %, así que en PvP la vida se ajusta por clase (Guerrero ×0,90, Hechicero ×1,20, Arquero ×1,25,
+  Ninja ×1,0): el peor cruce queda en 66/34 y se arma un piedra-papel-tijera (Guerrero > Ninja > Arquero/Hechicero > Guerrero). Hay que volver a medirlo si se tocan las clases o sus habilidades.
+  Pendiente: un ranking de victorias, premio para el subcampeón y duelos con apuesta (ver ideas).
 - **Jefe que paga, nivel que se festeja, `/tips`, recetas por zona y respuestas aparte** (2026-10-01): (1) **El jefe pagaba menos que un `/travel`** (en Zona 2: ~280 XP contra ~520, una pelea dura con
   30 min de cooldown rendía la mitad que una de 10): ahora es la fórmula de `/hunt` con el bono grande del jefe **x6** (`CombatRewardCalculator.BossRewardMultiplier`) = ~3,2 veces un viaje de su
   zona (oro y XP; ~70 % de un nivel por jefe en zonas 2-5). Vale para `/boss` y `/raid` (cada participante cobra entero). Ojo con el ritmo: quien juega cazar + viajar + jefe en cada cooldown sube

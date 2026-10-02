@@ -221,6 +221,9 @@ class Program
         await _textCommands.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
         Console.WriteLine("[INFO] Comandos de texto (prefijo \"aa \") registrados.");
 
+        // El reloj de la Arena: juega los torneos de días anteriores (a las 00:00 de Uruguay, o apenas vuelve el bot si estuvo apagado).
+        _services.GetRequiredService<ArenaScheduler>().Start();
+
         // Si hay un servidor de pruebas configurado, registramos los comandos ahí:
         // se propagan al instante, ideal para iterar rápido en desarrollo.
         // Sin esa config, se registran globalmente (pueden tardar hasta 1h en aparecer).
@@ -504,6 +507,11 @@ public static class ServiceProviderBuilder
             .AddSingleton<IAchievementRepository, AchievementRepository>()
             .AddSingleton<IProgressNotifier, ProgressNotifier>()
             .AddSingleton<ITradeOfferService, TradeOfferService>()
+            .AddSingleton<IArenaRepository, ArenaRepository>()
+            .AddSingleton<IDuelFighterFactory, DuelFighterFactory>()
+            .AddSingleton<IDuelService, DuelService>()
+            .AddSingleton<IArenaService, ArenaService>()
+            .AddSingleton<ArenaScheduler>()
             .AddSingleton<IFarmAdvisor, FarmAdviceService>()
             .AddSingleton<IMiniEventRepository, MiniEventRepository>()
             .AddSingleton<IMiniEventService, MiniEventService>()

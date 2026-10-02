@@ -44,6 +44,11 @@ public sealed record TurnResult(
 
 public sealed record CounterResult(MonsterHitOutcome Hit, AbilityState Status);
 
+// Solo la mitad "yo pego" de un turno: lo que hizo el golpe (o los golpes de la habilidad), el Sifón de Almas y cómo quedó la habilidad.
+// Lo usa ResolveTurn (contra un monstruo, que después contraataca) y el PvP (GameData/DuelEngine.cs, donde el que recibe es otro jugador).
+public sealed record StrikeResult(
+    ClassAbility? AbilityUsed, bool Ambush, int Damage, int CritCount, int LifestealHeal, int HpAfterStrike, AbilityState StatusAfter);
+
 // UNA sola implementación del turno de un jugador contra un monstruo (golpe → Sifón de Almas →
 // contraataque), que comparten el combate solitario (Modules/AdventureModule.cs), el jefe
 // cooperativo (Modules/RaidModule.cs) y el autohunt (Modules/AutoHuntModule.cs). Antes esa lógica
@@ -67,6 +72,29 @@ public static class CombatTurnResolver
     public static TurnResult ResolveTurn(
         CombatantProfile player, AbilityState status, PlayerAction action,
         int playerHp, int playerMaxHp, int monsterHp, int monsterDamage)
+    {
+        var strike = ResolveStrike(player, status, action, playerHp, playerMaxHp);
+        int monsterHpAfter = Math.Max(0, monsterHp - strike.Damage);
+
+        if (monsterHpAfter <= 0)
+        {
+            return new TurnResult(
+                strike.AbilityUsed, strike.Ambush, strike.Damage, strike.CritCount, strike.LifestealHeal, 0,
+                strike.HpAfterStrike, null, strike.HpAfterStrike, strike.StatusAfter);
+        }
+
+        var counter = ResolveCounter(player, strike.StatusAfter, monsterDamage);
+        int playerHpAfter = Math.Max(0, strike.HpAfterStrike - counter.Hit.Damage);
+
+        return new TurnResult(
+            strike.AbilityUsed, strike.Ambush, strike.Damage, strike.CritCount, strike.LifestealHeal, monsterHpAfter,
+            strike.HpAfterStrike, counter.Hit, playerHpAfter, counter.Status);
+    }
+
+    // La mitad "yo pego" del turno: el golpe (o los de la habilidad), el Sifón de Almas y el enfriamiento. No toca al rival: el que
+    // llama resta el daño de la vida del monstruo (ResolveTurn) o lo hace pasar por la defensa y el esquive del otro jugador (PvP).
+    // Mismas reglas de siempre sobre habilidades: el llamador chequea CheckAbility antes de pedir PlayerAction.Ability.
+    public static StrikeResult ResolveStrike(CombatantProfile player, AbilityState status, PlayerAction action, int playerHp, int playerMaxHp)
     {
         ClassAbility? used = null;
         if (action == PlayerAction.Ability)
@@ -135,23 +163,19 @@ public static class CombatTurnResolver
         // Sifón de Almas (Hechicero): cura al pegar, golpe final incluido, antes del contraataque.
         int lifestealHeal = CombatMath.RollLifesteal(damage, player.Passives.LifestealChance, player.Passives.LifestealRatio);
         int playerHpAfterStrike = Math.Min(playerMaxHp, playerHp + lifestealHeal);
-        int monsterHpAfter = Math.Max(0, monsterHp - damage);
 
         // Usar la habilidad arranca su enfriamiento y su efecto; cualquier otro turno lo hace bajar 1.
         var statusAfterStrike = used is not null
             ? new AbilityState(used.CooldownTurns, EffectTurnsFor(used.Kind))
             : status with { CooldownRemaining = Math.Max(0, status.CooldownRemaining - 1) };
 
-        if (monsterHpAfter <= 0)
-        {
-            return new TurnResult(used, ambush, damage, crits, lifestealHeal, 0, playerHpAfterStrike, null, playerHpAfterStrike, statusAfterStrike);
-        }
-
-        var counter = ResolveCounter(player, statusAfterStrike, monsterDamage);
-        int playerHpAfter = Math.Max(0, playerHpAfterStrike - counter.Hit.Damage);
-
-        return new TurnResult(used, ambush, damage, crits, lifestealHeal, monsterHpAfter, playerHpAfterStrike, counter.Hit, playerHpAfter, counter.Status);
+        return new StrikeResult(used, ambush, damage, crits, lifestealHeal, playerHpAfterStrike, statusAfterStrike);
     }
+
+    // La mitad "recibo un golpe": esquive (con el bonus de la clase o el de Sombra), defensa, la mitigación de Aguante y la pasiva de daño
+    // recibido, y consume un turno del efecto activo. Es el contraataque de siempre, expuesto para que el PvP lo use con el golpe de otro jugador.
+    public static CounterResult ResolveIncoming(CombatantProfile defender, AbilityState status, int incomingDamage) =>
+        ResolveCounter(defender, status, incomingDamage);
 
     // Turno en el que el jugador NO ataca (usó un consumible, ver Modules/UseModule.cs): el monstruo
     // contraataca igual, con los efectos activos aplicados, y el turno cuenta para el enfriamiento.

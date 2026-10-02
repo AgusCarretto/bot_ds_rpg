@@ -422,6 +422,26 @@ shortcut for quantities and for text commands; `/shop view` carries no photo on 
 **NPC images ship with the bot**: `Assets/npc/blacksmith.jpg` and `innkeeper.jpg` (256x256, ~25 KB; `Assets/**` is copied to the output and the publish)
 are attached to the message as `attachment://file.jpg` (the embed's thumbnail), so nothing has to be hosted; an `Images__*` URL in the `.env` wins if set.
 
+**PvP: friendly duel (`/fight @user`, `aa fight @user`) and the daily Arena (`/arena join|listplayers|results`)** — both run on ONE pure engine, `GameData/DuelEngine.cs`, built on the
+same two halves of the combat resolver the monster fights use (`CombatTurnResolver.ResolveStrike` = "I hit" and `ResolveIncoming` = "I get hit"; `ResolveTurn` is just the two glued
+with a monster counter, and its behavior did not change — `abilitytest` checks the distributions). PvP-only rules, all in that file: turns alternate; the defender's DEFENSE is subtracted
+from the attack BEFORE abilities/crits (subtracting it after made Bola de Fuego hit ~4× a plain strike against a defended rival instead of its calibrated 2.2×); lifesteal heals on damage
+that actually landed; an ability effect (Aguante/Sombra) is spent by hits received. **Class balance is PvP-specific** (`GameData/PvpTuning.cs`): per-class combat-HP factors (Guerrero 0.90,
+Hechicero 1.20, Arquero 1.25, Ninja 1.0) — without them the Warrior beat every class 74–85% and the Archer lost 80–85%, so any tournament would be won by a Warrior. They were
+measured with 3000–4000 simulated duels per matchup at levels 5/12/22/30 (policy "use the ability as soon as it is ready"); with one lever (HP) the floor is ~66/34 in the worst matchup and
+a rock-paper-scissors forms (Guerrero > Ninja > Arquero/Hechicero > Guerrero). **Re-measure whenever a class passive or ability changes** (the harness is a double loop over `DuelEngine.Simulate`).
+The friendly duel (`Modules/DuelModule.cs`, `Services/DuelService.cs`): challenge with Accept/Decline buttons (2 min, one open challenge per challenger), then alternating turns with
+Attack / the class ability / Forfeit buttons, 60 s per turn (the one who does not play loses); both start at full HP and **nothing touches the database** (no HP, gold, XP or
+cooldowns — only `duel_win`/`duel_loss` events). A `DuelSession` is mutable under its `Lock` (no `await` inside; same model as the raid), the winner/loser bookkeeping runs once when the
+session is released, and the turn timer races the click inside that same lock. **The Arena** (`Services/ArenaService.cs`, `Repositories/ArenaRepository.cs`, tables `arena_days/arena_entries/arena_matches`, `Database/add_arena.sql`):
+one tournament per **Uruguay day**; people join during the day (max 32, min 2; joining is a transaction that locks the day row so the cap can't be passed); the bot's clock
+(`Modules/ArenaScheduler.cs`, every 30 s, started from `ReadyAsync`) plays every open day BEFORE today — so it runs at 00:00 Uruguay, or right when the bot comes back if it was off at midnight. The bracket is single
+elimination (`GameData/ArenaBracket.cs`, pure: shuffled order, the first slots get byes when the count is not a power of two), fights are `DuelEngine.Simulate` with the stats the players have AT THAT MOMENT,
+and closing the day is ONE transaction: `UPDATE arena_days SET status='resolved' ... WHERE status='open'` (the guard — 20 concurrent closers pay once), the matches, and the champion's prize via
+`RewardPayer` (15 hunts of gold of THEIR zone + 6% XP + a zone box, `ArenaRules.ChampionReward`). Fewer than 2 players = cancelled, no prize (so nobody farms the daily prize by joining alone). The result is
+announced in the channel where the first player joined (or `Arena__ChannelId`), and `/arena results` shows the full bracket. Tests must use synthetic past days (the harness uses 2020) and never call
+`ResolveDueAsync` on the real repository — it would pay real tournaments.
+
 **Autoritative source for "how much SQL debt does this repo have right now"**: `MEJORAS.md` at the
 repo root. Read it before assuming the schema in `Database/schema.sql` is what's actually running
 on any given machine's Postgres instance — they drift (see "known recurring problem" above).
