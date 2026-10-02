@@ -90,7 +90,17 @@ UPDATE items SET emoji = '<:corona_escoriaviva:1555593539260391445>' WHERE name 
 UPDATE items SET emoji = '<:drop_miticos_escoriacrater:1555578379271409715>' WHERE name = 'Escoria Pura del Cráter';
 UPDATE items SET emoji = '<:drop_miticos_fragmentoalma:1555578387827785818>' WHERE name = 'Fragmento de Alma';
 
--- ⚔️ Weapon (0/28, pendiente: 25 se consiguen forjando y 3 — Arco Largo del Cazador, Báculo del Aprendiz, Dagas Gemelas de Sombra — hoy no se consiguen)
+-- ⚔️ Weapon (10/28): Zona 1 y Zona 2 completas. Pendiente: Zonas 3 a 5 (15 armas que se consiguen forjando) y 3 que hoy no se consiguen — Arco Largo del Cazador, Báculo del Aprendiz, Dagas Gemelas de Sombra
+UPDATE items SET emoji = '<:espada_madera:1555633462432636958>' WHERE name = 'Espada de Madera';
+UPDATE items SET emoji = '<:daga_oxidada:1555633460947984394>' WHERE name = 'Daga Oxidada';
+UPDATE items SET emoji = '<:arco_corto_sauce:1555633459232510022>' WHERE name = 'Arco Corto de Sauce';
+UPDATE items SET emoji = '<:grimorio_desgastado:1555633457428955176>' WHERE name = 'Grimorio Desgastado';
+UPDATE items SET emoji = '<:hoja_acero_pura:1555633455889387730>' WHERE name = 'Hoja de Acero Puro';
+UPDATE items SET emoji = '<:hacha_mk3:1555636580667105330>' WHERE name = 'Hacha de Hierro MK3';
+UPDATE items SET emoji = '<:colmillo_nocturno:1555636579047833610>' WHERE name = 'Colmillo Nocturno';
+UPDATE items SET emoji = '<:arco_elfico_ancestral:1555636576665604106>' WHERE name = 'Arco Élfico Ancestral';
+UPDATE items SET emoji = '<:grimorio_tormentas:1555636574740422746>' WHERE name = 'Grimorio de las Tormentas';
+UPDATE items SET emoji = '<:cuchilla_cenizas:1555636572970291282>' WHERE name = 'Cuchilla de Cenizas';
 
 -- 📿 Amulet (12/16): los 10 que se consiguen forjando + Capa y Carcaj de Pelaje Oscuro (hoy no se consiguen, pero el emoji ya estaba hecho). Sin emoji y sin forma de conseguirlos: Bombilla de Hierro Maldito, Botas de Silencio, Collar de Hueso, Ojo de Jabalí
 UPDATE items SET emoji = '<:amuleto_collar_basico:1555578428181188749>' WHERE name = 'Amuleto del Levantador';

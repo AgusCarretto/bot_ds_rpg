@@ -421,7 +421,7 @@ shortcut for quantities and for text commands; `/shop view` carries no photo on 
 
 **Item emojis are Discord *Application* Emojis** (`items.emoji` = `<:name:id>`, single source of truth `Database/update_item_emojis.sql`, UPDATEs by item *name*): they live in the Developer Portal (the bot's application → Emojis, up to 2000) instead of the server's 50 slots, and render in any
 guild the bot is in. They belong to the *application*: a different bot application does not have those ids, so re-upload and regenerate the script (DEPLOY.md). The only server emojis left are the 4 common Madera (Pino/Roble/Nogal/Ébano — re-upload them
-to the portal before deleting them from the server or those four show as broken text). Coverage: Weapon 0/28 (pending — 25 are obtainable by forging), Amulet 12/16 (the other 4 are not obtainable today), everything else complete. A NULL emoji is harmless
+to the portal before deleting them from the server or those four show as broken text). Coverage: Weapon 10/28 (zones 1–2 done; zones 3–5 pending — 15 obtainable by forging, plus 3 not obtainable today), Amulet 12/16 (the other 4 are not obtainable today), everything else complete. A NULL emoji is harmless
 (`ItemDisplay.Format` prints just the name). To add one: upload it in the portal with a clear name, copy its id, add the UPDATE to the script and run it. Never put an emoji in a select-menu option (a rejected emoji kills the whole message).
 
 **NPC images ship with the bot**: `Assets/npc/blacksmith.jpg` and `innkeeper.jpg` (256x256, ~25 KB; `Assets/**` is copied to the output and the publish)
