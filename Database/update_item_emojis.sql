@@ -47,12 +47,38 @@ UPDATE items SET emoji = '<:cofre_epico:1555258210649374831>'      WHERE name = 
 UPDATE items SET emoji = '<:cofre_legendario:1555258185357590709>' WHERE name = 'Cofre de Oro';
 UPDATE items SET emoji = '<:cofre_mitico:1555258258191548526>'     WHERE name = 'Arca del Soberano';
 
--- 🩸 Material (2/38): 21 son drops de monstruos que entran en recetas y 17 son "trofeos" que solo salen de cajas.
+-- 🩸 Material (22/38): 21 son drops de monstruos que entran en recetas y 17 son "trofeos" que solo salen de cajas.
+-- Faltan 8 drops de recetas (Colmillo de Jabalí, Ceniza Bendita, Esencia Espectral, Garra de Puma Cenizo, Pelaje Plateado del Alfa,
+-- Yunque del Capataz, Brasa Eterna, Corazón del Soberano) y 8 trofeos (Garra Maldita, Hueso Añejo, Rama Carbonizada, Garra del Alfa,
+-- Núcleo Ígneo, Colmillo del Señor del Volcán, Martillo del Capataz, Corona de Escoria Viva).
 UPDATE items SET emoji = '<:drop_comunes_colmillo:1546927649635700808>' WHERE name = 'Colmillo de Cimarrón';
 UPDATE items SET emoji = '<:Drops_comunes_cuero:1546927605221949440>'   WHERE name = 'Cuero Grueso';
+UPDATE items SET emoji = '<:drops_comunes_pluma:1546922505216721056>' WHERE name = 'Pluma de Ñandú';
+UPDATE items SET emoji = '<:drops_raros_colmilloreyjabali:1546922446412841021>' WHERE name = 'Colmillo del Rey Jabalí';
+UPDATE items SET emoji = '<:drops_epicos_yunque:1546922620866396210>' WHERE name = 'Yunque Fragmentado';
+UPDATE items SET emoji = '<:drops_epicos_piedraderretida:1546922595545256037>' WHERE name = 'Escoria Metálica Densa';
+UPDATE items SET emoji = '<:drops_epicos_gema:1546922552038006834>' WHERE name = 'Gema en Bruto';
+UPDATE items SET emoji = '<:drops_legendarios_nucleo:1546922421636964414>' WHERE name = 'Núcleo de Magma';
+UPDATE items SET emoji = '<:drops_legendarios_escamas:1546922402489827418>' WHERE name = 'Escama Ígnea';
+UPDATE items SET emoji = '<:drops_legendarios_alientofuego:1546922363659092101>' WHERE name = 'Aliento de Fuego Eterno';
+UPDATE items SET emoji = '<:drop_miticos_fragmentoalma:1546922343392084008>' WHERE name = 'Fragmento de Alma';
+UPDATE items SET emoji = '<:drop_miticos_corazontitan:1546922316733358190>' WHERE name = 'Corazón de Titán';
+UPDATE items SET emoji = '<:drop_miticos_ceniza:1546922256071135313>' WHERE name = 'Ceniza del Abismo';
+UPDATE items SET emoji = '<:drop_comunes_collarCuero:1546927625883353230>' WHERE name = 'Collar de Cuero Viejo';
+UPDATE items SET emoji = '<:drops_comunes_cuerocurtido:1546922484912099408>' WHERE name = 'Cuero Curtido de Pradera';
+UPDATE items SET emoji = '<:Drops_comunes_pelajeoscuro:1546927563828498553>' WHERE name = 'Pelaje Oscuro';
+UPDATE items SET emoji = '<:Drops_comunes_piedracaliente:1546927545835069480>' WHERE name = 'Piedra Caliente';
+UPDATE items SET emoji = '<:Drops_comunes_telarasgada:1546927525957992530>' WHERE name = 'Tela Rasgada';
+UPDATE items SET emoji = '<:drops_raros_coronacerdas:1546922464741826640>' WHERE name = 'Corona de Cerdas';
+UPDATE items SET emoji = '<:drops_epicos_polvo:1546922574594838528>' WHERE name = 'Polvo de Mina Sagrada';
+UPDATE items SET emoji = '<:drops_legendarios_rocavolcanica:1546922383640625304>' WHERE name = 'Roca Volcánica Pura';
+UPDATE items SET emoji = '<:drop_miticos_escoriacrater:1546922285636784168>' WHERE name = 'Escoria Pura del Cráter';
 
--- ⚔️ Weapon (0/29, pendiente)
--- 📿 Amulet (0/16, pendiente; 6 de ellos no se pueden conseguir hoy: no tienen receta ni están en cajas)
+-- ⚔️ Weapon (0/28, pendiente)
+
+-- 📿 Amulet (2/16; 6 de los que faltan no se pueden conseguir hoy: no tienen receta ni están en cajas)
+UPDATE items SET emoji = '<:amuleto_hombreras:1546922706497445948>' WHERE name = 'Hombreras de Cuero Grueso';
+UPDATE items SET emoji = '<:amuleto_collar_basico:1546922662813765672>' WHERE name = 'Amuleto del Levantador';
 
 -- Chequeo rápido: cuántos ítems totales todavía están en NULL (arrancó en 58, iba bajando de a tanda).
 -- SELECT type, COUNT(*) FROM items WHERE emoji IS NULL GROUP BY type ORDER BY type;
