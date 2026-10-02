@@ -69,13 +69,14 @@ public static class ForgeModule
             return embed.Build();
         }
 
-        embed.WithDescription($"{zoneName}{fallbackNote}{lockNote}\n{forgeHint ?? "Forjá con `/forge` (o `aa forge make <nombre>`): la lista te marca ✅ lo que ya podés hacer."}")
-            .WithFooter("🎯 arma de tu clase  ·  ⚔️ arma general  ·  📿 amuleto");
+        embed.WithDescription($"{zoneName}{fallbackNote}{lockNote}\n{forgeHint ?? "Forjá con `/forge` (o `aa forge make <nombre>`): la lista te marca ✅ lo que ya podés hacer."}");
 
-        AddRecipes(embed, view.Recipes, RecipeGroup.ClassWeapon, "🎯", playerClass, owned, playerGold);
-        AddRecipes(embed, view.Recipes, RecipeGroup.GeneralWeapon, "⚔️", playerClass, owned, playerGold);
-        AddRecipes(embed, view.Recipes, RecipeGroup.Amulet, "📿", playerClass, owned, playerGold);
-        AddRecipes(embed, view.Recipes, RecipeGroup.Other, "📦", playerClass, owned, playerGold);
+        // Sin íconos de espada / amuleto al lado del nombre: el ítem ya trae su propio emoji y dos íconos juntos lo achicaban. Qué tipo es cada uno
+        // lo dice una etiqueta bajo el nombre.
+        AddRecipes(embed, view.Recipes, RecipeGroup.ClassWeapon, "arma de tu clase", playerClass, owned, playerGold);
+        AddRecipes(embed, view.Recipes, RecipeGroup.GeneralWeapon, "arma general", playerClass, owned, playerGold);
+        AddRecipes(embed, view.Recipes, RecipeGroup.Amulet, "amuleto", playerClass, owned, playerGold);
+        AddRecipes(embed, view.Recipes, RecipeGroup.Other, "otro", playerClass, owned, playerGold);
 
         return embed.Build();
     }
@@ -84,7 +85,7 @@ public static class ForgeModule
     // abajo van lo que suma, el oro y cada ingrediente en su propia línea. Con las cantidades de la recolección (Hierro
     // x10...) la línea única era una pared de texto.
     private static void AddRecipes(
-        EmbedBuilder embed, IEnumerable<RecipeDetails> recipes, RecipeGroup group, string groupEmoji, string playerClass,
+        EmbedBuilder embed, IEnumerable<RecipeDetails> recipes, RecipeGroup group, string groupLabel, string playerClass,
         IReadOnlyDictionary<string, int>? owned, int? playerGold)
     {
         var inGroup = recipes
@@ -104,11 +105,11 @@ public static class ForgeModule
             string goldText = playerGold is int gold
                 ? $"{(gold >= recipe.GoldCost ? "✅" : "❌")} 💰 {recipe.GoldCost} oro (tenés {gold})"
                 : $"💰 {recipe.GoldCost} oro";
-            string value = $"**{stat}**\n{goldText}\n\n{ingredients}";
+            string value = $"**{stat}** · _{groupLabel}_\n{goldText}\n\n{ingredients}";
 
             // Defensa: un campo de más de 1024 caracteres haría reventar todo el mensaje.
             embed.AddField(
-                $"{groupEmoji} {ItemDisplay.Format(recipe.ResultItem.Emoji, recipe.ResultItem.Name)}",
+                ItemDisplay.Format(recipe.ResultItem.Emoji, recipe.ResultItem.Name),
                 value.Length <= 1024 ? value : value[..1023] + "…",
                 false);
         }
@@ -187,6 +188,7 @@ public static class ForgeModule
         return new ForgeMakeResult(null, new EmbedBuilder()
             .WithTitle(outcome.EquippedSlot is null ? "⚒️ ¡Forjado con éxito!" : "⚒️ ¡Forjado y equipado!")
             .WithDescription($"{NpcDialogue.Blacksmith(BlacksmithLine.Success)}\n\n{madeLine}\nOro restante: **{outcome.Player!.Gold}**.")
+            .WithItemThumbnail(recipe.ResultItem.Emoji)
             .WithColor(Color.Green)
             .Build());
     }

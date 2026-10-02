@@ -91,7 +91,8 @@ public class GatheringModule(
             .WithTitle($"{definition.Emoji} ¡{definition.DisplayName} exitoso!")
             .WithColor(RarityColor(item.Rarity))
             .WithDescription($"Conseguiste **{quantity}× {ItemDisplay.Format(item.Emoji, item.Name)}**")
-            .AddField("Rareza", item.Rarity, true);
+            .AddField("Rareza", item.Rarity, true)
+            .WithItemThumbnail(item.Emoji);
 
         return embed.Build();
     }

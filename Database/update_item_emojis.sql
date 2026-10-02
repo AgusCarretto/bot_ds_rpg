@@ -90,7 +90,7 @@ UPDATE items SET emoji = '<:corona_escoriaviva:1555593539260391445>' WHERE name 
 UPDATE items SET emoji = '<:drop_miticos_escoriacrater:1555578379271409715>' WHERE name = 'Escoria Pura del Cráter';
 UPDATE items SET emoji = '<:drop_miticos_fragmentoalma:1555578387827785818>' WHERE name = 'Fragmento de Alma';
 
--- ⚔️ Weapon (10/28): Zona 1 y Zona 2 completas. Pendiente: Zonas 3 a 5 (15 armas que se consiguen forjando) y 3 que hoy no se consiguen — Arco Largo del Cazador, Báculo del Aprendiz, Dagas Gemelas de Sombra
+-- ⚔️ Weapon (15/28): Zonas 1, 2 y 3 completas. Pendiente: Zonas 4 y 5 (10 armas que se consiguen forjando) y 3 que hoy no se consiguen — Arco Largo del Cazador, Báculo del Aprendiz, Dagas Gemelas de Sombra
 UPDATE items SET emoji = '<:espada_madera:1555633462432636958>' WHERE name = 'Espada de Madera';
 UPDATE items SET emoji = '<:daga_oxidada:1555633460947984394>' WHERE name = 'Daga Oxidada';
 UPDATE items SET emoji = '<:arco_corto_sauce:1555633459232510022>' WHERE name = 'Arco Corto de Sauce';
@@ -101,6 +101,11 @@ UPDATE items SET emoji = '<:colmillo_nocturno:1555636579047833610>' WHERE name =
 UPDATE items SET emoji = '<:arco_elfico_ancestral:1555636576665604106>' WHERE name = 'Arco Élfico Ancestral';
 UPDATE items SET emoji = '<:grimorio_tormentas:1555636574740422746>' WHERE name = 'Grimorio de las Tormentas';
 UPDATE items SET emoji = '<:cuchilla_cenizas:1555636572970291282>' WHERE name = 'Cuchilla de Cenizas';
+UPDATE items SET emoji = '<:mazo_escoria:1555644053788299274>' WHERE name = 'Mazo de Escoria';
+UPDATE items SET emoji = '<:daga_guerra_maldita:1555644052026691594>' WHERE name = 'Dagas de Garra Maldita';
+UPDATE items SET emoji = '<:boleadoras_escoria:1555644050281992242>' WHERE name = 'Boleadoras de Escoria';
+UPDATE items SET emoji = '<:baculo_tizon:1555644047610347663>' WHERE name = 'Báculo de Tizón';
+UPDATE items SET emoji = '<:pico_minero_reforzado:1555644045903265813>' WHERE name = 'Pico de Minero Reforzado';
 
 -- 📿 Amulet (12/16): los 10 que se consiguen forjando + Capa y Carcaj de Pelaje Oscuro (hoy no se consiguen, pero el emoji ya estaba hecho). Sin emoji y sin forma de conseguirlos: Bombilla de Hierro Maldito, Botas de Silencio, Collar de Hueso, Ojo de Jabalí
 UPDATE items SET emoji = '<:amuleto_collar_basico:1555578428181188749>' WHERE name = 'Amuleto del Levantador';

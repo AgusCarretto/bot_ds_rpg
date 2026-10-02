@@ -85,8 +85,8 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
         // fila en blanco separa los bloques. El historial de PvP ya no va acá: está en /history y /duels.
         string attackText = $"**{attack}**" + (hasSynergy ? " ⚡" : string.Empty)
             + (buff is null ? string.Empty : $" 🍖 +{buff.AttackPercent}% ({Math.Max(1, (int)Math.Ceiling(buff.Remaining.TotalMinutes))} min)")
-            + $"\n🗡️ {(weapon is null ? "_Sin arma_" : $"{ItemDisplay.Format(weapon.Emoji, weapon.Name)} (+{weapon.StatValue})")}";
-        string defenseText = $"**{defense}**\n📿 {(amulet is null ? "_Sin amuleto_" : $"{ItemDisplay.Format(amulet.Emoji, amulet.Name)} (+{amulet.StatValue})")}";
+            + $"\n{(weapon is null ? "_Sin arma_" : $"{ItemDisplay.Format(weapon.Emoji, weapon.Name)} (+{weapon.StatValue})")}";
+        string defenseText = $"**{defense}**\n{(amulet is null ? "_Sin amuleto_" : $"{ItemDisplay.Format(amulet.Emoji, amulet.Name)} (+{amulet.StatValue})")}";
         string goldText = $"**{player.Gold}**\n🎁 Racha: {(player.DailyStreak > 0 ? $"día {player.DailyStreak}" : "_ninguna_")}";
 
         return new EmbedBuilder()
@@ -142,15 +142,18 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
 
     // Estático (sin dependencia de Context) para que Modules/TextCommandModule.cs arme el mismo embed en "aa inventory".
     //
-    // La pantalla va en COLUMNAS (campos en línea de Discord), de dos en dos y con una fila en blanco entre filas, para que se lea de
-    // un vistazo y no sea una pared de texto:
-    //     🪵 Recolección (Madera y después Mineral)      🩸 Drops de monstruo
-    //     🗡️ Armas                                         📿 Amuletos
-    //     🍖 Comida                                        📦 Cajas
-    // "Recolección" es lo que dan /chop y /mine (items.type Madera y Mineral, agrupados POR TIPO: primero toda la madera y después la
-    // piedra y los minerales) y "Drops de monstruo" es otra columna: el type "Material" ES, por diseño de todo el juego, exactamente lo
-    // que sueltan los monstruos (nunca madera ni piedra, ver Database/seed_class_gear_and_monster_drops.sql). Cada línea es el nombre y
-    // la cantidad; la rareza se ve con el emoji del ítem (o un círculo de color si todavía no tiene), sin escribirla en cada renglón.
+    // TODA la pantalla va en UNA sola columna, de arriba hacia abajo: un bloque por tipo y una línea en blanco entre bloque y bloque.
+    //     🪵 Madera
+    //     ⛏️ Mineral
+    //     🩸 Drops de monstruo
+    //     🍖 Comida
+    //     📦 Cajas
+    // El type "Material" ES, por diseño de todo el juego, exactamente lo que sueltan los monstruos (nunca madera ni piedra, ver
+    // Database/seed_class_gear_and_monster_drops.sql). Antes eran dos columnas lado a lado y los drops (~40 ítems) se partían en "(1/2)" y
+    // "(2/2)" porque un campo de embed admite 1024 caracteres: ahora todo va en la descripción (4096), que entra aunque el jugador tenga el
+    // catálogo entero. Si algún día el catálogo crece y no entra, lo que sobra sigue en campos SIN título (nunca "(1/2)"). Cada línea es el
+    // ícono, el nombre y la cantidad; la rareza se ve con el emoji del ítem (o un círculo de color si todavía no tiene), sin escribirla en
+    // cada renglón. Las armas y los amuletos no están acá: se forjan directo a equipamiento (ver /profile).
     public static async Task<Embed> BuildInventoryEmbedAsync(IInventoryRepository inventoryRepository, ulong discordId, string username)
     {
         var entries = await inventoryRepository.GetByDiscordIdAsync(discordId);
@@ -160,50 +163,30 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
             .WithColor(Color.Orange)
             .WithCurrentTimestamp();
 
-        if (entries.Count == 0)
+        var units = new List<string>();
+        foreach (var (heading, type) in new[]
+                 {
+                     ("🪵 **Madera**", "Madera"),
+                     ("⛏️ **Mineral**", "Mineral"),
+                     ("🩸 **Drops de monstruo**", "Material"),
+                     ("🍖 **Comida**", "Consumable"),
+                     ("📦 **Cajas**", "Caja"),
+                 })
+        {
+            AddBlock(units, heading, Lines(entries.Where(e => e.Type == type)));
+        }
+
+        if (units.Count == 0)
         {
             embed.WithDescription("Todavía no tenés ningún material. ¡Probá /chop, /mine o /travel!");
             return embed.Build();
         }
 
-        var rows = new[]
+        var pages = Paginate(units, DescriptionLimit, FieldLimit);
+        embed.WithDescription(pages[0]);
+        foreach (string page in pages.Skip(1))
         {
-            (Left: GatheredColumn(entries), Right: Column("🩸 Drops de monstruo", entries, e => e.Type == "Material")),
-            (Left: Column("🍖 Comida", entries, e => e.Type == "Consumable"), Right: Column("📦 Cajas", entries, e => e.Type == "Caja")),
-        };
-
-        bool first = true;
-        foreach (var (left, right) in rows)
-        {
-            if (left.Count == 0 && right.Count == 0)
-            {
-                continue;
-            }
-
-            // Una fila en blanco entre fila y fila: es lo que "despega" los bloques.
-            if (!first)
-            {
-                embed.AddField(Blank, Blank, false);
-            }
-
-            first = false;
-
-            // Dos columnas lado a lado; si una está vacía, la otra ocupa todo el ancho (no queda un hueco a la derecha).
-            bool inline = left.Count > 0 && right.Count > 0;
-            for (int i = 0; i < Math.Max(left.Count, right.Count); i++)
-            {
-                if (left.Count > 0)
-                {
-                    var (title, text) = i < left.Count ? left[i] : (Blank, Blank);
-                    embed.AddField(title, text, inline);
-                }
-
-                if (right.Count > 0)
-                {
-                    var (title, text) = i < right.Count ? right[i] : (Blank, Blank);
-                    embed.AddField(title, text, inline);
-                }
-            }
+            embed.AddField(Blank, page, false);
         }
 
         if (entries.Any(e => e.Type == "Caja"))
@@ -217,59 +200,56 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
     // Espacio de ancho cero (U+200B): Discord no deja campos con el texto vacío y así se arma una columna o una fila en blanco.
     private static readonly string Blank = ((char)0x200B).ToString();
 
-    // La columna de recolección: primero toda la Madera y después los Minerales (piedra, hierro...). Dentro de cada tipo, de lo más
-    // común a lo más raro (que es, de paso, el orden en que se van consiguiendo).
-    private static List<(string Title, string Text)> GatheredColumn(IReadOnlyList<InventoryEntry> entries)
+    // Límites de Discord con un poco de margen: la descripción de un embed admite 4096 caracteres y un campo 1024.
+    private const int DescriptionLimit = 4000;
+    private const int FieldLimit = 1000;
+
+    // Suma un bloque (título + sus líneas) a la lista de "unidades" que después se reparten en páginas. El título viaja pegado a su primera
+    // línea (así una página nunca termina en un título huérfano) y lleva adelante el salto que deja la línea en blanco entre un bloque y el anterior.
+    private static void AddBlock(List<string> units, string heading, IReadOnlyList<string> lines)
     {
-        var sections = new List<string>();
-
-        foreach (var (type, heading) in new[] { ("Madera", "🪵 **Madera**"), ("Mineral", "⛏️ **Mineral**") })
-        {
-            var lines = Lines(entries.Where(e => e.Type == type));
-            if (lines.Count > 0)
-            {
-                sections.Add($"{heading}\n{string.Join('\n', lines)}");
-            }
-        }
-
-        // Solo hay unas pocas decenas de ítems de recolección: entra siempre en un campo (1024 caracteres), no hace falta partirlo.
-        return sections.Count == 0 ? [] : [("⛏️ Recolección", string.Join("\n\n", sections))];
-    }
-
-    // Una columna simple de un grupo de ítems. Los campos de embed de Discord admiten 1024 caracteres: si un grupo (por ejemplo los
-    // drops, que son ~40 ítems distintos) se pasa, se parte en "(1/2)", "(2/2)" en vez de que /inventory reviente.
-    private static List<(string Title, string Text)> Column(string title, IReadOnlyList<InventoryEntry> entries, Func<InventoryEntry, bool> matches)
-    {
-        const int maxFieldLength = 1024;
-
-        var lines = Lines(entries.Where(matches));
         if (lines.Count == 0)
         {
-            return [];
+            return;
         }
 
-        var chunks = new List<string>();
+        units.Add((units.Count > 0 ? "\n" : string.Empty) + heading + "\n" + lines[0]);
+        units.AddRange(lines.Skip(1));
+    }
+
+    // Junta las unidades en páginas de a lo sumo `firstLimit` caracteres la primera y `nextLimit` las demás, cortando siempre entre unidades.
+    // Una página nueva nunca arranca con una línea en blanco.
+    private static List<string> Paginate(IReadOnlyList<string> units, int firstLimit, int nextLimit)
+    {
+        var pages = new List<string>();
         var current = new StringBuilder();
+        int limit = firstLimit;
 
-        foreach (var line in lines)
+        foreach (string raw in units)
         {
-            if (current.Length > 0 && current.Length + 1 + line.Length > maxFieldLength)
+            if (current.Length > 0 && current.Length + 1 + raw.Length > limit)
             {
-                chunks.Add(current.ToString());
+                pages.Add(current.ToString());
                 current.Clear();
+                limit = nextLimit;
             }
 
-            if (current.Length > 0)
+            if (current.Length == 0)
             {
-                current.Append('\n');
+                current.Append(raw.TrimStart('\n'));
             }
-
-            current.Append(line);
+            else
+            {
+                current.Append('\n').Append(raw);
+            }
         }
 
-        chunks.Add(current.ToString());
+        if (current.Length > 0)
+        {
+            pages.Add(current.ToString());
+        }
 
-        return chunks.Select((text, i) => (chunks.Count > 1 ? $"{title} ({i + 1}/{chunks.Count})" : title, text)).ToList();
+        return pages;
     }
 
     // "Madera de Roble ×3": de lo más común a lo más raro y por nombre dentro de la misma rareza.

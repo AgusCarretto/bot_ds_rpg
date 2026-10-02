@@ -273,9 +273,9 @@ table, `RarityCatalog.GatheringWeights` (per mille): Común 68 / Raro 21 / Épic
 bottleneck: Hierro (10.5% per `/mine`, cooldown 5 min — it shares the Raro pool with Carbón) makes several zone 2–4 weapons take
 ~190–290 min of mining, more than their drop farming.
 
-**Readable embeds** (the owner's rule: spaced out, not crowded — use blank lines and columns, not walls of text): `/inventory` is two inline columns per row
-(Recolección = Madera first, then Mineral, grouped by TYPE; next to it Drops de monstruo, i.e. `items.type = 'Material'`), then
-Comida | Cajas, with a blank spacer field between rows and no rarity text per line (the item emoji, or a coloured dot, carries it);
+**Readable embeds** (the owner's rule: spaced out, not crowded — use blank lines and columns, not walls of text): `/inventory` is ONE column (the owner asked for it after the drops split into "(1/2)" / "(2/2)" fields): blocks Madera, Mineral, Drops de monstruo (`items.type = 'Material'`), Comida and Cajas inside the
+embed *description* (4096 chars: the whole catalog at 9999 of each is ~4000), a blank line between blocks and no rarity text per line (the item emoji, or a coloured dot, carries it); if the catalog ever outgrows it, the rest continues in untitled fields
+(`GameModule.Paginate`, never "(1/2)");
 `/shop view` is two inline columns (Comida | Cajas), each item with ITS OWN emoji and a one-line detail, no rarity text and no decorative emojis; the recipes page (`/forge` zone picker, `aa forge recipes [zone]`) shows "have/need" per ingredient (✅/❌) when given the player's inventory. it shows ONE recipe per field (item + stat, gold, one ingredient per line) and
 `/drops` sends one embed per zone (a field per fight type, two short lines per monster). Both were single walls of text
 before. Every embed built from a growing catalog must stay under Discord's 6000-character total (all embeds of a message
@@ -421,8 +421,9 @@ shortcut for quantities and for text commands; `/shop view` carries no photo on 
 
 **Item emojis are Discord *Application* Emojis** (`items.emoji` = `<:name:id>`, single source of truth `Database/update_item_emojis.sql`, UPDATEs by item *name*): they live in the Developer Portal (the bot's application → Emojis, up to 2000) instead of the server's 50 slots, and render in any
 guild the bot is in. They belong to the *application*: a different bot application does not have those ids, so re-upload and regenerate the script (DEPLOY.md). The only server emojis left are the 4 common Madera (Pino/Roble/Nogal/Ébano — re-upload them
-to the portal before deleting them from the server or those four show as broken text). Coverage: Weapon 10/28 (zones 1–2 done; zones 3–5 pending — 15 obtainable by forging, plus 3 not obtainable today), Amulet 12/16 (the other 4 are not obtainable today), everything else complete. A NULL emoji is harmless
+to the portal before deleting them from the server or those four show as broken text). Coverage: Weapon 15/28 (zones 1–3 done; zones 4–5 pending — 10 obtainable by forging, plus 3 not obtainable today), Amulet 12/16 (the other 4 are not obtainable today), everything else complete. A NULL emoji is harmless
 (`ItemDisplay.Format` prints just the name). To add one: upload it in the portal with a clear name, copy its id, add the UPDATE to the script and run it. Never put an emoji in a select-menu option (a rejected emoji kills the whole message).
+**Item icons are small and Discord cannot enlarge them in text** (22 px; only a message made of nothing but emojis is "jumbo"), so where ONE item is the hero of a message the embed carries its image as the thumbnail — `ItemDisplay.ImageUrl` (pure: the CDN URL built from the emoji id, `null` if the item has no emoji) + `EmbedBuilder.WithItemThumbnail` (`Modules/ItemEmbedExtensions.cs`): `/chop` and `/mine` results, the drop of a victory / auto-hunt, a forge, food eaten with `/use`, the box of `/open`. NPC scenes already use the thumbnail for the character photo, so they do not get one. Do not stack a unicode weapon/amulet marker next to an item that has its own emoji (profile and recipe pages used to show 🗡️ / 📿 / 🎯 / ⚔️ next to it, which shrank it): the recipe type is now an italic label under the name ("arma de tu clase" / "arma general" / "amuleto"). Class icons (⚔️ Guerrero...) and the select-menu options are unchanged.
 
 **NPC images ship with the bot**: `Assets/npc/blacksmith.jpg` and `innkeeper.jpg` (256x256, ~25 KB; `Assets/**` is copied to the output and the publish)
 are attached to the message as `attachment://file.jpg` (the embed's thumbnail), so nothing has to be hosted; an `Images__*` URL in the `.env` wins if set.

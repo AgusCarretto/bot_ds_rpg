@@ -561,7 +561,8 @@ public class AdventureModule(
 
         if (droppedItem is not null)
         {
-            embed.AddField("🎁 Material obtenido", ItemDisplay.Format(droppedItem.Emoji, droppedItem.Name), false);
+            embed.AddField("🎁 Material obtenido", ItemDisplay.Format(droppedItem.Emoji, droppedItem.Name), false)
+                .WithItemThumbnail(droppedItem.Emoji);
         }
 
         // La subida de nivel NO va acá: sale como mensaje propio, apenas termina el combate (GameData/LevelUpCard.cs).

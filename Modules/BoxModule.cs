@@ -144,6 +144,7 @@ public class BoxModule(
             .WithTitle(title)
             .WithColor(GatheringModule.RarityColor(box.Rarity))
             .WithDescription(string.Join('\n', lines))
+            .WithItemThumbnail(box.Emoji)
             .AddField("💰 Tu oro ahora", goldAfter.ToString(), true);
 
         if (newTrophies is { Count: > 0 })

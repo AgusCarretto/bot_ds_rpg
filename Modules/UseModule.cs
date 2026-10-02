@@ -92,6 +92,7 @@ public class UseModule(
             return new UseResult(null, new EmbedBuilder()
                 .WithTitle("🍖 ¡Usaste un consumible!")
                 .WithDescription($"Usaste **{ItemDisplay.Format(item.Emoji, item.Name)}** y recuperaste HP. Ahora tenés **{healed.CurrentHp}/{healed.MaxHp}** HP." + BuffLine(buff))
+                .WithItemThumbnail(item.Emoji)
                 .WithColor(Color.Green)
                 .Build());
         }
