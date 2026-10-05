@@ -1,6 +1,16 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-05 (v0.8.2: caras de los enemigos, Maderas nuevas y ATQ/DEF en la subida de nivel)_
+_Última revisión: 2026-10-05 (v0.8.3: todos los monstruos hablan y el inventario en columnas)_
+
+## Todos los monstruos hablan, la cara siempre y el inventario en columnas (v0.8.3, 2026-10-05)
+
+- **Los 20 monstruos dicen algo**: al aparecer, al caer y cuando te vencen (los jefes ya lo hacían; ahora también los 15 de cacería y de viaje, dos frases por situación,
+  `GameData/NpcDialogue.cs`). Sale en `/hunt`, `/travel`, `/boss`, `/use` en plena pelea y `/autohunt`, ganes o pierdas. Un monstruo nuevo sin frases propias usa unas genéricas.
+- **La cara del monstruo va SIEMPRE de miniatura**, también cuando la victoria trae un drop (antes ahí la miniatura pasaba a ser el ítem); el drop se sigue anunciando en su campo.
+- **Inventario en columnas**, como el de la referencia que te gustó: fila 1 Madera | Mineral | Comida (con las Cajas debajo de la comida), fila 2 los drops repartidos en 1 a 3 columnas;
+  cada renglón es «ícono **Nombre**: cantidad» con separador de miles. Probado con el peor caso (los 54 ítems a 9.999: 3.900 caracteres, bajo el límite de 6.000).
+  **Los emojis no se pueden agrandar**: dentro de un texto Discord los dibuja siempre de 22 px. Si más adelante querés íconos grandes de verdad, la salida es un inventario como
+  IMAGEN generada por el bot (una grilla con los íconos a 64 px y la cantidad), que es un proyecto aparte (una librería de imágenes nueva); en texto, lo que se puede es lo de acá.
 
 ## Caras de los enemigos, Maderas nuevas y ATQ/DEF al subir de nivel (v0.8.2, 2026-10-05)
 

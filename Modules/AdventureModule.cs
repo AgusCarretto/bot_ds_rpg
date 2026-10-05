@@ -514,9 +514,7 @@ public class AdventureModule(
             .WithTitle(title)
             .WithColor(Color.Orange)
             .WithMonsterPortrait(state.MonsterPortrait) // la cara del monstruo, miniatura de TODOS los mensajes de esta pelea (si no, desaparecería a mitad)
-            .WithDescription(state.CommandName == "boss"
-                ? $"¡Un **{state.MonsterName}** {state.MonsterEmoji} salvaje aparece!\n\n{NpcDialogue.Boss(state.MonsterName, state.MonsterEmoji, NpcDialogue.BossLine.Intro)}"
-                : $"¡Un **{state.MonsterName}** {state.MonsterEmoji} salvaje aparece!")
+            .WithDescription($"¡Un **{state.MonsterName}** {state.MonsterEmoji} salvaje aparece!\n\n{MonsterSays(state, NpcDialogue.BossLine.Intro)}")
             .AddField("❤️ Tu HP", HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
             .AddField($"{state.MonsterEmoji} HP de {state.MonsterName}", HpLine(state.MonsterCurrentHp, state.MonsterMaxHp), true);
 
@@ -555,8 +553,10 @@ public class AdventureModule(
         var embed = new EmbedBuilder()
             .WithTitle($"🏆 ¡Victoria contra {state.MonsterName} {state.MonsterEmoji}!")
             .WithColor(Color.Green)
-            .WithMonsterPortrait(state.MonsterPortrait) // si hubo drop, abajo la miniatura pasa a ser el ítem (el protagonista es lo que ganaste)
-            .WithDescription($"{turn.ActionFlavor}{CritPrefix(turn.CritCount)}Le hiciste **{turn.DamageDealt}** de daño y lo derrotaste.{LifestealSuffix(turn.LifestealHeal)}")
+            .WithMonsterPortrait(state.MonsterPortrait) // SIEMPRE la cara del monstruo, haya drop o no (el drop va en su campo, abajo)
+            // Todos los monstruos dicen algo al caer. El jefe lo dice en su campo propio (más abajo, junto con lo de la próxima zona).
+            .WithDescription($"{turn.ActionFlavor}{CritPrefix(turn.CritCount)}Le hiciste **{turn.DamageDealt}** de daño y lo derrotaste.{LifestealSuffix(turn.LifestealHeal)}" +
+                (state.CommandName == "boss" ? string.Empty : $"\n\n{MonsterSays(state, NpcDialogue.BossLine.Defeated)}"))
             .AddField("💰 Oro ganado", reward.Gold.ToString(), true)
             .AddField("📊 EXP ganada", reward.Xp.ToString(), true)
             .AddField("❤️ Tu HP", HpLine(player.CurrentHp, player.MaxHp), true)
@@ -567,8 +567,7 @@ public class AdventureModule(
             // El jefe suelta un cofre (ver GameData/CombatRewardCalculator.BossChestFirstClearPercent); lo demás, un material.
             bool isChest = droppedItem.Type == "Caja";
             string droppedText = ItemDisplay.Format(droppedItem.Emoji, droppedItem.Name);
-            embed.AddField(isChest ? "🎁 ¡Cofre del jefe!" : "🎁 Material obtenido", isChest ? $"{droppedText} — abrilo con `/open`" : droppedText, false)
-                .WithItemThumbnail(droppedItem.Emoji);
+            embed.AddField(isChest ? "🎁 ¡Cofre del jefe!" : "🎁 Material obtenido", isChest ? $"{droppedText} — abrilo con `/open`" : droppedText, false);
         }
 
         // La subida de nivel NO va acá: sale como mensaje propio, apenas termina el combate (GameData/LevelUpCard.cs).
@@ -580,7 +579,7 @@ public class AdventureModule(
             string zoneLine = firstBossClear
                 ? "¡Se abrió el camino! Ya podés avanzar a la próxima zona con `/zona`."
                 : "¡Volviste a ganarle! El camino a la próxima zona ya lo tenías abierto.";
-            embed.AddField("👑 ¡Jefe de Zona derrotado!", $"{NpcDialogue.Boss(state.MonsterName, state.MonsterEmoji, NpcDialogue.BossLine.Defeated)}\n\n{zoneLine}", false);
+            embed.AddField("👑 ¡Jefe de Zona derrotado!", $"{MonsterSays(state, NpcDialogue.BossLine.Defeated)}\n\n{zoneLine}", false);
         }
 
         return embed.Build();
@@ -599,7 +598,7 @@ public class AdventureModule(
             .WithMonsterPortrait(state.MonsterPortrait)
             .WithDescription(
                 $"{turn.ActionFlavor}{CritPrefix(turn.CritCount)}{playerLine} **{state.MonsterName}** te devolvió **{turn.MonsterHit!.Damage}** " +
-                $"y te dejó fuera de combate. Usá **/heal** para recuperarte.{LifestealSuffix(turn.LifestealHeal)}{BossTaunt(state)}")
+                $"y te dejó fuera de combate. Usá **/heal** para recuperarte.{LifestealSuffix(turn.LifestealHeal)}\n\n{MonsterSays(state, NpcDialogue.BossLine.Victory)}")
             .AddField("❤️ Tu HP", HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
             .AddField($"{state.MonsterEmoji} HP de {state.MonsterName}", HpLine(turn.MonsterHpAfter, state.MonsterMaxHp), true)
             .AddField("📋 Resumen del combate", BuildCombatSummaryLine(state), false)
@@ -640,9 +639,10 @@ public class AdventureModule(
         return $"⏱️ {state.TurnsElapsed} turno(s) · 🗡️ {state.TotalDamageDealt} de daño hecho · 🩸 {state.TotalDamageTaken} de daño recibido{critText}{dodgeText}{healText}";
     }
 
-    // Lo que dice el jefe cuando te vence (nada si no era un jefe).
-    private static string BossTaunt(CombatState state) =>
-        state.CommandName == "boss" ? "\n\n" + NpcDialogue.Boss(state.MonsterName, state.MonsterEmoji, NpcDialogue.BossLine.Victory) : string.Empty;
+    // Lo que dice el monstruo de ESTA pelea (cacería, viaje o jefe) al aparecer, al caer o cuando te vence: todos hablan. Público para que /use y /autohunt
+    // usen exactamente las mismas frases.
+    public static string MonsterSays(CombatState state, NpcDialogue.BossLine line) =>
+        NpcDialogue.Monster(state.MonsterName, state.MonsterEmoji, line, isBoss: state.CommandName == "boss");
 
     private static string HpLine(int current, int max) => $"{ProgressBar.Render(current, max)}\n{current}/{max}";
 }

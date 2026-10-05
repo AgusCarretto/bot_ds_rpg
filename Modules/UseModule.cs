@@ -234,7 +234,7 @@ public class UseModule(
             .WithMonsterPortrait(state.MonsterPortrait)
             .WithDescription(
                 $"Usaste **{ItemDisplay.Format(item.Emoji, item.Name)}**, pero el **{state.MonsterName}** te hizo **{monsterHit}** de daño " +
-                "y te dejó fuera de combate. Usá **/heal** para recuperarte.")
+                $"y te dejó fuera de combate. Usá **/heal** para recuperarte.\n\n{AdventureModule.MonsterSays(state, NpcDialogue.BossLine.Victory)}")
             .AddField("❤️ Tu HP", HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
             .AddField("📋 Resumen del combate", AdventureModule.BuildCombatSummaryLine(state), false)
             .Build();

@@ -142,18 +142,16 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
 
     // Estático (sin dependencia de Context) para que Modules/TextCommandModule.cs arme el mismo embed en "aa inventory".
     //
-    // TODA la pantalla va en UNA sola columna, de arriba hacia abajo: un bloque por tipo y una línea en blanco entre bloque y bloque.
-    //     🪵 Madera
-    //     ⛏️ Mineral
-    //     🩸 Drops de monstruo
-    //     🍖 Comida
-    //     📦 Cajas
-    // El type "Material" ES, por diseño de todo el juego, exactamente lo que sueltan los monstruos (nunca madera ni piedra, ver
-    // Database/seed_class_gear_and_monster_drops.sql). Antes eran dos columnas lado a lado y los drops (~40 ítems) se partían en "(1/2)" y
-    // "(2/2)" porque un campo de embed admite 1024 caracteres: ahora todo va en la descripción (4096), que entra aunque el jugador tenga el
-    // catálogo entero. Si algún día el catálogo crece y no entra, lo que sobra sigue en campos SIN título (nunca "(1/2)"). Cada línea es el
-    // ícono, el nombre y la cantidad; la rareza se ve con el emoji del ítem (o un círculo de color si todavía no tiene), sin escribirla en
-    // cada renglón. Las armas y los amuletos no están acá: se forjan directo a equipamiento (ver /profile).
+    // El inventario va en COLUMNAS (campos en línea de Discord, de a tres por fila), como los de otros bots que al dueño le gustaron, en vez de una sola
+    // columna larga (la v0.7 era una columna por pedido suyo, porque los drops se partían en "(1/2)" y "(2/2)"):
+    //     🪵 Madera           ⛏️ Mineral           🍖 Comida
+    //     🩸 Drops de monstruo (1 a 3 columnas según cuántos tengas)               📦 Cajas
+    // Cada renglón es "ícono **Nombre**: cantidad" (el nombre en negrita y la cantidad con separador de miles). Un campo de embed admite 1024
+    // caracteres y el código de un emoji ocupa ~45, así que los drops (~32 ítems) se reparten en columnas parejas y, si el catálogo crece, en más:
+    // la primera con título y las demás con título invisible (nunca "(1/2)"). Solo aparecen las columnas que tienen algo. El type "Material" ES, por
+    // diseño de todo el juego, exactamente lo que sueltan los monstruos (nunca madera ni piedra, ver Database/seed_class_gear_and_monster_drops.sql).
+    // La rareza se ve con el emoji del ítem (o un círculo de color si todavía no tiene). Las armas y los amuletos no están acá: se forjan directo a
+    // equipamiento (ver /profile). Los íconos no se pueden agrandar: dentro de un texto Discord los dibuja siempre de 22 px.
     public static async Task<Embed> BuildInventoryEmbedAsync(IInventoryRepository inventoryRepository, ulong discordId, string username)
     {
         var entries = await inventoryRepository.GetByDiscordIdAsync(discordId);
@@ -163,33 +161,46 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
             .WithColor(Color.Orange)
             .WithCurrentTimestamp();
 
-        var units = new List<string>();
-        foreach (var (heading, type) in new[]
-                 {
-                     ("🪵 **Madera**", "Madera"),
-                     ("⛏️ **Mineral**", "Mineral"),
-                     ("🩸 **Drops de monstruo**", "Material"),
-                     ("🍖 **Comida**", "Consumable"),
-                     ("📦 **Cajas**", "Caja"),
-                 })
-        {
-            AddBlock(units, heading, Lines(entries.Where(e => e.Type == type)));
-        }
+        var wood = Lines(entries.Where(e => e.Type == "Madera"));
+        var minerals = Lines(entries.Where(e => e.Type == "Mineral"));
+        var food = Lines(entries.Where(e => e.Type == "Consumable"));
+        var drops = Lines(entries.Where(e => e.Type == "Material"));
+        var boxes = Lines(entries.Where(e => e.Type == "Caja"));
 
-        if (units.Count == 0)
+        if (wood.Count + minerals.Count + food.Count + drops.Count + boxes.Count == 0)
         {
             embed.WithDescription("Todavía no tenés ningún material. ¡Probá /chop, /mine o /travel!");
             return embed.Build();
         }
 
-        var pages = Paginate(units, DescriptionLimit, FieldLimit);
-        embed.WithDescription(pages[0]);
-        foreach (string page in pages.Skip(1))
+        // El orden de los campos ES la distribución (Discord los acomoda de a tres por fila): primero lo corto (la primera fila), después los drops.
+        // Comida y Cajas comparten la tercera columna de la primera fila si entran juntas en un campo (si no, las cajas van al final, aparte).
+        AddColumn(embed, "🪵 Madera", wood);
+        AddColumn(embed, "⛏️ Mineral", minerals);
+
+        string stacked = food.Count > 0 && boxes.Count > 0 ? string.Join('\n', food) + "\n\n📦 **Cajas**\n" + string.Join('\n', boxes) : string.Empty;
+        bool boxesUnderFood = stacked.Length > 0 && stacked.Length <= FieldLimit;
+        if (boxesUnderFood)
         {
-            embed.AddField(Blank, page, false);
+            embed.AddField("🍖 Comida", stacked, true);
+        }
+        else
+        {
+            AddColumn(embed, "🍖 Comida", food);
         }
 
-        if (entries.Any(e => e.Type == "Caja"))
+        var dropColumns = SplitIntoColumns(drops);
+        for (int i = 0; i < dropColumns.Count; i++)
+        {
+            embed.AddField(i == 0 ? "🩸 Drops de monstruo" : Blank, dropColumns[i], true);
+        }
+
+        if (!boxesUnderFood)
+        {
+            AddColumn(embed, "📦 Cajas", boxes);
+        }
+
+        if (boxes.Count > 0)
         {
             embed.WithFooter("📦 Abrí tus cajas con /open");
         }
@@ -197,67 +208,48 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
         return embed.Build();
     }
 
-    // Espacio de ancho cero (U+200B): Discord no deja campos con el texto vacío y así se arma una columna o una fila en blanco.
+    // Espacio de ancho cero (U+200B): Discord no deja campos con el texto vacío y así se arma una columna sin título.
     private static readonly string Blank = ((char)0x200B).ToString();
 
-    // Límites de Discord con un poco de margen: la descripción de un embed admite 4096 caracteres y un campo 1024.
-    private const int DescriptionLimit = 4000;
+    // El límite de un campo de embed es 1024 caracteres; un poco de margen.
     private const int FieldLimit = 1000;
 
-    // Suma un bloque (título + sus líneas) a la lista de "unidades" que después se reparten en páginas. El título viaja pegado a su primera
-    // línea (así una página nunca termina en un título huérfano) y lleva adelante el salto que deja la línea en blanco entre un bloque y el anterior.
-    private static void AddBlock(List<string> units, string heading, IReadOnlyList<string> lines)
+    // Una columna (campo en línea) con su título, o nada si no hay renglones. Si no entrara en un campo, sigue en columnas sin título.
+    private static void AddColumn(EmbedBuilder embed, string title, IReadOnlyList<string> lines)
+    {
+        var columns = SplitIntoColumns(lines);
+        for (int i = 0; i < columns.Count; i++)
+        {
+            embed.AddField(i == 0 ? title : Blank, columns[i], true);
+        }
+    }
+
+    // Reparte los renglones en columnas PAREJAS (las mismas filas en cada una, la última puede quedar más corta): 1 columna hasta 8 renglones, 2 hasta 16
+    // y 3 de ahí en adelante; y si alguna se pasa de FieldLimit caracteres (ítems con nombre largo y emoji de la aplicación) se agregan columnas hasta que entren.
+    internal static List<string> SplitIntoColumns(IReadOnlyList<string> lines)
     {
         if (lines.Count == 0)
         {
-            return;
+            return [];
         }
 
-        units.Add((units.Count > 0 ? "\n" : string.Empty) + heading + "\n" + lines[0]);
-        units.AddRange(lines.Skip(1));
+        for (int columns = lines.Count <= 8 ? 1 : lines.Count <= 16 ? 2 : 3; ; columns++)
+        {
+            int perColumn = (int)Math.Ceiling(lines.Count / (double)columns);
+            var result = lines.Chunk(perColumn).Select(chunk => string.Join('\n', chunk)).ToList();
+            if (result.All(text => text.Length <= FieldLimit) || perColumn == 1)
+            {
+                return result;
+            }
+        }
     }
 
-    // Junta las unidades en páginas de a lo sumo `firstLimit` caracteres la primera y `nextLimit` las demás, cortando siempre entre unidades.
-    // Una página nueva nunca arranca con una línea en blanco.
-    private static List<string> Paginate(IReadOnlyList<string> units, int firstLimit, int nextLimit)
-    {
-        var pages = new List<string>();
-        var current = new StringBuilder();
-        int limit = firstLimit;
-
-        foreach (string raw in units)
-        {
-            if (current.Length > 0 && current.Length + 1 + raw.Length > limit)
-            {
-                pages.Add(current.ToString());
-                current.Clear();
-                limit = nextLimit;
-            }
-
-            if (current.Length == 0)
-            {
-                current.Append(raw.TrimStart('\n'));
-            }
-            else
-            {
-                current.Append('\n').Append(raw);
-            }
-        }
-
-        if (current.Length > 0)
-        {
-            pages.Add(current.ToString());
-        }
-
-        return pages;
-    }
-
-    // "Madera de Roble ×3": de lo más común a lo más raro y por nombre dentro de la misma rareza.
+    // "<emoji> **Madera de Roble**: 3": de lo más común a lo más raro y por nombre dentro de la misma rareza.
     private static List<string> Lines(IEnumerable<InventoryEntry> entries) =>
         entries
             .OrderBy(e => RarityCatalog.RankOf(e.Rarity))
             .ThenBy(e => e.ItemName, StringComparer.Ordinal)
-            .Select(e => $"{(e.Emoji is null ? $"{RarityDot(e.Rarity)} {e.ItemName}" : ItemDisplay.Format(e.Emoji, e.ItemName))} ×{e.Quantity}")
+            .Select(e => $"{(string.IsNullOrWhiteSpace(e.Emoji) ? RarityDot(e.Rarity) : e.Emoji)} **{e.ItemName}**: {GameHistory.Number(e.Quantity)}")
             .ToList();
 
     // El color de la rareza como círculo: lo mismo que usa el juego en los embeds de cada rareza.
