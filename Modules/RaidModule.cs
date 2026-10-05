@@ -387,6 +387,7 @@ public class RaidModule(
             RaidId = Guid.NewGuid(),
             BossName = boss.Name,
             BossEmoji = boss.Emoji,
+            BossPortrait = boss.Portrait,
             BossBaseHp = bossBaseHp,
             BossMaxHp = bossMaxHp,
             BossDamage = RaidDifficulty.BossDamage(bossBaseDamage, zoneRank),
@@ -785,6 +786,7 @@ public class RaidModule(
         return new EmbedBuilder()
             .WithTitle($"👑 Raid: {session.BossName} {session.BossEmoji}")
             .WithColor(Color.Purple)
+            .WithMonsterPortrait(session.BossPortrait) // la cara del jefe en todos los mensajes del raid
             .WithDescription(
                 $"Jefe de **{session.ZoneName}**. Quien arrancó el raid ya está adentro; el resto clickea " +
                 $"**Unirse** — se cierra en {(int)LobbyDuration.TotalSeconds}s o cuando quien lo arrancó clickee **Empezar ya**.\n" +
@@ -824,6 +826,7 @@ public class RaidModule(
         return new EmbedBuilder()
             .WithTitle($"⚔️ Raid contra {session.BossName} {session.BossEmoji}")
             .WithColor(Color.Gold)
+            .WithMonsterPortrait(session.BossPortrait)
             .WithDescription(logLine)
             .AddField($"{session.BossEmoji} HP de {session.BossName}", HpLine(bossHp, session.BossMaxHp), false)
             .AddField("👥 Participantes", roster, false)
@@ -845,6 +848,7 @@ public class RaidModule(
         var embed = new EmbedBuilder()
             .WithTitle($"🏆 ¡{session.BossName} {session.BossEmoji} derrotado!")
             .WithColor(Color.Green)
+            .WithMonsterPortrait(session.BossPortrait)
             .WithDescription($"{logLine}\n\n{NpcDialogue.Boss(session.BossName, session.BossEmoji, NpcDialogue.BossLine.Defeated)}");
 
         if (results.Count == 0)
@@ -871,6 +875,7 @@ public class RaidModule(
         return new EmbedBuilder()
             .WithTitle($"💀 El grupo cayó ante {session.BossName} {session.BossEmoji}")
             .WithColor(Color.DarkRed)
+            .WithMonsterPortrait(session.BossPortrait)
             .WithDescription($"{logLine}\n\n{NpcDialogue.Boss(session.BossName, session.BossEmoji, NpcDialogue.BossLine.Victory)}\n\nSin recompensa esta vez. Usá **/heal** para recuperarte.")
             .Build();
     }

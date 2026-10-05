@@ -14,7 +14,7 @@ public sealed record LevelUpCardContent(string Title, string Description, IReadO
 //
 // PURO (sin base ni Discord): recibe lo que ya se sabe del evento — a qué nivel llegó y cuántos subió — y las zonas, para avisar si con este
 // nivel ya alcanza el mínimo de alguna. No lleva la vida máxima total a propósito: no todos los caminos que suben de nivel la tienen a mano
-// (misiones, logros), pero sí cuánto sube por nivel y que se cura del todo (ver LevelingCalculator.ApplyXpGain).
+// (misiones, logros), pero sí cuánto sube por nivel (vida máxima, ataque y defensa) y que se cura del todo (ver LevelingCalculator.ApplyXpGain y CombatStats).
 public static class LevelUpCard
 {
     private static readonly string[] Cheers =
@@ -41,10 +41,17 @@ public static class LevelUpCard
             $"🌟 **¡<@{discordId}> ahora es nivel {newLevel}!** 🌟\n\n" +
             $"⬆️ Nivel {oldLevel}  ➜  **Nivel {newLevel}**";
 
+        // Lo que sube de verdad, sacado de las MISMAS fórmulas que usa el combate y /profile (CombatStats): ataque base y defensa base crecen con el nivel
+        // (el arma y el amuleto suman aparte). Es la diferencia entre el nivel nuevo y el viejo, así que si la fórmula cambia el aviso no se desfasa.
+        int attackGained = CombatStats.BaseAttack(newLevel) - CombatStats.BaseAttack(oldLevel);
+        int defenseGained = CombatStats.BaseDefense(newLevel) - CombatStats.BaseDefense(oldLevel);
+
         var fields = new List<LevelUpField>
         {
             new("❤️ Vida máxima", $"**+{LevelingCalculator.HpGainedPerLevel * gained}**", true),
-            new("💚 Tu vida", "Curada al máximo", true),
+            new("⚔️ Ataque", $"**+{attackGained}**", true),
+            new("🛡️ Defensa", $"**+{defenseGained}**", true),
+            new("💚 Tu vida", "Curada al máximo", false),
         };
 
         // Las zonas cuyo nivel mínimo se cruzó con esta subida (la primera, con nivel 1, ya la tiene todo el mundo).

@@ -33,7 +33,7 @@ public sealed class MonsterRepository(IDbConnectionFactory connectionFactory) : 
         using IDbConnection connection = connectionFactory.CreateConnection();
 
         const string monstersSql = """
-            SELECT monster_id AS "MonsterId", zone_id AS "ZoneId", name AS "Name", emoji AS "Emoji", min_hp AS "MinHp",
+            SELECT monster_id AS "MonsterId", zone_id AS "ZoneId", name AS "Name", emoji AS "Emoji", portrait_emoji AS "Portrait", min_hp AS "MinHp",
                    max_hp AS "MaxHp", min_damage AS "MinDamage", max_damage AS "MaxDamage",
                    gold_reward AS "GoldBonus", xp_reward AS "XpBonus", is_boss AS "IsBoss", is_travel AS "IsTravel"
             FROM monsters
@@ -75,12 +75,13 @@ public sealed class MonsterRepository(IDbConnectionFactory connectionFactory) : 
                     row.MaxDamage,
                     dropsByMonster[row.MonsterId].ToList(),
                     row.GoldBonus,
-                    row.XpBonus)))
+                    row.XpBonus,
+                    row.Portrait)))
             .ToList();
     }
 
     private sealed record MonsterRow(
-        int MonsterId, int ZoneId, string Name, string? Emoji, int MinHp, int MaxHp, int MinDamage, int MaxDamage,
+        int MonsterId, int ZoneId, string Name, string? Emoji, string? Portrait, int MinHp, int MaxHp, int MinDamage, int MaxDamage,
         int GoldBonus, int XpBonus, bool IsBoss, bool IsTravel);
 
     private sealed record DropRow(int MonsterId, string ItemName);

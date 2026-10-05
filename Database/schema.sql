@@ -85,6 +85,9 @@ CREATE TABLE IF NOT EXISTS monsters (
     zone_id     INTEGER NOT NULL REFERENCES zones (zone_id) ON DELETE CASCADE,
     name        TEXT NOT NULL UNIQUE,
     emoji       TEXT,
+    -- La cara del monstruo: un emoji de la aplicación ("<:nombre:id>") que sale como miniatura en los mensajes de combate
+    -- (la carga Database/update_monster_portraits.sql). "emoji" de arriba es el unicode que va dentro del texto.
+    portrait_emoji VARCHAR(100),
     min_hp      INTEGER NOT NULL CHECK (min_hp > 0),
     max_hp      INTEGER NOT NULL CHECK (max_hp >= min_hp),
     min_damage  INTEGER NOT NULL CHECK (min_damage >= 0),

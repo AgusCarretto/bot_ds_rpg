@@ -152,6 +152,11 @@ que el código lee; si arrancás primero, `/open`, `/shop` y la taberna fallan).
 (los pools de materiales y drops de las cajas se cachean 5 minutos). En Railway: corrélo contra la URL pública de la base con
 `psql "<DATABASE_PUBLIC_URL>" -v ON_ERROR_STOP=1 -f rework_boxes.sql` (con `$env:PGCLIENTENCODING="UTF8"` en PowerShell) y recién ahí desplegá `main`.
 
+**v0.8.1 → v0.8.2 (caras de los enemigos y Maderas nuevas):** ANTES de arrancar el bot nuevo corré, en este orden, `Database/update_item_emojis.sql` (las 10 armas de Zona 4 y 5
+y las 4 Maderas nuevas) y `Database/update_monster_portraits.sql` (agrega la columna `monsters.portrait_emoji`, que el código lee: si arrancás primero, `/hunt`, `/travel`,
+`/boss` y `/raid` fallan). Los dos son re-ejecutables y el segundo se verifica solo. Esos emojis son de la **aplicación** del bot: si usás otro bot (otra aplicación), no los tiene y
+hay que resubirlos y regenerar los scripts. Después reiniciá el bot.
+
 La carpeta `Database/` del repo está montada en `/seed`, así que los scripts nuevos aparecen con el `git checkout`. Los seeds son
 re-ejecutables; **nunca** corras `run_fresh_install.sql` sobre una base con datos.
 

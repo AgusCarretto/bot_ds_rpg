@@ -139,6 +139,7 @@ public sealed class AdventureCombatStarter(
             CommandName: definition.CommandName,
             MonsterName: monster.Name,
             MonsterEmoji: monster.Emoji,
+            MonsterPortrait: monster.Portrait,
             MonsterMaxHp: monsterMaxHp,
             MonsterCurrentHp: monsterMaxHp,
             MonsterDamage: monsterDamage,

@@ -38,7 +38,7 @@ schema.sql → seed.sql → add_weapon_family.sql → seed_class_gear_and_monste
   → seed_zone4_gear_and_recipes.sql → seed_zone5_gear_and_recipes.sql
   → finalize_consumable_catalog.sql → remove_legacy_consumables.sql → rebalance_consumable_prices.sql
   → rework_food_catalog.sql → seed_boxes.sql → rework_drops_and_recipes.sql → rework_boxes.sql
-  → update_item_emojis.sql
+  → update_item_emojis.sql → update_monster_portraits.sql
 ```
 
 `seed_recipes.sql` must come after every seed that creates items it uses: a recipe whose result or ingredient
@@ -46,7 +46,7 @@ item doesn't exist yet would be silently skipped (or created *without* that ingr
 itself and raises instead. (`seed_zone_bosses.sql` used to be missing from this list, so a fresh install had no
 zone bosses at all.)
 
-`Database/run_fresh_install.sql` runs all twenty-two in this exact order in one shot via `psql` (or
+`Database/run_fresh_install.sql` runs all twenty-three in this exact order in one shot via `psql` (or
 pgAdmin's "PSQL Tool", NOT its plain Query Tool — both need real `psql`, since it uses the `\ir`
 meta-command) — **only against a genuinely empty database**, never against one with existing data
 (see below, several of these are not safe to re-run).
@@ -62,8 +62,8 @@ data (their own header comments predate `items.name UNIQUE`, so they undersell i
 constraint now in schema.sql, their `ON CONFLICT DO NOTHING` inserts are actually idempotent too,
 but don't rely on that for the `UPDATE`/data-shape parts). Everything else in the order above
 (`seed_consumables_and_base_swords.sql`, `seed_zones_and_monsters.sql`, `seed_zone_bosses.sql`,
-`seed_travel_monsters.sql`, `finalize_monster_roster.sql`, `seed_recipes.sql`, `seed_zoneN_gear_and_recipes.sql` (N = 2..5), `finalize_consumable_catalog.sql`, `remove_legacy_consumables.sql`, `rebalance_consumable_prices.sql`, `rework_food_catalog.sql`, `seed_boxes.sql`, `rework_drops_and_recipes.sql`, `rework_boxes.sql`, `update_item_emojis.sql`) is
-safe to re-run (**`rework_boxes.sql` must be applied to a live database BEFORE starting the v0.8.0 binary**: the code reads the `boxes.min_items/max_items` columns it adds), **with one exception since v0.7.0**: `rework_drops_and_recipes.sql` supersedes the drops, the boss drops, the Zone-1 roster and every recipe of the seeds before it
+`seed_travel_monsters.sql`, `finalize_monster_roster.sql`, `seed_recipes.sql`, `seed_zoneN_gear_and_recipes.sql` (N = 2..5), `finalize_consumable_catalog.sql`, `remove_legacy_consumables.sql`, `rebalance_consumable_prices.sql`, `rework_food_catalog.sql`, `seed_boxes.sql`, `rework_drops_and_recipes.sql`, `rework_boxes.sql`, `update_item_emojis.sql`, `update_monster_portraits.sql`) is
+safe to re-run (**`rework_boxes.sql` must be applied to a live database BEFORE starting the v0.8.0 binary**: the code reads the `boxes.min_items/max_items` columns it adds; the same goes for **`update_monster_portraits.sql` before the v0.8.2 binary**, which reads `monsters.portrait_emoji`), **with one exception since v0.7.0**: `rework_drops_and_recipes.sql` supersedes the drops, the boss drops, the Zone-1 roster and every recipe of the seeds before it
 (`finalize_monster_roster.sql`, `seed_zone_bosses.sql`, `seed_travel_monsters.sql`'s boss/roster parts, `seed_recipes.sql`, `seed_zoneN_gear_and_recipes.sql`). Never re-run those alone on a live database: they would bring the old state back (or fail on
 items that no longer exist). The rework script always goes after them and is itself re-runnable — but it deletes on purpose (retired items vanish from inventories with no refund; it prints a NOTICE with what was lost), so take a `pg_dump` first.
 
@@ -402,8 +402,8 @@ have no advice parameter). The choice is pure (`FarmAdvisor.Choose`); the servic
 names) for 5 minutes. It NEVER throws (an advice is an extra: any failure returns null, and `/tips` then says there is nothing to advise).
 
 **Level-up banner (`GameData/LevelUpCard.cs`, `Services/ProgressNotifier.cs`)** — leveling up used to be one small field ("Ahora sos nivel 7") inside victory/daily/receipt embeds that
-already had gold, XP, HP, summary, drop... and got lost. Now it is its own **public gold embed** ("🎉 ¡SUBISTE DE NIVEL! 🎉": mention, `Nivel 6 ➜ Nivel 7`, max HP +15 per level, "curada al
-máximo", a "zona nueva a tu alcance" line when the new level crosses a zone's `min_level`, and a random cheer in the footer). It comes out of the ONE place every XP source already
+already had gold, XP, HP, summary, drop... and got lost. Now it is its own **public gold embed** ("🎉 ¡SUBISTE DE NIVEL! 🎉": mention, `Nivel 6 ➜ Nivel 7`, three columns with max HP +15, ATQ +2 and DEF +1 per level (the ATQ/DEF come from the difference of `CombatStats.BaseAttack/BaseDefense` between the new and the old level, so they follow the formula the combat and `/profile` use; weapon and amulet add separately), "curada al
+máximo" full width underneath, a "zona nueva a tu alcance" line when the new level crosses a zone's `min_level`, and a random cheer in the footer). It comes out of the ONE place every XP source already
 goes through: they all record a `level_up` event (`GameEventExtensions.RecordVictoryAsync`, the mission/achievement claims), `ProgressNotifier` turns it into a `GameNotice` carrying the
 embed, and `NoticeDelivery` delivers it as soon as the command ends (follow-up for slash and button interactions, channel message for text commands; known limit: in a raid only the player who lands the last blow has an interaction to answer, so the other participants still get their banner on their next command, within its 2 minutes). So a new XP source gets the banner for free
 as long as it records `level_up`; the in-embed field was removed everywhere (a raid keeps its short per-player line in the shared victory embed, because only the player who landed
@@ -425,8 +425,11 @@ game events), then the scene is rebuilt with your fresh gold and the innkeeper's
 shortcut for quantities and for text commands; `/shop view` carries no photo on purpose (an `attachment://` thumbnail without its file would make Discord reject the message).
 
 **Item emojis are Discord *Application* Emojis** (`items.emoji` = `<:name:id>`, single source of truth `Database/update_item_emojis.sql`, UPDATEs by item *name*): they live in the Developer Portal (the bot's application → Emojis, up to 2000) instead of the server's 50 slots, and render in any
-guild the bot is in. They belong to the *application*: a different bot application does not have those ids, so re-upload and regenerate the script (DEPLOY.md). The only server emojis left are the 4 common Madera (Pino/Roble/Nogal/Ébano — re-upload them
-to the portal before deleting them from the server or those four show as broken text). Coverage (2026-10-05, 86 of 93 items): Weapon 25/28 (every weapon that can be forged, zones 1–5; the 3 without are legacy items nobody can obtain: Arco Largo del Cazador, Báculo del Aprendiz, Dagas Gemelas de Sombra), Amulet 7/11 (all 5 forgeable + 2 extra; the other 4 are legacy and not obtainable: Bombilla de Hierro Maldito, Botas de Silencio, Collar de Hueso, Ojo de Jabalí), everything else complete. The only item emojis that are NOT application emojis are the 4 common Madera (checked against the portal's list with the bot token: `GET /applications/{id}/emojis`). A NULL emoji is harmless
+guild the bot is in. They belong to the *application*: a different bot application does not have those ids, so re-upload and regenerate the script (DEPLOY.md). There are no server emojis left (the 4 common Madera were redone and moved to the portal on 2026-10-05, with a stronger rarity aura: Roble blue with stars, Nogal violet, Ébano gold).
+**Monster faces** (v0.8.2): the 20 monsters have a portrait emoji in `monsters.portrait_emoji` (`Database/update_monster_portraits.sql`, UPDATEs by monster name, verifies all 20 exist) — a SEPARATE column from `monsters.emoji`, which stays the
+unicode that messages write inside the text. `MonsterTemplate.Portrait` → `CombatState.MonsterPortrait` / `RaidSession.BossPortrait` → `EmbedBuilder.WithMonsterPortrait` (same CDN-thumbnail mechanic as the item icons) on every message of a
+fight: `/hunt`, `/travel`, `/boss`, `/use` mid-fight, `/autohunt`, the raid lobby/fight/victory/wipe and the abandoned-combat notice; a victory WITH a drop keeps the item as the thumbnail (the item is the hero), and a monster without a face just
+sends the message without a thumbnail. Coverage (2026-10-05, 86 of 93 items): Weapon 25/28 (every weapon that can be forged, zones 1–5; the 3 without are legacy items nobody can obtain: Arco Largo del Cazador, Báculo del Aprendiz, Dagas Gemelas de Sombra), Amulet 7/11 (all 5 forgeable + 2 extra; the other 4 are legacy and not obtainable: Bombilla de Hierro Maldito, Botas de Silencio, Collar de Hueso, Ojo de Jabalí), everything else complete. All item emojis were checked against the portal's list with the bot token (`GET /applications/{id}/emojis`). A NULL emoji is harmless
 (`ItemDisplay.Format` prints just the name). To add one: upload it in the portal with a clear name, copy its id, add the UPDATE to the script and run it. Never put an emoji in a select-menu option (a rejected emoji kills the whole message).
 **Item icons are small and Discord cannot enlarge them in text** (22 px; only a message made of nothing but emojis is "jumbo"), so where ONE item is the hero of a message the embed carries its image as the thumbnail — `ItemDisplay.ImageUrl` (pure: the CDN URL built from the emoji id, `null` if the item has no emoji) + `EmbedBuilder.WithItemThumbnail` (`Modules/ItemEmbedExtensions.cs`): `/chop` and `/mine` results, the drop of a victory / auto-hunt, a forge, food eaten with `/use`, the box of `/open`. NPC scenes already use the thumbnail for the character photo, so they do not get one. Do not stack a unicode weapon/amulet marker next to an item that has its own emoji (profile and recipe pages used to show 🗡️ / 📿 / 🎯 / ⚔️ next to it, which shrank it): the recipe type is now an italic label under the name ("arma de tu clase" / "arma general" / "amuleto"). Class icons (⚔️ Guerrero...) and the select-menu options are unchanged.
 

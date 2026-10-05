@@ -1,6 +1,20 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-05 (v0.8.1: cooldowns de jefe/raid y cajas, y aviso de nivel al instante)_
+_Última revisión: 2026-10-05 (v0.8.2: caras de los enemigos, Maderas nuevas y ATQ/DEF en la subida de nivel)_
+
+## Caras de los enemigos, Maderas nuevas y ATQ/DEF al subir de nivel (v0.8.2, 2026-10-05)
+
+- **Cada enemigo tiene su cara** (los 20, un retrato por monstruo subido como emoji de la aplicación): sale de miniatura arriba a la derecha en `/hunt`, `/travel`, `/boss`,
+  `/autohunt`, `/use` en plena pelea y todo el raid (sala de espera, pelea, victoria y derrota). Si ganás y el monstruo suelta algo, la miniatura es el ítem (como antes); un
+  monstruo sin cara cargada manda el mensaje sin miniatura. La cara vive en una columna aparte, `monsters.portrait_emoji` (`Database/update_monster_portraits.sql`); el
+  `monsters.emoji` de siempre sigue siendo el unicode que va dentro del texto.
+- **Las 4 Maderas rehechas** y pasadas a emojis de la aplicación (eran del servidor): el Roble con aura azul y estrellitas bien marcada para que no se confunda con el Pino, el Nogal
+  violeta y el Ébano dorado. Ya no queda ningún emoji de ítem que dependa del servidor, y las 10 armas de Zona 4 y 5 también tienen el suyo (armas 25/28).
+- **La subida de nivel dice cuánto subís de Ataque y Defensa**, además de la vida: +2 ATQ y +1 DEF por nivel (se calcula con `CombatStats`, así que sigue a la fórmula del combate
+  y de `/profile`; el arma y el amuleto suman aparte). Con varios niveles de una, suma todos.
+- **Ojo con la base real**: dos monstruos (Espíritu del Monte y Puma de las Cenizas) tenían en `monsters.emoji` el código del emoji custom de su cara, puesto a mano. Se devolvieron a su unicode
+  (👻 y 🐆), que es lo que da una instalación limpia; la comparación instalación limpia vs base real quedó idéntica.
+- **Para desplegar una base viva**: correr `update_item_emojis.sql` y `update_monster_portraits.sql` ANTES de arrancar la v0.8.2 (el código lee la columna nueva). Ver DEPLOY.md.
 
 ## Cooldowns de jefe/raid y cajas, y aviso de nivel al instante (v0.8.1, 2026-10-05)
 
