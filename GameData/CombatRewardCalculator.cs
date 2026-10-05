@@ -38,6 +38,8 @@ public static class CombatRewardCalculator
     // dura y con 30 minutos de cooldown rendía menos que una de 10. Con x6 paga ~3,2 veces un viaje de su zona (oro y XP) — un poco más que
     // los 3 viajes que caben en sus 30 minutos, que es lo justo por arriesgarse a perder — y ronda 7/10 de un nivel en Zona 2-5. En un raid
     // cada participante cobra esto entero.
+    // OJO: ese x6 se calibró cuando el cooldown del jefe y del raid era de 30 minutos; desde la v0.7.1 es de 5 HORAS (CooldownCatalog.Boss): cada pelea es ahora
+    // un evento mucho más raro y el x6 quedó corto POR MINUTO de cooldown. Si se quiere compensar, es esta constante (el cofre del jefe va aparte).
     public const int BossRewardMultiplier = 6;
 
     public static CombatReward RollBossReward(int playerLevel, int monsterGoldBonus, int monsterXpBonus, bool firstClear) =>

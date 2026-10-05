@@ -30,7 +30,7 @@ public class RaidModule(
     private const int MaxParticipants = RaidSettings.MaxParticipants;
     private static readonly TimeSpan LobbyDuration = TimeSpan.FromSeconds(60);
 
-    [SlashCommand("raid", "Jefe de zona cooperativo: varios jugadores atacan al mismo jefe (mín. 2, cooldown de 30 min).")]
+    [SlashCommand("raid", "Jefe de zona cooperativo: varios jugadores atacan al mismo jefe (mín. 2, cooldown de 5 h).")]
     public async Task HandleRaidAsync()
     {
         await DeferAsync();

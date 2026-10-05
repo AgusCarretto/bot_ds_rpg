@@ -54,7 +54,6 @@ public class CooldownModule(ICooldownRepository cooldownRepository, IUserReposit
             .WithTitle("⏱️ Tus cooldowns")
             .WithColor(Color.Teal)
             .WithDescription(string.Join('\n', lines))
-            .WithFooter("El Jefe y el Raid comparten el mismo cooldown.")
             .Build();
     }
 }
