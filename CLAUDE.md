@@ -37,7 +37,8 @@ schema.sql → seed.sql → add_weapon_family.sql → seed_class_gear_and_monste
   → seed_recipes.sql → seed_zone2_gear_and_recipes.sql → seed_zone3_gear_and_recipes.sql
   → seed_zone4_gear_and_recipes.sql → seed_zone5_gear_and_recipes.sql
   → finalize_consumable_catalog.sql → remove_legacy_consumables.sql → rebalance_consumable_prices.sql
-  → rework_food_catalog.sql → seed_boxes.sql → rework_drops_and_recipes.sql → update_item_emojis.sql
+  → rework_food_catalog.sql → seed_boxes.sql → rework_drops_and_recipes.sql → rework_boxes.sql
+  → update_item_emojis.sql
 ```
 
 `seed_recipes.sql` must come after every seed that creates items it uses: a recipe whose result or ingredient
@@ -45,7 +46,7 @@ item doesn't exist yet would be silently skipped (or created *without* that ingr
 itself and raises instead. (`seed_zone_bosses.sql` used to be missing from this list, so a fresh install had no
 zone bosses at all.)
 
-`Database/run_fresh_install.sql` runs all twenty-one in this exact order in one shot via `psql` (or
+`Database/run_fresh_install.sql` runs all twenty-two in this exact order in one shot via `psql` (or
 pgAdmin's "PSQL Tool", NOT its plain Query Tool — both need real `psql`, since it uses the `\ir`
 meta-command) — **only against a genuinely empty database**, never against one with existing data
 (see below, several of these are not safe to re-run).
@@ -61,8 +62,8 @@ data (their own header comments predate `items.name UNIQUE`, so they undersell i
 constraint now in schema.sql, their `ON CONFLICT DO NOTHING` inserts are actually idempotent too,
 but don't rely on that for the `UPDATE`/data-shape parts). Everything else in the order above
 (`seed_consumables_and_base_swords.sql`, `seed_zones_and_monsters.sql`, `seed_zone_bosses.sql`,
-`seed_travel_monsters.sql`, `finalize_monster_roster.sql`, `seed_recipes.sql`, `seed_zoneN_gear_and_recipes.sql` (N = 2..5), `finalize_consumable_catalog.sql`, `remove_legacy_consumables.sql`, `rebalance_consumable_prices.sql`, `rework_food_catalog.sql`, `seed_boxes.sql`, `rework_drops_and_recipes.sql`, `update_item_emojis.sql`) is
-safe to re-run, **with one exception since v0.7.0**: `rework_drops_and_recipes.sql` supersedes the drops, the boss drops, the Zone-1 roster and every recipe of the seeds before it
+`seed_travel_monsters.sql`, `finalize_monster_roster.sql`, `seed_recipes.sql`, `seed_zoneN_gear_and_recipes.sql` (N = 2..5), `finalize_consumable_catalog.sql`, `remove_legacy_consumables.sql`, `rebalance_consumable_prices.sql`, `rework_food_catalog.sql`, `seed_boxes.sql`, `rework_drops_and_recipes.sql`, `rework_boxes.sql`, `update_item_emojis.sql`) is
+safe to re-run (**`rework_boxes.sql` must be applied to a live database BEFORE starting the v0.8.0 binary**: the code reads the `boxes.min_items/max_items` columns it adds), **with one exception since v0.7.0**: `rework_drops_and_recipes.sql` supersedes the drops, the boss drops, the Zone-1 roster and every recipe of the seeds before it
 (`finalize_monster_roster.sql`, `seed_zone_bosses.sql`, `seed_travel_monsters.sql`'s boss/roster parts, `seed_recipes.sql`, `seed_zoneN_gear_and_recipes.sql`). Never re-run those alone on a live database: they would bring the old state back (or fail on
 items that no longer exist). The rework script always goes after them and is itself re-runnable — but it deletes on purpose (retired items vanish from inventories with no refund; it prints a NOTICE with what was lost), so take a `pg_dump` first.
 
@@ -132,13 +133,13 @@ hardcoded in `MonsterCatalog` anymore). A zone has three *mutually exclusive* ki
 `/travel` monster per zone** (`PrepareTravelAsync`, `Database/seed_travel_monsters.sql`). The travel monster
 is the average of that zone's commons at HP ×1.25 / damage ×1.1 (an élite, not a boss — measured with the
 real `CombatTurnResolver`, see the seed header), and `CombatRewardCalculator.RollTravelReward` pays the
-**whole `/hunt` formula ×10** (`TravelRewardMultiplier` — what the 10-minute cooldown is worth in hunts). So
+**whole `/hunt` formula ×30** (`TravelRewardMultiplier` — what the 30-minute cooldown is worth in hunts; it was ×10 with a 10-minute cooldown until v0.7.1, so the payout per minute is unchanged). So
 travel rewards follow the zone ladder automatically: a new zone's travel payout is set by the
 `gold_reward`/`xp_reward` bonus of its monster, same as hunts. If you add a zone, add its travel monster or
 `/travel` answers "zona sin monstruos" (without charging the cooldown). **A boss pays more than a travel**: `RollBossReward` is the `/hunt` formula (plus the boss's own big gold/XP bonus,
-`seed_zone_bosses.sql`) ×6 (`BossRewardMultiplier`), i.e. ~3.2× a travel of its zone in zones 2–5 (it was ×1 until v0.6.0 and paid HALF a travel — the 30-minute exam paid less than a
-10-minute fight). That is about what its 30-minute cooldown (the one it had in v0.6/v0.7.0) was worth in travels (3) plus a premium for the risk of losing — since v0.7.1 the boss/raid cooldown is 5 HOURS, so ×6 is short per minute of cooldown and is the constant to raise if it should feel worth the wait; every raid participant gets the full amount. It speeds up
-leveling (a player cycling hunt + travel + boss on cooldown levels ~40% faster than with ×1), so if pacing needs to slow down, lower this one constant. **The boss no longer drops a material: its single `monster_drops` row is the zone's CHEST** (`Cajón de Pino` Z1, `Baúl de Roble` Z2, `Arcón de Hierro` Z3, `Cofre de Oro` Z4 and Z5), 100%
+`seed_zone_bosses.sql`) ×15 (`BossRewardMultiplier`), i.e. 2.0–4.7× a travel of its zone (zone 1 the most; measured in the stage-11 harness at the zone's level). History: ×1 until v0.6.0 (it paid HALF a travel), ×6 for a 30-minute cooldown, and ×15 since v0.8.0
+for a ONE-HOUR cooldown: parity per minute against the 30-minute travel would be ×12, the extra 25% is the owner's "un poco más" for the risk of losing. If the boss should feel worth the wait, raise this one constant; every raid participant gets the full amount. It speeds up
+leveling (a player cycling hunt + travel + boss on cooldown levels faster than with ×1), so if pacing needs to slow down, lower this one constant. **The boss no longer drops a material: its single `monster_drops` row is the zone's CHEST** (`Cajón de Pino` Z1, `Baúl de Roble` Z2, `Arcón de Hierro` Z3, `Cofre de Oro` Z4 and Z5), 100%
 the first time THAT player beats it (`highest_zone_cleared` is read before applying the victory — solo, and per participant in a raid) and 40% after (`BossChestFirstClearPercent` / `BossChestRepeatPercent` in `CombatRewardCalculator`). The chest travels the
 normal drop path (`ApplyBossVictoryAsync`) and is opened with `/open`; the Arca del Soberano stays achievement-only.
 
@@ -146,7 +147,7 @@ normal drop path (`ApplyBossVictoryAsync`) and is opened with `/open`; the Arca 
 one for Arquero and Hechicero) and one from the travel monster ("escaso", needed by every class weapon and by the amulet) — plus the boss's chest. 20 monsters in total (2 hunt + travel + boss in each of the 5 zones, `Perro Cimarrón` was
 removed). `Database/rework_drops_and_recipes.sql` (v0.7.0) is the single source of truth for the roster, the boss chests and the recipes: it verifies the final state (exactly 2 hunt + 1 travel + 1 boss per zone, one drop each — a Material for
 hunt/travel, a Caja for the boss). The chances live in `CombatRewardCalculator` and nowhere else: `HuntDropChancePercent` 6 (it was 10 until v0.6.0: lowered so that reaching a zone's level is not enough to breeze through it — you have to stay and farm the gear),
-`TravelDropChancePercent` 20 and the boss chest chances (the boss has its own constants on purpose: it used to share the hunt formula, so lowering hunt would have silently changed it). `/drops` (`aa drops`,
+`TravelDropChancePercent` 60 (per travel; with the 30-minute cooldown that is the same 0.02 drops per minute as the old 20% per 10 minutes, so the recipes did not move) and the boss chest chances (the boss has its own constants on purpose: it used to share the hunt formula, so lowering hunt would have silently changed it). `/drops` (`aa drops`,
 `Modules/DropsModule.cs` + the pure `GameData/DropsCatalog.cs`) lists every zone's monsters and drops from those same
 constants, so the list can't drift. These are **run-1 baseline values** — the reset unlocked after Zone 5 is meant to
 raise drop % and material quantity. **Recipe quantities are calibrated against these chances**, so changing a chance,
@@ -310,17 +311,17 @@ a purchase or a fight — so call it *after* the real transaction committed, nev
 players atomically: `SELECT ... FOR UPDATE` on both rows **ordered by discord_id** (two opposite transfers can't deadlock), then a
 guarded update each; no tax today — the events table is there to spot abuse, and `ExecuteGiveAsync` is the one place to add a cap.
 
-**Boxes (`items.type = 'Caja'`, `boxes`, `box_loot`)** — five tiers, one per rarity; four are sold in `/shop` (150 / 700 / 1800 /
-3500 gold) and the Mítica ("Arca del Soberano") is prize-only (`buy_price = 0`; `GameData/ShopCatalog.IsForSale` is the single
-definition of "sold in the shop" — food and boxes alike). `/open` / `aa open <caja> [n]` (`Modules/BoxModule.cs`, 1–10 at a time)
-consumes the box and pays the loot in ONE transaction (`Repositories/BoxRepository.OpenAsync`: guarded decrement, then gold + items),
-the roll itself is the pure `GameData/BoxLootRoller.cs`. Loot lives in the DB (`Database/seed_boxes.sql` is the source of truth and
-verifies itself): gold with a rare jackpot, gathering materials (Hierro from the cheapest box — it is the known bottleneck), "trophy"
-materials no monster drops anymore, food and lower boxes. Two rules that must keep holding: (1) shop boxes **never** give the zone
-drops used in recipes (Garra de Puma, Esencia Espectral...) — a 1000-gold box giving those would make buying ~5× faster than the
-farming the pacing was calibrated on; (2) Corteza del Árbol de Vida / Fragmento de Meteorito (the very-long-term goals) come only from
-the Mítica box, which can't be bought. Expected value of shop boxes is ~52–60% of price (a gold sink, not a business), and the best outcomes are deliberately rare (v0.6.0 tuning: the Cofre de Oro has a Legendary material in ~36% of openings, the Arcón de Hierro an Epic one in ~50%, and an opening that returns more than the box cost happens 6–9% of the time) —
-`Database/report_box_economy.sql` computes it; re-run it if weights or prices change. The zone bosses give these same boxes (first clear 100%, then 40% per fight, one every 5 hours, see Drops), which adds to that supply.
+**Boxes v2 (`items.type = 'Caja'`, `boxes`, `box_loot`; v0.8.0)** — five tiers, one per rarity, and **each box says how many items it gives**: Cajón de Pino 1–10 (1.000 gold), Baúl de Roble 5–20 (10.000), Arcón de Hierro 10–35 (35.000),
+Cofre de Oro 20–60 (110.000) and the Mítica ("Arca del Soberano") 40–100, prize-only (`buy_price = 0`; `GameData/ShopCatalog.IsForSale` is the single definition of "sold in the shop" — food and boxes alike). **Boxes cannot be resold** (`sell_price = 0`:
+a boss chest must not be a gold source). `/open` / `aa open <caja> [n]` (`Modules/BoxModule.cs`, 1–10 at a time) consumes the box and pays the loot in ONE transaction (`Repositories/BoxRepository.OpenAsync`: guarded decrement, then gold + items); the roll is the
+pure `GameData/BoxLoot.cs` (`BoxLootRoller.Roll(box, context, rng)`). **An opening is N draws, N uniform in `boxes.min_items..max_items`** (gold is NOT a draw), and each draw picks ONE `box_loot` entry by weight (the weights of the non-gold entries add up to 1000 per box). Entry kinds:
+`gather` (a Madera/Mineral rolled exactly like `/chop` and `/mine`: the same rarity table, `RarityCatalog.GatheringChances`, **except the Mítico, which is 0.2% in total = 0.1% per item** — a test compares the other four with RarityCatalog so they cannot drift), `zone_drop` (a monster drop from zone ≤
+min(the box's zone, the player's highest UNLOCKED zone); hunt drops weigh 3 and the travel drop 2, the real farming proportion), `item` (food, a trophy that no monster drops, or the box one tier below) and `gold` (NOT a draw: a rare bonus per opening whose `weight` is its chance in per mille, 3% in the shop boxes).
+**Zone gating, two places, one rule**: a box belongs to the zone of its rarity (Común = 1 … Legendario = 4, Mítico = 5, `BoxCatalog.RequiredZoneRank`) and you can only BUY it once that zone is unlocked (`ShopModule.ExecuteBuyAsync` answers "🔒 es una caja de la Zona N" BEFORE charging gold or burning the box-buy cooldown; the shop, the tavern menu and `/shop buy` autocomplete mark the closed ones with 🔒); and what comes OUT only includes drops of zones
+you have unlocked, even if the box is from a higher zone (so a box won from a boss or a mission never hands out zone-5 materials to a level-3 player). "Unlocked" is the same rule as `/zona` (`ZoneRanking.MaxUnlockedRank`: level ≥ `min_level` and no pending gatekeeper boss), resolved by `Services/BoxContextService.cs` (cached pools of gatherable items and zone drops, 5 minutes;
+the player's rank is read fresh each time). Loot lives in the DB (`Database/rework_boxes.sql` is the source of truth, it also adds the `min_items/max_items` columns and verifies itself): **boxes now DO hand out zone drops and gathering materials** (rule changed in v0.8.0; the old "never give zone drops" existed because a 1000-gold box would have made buying ~5× faster than farming — the new prices and the zone/rarity limits are what keep it honest).
+Prices come from minutes of farming: `Database/report_box_economy.sql` values a box in farming minutes (each item at its real drop/gather rate) × the gold of an hour of `/hunt` in the box's zone, and the price is ~70% of that (measured 60–79%, buying is never faster than playing). Re-run it if the weights, the ranges, the drop chances, the gather yields or the prices change. Rules that must keep holding: (1) a box never pays gold as a main prize (3% bonus, ~0.5% of the price in expectation); (2) Corteza del Árbol de Vida / Fragmento de Meteorito (the very-long-term goals) are fixed items only in the Mítica box (which can't be bought);
+in the others they come only through the 0.1% gather draw. The zone bosses give the zone's chest (first clear 100%, then 40% per fight, one boss fight per hour, see Drops), which adds to that supply.
 
 **Food: 6 items, and the two Mítica ones are "banquetes" with an attack buff** — the catalog was cut from 9 to 6 (Pan Casero, Choripán
 and Vacío al Disco removed by `Database/rework_food_catalog.sql`, which refunds their gold value to anyone holding them *before* the
@@ -453,7 +454,7 @@ NARRATED in the channel where the first player joined (or `Arena__ChannelId`), r
 cover it, the plan is ALL the food (and the message says how many HP are still missing). `/heal comida:<name>` (autocomplete list, `HealFoodAutocompleteHandler`) restricts it to one food; a banquet is refused there too (it is for `/use` — its value is the buff). The whole plan is paid in ONE transaction
 (`IInventoryRepository.EatAndHealAsync`: guarded decrements, any shortfall rolls everything back, then `LEAST(max_hp, hp + n)`), so concurrent heals never drive an item negative. Still blocked in combat. The tavern's eat menu gets a first option "🍖 Curarme del todo" (same code, `TavernModule.ExecuteHealCoreAsync`) when the player is hurt and has non-banquet food.
 
-**Boss and raid are ONE cooldown, 5 HOURS (v0.7.1; it was 30 minutes)**: `CooldownCatalog.Raid` is just an alias of `CooldownCatalog.Boss` ("Jefe / Raid", `CommandName` "boss"), so claiming either blocks the other and `/cd` shows ONE line; the duration is changed only there. The cooldown is claimed when the fight STARTS, so losing or fleeing also burns the 5 hours (open question for the owner). `RaidModule.ValidateStartAsync/ValidateJoinAsync` check it up front and `RaidModule.ValidateStartAsync/ValidateJoinAsync` reject with the time left BEFORE building or joining a lobby (they used to only find out at activation and silently drop the player). The atomic claim in `TryActivateAsync` stays as the real guard.
+**Boss and raid are ONE cooldown: 1 HOUR after a victory, 30 MINUTES after a defeat, a flee or a timeout (v0.8.0; it was 5 hours for a while in v0.7.1)**: `CooldownCatalog.Raid` is just an alias of `CooldownCatalog.Boss` ("Jefe / Raid", `CommandName` "boss"), so claiming either blocks the other and `/cd` shows ONE line; the duration and the shorter retry (`CooldownDefinition.RetryAfterFailure`) are changed only there. How the two times work with ONE mechanism and no hooks on the failure paths: the cooldown is claimed when the fight STARTS (`IAdventureRepository.TryClaimCooldownAsync(..., remainingIfNotCompleted)`) leaving only the retry time (it writes `last_executed_at = now() - (duration - retry)`), and a VICTORY completes it inside the same transaction that pays the reward (`ApplyVictoryInternalAsync` sets `last_executed_at = now()` for a boss kill), so losing, fleeing, a timeout or a raid wipe all leave the 30 minutes without any extra code. `/travel` is a 30-minute cooldown (it was 10), see Zones. `RaidModule.ValidateStartAsync/ValidateJoinAsync` check it up front and `RaidModule.ValidateStartAsync/ValidateJoinAsync` reject with the time left BEFORE building or joining a lobby (they used to only find out at activation and silently drop the player). The atomic claim in `TryActivateAsync` stays as the real guard.
 
 **Amounts accept `all` (`/play` bet, `/give` amount)**: the slash parameters are text now and `GameData/AmountParser.cs` reads a number ("500", "1.000") or all/todo/toda/max → the player's whole gold; `CasinoModule.ExecutePlayAsync` and `GiveModule.ExecuteGiveAsync` keep their numeric overloads and add a text one that parses and delegates.
 

@@ -13,8 +13,8 @@
 -- /chop y /mine (GameData/GatheringYield) o las cantidades de una receta: las cantidades de seed_recipes.sql /
 -- seed_zoneN_gear_and_recipes.sql están calibradas contra estos números.
 --
--- Columnas: min_drops = tiempo de juntar los materiales que DROPEAN (1 cacería por minuto, 1 viaje cada 10, 1 jefe cada
--- 30; se juntan en paralelo, así que cuenta el más lento). min_recol_antes / min_recol_ahora = lo mismo para los de
+-- Columnas: min_drops = tiempo de juntar los materiales que DROPEAN (1 cacería por minuto, 1 viaje cada 30, 1 jefe cada
+-- 60; se juntan en paralelo, así que cuenta el más lento). min_recol_antes / min_recol_ahora = lo mismo para los de
 -- RECOLECCIÓN con 1 unidad por acción vs con el rendimiento de GatheringYield (Común 1-5, Raro 1-3, Épico 1-2,
 -- Legendario/Mítico 1: ver GameData/GatheringYield), con /chop y /mine cada 5 min y en paralelo entre sí. "antes" solo sirve para comprobar que
 -- subir las cantidades de las recetas dejó el ritmo parejo (con las cantidades VIEJAS de las recetas, "ahora" sería
@@ -54,7 +54,7 @@ WITH hunt_n AS (
     SELECT s.item_id,
            SUM(CASE s.kind
                  WHEN 'hunt'   THEN (1.0 / h.n) * :ph / s.k
-                 WHEN 'travel' THEN :pt / s.k / 10.0
+                 WHEN 'travel' THEN :pt / s.k / 30.0
                  WHEN 'boss'   THEN :pb / s.k / 30.0 END) AS per_min
     FROM src s LEFT JOIN hunt_n h USING (zone_id) GROUP BY s.item_id
 ), weights (rarity, weight, avg_yield) AS (

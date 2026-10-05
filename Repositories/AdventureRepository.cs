@@ -8,13 +8,16 @@ namespace BotDsRpg.Repositories;
 
 public sealed class AdventureRepository(IDbConnectionFactory connectionFactory) : IAdventureRepository
 {
-    public async Task<bool> TryClaimCooldownAsync(ulong discordId, string commandName, TimeSpan cooldownDuration, CancellationToken cancellationToken = default)
+    public async Task<bool> TryClaimCooldownAsync(
+        ulong discordId, string commandName, TimeSpan cooldownDuration, TimeSpan? remainingIfNotCompleted = null, CancellationToken cancellationToken = default)
     {
         // Mismo upsert "guardado" que CooldownGuard (Repositories/TransactionalHelpers.cs), pero
         // standalone: acá no hace falta una transacción explícita, la sentencia ya es atómica.
+        // remainingIfNotCompleted (el jefe): se reclama dejando solo ese tiempo (last_executed_at corrido hacia atrás); el cooldown COMPLETO recién
+        // lo pone una victoria (ApplyVictoryInternalAsync). La guarda de abajo sigue pidiendo que haya pasado la duración entera.
         const string sql = """
             INSERT INTO cooldowns (discord_id, command_name, last_executed_at)
-            VALUES (@DiscordId, @CommandName, now())
+            VALUES (@DiscordId, @CommandName, now() - @Shift)
             ON CONFLICT (discord_id, command_name) DO UPDATE
                 SET last_executed_at = EXCLUDED.last_executed_at
                 WHERE cooldowns.last_executed_at <= now() - @CooldownInterval
@@ -24,7 +27,13 @@ public sealed class AdventureRepository(IDbConnectionFactory connectionFactory) 
         using IDbConnection connection = connectionFactory.CreateConnection();
         var command = new CommandDefinition(
             sql,
-            new { DiscordId = (long)discordId, CommandName = commandName, CooldownInterval = cooldownDuration },
+            new
+            {
+                DiscordId = (long)discordId,
+                CommandName = commandName,
+                CooldownInterval = cooldownDuration,
+                Shift = remainingIfNotCompleted is { } remaining ? cooldownDuration - remaining : TimeSpan.Zero,
+            },
             cancellationToken: cancellationToken);
 
         DateTime? applied = await connection.QuerySingleOrDefaultAsync<DateTime?>(command);
@@ -96,6 +105,16 @@ public sealed class AdventureRepository(IDbConnectionFactory connectionFactory) 
                 WHERE discord_id = @DiscordId
                 RETURNING {UserSql.SelectColumns};
                 """;
+
+            // Ganarle al jefe completa el cooldown (se reclamó al empezar dejando solo la mitad, ver TryClaimCooldownAsync): la MISMA transacción que el
+            // premio, así una victoria nunca queda sin su cooldown entero ni un cooldown entero sin victoria.
+            if (clearedZoneId is not null)
+            {
+                await connection.ExecuteAsync(new CommandDefinition(
+                    "UPDATE cooldowns SET last_executed_at = now() WHERE discord_id = @DiscordId AND command_name = @CommandName;",
+                    new { DiscordId = (long)discordId, CommandName = BotDsRpg.GameData.CooldownCatalog.Boss.CommandName },
+                    transaction: transaction, cancellationToken: cancellationToken));
+            }
 
             var finalUser = await connection.QuerySingleAsync<User>(new CommandDefinition(
                 updateGoldSql,

@@ -50,7 +50,9 @@ public partial class TextCommandModule
     {
         try
         {
-            await ReplyAsync(embed: ShopModule.BuildViewEmbed(await ShopModule.LoadShopItemsAsync(itemRepository), await buffRepository.GetItemBuffsAsync()));
+            await ReplyAsync(embed: ShopModule.BuildViewEmbed(
+                await ShopModule.LoadShopItemsAsync(itemRepository), await buffRepository.GetItemBuffsAsync(),
+                unlockedZoneRank: await boxContextService.MaxUnlockedRankAsync(Context.User.Id)));
         }
         catch (Exception ex)
         {
@@ -71,7 +73,7 @@ public partial class TextCommandModule
     {
         try
         {
-            var result = await ShopModule.ExecuteBuyAsync(userRepository, itemRepository, shopRepository, combatSessions, gameEvents, Context.User.Id, item, cantidad);
+            var result = await ShopModule.ExecuteBuyAsync(userRepository, itemRepository, shopRepository, combatSessions, gameEvents, Context.User.Id, item, cantidad, boxContextService);
             await ReplyAsync(result.PlainMessage, embed: result.Embed);
         }
         catch (Exception ex)

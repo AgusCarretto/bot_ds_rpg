@@ -34,6 +34,7 @@ public partial class TextCommandModule(
     IRaidSessionService raidSessions,
     ITransferRepository transferRepository,
     IBoxRepository boxRepository,
+    IBoxContextService boxContextService,
     IBuffRepository buffRepository,
     IMissionRepository missionRepository,
     IAchievementRepository achievementRepository,

@@ -23,7 +23,7 @@ public class AdventureModule(
     public Task HandleTravelAsync() =>
         StartCombatAsync(CooldownCatalog.Travel, () => combatStarter.PrepareTravelAsync(Context.User.Id));
 
-    [SlashCommand("boss", "Enfrentá al Jefe de tu zona: derrotarlo te deja avanzar (cooldown de 5 h, compartido con /raid).")]
+    [SlashCommand("boss", "Enfrentá al Jefe de tu zona: ganarlo te deja avanzar (cooldown de 1 h, 30 min si perdés).")]
     public Task HandleBossAsync() =>
         StartCombatAsync(CooldownCatalog.Boss, () => combatStarter.PrepareBossAsync(Context.User.Id));
 

@@ -19,6 +19,8 @@ internal static class ItemSql
         i.buy_price   AS "BuyPrice",
         i.weapon_family AS "WeaponFamily",
         i.class_requirement AS "ClassRequirement",
-        i.emoji AS "Emoji"
+        i.emoji AS "Emoji",
+        (SELECT bx.min_items FROM boxes bx WHERE bx.box_item_id = i.item_id) AS "BoxMinItems",
+        (SELECT bx.max_items FROM boxes bx WHERE bx.box_item_id = i.item_id) AS "BoxMaxItems"
         """;
 }

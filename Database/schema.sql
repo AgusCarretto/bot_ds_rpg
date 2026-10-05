@@ -197,18 +197,22 @@ CREATE TABLE IF NOT EXISTS player_stats (
 -- ---------------------------------------------------------
 CREATE TABLE IF NOT EXISTS boxes (
     box_item_id INTEGER PRIMARY KEY REFERENCES items (item_id) ON DELETE CASCADE,
-    rolls       INTEGER NOT NULL CHECK (rolls BETWEEN 1 AND 10)
+    rolls       INTEGER NOT NULL CHECK (rolls BETWEEN 1 AND 10),   -- OBSOLETO desde la v0.8.0: la caja trae entre min_items y max_items (ver Database/rework_boxes.sql)
+    min_items   INTEGER,
+    max_items   INTEGER,
+    CONSTRAINT boxes_items_range CHECK (min_items >= 1 AND max_items >= min_items)
 );
 
 CREATE TABLE IF NOT EXISTS box_loot (
     loot_id     INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     box_item_id INTEGER NOT NULL REFERENCES boxes (box_item_id) ON DELETE CASCADE,
-    kind        TEXT NOT NULL CHECK (kind IN ('gold', 'item')),
-    item_id     INTEGER REFERENCES items (item_id) ON DELETE CASCADE,   -- NULL si es oro
+    kind        TEXT NOT NULL CHECK (kind IN ('gold', 'item', 'gather', 'zone_drop')),   -- gather / zone_drop / gold: dinámicos, sin ítem fijo (ver rework_boxes.sql)
+    item_id     INTEGER REFERENCES items (item_id) ON DELETE CASCADE,   -- NULL si es oro, recolección o drop de zona
     weight      INTEGER NOT NULL CHECK (weight > 0),
     min_qty     INTEGER NOT NULL CHECK (min_qty >= 1),
     max_qty     INTEGER NOT NULL CHECK (max_qty >= min_qty),
-    CONSTRAINT box_loot_kind_item CHECK ((kind = 'gold' AND item_id IS NULL) OR (kind = 'item' AND item_id IS NOT NULL))
+    CONSTRAINT box_loot_kind_item CHECK (
+        (kind IN ('gold', 'gather', 'zone_drop') AND item_id IS NULL) OR (kind = 'item' AND item_id IS NOT NULL))
 );
 
 -- Una entrada por caja y por ítem (y una sola de oro por caja y rango no se repite: el rango distingue "común" de "jackpot").

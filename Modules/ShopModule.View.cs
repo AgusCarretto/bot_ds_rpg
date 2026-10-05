@@ -19,7 +19,9 @@ public partial class ShopModule
 
         try
         {
-            await FollowupAsync(embed: BuildViewEmbed(await LoadShopItemsAsync(itemRepository), await buffRepository.GetItemBuffsAsync()));
+            await FollowupAsync(embed: BuildViewEmbed(
+                await LoadShopItemsAsync(itemRepository), await buffRepository.GetItemBuffsAsync(),
+                unlockedZoneRank: await boxContextService.MaxUnlockedRankAsync(Context.User.Id)));
         }
         catch (Exception ex)
         {
@@ -48,7 +50,7 @@ public partial class ShopModule
     // saber a cuánto se vende algo está la lista de /shop sell, que lo dice por cada ítem que tenés).
     // talk: lo que dice el tabernero (por defecto, el saludo); gold: tu oro, si se quiere mostrar.
     public static Embed BuildViewEmbed(
-        IReadOnlyList<Item> items, IReadOnlyDictionary<int, ItemBuff>? buffs = null, string? talk = null, int? gold = null)
+        IReadOnlyList<Item> items, IReadOnlyDictionary<int, ItemBuff>? buffs = null, string? talk = null, int? gold = null, int? unlockedZoneRank = null)
     {
         var embed = new EmbedBuilder()
             .WithTitle("🍺 La Taberna")
@@ -66,9 +68,18 @@ public partial class ShopModule
             "Las cajas se compran **de a una y una vez por hora**; abrilas con `/open`.");
 
         AddColumn(embed, "Comida", items.Where(i => i.Type != "Caja"), i => $"Cura {i.StatValue} HP{BuffText(i, buffs)} · {i.BuyPrice} oro");
-        AddColumn(embed, "Cajas", items.Where(i => i.Type == "Caja"), i => $"{i.BuyPrice} oro");
+        AddColumn(embed, "Cajas", items.Where(i => i.Type == "Caja"), i => BoxLine(i, unlockedZoneRank));
 
         return embed.Build();
+    }
+
+    // "entre 1 y 10 ítems · 1.000 oro", y si es de una zona que todavía no desbloqueaste, "🔒 Zona 2" adelante.
+    public static string BoxLine(Item box, int? unlockedZoneRank)
+    {
+        string range = BoxCatalog.RangeText(box.BoxMinItems, box.BoxMaxItems);
+        string detail = (range.Length > 0 ? range + " · " : string.Empty) + $"{GameHistory.Number(box.BuyPrice)} oro";
+        int required = BoxCatalog.RequiredZoneRank(box.Rarity);
+        return unlockedZoneRank is int unlocked && required > unlocked ? $"🔒 Zona {required} · {detail}" : detail;
     }
 
     // " · +15% ATQ 30 min" para los banquetes, nada para el resto de la comida.

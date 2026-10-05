@@ -12,4 +12,6 @@ public sealed class Item
     public string? WeaponFamily { get; init; } // solo si Type == "Weapon"; ver GameData/ClassWeaponSynergy.cs
     public string? ClassRequirement { get; init; } // NULL = cualquier clase; ver Modules/EquipModule.cs y Modules/ForgeModule.cs
     public string? Emoji { get; init; } // emoji personalizado de Discord ("<:nombre:id>"); NULL = sin pixel art cargado todavía, ver GameData/ItemDisplay.cs
+    public int? BoxMinItems { get; init; } // solo si Type == "Caja": cuántos ítems trae como mínimo (boxes.min_items)
+    public int? BoxMaxItems { get; init; } // ... y como máximo (boxes.max_items); ver GameData/BoxLoot.cs (BoxCatalog.RangeText)
 }

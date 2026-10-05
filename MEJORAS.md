@@ -1,6 +1,31 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-01 (v0.6.0: eventos y `/give`, cajas, banquetes, misiones y logros)_
+_Última revisión: 2026-10-05 (v0.8.0: cajas v2 y cooldowns de `/travel` y del jefe)_
+
+## Cajas v2 y cooldowns de viaje y jefe (v0.8.0, 2026-10-05)
+
+Pedido del dueño: que una caja diga cuántos ítems da, que cueste mucho más, que lo que sale tenga las probabilidades reales de farmear y
+que no regale oro. Plan y ledger: `docs/superpowers/plans/2026-10-05-cajas-v2-y-cooldowns.md`.
+
+- **Cada caja dice su rango de ítems**: Cajón de Pino 1–10, Baúl de Roble 5–20, Arcón de Hierro 10–35, Cofre de Oro 20–60 y Arca del Soberano
+  40–100 (el oro no cuenta como ítem). Se ve en `/shop view`, la taberna, las listas de `/shop buy` y `/open`, y al abrir ("Cada Baúl de Roble trae entre 5 y 20 ítems").
+- **Precios por minutos de farmeo**: 1.000 / 10.000 / 35.000 / 110.000 (antes 150 / 700 / 1.800 / 3.500). `Database/report_box_economy.sql` valora cada
+  caja en minutos de farmeo × el oro de una hora de `/hunt` de su zona: el precio queda en 60–79 % de ese valor, o sea que comprar nunca es más rápido que jugar.
+  **Las cajas ya no se revenden** (venta 0).
+- **El botín sale con las chances reales**: cada tirada es recolección (la misma tabla de `/chop` y `/mine`; el Mítico baja a **0,1 % por ítem**, pedido
+  del dueño), drops de zona (hunt y travel en su proporción real 3 : 2), comida/trofeos/la caja de abajo, y el oro pasó a ser un **bono raro del 3 %**
+  que no cuenta como ítem. Cambia una regla vieja: las cajas SÍ dan drops de zona y materiales (antes no, por el ritmo; los precios y los topes de abajo lo cuidan).
+- **Solo hasta la zona desbloqueada**: una caja es de la zona de su rareza y solo se compra si ya la desbloqueaste (🔒 en la lista, el pedido se rechaza
+  sin cobrar ni gastar el cooldown), y lo que sale nunca trae drops de una zona que el jugador no tiene abierta, aunque la caja sea de una más alta.
+- **`/travel` cada 30 minutos** (eran 10), con la recompensa ×30 y 60 % de drop: lo mismo por minuto que antes.
+- **Jefe y raid: 1 hora** (30 minutos si perdés o escapás) y la recompensa ×15 (era ×6, "un poco más" porque ahora esperás más). Un solo mecanismo: el cooldown se
+  reclama al empezar dejando solo 30 minutos y una **victoria** lo completa a 1 hora en la misma transacción que paga.
+- **Encontrado en la revisión final**: `/shop sellall` borraba TODA la mochila, también lo que la tienda no compra (venta 0), así que con las cajas sin reventa
+  se las habría llevado gratis (el Arca del Soberano ya corría ese riesgo). Ahora solo vende y borra lo que tiene precio de venta; el resto se queda. Y
+  `aa taberna` no marcaba con 🔒 las cajas cerradas (la compra sí las rechazaba): ahora usa el mismo contexto de zonas que `/taberna`.
+- **Para desplegar una base viva**: correr `Database/rework_boxes.sql` ANTES de arrancar la v0.8.0 (agrega columnas que el código lee). Es re-ejecutable.
+- **Pendiente / a mirar**: el valor de las cajas altas incluye la caja de abajo que a veces traen (se valora a su precio de compra); si en la práctica la cadena
+  Cofre → Arcón → Baúl hace que se sienta de más, se baja el peso de esa entrada en `rework_boxes.sql`. El Hierro sigue siendo el cuello de botella de varias recetas.
 
 ## Eventos de juego, `/give`, cajas, banquetes, misiones y logros (v0.6.0, 2026-10-01)
 
