@@ -65,7 +65,7 @@ public partial class ShopModule
         string goldLine = gold is int g ? $"\n\nTu oro: **{g}**" : string.Empty;
         embed.WithDescription(
             $"{talk ?? NpcDialogue.Shopkeeper(ShopkeeperLine.Greeting)}{goldLine}\n\n" +
-            "Las cajas se compran **de a una y una vez por hora**; abrilas con `/open`.");
+            "Las cajas se compran **de a una y una vez cada 2 horas**; abrilas con `/open`.");
 
         AddColumn(embed, "Comida", items.Where(i => i.Type != "Caja"), i => $"Cura {i.StatValue} HP{BuffText(i, buffs)} · {i.BuyPrice} oro");
         AddColumn(embed, "Cajas", items.Where(i => i.Type == "Caja"), i => BoxLine(i, unlockedZoneRank));

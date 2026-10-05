@@ -123,12 +123,12 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
             }
         }
 
-        // Las cajas se compran de a una y una vez por hora (CooldownCatalog.BoxBuy): un freno a cuántas entran al juego. Se avisa ANTES de
+        // Las cajas se compran de a una y una vez cada 2 horas (CooldownCatalog.BoxBuy): un freno a cuántas entran al juego. Se avisa ANTES de
         // tocar nada, así pedir 5 no gasta el cooldown. La comida no tiene límite.
         if (item.Type == "Caja" && quantity > ShopCatalog.BoxesPerPurchase)
         {
             return new ShopActionResult(
-                $"Las cajas se compran **de a {ShopCatalog.BoxesPerPurchase}** y una compra por hora: pedí **{ItemDisplay.Format(item.Emoji, item.Name)}** con cantidad {ShopCatalog.BoxesPerPurchase}.", null);
+                $"Las cajas se compran **de a {ShopCatalog.BoxesPerPurchase}** y una compra cada 2 horas: pedí **{ItemDisplay.Format(item.Emoji, item.Name)}** con cantidad {ShopCatalog.BoxesPerPurchase}.", null);
         }
 
         int totalCost = item.BuyPrice * quantity;
@@ -143,7 +143,7 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
             {
                 return new ShopActionResult(null, new EmbedBuilder()
                     .WithTitle($"{cooldownDefinition.Emoji} Ya compraste una caja hace poco")
-                    .WithDescription($"{NpcDialogue.Shopkeeper(ShopkeeperLine.BoxWait)}\n\nLas cajas se compran de a una y **una vez por hora**. Te falta **{TimeFormat.Remaining(wait)}** para comprar otra.")
+                    .WithDescription($"{NpcDialogue.Shopkeeper(ShopkeeperLine.BoxWait)}\n\nLas cajas se compran de a una y **una vez cada 2 horas**. Te falta **{TimeFormat.Remaining(wait)}** para comprar otra.")
                     .WithColor(Color.DarkGrey)
                     .Build());
             }

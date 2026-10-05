@@ -80,7 +80,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 false)
             .AddField(
                 "⚔️ Aventura",
-                "`/hunt` / `aa ah` — Pelear en tu zona actual (manual/automático)\n`/travel` — Monstruo élite de tu zona: más difícil, recompensa x10\n`/boss` — Enfrentar al Jefe de tu zona actual\n`/raid` — Jefe de zona cooperativo (2 a 6 jugadores)\n`/fight` — Duelo amistoso con otro jugador (no se gana ni se pierde nada)\n`/arena` — Torneo PvP diario: `join`, `listplayers` y `results` (se juega a las 00:00, hora de Uruguay)\n`/zona` — Viajar a otra zona del mundo\n`/zonas` — Ver todas las zonas y sus niveles\n`/drops` — Qué suelta cada monstruo de cada zona\n`/chop` — Recolectar madera\n`/mine` — Recolectar piedra/minerales",
+                "`/hunt` / `aa ah` — Pelear en tu zona actual (manual/automático)\n`/travel` — Monstruo élite de tu zona: más difícil, recompensa x30 (cada 30 min)\n`/boss` — Enfrentar al Jefe de tu zona actual (cada 5 h)\n`/raid` — Jefe de zona cooperativo (2 a 6 jugadores)\n`/fight` — Duelo amistoso con otro jugador (no se gana ni se pierde nada)\n`/arena` — Torneo PvP diario: `join`, `listplayers` y `results` (se juega a las 00:00, hora de Uruguay)\n`/zona` — Viajar a otra zona del mundo\n`/zonas` — Ver todas las zonas y sus niveles\n`/drops` — Qué suelta cada monstruo de cada zona\n`/chop` — Recolectar madera\n`/mine` — Recolectar piedra/minerales",
                 false)
             .AddField(
                 "📈 Progresión",

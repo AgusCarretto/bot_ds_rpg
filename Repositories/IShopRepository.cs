@@ -13,7 +13,7 @@ public interface IShopRepository
     // debe existir (llamar antes a IUserRepository.GetOrCreateUserAsync).
     Task<User?> BuyItemAsync(ulong discordId, int itemId, int quantity, int totalCost, CancellationToken cancellationToken = default);
 
-    // Igual que BuyItemAsync, pero la compra tiene un cooldown (hoy: las cajas, una por hora). Todo en UNA transacción: se reclama el
+    // Igual que BuyItemAsync, pero la compra tiene un cooldown (hoy: las cajas, una cada 2 horas). Todo en UNA transacción: se reclama el
     // cooldown con la guarda de siempre (CooldownGuard), se descuenta el oro y se suma el ítem; si el cooldown sigue vigente o no
     // alcanza el oro, se revierte todo, así que una compra fallida NUNCA gasta el cooldown, y dos compras simultáneas no pasan las dos.
     Task<CooldownBuyOutcome> BuyItemWithCooldownAsync(

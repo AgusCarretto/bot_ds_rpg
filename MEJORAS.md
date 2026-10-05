@@ -1,8 +1,26 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-05 (v0.8.0: cajas v2 y cooldowns de `/travel` y del jefe)_
+_Última revisión: 2026-10-05 (v0.8.1: cooldowns de jefe/raid y cajas, y aviso de nivel al instante)_
+
+## Cooldowns de jefe/raid y cajas, y aviso de nivel al instante (v0.8.1, 2026-10-05)
+
+Pedido del dueño: "las cajas estaban muy rotas", así que **solo cooldowns**, sin tocar recompensas ni drops.
+
+- **Jefe y raid: 5 horas** (un solo cooldown, una sola línea en `/cd`). Si perdés, escapás o abandonás siguen siendo solo 30 minutos para reintentar
+  (`RetryAfterFailure`, aprobado en la v0.8.0): ganar es lo que cuesta las 5 horas. La recompensa se queda en ×15 (el dueño pidió no tocarla): por minuto de
+  cooldown el jefe ahora rinde bastante menos que un viaje; si hace falta que vuelva a valer la espera, `CombatRewardCalculator.BossRewardMultiplier` es la perilla.
+- **Comprar cajas: una cada 2 horas** (era 1). Los textos de la taberna, `/shop` y los errores lo dicen.
+- **Las cajas quedan como las dejó el dueño** en `rework_boxes.sql` (la base real ya las tiene): 1–5 ítems a 2.300, 5–10 a 14.000, 10–25 a 42.000, 25–60 a
+  120.000 y el Arca 60–100. Solo se actualizaron los comentarios y los arneses que decían los números viejos.
+- **"¡SUBISTE DE NIVEL!" (y misiones/logros) llegaba recién con el comando siguiente**: Discord.Net corre los comandos de barra en modo asíncrono, así que
+  `ExecuteCommandAsync` vuelve apenas LANZA el comando y los avisos se entregaban con la cola todavía vacía. Ahora salen cuando el comando termina
+  (`Services/NoticeDelivery.cs`, enganchado a `InteractionExecuted`; los comandos de texto ya andaban). Reproducido con el `InteractionService` real en el arnés
+  `noticetest`. Límite conocido: en un raid, solo quien da el golpe final tiene una interacción donde contestar; el resto recibe su banner en su próximo comando.
+- **`Assest/`** (los retratos del herrero y el tabernero) entra al repositorio.
 
 ## Cajas v2 y cooldowns de viaje y jefe (v0.8.0, 2026-10-05)
+
+_(Los números de abajo son los de la v0.8.0: el dueño ajustó rangos y precios de las cajas y el cooldown del jefe volvió a 5 horas, ver la v0.8.1 de arriba.)_
 
 Pedido del dueño: que una caja diga cuántos ítems da, que cueste mucho más, que lo que sale tenga las probabilidades reales de farmear y
 que no regale oro. Plan y ledger: `docs/superpowers/plans/2026-10-05-cajas-v2-y-cooldowns.md`.

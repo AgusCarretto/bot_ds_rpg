@@ -330,7 +330,7 @@ public class TabernaModule(
         if (boxesForSale.Count > 0)
         {
             components.WithSelectMenu(Menu(
-                BuyBox, discordId, "Comprar una caja (una por hora)",
+                BuyBox, discordId, "Comprar una caja (una cada 2 horas)",
                 boxesForSale.Select(i => (i.Name, ShopModule.BoxLine(i, unlockedRank), i.Name))), row++);
         }
 

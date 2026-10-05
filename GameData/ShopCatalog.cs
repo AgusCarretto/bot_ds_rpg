@@ -9,7 +9,7 @@ public static class ShopCatalog
 {
     public static readonly string[] SoldTypes = ["Consumable", "Caja"];
 
-    // Cuántas cajas se pueden comprar en una sola compra (y hay una compra por hora: CooldownCatalog.BoxBuy). La comida no tiene tope.
+    // Cuántas cajas se pueden comprar en una sola compra (y hay una compra cada 2 horas: CooldownCatalog.BoxBuy). La comida no tiene tope.
     public const int BoxesPerPurchase = 1;
 
     public static bool IsForSale(Item item) => item.BuyPrice > 0 && SoldTypes.Contains(item.Type);
