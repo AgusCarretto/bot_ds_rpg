@@ -142,16 +142,18 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
 
     // Estático (sin dependencia de Context) para que Modules/TextCommandModule.cs arme el mismo embed en "aa inventory".
     //
-    // El inventario va en COLUMNAS (campos en línea de Discord, de a tres por fila), como los de otros bots que al dueño le gustaron, en vez de una sola
-    // columna larga (la v0.7 era una columna por pedido suyo, porque los drops se partían en "(1/2)" y "(2/2)"):
-    //     🪵 Madera           ⛏️ Mineral           🍖 Comida
-    //     🩸 Drops de monstruo (1 a 3 columnas según cuántos tengas)               📦 Cajas
-    // Cada renglón es "ícono **Nombre**: cantidad" (el nombre en negrita y la cantidad con separador de miles). Un campo de embed admite 1024
-    // caracteres y el código de un emoji ocupa ~45, así que los drops (~32 ítems) se reparten en columnas parejas y, si el catálogo crece, en más:
-    // la primera con título y las demás con título invisible (nunca "(1/2)"). Solo aparecen las columnas que tienen algo. El type "Material" ES, por
-    // diseño de todo el juego, exactamente lo que sueltan los monstruos (nunca madera ni piedra, ver Database/seed_class_gear_and_monster_drops.sql).
-    // La rareza se ve con el emoji del ítem (o un círculo de color si todavía no tiene). Las armas y los amuletos no están acá: se forjan directo a
-    // equipamiento (ver /profile). Los íconos no se pueden agrandar: dentro de un texto Discord los dibuja siempre de 22 px.
+    // El inventario va en COLUMNAS arriba y los drops a ANCHO COMPLETO abajo (el dueño pidió columnas como las de otro bot, pero esos nombres son cortos):
+    //     🪵 Madera           ⛏️ Mineral           🍖 Comida (con las 📦 Cajas debajo)       <- campos en línea, de a tres por fila
+    //     🩸 Drops de monstruo: ícono Nombre: 3   ícono Otro nombre: 1   ícono ...             <- campo de ancho completo
+    // POR QUÉ los drops no van en columnas: una columna angosta (~19 caracteres) parte los nombres largos en dos renglones ("Collar de Cuero / Viejo: 3"),
+    // y los drops tienen nombres como "Cuero Curtido de Pradera". En ancho completo cada ítem es una FICHA que no se parte por dentro (espacios que no
+    // se cortan, U+00A0) y la línea solo se corta ENTRE ítems: entran dos o tres por renglón y no hay nada alineado que se rompa.
+    // Cada ítem es "ícono **Nombre**: cantidad" (nombre en negrita, cantidad con separador de miles). Un campo de embed admite 1024 caracteres y el
+    // código de un emoji ocupa ~45, así que los drops (~32 ítems) se reparten en varios campos: el primero con título y los demás con título invisible
+    // (nunca "(1/2)"). Solo aparece lo que tiene algo. El type "Material" ES, por diseño de todo el juego, exactamente lo que sueltan los monstruos (nunca
+    // madera ni piedra, ver Database/seed_class_gear_and_monster_drops.sql). La rareza se ve con el emoji del ítem (o un círculo de color si todavía no
+    // tiene). Las armas y los amuletos no están acá: se forjan directo a equipamiento (ver /profile). Los íconos no se pueden agrandar: dentro de un
+    // texto Discord los dibuja siempre de 22 px.
     public static async Task<Embed> BuildInventoryEmbedAsync(IInventoryRepository inventoryRepository, ulong discordId, string username)
     {
         var entries = await inventoryRepository.GetByDiscordIdAsync(discordId);
@@ -164,17 +166,17 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
         var wood = Lines(entries.Where(e => e.Type == "Madera"));
         var minerals = Lines(entries.Where(e => e.Type == "Mineral"));
         var food = Lines(entries.Where(e => e.Type == "Consumable"));
-        var drops = Lines(entries.Where(e => e.Type == "Material"));
+        var dropChips = Chips(entries.Where(e => e.Type == "Material"));
         var boxes = Lines(entries.Where(e => e.Type == "Caja"));
 
-        if (wood.Count + minerals.Count + food.Count + drops.Count + boxes.Count == 0)
+        if (wood.Count + minerals.Count + food.Count + dropChips.Count + boxes.Count == 0)
         {
             embed.WithDescription("Todavía no tenés ningún material. ¡Probá /chop, /mine o /travel!");
             return embed.Build();
         }
 
-        // El orden de los campos ES la distribución (Discord los acomoda de a tres por fila): primero lo corto (la primera fila), después los drops.
-        // Comida y Cajas comparten la tercera columna de la primera fila si entran juntas en un campo (si no, las cajas van al final, aparte).
+        // El orden de los campos ES la distribución (Discord los acomoda de a tres por fila): primero lo corto (la primera fila), después los drops a ancho
+        // completo. Comida y Cajas comparten la tercera columna de la primera fila si entran juntas en un campo (si no, las cajas van al final, aparte).
         AddColumn(embed, "🪵 Madera", wood);
         AddColumn(embed, "⛏️ Mineral", minerals);
 
@@ -189,10 +191,10 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
             AddColumn(embed, "🍖 Comida", food);
         }
 
-        var dropColumns = SplitIntoColumns(drops);
-        for (int i = 0; i < dropColumns.Count; i++)
+        var dropFields = PackChips(dropChips);
+        for (int i = 0; i < dropFields.Count; i++)
         {
-            embed.AddField(i == 0 ? "🩸 Drops de monstruo" : Blank, dropColumns[i], true);
+            embed.AddField(i == 0 ? "🩸 Drops de monstruo" : Blank, dropFields[i], false);
         }
 
         if (!boxesUnderFood)
@@ -246,11 +248,54 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
 
     // "<emoji> **Madera de Roble**: 3": de lo más común a lo más raro y por nombre dentro de la misma rareza.
     private static List<string> Lines(IEnumerable<InventoryEntry> entries) =>
-        entries
-            .OrderBy(e => RarityCatalog.RankOf(e.Rarity))
-            .ThenBy(e => e.ItemName, StringComparer.Ordinal)
-            .Select(e => $"{(string.IsNullOrWhiteSpace(e.Emoji) ? RarityDot(e.Rarity) : e.Emoji)} **{e.ItemName}**: {GameHistory.Number(e.Quantity)}")
+        Ordered(entries)
+            .Select(e => $"{Icon(e)} **{e.ItemName}**: {GameHistory.Number(e.Quantity)}")
             .ToList();
+
+    // Lo mismo, pero como FICHA que no se parte: todos los espacios son U+00A0 (no se cortan), así que si la línea se corta es entre una ficha y otra.
+    private static List<string> Chips(IEnumerable<InventoryEntry> entries) =>
+        Ordered(entries)
+            .Select(e => $"{Icon(e)} **{e.ItemName}**: {GameHistory.Number(e.Quantity)}".Replace(' ', NoBreakSpace))
+            .ToList();
+
+    private static IEnumerable<InventoryEntry> Ordered(IEnumerable<InventoryEntry> entries) =>
+        entries.OrderBy(e => RarityCatalog.RankOf(e.Rarity)).ThenBy(e => e.ItemName, StringComparer.Ordinal);
+
+    private static string Icon(InventoryEntry e) => string.IsNullOrWhiteSpace(e.Emoji) ? RarityDot(e.Rarity) : e.Emoji;
+
+    // Espacio que no se corta (U+00A0) y lo que separa una ficha de la siguiente: un espacio em (U+2003, deja un hueco bien visible) y uno común, que es donde la línea puede cortarse.
+    private const char NoBreakSpace = (char)0xA0;
+    private static readonly string ChipSeparator = ((char)0x2003).ToString() + " ";
+
+    // Junta las fichas en campos de a lo sumo FieldLimit caracteres, cortando siempre entre ficha y ficha.
+    internal static List<string> PackChips(IReadOnlyList<string> chips)
+    {
+        var fields = new List<string>();
+        var current = new StringBuilder();
+
+        foreach (string chip in chips)
+        {
+            if (current.Length > 0 && current.Length + ChipSeparator.Length + chip.Length > FieldLimit)
+            {
+                fields.Add(current.ToString());
+                current.Clear();
+            }
+
+            if (current.Length > 0)
+            {
+                current.Append(ChipSeparator);
+            }
+
+            current.Append(chip);
+        }
+
+        if (current.Length > 0)
+        {
+            fields.Add(current.ToString());
+        }
+
+        return fields;
+    }
 
     // El color de la rareza como círculo: lo mismo que usa el juego en los embeds de cada rareza.
     private static string RarityDot(string rarity) => rarity switch
