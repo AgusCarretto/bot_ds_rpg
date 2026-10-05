@@ -12,6 +12,12 @@ public static class GameEventExtensions
     {
         await events.RecordAsync(discordId, kind, outcome.Player.CurrentZoneId);
 
+        // Cada victoria de combate (cacería, viaje, jefe, raid, /autohunt) también es un enemigo vencido: es el contador del logro Exterminador.
+        if (GameEventKinds.IsEnemyWin(kind))
+        {
+            await events.RecordAsync(discordId, GameEventKinds.EnemyDefeated, outcome.Player.CurrentZoneId);
+        }
+
         if (outcome.LevelsGained > 0)
         {
             await events.RecordAsync(

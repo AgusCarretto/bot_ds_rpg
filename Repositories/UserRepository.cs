@@ -1,6 +1,7 @@
 using System.Data;
 using System.Data.Common;
 using BotDsRpg.Data;
+using BotDsRpg.GameData;
 using BotDsRpg.Models;
 using Dapper;
 
@@ -153,5 +154,27 @@ public sealed class UserRepository(IDbConnectionFactory connectionFactory) : IUs
             new { DiscordId = (long)discordId, ZoneId = zoneId },
             cancellationToken: cancellationToken);
         return await connection.QuerySingleAsync<User>(command);
+    }
+
+    public async Task<DeathPenaltyOutcome?> ApplyDeathPenaltyAsync(ulong discordId, CancellationToken cancellationToken = default)
+    {
+        // UNA sola sentencia: el CTE toma la fila con FOR UPDATE y el UPDATE usa los valores de ANTES para calcular lo que se pierde, así que dos derrotas
+        // simultáneas se aplican una detrás de otra (nunca se pisan) y lo que se informa es exactamente lo que se descontó. Solo toca la billetera (gold) y la
+        // EXP del nivel actual: el banco (bank_gold) y el nivel quedan como están. El porcentaje es el mismo de GameData/DeathPenalty.cs.
+        const string sql = """
+            WITH old AS (
+                SELECT discord_id, gold, xp FROM users WHERE discord_id = @DiscordId FOR UPDATE
+            )
+            UPDATE users u
+            SET xp = 0,
+                gold = u.gold - (old.gold::bigint * @GoldPercent / 100)::integer
+            FROM old
+            WHERE u.discord_id = old.discord_id
+            RETURNING (old.gold - u.gold) AS "GoldLost", old.xp AS "XpLost", u.gold AS "GoldAfter";
+            """;
+
+        using IDbConnection connection = connectionFactory.CreateConnection();
+        return await connection.QuerySingleOrDefaultAsync<DeathPenaltyOutcome>(new CommandDefinition(
+            sql, new { DiscordId = (long)discordId, GoldPercent = DeathPenalty.GoldPercent }, cancellationToken: cancellationToken));
     }
 }

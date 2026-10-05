@@ -149,8 +149,9 @@ public class AutoHuntModule(
 
         // Derrota: el jugador llegó a 0 HP antes de bajar al monstruo.
         await userRepository.ApplyCombatHpDeltaAsync(discordId, finalState.ToDbHpDelta(playerHp - state.PlayerStartingHp));
+        var penalty = await AdventureModule.ApplyDeathPenaltyAsync(userRepository, discordId);
         await gameEvents.RecordAsync(discordId, GameEventKinds.FightLost, detail: "hunt");
-        return new AutoHuntResult(null, BuildDefeatEmbed(finalState));
+        return new AutoHuntResult(null, BuildDefeatEmbed(finalState, penalty));
     }
 
     private static Embed BuildVictoryEmbed(CombatState state, LevelUpOutcome outcome, CombatReward reward, Item? droppedItem)
@@ -178,14 +179,15 @@ public class AutoHuntModule(
     // state.PlayerCurrentHp ya viene con el resultado final (ver ExecuteAsync) — en unidades de
     // combate, posiblemente escaladas por un Guerrero, para no mezclar una cifra real de la base
     // con un Máximo escalado.
-    private static Embed BuildDefeatEmbed(CombatState state)
+    private static Embed BuildDefeatEmbed(CombatState state, DeathPenaltyOutcome? penalty = null)
     {
-        return new EmbedBuilder()
+        var embed = new EmbedBuilder()
             .WithTitle("☠️ Derrota Rápida")
             .WithColor(Color.DarkRed)
             .WithMonsterPortrait(state.MonsterPortrait)
             .WithDescription($"El **{state.MonsterName}** {state.MonsterEmoji} fue demasiado fuerte. Quedaste a **{state.PlayerCurrentHp}** HP. Usá **/heal** para recuperarte.\n\n{AdventureModule.MonsterSays(state, NpcDialogue.BossLine.Victory)}")
-            .AddField("📋 Resumen del combate", AdventureModule.BuildCombatSummaryLine(state), false)
-            .Build();
+            .AddField("📋 Resumen del combate", AdventureModule.BuildCombatSummaryLine(state), false);
+
+        return AdventureModule.WithDeathPenalty(embed, penalty).Build();
     }
 }

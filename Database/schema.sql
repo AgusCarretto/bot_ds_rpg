@@ -142,6 +142,14 @@ CREATE TABLE IF NOT EXISTS users (
     -- Modules/ZoneModule.ExecuteTravelAsync) — así no depende de que los zone_id sigan siendo
     -- consecutivos en orden de dificultad para siempre.
     highest_zone_cleared INTEGER NOT NULL DEFAULT 0 CHECK (highest_zone_cleared >= 0),
+    -- El banco (v0.9.0, /bank): la cuenta se compra una vez (GameData/BankRules.cs) y el oro guardado ahí no lo toca la penalidad por muerte.
+    has_bank          BOOLEAN NOT NULL DEFAULT false,
+    bank_gold         INTEGER NOT NULL DEFAULT 0 CHECK (bank_gold >= 0),
+    -- Polvo (v0.9.0): sale de desmantelar materiales (/dismantle) y se gasta en encantar (/enchant). No es un ítem: no se vende ni se regala.
+    dust              INTEGER NOT NULL DEFAULT 0 CHECK (dust >= 0),
+    -- Tier del encantamiento (0 = sin encantar, 1..5, ver GameData/Enchantments.cs) de la pieza que lleva puesta. Es de la PIEZA: al venderla vuelve a 0.
+    weapon_enchant    INTEGER NOT NULL DEFAULT 0 CHECK (weapon_enchant BETWEEN 0 AND 5),
+    amulet_enchant    INTEGER NOT NULL DEFAULT 0 CHECK (amulet_enchant BETWEEN 0 AND 5),
     CONSTRAINT chk_current_hp_within_max CHECK (current_hp <= max_hp)
 );
 

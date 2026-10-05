@@ -70,8 +70,9 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
 
         // Ataque/Defensa = Nivel (Base) + equipo (arma con sinergia de clase si corresponde /
         // amuleto), misma fórmula que usa el combate real — ver GameData/CombatStats.cs.
-        int weaponDamage = ClassWeaponSynergy.ApplyBonus(weapon?.StatValue ?? 0, player.Class, weapon?.WeaponFamily);
-        int amuletDefense = amulet?.StatValue ?? 0;
+        // El arma y el amuleto cuentan CON su encantamiento (/enchant): son las mismas dos cuentas del combate real.
+        int weaponDamage = PlayerCombatProfileCalculator.WeaponDamage(player, weapon);
+        int amuletDefense = PlayerCombatProfileCalculator.AmuletDefense(player, amulet);
         // El banquete activo (si lo hay) suma a lo que se ve igual que en el combate real.
         var buff = await buffRepository.GetActiveAttackAsync(discordId);
         int attack = AttackBuff.Apply(CombatStats.TotalAttack(player.Level, weaponDamage), buff?.AttackPercent ?? 0);
@@ -85,9 +86,15 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
         // fila en blanco separa los bloques. El historial de PvP ya no va acá: está en /history y /duels.
         string attackText = $"**{attack}**" + (hasSynergy ? " ⚡" : string.Empty)
             + (buff is null ? string.Empty : $" 🍖 +{buff.AttackPercent}% ({Math.Max(1, (int)Math.Ceiling(buff.Remaining.TotalMinutes))} min)")
-            + $"\n{(weapon is null ? "_Sin arma_" : $"{ItemDisplay.Format(weapon.Emoji, weapon.Name)} (+{weapon.StatValue})")}";
-        string defenseText = $"**{defense}**\n{(amulet is null ? "_Sin amuleto_" : $"{ItemDisplay.Format(amulet.Emoji, amulet.Name)} (+{amulet.StatValue})")}";
-        string goldText = $"**{player.Gold}**\n🎁 Racha: {(player.DailyStreak > 0 ? $"día {player.DailyStreak}" : "_ninguna_")}";
+            + $"\n{(weapon is null ? "_Sin arma_" : $"{ItemDisplay.Format(weapon.Emoji, weapon.Name)} (+{weapon.StatValue})")}"
+            + EnchantLine("weapon", weapon is null ? 0 : player.WeaponEnchant);
+        string defenseText = $"**{defense}**\n{(amulet is null ? "_Sin amuleto_" : $"{ItemDisplay.Format(amulet.Emoji, amulet.Name)} (+{amulet.StatValue})")}"
+            + EnchantLine("amulet", amulet is null ? 0 : player.AmuletEnchant);
+        // El oro de la billetera y, si tiene cuenta, el del banco (a salvo de la penalidad por morir); el Polvo (/dismantle) solo cuando hay.
+        string goldText = $"**{player.Gold}**"
+            + (player.HasBank ? $"\n🏦 Banco: **{player.BankGold}**" : string.Empty)
+            + (player.Dust > 0 ? $"\n✨ Polvo: **{player.Dust}**" : string.Empty)
+            + $"\n🎁 Racha: {(player.DailyStreak > 0 ? $"día {player.DailyStreak}" : "_ninguna_")}";
 
         return new EmbedBuilder()
             .WithAuthor(username, avatarUrl)
@@ -112,6 +119,10 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
             .WithCurrentTimestamp()
             .Build();
     }
+
+    // "\n✨ Filo Ardiente (+13 %)" debajo de la pieza si está encantada; sin encantamiento no agrega nada (el perfil no se llena de "sin encantar").
+    private static string EnchantLine(string slot, int tier) =>
+        tier is >= 1 and <= Enchantments.MaxTier ? $"\n✨ {Enchantments.Label(slot, tier)} (+{Enchantments.BonusPercent(tier)} %)" : string.Empty;
 
     // Comando barra: /inventory [jugador]
     [SlashCommand("inventory", "Mostrá los materiales que tenés guardados (o los de otro jugador del server).")]

@@ -296,11 +296,12 @@ public class AdventureModule(
                 await userRepository.ApplyCombatHpDeltaAsync(
                     Context.User.Id, finalState.ToDbHpDelta(playerHpAfter - state.PlayerStartingHp));
 
+                var penalty = await ApplyDeathPenaltyAsync(userRepository, Context.User.Id);
                 await gameEvents.RecordAsync(Context.User.Id, GameEventKinds.FightLost, detail: finalState.CommandName);
 
                 await ModifyOriginalResponseAsync(props =>
                 {
-                    props.Embed = BuildDefeatEmbed(finalState, turn);
+                    props.Embed = BuildDefeatEmbed(finalState, turn, penalty);
                     props.Components = new ComponentBuilder().Build();
                 });
                 return;
@@ -588,11 +589,11 @@ public class AdventureModule(
     // state.PlayerCurrentHp ya viene con el resultado final aplicado (ver ResolveTurnAsync) — no
     // hace falta un HP "real" aparte de la base: al mostrar en unidades de combate (posiblemente
     // escaladas por un Guerrero) evitamos mezclar una cifra real de la base con un Máximo escalado.
-    private static Embed BuildDefeatEmbed(CombatState state, TurnResult turn)
+    private static Embed BuildDefeatEmbed(CombatState state, TurnResult turn, DeathPenaltyOutcome? penalty = null)
     {
         string playerLine = turn.DamageDealt > 0 ? $"Le hiciste **{turn.DamageDealt}** de daño, pero el" : "Pero el";
 
-        return new EmbedBuilder()
+        var embed = new EmbedBuilder()
             .WithTitle($"💀 Derrota contra {state.MonsterName} {state.MonsterEmoji}")
             .WithColor(Color.DarkRed)
             .WithMonsterPortrait(state.MonsterPortrait)
@@ -601,8 +602,51 @@ public class AdventureModule(
                 $"y te dejó fuera de combate. Usá **/heal** para recuperarte.{LifestealSuffix(turn.LifestealHeal)}\n\n{MonsterSays(state, NpcDialogue.BossLine.Victory)}")
             .AddField("❤️ Tu HP", HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
             .AddField($"{state.MonsterEmoji} HP de {state.MonsterName}", HpLine(turn.MonsterHpAfter, state.MonsterMaxHp), true)
-            .AddField("📋 Resumen del combate", BuildCombatSummaryLine(state), false)
-            .Build();
+            .AddField("📋 Resumen del combate", BuildCombatSummaryLine(state), false);
+
+        return WithDeathPenalty(embed, penalty).Build();
+    }
+
+    // Penalidad por perder un combate (GameData/DeathPenalty.cs): la EXP del nivel vuelve a 0 y se pierde el 5 % del oro de la billetera. Es UN solo
+    // UPDATE atómico en IUserRepository; los cuatro lugares donde se pierde (solitario, /use, /autohunt y el raid caído) pasan por acá. Nunca tira: si
+    // la base falla se loguea y el jugador simplemente no pierde nada (peor sería dejarlo sin respuesta justo cuando el combate ya se resolvió).
+    public static async Task<DeathPenaltyOutcome?> ApplyDeathPenaltyAsync(IUserRepository userRepository, ulong discordId)
+    {
+        try
+        {
+            return await userRepository.ApplyDeathPenaltyAsync(discordId);
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            return null;
+        }
+    }
+
+    // La línea que cuenta la penalidad, o null si no hubo nada que contar (sin oro y sin EXP no se agrega ni un campo vacío).
+    public static string? DeathPenaltyLine(DeathPenaltyOutcome? penalty)
+    {
+        if (penalty is null || (penalty.GoldLost <= 0 && penalty.XpLost <= 0))
+        {
+            return null;
+        }
+
+        if (penalty.GoldLost <= 0)
+        {
+            return "Tu EXP de este nivel volvió a **0**.";
+        }
+
+        string gold = $"Perdiste **{GameHistory.Number(penalty.GoldLost)}** de oro (el {DeathPenalty.GoldPercent} % de tu billetera)";
+        return penalty.XpLost > 0
+            ? $"{gold} y tu EXP de este nivel volvió a **0**. Lo del banco no se toca."
+            : $"{gold}. Lo del banco no se toca.";
+    }
+
+    // Agrega el campo "☠️ Penalidad" si hubo algo que perder; sin penalidad deja el embed como está.
+    public static EmbedBuilder WithDeathPenalty(EmbedBuilder embed, DeathPenaltyOutcome? penalty)
+    {
+        string? line = DeathPenaltyLine(penalty);
+        return line is null ? embed : embed.AddField("☠️ Penalidad", line, false);
     }
 
     // "💥 ¡GOLPE CRÍTICO! " antepuesto a la línea de daño del jugador (o "¡N GOLPES CRÍTICOS!" si la

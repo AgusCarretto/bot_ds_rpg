@@ -30,6 +30,12 @@ public static class AchievementCatalog
     private static IReadOnlyList<AchievementTier> Standard(long one, long two, long three, bool mythicTop = false) =>
         [new(one, TierOne), new(two, TierTwo), new(three, mythicTop ? TierThreeMythic : TierThree)];
 
+    // Los logros de v0.9.0 (comandos, enemigos, misiones...) pagan SOLO oro y XP, sin caja, y poco: sus contadores se pueden inflar (los comandos
+    // se cuentan aunque sean de mirar, un enemigo vencido ya cuenta además para Cazador/Viajero/Matajefes) y una caja por tramo se podría farmear.
+    // Mismo espíritu que los premios chicos de las misiones: un empujoncito por constancia, no una fuente de oro.
+    private static IReadOnlyList<AchievementTier> Plain(long one, long two, long three) =>
+        [new(one, new RewardSpec(4, 3)), new(two, new RewardSpec(12, 5)), new(three, new RewardSpec(30, 8))];
+
     public static readonly IReadOnlyList<AchievementDefinition> All =
     [
         new("cazador",       "Cazador",       "🏹", GameEventKinds.HuntWin,       "Ganá cacerías con /hunt",                          Standard(25, 150, 600)),
@@ -42,7 +48,63 @@ public static class AchievementCatalog
         new("abridor",       "Abridor",       "📦", GameEventKinds.BoxOpened,     "Abrí cajas con /open",                            Standard(5, 30, 150)),
         new("coleccionista", "Coleccionista", "🏺", GameEventKinds.TrophyFound,   "Conseguí trofeos distintos en las cajas",          Standard(6, 12, TrophyTotal, mythicTop: true)),
         new("constante",     "Constante",     "📅", GameEventKinds.DailyClaim,    "Reclamá tu recompensa diaria con /daily",          Standard(7, 30, 100)),
+
+        // v0.9.0 (premios solo de oro y XP, ver Plain).
+        new("comandante",    "Comandante",    "⌨️", GameEventKinds.CommandUsed,   "Usá comandos del bot (de barra o con aa)",          Plain(100, 1000, 10000)),
+        new("exterminador",  "Exterminador",  "☠️", GameEventKinds.EnemyDefeated, "Vencé enemigos: cacerías, viajes, jefes y raids",   Plain(50, 500, 3000)),
+        new("misionero",     "Misionero",     "📋", GameEventKinds.MissionClaimed,"Reclamá misiones diarias y semanales",              Plain(5, 40, 150)),
+        new("desmantelador", "Desmantelador", "🧰", GameEventKinds.Dismantle,     "Desmantelá materiales para sacar Polvo",           Plain(20, 150, 1000)),
+        new("encantador",    "Encantador",    "✨", GameEventKinds.Enchant,       "Intentá encantar tu arma o tu amuleto",            Plain(1, 10, 40)),
+        new("afortunado",    "Afortunado",    "🎰", GameEventKinds.CasinoWin,     "Ganá oro en el casino con /play",                  Plain(500, 5000, 50000)),
+        new("gladiador",     "Gladiador",     "🏟️", GameEventKinds.ArenaJoin,     "Anotate en el torneo diario con /arena join",      Plain(3, 15, 60)),
     ];
+
+    // Los logros se muestran en páginas por tema (/achievements): cada logro está en exactamente una (lo chequea la prueba).
+    public sealed record AchievementCategory(string Name, string Emoji, IReadOnlyList<string> Keys);
+
+    public static readonly IReadOnlyList<AchievementCategory> Categories =
+    [
+        new("Combate", "⚔️", ["cazador", "viajero", "matajefes", "exterminador", "gladiador"]),
+        new("Oficios", "🔨", ["recolector", "herrero", "desmantelador", "encantador"]),
+        new("Economía", "💰", ["comerciante", "generoso", "abridor", "coleccionista", "afortunado"]),
+        new("Constancia", "📅", ["constante", "comandante", "misionero"]),
+    ];
+
+    // Los logros de una página (0..Categories.Count-1); una página fuera de rango se acota a la más cercana.
+    public static IReadOnlyList<AchievementDefinition> OfPage(int page)
+    {
+        var keys = Categories[Math.Clamp(page, 0, Categories.Count - 1)].Keys;
+        return keys.Select(k => Find(k)!).ToList();
+    }
+
+    // "aa logros 2" o "aa logros oficios" → el número de página (0-based), o null si no es ninguna. Sin tildes ni mayúsculas.
+    public static int? ParsePage(string? text)
+    {
+        string wanted = Normalize(text);
+        if (wanted.Length == 0)
+        {
+            return null;
+        }
+
+        if (int.TryParse(wanted, out int number))
+        {
+            return number >= 1 && number <= Categories.Count ? number - 1 : null;
+        }
+
+        for (int i = 0; i < Categories.Count; i++)
+        {
+            if (Normalize(Categories[i].Name).StartsWith(wanted, StringComparison.Ordinal))
+            {
+                return i;
+            }
+        }
+
+        return null;
+    }
+
+    private static string Normalize(string? text) =>
+        new string((text ?? string.Empty).Trim().ToLowerInvariant().Normalize(System.Text.NormalizationForm.FormD)
+            .Where(c => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.NonSpacingMark).ToArray());
 
     public static AchievementDefinition? Find(string key) => All.FirstOrDefault(a => a.Key == key);
 

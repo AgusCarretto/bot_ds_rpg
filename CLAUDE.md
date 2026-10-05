@@ -83,7 +83,7 @@ between it and the live one — they must be identical (that comparison is how t
 aggregate: `IUserRepository`, `IItemRepository`, `IInventoryRepository`, `IShopRepository`,
 `ICraftingRepository`, `IRecipeRepository`, `ICasinoRepository`, `IAdventureRepository`,
 `IGatheringRepository`, `ICooldownRepository`, `IProgressionRepository`, `IGameEventRepository`, `ITransferRepository`,
-`IBoxRepository`, `IBuffRepository`, `IMissionRepository`, `IAchievementRepository`) + `Services/` (stateful
+`IBoxRepository`, `IBuffRepository`, `IMissionRepository`, `IAchievementRepository`, `IBankRepository`, `IDustRepository`) + `Services/` (stateful
 or pure-logic helpers that don't touch SQL directly) + `GameData/` (pure calculators/catalogs, no
 I/O — `LevelingCalculator`, `RarityCatalog`, `CombatMath`, `ClassPassives`, etc.). There is no
 "DatabaseService" god-object — each repository owns its own slice of the schema.
@@ -483,6 +483,31 @@ free slot gets the best usable piece, the rest is paid at `sell_price`; re-runna
 participant who didn't flee —, duelos, arena with tournaments joined and championships) and, for the two casino games, the gold won and lost and the balance (`casino_win`/`casino_loss`, `amount` =
 net gold won / gold bet, `detail` = slots|coinflip, recorded by `CasinoModule.ExecutePlayAsync` after the bet commits). It counts from when each game started being recorded (the footer says so);
 `duel_win`/`duel_loss` carry the rival's name in `detail`, which is what `/duels` lists (last 10 + streak). Both accept an optional player like `/profile`.
+
+**Bank and death penalty (v0.9.0; `/bank view|open|deposit|withdraw`, `aa bank`; `Modules/BankModule.cs`, `Repositories/BankRepository.cs`, `GameData/BankRules.cs`, `GameData/DeathPenalty.cs`)** — losing a fight costs the **current level's XP (back to 0, never a de-level)
+and 5 % of the WALLET gold** (`DeathPenalty.GoldPercent`, rounded down: under 20 gold loses none). The bank is a second balance (`users.has_bank`, `bank_gold`) that the penalty never touches; the account is BOUGHT once for
+`BankRules.AccountPrice` (1000 gold), no interest and no cap yet. Everything is one guarded `UPDATE` (`open`: `WHERE NOT has_bank AND gold >= price`; deposit/withdraw: `WHERE gold >= n` / `bank_gold >= n`) and the repository re-reads
+only to explain a rejection. `/bank deposit|withdraw` accept `all` through `AmountParser`. **The penalty applies at FOUR defeat sites, all through `AdventureModule.ApplyDeathPenaltyAsync`** (never throws: a failure logs and the player just loses
+nothing): solo `/hunt` `/travel` `/boss`, the `/use` that gets you killed mid-fight, `/autohunt` (it counts: the owner chose "any level, any fight") and each knocked-out, non-fled participant of a raid wipe. It does NOT apply to fleeing,
+timeouts, duels or the Arena. The SQL is a single `WITH old AS (SELECT ... FOR UPDATE) UPDATE ... RETURNING` (concurrent defeats serialize, each takes 5 % of what is left); the defeat embeds get a "☠️ Penalidad" field
+(`AdventureModule.DeathPenaltyLine`/`WithDeathPenalty`, empty when nothing was lost) and the shared raid-wipe embed states the rule in general (it cannot list each player). `/profile` shows the bank balance and the Polvo.
+
+**Dust and enchantments (v0.9.0; `/dismantle`, `/enchant`, `aa desmantelar|encantar`; `Modules/DustModule.cs`, `Repositories/DustRepository.cs`, `GameData/Dismantling.cs`, `GameData/Enchantments.cs`)** — crafting-by-quantity was dropped ("lo de craftear lo olvidamos");
+what remains is the dust loop. **`/dismantle <item> [1-5]`** (`Dismantling.MaxPerCommand`, one constant) destroys gathered materials (`Madera`/`Mineral`/`Material`, never boxes, food or gear) for **Polvo** (`users.dust`): 1 / 6 / 24 / 70 / 500
+per unit by rarity (Común..Mítico), calibrated to ≈0.5 dust per farming minute for EVERY rarity so nobody dismantles "the efficient thing" and breaks the enchant cost. The decrement is guarded (`quantity >= n`), so a double click
+never goes negative. **`/enchant [arma|amuleto]`** spends gold + dust (`Enchantments.Cost(gearRank)`: gold = 8 × `MissionRewards.GoldUnit`, dust 10/15/25/40/60 by the piece's zone rank, which comes from its rarity) and rolls a tier at random
+(Tibio 40 % / Al Rojo 30 % / Ardiente 18 % / Incandescente 9 % / Soberano 3 %, bonus +4/+8/+13/+19/+26 % of the PIECE's stat, always at least +1). The attempt is always paid, the new tier only REPLACES the current one if it is better
+(`users.weapon_enchant`/`amulet_enchant`, 0 = none). **Selling or replacing a worn piece resets its enchant to 0** (`ShopRepository.SellEquippedAsync`, `CraftingRepository` equip SQL): it belongs to the piece. The enchant is applied in ONE place,
+`PlayerCombatProfileCalculator.WeaponDamage/AmuletDefense` (profile, solo fight, raid and duels all go through `Resolve`), so the number shown is the number that fights. **Balance caveat**: with zone gear the top tier is about +15–20 % total attack
+and the zone ladder was measured WITHOUT enchants — if run 1 becomes too easy the counterweight is the second run's monsters (post-Zone-5 reset), not retuning run 1's zones. Re-measure with the real `CombatTurnResolver` if tiers/odds change.
+
+**Achievements v0.9.0: 17, in four pages** — `GameData/AchievementCatalog.cs` keeps the 10 original ones and adds 7 (Comandante `command_used`, Exterminador `enemy_defeated`, Misionero `mission_claimed`, Desmantelador `dismantle`, Encantador `enchant`,
+Afortunado `casino_win` = net gold won, Gladiador `arena_join`) that pay **only gold and XP, small, never a box** (`Plain` tiers): their counters can be inflated (a command counts even if it only looks at something; an enemy already counts for
+Cazador/Viajero/Matajefes) so a box per tier would be farmable. Do not pay boxes from these. Two new counters have ONE place that records them: `command_used` (`Services/CommandCounter.cs`: slash commands from `NoticeDelivery.Attach`'s single
+`InteractionExecuted` handler BEFORE it delivers notices — same handler on purpose, so the order is safe — and text commands from `Program.HandleTextMessageAsync`; `/start` and buttons never count, a command that ran and answered an error does) and
+`enemy_defeated` (`GameEventExtensions.RecordVictoryAsync`, for hunt/travel/boss/raid wins and `/autohunt`). `/achievements` shows one **category page** at a time (`AchievementCatalog.Categories`: Combate, Oficios, Economía, Constancia; every achievement
+is in exactly one, a test checks it): a select menu `ach_page:{owner}` and the claim button `ach_claim:{owner}:{page}` (claims ALL pages, returns to the same one; the pre-pages `achievements_claim:{owner}` still works for old messages). The two-wildcard
+custom id was verified against the real `InteractionService` routing (`SearchComponentCommand`). `aa achievements 2` / `aa logros oficios` open a page. `game_events` now grows by one row per command and per kill.
 
 **Autoritative source for "how much SQL debt does this repo have right now"**: `MEJORAS.md` at the
 repo root. Read it before assuming the schema in `Database/schema.sql` is what's actually running

@@ -345,6 +345,9 @@ class Program
                 await HandleTextCommandFailureAsync(context, message, argPos, result);
             }
 
+            // El comando cuenta para el logro Comandante (antes de entregar los avisos: puede cruzar un tramo). Nunca tira (RecordAsync lo atrapa).
+            await CommandCounter.RecordTextAsync(_services.GetRequiredService<IGameEvents>(), message.Author.Id, commandText, result.IsSuccess);
+
             // Los avisos que dejó el comando (misión completada, logro): en texto no hay mensajes privados, salen en el canal.
             await DeliverNoticesAsync(
                 message.Author.Id,
@@ -488,6 +491,8 @@ public static class ServiceProviderBuilder
             .AddSingleton<ITransferRepository, TransferRepository>()
             .AddSingleton<IBoxRepository, BoxRepository>()
             .AddSingleton<IBoxContextService, BoxContextService>()
+            .AddSingleton<IBankRepository, BankRepository>()
+            .AddSingleton<IDustRepository, DustRepository>()
             .AddSingleton<IBuffRepository, BuffRepository>()
             .AddSingleton<IMissionRepository, MissionRepository>()
             .AddSingleton<IAchievementRepository, AchievementRepository>()
