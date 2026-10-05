@@ -219,15 +219,141 @@ public static class NpcDialogue
         return Say(bossName, emoji, Pick(lines, rng));
     }
 
+    // ---------------- Los monstruos de cacería y de viaje ----------------
+    // TODOS los monstruos hablan, no solo los jefes: al aparecer (Intro), al caer (Defeated: ganó el jugador) y cuando te vencen (Victory: ganó el monstruo).
+    // Mismas tres situaciones que los jefes (por eso se reusa BossLine) y la misma regla: cada tabla con 2 o más frases distintas. Van por nombre, tal cual
+    // está en la base (monsters.name).
+    private static readonly Dictionary<string, Dictionary<BossLine, string[]>> MonsterLines = new()
+    {
+        // Zona 1 — Praderas del Mate
+        ["Jabalí Rabioso"] = new()
+        {
+            [BossLine.Intro] = ["¡Groink! Este pastizal es mío, forastero.", "Mis colmillos tienen hambre... y vos tenés cara de almuerzo."],
+            [BossLine.Defeated] = ["Groink... me ganaste... bien jugado...", "Mis colmillos... ya no clavan como antes..."],
+            [BossLine.Victory] = ["¡Jajá! Pisoteado como el pasto.", "Volvé cuando tengas más garra, flaco."],
+        },
+        ["Ñandú Salvaje"] = new()
+        {
+            [BossLine.Intro] = ["¡Brrruum! ¡Salí de mi pampa o te corro a picotazos!", "Soy más rápido que vos y más terco también."],
+            [BossLine.Defeated] = ["Ay, mis plumas... me ganaste de pura suerte...", "Hoy corrí... pero no alcanzó."],
+            [BossLine.Victory] = ["¡Ja! Te dejé más pelado que una gallina.", "Corré, corré, que mañana te alcanzo."],
+        },
+        ["Toro Bravo"] = new()
+        {
+            [BossLine.Intro] = ["¡MUUU! Se acabó el corral: ahora la plaza es mía.", "Agitá el trapo, que te voy a embestir."],
+            [BossLine.Defeated] = ["Mu... qué cornada la tuya...", "Vas a ser leyenda en el pago... yo me voy a la sombra."],
+            [BossLine.Victory] = ["¡Embestido y por los aires!", "Olé. Eso se llama faena."],
+        },
+        // Zona 2 — Bosque de Cenizas
+        ["Espíritu del Monte"] = new()
+        {
+            [BossLine.Intro] = ["Uuuh... este monte tiene dueño, y no está vivo.", "Un susurro en la ceniza... y vos sos el próximo."],
+            [BossLine.Defeated] = ["Me desvanezco... el monte me llama...", "Otro que me deja descansar... gracias."],
+            [BossLine.Victory] = ["Uuuh... ahora el monte te susurra a vos.", "Un alma más para el humo."],
+        },
+        ["Puma de las Cenizas"] = new()
+        {
+            [BossLine.Intro] = ["Grrr... te vengo siguiendo desde el último árbol quemado.", "El silencio es mi garra. Y ya estás a tiro."],
+            [BossLine.Defeated] = ["Mi garra... se apagó...", "Fuiste más rápido que mi sombra..."],
+            [BossLine.Victory] = ["Cayó el cazador, cazado.", "Ni me oíste venir, ¿no?"],
+        },
+        ["Ciervo Sagrado"] = new()
+        {
+            [BossLine.Intro] = ["La ceniza bendice a quien camina en paz. ¿Venís en paz?", "Mis astas guardan este bosque. Retrocedé."],
+            [BossLine.Defeated] = ["Que la ceniza te sea leve, cazador...", "El bosque... recordará esto."],
+            [BossLine.Victory] = ["Volvé cuando aprendas a respetar el monte.", "Ni la ceniza bendita te salvó."],
+        },
+        // Zona 3 — Minas del Yunque
+        ["Excavador Profundo"] = new()
+        {
+            [BossLine.Intro] = ["Cavé hasta acá... y no pienso soltar mi veta.", "Clic, clac. ¿Venís a robarme las gemas?"],
+            [BossLine.Defeated] = ["Mis gemas... mi veta... todo para vos...", "Me derrumbaste más rápido que un túnel."],
+            [BossLine.Victory] = ["¡Enterrado! Ahí te quedás, con las piedras.", "Cavá más hondo la próxima, minero."],
+        },
+        ["Gólem del Yunque"] = new()
+        {
+            [BossLine.Intro] = ["CLANG. INTRUSO DETECTADO. FORJA ACTIVA.", "Mi puño es yunque. Tu cabeza es clavo."],
+            [BossLine.Defeated] = ["CLANG... sistema... enfriando...", "Me desarmaste... pieza por pieza..."],
+            [BossLine.Victory] = ["CLANG. UN CLAVO MENOS.", "GOLPE EJECUTADO. VOLVÉ CUANDO SEAS DE ACERO."],
+        },
+        ["Mole de Escoria"] = new()
+        {
+            [BossLine.Intro] = ["Rrrmmm... soy la montaña que se mueve.", "La mina entera es mi cuerpo. Vas a sentir cada piedra."],
+            [BossLine.Defeated] = ["Me... desmoronooo...", "Rrrm... solo quedan escombros..."],
+            [BossLine.Victory] = ["Rrrmmm. Aplastado como un mineral más.", "La escoria no perdona, minero."],
+        },
+        // Zona 4 — Cordillera del Fuego
+        ["Coloso de Magma"] = new()
+        {
+            [BossLine.Intro] = ["El monte entero arde en mis venas. ¡Arrodillate o derretite!", "BRRRM. Cada paso mío es una erupción."],
+            [BossLine.Defeated] = ["Mi lava... se enfría...", "Qué fuego tenés, mortal..."],
+            [BossLine.Victory] = ["Derretido, como cera de vela.", "Eso se llama volcán, aventurero."],
+        },
+        ["Salamandra Infernal"] = new()
+        {
+            [BossLine.Intro] = ["¡Ssss! Tengo las llamas más sabrosas de la cordillera.", "Ssss... ¿venís a calentarte un poco?"],
+            [BossLine.Defeated] = ["Ssss... se me apagó la cola...", "Ahora sí... me enfrié..."],
+            [BossLine.Victory] = ["¡Ssss! Quedaste bien crocante.", "Chamuscado y servido."],
+        },
+        ["Dragón de Lava"] = new()
+        {
+            [BossLine.Intro] = ["¡RAAAWR! Mi aliento derrite el acero. ¿Probamos con tu armadura?", "Volé sobre estos picos mil años. Nadie sube sin mi permiso."],
+            [BossLine.Defeated] = ["Mi fuego... se extingue... digno guerrero...", "Que los picos... me guarden..."],
+            [BossLine.Victory] = ["Una pizca de aliento y listo. Qué decepción.", "Chamuscado. Volvé en otros mil años."],
+        },
+        // Zona 5 — Cráter de la Escoria
+        ["Devorador de Almas"] = new()
+        {
+            [BossLine.Intro] = ["Tu alma huele... deliciosa...", "Tengo hambre... y vos traés algo para llenar el vacío."],
+            [BossLine.Defeated] = ["Mi hambre era infinita... y aun así...", "Me devolvés las almas... qué cruel."],
+            [BossLine.Victory] = ["Ñam. Gracias por el alma, caminante.", "Un bocado más para el vacío."],
+        },
+        ["Titán de Escoria"] = new()
+        {
+            [BossLine.Intro] = ["Soy el corazón de piedra del cráter. No hay paso.", "Mil años dormí. ¿Quién me despierta?"],
+            [BossLine.Defeated] = ["Mi corazón de piedra... se agrieta...", "Un mortal... derribó a un titán..."],
+            [BossLine.Victory] = ["Aplastado como una hormiga.", "El cráter no se rinde ante nadie."],
+        },
+        ["Quimera del Abismo"] = new()
+        {
+            [BossLine.Intro] = ["¡Rraaaw, ssss! Tres bocas, tres hambres, ¡y una sola presa!", "Del abismo vengo... y al abismo te llevo."],
+            [BossLine.Defeated] = ["Tres cabezas... y ninguna ganó...", "El abismo... me recibe..."],
+            [BossLine.Victory] = ["Tres bocas para un solo bocado.", "El abismo siempre cobra."],
+        },
+    };
+
+    // Para un monstruo que no está en la tabla (uno nuevo en la base): frases genéricas, así nunca queda mudo.
+    private static readonly Dictionary<BossLine, string[]> GenericMonsterLines = new()
+    {
+        [BossLine.Intro] = ["¡Grrr! Este es mi territorio.", "Te estaba esperando... con hambre."],
+        [BossLine.Defeated] = ["Ugh... me ganaste esta vez...", "Qué golpe... me voy a acordar."],
+        [BossLine.Victory] = ["¡Grrr! Volvé cuando seas más fuerte.", "Uno menos en mi territorio."],
+    };
+
+    // Lo que dice CUALQUIER monstruo (de cacería, de viaje o jefe) en esa situación. isBoss solo importa si no está en ninguna tabla: elige qué genéricas usar.
+    public static string Monster(string name, string emoji, BossLine line, bool isBoss = false, Random? rng = null)
+    {
+        string[] lines =
+            BossLines.TryGetValue(name, out var boss) ? boss[line] :
+            MonsterLines.TryGetValue(name, out var own) ? own[line] :
+            isBoss ? GenericBossLines[line] : GenericMonsterLines[line];
+        return Say(name, emoji, Pick(lines, rng));
+    }
+
     // Para las pruebas: toda tabla de frases (nombre -> lista).
     public static IEnumerable<(string Key, IReadOnlyList<string> Lines)> AllTables() =>
         BlacksmithLines.Select(kv => ($"herrero:{kv.Key}", (IReadOnlyList<string>)kv.Value))
             .Concat(ShopkeeperLines.Select(kv => ($"tendero:{kv.Key}", (IReadOnlyList<string>)kv.Value)))
             .Concat(InnkeeperLines.Select(kv => ($"tabernero:{kv.Key}", (IReadOnlyList<string>)kv.Value)))
             .Concat(BossLines.SelectMany(b => b.Value.Select(kv => ($"{b.Key}:{kv.Key}", (IReadOnlyList<string>)kv.Value))))
-            .Concat(GenericBossLines.Select(kv => ($"jefe-genérico:{kv.Key}", (IReadOnlyList<string>)kv.Value)));
+            .Concat(GenericBossLines.Select(kv => ($"jefe-genérico:{kv.Key}", (IReadOnlyList<string>)kv.Value)))
+            .Concat(MonsterLines.SelectMany(m => m.Value.Select(kv => ($"{m.Key}:{kv.Key}", (IReadOnlyList<string>)kv.Value))))
+            .Concat(GenericMonsterLines.Select(kv => ($"monstruo-genérico:{kv.Key}", (IReadOnlyList<string>)kv.Value)));
 
     public static IReadOnlyCollection<string> KnownBosses => BossLines.Keys;
+
+    // Los monstruos de cacería y de viaje con frases propias (los jefes están en KnownBosses).
+    public static IReadOnlyCollection<string> KnownMonsters => MonsterLines.Keys;
 }
 
 // La imagen de un personaje. Reference es lo que va en el embed: una URL, o "attachment://archivo.jpg" si la imagen viaja como adjunto

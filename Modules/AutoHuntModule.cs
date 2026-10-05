@@ -160,16 +160,16 @@ public class AutoHuntModule(
         var embed = new EmbedBuilder()
             .WithTitle("⚔️ Auto-Cacería Exitosa")
             .WithColor(Color.Green)
-            .WithMonsterPortrait(state.MonsterPortrait) // si hubo drop, abajo la miniatura pasa a ser el ítem
+            .WithMonsterPortrait(state.MonsterPortrait) // siempre la cara del monstruo, haya drop o no
             .WithDescription(
                 $"Venciste al **{state.MonsterName}** {state.MonsterEmoji}. Te quedan **{player.CurrentHp}/{player.MaxHp}** HP.\n" +
-                $"Ganaste: **{reward.Gold}** Oro, **{reward.Xp}** XP.")
+                $"Ganaste: **{reward.Gold}** Oro, **{reward.Xp}** XP.\n\n" +
+                AdventureModule.MonsterSays(state, NpcDialogue.BossLine.Defeated))
             .AddField("📋 Resumen del combate", AdventureModule.BuildCombatSummaryLine(state), false);
 
         if (droppedItem is not null)
         {
-            embed.AddField("🎁 Material obtenido", ItemDisplay.Format(droppedItem.Emoji, droppedItem.Name), false)
-                .WithItemThumbnail(droppedItem.Emoji);
+            embed.AddField("🎁 Material obtenido", ItemDisplay.Format(droppedItem.Emoji, droppedItem.Name), false);
         }
 
         return embed.Build();
@@ -184,7 +184,7 @@ public class AutoHuntModule(
             .WithTitle("☠️ Derrota Rápida")
             .WithColor(Color.DarkRed)
             .WithMonsterPortrait(state.MonsterPortrait)
-            .WithDescription($"El **{state.MonsterName}** {state.MonsterEmoji} fue demasiado fuerte. Quedaste a **{state.PlayerCurrentHp}** HP. Usá **/heal** para recuperarte.")
+            .WithDescription($"El **{state.MonsterName}** {state.MonsterEmoji} fue demasiado fuerte. Quedaste a **{state.PlayerCurrentHp}** HP. Usá **/heal** para recuperarte.\n\n{AdventureModule.MonsterSays(state, NpcDialogue.BossLine.Victory)}")
             .AddField("📋 Resumen del combate", AdventureModule.BuildCombatSummaryLine(state), false)
             .Build();
     }
