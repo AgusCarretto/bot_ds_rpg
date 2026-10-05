@@ -15,8 +15,8 @@
 --
 -- Columnas: min_drops = tiempo de juntar los materiales que DROPEAN (1 cacería por minuto, 1 viaje cada 10, 1 jefe cada
 -- 30; se juntan en paralelo, así que cuenta el más lento). min_recol_antes / min_recol_ahora = lo mismo para los de
--- RECOLECCIÓN con 1 unidad por acción vs con el rendimiento de GatheringYield (Común 1-5, Raro/Épico 1-3,
--- Legendario/Mítico 1), con /chop y /mine cada 5 min y en paralelo entre sí. "antes" solo sirve para comprobar que
+-- RECOLECCIÓN con 1 unidad por acción vs con el rendimiento de GatheringYield (Común 1-5, Raro 1-3, Épico 1-2,
+-- Legendario/Mítico 1: ver GameData/GatheringYield), con /chop y /mine cada 5 min y en paralelo entre sí. "antes" solo sirve para comprobar que
 -- subir las cantidades de las recetas dejó el ritmo parejo (con las cantidades VIEJAS de las recetas, "ahora" sería
 -- 2-3 veces más rápido). min_total = el más lento de los tres.
 -- Referencia de la run 1 (hunt 10% / travel 20% / jefe 15%): armas de afinidad, amuletos bajos y general de zonas 2-5
@@ -59,7 +59,7 @@ WITH hunt_n AS (
     FROM src s LEFT JOIN hunt_n h USING (zone_id) GROUP BY s.item_id
 ), weights (rarity, weight, avg_yield) AS (
     -- Mantener sincronizado con RarityCatalog.GatheringWeights y GameData/GatheringYield.
-    VALUES ('Común', :wc, 3.0), ('Raro', :wr, 2.0), ('Épico', :we, 2.0), ('Legendario', :wl, 1.0), ('Mítico', :wm, 1.0)
+    VALUES ('Común', :wc, 3.0), ('Raro', :wr, 2.0), ('Épico', :we, 1.5), ('Legendario', :wl, 1.0), ('Mítico', :wm, 1.0)
 ), gather_rate AS (
     -- Unidades por minuto de UN ítem de recolección (un /chop o /mine cada 5 min; el ítem sale con la probabilidad de
     -- su rareza repartida entre los ítems de esa rareza y ese tipo).

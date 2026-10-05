@@ -4,12 +4,14 @@ namespace BotDsRpg.GameData;
 // RarityCatalog.RollGatheringRarity): lo común viene a montones y lo mejor de a uno.
 //
 //   Común (Madera de Pino, Piedra)                        1 a 5   (promedio 3)
-//   Raro y Épico (Roble, Carbón, Hierro, Nogal, Oro Puro) 1 a 3   (promedio 2)
+//   Raro (Roble, Carbón, Hierro)                          1 a 3   (promedio 2)
+//   Épico (Nogal, Oro Puro)                               1 a 2   (promedio 1,5)
 //   Legendario y Mítico (Ébano, Zafiro, Meteorito...)     1 solo
 //
-// Las cantidades de las recetas (Database/seed_recipes.sql y seed_zoneN_gear_and_recipes.sql) están calibradas
-// contra estos promedios: cada material de recolección pide ~3x (Común) o ~2x (Raro/Épico) lo que pedía cuando
-// daba 1 por vez, así que el ritmo de la run 1 no cambió. Si se tocan estos rangos hay que recalcularlas.
+// El máximo BAJA con cada escalón de rareza: lo básico viene a montones y nunca sale mucho de algo raro (pedido del
+// dueño; antes Raro y Épico eran los dos 1 a 3). Las cantidades de las recetas (Database/rework_drops_and_recipes.sql, que
+// pisa a seed_recipes.sql y seed_zoneN_gear_and_recipes.sql) están calculadas contra estos promedios con el modelo de
+// Database/report_recipe_pacing.sql. Si se tocan estos rangos hay que recalcularlas y actualizar el promedio de ese script.
 public static class GatheringYield
 {
     // Multiplicador de RUN sobre la cantidad sorteada: 1 en la run 1. El reset que se desbloquea al terminar la
@@ -20,7 +22,8 @@ public static class GatheringYield
     public static (int Min, int Max) RangeFor(string rarity) => rarity switch
     {
         "Común" => (1, 5),
-        "Raro" or "Épico" => (1, 3),
+        "Raro" => (1, 3),
+        "Épico" => (1, 2),
         _ => (1, 1), // Legendario, Mítico (y cualquier rareza que no se reconozca: lo seguro es darle 1)
     };
 
