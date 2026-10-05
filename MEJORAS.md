@@ -1,6 +1,12 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-05 (v0.8.3: todos los monstruos hablan y el inventario en columnas)_
+_Última revisión: 2026-10-05 (v0.8.4: el inventario sin nombres partidos)_
+
+## Inventario sin nombres partidos (v0.8.4, 2026-10-05)
+
+- En la captura del dueño (PC), los drops en tres columnas angostas partían los nombres largos en dos renglones ("Collar de Cuero / Viejo: 3"). Ahora **Madera | Mineral | Comida (con las Cajas debajo)** siguen en columnas, y los **drops van a ancho completo**: cada ítem es una ficha que no se parte por dentro
+  (espacios que no se cortan) y la línea solo se corta entre un ítem y otro, así que entran dos o tres por renglón. Con los 54 ítems a 9.999 sigue entrando (3.900 de 6.000 caracteres). Detalle y por qué no volver a columnas en CLAUDE.md.
+- Se anotó en "Ideas a futuro" la lista de siete ideas del dueño (logros, desmantelar/craftear, relación, encantamientos, banco, muerte con penalidad, mascotas) con el orden sugerido y qué cuidar en cada una.
 
 ## Todos los monstruos hablan, la cara siempre y el inventario en columnas (v0.8.3, 2026-10-05)
 
@@ -905,6 +911,21 @@ Todo esto ya compila y bootea limpio contra Discord.
   vale confirmarla a propósito en vez de que sea un efecto colateral de no haberlo construido.
 
 ## Ideas a futuro (sin comprometerme a nada, para cuando quieran expandir)
+
+**Lista del dueño (2026-10-05), todavía SIN diseño cerrado** — con lo que se charló y lo que hay que cuidar. Orden sugerido: banco → penalidad por muerte → desmantelar/craftear → encantamientos → logros nuevos → relación → mascotas.
+- **Logros: muchos más y con páginas.** Fácil y seguro: el progreso sale de `player_stats`, no se guarda nada. Hace falta paginar `/achievements` (botones o menú) y categorías (combate, recolección, economía, PvP, colección...). Cuidar la inflación de premios: más logros = más oro/cajas gratis; conviene que
+  los nuevos paguen sobre todo **títulos/insignias** que se muestran en `/profile` (no inflan nada). Mejor hacerlo DESPUÉS de los sistemas nuevos para que haya logros de encantar, desmantelar, mascotas...
+- **Desmantelar y craftear (craft 1–10, desmantelar 1–5).** Lo que podría romper no es la cantidad por comando sino la tasa de cambio. Reglas para que no rompa: lo que se desmantela devuelve menos de lo que cuesta (ida y vuelta siempre pierde), los drops de zona NO se pueden fabricar ni recuperar (las recetas
+  están calibradas con 3 drops por zona), y nada convierte Carbón en Hierro (lo mismo que prohíbe `TradeRules`). Idea que cierra con encantamientos y banco: desmantelar (excedentes, drops de zonas viejas, trofeos repetidos) da **Polvo** por rareza, que solo sirve para encantar. Pendiente: confirmar con el dueño QUÉ se
+  desmantela y QUÉ se craftea (las armas y amuletos se equipan directo, así que "1–5 / 1–10" apunta a cosas apilables).
+- **Relación / casamiento**: ya estaba anotado abajo ("Casamiento"). Ideas con valor real y sin romper: intercambio 1 a 1 de drops de cacería de la MISMA zona entre la pareja (una clase usa un drop y la otra el otro, así se aprovecha lo que a cada uno le sobra), bonus chico en raid de a dos, premio del `/daily`
+  compartido. Cuidar: cuentas alternativas (casarse con uno mismo), mismo tope que `/give`.
+- **Encantamientos con tiers** (arma y amuleto, estilo propio de Asado y Acero: nombres de parrilla/brasa/ceniza, no los del EPIC RPG). Es poder extra, y el escalón entre zonas está medido con simulación: hay que fijar un **tope de poder total** (todo lo que no es arma: encantamiento, mascota, banquete, relación) y volver a medir con el
+  simulador (hoy no está en el repo: se rehace, ver CLAUDE.md). Propuesta: tirada con chance por tier, no se pierde lo que ya tenés (solo reemplaza si sale mejor), cuesta oro + Polvo (sumidero), y los tiers altos son raros. Lo más sano es que sea el contenido de DESPUÉS de la Zona 5 / del reset, cuando los monstruos
+  de la segunda vuelta se escalen a propósito, y no tocar los monstruos de la primera.
+- **Banco**: oro guardado aparte, protegido de la penalidad por muerte. Mejor que "da XP": capacidad que se amplía pagando (sumidero de oro) y, si se quiere, un interés chico y con tope. Un bono de XP por oro guardado mezcla dos recursos y es difícil de calibrar.
+- **Muerte con penalidad.** Perder un nivel es lo más fuerte que hay (rompe misiones, `/zona` por nivel mínimo y se siente muy mal). Más sano: perder un % chico de oro (con tope, y lo del banco no se toca) y/o un poco de XP del nivel actual SIN bajar de nivel; no en `/autohunt` ni en Zona 1 ni bajo cierto nivel. Necesita el banco primero.
+- **Mascotas**: es lo que más engancha pero también lo más grande (cómo se consiguen, cómo suben, qué dan). Que den cosas chicas (oro/XP o un poco de defensa) y NUNCA toquen las chances de drop (las recetas están calibradas con ellas). Al final de la lista: depende de logros, encantamientos y del diseño del reset.
 
 - **Casamiento (`marriage`)** — pedido por el dueño (2026-10-02), para más adelante: dos jugadores se casan (propuesta con aceptar/rechazar, como `/trade` y `/fight`) y pueden **compartir cosas** entre sí. Preguntas para cuando se encare: qué se comparte (¿oro común?, ¿cofre compartido?, ¿bonus al pelear juntos / en raid?, ¿cooldowns?), cómo se divorcia (y qué pasa con lo compartido), y cuidado con las cuentas alternativas: si se comparte algo con valor, el casamiento abre la misma puerta que `/give` (mismo tope o registro en `game_events`).
 - Sistema de armadura/defensa (hoy el daño recibido no depende de ningún stat defensivo).
