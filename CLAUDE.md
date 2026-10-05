@@ -296,7 +296,12 @@ instance means a second bot). Branches: `main` is what runs/gets deployed, `deve
 of `develop` into `main` plus a tag. The Dockerfile
 must keep using the standard Debian images — `string.Normalize(FormD)` in the autocompletes needs ICU, which the chiseled and
 Alpine images don't ship. `<Version>` in the csproj is the bot version (`BotVersion.Current`, shown in `/info` and the startup
-log); releases are git tags (`v0.5.0`).
+log); releases are git tags (`v0.5.0`). **Railway is supported out of the box** (the owner chose it on 2026-10-05): `railway.toml` (Dockerfile worker, 1 replica, restart ALWAYS, overlap 0 / draining 20 s so
+the old copy gets SIGTERM and time to leave Discord), the variables are pasted into the service's Raw Editor from `.env.railway` (gitignored through `.env.*`; the template without secrets is `deploy/railway.env.example`) and
+`Postgres__ConnectionString` uses `${{Postgres.PGHOST}}`-style references, so the database service MUST be named `Postgres`; `deploy/migrate-to-railway.ps1` copies the live DB to any target URL (pg_dump → pg_restore, then compares
+row counts; refuses a non-empty target without `-Replace` and refuses the same DB as the source). Railway tracks `main`: every push there redeploys and cuts fights, so work stays on `develop` and `main` only moves on releases.
+Cost facts (docs, 2026-10-05): Hobby = US$5/month including US$5 of usage, overage is billed (not cut), the hard usage limit is optional and has a US$10 minimum; usage is per workspace. After any catalog change, the scratch
+fresh-install-vs-live comparison (see "Known recurring problem") must come out identical — it did on 2026-10-05 after aligning `items.emoji` to VARCHAR(100) in `schema.sql`.
 
 **Game events & stats (`game_events`, `player_stats`)** — ONE pipeline for "something happened": `IGameEvents.RecordAsync(discordId,
 kind, zoneId?, amount, detail?)` (`Services/GameEventService.cs`, kinds in `GameData/GameEventKinds.cs`, helpers in

@@ -1,4 +1,4 @@
-# Cómo desplegar Asado y Acero RPG (v0.5)
+# Cómo desplegar Asado y Acero RPG (v0.6)
 
 El bot es **un solo proceso** que se conecta a Discord (no escucha ningún puerto) y una **base de Postgres**. Sirve
 cualquier host que corra contenedores Docker; no está atado a ningún proveedor. Importante:
@@ -62,14 +62,56 @@ del bot tenés que ver, en este orden:
 - Reiniciar: `docker compose restart bot` · Apagar: `docker compose down` (conserva los datos; `-v` los borra).
 - Por si el servidor se reinicia, todo está con `restart: unless-stopped` y vuelve solo.
 
-## 3. Opción B — otro hosting con Dockerfile (Railway, Fly.io, Koyeb, etc.)
+## 3. Opción B — Railway (y otros hostings con Dockerfile)
 
-Usan el `Dockerfile` del repo (servicio tipo *worker*, sin puerto ni healthcheck) y una base de Postgres del mismo
-proveedor. Variables del servicio:
+Railway construye el `Dockerfile` del repo y lo deja corriendo 24 h; `railway.toml` ya trae la configuración (worker sin puerto, una sola
+réplica, reinicio automático). Despliega **la rama `main`**: cada push a `main` redespliega solo (y corta las peleas en curso), por eso
+el trabajo diario va a `develop` y a `main` solo llegan los releases.
+
+### Paso a paso en Railway
+
+1. **La base.** railway.com → *New Project* → *Database* → *Add PostgreSQL*. Dejale el nombre **Postgres** (las variables del bot lo usan).
+2. **Pasar tus datos** (una vez, desde tu PC; si preferís empezar de cero, saltealo y mirá "Base vacía" más abajo):
+   - Servicio Postgres → *Settings* → *Networking* → **Enable Public Networking** → pestaña *Variables* → copiá `DATABASE_PUBLIC_URL`.
+   - En PowerShell, desde la raíz del repo:
+     `.\deploy\migrate-to-railway.ps1 -TargetUrl "<la URL>"`
+     Saca una copia de tu base real (queda un respaldo en tu carpeta temporal), la carga en Railway y compara cuántas filas hay en cada
+     tabla. Se niega a pisar una base que ya tenga tablas. Necesita las herramientas de PostgreSQL (`pg_dump`, `pg_restore`, `psql`) que ya tenés.
+   - Cuando diga "Listo": volvé a **desactivar Public Networking** (el tráfico por ahí se cobra y deja la base expuesta).
+3. **El bot.** En el mismo proyecto → *New* → *GitHub Repo* → elegí `bot_ds_rpg` → en *Settings* → *Source* poné la rama **`main`**.
+   Railway lee `railway.toml` y usa el `Dockerfile`.
+4. **Variables del bot.** Servicio del bot → *Variables* → *Raw Editor* → pegá el contenido de **`.env.railway`** (en la raíz del repo; está
+   en `.gitignore`, no se sube nunca; la plantilla sin secretos es `deploy/railway.env.example`) → *Update Variables*.
+5. **Mirá el log** (*Deployments* → el deploy → *View logs*): tiene que decir `Base de datos OK … 5 zonas cargadas` y `está en línea`.
+6. **Apagá el bot de tu PC.** Es el mismo token: con los dos prendidos cada comando se contesta dos veces. Para desarrollar en tu PC,
+   primero parás el servicio en Railway (*Deployments* → los tres puntos del deploy activo → *Remove*; para volver, *Redeploy*).
+
+**Base vacía (sin los datos de tus amigos):** con Public Networking activado, desde la carpeta `Database/`:
+`psql "<DATABASE_PUBLIC_URL>" -v ON_ERROR_STOP=1 -f run_fresh_install.sql` (con `$env:PGCLIENTENCODING="UTF8"` antes, en PowerShell).
+
+**Si el bot no arranca:** `No pude usar la base de datos` → revisá que el servicio de la base se llame exactamente `Postgres`; `no llegó a
+conectarse a Discord en 90 segundos` → token mal o intents sin activar (sección 1).
+
+### Cuánto cuesta, y qué pasa si pasás los US$5
+
+*(Datos de docs.railway.com consultados el 2026-10-05; verificá en tu cuenta.)*
+
+- El plan **Hobby cuesta US$5/mes e incluye US$5 de uso**. Si el uso pasa de eso **no se corta nada: se cobra la diferencia**
+  (ejemplo de Railway: uso de US$7 → factura de US$7 = US$5 del plan + US$2 de exceso).
+- Se paga lo que realmente usa: RAM US$10 por GB al mes, CPU US$20 por vCPU al mes, disco US$0,15 por GB al mes, tráfico de salida
+  US$0,05 por GB. El uso es de **todo el workspace** (si tenés otros proyectos ahí, suman).
+- Estimación para este bot: el bot usa ~150 MB de RAM y casi nada de CPU (~US$1,5-2), Postgres ~150-250 MB (~US$1,5-2,5) y el disco de la base
+  casi nada: **~US$4-5/mes en total**. Con 4 jugadores casi no cambia (lo que cuesta es tenerlo prendido). Mirá *Usage* de la primera semana y ajustá.
+- Para no llevarte sorpresas: *Workspace* → *Usage* → *Set Usage Limits*. La **alerta por mail** (límite blando) no corta nada; el **límite
+  duro** (mínimo US$10) apaga TODOS los servicios cuando se alcanza. Sugerencia: alerta en US$5-6 y, si querés techo, límite duro en US$10.
+
+### Otros hostings con Dockerfile (Fly.io, Koyeb, etc.)
+
+Usan el mismo `Dockerfile` (servicio tipo *worker*, sin puerto ni healthcheck) y una base de Postgres del mismo proveedor. Variables del servicio:
 
 | Variable | Valor |
 |---|---|
-| `Discord__Token` | el token del bot de producción |
+| `Discord__Token` | el token del bot |
 | `Discord__TestGuildId` | el ID del servidor |
 | `Postgres__ConnectionString` | `Server=<host>;Port=<puerto>;Database=<base>;User Id=<usuario>;Password=<clave>` (formato clave=valor, no URL) |
 | `Raid__MinParticipants` | no la pongas (por defecto 2) |
@@ -81,7 +123,8 @@ cd Database
 PGCLIENTENCODING=UTF8 psql "host=<host> port=<puerto> dbname=<base> user=<usuario> password=<clave>" -v ON_ERROR_STOP=1 -f run_fresh_install.sql
 ```
 
-(En Windows/PowerShell: `$env:PGCLIENTENCODING="UTF8"` antes del comando.) **Solo contra una base vacía.**
+(En Windows/PowerShell: `$env:PGCLIENTENCODING="UTF8"` antes del comando.) **Solo contra una base vacía.** Para llevar tus datos actuales
+en vez de empezar de cero, `deploy/migrate-to-railway.ps1` sirve con cualquier Postgres (le pasás la URL `postgresql://…` de la base de destino).
 
 ## 4. Opción C — tu PC mientras jugás (gratis)
 
@@ -132,7 +175,7 @@ mensaje que ya no se puede editar); `[INFO]` es el arranque. Cuando un amigo rep
 | Tu PC | 0 | Solo online con la PC prendida. |
 | Oracle Cloud *Always Free* | 0 | Hoy 2 OCPU / 12 GB ([recortado a la mitad](https://terminalbytes.com/oracle-cloud-free-tier-changes-2026/)); registro exigente y a veces sin capacidad. |
 | VPS Hetzner CX23 (UE) | ~€6/mes | [2 vCPU, 4 GB](https://www.cloudhim.com/cloud-costs/hetzner-cx22-pricing-2026); en EE.UU. cuesta bastante más. Entran este bot **y** otros proyectos. |
-| Railway | US$5/mes + exceso | [Incluye US$5 de uso](https://docs.railway.com/reference/pricing/plans); bot + base ≈ US$4 estimados. |
+| Railway | US$5/mes (incluye US$5 de uso); si te pasás se cobra la diferencia | [Planes](https://docs.railway.com/reference/pricing/plans); bot + base ≈ US$4-5 estimados. Paso a paso y límites de gasto: sección 3. |
 | Fly.io | desde ~US$2/mes la máquina | [Sin plan gratis para cuentas nuevas](https://www.saaspricepulse.com/blog/flyio-free-tier-2026); la base de Postgres aparte. |
 
 Con 4 jugadores el consumo casi no cambia: lo que se paga es tener el bot y la base prendidos, no la cantidad de gente.
@@ -142,6 +185,10 @@ Con 4 jugadores el consumo casi no cambia: lo que se paga es tener el bot y la b
 Probado en la PC de desarrollo: arranque **solo con variables de entorno** (sin `.env`), chequeo de base (OK, y corte con código 1
 si falta o no responde), corte a los 90 s con token inválido, instalación limpia de los 18 scripts en una base nueva (idéntica a la
 real) y todas las pruebas de juego.
+**Railway (v0.6):** `railway.toml`, la plantilla de variables, la cadena de conexión (Npgsql 10 + `SSL Mode=Prefer`) y `deploy/migrate-to-railway.ps1` se probaron contra una base local
+(copia idéntica a la real: mismas tablas, columnas, restricciones y catálogo, y la instalación limpia con `run_fresh_install.sql` también da lo mismo). No se pudo probar el build real en
+Railway ni con Docker: el primer deploy es esa prueba.
+
 **No se pudo probar** (no había Docker en esa PC): construir la imagen y el `docker-compose.yml`; el primer `docker compose up`
 es esa prueba. Tampoco el apagado limpio por SIGTERM ni clickear los botones y el desplegable en un Discord real.
 

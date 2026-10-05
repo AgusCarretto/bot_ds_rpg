@@ -1,0 +1,19 @@
+# Configuración de Railway para el bot (se lee solo al conectar el repo). Guía completa: DEPLOY.md, sección "Railway".
+#
+# El bot es un worker: se conecta a Discord, no escucha ningún puerto, así que NO hay healthcheck ni dominio público.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# UNA sola instancia, siempre: las peleas y los raids viven en memoria, y con dos copias del mismo token cada comando se contesta dos veces.
+numReplicas = 1
+
+# Si el bot se corta (por ejemplo arrancó antes que la base y "EnsureDatabaseAsync" salió con error) Railway lo vuelve a levantar solo.
+restartPolicyType = "ALWAYS"
+
+# Al redesplegar, la versión vieja se apaga apenas arranca la nueva (sin solaparse más de lo necesario) y tiene 20 s para desconectarse
+# prolijo de Discord (el bot atiende SIGTERM). Aun así, hay unos segundos con las dos copias: redesplegá cuando no haya nadie en una pelea.
+overlapSeconds = 0
+drainingSeconds = 20

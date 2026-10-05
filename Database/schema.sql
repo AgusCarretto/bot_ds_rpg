@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS items (
     class_requirement TEXT CHECK (class_requirement IN ('Guerrero', 'Ninja', 'Arquero', 'Hechicero')),
     -- Emoji personalizado de Discord ("<:nombre:id>"), NULL = todavía sin pixel art cargado
     -- (GameData/ItemDisplay.cs cae a mostrar solo el nombre en ese caso).
-    emoji TEXT
+    emoji VARCHAR(100)
 );
 
 -- ---------------------------------------------------------
