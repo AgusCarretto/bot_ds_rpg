@@ -723,7 +723,9 @@ public class RaidModule(
         // transacción, tanto su HP final como el oro/XP/drop y el highest_zone_cleared.
         foreach (var participant in session.Participants.Where(p => p.Contributed && !p.HasFled))
         {
-            var reward = CombatRewardCalculator.RollBossReward(participant.Level, session.BossGoldBonus, session.BossXpBonus);
+            // "Primera vez" por participante: el cofre es 100% solo para quien nunca había derrotado a este jefe (se mira ANTES de aplicar la victoria).
+            bool firstClear = ((await userRepository.GetByDiscordIdAsync(participant.DiscordId))?.HighestZoneCleared ?? 0) < session.ZoneId;
+            var reward = CombatRewardCalculator.RollBossReward(participant.Level, session.BossGoldBonus, session.BossXpBonus, firstClear);
 
             Item? drop = null;
             if (reward.DroppedSomething && session.BossDropItemNames.Count > 0)
@@ -851,7 +853,7 @@ public class RaidModule(
 
         foreach (var (participant, reward, drop, outcome) in results)
         {
-            string dropLine = drop is not null ? $"\n🎁 {ItemDisplay.Format(drop.Emoji, drop.Name)}" : string.Empty;
+            string dropLine = drop is not null ? $"\n🎁 {ItemDisplay.Format(drop.Emoji, drop.Name)}{(drop.Type == "Caja" ? " — abrilo con /open" : string.Empty)}" : string.Empty;
             string levelLine = outcome.LevelsGained > 0 ? $"\n🎉 ¡Subió a nivel {outcome.Player.Level}!" : string.Empty;
 
             embed.AddField(

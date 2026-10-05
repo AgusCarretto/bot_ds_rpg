@@ -24,15 +24,15 @@ public static class DropsCatalog
         var monsters = zoneMonsters.ToList();
         var blocks = new List<DropsBlock>();
 
-        AddBlock(blocks, "🏹 Cazar", CombatRewardCalculator.HuntDropChancePercent, monsters, MonsterKind.Hunt, items);
-        AddBlock(blocks, "🗺️ Viajar (élite)", CombatRewardCalculator.TravelDropChancePercent, monsters, MonsterKind.Travel, items);
-        AddBlock(blocks, "👑 Jefe", CombatRewardCalculator.BossDropChancePercent, monsters, MonsterKind.Boss, items);
+        AddBlock(blocks, "🏹 Cazar", $"{CombatRewardCalculator.HuntDropChancePercent}% al ganar", monsters, MonsterKind.Hunt, items);
+        AddBlock(blocks, "🗺️ Viajar (élite)", $"{CombatRewardCalculator.TravelDropChancePercent}% al ganar", monsters, MonsterKind.Travel, items);
+        AddBlock(blocks, "👑 Jefe", $"cofre: {CombatRewardCalculator.BossChestFirstClearPercent}% la 1.ª vez, {CombatRewardCalculator.BossChestRepeatPercent}% después", monsters, MonsterKind.Boss, items);
 
         return blocks;
     }
 
     private static void AddBlock(
-        List<DropsBlock> blocks, string title, int chancePercent, List<ZoneMonster> monsters, MonsterKind kind,
+        List<DropsBlock> blocks, string title, string chanceText, List<ZoneMonster> monsters, MonsterKind kind,
         IReadOnlyDictionary<string, DropItemInfo> items)
     {
         var ofKind = monsters.Where(m => m.Kind == kind).ToList();
@@ -52,7 +52,7 @@ public static class DropsCatalog
 
         string text = string.Join("\n\n", entries);
         blocks.Add(new DropsBlock(
-            $"{title} · {chancePercent}% al ganar",
+            $"{title} · {chanceText}",
             text.Length <= FieldLimit ? text : text[..(FieldLimit - 1)] + "…"));
     }
 

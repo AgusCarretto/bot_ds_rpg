@@ -48,7 +48,8 @@ public class DropsModule(
         var player = await userRepository.GetByDiscordIdAsync(discordId);
         var zones = ZoneRanking.OrderByDifficulty(await zoneRepository.GetAllAsync());
         var monsters = await monsterRepository.GetAllAsync();
-        var materials = (await itemRepository.GetAllByTypeAsync("Material"))
+        // Materiales y cofres: el jefe suelta un cofre, y tiene que salir con su emoji igual que un material.
+        var dropItems = (await itemRepository.GetAllByTypeAsync("Material")).Concat(await itemRepository.GetAllByTypeAsync("Caja"))
             .ToDictionary(item => item.Name, item => new DropItemInfo(item.Name, item.Rarity, item.Emoji));
 
         var embeds = new List<Embed>();
@@ -66,7 +67,7 @@ public class DropsModule(
                 embed.WithDescription(here.Trim());
             }
 
-            var blocks = DropsCatalog.BuildZoneBlocks(monsters.Where(m => m.ZoneId == zone.ZoneId), materials);
+            var blocks = DropsCatalog.BuildZoneBlocks(monsters.Where(m => m.ZoneId == zone.ZoneId), dropItems);
             if (blocks.Count == 0)
             {
                 embed.AddField("Sin monstruos", "_Todavía no hay monstruos cargados en esta zona._", false);

@@ -18,9 +18,13 @@ public static class CombatRewardCalculator
     // quedarse un rato a farmear el equipo (las recetas que dependen de drops de /hunt tardan ~1,7 veces más).
     public const int HuntDropChancePercent = 6;
     public const int TravelDropChancePercent = 20;
-    // El jefe (solitario y de raid) antes usaba la misma fórmula que /hunt y, con UN solo drop por monstruo, cada
-    // ítem del jefe salía el doble de seguido que antes; 15% mantiene el ritmo de siempre (~200 min por unidad).
-    public const int BossDropChancePercent = 15;
+    // El jefe de zona ya no suelta un material sino un COFRE de su zona (monster_drops del jefe apunta a la caja, ver
+    // Database/rework_drops_and_recipes.sql): la primera vez que ESE jugador lo derrota siempre cae; las siguientes, 40%.
+    // Vale para el combate solitario y, por participante, para el raid.
+    public const int BossChestFirstClearPercent = 100;
+    public const int BossChestRepeatPercent = 40;
+
+    public static int BossChestChancePercent(bool firstClear) => firstClear ? BossChestFirstClearPercent : BossChestRepeatPercent;
 
     // monsterGoldBonus/monsterXpBonus: bonus fijo del monstruo (ver GameData/MonsterCatalog.cs y
     // Repositories/IMonsterRepository.cs) que se SUMA a la fórmula de siempre, no la reemplaza —
@@ -29,15 +33,15 @@ public static class CombatRewardCalculator
     public static CombatReward RollHuntReward(int playerLevel, int monsterGoldBonus = 0, int monsterXpBonus = 0) =>
         Roll(playerLevel, monsterGoldBonus, monsterXpBonus, multiplier: 1, HuntDropChancePercent);
 
-    // Jefe de zona (/boss y /raid): la fórmula de /hunt (con el bono GRANDE del jefe, ver Database/seed_zone_bosses.sql) x6, y su propia
-    // chance de drop. Era x1 hasta la v0.6.0 y el jefe pagaba la MITAD que un /travel (en Zona 2: ~280 XP contra ~520): una pelea mucho más
+    // Jefe de zona (/boss y /raid): la fórmula de /hunt (con el bono GRANDE del jefe, ver Database/seed_zone_bosses.sql) x6, y la chance del
+    // cofre de la zona. Era x1 hasta la v0.6.0 y el jefe pagaba la MITAD que un /travel (en Zona 2: ~280 XP contra ~520): una pelea mucho más
     // dura y con 30 minutos de cooldown rendía menos que una de 10. Con x6 paga ~3,2 veces un viaje de su zona (oro y XP) — un poco más que
     // los 3 viajes que caben en sus 30 minutos, que es lo justo por arriesgarse a perder — y ronda 7/10 de un nivel en Zona 2-5. En un raid
     // cada participante cobra esto entero.
     public const int BossRewardMultiplier = 6;
 
-    public static CombatReward RollBossReward(int playerLevel, int monsterGoldBonus = 0, int monsterXpBonus = 0) =>
-        Roll(playerLevel, monsterGoldBonus, monsterXpBonus, BossRewardMultiplier, BossDropChancePercent);
+    public static CombatReward RollBossReward(int playerLevel, int monsterGoldBonus, int monsterXpBonus, bool firstClear) =>
+        Roll(playerLevel, monsterGoldBonus, monsterXpBonus, BossRewardMultiplier, BossChestChancePercent(firstClear));
 
     // /travel tiene 10 minutos de cooldown (10 veces el de /hunt) y enfrenta a un monstruo élite (HP
     // x1.25 / daño x1.1 de los comunes de la zona, ver Database/seed_travel_monsters.sql): la

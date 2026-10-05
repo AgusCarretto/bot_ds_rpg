@@ -214,10 +214,14 @@ public class AdventureModule(
                 // Las tres recompensas salen de la MISMA fórmula (nivel + bonus del monstruo); /travel la
                 // multiplica y cada tipo de pelea tiene su chance de drop (ver GameData/CombatRewardCalculator.cs),
                 // así sube junto con la zona.
+                // Primera vez que cae el jefe de esta zona (la que abre la siguiente) o repetición: cambia el cofre (100% / 40%) y el mensaje.
+                // Se mira ANTES de aplicar la victoria, que es lo que sube highest_zone_cleared.
+                bool firstBossClear = state.CommandName == "boss" && state.BossZoneId is int clearedZone
+                    && ((await userRepository.GetByDiscordIdAsync(Context.User.Id))?.HighestZoneCleared ?? 0) < clearedZone;
                 var reward = state.CommandName switch
                 {
                     "travel" => CombatRewardCalculator.RollTravelReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus),
-                    "boss" => CombatRewardCalculator.RollBossReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus),
+                    "boss" => CombatRewardCalculator.RollBossReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus, firstBossClear),
                     _ => CombatRewardCalculator.RollHuntReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus),
                 };
 
@@ -243,10 +247,6 @@ public class AdventureModule(
                 // Si es un jefe, ApplyBossVictoryAsync además sube highest_zone_cleared a
                 // BossZoneId (capturado al arrancar el combate, no la zona actual "de nuevo").
                 int hpDelta = finalState.ToDbHpDelta(finalState.PlayerCurrentHp - finalState.PlayerStartingHp);
-                // Primera vez que cae el jefe de esta zona (la que abre la siguiente) o repetición: el mensaje es distinto.
-                // Se mira ANTES de aplicar la victoria, que es lo que sube highest_zone_cleared.
-                bool firstBossClear = finalState.CommandName == "boss" && finalState.BossZoneId is int clearedZone
-                    && ((await userRepository.GetByDiscordIdAsync(Context.User.Id))?.HighestZoneCleared ?? 0) < clearedZone;
                 var outcome = finalState.CommandName == "boss"
                     ? await adventureRepository.ApplyBossVictoryAsync(
                         Context.User.Id, reward.Gold, reward.Xp, hpDelta, droppedItem?.ItemId, droppedItemQuantity: 1, finalState.BossZoneId!.Value)
@@ -561,7 +561,10 @@ public class AdventureModule(
 
         if (droppedItem is not null)
         {
-            embed.AddField("🎁 Material obtenido", ItemDisplay.Format(droppedItem.Emoji, droppedItem.Name), false)
+            // El jefe suelta un cofre (ver GameData/CombatRewardCalculator.BossChestFirstClearPercent); lo demás, un material.
+            bool isChest = droppedItem.Type == "Caja";
+            string droppedText = ItemDisplay.Format(droppedItem.Emoji, droppedItem.Name);
+            embed.AddField(isChest ? "🎁 ¡Cofre del jefe!" : "🎁 Material obtenido", isChest ? $"{droppedText} — abrilo con `/open`" : droppedText, false)
                 .WithItemThumbnail(droppedItem.Emoji);
         }
 
