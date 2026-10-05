@@ -114,7 +114,7 @@ public sealed class AdventureCombatStarter(
 
         // El cooldown se cobra ACÁ, al iniciar el combate: si el jugador lo abandona o se le
         // acaba el tiempo de respuesta, igual "gastó" el intento (no puede reintentar gratis).
-        bool claimed = await adventureRepository.TryClaimCooldownAsync(discordId, definition.CommandName, definition.Duration, cancellationToken);
+        bool claimed = await adventureRepository.TryClaimCooldownAsync(discordId, definition.CommandName, definition.Duration, definition.RetryAfterFailure, cancellationToken);
         if (!claimed)
         {
             // Perdió la carrera contra otra ejecución concurrente del mismo comando (ej. doble click).

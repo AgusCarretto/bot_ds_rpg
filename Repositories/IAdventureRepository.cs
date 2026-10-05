@@ -8,7 +8,8 @@ public interface IAdventureRepository
     // ejecuciones concurrentes del mismo comando). Se cobra al INICIAR el combate, no al
     // terminarlo: si el jugador abandona o se le acaba el tiempo, igual "gastó" el intento.
     // Devuelve false si el cooldown seguía vigente (no aplica ningún cambio en ese caso).
-    Task<bool> TryClaimCooldownAsync(ulong discordId, string commandName, TimeSpan cooldownDuration, CancellationToken cancellationToken = default);
+    Task<bool> TryClaimCooldownAsync(
+        ulong discordId, string commandName, TimeSpan cooldownDuration, TimeSpan? remainingIfNotCompleted = null, CancellationToken cancellationToken = default);
 
     // Aplica de forma atómica el resultado de ganar un combate: suma oro, aplica la XP (con
     // nivelado y curación de HP al subir de nivel) y si corresponde agrega un material al

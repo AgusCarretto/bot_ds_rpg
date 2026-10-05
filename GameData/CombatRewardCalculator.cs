@@ -17,7 +17,8 @@ public static class CombatRewardCalculator
     // Era 10% hasta la v0.6.0: se bajó a 6% para que al llegar al nivel de una zona no sea tan fácil pasarla de largo, y haya que
     // quedarse un rato a farmear el equipo (las recetas que dependen de drops de /hunt tardan ~1,7 veces más).
     public const int HuntDropChancePercent = 6;
-    public const int TravelDropChancePercent = 20;
+    // 60% (era 20% con el travel de 10 minutos): con el cooldown en 30 minutos sigue cayendo 2% por minuto de cooldown, que es lo contra lo que están calibradas las recetas.
+    public const int TravelDropChancePercent = 60;
     // El jefe de zona ya no suelta un material sino un COFRE de su zona (monster_drops del jefe apunta a la caja, ver
     // Database/rework_drops_and_recipes.sql): la primera vez que ESE jugador lo derrota siempre cae; las siguientes, 40%.
     // Vale para el combate solitario y, por participante, para el raid.
@@ -38,21 +39,21 @@ public static class CombatRewardCalculator
     // dura y con 30 minutos de cooldown rendía menos que una de 10. Con x6 paga ~3,2 veces un viaje de su zona (oro y XP) — un poco más que
     // los 3 viajes que caben en sus 30 minutos, que es lo justo por arriesgarse a perder — y ronda 7/10 de un nivel en Zona 2-5. En un raid
     // cada participante cobra esto entero.
-    // OJO: ese x6 se calibró cuando el cooldown del jefe y del raid era de 30 minutos; desde la v0.7.1 es de 5 HORAS (CooldownCatalog.Boss): cada pelea es ahora
-    // un evento mucho más raro y el x6 quedó corto POR MINUTO de cooldown. Si se quiere compensar, es esta constante (el cofre del jefe va aparte).
-    public const int BossRewardMultiplier = 6;
+    // v0.8.0: x15 (era x6 con 30 minutos de cooldown). Con 1 hora de cooldown la paridad por minuto sería x12; el 25% de más es el "un poco más" que pidió el
+    // dueño. Por minuto de cooldown el jefe rinde ~1,2 veces un viaje de su zona (el bono grande del jefe ya está dentro de la fórmula).
+    public const int BossRewardMultiplier = 15;
 
     public static CombatReward RollBossReward(int playerLevel, int monsterGoldBonus, int monsterXpBonus, bool firstClear) =>
         Roll(playerLevel, monsterGoldBonus, monsterXpBonus, BossRewardMultiplier, BossChestChancePercent(firstClear));
 
-    // /travel tiene 10 minutos de cooldown (10 veces el de /hunt) y enfrenta a un monstruo élite (HP
+    // /travel tiene 30 minutos de cooldown (30 veces el de /hunt; 10 hasta la v0.7.1) y enfrenta a un monstruo élite (HP
     // x1.25 / daño x1.1 de los comunes de la zona, ver Database/seed_travel_monsters.sql): la
     // recompensa tiene que hacerlo valer. Antes era un monto fijo que NO seguía a la zona (~150 oro /
     // ~155 XP a nivel 5), así que en Zona 4-5 rendía mucho menos que UNA cacería común (~217 / ~168 y
     // ~377 / ~285) y nadie lo usaba. Ahora es la fórmula entera de /hunt (nivel + bonus del monstruo)
-    // x10 — lo que diez cacerías darían en ese cooldown — así que escala con la zona igual que ellas.
+    // x30 — lo que treinta cacerías darían en ese cooldown — así que escala con la zona igual que ellas.
     // En Zona 1 (bonus 0/0) queda casi igual que antes (~120 oro / ~150 XP a nivel 1).
-    public const int TravelRewardMultiplier = 10;
+    public const int TravelRewardMultiplier = 30;
 
     public static CombatReward RollTravelReward(int playerLevel, int monsterGoldBonus = 0, int monsterXpBonus = 0) =>
         Roll(playerLevel, monsterGoldBonus, monsterXpBonus, TravelRewardMultiplier, TravelDropChancePercent);
