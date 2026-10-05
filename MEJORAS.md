@@ -1,6 +1,17 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-05 (v0.9.0: banco, penalidad por muerte, Polvo y encantamientos, logros nuevos)_
+_Última revisión: 2026-10-05 (v0.9.1: inventario y perfil más aireados, la Arena en `/cd`)_
+
+## Inventario y perfil más aireados, y la Arena en `/cd` (v0.9.1, 2026-10-05)
+
+A partir de las capturas del dueño (inventario y perfil de la v0.9.0):
+- **Inventario**: los drops ahora van **uno por renglón**, a ancho completo, con una fila en blanco entre las columnas de arriba (Madera | Mineral | Comida) y ellos. Las "fichas" de la v0.8.4 no aguantaron: Discord igual corta la línea entre el ícono (que es una imagen) y el texto, así que el ícono de un ítem quedaba al final del renglón anterior, pegado al ítem equivocado.
+  Con todo el catálogo a 9.999 entra (3.870 de 6.000 caracteres; los 32 drops en 3 campos).
+- **Perfil apilado**: Ataque, debajo Defensa, debajo Oro y debajo Banco (cada uno en su renglón, ya no en columnas angostas); Polvo y Racha en una fila aparte. Se sacó el «(+N)» del arma y del amuleto (ya está sumado en el número grande) y queda el encantamiento debajo del arma. El campo «Zona actual» pasó a una línea
+  debajo del título: «Zona 1: Praderas del Mate (máx. Zona 4)», donde el máximo es la zona más alta que tenés desbloqueada (la misma regla que `/zona`).
+- **`/enchant` y `/dismantle`** con párrafos separados, una fila en blanco bajo la descripción y los campos apilados (los tiers posibles en dos renglones cortos, no en uno apretado).
+- **`/cd` incluye la Arena** como última línea: «anotado ✅ — se juega en 1h 35m» o «¡todavía no te anotaste! ⚠️ Se juega en ...: /arena join». Es para que nadie se olvide de anotarse; solo lee el torneo de hoy y, si la consulta falla, la línea no sale (`/cd` nunca se rompe por la Arena).
+- Sin cambios de base de datos.
 
 ## Banco, penalidad por muerte, Polvo, encantamientos y 7 logros nuevos (v0.9.0, 2026-10-05)
 

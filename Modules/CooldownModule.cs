@@ -4,17 +4,17 @@ using Discord;
 using Discord.Interactions;
 using BotDsRpg.Services;
 
-public class CooldownModule(ICooldownRepository cooldownRepository, IUserRepository userRepository)
+public class CooldownModule(ICooldownRepository cooldownRepository, IUserRepository userRepository, IArenaService arenaService)
     : InteractionModuleBase<SocketInteractionContext>
 {
-    [SlashCommand("cd", "Mostrá el estado de tus cooldowns (cazar, viajar, talar, minar, jefe, raid, cajas y diario).")]
+    [SlashCommand("cd", "Mirá tus cooldowns: cazar, viajar, talar, minar, jefe, raid, cajas, diario y la Arena de hoy.")]
     public async Task HandleCooldownsAsync()
     {
         await DeferAsync(ephemeral: true);
 
         try
         {
-            var embed = await BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id);
+            var embed = await BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id, arenaService);
             await FollowupAsync(embed: embed, ephemeral: true);
         }
         catch (Exception ex)
@@ -27,7 +27,10 @@ public class CooldownModule(ICooldownRepository cooldownRepository, IUserReposit
 
     // Estático (sin dependencia de Context) para que Modules/TextCommandModule.cs use exactamente
     // la misma lógica en "aa cd" — acá vive tanto el cálculo como el embed, no hay nada más que compartir.
-    public static async Task<Embed> BuildStatusEmbedAsync(ICooldownRepository cooldownRepository, IUserRepository userRepository, ulong discordId)
+    // arenaService: con él, la última línea dice si ya estás anotado en la Arena de hoy y cuánto falta para que se juegue (para que nadie se olvide de
+    // anotarse). Sin él (o si falla) la línea simplemente no sale: /cd nunca se rompe por la Arena.
+    public static async Task<Embed> BuildStatusEmbedAsync(
+        ICooldownRepository cooldownRepository, IUserRepository userRepository, ulong discordId, IArenaService? arenaService = null)
     {
         var lines = new List<string>();
 
@@ -50,10 +53,41 @@ public class CooldownModule(ICooldownRepository cooldownRepository, IUserReposit
             : "**¡Listo!** ✅";
         lines.Add($"🎁 **Diario**: {dailyStatus}");
 
+        if (await TryBuildArenaLineAsync(arenaService, discordId) is { } arenaLine)
+        {
+            lines.Add(arenaLine);
+        }
+
         return new EmbedBuilder()
             .WithTitle("⏱️ Tus cooldowns")
             .WithColor(Color.Teal)
             .WithDescription(string.Join('\n', lines))
             .Build();
     }
+
+    private static async Task<string?> TryBuildArenaLineAsync(IArenaService? arenaService, ulong discordId)
+    {
+        if (arenaService is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            var listing = await arenaService.ListAsync(DateTime.UtcNow);
+            return ArenaLine(listing.Entries.Any(e => e.DiscordId == discordId), listing.UntilPlay);
+        }
+        catch (Exception ex)
+        {
+            BotLog.Warn(ex);
+            return null;
+        }
+    }
+
+    // La línea de la Arena (el torneo de hoy se juega a la medianoche de Uruguay): anotado ✅ con lo que falta, o el aviso de que todavía no te anotaste.
+    // Pública y pura para probarla sin base.
+    public static string ArenaLine(bool joined, TimeSpan untilPlay) =>
+        joined
+            ? $"🏟️ **Arena**: anotado ✅ — se juega en {TimeFormat.Remaining(untilPlay)}"
+            : $"🏟️ **Arena**: **¡todavía no te anotaste!** ⚠️ Se juega en {TimeFormat.Remaining(untilPlay)}: **/arena join**";
 }
