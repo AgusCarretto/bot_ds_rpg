@@ -1,6 +1,12 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-05 (v0.9.1: inventario y perfil más aireados, la Arena en `/cd`)_
+_Última revisión: 2026-10-05 (v0.9.2: sin huecos enormes en el perfil)_
+
+## Sin huecos enormes en el perfil (v0.9.2, 2026-10-05)
+
+- La captura del dueño mostró que cada campo «en blanco» (el separador de la v0.9.1) dejaba un hueco enorme entre Vida y Ataque y antes de Habilidad, y que Polvo y Racha, en columnas, quedaban muy lejos. Se **sacaron todos los separadores** (perfil, inventario, `/enchant`, `/dismantle`) y Polvo y Racha pasan a ir uno debajo del otro: ahora todo el perfil es apilado. Regla en CLAUDE.md: no usar campos vacíos de separación.
+- **Limpieza de datos (solo la cuenta del dueño, agus_42)**: se sacó de su inventario lo que hoy no usa ninguna receta ni suelta ningún monstruo: 12 trofeos de cajas (Collar de Cuero Viejo ×3, Cuero Curtido de Pradera, Pelaje Oscuro, Piedra Caliente ×2, Garra del Alfa ×2, Polvo de Mina Sagrada, Martillo del Capataz ×3, Roca Volcánica Pura, Corona de Cerdas ×4, Garra Maldita ×2,
+  Hueso Añejo ×3, Rama Carbonizada ×4). Los otros tres jugadores no se tocaron, y el logro Coleccionista no cambia (cuenta los trofeos encontrados, no los que tenés). Ojo: **desmantelados valían ~437 Polvo**. Quedó un respaldo restaurable fuera del repo (`bot_ds_rpg_backups/inventario_agus_42_2026-10-05.sql`).
 
 ## Inventario y perfil más aireados, y la Arena en `/cd` (v0.9.1, 2026-10-05)
 

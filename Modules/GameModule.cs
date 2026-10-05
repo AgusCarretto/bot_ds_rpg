@@ -108,12 +108,12 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
             .WithThumbnailUrl(avatarUrl)
             .AddField("📊 Experiencia", $"{ProgressBar.Render(player.Xp, requiredXp)}\n{player.Xp} / {requiredXp} XP", false)
             .AddField("❤️ Vida", $"{ProgressBar.Render(player.CurrentHp, player.MaxHp)}\n{player.CurrentHp} / {player.MaxHp} HP", false)
-            .AddField(Blank, Blank, false)
             .AddField("⚔️ Ataque", attackText, false)
             .AddField("🛡️ Defensa", defenseText, false)
             .AddField("💰 Oro", $"**{GameHistory.Number(player.Gold)}**", false);
 
-        // El oro del banco (a salvo de la penalidad por morir) debajo del oro; el Polvo (/dismantle) solo cuando hay, junto a la racha del /daily.
+        // El oro del banco (a salvo de la penalidad por morir) debajo del oro; el Polvo (/dismantle) solo cuando hay, y la racha del /daily. Todo apilado:
+        // ni columnas (en una fila de tres los dos campos cortos quedaban muy separados) ni campos "en blanco" de separación (cada uno dejaba un hueco enorme).
         if (player.HasBank)
         {
             embed.AddField("🏦 Banco", $"**{GameHistory.Number(player.BankGold)}**", false);
@@ -121,13 +121,12 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
 
         if (player.Dust > 0)
         {
-            embed.AddField("✨ Polvo", $"**{GameHistory.Number(player.Dust)}**", true);
+            embed.AddField("✨ Polvo", $"**{GameHistory.Number(player.Dust)}**", false);
         }
 
-        embed.AddField("🎁 Racha", player.DailyStreak > 0 ? $"día {player.DailyStreak}" : "_ninguna_", true);
+        embed.AddField("🎁 Racha", player.DailyStreak > 0 ? $"día {player.DailyStreak}" : "_ninguna_", false);
 
         return embed
-            .AddField(Blank, Blank, false)
             .AddField(
                 "✨ Habilidad",
                 ability is null
@@ -174,8 +173,7 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
     //
     // El inventario va en COLUMNAS arriba (lo corto) y los drops UNO POR LÍNEA, a ancho completo, abajo:
     //     🪵 Madera           ⛏️ Mineral           🍖 Comida (con las 📦 Cajas debajo)       <- campos en línea, de a tres por fila
-    //     (una fila en blanco)
-    //     🩸 Drops de monstruo                                                                <- campo de ancho completo
+    //     🩸 Drops de monstruo                                                               <- campo de ancho completo
     //     ícono **Nombre**: 3
     //     ícono **Otro nombre**: 1
     // POR QUÉ los drops van cada uno en su renglón: primero eran columnas angostas (~19 caracteres) que partían los nombres largos ("Collar de Cuero /
@@ -223,12 +221,6 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
         else
         {
             AddColumn(embed, "🍖 Comida", food);
-        }
-
-        // Una fila en blanco entre lo de arriba y los drops: que respire.
-        if (drops.Count > 0 && wood.Count + minerals.Count + food.Count > 0)
-        {
-            embed.AddField(Blank, Blank, false);
         }
 
         var dropFields = PackLines(drops);
