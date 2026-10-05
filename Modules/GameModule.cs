@@ -62,7 +62,10 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
         // Si es la primera vez que este usuario ejecuta un comando, se crea acá
         // automáticamente con los valores por defecto (Nivel 1, 0 EXP, 50 de oro, 100/100 HP, Guerrero).
         var player = await userRepository.GetOrCreateUserAsync(discordId);
-        var zone = await zoneRepository.GetByIdAsync(player.CurrentZoneId);
+        var allZones = ZoneRanking.OrderByDifficulty(await zoneRepository.GetAllAsync());
+        var zone = allZones.FirstOrDefault(z => z.ZoneId == player.CurrentZoneId);
+        // La zona más alta que tiene desbloqueada (la misma regla que /zona), para el "(máx. Zona N)".
+        var maxZone = allZones.Count == 0 ? null : allZones[ZoneRanking.MaxUnlockedRank(allZones, player.Level, player.HighestZoneCleared) - 1];
 
         var weapon = player.WeaponId is int weaponId ? await itemRepository.GetByIdAsync(weaponId) : null;
         var amulet = player.AmuletId is int amuletId ? await itemRepository.GetByIdAsync(amuletId) : null;
@@ -82,33 +85,49 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
         var ability = ClassAbilities.For(player.Class);
         int requiredXp = LevelingCalculator.RequiredXpForLevel(player.Level);
 
-        // El ataque lleva abajo el ARMA y la defensa el AMULETO (cada número con la pieza que lo da, en la misma columna); el oro, la racha. Una
-        // fila en blanco separa los bloques. El historial de PvP ya no va acá: está en /history y /duels.
+        // TODO apilado, uno debajo del otro (el dueño pidió "el ataque, abajo la defensa, abajo la plata, abajo el banco": en columnas angostas se
+        // apretaba todo y los nombres se partían). El ataque lleva debajo el ARMA y su encantamiento, y la defensa el AMULETO: sin el "+N" de la pieza,
+        // que ya está sumado en el número grande. Una fila en blanco separa los bloques. El historial de PvP no va acá: está en /history y /duels.
         string attackText = $"**{attack}**" + (hasSynergy ? " ⚡" : string.Empty)
             + (buff is null ? string.Empty : $" 🍖 +{buff.AttackPercent}% ({Math.Max(1, (int)Math.Ceiling(buff.Remaining.TotalMinutes))} min)")
-            + $"\n{(weapon is null ? "_Sin arma_" : $"{ItemDisplay.Format(weapon.Emoji, weapon.Name)} (+{weapon.StatValue})")}"
+            + $"\n{(weapon is null ? "_Sin arma_" : ItemDisplay.Format(weapon.Emoji, weapon.Name))}"
             + EnchantLine("weapon", weapon is null ? 0 : player.WeaponEnchant);
-        string defenseText = $"**{defense}**\n{(amulet is null ? "_Sin amuleto_" : $"{ItemDisplay.Format(amulet.Emoji, amulet.Name)} (+{amulet.StatValue})")}"
+        string defenseText = $"**{defense}**\n{(amulet is null ? "_Sin amuleto_" : ItemDisplay.Format(amulet.Emoji, amulet.Name))}"
             + EnchantLine("amulet", amulet is null ? 0 : player.AmuletEnchant);
-        // El oro de la billetera y, si tiene cuenta, el del banco (a salvo de la penalidad por morir); el Polvo (/dismantle) solo cuando hay.
-        string goldText = $"**{player.Gold}**"
-            + (player.HasBank ? $"\n🏦 Banco: **{player.BankGold}**" : string.Empty)
-            + (player.Dust > 0 ? $"\n✨ Polvo: **{player.Dust}**" : string.Empty)
-            + $"\n🎁 Racha: {(player.DailyStreak > 0 ? $"día {player.DailyStreak}" : "_ninguna_")}";
 
-        return new EmbedBuilder()
+        // La zona va debajo del título, en una línea: "Zona 1: Praderas del Mate (máx. Zona 4)". Antes era un campo "Zona actual" que repetía la palabra.
+        string zoneLine = zone is null
+            ? "_Zona desconocida_"
+            : $"{zone.Emoji} **Zona {zone.ZoneId}: {zone.Name}**" + (maxZone is null ? string.Empty : $" (máx. Zona {maxZone.ZoneId})");
+
+        var embed = new EmbedBuilder()
             .WithAuthor(username, avatarUrl)
             .WithTitle($"{classDef?.Emoji ?? "🔥"} {player.Class} — Nivel {player.Level}")
+            .WithDescription(zoneLine)
             .WithColor(Color.Orange) // Color cálido acorde al asado
             .WithThumbnailUrl(avatarUrl)
             .AddField("📊 Experiencia", $"{ProgressBar.Render(player.Xp, requiredXp)}\n{player.Xp} / {requiredXp} XP", false)
             .AddField("❤️ Vida", $"{ProgressBar.Render(player.CurrentHp, player.MaxHp)}\n{player.CurrentHp} / {player.MaxHp} HP", false)
             .AddField(Blank, Blank, false)
-            .AddField("⚔️ Ataque", attackText, true)
-            .AddField("🛡️ Defensa", defenseText, true)
-            .AddField("💰 Oro", goldText, true)
+            .AddField("⚔️ Ataque", attackText, false)
+            .AddField("🛡️ Defensa", defenseText, false)
+            .AddField("💰 Oro", $"**{GameHistory.Number(player.Gold)}**", false);
+
+        // El oro del banco (a salvo de la penalidad por morir) debajo del oro; el Polvo (/dismantle) solo cuando hay, junto a la racha del /daily.
+        if (player.HasBank)
+        {
+            embed.AddField("🏦 Banco", $"**{GameHistory.Number(player.BankGold)}**", false);
+        }
+
+        if (player.Dust > 0)
+        {
+            embed.AddField("✨ Polvo", $"**{GameHistory.Number(player.Dust)}**", true);
+        }
+
+        embed.AddField("🎁 Racha", player.DailyStreak > 0 ? $"día {player.DailyStreak}" : "_ninguna_", true);
+
+        return embed
             .AddField(Blank, Blank, false)
-            .AddField("🗺️ Zona actual", zone is null ? "_Desconocida_" : $"{zone.Emoji} Zona {zone.ZoneId}: {zone.Name}", false)
             .AddField(
                 "✨ Habilidad",
                 ability is null
@@ -153,12 +172,16 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
 
     // Estático (sin dependencia de Context) para que Modules/TextCommandModule.cs arme el mismo embed en "aa inventory".
     //
-    // El inventario va en COLUMNAS arriba y los drops a ANCHO COMPLETO abajo (el dueño pidió columnas como las de otro bot, pero esos nombres son cortos):
+    // El inventario va en COLUMNAS arriba (lo corto) y los drops UNO POR LÍNEA, a ancho completo, abajo:
     //     🪵 Madera           ⛏️ Mineral           🍖 Comida (con las 📦 Cajas debajo)       <- campos en línea, de a tres por fila
-    //     🩸 Drops de monstruo: ícono Nombre: 3   ícono Otro nombre: 1   ícono ...             <- campo de ancho completo
-    // POR QUÉ los drops no van en columnas: una columna angosta (~19 caracteres) parte los nombres largos en dos renglones ("Collar de Cuero / Viejo: 3"),
-    // y los drops tienen nombres como "Cuero Curtido de Pradera". En ancho completo cada ítem es una FICHA que no se parte por dentro (espacios que no
-    // se cortan, U+00A0) y la línea solo se corta ENTRE ítems: entran dos o tres por renglón y no hay nada alineado que se rompa.
+    //     (una fila en blanco)
+    //     🩸 Drops de monstruo                                                                <- campo de ancho completo
+    //     ícono **Nombre**: 3
+    //     ícono **Otro nombre**: 1
+    // POR QUÉ los drops van cada uno en su renglón: primero eran columnas angostas (~19 caracteres) que partían los nombres largos ("Collar de Cuero /
+    // Viejo: 3"); después "fichas" con espacios que no se cortan (U+00A0), pero Discord igual corta entre el ícono (que es una imagen) y el texto, y el
+    // ícono de un ítem quedaba al final del renglón anterior, pegado al ítem equivocado (captura del dueño, v0.9.0). Un ítem por renglón no puede
+    // desarmarse: es la única forma segura, y es lo que el dueño pidió ("más espaciado, con saltos de línea"). NO volver a fichas ni a columnas para los drops.
     // Cada ítem es "ícono **Nombre**: cantidad" (nombre en negrita, cantidad con separador de miles). Un campo de embed admite 1024 caracteres y el
     // código de un emoji ocupa ~45, así que los drops (~32 ítems) se reparten en varios campos: el primero con título y los demás con título invisible
     // (nunca "(1/2)"). Solo aparece lo que tiene algo. El type "Material" ES, por diseño de todo el juego, exactamente lo que sueltan los monstruos (nunca
@@ -177,10 +200,10 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
         var wood = Lines(entries.Where(e => e.Type == "Madera"));
         var minerals = Lines(entries.Where(e => e.Type == "Mineral"));
         var food = Lines(entries.Where(e => e.Type == "Consumable"));
-        var dropChips = Chips(entries.Where(e => e.Type == "Material"));
+        var drops = Lines(entries.Where(e => e.Type == "Material"));
         var boxes = Lines(entries.Where(e => e.Type == "Caja"));
 
-        if (wood.Count + minerals.Count + food.Count + dropChips.Count + boxes.Count == 0)
+        if (wood.Count + minerals.Count + food.Count + drops.Count + boxes.Count == 0)
         {
             embed.WithDescription("Todavía no tenés ningún material. ¡Probá /chop, /mine o /travel!");
             return embed.Build();
@@ -202,7 +225,13 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
             AddColumn(embed, "🍖 Comida", food);
         }
 
-        var dropFields = PackChips(dropChips);
+        // Una fila en blanco entre lo de arriba y los drops: que respire.
+        if (drops.Count > 0 && wood.Count + minerals.Count + food.Count > 0)
+        {
+            embed.AddField(Blank, Blank, false);
+        }
+
+        var dropFields = PackLines(drops);
         for (int i = 0; i < dropFields.Count; i++)
         {
             embed.AddField(i == 0 ? "🩸 Drops de monstruo" : Blank, dropFields[i], false);
@@ -263,30 +292,20 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
             .Select(e => $"{Icon(e)} **{e.ItemName}**: {GameHistory.Number(e.Quantity)}")
             .ToList();
 
-    // Lo mismo, pero como FICHA que no se parte: todos los espacios son U+00A0 (no se cortan), así que si la línea se corta es entre una ficha y otra.
-    private static List<string> Chips(IEnumerable<InventoryEntry> entries) =>
-        Ordered(entries)
-            .Select(e => $"{Icon(e)} **{e.ItemName}**: {GameHistory.Number(e.Quantity)}".Replace(' ', NoBreakSpace))
-            .ToList();
-
     private static IEnumerable<InventoryEntry> Ordered(IEnumerable<InventoryEntry> entries) =>
         entries.OrderBy(e => RarityCatalog.RankOf(e.Rarity)).ThenBy(e => e.ItemName, StringComparer.Ordinal);
 
     private static string Icon(InventoryEntry e) => string.IsNullOrWhiteSpace(e.Emoji) ? RarityDot(e.Rarity) : e.Emoji;
 
-    // Espacio que no se corta (U+00A0) y lo que separa una ficha de la siguiente: un espacio em (U+2003, deja un hueco bien visible) y uno común, que es donde la línea puede cortarse.
-    private const char NoBreakSpace = (char)0xA0;
-    private static readonly string ChipSeparator = ((char)0x2003).ToString() + " ";
-
-    // Junta las fichas en campos de a lo sumo FieldLimit caracteres, cortando siempre entre ficha y ficha.
-    internal static List<string> PackChips(IReadOnlyList<string> chips)
+    // Junta los renglones (uno por ítem) en campos de a lo sumo FieldLimit caracteres, cortando siempre entre renglón y renglón.
+    internal static List<string> PackLines(IReadOnlyList<string> lines)
     {
         var fields = new List<string>();
         var current = new StringBuilder();
 
-        foreach (string chip in chips)
+        foreach (string line in lines)
         {
-            if (current.Length > 0 && current.Length + ChipSeparator.Length + chip.Length > FieldLimit)
+            if (current.Length > 0 && current.Length + 1 + line.Length > FieldLimit)
             {
                 fields.Add(current.ToString());
                 current.Clear();
@@ -294,10 +313,10 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
 
             if (current.Length > 0)
             {
-                current.Append(ChipSeparator);
+                current.Append('\n');
             }
 
-            current.Append(chip);
+            current.Append(line);
         }
 
         if (current.Length > 0)
