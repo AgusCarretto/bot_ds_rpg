@@ -513,6 +513,7 @@ public class AdventureModule(
         var embed = new EmbedBuilder()
             .WithTitle(title)
             .WithColor(Color.Orange)
+            .WithMonsterPortrait(state.MonsterPortrait) // la cara del monstruo, miniatura de TODOS los mensajes de esta pelea (si no, desaparecería a mitad)
             .WithDescription(state.CommandName == "boss"
                 ? $"¡Un **{state.MonsterName}** {state.MonsterEmoji} salvaje aparece!\n\n{NpcDialogue.Boss(state.MonsterName, state.MonsterEmoji, NpcDialogue.BossLine.Intro)}"
                 : $"¡Un **{state.MonsterName}** {state.MonsterEmoji} salvaje aparece!")
@@ -538,6 +539,7 @@ public class AdventureModule(
         var embed = new EmbedBuilder()
             .WithTitle($"⚔️ Combate contra {state.MonsterName} {state.MonsterEmoji}")
             .WithColor(Color.Gold)
+            .WithMonsterPortrait(state.MonsterPortrait)
             .WithDescription($"{turn.ActionFlavor}{CritPrefix(turn.CritCount)}{playerLine} {monsterLine}{LifestealSuffix(turn.LifestealHeal)}")
             .AddField("❤️ Tu HP", HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
             .AddField($"{state.MonsterEmoji} HP de {state.MonsterName}", HpLine(state.MonsterCurrentHp, state.MonsterMaxHp), true);
@@ -553,6 +555,7 @@ public class AdventureModule(
         var embed = new EmbedBuilder()
             .WithTitle($"🏆 ¡Victoria contra {state.MonsterName} {state.MonsterEmoji}!")
             .WithColor(Color.Green)
+            .WithMonsterPortrait(state.MonsterPortrait) // si hubo drop, abajo la miniatura pasa a ser el ítem (el protagonista es lo que ganaste)
             .WithDescription($"{turn.ActionFlavor}{CritPrefix(turn.CritCount)}Le hiciste **{turn.DamageDealt}** de daño y lo derrotaste.{LifestealSuffix(turn.LifestealHeal)}")
             .AddField("💰 Oro ganado", reward.Gold.ToString(), true)
             .AddField("📊 EXP ganada", reward.Xp.ToString(), true)
@@ -593,6 +596,7 @@ public class AdventureModule(
         return new EmbedBuilder()
             .WithTitle($"💀 Derrota contra {state.MonsterName} {state.MonsterEmoji}")
             .WithColor(Color.DarkRed)
+            .WithMonsterPortrait(state.MonsterPortrait)
             .WithDescription(
                 $"{turn.ActionFlavor}{CritPrefix(turn.CritCount)}{playerLine} **{state.MonsterName}** te devolvió **{turn.MonsterHit!.Damage}** " +
                 $"y te dejó fuera de combate. Usá **/heal** para recuperarte.{LifestealSuffix(turn.LifestealHeal)}{BossTaunt(state)}")
@@ -619,6 +623,7 @@ public class AdventureModule(
         return new EmbedBuilder()
             .WithTitle($"🏃 Huiste del combate contra {state.MonsterName} {state.MonsterEmoji}")
             .WithColor(Color.DarkGrey)
+            .WithMonsterPortrait(state.MonsterPortrait)
             .WithDescription("Escapaste cobardemente... sin oro, sin experiencia, pero de una sola pieza.")
             .AddField("❤️ Tu HP", HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
             .AddField("📋 Resumen del combate", BuildCombatSummaryLine(state), false)

@@ -160,6 +160,7 @@ public class AutoHuntModule(
         var embed = new EmbedBuilder()
             .WithTitle("⚔️ Auto-Cacería Exitosa")
             .WithColor(Color.Green)
+            .WithMonsterPortrait(state.MonsterPortrait) // si hubo drop, abajo la miniatura pasa a ser el ítem
             .WithDescription(
                 $"Venciste al **{state.MonsterName}** {state.MonsterEmoji}. Te quedan **{player.CurrentHp}/{player.MaxHp}** HP.\n" +
                 $"Ganaste: **{reward.Gold}** Oro, **{reward.Xp}** XP.")
@@ -182,6 +183,7 @@ public class AutoHuntModule(
         return new EmbedBuilder()
             .WithTitle("☠️ Derrota Rápida")
             .WithColor(Color.DarkRed)
+            .WithMonsterPortrait(state.MonsterPortrait)
             .WithDescription($"El **{state.MonsterName}** {state.MonsterEmoji} fue demasiado fuerte. Quedaste a **{state.PlayerCurrentHp}** HP. Usá **/heal** para recuperarte.")
             .AddField("📋 Resumen del combate", AdventureModule.BuildCombatSummaryLine(state), false)
             .Build();

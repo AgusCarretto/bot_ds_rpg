@@ -99,6 +99,7 @@ public sealed class CombatSessionService(IUserRepository userRepository) : IComb
                         $"No respondiste a tiempo y te retiraste del combate contra " +
                         $"**{session.State.MonsterName}** {session.State.MonsterEmoji}.")
                     .WithColor(Color.DarkGrey)
+                    .WithMonsterPortrait(session.State.MonsterPortrait)
                     .Build();
 
                 await session.ReplyTarget.UpdateAsync(embed, new ComponentBuilder().Build());

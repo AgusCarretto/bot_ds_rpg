@@ -56,6 +56,8 @@ public sealed class RaidSession
     public required Guid RaidId { get; init; }
     public required string BossName { get; init; }
     public required string BossEmoji { get; init; }
+    // La cara del jefe (emoji de la aplicación, ver MonsterTemplate.Portrait): miniatura de los mensajes del raid. Null = sin cara.
+    public string? BossPortrait { get; init; }
     // BossBaseHp: HP sorteado del jefe SIN escalar (tal cual está en la base). BossMaxHp es el HP real
     // del raid, que depende de cuántos jugadores terminan entrando: se calcula de nuevo al arrancar
     // (RaidModule.TryActivateAsync, con la lista ya definitiva) — por eso tiene setter. Mientras el

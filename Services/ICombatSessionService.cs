@@ -51,7 +51,9 @@ public sealed record CombatState(
     bool HealUsed = false,
     // El +% de ataque de un banquete que YA está aplicado a PlayerDamage (de antes de la pelea o comido en medio): hace falta
     // para no apilar un segundo banquete sobre el primero (ver GameData/AttackBuff.Rescale).
-    int AttackBuffPercent = 0)
+    int AttackBuffPercent = 0,
+    // La cara del monstruo (emoji de la aplicación "<:nombre:id>", ver MonsterTemplate.Portrait): miniatura de todos los mensajes de esta pelea. Null = sin cara.
+    string? MonsterPortrait = null)
 {
     // Convierte un delta de HP en unidades de COMBATE (ya escaladas por Passives.MaxHpMultiplier)
     // a unidades reales de base de datos, para pasarlo a IUserRepository.ApplyCombatHpDeltaAsync /

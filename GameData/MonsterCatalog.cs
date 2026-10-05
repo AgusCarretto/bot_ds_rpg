@@ -7,9 +7,11 @@ namespace BotDsRpg.GameData;
 // Database/seed_class_gear_and_monster_drops.sql y Modules/AdventureModule.ResolveDroppedItemAsync).
 // GoldBonus/XpBonus: bonus fijo que este monstruo suma a la recompensa base de /hunt (ver
 // GameData/CombatRewardCalculator.RollHuntReward); /travel lo multiplica junto con el resto.
+// Emoji: el unicode que los mensajes escriben dentro del texto. Portrait: la CARA del monstruo, un emoji de la aplicación ("<:nombre:id>",
+// columna monsters.portrait_emoji, ver Database/update_monster_portraits.sql) que sale como miniatura del mensaje de combate; null si no tiene.
 public sealed record MonsterTemplate(
     string Name, string Emoji, int MinHp, int MaxHp, int MinDamage, int MaxDamage, IReadOnlyList<string> DropItemNames,
-    int GoldBonus = 0, int XpBonus = 0);
+    int GoldBonus = 0, int XpBonus = 0, string? Portrait = null);
 
 // Los tres tipos de monstruo de una zona, que se excluyen entre sí (monsters.is_boss / is_travel, ver
 // Database/schema.sql): el pool de /hunt, el jefe de /boss (y /raid) y el monstruo dedicado de /travel.

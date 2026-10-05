@@ -15,16 +15,18 @@
 -- EMOJIS DE LA APLICACIÓN (desde 2026-10-02): casi todos viven en el Discord Developer Portal > la aplicación del bot > Emojis, NO en el
 -- servidor. No gastan los 50 slots del servidor (la aplicación admite hasta 2000) y se ven en cualquier servidor donde esté el bot (los del
 -- servidor solo si el bot comparte servidor con ese emoji). El código es el mismo "<:nombre:id>". Para sumar uno: subirlo en el portal con un
--- nombre claro, pedirle al bot la lista (o copiar el id) y agregar el UPDATE acá. Las únicas excepciones siguen siendo las 4 maderas.
+-- nombre claro, pedirle al bot la lista (o copiar el id) y agregar el UPDATE acá. Desde 2026-10-05 YA NO HAY excepciones: las 4 maderas también
+-- pasaron a la aplicación (antes eran del servidor). Las caras de los monstruos van aparte: Database/update_monster_portraits.sql.
 -- =========================================================
 
 ALTER TABLE items ADD COLUMN IF NOT EXISTS emoji VARCHAR(100);
 
--- 🪵 Madera (5/5) — OJO: las 4 maderas comunes siguen siendo emojis del SERVIDOR (ids viejos, no están en la lista de la aplicación); la Corteza del Árbol de Vida ya es de la aplicación
-UPDATE items SET emoji = '<:maderacomun:1545190666122960906>' WHERE name = 'Madera de Pino';
-UPDATE items SET emoji = '<:maderarara:1545190728970407998>' WHERE name = 'Madera de Roble';
-UPDATE items SET emoji = '<:maderaepica:1545190573957447700>' WHERE name = 'Madera de Nogal';
-UPDATE items SET emoji = '<:maderalegendaria:1545190639715745832>' WHERE name = 'Madera de Ébano';
+-- 🪵 Madera (5/5, todas de la aplicación). Las 4 comunes se rehicieron el 2026-10-05 con el aura de su rareza más marcada (el Roble, azul con estrellitas); los viejos
+-- ids del servidor (maderacomun, maderarara, maderaepica, maderalegendaria) ya no se usan.
+UPDATE items SET emoji = '<:madera_pino:1556678837482422392>' WHERE name = 'Madera de Pino';
+UPDATE items SET emoji = '<:madera_roble:1556678835339006023>' WHERE name = 'Madera de Roble';
+UPDATE items SET emoji = '<:madera_nogal:1556678833569275914>' WHERE name = 'Madera de Nogal';
+UPDATE items SET emoji = '<:madera_ebano:1556678831841091715>' WHERE name = 'Madera de Ébano';
 UPDATE items SET emoji = '<:MADERADELAVIDA_MITICO:1555578599556517888>' WHERE name = 'Corteza del Árbol de Vida';
 
 -- ⛏️ Mineral (6/6 completo)

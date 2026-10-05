@@ -60,5 +60,7 @@
 -- Cajas v2 (v0.8.0): cada caja dice cuántos ítems trae, cuesta mucho más y su botín sale con las chances reales de /chop, /mine y los drops de zona.
 \ir rework_boxes.sql
 \ir update_item_emojis.sql
+-- La cara de cada monstruo (emoji de la aplicación, miniatura de los mensajes de combate): va DESPUÉS de los scripts que crean los 20 monstruos.
+\ir update_monster_portraits.sql
 
 \echo 'Listo — base cargada completa: esquema, items, recetas, zonas/monstruos, catálogo final de consumibles y emojis.'

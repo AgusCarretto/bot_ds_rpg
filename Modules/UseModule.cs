@@ -216,6 +216,7 @@ public class UseModule(
         return new EmbedBuilder()
             .WithTitle($"⚔️ Combate contra {state.MonsterName} {state.MonsterEmoji}")
             .WithColor(Color.Gold)
+            .WithMonsterPortrait(state.MonsterPortrait)
             .WithDescription($"Usaste **{ItemDisplay.Format(item.Emoji, item.Name)}**. {monsterLine}")
             .AddField("❤️ Tu HP", HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
             .AddField($"{state.MonsterEmoji} HP de {state.MonsterName}", HpLine(state.MonsterCurrentHp, state.MonsterMaxHp), true)
@@ -230,6 +231,7 @@ public class UseModule(
         return new EmbedBuilder()
             .WithTitle($"💀 Derrota contra {state.MonsterName} {state.MonsterEmoji}")
             .WithColor(Color.DarkRed)
+            .WithMonsterPortrait(state.MonsterPortrait)
             .WithDescription(
                 $"Usaste **{ItemDisplay.Format(item.Emoji, item.Name)}**, pero el **{state.MonsterName}** te hizo **{monsterHit}** de daño " +
                 "y te dejó fuera de combate. Usá **/heal** para recuperarte.")
