@@ -54,10 +54,6 @@ public class DustModule(IUserRepository userRepository, IItemRepository itemRepo
     public sealed record DustResult(string? PlainMessage, Embed? Embed);
 
     private const string NoAccount = "Todavía no tenés cuenta: empezá con **/start**.";
-
-    // Espacio de ancho cero (U+200B): un campo con nombre y texto "vacíos" es una fila en blanco que separa los bloques (Discord no deja campos realmente vacíos).
-    private static readonly string ZeroWidth = ((char)0x200B).ToString();
-
     public static async Task<DustResult> ExecuteDismantleAsync(
         IUserRepository userRepository, IItemRepository itemRepository, IDustRepository dustRepository, IGameEvents gameEvents,
         ulong discordId, string itemName, int quantity)
@@ -92,9 +88,8 @@ public class DustModule(IUserRepository userRepository, IItemRepository itemRepo
             .WithColor(Color.Teal)
             .WithItemThumbnail(item.Emoji)
             .WithDescription($"Rompiste **{quantity}×** {ItemDisplay.Format(item.Emoji, item.Name)}.\n\n✨ Juntaste **+{GameHistory.Number(dustGained)}** de Polvo.")
-            .AddField(ZeroWidth, ZeroWidth, false)
-            .AddField("✨ Tu Polvo", $"**{GameHistory.Number(outcome.DustAfter)}**", true)
-            .AddField("🎒 Te quedan", $"**{GameHistory.Number(outcome.QuantityLeft)}**", true)
+            .AddField("✨ Tu Polvo", $"**{GameHistory.Number(outcome.DustAfter)}**", false)
+            .AddField("🎒 Te quedan", $"**{GameHistory.Number(outcome.QuantityLeft)}**", false)
             .WithFooter("El Polvo sirve para encantar tu arma y tu amuleto: /enchant");
         return new DustResult(null, embed.Build());
     }
@@ -188,10 +183,9 @@ public class DustModule(IUserRepository userRepository, IItemRepository itemRepo
             .WithColor(now > previous ? Color.Gold : Color.DarkGrey)
             .WithItemThumbnail(gear.Emoji)
             .WithDescription($"Sobre {ItemDisplay.Format(gear.Emoji, gear.Name)} salió **{rolledText}**.\n\n{verdict}")
-            .AddField(ZeroWidth, ZeroWidth, false)
             .AddField(isWeapon ? "⚔️ ATQ del arma" : "🛡️ DEF del amuleto", before == after ? $"**{after}**" : $"{before} ➜ **{after}**", false)
-            .AddField("💸 Costó", $"{GameHistory.Number(cost.Gold)} oro\n{cost.Dust} Polvo", true)
-            .AddField("🎒 Te quedan", $"{GameHistory.Number(outcome.User!.Gold)} oro\n{GameHistory.Number(outcome.User.Dust)} Polvo", true)
+            .AddField("💸 Costó", $"{GameHistory.Number(cost.Gold)} oro · {cost.Dust} Polvo", false)
+            .AddField("🎒 Te quedan", $"{GameHistory.Number(outcome.User!.Gold)} oro · {GameHistory.Number(outcome.User.Dust)} Polvo", false)
             .WithFooter("Cada intento se paga igual: el tier sale al azar y nunca baja.")
             .Build();
     }
@@ -221,7 +215,6 @@ public class DustModule(IUserRepository userRepository, IItemRepository itemRepo
                 "Mejorá tu arma o tu amuleto con **Polvo** y oro: **/enchant arma** o **/enchant amuleto**.\n\n" +
                 "El Polvo lo juntás desmantelando materiales con **/dismantle**.\n\n" +
                 "Cada intento sortea un tier al azar y **nunca baja** el que ya tenés: te quedás con el mejor.")
-            .AddField(ZeroWidth, ZeroWidth, false)
             .AddField("⚔️ Arma", Line("weapon", weapon, player.WeaponEnchant), false)
             .AddField("🛡️ Amuleto", Line("amulet", amulet, player.AmuletEnchant), false)
             .AddField("✨ Tu Polvo", $"**{GameHistory.Number(player.Dust)}**", false)
