@@ -1,6 +1,6 @@
 # Rework de drops, jefes y recetas — diseño (2026-10-05)
 
-Estado: **diseño aprobado en la charla con el dueño; falta que revise este documento** antes de armar el plan y tocar código o base.
+Estado: **aprobado por el dueño el 2026-10-05** ("perfecto, dale"). Plan de implementación: `docs/superpowers/plans/2026-10-05-drops-y-recetas-rework.md`.
 Orden acordado: primero este rework, **después** el deploy en Railway (el repo ya está listo para desplegar en `main`/v0.6.0).
 
 ## 1. Por qué
@@ -16,10 +16,11 @@ Zona 1 la general (Hoja de Acero Puro, +15) pegaba más que cualquier arma de cl
 2. **3 drops de material por zona (15 en total)**: 2 de hunt ("a granel") y 1 de travel ("escaso"). Las chances no se tocan (hunt 6%, travel 20%): con 2 mobs en el pool cada drop de hunt sigue saliendo 3% por `/hunt`.
 3. **El jefe no suelta material: da un cofre de su zona** — 100% la primera vez que cae y 40% en las siguientes (solitario y raid).
 4. **6 recetas por zona (30 en total)**: 4 armas de clase + 1 general + **1 amuleto**. Cada jugador ve 3 por zona: la general, la de su clase y el amuleto.
-5. **Armas**: la general es *accesible* y tiene el MISMO ATQ base que las de clase, pero **sin familia** (no recibe el boost de clase ×1,6); la de clase es *más complicada* y con el boost de su clase queda más fuerte. La general es para arrancar.
+5. **Armas**: la general es *accesible* y tiene el MISMO ATQ base que las de clase, pero **sin familia** (no recibe el boost de clase ×1,5); la de clase es *más complicada* y con el boost de su clase queda más fuerte. La general es para arrancar.
 6. **Amuleto único por zona**, y es la receta más pesada: usa **los 3 drops de la zona + 1 material de recolección**.
 7. No quiere que sea fácil: la dificultad se marca por tipo de pieza (más tipos de ingrediente y más tiempo = más potente), con un máximo de 4 tipos por receta.
-8. **Todo lo actual de la base es reemplazable** (el dueño ya avisó a sus amigos): sin reembolsos ni conversiones. Los materiales se pierden al forjar (se consumen) y vender un arma solo devuelve el oro de venta.
+8. **Rendimiento de `/chop` y `/mine` escalado por rareza**: cuanto más rara la cosa, menos unidades por acción (nunca 5 de algo raro): **Común 1–5, Raro 1–3, Épico 1–2, Legendario 1, Mítico 1** (antes Raro y Épico eran los dos 1–3). `GatheringYield.RangeFor` es el único lugar; `RunMultiplier` sigue en 1 y el reset lo va a subir. Las cantidades de recolección de las recetas ya están calculadas con esta escala.
+9. **Todo lo actual de la base es reemplazable** (el dueño ya avisó a sus amigos): sin reembolsos ni conversiones. Los materiales se pierden al forjar (se consumen) y vender un arma solo devuelve el oro de venta.
 
 ## 3. Mobs, drops y cofres resultantes
 
@@ -39,11 +40,11 @@ Zona 1 la general (Hoja de Acero Puro, +15) pegaba más que cualquier arma de cl
 ## 4. Recetas nuevas (30)
 
 Reglas:
-- **ATQ base por zona: 9 / 20 / 32 / 50 / 80** (el de clase con boost ×1,6 queda ~14 / 32 / 51 / 80 / 128). La Zona 1 pasa a +9 para que, con el boost, quede ~+14: lo que calibró la escalera (se entra a la Zona 2 con +15).
+- **ATQ base por zona: 9 / 20 / 32 / 50 / 80** (el de clase con boost ×1,5 queda ~14 / 30 / 48 / 75 / 120). La Zona 1 pasa a +9 para que, con el boost, quede ~+14: lo que calibró la escalera (se entra a la Zona 2 con +15).
 - **DEF del amuleto único: 10 / 18 / 30 / 46 / 75** — los amuletos "bajos" con los que se calibró la escalera de zonas. Con los "altos" el jefe bajaría de ~11% a ~3% de derrota y dejaría de ser el examen.
 - **General** = 1 recolección + el drop físico + el drop arcano (3 tipos). **De clase** = 2 recolecciones + el drop de su ruta (físico o arcano) + el de travel (4 tipos). **Amuleto** = 1 recolección + los 3 drops (4 tipos).
 - Guerrero y Ninja: Hierro más otra recolección (Guerrero madera, Ninja carbón/oro/piedra). Arquero y Hechicero: madera más otra recolección.
-- **Min** = minutos de juego continuo del modelo de `Database/report_recipe_pacing.sql` (el ingrediente más lento; hunt 1/min, travel 1 cada 10, `/chop` y `/mine` 1 cada 5). Objetivo: **general ~100** (Zona 1 ~50), **de clase ~150** (Zona 1 ~100), **amuleto ~200** (Zona 1 ~130). Hoy: generales 143–190, de clase 143–286 (Zonas 2 a 4), amuletos 167–286.
+- **Min** = minutos de juego continuo del modelo de `Database/report_recipe_pacing.sql` (el ingrediente más lento; hunt 1/min, travel 1 cada 10, `/chop` y `/mine` 1 cada 5). Con la escala de rendimiento nueva (Épico 1–2). Objetivo: **general ~100** (Zona 1 ~50), **de clase ~150** (Zona 1 ~100), **amuleto ~200** (Zona 1 ~130). Hoy: generales 143–190, de clase 143–286 (Zonas 2 a 4), amuletos 167–286.
 - ⚠️ Las 4 armas de clase de la Zona 5 siguen pidiendo 1 material **mítico** (Meteorito o Corteza, ~1000 min de recolección): es la meta larga de la run 1 y el reset la acorta. Ver "Decisiones abiertas".
 
 **Zona 1 · Praderas del Mate (nivel 1)**
@@ -66,7 +67,7 @@ Reglas:
 | Colmillo Nocturno | Ninja | +20 ATQ | 400 | 6× Hierro, 3× Carbón | 4× Garra de Puma Cenizo, 3× Ceniza Bendita | 4 | 150 |
 | Arco Élfico Ancestral | Arquero | +20 ATQ | 400 | 12× Madera de Roble, 3× Carbón | 4× Esencia Espectral, 3× Ceniza Bendita | 4 | 150 |
 | Grimorio de las Tormentas | Hechicero | +20 ATQ | 400 | 12× Madera de Roble, 2× Oro Puro | 4× Esencia Espectral, 3× Ceniza Bendita | 4 | 150 |
-| Talismán de Ceniza Bendita | Amuleto | +18 DEF | 400 | 6× Oro Puro | 4× Garra de Puma Cenizo, 4× Esencia Espectral, 4× Ceniza Bendita | 4 | 214 |
+| Talismán de Ceniza Bendita | Amuleto | +18 DEF | 400 | 4× Oro Puro | 4× Garra de Puma Cenizo, 4× Esencia Espectral, 4× Ceniza Bendita | 4 | 200 |
 
 **Zona 3 · Minas del Yunque (nivel 10)**
 
@@ -75,9 +76,9 @@ Reglas:
 | Pico de Minero Reforzado | General | +32 ATQ | 450 | 4× Hierro | 3× Yunque Fragmentado, 3× Gema en Bruto | 3 | 100 |
 | Mazo de Escoria | Guerrero | +32 ATQ | 600 | 6× Hierro, 3× Madera de Nogal | 4× Yunque Fragmentado, 3× Escoria Metálica Densa | 4 | 150 |
 | Dagas de Garra Maldita | Ninja | +32 ATQ | 600 | 6× Hierro, 3× Oro Puro | 4× Yunque Fragmentado, 3× Escoria Metálica Densa | 4 | 150 |
-| Boleadoras de Escoria | Arquero | +32 ATQ | 600 | 4× Madera de Nogal, 3× Hierro | 4× Gema en Bruto, 3× Escoria Metálica Densa | 4 | 150 |
-| Báculo de Tizón | Hechicero | +32 ATQ | 600 | 4× Madera de Nogal, 3× Oro Puro | 4× Gema en Bruto, 3× Escoria Metálica Densa | 4 | 150 |
-| Peto de Escoria Templada | Amuleto | +30 DEF | 650 | 6× Oro Puro | 4× Yunque Fragmentado, 4× Gema en Bruto, 4× Escoria Metálica Densa | 4 | 214 |
+| Boleadoras de Escoria | Arquero | +32 ATQ | 600 | 3× Madera de Nogal, 3× Hierro | 4× Gema en Bruto, 3× Escoria Metálica Densa | 4 | 150 |
+| Báculo de Tizón | Hechicero | +32 ATQ | 600 | 3× Madera de Nogal, 3× Oro Puro | 4× Gema en Bruto, 3× Escoria Metálica Densa | 4 | 150 |
+| Peto de Escoria Templada | Amuleto | +30 DEF | 650 | 4× Oro Puro | 4× Yunque Fragmentado, 4× Gema en Bruto, 4× Escoria Metálica Densa | 4 | 200 |
 
 **Zona 4 · Cordillera del Fuego (nivel 15)**
 
@@ -125,11 +126,11 @@ Reglas:
 4. La escalera: los monstruos no se tocan salvo el Perro Cimarrón; se revisa con el simulador `ladder` que la Zona 1 (arma de clase ~+14) siga entrando a la Zona 2 como está calibrado, y `report_box_economy.sql` por los cofres del jefe.
 5. Prueba del jefe: primera vez siempre cofre; repetición ~40% (muestra grande); raid por participante.
 
-## 8. Decisiones abiertas (con recomendación)
+## 8. Decisiones (resueltas por el dueño)
 
-1. **Zona 5, material mítico en las armas de clase.** Hoy y en este diseño piden 1 Meteorito o Corteza (≈1000 min de recolección, es la meta larga de la run 1; el reset la acorta). *Recomiendo dejarlo así*; la alternativa es pedir 1 Zafiro y reservar los míticos para el reset.
-2. **Zona 5, cofre del jefe**: Cofre de Oro como la Zona 4 (recomendado, no se regala nada del Arca) o 2 cofres.
-3. **Nombres de los amuletos que quedan**: dejo los "grandes"; es solo el nombre y su emoji (hay 2 jugadores usando el Amuleto del Levantador, que se retira).
+1. **Zona 5, material mítico en las armas de clase**: se queda (1 Meteorito o Corteza, ≈1000 min). El dueño lo avaló: la recolección es global, así que un mítico puede salir incluso farmeando en Zona 1.
+2. **Zona 5, cofre del jefe**: Cofre de Oro como la Zona 4.
+3. **Amuletos que quedan**: los de nombre "grande" (el Amuleto del Levantador, que usan 2 jugadores, se retira).
 4. **Oro**: la general de la Zona 1 cuesta 40 (se puede forjar el primer día con el oro inicial) y las demás zonas con los valores actuales de cada pieza.
 
 ## 9. Fuera de alcance (después de este rework y del deploy)
