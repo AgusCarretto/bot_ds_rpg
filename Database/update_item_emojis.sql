@@ -84,7 +84,7 @@ UPDATE items SET emoji = '<:corona_escoriaviva:1555593539260391445>' WHERE name 
 UPDATE items SET emoji = '<:drop_miticos_escoriacrater:1555578379271409715>' WHERE name = 'Escoria Pura del Cráter';
 UPDATE items SET emoji = '<:drop_miticos_fragmentoalma:1555578387827785818>' WHERE name = 'Fragmento de Alma';
 
--- ⚔️ Weapon (15/28): Zonas 1, 2 y 3 completas. Pendiente: Zonas 4 y 5 (10 armas que se consiguen forjando) y 3 que hoy no se consiguen — Arco Largo del Cazador, Báculo del Aprendiz, Dagas Gemelas de Sombra
+-- ⚔️ Weapon (25/28): las 5 zonas completas (las 25 armas que se consiguen forjando). Sin emoji y sin forma de conseguirlas: Arco Largo del Cazador, Báculo del Aprendiz, Dagas Gemelas de Sombra
 UPDATE items SET emoji = '<:espada_madera:1555633462432636958>' WHERE name = 'Espada de Madera';
 UPDATE items SET emoji = '<:daga_oxidada:1555633460947984394>' WHERE name = 'Daga Oxidada';
 UPDATE items SET emoji = '<:arco_corto_sauce:1555633459232510022>' WHERE name = 'Arco Corto de Sauce';
@@ -100,6 +100,17 @@ UPDATE items SET emoji = '<:daga_guerra_maldita:1555644052026691594>' WHERE name
 UPDATE items SET emoji = '<:boleadoras_escoria:1555644050281992242>' WHERE name = 'Boleadoras de Escoria';
 UPDATE items SET emoji = '<:baculo_tizon:1555644047610347663>' WHERE name = 'Báculo de Tizón';
 UPDATE items SET emoji = '<:pico_minero_reforzado:1555644045903265813>' WHERE name = 'Pico de Minero Reforzado';
+-- Zona 4 (Cordillera del Fuego) y Zona 5 (Cráter de la Escoria), cargadas el 2026-10-05
+UPDATE items SET emoji = '<:facon_hueso_anejo:1556675307841388586>' WHERE name = 'Facón de Hueso Añejo';
+UPDATE items SET emoji = '<:cuchillos_ceniza:1556675305614221332>' WHERE name = 'Cuchillos de Ceniza';
+UPDATE items SET emoji = '<:arco_caza_mayor:1556675303965724772>' WHERE name = 'Arco de Caza Mayor';
+UPDATE items SET emoji = '<:codice_brasas:1556675302229413939>' WHERE name = 'Códice de las Brasas';
+UPDATE items SET emoji = '<:lanza_magma:1556675300497162332>' WHERE name = 'Lanza de Magma';
+UPDATE items SET emoji = '<:espada_abismo:1556675298660196484>' WHERE name = 'Espada del Abismo';
+UPDATE items SET emoji = '<:colmillo_crater:1556675296768303135>' WHERE name = 'Colmillo del Cráter';
+UPDATE items SET emoji = '<:arco_alma_errante:1556675294918746243>' WHERE name = 'Arco del Alma Errante';
+UPDATE items SET emoji = '<:baculo_arbol_vida:1556675289960943786>' WHERE name = 'Báculo del Árbol de Vida';
+UPDATE items SET emoji = '<:martillo_titan:1556675288442609747>' WHERE name = 'Martillo del Titán';
 
 -- 📿 Amulet (7/11): los 5 que se consiguen forjando (uno por zona) + Capa y Carcaj de Pelaje Oscuro (hoy no se consiguen, pero el emoji ya estaba hecho). Sin emoji y sin forma de conseguirlos: Bombilla de Hierro Maldito, Botas de Silencio, Collar de Hueso, Ojo de Jabalí. Los 5 amuletos "bajos" salieron en la v0.7.0 (emojis libres: amuleto_collar_basico, mate_ceniza, casco_capataz, coraza_escamas_ignea, egidia_deborador)
 UPDATE items SET emoji = '<:amuleto_hombreras:1555578432006652005>' WHERE name = 'Hombreras de Cuero Grueso';
