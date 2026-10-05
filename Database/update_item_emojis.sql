@@ -50,8 +50,7 @@ UPDATE items SET emoji = '<:cofre_epico:1555578511996092466>' WHERE name = 'Arc�
 UPDATE items SET emoji = '<:cofre_legendario:1555578509601280113>' WHERE name = 'Cofre de Oro';
 UPDATE items SET emoji = '<:cofre_mitico:1555578518115590245>' WHERE name = 'Arca del Soberano';
 
--- 🩸 Material — drops de monstruo y trofeos de caja (38/38 completo). OJO: "Yunque del Capataz" usa el emoji forja_hierro
-UPDATE items SET emoji = '<:drop_comunes_colmillo:1555578374712201347>' WHERE name = 'Colmillo de Cimarrón';
+-- 🩸 Material — drops de monstruo (los 15 de las zonas) y trofeos de caja (32/32 completo). El rework de la v0.7.0 retiró 6 (Colmillo de Cimarrón y los 5 drops de jefe): sus emojis quedan libres en el portal (drop_comunes_colmillo, drops_raros_colmilloreyjabali, pelaje_plateado_alfa, forja_hierro, brasa_eterna, corazon_del_soberano)
 UPDATE items SET emoji = '<:drop_comunes_collarCuero:1555578362704036010>' WHERE name = 'Collar de Cuero Viejo';
 UPDATE items SET emoji = '<:drops_comunes_cuerocurtido:1555578412968579184>' WHERE name = 'Cuero Curtido de Pradera';
 UPDATE items SET emoji = '<:Drops_comunes_cuero:1555578359881146388>' WHERE name = 'Cuero Grueso';
@@ -61,7 +60,6 @@ UPDATE items SET emoji = '<:drops_comunes_pluma:1555578415502065865>' WHERE name
 UPDATE items SET emoji = '<:Drops_comunes_telarasgada:1555578353627570186>' WHERE name = 'Tela Rasgada';
 UPDATE items SET emoji = '<:Ceniza_bendita:1555578250485309592>' WHERE name = 'Ceniza Bendita';
 UPDATE items SET emoji = '<:colmillo_jabali:1555578251605442581>' WHERE name = 'Colmillo de Jabalí';
-UPDATE items SET emoji = '<:drops_raros_colmilloreyjabali:1555578397831467058>' WHERE name = 'Colmillo del Rey Jabalí';
 UPDATE items SET emoji = '<:drops_raros_coronacerdas:1555578411009835139>' WHERE name = 'Corona de Cerdas';
 UPDATE items SET emoji = '<:escencia_espectral:1555578248547672187>' WHERE name = 'Esencia Espectral';
 UPDATE items SET emoji = '<:garra_puma:1555578246345789522>' WHERE name = 'Garra de Puma Cenizo';
@@ -72,20 +70,16 @@ UPDATE items SET emoji = '<:drops_epicos_piedraderretida:1555578423475175444>' W
 UPDATE items SET emoji = '<:garra_alfa:1555580921351110778>' WHERE name = 'Garra del Alfa';
 UPDATE items SET emoji = '<:drops_epicos_gema:1555578418114855003>' WHERE name = 'Gema en Bruto';
 UPDATE items SET emoji = '<:nucleo_igneo:1555578241815805992>' WHERE name = 'Núcleo Ígneo';
-UPDATE items SET emoji = '<:pelaje_plateado_alfa:1555580919929249812>' WHERE name = 'Pelaje Plateado del Alfa';
 UPDATE items SET emoji = '<:drops_epicos_polvo:1555578420954669086>' WHERE name = 'Polvo de Mina Sagrada';
 UPDATE items SET emoji = '<:drops_epicos_yunque:1555578425467736235>' WHERE name = 'Yunque Fragmentado';
 UPDATE items SET emoji = '<:drops_legendarios_alientofuego:1555578390256549989>' WHERE name = 'Aliento de Fuego Eterno';
-UPDATE items SET emoji = '<:brasa_eterna:1555580923247071281>' WHERE name = 'Brasa Eterna';
 UPDATE items SET emoji = '<:colmillo_seor_volcan:1555593542905110548>' WHERE name = 'Colmillo del Señor del Volcán';
 UPDATE items SET emoji = '<:drops_legendarios_escamas:1555578393498620024>' WHERE name = 'Escama Ígnea';
 UPDATE items SET emoji = '<:martillo_del_capataz:1555593537465229393>' WHERE name = 'Martillo del Capataz';
 UPDATE items SET emoji = '<:drops_legendarios_nucleo:1555578395364958248>' WHERE name = 'Núcleo de Magma';
 UPDATE items SET emoji = '<:drops_legendarios_rocavolcanica:1555578391779082351>' WHERE name = 'Roca Volcánica Pura';
-UPDATE items SET emoji = '<:forja_hierro:1555580925033848984>' WHERE name = 'Yunque del Capataz';
 UPDATE items SET emoji = '<:drop_miticos_ceniza:1555578376440250459>' WHERE name = 'Ceniza del Abismo';
 UPDATE items SET emoji = '<:drop_miticos_corazontitan:1555578382857674836>' WHERE name = 'Corazón de Titán';
-UPDATE items SET emoji = '<:corazon_del_soberano:1555593540761821265>' WHERE name = 'Corazón del Soberano';
 UPDATE items SET emoji = '<:corona_escoriaviva:1555593539260391445>' WHERE name = 'Corona de Escoria Viva';
 UPDATE items SET emoji = '<:drop_miticos_escoriacrater:1555578379271409715>' WHERE name = 'Escoria Pura del Cráter';
 UPDATE items SET emoji = '<:drop_miticos_fragmentoalma:1555578387827785818>' WHERE name = 'Fragmento de Alma';
@@ -107,17 +101,12 @@ UPDATE items SET emoji = '<:boleadoras_escoria:1555644050281992242>' WHERE name 
 UPDATE items SET emoji = '<:baculo_tizon:1555644047610347663>' WHERE name = 'Báculo de Tizón';
 UPDATE items SET emoji = '<:pico_minero_reforzado:1555644045903265813>' WHERE name = 'Pico de Minero Reforzado';
 
--- 📿 Amulet (12/16): los 10 que se consiguen forjando + Capa y Carcaj de Pelaje Oscuro (hoy no se consiguen, pero el emoji ya estaba hecho). Sin emoji y sin forma de conseguirlos: Bombilla de Hierro Maldito, Botas de Silencio, Collar de Hueso, Ojo de Jabalí
-UPDATE items SET emoji = '<:amuleto_collar_basico:1555578428181188749>' WHERE name = 'Amuleto del Levantador';
+-- 📿 Amulet (7/11): los 5 que se consiguen forjando (uno por zona) + Capa y Carcaj de Pelaje Oscuro (hoy no se consiguen, pero el emoji ya estaba hecho). Sin emoji y sin forma de conseguirlos: Bombilla de Hierro Maldito, Botas de Silencio, Collar de Hueso, Ojo de Jabalí. Los 5 amuletos "bajos" salieron en la v0.7.0 (emojis libres: amuleto_collar_basico, mate_ceniza, casco_capataz, coraza_escamas_ignea, egidia_deborador)
 UPDATE items SET emoji = '<:amuleto_hombreras:1555578432006652005>' WHERE name = 'Hombreras de Cuero Grueso';
-UPDATE items SET emoji = '<:mate_ceniza:1555615167629496380>' WHERE name = 'Mate Tallado en Cenizas';
 UPDATE items SET emoji = '<:talizman_ceniza:1555615173484748860>' WHERE name = 'Talismán de Ceniza Bendita';
-UPDATE items SET emoji = '<:casco_capataz:1555615169189781667>' WHERE name = 'Casco de Capataz';
 UPDATE items SET emoji = '<:peto_escoria_templaria:1555615171689455676>' WHERE name = 'Peto de Escoria Templada';
-UPDATE items SET emoji = '<:coraza_escamas_ignea:1555616983188508733>' WHERE name = 'Coraza de Escamas Ígneas';
 UPDATE items SET emoji = '<:talizman_volcan:1555616984899784774>' WHERE name = 'Talismán del Volcán';
 UPDATE items SET emoji = '<:corazon_titan_acorazado:1555616981447614514>' WHERE name = 'Corazón de Titán Engarzado';
-UPDATE items SET emoji = '<:egidia_deborador:1555616979845390407>' WHERE name = 'Égida del Devorador';
 UPDATE items SET emoji = '<:amuleto_capa:1555578429959577601>' WHERE name = 'Capa de Pelaje Oscuro';
 UPDATE items SET emoji = '<:amuleto_flechas:1555578434606997564>' WHERE name = 'Carcaj de Pelaje Oscuro';
 

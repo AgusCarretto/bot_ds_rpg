@@ -37,7 +37,7 @@ schema.sql → seed.sql → add_weapon_family.sql → seed_class_gear_and_monste
   → seed_recipes.sql → seed_zone2_gear_and_recipes.sql → seed_zone3_gear_and_recipes.sql
   → seed_zone4_gear_and_recipes.sql → seed_zone5_gear_and_recipes.sql
   → finalize_consumable_catalog.sql → remove_legacy_consumables.sql → rebalance_consumable_prices.sql
-  → rework_food_catalog.sql → seed_boxes.sql → update_item_emojis.sql
+  → rework_food_catalog.sql → seed_boxes.sql → rework_drops_and_recipes.sql → update_item_emojis.sql
 ```
 
 `seed_recipes.sql` must come after every seed that creates items it uses: a recipe whose result or ingredient
@@ -45,7 +45,7 @@ item doesn't exist yet would be silently skipped (or created *without* that ingr
 itself and raises instead. (`seed_zone_bosses.sql` used to be missing from this list, so a fresh install had no
 zone bosses at all.)
 
-`Database/run_fresh_install.sql` runs all twenty in this exact order in one shot via `psql` (or
+`Database/run_fresh_install.sql` runs all twenty-one in this exact order in one shot via `psql` (or
 pgAdmin's "PSQL Tool", NOT its plain Query Tool — both need real `psql`, since it uses the `\ir`
 meta-command) — **only against a genuinely empty database**, never against one with existing data
 (see below, several of these are not safe to re-run).
@@ -61,8 +61,10 @@ data (their own header comments predate `items.name UNIQUE`, so they undersell i
 constraint now in schema.sql, their `ON CONFLICT DO NOTHING` inserts are actually idempotent too,
 but don't rely on that for the `UPDATE`/data-shape parts). Everything else in the order above
 (`seed_consumables_and_base_swords.sql`, `seed_zones_and_monsters.sql`, `seed_zone_bosses.sql`,
-`seed_travel_monsters.sql`, `finalize_monster_roster.sql`, `seed_recipes.sql`, `seed_zoneN_gear_and_recipes.sql` (N = 2..5), `finalize_consumable_catalog.sql`, `remove_legacy_consumables.sql`, `rebalance_consumable_prices.sql`, `rework_food_catalog.sql`, `seed_boxes.sql`, `update_item_emojis.sql`) is
-safe to re-run.
+`seed_travel_monsters.sql`, `finalize_monster_roster.sql`, `seed_recipes.sql`, `seed_zoneN_gear_and_recipes.sql` (N = 2..5), `finalize_consumable_catalog.sql`, `remove_legacy_consumables.sql`, `rebalance_consumable_prices.sql`, `rework_food_catalog.sql`, `seed_boxes.sql`, `rework_drops_and_recipes.sql`, `update_item_emojis.sql`) is
+safe to re-run, **with one exception since v0.7.0**: `rework_drops_and_recipes.sql` supersedes the drops, the boss drops, the Zone-1 roster and every recipe of the seeds before it
+(`finalize_monster_roster.sql`, `seed_zone_bosses.sql`, `seed_travel_monsters.sql`'s boss/roster parts, `seed_recipes.sql`, `seed_zoneN_gear_and_recipes.sql`). Never re-run those alone on a live database: they would bring the old state back (or fail on
+items that no longer exist). The rework script always goes after them and is itself re-runnable — but it deletes on purpose (retired items vanish from inventories with no refund; it prints a NOTICE with what was lost), so take a `pg_dump` first.
 
 **Known recurring problem**: catalog items have repeatedly been added by hand directly to a
 Postgres instance on one machine and never captured in a script, so a fresh install on another
@@ -126,7 +128,7 @@ Each player has `users.current_zone_id` (default 1); `/zona [id]` moves them aft
 monster lives in the DB (`monsters` + `monster_drops`, `Repositories/IMonsterRepository.cs`; nothing is
 hardcoded in `MonsterCatalog` anymore). A zone has three *mutually exclusive* kinds of monster
 (`monsters.is_boss` / `monsters.is_travel`, `CHECK (NOT (is_boss AND is_travel))`): the `/hunt` pool
-(`PrepareHuntAsync`, **3 in zone 1 and 2 in zones 2–5**), the boss (`/boss`, `/raid`) and **one dedicated
+(`PrepareHuntAsync`, **2 in every zone**), the boss (`/boss`, `/raid`) and **one dedicated
 `/travel` monster per zone** (`PrepareTravelAsync`, `Database/seed_travel_monsters.sql`). The travel monster
 is the average of that zone's commons at HP ×1.25 / damage ×1.1 (an élite, not a boss — measured with the
 real `CombatTurnResolver`, see the seed header), and `CombatRewardCalculator.RollTravelReward` pays the
@@ -136,24 +138,22 @@ travel rewards follow the zone ladder automatically: a new zone's travel payout 
 `/travel` answers "zona sin monstruos" (without charging the cooldown). **A boss pays more than a travel**: `RollBossReward` is the `/hunt` formula (plus the boss's own big gold/XP bonus,
 `seed_zone_bosses.sql`) ×6 (`BossRewardMultiplier`), i.e. ~3.2× a travel of its zone in zones 2–5 (it was ×1 until v0.6.0 and paid HALF a travel — the 30-minute exam paid less than a
 10-minute fight). That is about what its 30-minute cooldown is worth in travels (3) plus a premium for the risk of losing; every raid participant gets the full amount. It speeds up
-leveling (a player cycling hunt + travel + boss on cooldown levels ~40% faster than with ×1), so if pacing needs to slow down, lower this one constant.
+leveling (a player cycling hunt + travel + boss on cooldown levels ~40% faster than with ×1), so if pacing needs to slow down, lower this one constant. **The boss no longer drops a material: its single `monster_drops` row is the zone's CHEST** (`Cajón de Pino` Z1, `Baúl de Roble` Z2, `Arcón de Hierro` Z3, `Cofre de Oro` Z4 and Z5), 100%
+the first time THAT player beats it (`highest_zone_cleared` is read before applying the victory — solo, and per participant in a raid) and 40% after (`BossChestFirstClearPercent` / `BossChestRepeatPercent` in `CombatRewardCalculator`). The chest travels the
+normal drop path (`ApplyBossVictoryAsync`) and is opened with `/open`; the Arca del Soberano stays achievement-only.
 
-**Drops: every monster drops exactly ONE item, and the chances are deliberately low.** Per zone there are 4 drop
-materials — one per `/hunt` monster ("a granel"), one from the travel monster ("escaso") and one from the boss
-("raro") — and `Database/finalize_monster_roster.sql` is the single source of truth for the hunt + boss drops (and for
-which Zone-1 hunt monsters exist; it runs after the seeds that create them, deletes the extras and raises if any
-monster doesn't end with exactly one drop or a monster is missing from its roster list); `seed_travel_monsters.sql`
-owns the travel drops. The chances live in `CombatRewardCalculator` and nowhere else: `HuntDropChancePercent` 6 (it was 10 until v0.6.0: lowered so that reaching a zone's level is not enough to breeze through it — you have to stay and farm the gear),
-`TravelDropChancePercent` 20, `BossDropChancePercent` 15 (the boss — solo and raid — has its own constant on purpose:
-it used to share the hunt formula, so lowering hunt would have silently changed it). `/drops` (`aa drops`,
+**Drops: every monster drops exactly ONE item, and the chances are deliberately low.** Per zone there are **3 drop materials** — one per `/hunt` monster (the two "a granel": the *physical* one that Guerrero and Ninja need and the *arcane*
+one for Arquero and Hechicero) and one from the travel monster ("escaso", needed by every class weapon and by the amulet) — plus the boss's chest. 20 monsters in total (2 hunt + travel + boss in each of the 5 zones, `Perro Cimarrón` was
+removed). `Database/rework_drops_and_recipes.sql` (v0.7.0) is the single source of truth for the roster, the boss chests and the recipes: it verifies the final state (exactly 2 hunt + 1 travel + 1 boss per zone, one drop each — a Material for
+hunt/travel, a Caja for the boss). The chances live in `CombatRewardCalculator` and nowhere else: `HuntDropChancePercent` 6 (it was 10 until v0.6.0: lowered so that reaching a zone's level is not enough to breeze through it — you have to stay and farm the gear),
+`TravelDropChancePercent` 20 and the boss chest chances (the boss has its own constants on purpose: it used to share the hunt formula, so lowering hunt would have silently changed it). `/drops` (`aa drops`,
 `Modules/DropsModule.cs` + the pure `GameData/DropsCatalog.cs`) lists every zone's monsters and drops from those same
 constants, so the list can't drift. These are **run-1 baseline values** — the reset unlocked after Zone 5 is meant to
 raise drop % and material quantity. **Recipe quantities are calibrated against these chances**, so changing a chance,
 a monster or a drop means re-running `Database/report_recipe_pacing.sql` (minutes of farming per recipe; pass the
-chances as `-v ph= -v pt= -v pb=`) and retuning the seeds. Note the trap this avoids: with one item per monster each
+chances as `-v ph= -v pt=`; `pb` no longer matters) and retuning the recipes in the rework script. Note the trap this avoids: with one item per monster each
 specific item drops *more* often than with two, so lowering the percentages alone would have made progress faster,
-not slower. Target: a zone's gear ≈ as long as leveling through that zone (~100 min of continuous play), the
-boss-drop amulet ~200 min.
+not slower. Targets in continuous-play minutes (the pacing script's model): general weapon ~100 (Zone 1 ~50), class weapon ~150 (Zone 1 ~100), amulet ~200 (Zone 1 ~130).
 
 **Co-op zone bosses (`/raid`)**: `Modules/RaidModule.cs` + `Services/RaidSessionService.cs`. Same
 in-memory philosophy as solo combat, but a *different concurrency model on purpose*: solo combat's
@@ -197,8 +197,8 @@ request throws). Per-fight ability state (`AbilityState`) lives in `CombatState.
 it can't be labelled per player).
 
 **Zone difficulty is a ladder, and it is calibrated, not guessed.** All 5 zones are loaded. Each zone needs a *jump*
-in gear, ×1.6 the previous one (affinity weapon stat: Z2 +20, Z3 +32, Z4 +50, Z5 +80; generals and amulets follow the
-same pace — the full table is in `MEJORAS.md` and each `seed_zoneN_gear_and_recipes.sql`), and its monsters are
+in gear, ×1.6 the previous one (base weapon ATQ per zone: Z1 +9, Z2 +20, Z3 +32, Z4 +50, Z5 +80, and the class weapon gets ×1.5 for its own class — `ClassWeaponSynergy.Multiplier`; the single amulet's DEF is 10/18/30/46/75, the "low" amulets the ladder was calibrated
+with — all in `rework_drops_and_recipes.sql`), and its monsters are
 tuned so that **entering** with the previous zone's gear costs (~5 turns, ~47% of HP in a common fight), the zone's
 own gear leaves commons at 13-18% HP (comfortable, never a walkover), and the **boss** is the exam (67-87% defeat
 with the previous zone's gear, ~16% with its own). Numbers come from a simulation that drives the real
@@ -208,26 +208,23 @@ remember is that the "exit" target controls how fast the ladder inflates, becaus
 previous zone's exit gear). Never retune a zone's monsters without its gear (recipes) shipping with it, or it becomes
 a wall, and re-measure that zone's raid when its boss changes. The whole ladder is the **run-1 baseline**: a future
 post-Zone-5 reset will raise drop % and material quantities, so don't lower recipes for run 1 because they're slow.
-The per-zone recipe seeds (`seed_recipes.sql` = Zone 1, `seed_zone2..5_gear_and_recipes.sql`) own their recipes'
-ingredients (they delete the old ones before loading) so a moved/changed recipe never keeps stale rows.
+Recipes (stats, gold, ingredients) are owned by `rework_drops_and_recipes.sql`, which deletes the old ingredients of the 30 recipes before loading, so a changed recipe never keeps stale rows.
 
-**Forge recipes: 7 per zone, and a player only sees their own zone's** (`recipes.zone_id` + `recipes.affinity`;
-`add_recipe_zone_and_affinity.sql` for old DBs). The per-zone template is **4 affinity weapons (one per class — the
-weapon family of that class) + 1 general weapon + 2 amulets (amulets are always general, never class-locked)**
-(it used to be 2 generals; with one drop per monster the sources don't stretch that far, and the second general never
-beat anyone's affinity weapon — `remove_extra_general_recipes.sql` migrates an old DB);
-`affinity` is an explicit flag because a *general* weapon also has a family (Hoja de Acero Puro is Espadas), so it
-can't be inferred from the item. A player sees 4: their class's affinity weapon + the general + the 2 amulets, for
+**Forge recipes: 6 per zone, and a player only sees their own zone's** (`recipes.zone_id` + `recipes.affinity`;
+`add_recipe_zone_and_affinity.sql` for old DBs). The per-zone template is **4 class weapons (one per class — the weapon family of that class, class-locked with `class_requirement`) + 1 general weapon + 1 amulet** (30 recipes in all).
+The *general* weapon has the SAME base ATQ as the class weapons but **no family** (nobody gets the class boost with it) and the easiest recipe (1 gathered + the 2 hunt drops, ~100 min): it is the way to start. The *class* weapon
+(2 gathered + the hunt drop of its route + the travel drop, ~150 min) is stronger through the ×1.5 boost. The *amulet* is the heaviest piece: 1 gathered + ALL 3 drops of the zone (~200 min). Max 4 ingredient types per recipe.
+`affinity` is an explicit flag (set by the rework script) rather than inferred from the item. A player sees 3: their class's weapon + the general + the amulet, for
 their **current zone** (falling back to the nearest earlier zone that has recipes, with a note). That view lives in
 one pure place, `GameData/RecipeCatalog.cs`, shared by `/forge recipes` and the `/forge make` autocomplete — they must
 show the same thing. Each line shows what the result adds via `GameData/ItemStatLabel.cs` ("+15 ATQ" / "+20 DEF", plus
 the class-synergy value for weapons). A Discord embed is capped at **6000 characters in total** (not just 1024 per
 field) and `EmbedBuilder.Build()` *throws* past it — the template + single-zone view is what keeps it around 1000; any
 embed built from a growing catalog needs a similar cap. Recipe seeds verify themselves (`seed_recipes.sql` raises if
-an item/zone is missing — otherwise the row is silently dropped or created without that ingredient). Higher-zone
-gear for zones 3-5 follows the same template (`seed_zone3..5_gear_and_recipes.sql`).
+an item/zone is missing — otherwise the row is silently dropped or created without that ingredient). The same
+template holds for every zone (all of it in `rework_drops_and_recipes.sql`).
 Deleting catalog items is dangerous: `inventory.item_id` is `ON DELETE CASCADE` (it silently wipes player inventories),
-so any script that deletes items must first abort if anyone holds them (see `trim_recipes_to_zone_template.sql`).
+so any script that deletes items must first abort if anyone holds them (see `trim_recipes_to_zone_template.sql`) — except `rework_drops_and_recipes.sql`, which deletes on purpose (the owner approved it, no refund) and says what was lost with a NOTICE.
 
 **Name/ID slash parameters use Discord autocomplete** (`Modules/ItemAutocomplete.cs` for `/shop buy` and
 `/shop sell`, `ZoneAutocomplete.cs` for `/zona`, `ForgeAutocomplete.cs` for `/forge make`, shared limits and
@@ -263,15 +260,14 @@ emoji: if the bot can't access one, Discord rejects the WHOLE message, which wou
 Food prices (`rebalance_consumable_prices.sql`) rise faster than the heal (~0.5 gold/HP for the smallest, ~3 for the
 biggest) because with one heal per fight the big one is worth much more.
 
-**`/chop` and `/mine` give several units per action** (`GameData/GatheringYield.cs`): Común 1–5, Raro/Épico 1–3,
-Legendario/Mítico 1, times `RunMultiplier` (1 in run 1; the post-Zone-5 reset is meant to raise it). The gathered
-ingredients in the recipe seeds are ~3× (Común) / ~2× (Raro/Épico) what they used to be so the pace didn't change —
+**`/chop` and `/mine` give several units per action** (`GameData/GatheringYield.cs`): Común 1–5, Raro 1–3, Épico 1–2,
+Legendario/Mítico 1 (the max drops with EVERY rarity step: never 5 of something rare), times `RunMultiplier` (1 in run 1; the post-Zone-5 reset is meant to raise it). The gathered
+ingredients in the rework script were calculated for this scale (averages 3 / 2 / 1.5 / 1 / 1) —
 `Database/report_recipe_pacing.sql` measures it (it covers gathering too). Keep that in sync if the yields change.
 The rarity odds of `/chop` and `/mine` (first the rarity is rolled, then a uniform item among those of that type+rarity) live in ONE
 table, `RarityCatalog.GatheringWeights` (per mille): Común 68 / Raro 21 / Épico 7 / Legendario 3.5 / Mítico 0.5 (it was 60 / 25 / 10 /
-4.5 / 0.5 until v0.6.0). `report_recipe_pacing.sql` takes `-v wc= wr= we= wl= wm=` to try a scenario before applying it. Known
-bottleneck: Hierro (10.5% per `/mine`, cooldown 5 min — it shares the Raro pool with Carbón) makes several zone 2–4 weapons take
-~190–290 min of mining, more than their drop farming.
+4.5 / 0.5 until v0.6.0). `report_recipe_pacing.sql` takes `-v wc= wr= we= wl= wm=` to try a scenario before applying it. Hierro
+(10.5% per `/mine`, cooldown 5 min — it shares the Raro pool with Carbón) is still the slowest gathered item (6 Hierro ≈ 143 min), the one that binds the weapons that use it.
 
 **Readable embeds** (the owner's rule: spaced out, not crowded — use blank lines and columns, not walls of text): `/inventory` is ONE column (the owner asked for it after the drops split into "(1/2)" / "(2/2)" fields): blocks Madera, Mineral, Drops de monstruo (`items.type = 'Material'`), Comida and Cajas inside the
 embed *description* (4096 chars: the whole catalog at 9999 of each is ~4000), a blank line between blocks and no rarity text per line (the item emoji, or a coloured dot, carries it); if the catalog ever outgrows it, the rest continues in untitled fields
@@ -324,7 +320,7 @@ materials no monster drops anymore, food and lower boxes. Two rules that must ke
 drops used in recipes (Garra de Puma, Esencia Espectral...) — a 1000-gold box giving those would make buying ~5× faster than the
 farming the pacing was calibrated on; (2) Corteza del Árbol de Vida / Fragmento de Meteorito (the very-long-term goals) come only from
 the Mítica box, which can't be bought. Expected value of shop boxes is ~52–60% of price (a gold sink, not a business), and the best outcomes are deliberately rare (v0.6.0 tuning: the Cofre de Oro has a Legendary material in ~36% of openings, the Arcón de Hierro an Epic one in ~50%, and an opening that returns more than the box cost happens 6–9% of the time) —
-`Database/report_box_economy.sql` computes it; re-run it if weights or prices change.
+`Database/report_box_economy.sql` computes it; re-run it if weights or prices change. The zone bosses give these same boxes (first clear 100%, then 40% per 30-minute fight, see Drops), which adds to that supply.
 
 **Food: 6 items, and the two Mítica ones are "banquetes" with an attack buff** — the catalog was cut from 9 to 6 (Pan Casero, Choripán
 and Vacío al Disco removed by `Database/rework_food_catalog.sql`, which refunds their gold value to anyone holding them *before* the
