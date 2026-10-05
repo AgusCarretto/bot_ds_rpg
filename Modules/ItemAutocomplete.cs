@@ -1,4 +1,5 @@
 using BotDsRpg.GameData;
+using BotDsRpg.Services;
 using BotDsRpg.Models;
 using BotDsRpg.Repositories;
 using Discord;
@@ -19,7 +20,7 @@ public static class ItemChoices
     // Catálogo de la tienda (solo consumibles). playerGold == null si el jugador no existe todavía:
     // en ese caso simplemente no se marca qué puede pagar.
     public static IReadOnlyList<AutocompleteResult> ForBuy(
-        IEnumerable<Item> catalog, int? playerGold, string typed, IReadOnlyDictionary<int, ItemBuff>? buffs = null)
+        IEnumerable<Item> catalog, int? playerGold, string typed, IReadOnlyDictionary<int, ItemBuff>? buffs = null, int? unlockedZoneRank = null)
     {
         return catalog
             .Where(item => ShopCatalog.IsForSale(item) && FitsAsValue(item) && Matches(item.Name, typed))
@@ -31,10 +32,10 @@ public static class ItemChoices
             {
                 string missingGold = playerGold is int gold && gold < item.BuyPrice ? " (te falta oro)" : string.Empty;
                 string what = item.Type == "Caja"
-                    ? $"caja {item.Rarity}"
+                    ? ShopModule.BoxLine(item, unlockedZoneRank).Replace(" · " + GameHistory.Number(item.BuyPrice) + " oro", string.Empty)
                     : buffs is not null && buffs.TryGetValue(item.ItemId, out var buff) ? $"cura {item.StatValue} HP y +{buff.AttackPercent}% ATQ" : $"cura {item.StatValue} HP";
                 return new AutocompleteResult(
-                    Truncate($"{item.Name} — {what} · {item.BuyPrice} oro{missingGold}"), item.Name);
+                    Truncate($"{item.Name} — {what} · {GameHistory.Number(item.BuyPrice)} oro{missingGold}"), item.Name);
             })
             .ToList();
     }
@@ -51,7 +52,8 @@ public static class ItemChoices
             .ThenByDescending(o => RarityCatalog.RankOf(o.Item.Rarity))
             .ThenBy(o => o.Item.Name, StringComparer.Ordinal)
             .Take(MaxChoices)
-            .Select(o => new AutocompleteResult(Truncate($"📦 {o.Item.Name} — tenés {o.Quantity} · {o.Item.Rarity}"), o.Item.Name))
+            .Select(o => new AutocompleteResult(
+                Truncate($"📦 {o.Item.Name} — tenés {o.Quantity}{(BoxCatalog.RangeText(o.Item.BoxMinItems, o.Item.BoxMaxItems) is { Length: > 0 } range ? " · " + range : string.Empty)}"), o.Item.Name))
             .ToList();
     }
 
@@ -107,7 +109,7 @@ public sealed class BuyItemAutocompleteHandler : SafeAutocompleteHandler
         var player = await services.GetRequiredService<IUserRepository>().GetByDiscordIdAsync(userId);
         var buffs = await services.GetRequiredService<IBuffRepository>().GetItemBuffsAsync();
 
-        return ItemChoices.ForBuy(catalog, player?.Gold, typed, buffs);
+        return ItemChoices.ForBuy(catalog, player?.Gold, typed, buffs, await services.GetRequiredService<IBoxContextService>().MaxUnlockedRankAsync(userId));
     }
 }
 

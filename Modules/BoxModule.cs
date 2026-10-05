@@ -11,6 +11,7 @@ using Discord.Interactions;
 public class BoxModule(
     IItemRepository itemRepository,
     IBoxRepository boxRepository,
+    IBoxContextService boxContextService,
     ICombatSessionService combatSessions,
     IGameEvents gameEvents) : InteractionModuleBase<SocketInteractionContext>
 {
@@ -25,7 +26,7 @@ public class BoxModule(
 
         try
         {
-            var result = await ExecuteOpenAsync(itemRepository, boxRepository, combatSessions, gameEvents, Context.User.Id, boxName, quantity);
+            var result = await ExecuteOpenAsync(itemRepository, boxRepository, boxContextService, combatSessions, gameEvents, Context.User.Id, boxName, quantity);
             await FollowupAsync(result.PlainMessage, embed: result.Embed, ephemeral: result.Embed is null);
         }
         catch (Exception ex)
@@ -41,7 +42,7 @@ public class BoxModule(
     // Estático (sin Context) para que "aa open" comparta exactamente la misma lógica. rng: solo para poder probarlo con un
     // sorteo fijo; en el juego es el generador compartido.
     public static async Task<BoxActionResult> ExecuteOpenAsync(
-        IItemRepository itemRepository, IBoxRepository boxRepository, ICombatSessionService combatSessions, IGameEvents gameEvents,
+        IItemRepository itemRepository, IBoxRepository boxRepository, IBoxContextService boxContextService, ICombatSessionService combatSessions, IGameEvents gameEvents,
         ulong discordId, string boxName, int quantity, Random? rng = null)
     {
         // Misma regla que la tienda: en plena pelea no se puede parar a abrir cajas.
@@ -67,6 +68,9 @@ public class BoxModule(
             return new BoxActionResult($"**{ItemDisplay.Format(item.Emoji, item.Name)}** todavía no tiene botín cargado, avisale al staff.", null);
         }
 
+        // Qué se puede sortear y hasta qué zona llegó el jugador (UNA vez para todas las cajas que abre: es el mismo jugador).
+        var rollContext = await boxContextService.BuildAsync(discordId);
+
         rng ??= Random.Shared;
         int totalGold = 0;
         int goldAfter = 0;
@@ -76,7 +80,7 @@ public class BoxModule(
 
         for (int i = 0; i < quantity; i++)
         {
-            var loot = BoxLootRoller.Roll(box, rng);
+            var loot = BoxLootRoller.Roll(box, rollContext, rng);
             var outcome = await boxRepository.OpenAsync(discordId, item.ItemId, loot);
 
             if (outcome is null)
@@ -152,9 +156,15 @@ public class BoxModule(
             embed.AddField("🏺 ¡Nuevo en tu colección!", string.Join(", ", newTrophies));
         }
 
+        string range = BoxCatalog.RangeText(box.BoxMinItems, box.BoxMaxItems);
+        string rangeFooter = range.Length > 0 ? $"Cada {box.Name} trae {range}." : string.Empty;
         if (opened < requested)
         {
-            embed.WithFooter($"Pediste {requested} pero solo tenías {opened}.");
+            embed.WithFooter($"Pediste {requested} pero solo tenías {opened}.{(rangeFooter.Length > 0 ? " " + rangeFooter : string.Empty)}");
+        }
+        else if (rangeFooter.Length > 0)
+        {
+            embed.WithFooter(rangeFooter);
         }
 
         return embed.Build();

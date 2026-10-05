@@ -502,6 +502,7 @@ public static class ServiceProviderBuilder
             .AddSingleton<IGameEventRepository, GameEventRepository>()
             .AddSingleton<ITransferRepository, TransferRepository>()
             .AddSingleton<IBoxRepository, BoxRepository>()
+            .AddSingleton<IBoxContextService, BoxContextService>()
             .AddSingleton<IBuffRepository, BuffRepository>()
             .AddSingleton<IMissionRepository, MissionRepository>()
             .AddSingleton<IAchievementRepository, AchievementRepository>()

@@ -11,7 +11,7 @@ using Discord.Interactions;
 // que para poder separar archivos sin romper el grupo, ambos son la misma clase de C#.
 // Las recetas de forja viven en /forge (ForgeModule.cs), separadas de la Tienda por diseño de juego.
 [Group("shop", "Comprá objetos con tu oro.")]
-public partial class ShopModule(IUserRepository userRepository, IItemRepository itemRepository, IShopRepository shopRepository, ICombatSessionService combatSessions, IGameEvents gameEvents, IBuffRepository buffRepository)
+public partial class ShopModule(IUserRepository userRepository, IItemRepository itemRepository, IShopRepository shopRepository, ICombatSessionService combatSessions, IGameEvents gameEvents, IBuffRepository buffRepository, IBoxContextService boxContextService)
     : InteractionModuleBase<SocketInteractionContext>
 {
     // Comando barra: /shop buy
@@ -25,7 +25,7 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
 
         try
         {
-            var result = await ExecuteBuyAsync(userRepository, itemRepository, shopRepository, combatSessions, gameEvents, Context.User.Id, itemName, quantity);
+            var result = await ExecuteBuyAsync(userRepository, itemRepository, shopRepository, combatSessions, gameEvents, Context.User.Id, itemName, quantity, boxContextService);
             await FollowupAsync(result.PlainMessage, embed: result.Embed, ephemeral: result.Embed is null);
         }
         catch (Exception ex)
@@ -86,7 +86,7 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
 
     public static async Task<ShopActionResult> ExecuteBuyAsync(
         IUserRepository userRepository, IItemRepository itemRepository, IShopRepository shopRepository, ICombatSessionService combatSessions,
-        IGameEvents gameEvents, ulong discordId, string itemName, int quantity)
+        IGameEvents gameEvents, ulong discordId, string itemName, int quantity, IBoxContextService? boxContext = null)
     {
         // No se puede ir de compras en pleno combate — mismo espíritu que el bloqueo de /heal
         // (Modules/TavernModule.cs): comprar no debería ser una salida gratuita en medio de una pelea.
@@ -108,6 +108,20 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
 
         // Si es la primera vez que este usuario ejecuta un comando, se crea acá con los valores por defecto.
         await userRepository.GetOrCreateUserAsync(discordId);
+
+        // Una caja es de la zona de su rareza y solo se compra si ya desbloqueaste esa zona (el botín llega hasta ahí). Se avisa ANTES de tocar nada,
+        // así no se cobra ni se gasta el cooldown de compra.
+        if (item.Type == "Caja" && boxContext is not null)
+        {
+            int required = BoxCatalog.RequiredZoneRank(item.Rarity);
+            int unlocked = await boxContext.MaxUnlockedRankAsync(discordId);
+            if (required > unlocked)
+            {
+                return new ShopActionResult(
+                    $"{NpcDialogue.Shopkeeper(ShopkeeperLine.NotForSale)}\n🔒 **{ItemDisplay.Format(item.Emoji, item.Name)}** es una caja de la **Zona {required}** y todavía no la desbloqueaste " +
+                    $"(llegaste hasta la Zona {unlocked}): avanzá de zona para poder comprarla.", null);
+            }
+        }
 
         // Las cajas se compran de a una y una vez por hora (CooldownCatalog.BoxBuy): un freno a cuántas entran al juego. Se avisa ANTES de
         // tocar nada, así pedir 5 no gasta el cooldown. La comida no tiene límite.
@@ -217,7 +231,7 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
 
         if (outcome is null)
         {
-            return new ShopActionResult(NpcDialogue.Shopkeeper(ShopkeeperLine.NothingToSell) + "\nNo tenés nada en tu inventario para vender.", null);
+            return new ShopActionResult(NpcDialogue.Shopkeeper(ShopkeeperLine.NothingToSell) + "\nNo tenés nada en tu inventario para vender (las cajas y los premios no se venden).", null);
         }
 
         await gameEvents.RecordAsync(discordId, GameEventKinds.ShopGoldEarned, amount: outcome.GoldEarned, detail: "sellall");

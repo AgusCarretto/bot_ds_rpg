@@ -48,4 +48,23 @@ public static class ZoneRanking
         int clearedRank = highestZoneCleared == 0 ? 0 : RankOf(orderedZones, highestZoneCleared);
         return targetRank > clearedRank + 1 ? orderedZones[targetRank - 2] : null;
     }
+
+    // La zona más alta que el jugador tiene DESBLOQUEADA (1-indexada por dificultad): la misma regla que /zona (nivel mínimo de la zona y jefe de la
+    // anterior derrotado). La primera siempre está. Las desbloqueadas son un tramo corrido desde la primera, así que se corta en la primera cerrada.
+    public static int MaxUnlockedRank(IReadOnlyList<Zone> orderedZones, int playerLevel, int highestZoneCleared)
+    {
+        int best = 1;
+        for (int i = 0; i < orderedZones.Count; i++)
+        {
+            var zone = orderedZones[i];
+            if (i > 0 && (playerLevel < zone.MinLevel || PendingGatekeeperZone(orderedZones, zone.ZoneId, highestZoneCleared) is not null))
+            {
+                break;
+            }
+
+            best = i + 1;
+        }
+
+        return best;
+    }
 }

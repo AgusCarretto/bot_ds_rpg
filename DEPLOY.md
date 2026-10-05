@@ -147,6 +147,11 @@ docker compose exec -T db psql -U postgres -d asado-y-acero -v ON_ERROR_STOP=1 -
 Para pasar de v0.5.0 a v0.6.0 (eventos, cajas, banquetes, misiones y logros) el orden exacto de los 7 scripts está en la sección
 "Eventos de juego, /give, cajas, banquetes, misiones y logros" de `MEJORAS.md`; hacé backup antes (ver sección 6).
 
+**v0.7.0 → v0.8.0 (cajas v2):** ANTES de arrancar el bot nuevo corré `Database/rework_boxes.sql` (agrega las columnas `boxes.min_items/max_items`
+que el código lee; si arrancás primero, `/open`, `/shop` y la taberna fallan). Es re-ejecutable y se verifica solo. Después reiniciá el bot
+(los pools de materiales y drops de las cajas se cachean 5 minutos). En Railway: corrélo contra la URL pública de la base con
+`psql "<DATABASE_PUBLIC_URL>" -v ON_ERROR_STOP=1 -f rework_boxes.sql` (con `$env:PGCLIENTENCODING="UTF8"` en PowerShell) y recién ahí desplegá `main`.
+
 La carpeta `Database/` del repo está montada en `/seed`, así que los scripts nuevos aparecen con el `git checkout`. Los seeds son
 re-ejecutables; **nunca** corras `run_fresh_install.sql` sobre una base con datos.
 

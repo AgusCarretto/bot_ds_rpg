@@ -31,37 +31,37 @@
 
 ### Tarea 1: Cooldowns y recompensas (travel y jefe/raid)
 **Archivos:** `GameData/CooldownCatalog.cs`, `GameData/CombatRewardCalculator.cs`, `Repositories/IAdventureRepository.cs` + `AdventureRepository.cs`, `Services/BossCooldownExtensions.cs` (nuevo), `Services/CombatSessionService.cs`, `Modules/AdventureModule.cs`, `Modules/UseModule.cs`, `Modules/RaidModule.cs`, `Database/report_recipe_pacing.sql`.
-- [ ] Arnés: `Travel.Duration == 30 min`, `Boss.Duration == 1 h`, `BossRetryAfterFailure == 30 min`, `TravelRewardMultiplier == 30`, `TravelDropChancePercent == 60`, `BossRewardMultiplier == 15`; la devolución de cooldown (`RefundCooldownAsync`) deja el restante en ≤ 30 min y no se aplica dos veces si ya expiró.
-- [ ] `CooldownCatalog`: Travel 30 min, Boss 1 h, `BossRetryAfterFailure = 30 min`, `BossFailureRefund = Boss.Duration - BossRetryAfterFailure`.
-- [ ] `CombatRewardCalculator`: ×30 / 60% / ×15 con la cuenta de paridad en el comentario.
-- [ ] `IAdventureRepository.RefundCooldownAsync(ulong discordId, string commandName, TimeSpan amount)`: `UPDATE cooldowns SET last_executed_at = last_executed_at - @Amount WHERE discord_id = @DiscordId AND command_name = @CommandName`.
-- [ ] `BossCooldownExtensions.RefundAfterFailedBossAsync(this IAdventureRepository, string commandName, ulong discordId)`: solo si `commandName == "boss"`, devuelve `CooldownCatalog.BossFailureRefund`. Se llama en: huida y derrota solitarias (`AdventureModule`), derrota por `/use` (`UseModule`), timeout (`CombatSessionService`), y en el raid al huir y al arrasar (`RaidModule`).
-- [ ] `report_recipe_pacing.sql`: el divisor del travel de 10 a 30 y los comentarios.
-- [ ] Build, arnés, commit.
+- [x] Arnés: `Travel.Duration == 30 min`, `Boss.Duration == 1 h`, `BossRetryAfterFailure == 30 min`, `TravelRewardMultiplier == 30`, `TravelDropChancePercent == 60`, `BossRewardMultiplier == 15`; la devolución de cooldown (`RefundCooldownAsync`) deja el restante en ≤ 30 min y no se aplica dos veces si ya expiró.
+- [x] `CooldownCatalog`: Travel 30 min, Boss 1 h, `BossRetryAfterFailure = 30 min`, `BossFailureRefund = Boss.Duration - BossRetryAfterFailure`.
+- [x] `CombatRewardCalculator`: ×30 / 60% / ×15 con la cuenta de paridad en el comentario.
+- [x] `IAdventureRepository.RefundCooldownAsync(ulong discordId, string commandName, TimeSpan amount)`: `UPDATE cooldowns SET last_executed_at = last_executed_at - @Amount WHERE discord_id = @DiscordId AND command_name = @CommandName`.
+- [x] `BossCooldownExtensions.RefundAfterFailedBossAsync(this IAdventureRepository, string commandName, ulong discordId)`: solo si `commandName == "boss"`, devuelve `CooldownCatalog.BossFailureRefund`. Se llama en: huida y derrota solitarias (`AdventureModule`), derrota por `/use` (`UseModule`), timeout (`CombatSessionService`), y en el raid al huir y al arrasar (`RaidModule`).
+- [x] `report_recipe_pacing.sql`: el divisor del travel de 10 a 30 y los comentarios.
+- [x] Build, arnés, commit.
 
 ### Tarea 2: Núcleo puro de las cajas
 **Archivos:** `GameData/BoxLoot.cs`; arnés `scratchpad/reworktest`.
 **Produce:** `LootKind { Gold, Item, Gather, ZoneDrop }`; `BoxLootEntry` igual; `BoxDefinition(int BoxItemId, string BoxName, int MinItems, int MaxItems, int TierRank, IReadOnlyList<BoxLootEntry> Entries)`; `GatherCandidate(ItemId, Name, Rarity, Emoji, Type)`; `ZoneDropCandidate(ItemId, Name, Rarity, Emoji, ZoneRank, IsTravel)`; `BoxRollContext(int MaxZoneRank, IReadOnlyList<GatherCandidate> GatherPool, IReadOnlyList<ZoneDropCandidate> ZoneDropPool)`; `BoxLootRoller.Roll(BoxDefinition box, BoxRollContext context, Random rng)`; `BoxLootRoller.GatherWeights` (680/210/70/35/2); `BoxCatalog` con `RangeText(int? min, int? max)` = "entre 1 y 10 ítems".
-- [ ] Arnés primero (compila-falla): rangos (20000 aperturas dentro de [min,max] y se ven los dos extremos), recolección con las chances reales (± tolerancia) y Mítico ~0,1% por ítem, drops de zona solo de zonas permitidas (`MaxZoneRank` 1 → nunca zona 2+), proporción hunt/travel 3:2, oro como bono por mil, caja sin entradas lanza.
-- [ ] Implementar el roller y pasar el arnés.
+- [x] Arnés primero (compila-falla): rangos (20000 aperturas dentro de [min,max] y se ven los dos extremos), recolección con las chances reales (± tolerancia) y Mítico ~0,1% por ítem, drops de zona solo de zonas permitidas (`MaxZoneRank` 1 → nunca zona 2+), proporción hunt/travel 3:2, oro como bono por mil, caja sin entradas lanza.
+- [x] Implementar el roller y pasar el arnés.
 
 ### Tarea 3: Repositorio, servicio y pantallas
 **Archivos:** `Models/Item.cs`, `Repositories/ItemSql.cs`, `Repositories/IBoxRepository.cs`, `Repositories/BoxRepository.cs`, `Services/IBoxContextService.cs` + `BoxContextService.cs` (nuevos), `Program.cs` (registro), `Modules/BoxModule.cs`, `Modules/TextCommandModule.Boxes.cs`, `Modules/ShopModule.cs`, `Modules/ShopModule.View.cs`, `Modules/ShopModule` buy gate, `Modules/ItemAutocomplete.cs`, `Modules/TabernaModule.cs`, `GameData/ZoneRanking.cs`.
-- [ ] `Item.BoxMinItems/BoxMaxItems` (int?) cargados por subconsultas en `ItemSql.SelectColumns`.
-- [ ] `ZoneRanking.MaxUnlockedRank(zonesOrdered, level, highestZoneCleared)`: la zona más alta con `level >= MinLevel` y sin `PendingGatekeeperZone`.
-- [ ] `BoxRepository`: leer `min_items`, `max_items`, tier (rango de la rareza) y los tipos `gather` / `zone_drop`.
-- [ ] `BoxContextService.BuildAsync(discordId)`: pools de recolección (ítems `Madera` y `Mineral`), pool de drops de zona (monstruos hunt y travel con su rango de zona) y `MaxZoneRank` del jugador; cache de 5 min de lo estático.
-- [ ] `ExecuteOpenAsync` recibe el servicio, arma el contexto una vez y sortea con él; el embed dice "Abriste N× … (de A a B ítems cada una)".
-- [ ] Compra: `ExecuteBuyAsync` rechaza (sin cobrar ni gastar cooldown) una caja cuya zona no está desbloqueada, con el motivo; `/shop view` y el menú de la taberna muestran "entre X y Y ítems" y 🔒 en las bloqueadas; los autocompletados de comprar y de abrir también dicen el rango.
-- [ ] Build y arneses de caja/tienda/taberna.
+- [x] `Item.BoxMinItems/BoxMaxItems` (int?) cargados por subconsultas en `ItemSql.SelectColumns`.
+- [x] `ZoneRanking.MaxUnlockedRank(zonesOrdered, level, highestZoneCleared)`: la zona más alta con `level >= MinLevel` y sin `PendingGatekeeperZone`.
+- [x] `BoxRepository`: leer `min_items`, `max_items`, tier (rango de la rareza) y los tipos `gather` / `zone_drop`.
+- [x] `BoxContextService.BuildAsync(discordId)`: pools de recolección (ítems `Madera` y `Mineral`), pool de drops de zona (monstruos hunt y travel con su rango de zona) y `MaxZoneRank` del jugador; cache de 5 min de lo estático.
+- [x] `ExecuteOpenAsync` recibe el servicio, arma el contexto una vez y sortea con él; el embed dice "Abriste N× … (de A a B ítems cada una)".
+- [x] Compra: `ExecuteBuyAsync` rechaza (sin cobrar ni gastar cooldown) una caja cuya zona no está desbloqueada, con el motivo; `/shop view` y el menú de la taberna muestran "entre X y Y ítems" y 🔒 en las bloqueadas; los autocompletados de comprar y de abrir también dicen el rango.
+- [x] Build y arneses de caja/tienda/taberna.
 
 ### Tarea 4: Datos — `Database/rework_boxes.sql`
 **Archivos:** crear `Database/rework_boxes.sql`; `Database/schema.sql` (columnas `min_items`, `max_items`; `kind` con `gather` y `zone_drop`); `Database/run_fresh_install.sql`; `Database/report_box_economy.sql`.
-- [ ] El script (idempotente, se verifica solo): agrega columnas y amplía el CHECK, fija rangos, precios (compra 1.000 / 10.000 / 35.000 / 110.000, venta 0), borra y recarga el botín de las 5 cajas con la composición de arriba, y falla en voz alta si algo no coincide (rangos, suma de pesos, cada caja con su `gather`, trofeos que nadie más da todavía obtenibles: los 17).
-- [ ] `run_fresh_install.sql`: después de `rework_drops_and_recipes.sql`.
-- [ ] `report_box_economy.sql` reescrito para el modelo nuevo (valor esperado en minutos de farmeo por apertura contra el precio).
+- [x] El script (idempotente, se verifica solo): agrega columnas y amplía el CHECK, fija rangos, precios (compra 1.000 / 10.000 / 35.000 / 110.000, venta 0), borra y recarga el botín de las 5 cajas con la composición de arriba, y falla en voz alta si algo no coincide (rangos, suma de pesos, cada caja con su `gather`, trofeos que nadie más da todavía obtenibles: los 17).
+- [x] `run_fresh_install.sql`: después de `rework_drops_and_recipes.sql`.
+- [x] `report_box_economy.sql` reescrito para el modelo nuevo (valor esperado en minutos de farmeo por apertura contra el precio).
 
 ### Tarea 5: Verificación, regresión, documentación y publicación
-- [ ] Copia de la base real + script ×2 (idempotente) y instalación limpia = base migrada (mismo resumen); aplicar a la base real con `pg_dump` antes.
-- [ ] Arneses de caja/tienda/taberna/misiones actualizados; regresión completa.
-- [ ] `CLAUDE.md` (Boxes, Shop, Travel/Boss, drops) y `MEJORAS.md`; versión 0.8.0; commit, `develop`, `main` + tag `v0.8.0`.
+- [x] Copia de la base real + script ×2 (idempotente) y instalación limpia = base migrada (mismo resumen); aplicar a la base real con `pg_dump` antes.
+- [x] Arneses de caja/tienda/taberna/misiones actualizados; regresión completa.
+- [x] `CLAUDE.md` (Boxes, Shop, Travel/Boss, drops) y `MEJORAS.md`; versión 0.8.0; commit, `develop`, `main` + tag `v0.8.0`.

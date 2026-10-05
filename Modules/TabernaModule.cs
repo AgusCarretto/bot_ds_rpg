@@ -17,7 +17,7 @@ public sealed record TabernaScene(Embed Embed, MessageComponent? Components, str
 // las cajas, los eventos para misiones y logros... Nada se reimplementa acá.
 public class TabernaModule(
     IUserRepository userRepository, IItemRepository itemRepository, IInventoryRepository inventoryRepository, IShopRepository shopRepository,
-    IBuffRepository buffRepository, ICombatSessionService combatSessions, IGameEvents gameEvents)
+    IBuffRepository buffRepository, ICombatSessionService combatSessions, IGameEvents gameEvents, IBoxContextService boxContextService)
     : InteractionModuleBase<SocketInteractionContext>
 {
     private const string Eat = "taberna_eat";
@@ -37,7 +37,7 @@ public class TabernaModule(
         try
         {
             var scene = await BuildSceneAsync(
-                userRepository, itemRepository, inventoryRepository, buffRepository, Context.User.Id, null);
+                userRepository, itemRepository, inventoryRepository, buffRepository, Context.User.Id, null, boxContextService);
 
             if (scene.AttachmentPath is { } file)
             {
@@ -151,10 +151,10 @@ public class TabernaModule(
 
             string talk = await ExecuteActionAsync(
                 action, userRepository, itemRepository, inventoryRepository, shopRepository, buffRepository, combatSessions, gameEvents,
-                Context.User.Id, selected.FirstOrDefault() ?? string.Empty);
+                Context.User.Id, selected.FirstOrDefault() ?? string.Empty, boxContextService);
 
             // La escena se refresca (tu oro y tus listas al día) y la respuesta va en un mensaje aparte.
-            var scene = await BuildSceneAsync(userRepository, itemRepository, inventoryRepository, buffRepository, Context.User.Id, null);
+            var scene = await BuildSceneAsync(userRepository, itemRepository, inventoryRepository, buffRepository, Context.User.Id, null, boxContextService);
 
             await ModifyOriginalResponseAsync(p =>
             {
@@ -234,13 +234,13 @@ public class TabernaModule(
     public static async Task<string> ExecuteActionAsync(
         string action, IUserRepository userRepository, IItemRepository itemRepository, IInventoryRepository inventoryRepository,
         IShopRepository shopRepository, IBuffRepository buffRepository, ICombatSessionService combatSessions, IGameEvents gameEvents,
-        ulong discordId, string itemName)
+        ulong discordId, string itemName, IBoxContextService? boxContext = null)
     {
         switch (action)
         {
             case BuyFood or BuyBox:
             {
-                var bought = await ShopModule.ExecuteBuyAsync(userRepository, itemRepository, shopRepository, combatSessions, gameEvents, discordId, itemName, 1);
+                var bought = await ShopModule.ExecuteBuyAsync(userRepository, itemRepository, shopRepository, combatSessions, gameEvents, discordId, itemName, 1, boxContext);
                 return bought.PlainMessage ?? bought.Embed!.Description;
             }
 
@@ -280,7 +280,7 @@ public class TabernaModule(
     // que "aa taberna" muestre exactamente lo mismo.
     public static async Task<TabernaScene> BuildSceneAsync(
         IUserRepository userRepository, IItemRepository itemRepository, IInventoryRepository inventoryRepository,
-        IBuffRepository buffRepository, ulong discordId, string? talk)
+        IBuffRepository buffRepository, ulong discordId, string? talk, IBoxContextService? boxContext = null)
     {
         var player = await userRepository.GetByDiscordIdAsync(discordId);
         if (player is null)
@@ -296,7 +296,8 @@ public class TabernaModule(
         var inventory = await inventoryRepository.GetByDiscordIdAsync(discordId);
         var foodItems = await inventoryRepository.GetOwnedByTypeAsync(discordId, "Consumable");
 
-        var embed = NpcImages.Decorate(ShopModule.BuildViewEmbed(shopItems, buffs, talk, player.Gold), NpcImages.Innkeeper);
+        int? unlockedRank = boxContext is null ? null : await boxContext.MaxUnlockedRankAsync(discordId);
+        var embed = NpcImages.Decorate(ShopModule.BuildViewEmbed(shopItems, buffs, talk, player.Gold, unlockedRank), NpcImages.Innkeeper);
 
         var components = new ComponentBuilder();
         int row = 0;
@@ -330,7 +331,7 @@ public class TabernaModule(
         {
             components.WithSelectMenu(Menu(
                 BuyBox, discordId, "Comprar una caja (una por hora)",
-                boxesForSale.Select(i => (i.Name, $"{i.BuyPrice} oro", i.Name))), row++);
+                boxesForSale.Select(i => (i.Name, ShopModule.BoxLine(i, unlockedRank), i.Name))), row++);
         }
 
         // Primero lo que llevás puesto (avisando que es lo equipado: vender eso te deja sin la pieza) y después lo de la mochila.

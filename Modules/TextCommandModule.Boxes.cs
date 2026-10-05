@@ -16,7 +16,7 @@ public partial class TextCommandModule
     {
         try
         {
-            var result = await BoxModule.ExecuteOpenAsync(itemRepository, boxRepository, combatSessions, gameEvents, Context.User.Id, caja, cantidad);
+            var result = await BoxModule.ExecuteOpenAsync(itemRepository, boxRepository, boxContextService, combatSessions, gameEvents, Context.User.Id, caja, cantidad);
             await ReplyAsync(result.PlainMessage, embed: result.Embed);
         }
         catch (Exception ex)

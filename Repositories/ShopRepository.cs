@@ -200,11 +200,13 @@ public sealed class ShopRepository(IDbConnectionFactory connectionFactory) : ISh
         {
             // FOR UPDATE OF inv: solo bloqueamos las filas de inventory (que vamos a borrar),
             // no las de items (tabla de referencia compartida por todos los jugadores).
+            // sell_price > 0: lo que la tienda no compra (las cajas valen 0 desde la v0.8.0, y los premios como el Arca del Soberano) se queda en la
+            // mochila: antes se borraba "a cambio de 0" y un /shop sellall se llevaba las cajas gratis.
             const string selectInventorySql = """
                 SELECT inv.quantity AS "Quantity", i.sell_price AS "SellPrice"
                 FROM inventory inv
                 JOIN items i ON i.item_id = inv.item_id
-                WHERE inv.discord_id = @DiscordId
+                WHERE inv.discord_id = @DiscordId AND i.sell_price > 0
                 FOR UPDATE OF inv;
                 """;
 
@@ -220,7 +222,12 @@ public sealed class ShopRepository(IDbConnectionFactory connectionFactory) : ISh
             int totalRefund = rows.Sum(row => row.Quantity * row.SellPrice);
             int itemsSoldCount = rows.Sum(row => row.Quantity);
 
-            const string clearInventorySql = "DELETE FROM inventory WHERE discord_id = @DiscordId;";
+            // Solo lo que se vendió (la misma condición de arriba, y las filas ya están bloqueadas por el SELECT ... FOR UPDATE).
+            const string clearInventorySql = """
+                DELETE FROM inventory inv
+                USING items i
+                WHERE inv.discord_id = @DiscordId AND i.item_id = inv.item_id AND i.sell_price > 0;
+                """;
             await connection.ExecuteAsync(new CommandDefinition(
                 clearInventorySql, new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
 

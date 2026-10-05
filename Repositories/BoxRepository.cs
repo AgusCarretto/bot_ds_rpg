@@ -13,7 +13,8 @@ public sealed class BoxRepository(IDbConnectionFactory connectionFactory) : IBox
 
         var header = await connection.QuerySingleOrDefaultAsync<BoxHeaderRow>(new CommandDefinition(
             """
-            SELECT b.box_item_id AS BoxItemId, i.name AS BoxName, b.rolls AS Rolls
+            SELECT b.box_item_id AS BoxItemId, i.name AS BoxName, i.rarity AS Rarity,
+                   COALESCE(b.min_items, b.rolls) AS MinItems, COALESCE(b.max_items, b.rolls) AS MaxItems
             FROM boxes b JOIN items i ON i.item_id = b.box_item_id
             WHERE b.box_item_id = @BoxItemId;
             """,
@@ -36,10 +37,12 @@ public sealed class BoxRepository(IDbConnectionFactory connectionFactory) : IBox
 
         var entries = rows
             .Select(r => new BoxLootEntry(
-                r.Kind == "gold" ? LootKind.Gold : LootKind.Item, r.ItemId, r.ItemName, r.ItemRarity, r.ItemEmoji, r.Weight, r.MinQty, r.MaxQty))
+                r.Kind switch { "gold" => LootKind.Gold, "gather" => LootKind.Gather, "zone_drop" => LootKind.ZoneDrop, _ => LootKind.Item },
+                r.ItemId, r.ItemName, r.ItemRarity, r.ItemEmoji, r.Weight, r.MinQty, r.MaxQty))
             .ToList();
 
-        return new BoxDefinition(header.BoxItemId, header.BoxName, header.Rolls, entries);
+        // La zona de la caja es su rareza (Común = 1 ... Mítico = 5): es el tope de las zonas de las que pueden salir drops de monstruo.
+        return new BoxDefinition(header.BoxItemId, header.BoxName, header.MinItems, header.MaxItems, BoxCatalog.RequiredZoneRank(header.Rarity), entries);
     }
 
     public async Task<BoxOpenOutcome?> OpenAsync(ulong discordId, int boxItemId, BoxLootResult loot, CancellationToken cancellationToken = default)
@@ -102,7 +105,7 @@ public sealed class BoxRepository(IDbConnectionFactory connectionFactory) : IBox
         return new BoxOpenOutcome(goldAfter, newTrophies);
     }
 
-    private sealed record BoxHeaderRow(int BoxItemId, string BoxName, int Rolls);
+    private sealed record BoxHeaderRow(int BoxItemId, string BoxName, string Rarity, int MinItems, int MaxItems);
 
     private sealed record LootRow(
         string Kind, int? ItemId, string? ItemName, string? ItemRarity, string? ItemEmoji, int Weight, int MinQty, int MaxQty);
