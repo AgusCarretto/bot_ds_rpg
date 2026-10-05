@@ -31,11 +31,11 @@ ALTER TABLE box_loot ADD CONSTRAINT box_loot_kind_item CHECK (
 -- 1) Rangos y precios.
 CREATE TEMP TABLE rb_boxes (name TEXT, min_items INTEGER, max_items INTEGER, buy_price INTEGER);
 INSERT INTO rb_boxes VALUES
-    ('Cajón de Pino',      1,  10,   1000),
-    ('Baúl de Roble',      5,  20,  10000),
-    ('Arcón de Hierro',   10,  35,  35000),
-    ('Cofre de Oro',      20,  60, 110000),
-    ('Arca del Soberano', 40, 100,      0);
+    ('Cajón de Pino',      1,  5,   2300),
+    ('Baúl de Roble',      5,  10,  14000),
+    ('Arcón de Hierro',   10,  25,  42000),
+    ('Cofre de Oro',      25,  60, 120000),
+    ('Arca del Soberano', 60, 100,      0);
 
 UPDATE boxes b
 SET min_items = r.min_items, max_items = r.max_items, rolls = 1
