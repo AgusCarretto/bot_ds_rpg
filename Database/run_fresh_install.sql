@@ -9,7 +9,7 @@
 --   - El "PSQL Tool" de pgAdmin (el ícono de terminal, NO el "Query Tool" — ese último solo manda
 --     SQL crudo al servidor y no entiende \ir, va a tirar error de sintaxis).
 --   - DBeaver u otros clientes: probablemente NO sirve — correlos a mano, uno por uno, en el orden
---     de abajo (son los mismos 20 archivos, en esta carpeta).
+--     de abajo (son los mismos 21 archivos, en esta carpeta).
 --
 -- USAR SOLO CONTRA UNA BASE VACÍA. seed.sql, add_weapon_family.sql y
 -- seed_class_gear_and_monster_drops.sql NO son idempotentes (duplican filas si la base ya tiene
@@ -54,6 +54,9 @@
 \ir rework_food_catalog.sql
 -- Las cajas y su botín: usa materiales, comida y banquetes que ya existen a esta altura.
 \ir seed_boxes.sql
+-- El rework final (v0.7.0): 20 monstruos, 3 drops por zona, el jefe da un cofre y 6 recetas por zona. PISA lo de los seeds de arriba (recetas,
+-- drops de jefes, Perro Cimarrón...) y usa los cofres de seed_boxes.sql, así que va ACÁ: después de todo lo demás y antes de los emojis.
+\ir rework_drops_and_recipes.sql
 \ir update_item_emojis.sql
 
 \echo 'Listo — base cargada completa: esquema, items, recetas, zonas/monstruos, catálogo final de consumibles y emojis.'
