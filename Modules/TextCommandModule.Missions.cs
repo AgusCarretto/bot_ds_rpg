@@ -1,3 +1,4 @@
+using BotDsRpg.GameData;
 using BotDsRpg.Services;
 using Discord.Commands;
 
@@ -31,10 +32,11 @@ public partial class TextCommandModule
         }
     }
 
-    // "aa achievements" muestra tus logros; "aa achievements claim" cobra los desbloqueados. Misma lógica que /achievements.
+    // "aa achievements" muestra tus logros (con el desplegable de páginas); "aa achievements 2" o "aa logros oficios" abre esa página; "aa achievements claim"
+    // cobra los desbloqueados. Misma lógica que /achievements.
     [Command("achievements")]
     [Alias("logros", "logro")]
-    [Summary("Tus logros: \"aa achievements\" para verlos, \"aa achievements claim\" para cobrar los que ya desbloqueaste.")]
+    [Summary("Tus logros: \"aa achievements\" para verlos (o \"aa achievements oficios\" para una página), \"aa achievements claim\" para cobrar los que ya desbloqueaste.")]
     public async Task AchievementsAsync([Remainder] string accion = "")
     {
         try
@@ -47,7 +49,8 @@ public partial class TextCommandModule
                 return;
             }
 
-            var view = await AchievementsModule.BuildViewAsync(gameEventRepository, achievementRepository, Context.User.Id);
+            var view = await AchievementsModule.BuildViewAsync(
+                gameEventRepository, achievementRepository, Context.User.Id, AchievementCatalog.ParsePage(accion) ?? 0);
             await ReplyAsync(embed: view.Embed, components: view.Components);
         }
         catch (Exception ex)

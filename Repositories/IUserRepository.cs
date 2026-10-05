@@ -1,3 +1,4 @@
+using BotDsRpg.GameData;
 using BotDsRpg.Models;
 
 namespace BotDsRpg.Repositories;
@@ -35,4 +36,8 @@ public interface IUserRepository
     // Cambia la zona actual del jugador (/zona ya validó min_level antes de llamar acá) — a partir
     // de esto, /hunt caza monstruos de la nueva zona (ver Repositories/IMonsterRepository.cs).
     Task<User> ChangeZoneAsync(ulong discordId, int zoneId, CancellationToken cancellationToken = default);
+
+    // La penalidad por morir (GameData/DeathPenalty.cs): la EXP del nivel actual vuelve a 0 y se pierde el 5 % del oro de la billetera (el banco no se toca;
+    // el nivel tampoco baja). Atómica. Devuelve lo que se perdió, o null si el jugador no existe.
+    Task<DeathPenaltyOutcome?> ApplyDeathPenaltyAsync(ulong discordId, CancellationToken cancellationToken = default);
 }

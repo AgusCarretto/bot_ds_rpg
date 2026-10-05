@@ -18,6 +18,11 @@ internal static class UserSql
         daily_streak     AS "DailyStreak",
         last_daily_claim AS "LastDailyClaim",
         current_zone_id  AS "CurrentZoneId",
-        highest_zone_cleared AS "HighestZoneCleared"
+        highest_zone_cleared AS "HighestZoneCleared",
+        has_bank         AS "HasBank",
+        bank_gold        AS "BankGold",
+        dust             AS "Dust",
+        weapon_enchant   AS "WeaponEnchant",
+        amulet_enchant   AS "AmuletEnchant"
         """;
 }

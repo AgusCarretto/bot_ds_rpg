@@ -756,10 +756,13 @@ public class RaidModule(
 
         // Los que ya se habían retirado (HasFled) ya persistieron su HP al huir — no tocarlos de
         // nuevo acá o se les aplicaría el delta dos veces.
+        // Los caídos pagan la misma penalidad que en un combate solitario (EXP del nivel a 0, 5 % del oro de la billetera): el mensaje es compartido,
+        // así que avisa la regla en general en vez de listar a cada uno.
         foreach (var participant in session.Participants.Where(p => p.IsKnockedOut && !p.HasFled))
         {
             int hpDelta = participant.ToDbHpDelta(participant.CurrentHp - participant.StartingHp);
             await userRepository.ApplyCombatHpDeltaAsync(participant.DiscordId, hpDelta);
+            await AdventureModule.ApplyDeathPenaltyAsync(userRepository, participant.DiscordId);
             await gameEvents.RecordAsync(participant.DiscordId, GameEventKinds.FightLost, session.ZoneId, detail: "raid");
         }
 
@@ -877,6 +880,7 @@ public class RaidModule(
             .WithColor(Color.DarkRed)
             .WithMonsterPortrait(session.BossPortrait)
             .WithDescription($"{logLine}\n\n{NpcDialogue.Boss(session.BossName, session.BossEmoji, NpcDialogue.BossLine.Victory)}\n\nSin recompensa esta vez. Usá **/heal** para recuperarte.")
+            .AddField("☠️ Penalidad", $"Quien cayó perdió la EXP de su nivel y el {DeathPenalty.GoldPercent} % del oro de su billetera. Lo que hay en el banco no se toca.", false)
             .Build();
     }
 

@@ -156,8 +156,9 @@ public class UseModule(
             };
 
             await userRepository.ApplyCombatHpDeltaAsync(discordId, finalState.ToDbHpDelta(playerHpAfter - state.PlayerStartingHp));
+            var penalty = await AdventureModule.ApplyDeathPenaltyAsync(userRepository, discordId);
 
-            await session.ReplyTarget.UpdateAsync(BuildCombatDefeatEmbed(finalState, item, monsterHit), new ComponentBuilder().Build());
+            await session.ReplyTarget.UpdateAsync(BuildCombatDefeatEmbed(finalState, item, monsterHit, penalty), new ComponentBuilder().Build());
 
             return new UseResult(null, new EmbedBuilder()
                 .WithTitle("☠️ Te curaste, pero no alcanzó")
@@ -226,9 +227,9 @@ public class UseModule(
     // state.PlayerCurrentHp ya viene con el resultado final aplicado — en unidades de combate,
     // posiblemente escaladas por un Guerrero, para no mezclar una cifra real de la base con un
     // Máximo escalado.
-    private static Embed BuildCombatDefeatEmbed(CombatState state, Item item, int monsterHit)
+    private static Embed BuildCombatDefeatEmbed(CombatState state, Item item, int monsterHit, DeathPenaltyOutcome? penalty = null)
     {
-        return new EmbedBuilder()
+        var embed = new EmbedBuilder()
             .WithTitle($"💀 Derrota contra {state.MonsterName} {state.MonsterEmoji}")
             .WithColor(Color.DarkRed)
             .WithMonsterPortrait(state.MonsterPortrait)
@@ -236,8 +237,9 @@ public class UseModule(
                 $"Usaste **{ItemDisplay.Format(item.Emoji, item.Name)}**, pero el **{state.MonsterName}** te hizo **{monsterHit}** de daño " +
                 $"y te dejó fuera de combate. Usá **/heal** para recuperarte.\n\n{AdventureModule.MonsterSays(state, NpcDialogue.BossLine.Victory)}")
             .AddField("❤️ Tu HP", HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
-            .AddField("📋 Resumen del combate", AdventureModule.BuildCombatSummaryLine(state), false)
-            .Build();
+            .AddField("📋 Resumen del combate", AdventureModule.BuildCombatSummaryLine(state), false);
+
+        return AdventureModule.WithDeathPenalty(embed, penalty).Build();
     }
 
     private static string HpLine(int current, int max) => $"{ProgressBar.Render(current, max)}\n{current}/{max}";

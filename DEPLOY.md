@@ -157,6 +157,10 @@ y las 4 Maderas nuevas) y `Database/update_monster_portraits.sql` (agrega la col
 `/boss` y `/raid` fallan). Los dos son re-ejecutables y el segundo se verifica solo. Esos emojis son de la **aplicación** del bot: si usás otro bot (otra aplicación), no los tiene y
 hay que resubirlos y regenerar los scripts. Después reiniciá el bot.
 
+**v0.8.4 → v0.9.0 (banco, Polvo y encantamientos):** ANTES de arrancar el bot nuevo corré `Database/add_bank_dust_enchants.sql` (agrega a `users` las columnas `has_bank`, `bank_gold`, `dust`, `weapon_enchant` y
+`amulet_enchant`, que el código lee en CADA consulta de jugador: si arrancás primero, casi todos los comandos fallan). Es re-ejecutable y se verifica solo; una instalación nueva ya las trae en `schema.sql`. En Railway:
+`psql "<DATABASE_PUBLIC_URL>" -v ON_ERROR_STOP=1 -f add_bank_dust_enchants.sql` y recién ahí desplegá `main`. Hacé un backup antes (sección 6).
+
 La carpeta `Database/` del repo está montada en `/seed`, así que los scripts nuevos aparecen con el `git checkout`. Los seeds son
 re-ejecutables; **nunca** corras `run_fresh_install.sql` sobre una base con datos.
 

@@ -49,4 +49,15 @@ public static class GameEventKinds
     // Progreso de misiones y logros (los registra el propio sistema).
     public const string MissionClaimed = "mission_claimed"; // detail = clave de la misión
     public const string AchievementUnlocked = "achievement_unlocked"; // detail = clave del logro
+
+    // v0.9.0.
+    public const string CommandUsed = "command_used";       // un comando (de barra o de texto) que se ejecutó bien: alimenta el logro Comandante
+    public const string EnemyDefeated = "enemy_defeated";   // un enemigo vencido (cacería, viaje, jefe o raid): se registra junto con hunt_win / travel_win / boss_win / raid_win
+    public const string BankOpened = "bank_opened";         // compró la cuenta del banco
+    public const string BankDeposit = "bank_deposit";       // amount = oro depositado
+    public const string Dismantle = "dismantle";            // amount = unidades desmanteladas; detail = el ítem
+    public const string Enchant = "enchant";                // un intento de encantamiento; detail = "weapon:3" (de qué pieza y qué tier salió)
+
+    // Las victorias de combate de las que sale un "enemigo vencido" (GameEventExtensions.RecordVictoryAsync suma el enemy_defeated con ellas).
+    public static bool IsEnemyWin(string kind) => kind is HuntWin or TravelWin or BossWin or RaidWin;
 }

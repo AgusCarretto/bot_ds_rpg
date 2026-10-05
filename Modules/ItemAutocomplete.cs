@@ -57,6 +57,20 @@ public static class ItemChoices
             .ToList();
     }
 
+    // Lo que el jugador TIENE y se puede desmantelar (materiales: madera, minerales y drops), con cuántos y cuánto Polvo da cada uno; lo que más Polvo da arriba.
+    public static IReadOnlyList<AutocompleteResult> ForDismantle(IEnumerable<InventoryEntry> inventory, string typed)
+    {
+        return inventory
+            .Where(e => e.Quantity > 0 && Dismantling.CanDismantle(e.Type) && Dismantling.DustPerUnit(e.Rarity) > 0 && AutocompleteText.FitsAsValue(e.ItemName) && Matches(e.ItemName, typed))
+            .OrderBy(e => Relevance(e.ItemName, typed))
+            .ThenByDescending(e => Dismantling.DustPerUnit(e.Rarity))
+            .ThenBy(e => e.ItemName, StringComparer.Ordinal)
+            .Take(MaxChoices)
+            .Select(e => new AutocompleteResult(
+                Truncate($"{e.ItemName} — tenés {e.Quantity} · +{Dismantling.DustPerUnit(e.Rarity)} Polvo c/u ({e.Rarity})"), e.ItemName))
+            .ToList();
+    }
+
     // Lo que el jugador TIENE y se puede vender (los premios no: sell_price 0), lo que más plata deja arriba. "c/u" porque /shop sell
     // vende por unidad y el jugador elige cuántas. equippedGear: su arma y su amuleto EQUIPADOS (no están en el inventario) — se ofrecen
     // arriba de todo y avisan que son los puestos, porque venderlos te deja sin ellos.

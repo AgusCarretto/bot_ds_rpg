@@ -57,7 +57,8 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 false)
             .AddField(
                 "🥩 Supervivencia",
-                "Usá `/shop` para comprar comida y `/heal` para curarte (¡cuidado, curarte en combate le da un turno extra al enemigo!).",
+                "Usá `/shop` para comprar comida y `/heal` para curarte (¡cuidado, curarte en combate le da un turno extra al enemigo!). " +
+                "Perder un combate te cuesta la EXP del nivel y el 5 % del oro que llevás: lo que guardes en el banco (`/bank`) no se toca.",
                 false)
             .AddField(
                 "📋 Misiones y logros",
@@ -76,7 +77,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             .WithDescription("Todo comando de barra tiene su versión de texto con el prefijo `aa ` (ej. `aa hunt`). Usá `/tutorial` para el loop básico.")
             .AddField(
                 "💰 Economía y Suerte",
-                "`/daily` — Recompensa diaria\n`/shop` — Comprar comida y cajas, y vender (view/buy/sell/sellall)\n`/open` — Abrir cajas de tu inventario (`aa open <caja>`)\n`/play` — Casino (slots/coinflip)\n`/give` — Dale monedas a otro jugador (`aa give @jugador 100`)",
+                "`/daily` — Recompensa diaria\n`/shop` — Comprar comida y cajas, y vender (view/buy/sell/sellall)\n`/open` — Abrir cajas de tu inventario (`aa open <caja>`)\n`/play` — Casino (slots/coinflip)\n`/give` — Dale monedas a otro jugador (`aa give @jugador 100`)\n`/bank` — Tu cuenta del banco (se abre con 1.000 de oro): guardá oro a salvo de la penalidad por morir (`aa bank`)",
                 false)
             .AddField(
                 "⚔️ Aventura",
@@ -85,6 +86,12 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             .AddField(
                 "📈 Progresión",
                 "`/forge` (`aa herrero`) — Pasá por la herrería: forjá armas y amuletos (quedan equipados solos) y mirá las recetas de cada zona\n`/taberna` — Comé, comprá comida y cajas y vendé con el tabernero (también tu arma o amuleto equipados, para poder forjar otro)\n`/heal` — Curarte toda la vida de una con lo necesario de tu inventario (no en combate; podés elegir la comida)\n`/use` — Curarte con un consumible (en combate: en `/travel` y `/boss` una sola vez por pelea, también desde el desplegable). Los banquetes Míticos suman +15% de ataque por 30 min\n`/missions` — Misiones diarias y semanales (reclamás los premios ahí)\n`/achievements` — Tus logros por tramos\n`/trade` — Cambiá 1 material por 1 de la misma rareza con otro jugador\n`/leaderboard` — Ranking del server",
+                false)
+            .AddField(
+                "✨ Polvo y encantamientos",
+                "`/dismantle` — Desarmá de 1 a 5 materiales y quedate con su Polvo (`aa desmantelar 3 Hierro`)\n" +
+                "`/enchant` — Gastá Polvo y oro para encantar tu arma o tu amuleto: sale un tier al azar (Tibio ➜ Soberano) y solo reemplaza al actual si es mejor (`aa encantar arma`)\n" +
+                "💀 Si perdés un combate, la EXP del nivel vuelve a 0 y perdés el 5 % del oro de la billetera (el del banco no).",
                 false)
             .AddField(
                 "🛠️ Utilidad",

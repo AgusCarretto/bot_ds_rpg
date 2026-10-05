@@ -14,8 +14,22 @@ namespace BotDsRpg.Services;
 public static class NoticeDelivery
 {
     // Engancha la entrega al final de cada comando de barra y de cada botón/menú. Se llama una vez al armar el bot.
+    // Antes de entregar cuenta el comando (Services/CommandCounter.cs): va en el MISMO manejador y no en otra suscripción para que el orden sea seguro,
+    // porque ese conteo puede cruzar un tramo de logro y su aviso tiene que estar en la cola cuando se entrega.
     public static void Attach(InteractionService commands, IGameEvents events) =>
-        commands.InteractionExecuted += (_, context, _) => DeliverAfterInteractionAsync(events, context);
+        commands.InteractionExecuted += async (_, context, result) =>
+        {
+            try
+            {
+                await CommandCounter.RecordSlashAsync(events, context, result);
+            }
+            catch (Exception ex)
+            {
+                BotLog.Warn(ex); // contar un comando nunca tira abajo la entrega de los avisos
+            }
+
+            await DeliverAfterInteractionAsync(events, context);
+        };
 
     private static async Task DeliverAfterInteractionAsync(IGameEvents events, IInteractionContext context)
     {

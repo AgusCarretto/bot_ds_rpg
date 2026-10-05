@@ -1,6 +1,26 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-05 (v0.8.4: el inventario sin nombres partidos)_
+_Última revisión: 2026-10-05 (v0.9.0: banco, penalidad por muerte, Polvo y encantamientos, logros nuevos)_
+
+## Banco, penalidad por muerte, Polvo, encantamientos y 7 logros nuevos (v0.9.0, 2026-10-05)
+
+Lo que el dueño aprobó de su lista de ideas (punto 1 y 2 tal cual los dijo; el 3 sin "craftear"; los logros de comandos y enemigos). Relación y mascotas quedan para más adelante.
+
+- **Banco** (`/bank view|open|deposit|withdraw`, `aa bank`): la cuenta **se compra** una vez por **1.000 de oro**; después se deposita y se retira (acepta `all`). El oro del banco **no lo toca la penalidad**. Sin interés ni tope por ahora (anotado abajo).
+- **Penalidad por morir**: al perder un combate, **a cualquier nivel**, la **EXP del nivel actual vuelve a 0** y se pierde el **5 % del oro de la billetera** (redondeado hacia abajo: con menos de 20 de oro no se pierde nada; nunca se baja de nivel). Se aplica en `/hunt`, `/travel`, `/boss`,
+  el `/use` que te mata en plena pelea, **`/autohunt`** y a cada caído de un **raid** que cae entero. **No** se aplica al huir, al vencerse el tiempo, ni en duelos y Arena. Los mensajes de derrota traen un campo «☠️ Penalidad» con lo que perdiste (el del raid explica la regla en general).
+- **Desmantelar → Polvo** (`/dismantle <ítem> [1-5]`, `aa desmantelar 3 Hierro`): destruye Madera, Mineral o drops de monstruo (nunca cajas, comida ni equipo) y da **Polvo**: 1 / 6 / 24 / 70 / 500 por unidad según la rareza, calibrado a ~0,5 Polvo por minuto de farmeo en TODAS las rarezas
+  (para que desmantelar "lo más eficiente" no rompa el costo de encantar). El tope de 5 por comando es una sola constante (`Dismantling.MaxPerCommand`). **Craftear queda descartado.**
+- **Encantamientos** (`/enchant [arma|amuleto]`, `aa encantar arma`): cuestan **Polvo + oro** según la zona de la pieza (rareza → zona; Zona 1: 10 Polvo + 112 oro, Zona 5: 60 Polvo + 3.000 oro) y sale un **tier al azar**: Tibio 40 % (+4 %) · Al Rojo 30 % (+8 %) · Ardiente 18 % (+13 %) ·
+  Incandescente 9 % (+19 %) · Soberano 3 % (+26 %) del stat de **la pieza** (mínimo +1). El intento se paga siempre; el tier nuevo **solo reemplaza** al actual si es mejor. **Vender o reemplazar la pieza equipada borra su encantamiento.** El arma lleva un «Filo» y el amuleto una «Guarda» (nombres de brasa, no del EPIC RPG).
+  `/profile` muestra el banco, el Polvo y el encantamiento con su %, y el ataque/defensa ya lo incluyen (es la misma cuenta del combate).
+- **7 logros nuevos (17 en total) y `/achievements` con páginas**: Comandante (comandos usados, de barra o `aa`), Exterminador (enemigos vencidos), Misionero, Desmantelador, Encantador, Afortunado (oro ganado en el casino) y Gladiador (torneos de la Arena). **Pagan solo oro y XP, poco, nunca cajas**
+  (sus contadores se pueden inflar: un comando cuenta aunque sea de mirar). La pantalla va por **categorías** (Combate, Oficios, Economía, Constancia) con un desplegable, y el botón «Reclamar» cobra todas las páginas y vuelve a la misma. `aa logros 2` / `aa logros oficios` abren una página.
+- **Para desplegar una base viva**: correr `Database/add_bank_dust_enchants.sql` ANTES de arrancar la v0.9.0 (agrega 5 columnas a `users` que el código lee). Es re-ejecutable y se verifica solo. Ver DEPLOY.md.
+- **Ojo con el balance (decisión para el dueño)**: el escalón entre zonas se midió SIN encantamientos. Con el equipo de la zona, el tier más alto (3 % de los intentos) suma ~+15–20 % de ataque total; un jugador con muchos intentos va a pelear más cómodo que lo calibrado. Si se siente fácil, el contrapeso previsto es endurecer los monstruos de la segunda vuelta (después del reset),
+  no tocar los de la primera. La penalidad por morir suma presión del otro lado.
+- **`game_events` crece más**: ahora hay una fila por comando usado y otra por enemigo vencido. Si la tabla llega a pesar, el contador de `command_used` se puede llevar solo en `player_stats` sin guardar cada evento.
+- Pendientes que quedaron anotados: interés o tope del banco, relación/casamiento y mascotas (la lista completa está en "Ideas a futuro").
 
 ## Inventario sin nombres partidos (v0.8.4, 2026-10-05)
 
@@ -912,7 +932,8 @@ Todo esto ya compila y bootea limpio contra Discord.
 
 ## Ideas a futuro (sin comprometerme a nada, para cuando quieran expandir)
 
-**Lista del dueño (2026-10-05), todavía SIN diseño cerrado** — con lo que se charló y lo que hay que cuidar. Orden sugerido: banco → penalidad por muerte → desmantelar/craftear → encantamientos → logros nuevos → relación → mascotas.
+**Lista del dueño (2026-10-05)** — con lo que se charló y lo que hay que cuidar. **HECHO en la v0.9.0: banco, penalidad por muerte, desmantelar (→ Polvo), encantamientos y logros nuevos con páginas** (ver la sección de arriba; lo de "craftear" se descartó). Quedan **relación y mascotas**. El texto de abajo es el análisis
+original, se deja como registro de los motivos de cada decisión.
 - **Logros: muchos más y con páginas.** Fácil y seguro: el progreso sale de `player_stats`, no se guarda nada. Hace falta paginar `/achievements` (botones o menú) y categorías (combate, recolección, economía, PvP, colección...). Cuidar la inflación de premios: más logros = más oro/cajas gratis; conviene que
   los nuevos paguen sobre todo **títulos/insignias** que se muestran en `/profile` (no inflan nada). Mejor hacerlo DESPUÉS de los sistemas nuevos para que haya logros de encantar, desmantelar, mascotas...
 - **Desmantelar y craftear (craft 1–10, desmantelar 1–5).** Lo que podría romper no es la cantidad por comando sino la tasa de cambio. Reglas para que no rompa: lo que se desmantela devuelve menos de lo que cuesta (ida y vuelta siempre pierde), los drops de zona NO se pueden fabricar ni recuperar (las recetas

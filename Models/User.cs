@@ -17,4 +17,9 @@ public sealed class User
     public DateTime? LastDailyClaim { get; init; }
     public int CurrentZoneId { get; init; }
     public int HighestZoneCleared { get; init; }
+    public bool HasBank { get; init; }      // compró la cuenta del banco (GameData/BankRules.cs)
+    public int BankGold { get; init; }      // el oro guardado en el banco: la penalidad por muerte no lo toca
+    public int Dust { get; init; }          // Polvo: sale de desmantelar materiales y se gasta en encantar
+    public int WeaponEnchant { get; init; } // tier del encantamiento del arma puesta (0 = ninguno, 1..5; GameData/Enchantments.cs)
+    public int AmuletEnchant { get; init; } // ídem del amuleto
 }
