@@ -21,14 +21,14 @@ public partial class TextCommandModule
 
     // "aa boss" — misma lógica que AdventureModule.HandleBossAsync.
     [Command("boss")]
-    [Summary("Enfrentá al Jefe de tu zona actual (cooldown de 1 hora, compartido con el raid; si perdés o huís, 30 minutos).")]
+    [Summary("Enfrentá al Jefe de tu zona actual (cooldown de 5 horas, compartido con el raid; si perdés o huís, 30 minutos).")]
     public Task BossAsync() => StartCombatAsync(CooldownCatalog.Boss, () => combatStarter.PrepareBossAsync(Context.User.Id));
 
     // "aa raid" — misma lógica que RaidModule.HandleRaidAsync. Solo ARRANCA el lobby: los botones
     // (Unirse / Empezar ya / Atacar / Huir) siempre llegan como interacción de componente, sin
     // importar si el mensaje nació de un slash command o de este comando de texto.
     [Command("raid")]
-    [Summary("Jefe de zona cooperativo: varios jugadores atacan al mismo jefe (mín. 2, cooldown de 1 hora, compartido con /boss).")]
+    [Summary("Jefe de zona cooperativo: varios jugadores atacan al mismo jefe (mín. 2, cooldown de 5 horas, compartido con /boss).")]
     public async Task RaidAsync()
     {
         try

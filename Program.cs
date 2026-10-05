@@ -94,6 +94,10 @@ class Program
         // 3. Inyectamos dependencias
         _services = ServiceProviderBuilder.BuildServiceProvider(_client, _commands, configuration);
 
+        // Los avisos de los comandos de barra y de los botones (¡SUBISTE DE NIVEL!, misiones, logros) salen cuando el comando TERMINA: ver
+        // Services/NoticeDelivery.cs (entregarlos justo después de ExecuteCommandAsync llegaba antes de que el comando hubiera registrado nada).
+        NoticeDelivery.Attach(_commands, _services.GetRequiredService<IGameEvents>());
+
         // Falla rápido y claro si la base no está o no tiene el esquema: sin esto el bot se conecta a Discord igual y
         // CADA comando responde "¡Upa! Algo falló" sin que se vea el motivo.
         await EnsureDatabaseAsync();
@@ -246,22 +250,10 @@ class Program
             channel.Id,
             async (embed, buttons) => new DiscordEventAnnouncement(await channel.SendMessageAsync(embed: embed, components: buttons)));
 
-    // Entrega los avisos pendientes de un jugador (ver Services/IGameEvents.cs). Un aviso que no se pueda mandar (el canal ya no
-    // existe, el token venció) se registra y se descarta: nunca tira abajo el comando que ya salió bien.
-    private static async Task DeliverNoticesAsync(ulong userId, Func<GameNotice, Task> send)
-    {
-        foreach (var notice in _services.GetRequiredService<IGameEvents>().TakeNotices(userId))
-        {
-            try
-            {
-                await send(notice);
-            }
-            catch (Exception ex)
-            {
-                BotLog.Warn(ex);
-            }
-        }
-    }
+    // Entrega los avisos pendientes de un jugador tras un comando de TEXTO (ver Services/IGameEvents.cs y Services/NoticeDelivery.cs; los de
+    // barra y botones se entregan solos cuando el comando termina, vía NoticeDelivery.Attach).
+    private static Task DeliverNoticesAsync(ulong userId, Func<GameNotice, Task> send) =>
+        NoticeDelivery.DeliverAsync(_services.GetRequiredService<IGameEvents>(), userId, send);
 
     private static async Task HandleInteractionAsync(SocketInteraction interaction)
     {
@@ -285,15 +277,8 @@ class Program
             if (!result.IsSuccess)
                 Console.WriteLine($"[ERROR DE COMANDO] {result.ErrorReason}");
 
-            // Los avisos que dejó el comando (una misión completada, un logro) salen apenas termina, con todo ya
-            // respondido. Los autocompletados no pueden recibir mensajes de seguimiento, así que ahí no se entrega nada.
-            if (interaction is SocketSlashCommand or SocketMessageComponent)
-            {
-                await DeliverNoticesAsync(
-                    interaction.User.Id,
-                    async notice => await interaction.FollowupAsync(
-                        string.IsNullOrEmpty(notice.Text) ? null : notice.Text, embed: notice.Embed, ephemeral: !notice.Public));
-            }
+            // OJO: acá NO se entregan los avisos del comando (misión completada, logro, subida de nivel). ExecuteCommandAsync vuelve apenas
+            // LANZA el comando (modo asíncrono) y el comando todavía no registró nada; los avisos salen cuando termina, ver NoticeDelivery.Attach.
 
             // Con poca probabilidad, después de un comando en un servidor puede aparecer un minievento en ese canal (ver Services/MiniEventService.cs).
             if (interaction is SocketSlashCommand && interaction.GuildId is not null && interaction.Channel is { } eventChannel)

@@ -40,7 +40,8 @@ public static class CombatRewardCalculator
     // los 3 viajes que caben en sus 30 minutos, que es lo justo por arriesgarse a perder — y ronda 7/10 de un nivel en Zona 2-5. En un raid
     // cada participante cobra esto entero.
     // v0.8.0: x15 (era x6 con 30 minutos de cooldown). Con 1 hora de cooldown la paridad por minuto sería x12; el 25% de más es el "un poco más" que pidió el
-    // dueño. Por minuto de cooldown el jefe rinde ~1,2 veces un viaje de su zona (el bono grande del jefe ya está dentro de la fórmula).
+    // dueño. Después el cooldown del jefe volvió a 5 horas (CooldownCatalog.Boss) y el dueño pidió NO tocar las recompensas: sigue en x15, así que por
+    // minuto de cooldown ahora rinde bastante menos que un viaje (es el valor a subir si el jefe tiene que volver a sentirse "vale la espera").
     public const int BossRewardMultiplier = 15;
 
     public static CombatReward RollBossReward(int playerLevel, int monsterGoldBonus, int monsterXpBonus, bool firstClear) =>

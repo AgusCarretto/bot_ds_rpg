@@ -13,7 +13,8 @@
 --     que farmear. Todas las cajas pasan a venta 0 (no se pueden revender: un cofre de jefe no puede ser una fuente de oro).
 --   · una caja solo se COMPRA si ya desbloqueaste su zona (Común = Zona 1 ... Legendario = Zona 4; la Mítica es solo premio); lo valida el código.
 --
--- Cantidad de ítems: Cajón de Pino 1-10 · Baúl de Roble 5-20 · Arcón de Hierro 10-35 · Cofre de Oro 20-60 · Arca del Soberano 40-100.
+-- Cantidad de ítems (ajustada por el dueño el 2026-10-05; los precios de la tabla de abajo también): Cajón de Pino 1-5 · Baúl de Roble 5-10 · Arcón de Hierro 10-25 ·
+-- Cofre de Oro 25-60 · Arca del Soberano 60-100. La tabla rb_boxes de abajo es la fuente de verdad: si cambia, cambia ESA (y se re-corre el script).
 -- Re-ejecutable (la segunda vez no cambia nada) y FALLA EN VOZ ALTA si algo no coincide. Va DESPUÉS de seed_boxes.sql y de rework_drops_and_recipes.sql.
 -- IMPORTANTE para una base viva: correr ESTE script ANTES de arrancar el bot v0.8.0 (el código lee las columnas nuevas).
 -- =========================================================
@@ -31,11 +32,11 @@ ALTER TABLE box_loot ADD CONSTRAINT box_loot_kind_item CHECK (
 -- 1) Rangos y precios.
 CREATE TEMP TABLE rb_boxes (name TEXT, min_items INTEGER, max_items INTEGER, buy_price INTEGER);
 INSERT INTO rb_boxes VALUES
-    ('Cajón de Pino',      1,  10,   1000),
-    ('Baúl de Roble',      5,  20,  10000),
-    ('Arcón de Hierro',   10,  35,  35000),
-    ('Cofre de Oro',      20,  60, 110000),
-    ('Arca del Soberano', 40, 100,      0);
+    ('Cajón de Pino',      1,  5,   2300),
+    ('Baúl de Roble',      5,  10,  14000),
+    ('Arcón de Hierro',   10,  25,  42000),
+    ('Cofre de Oro',      25,  60, 120000),
+    ('Arca del Soberano', 60, 100,      0);
 
 UPDATE boxes b
 SET min_items = r.min_items, max_items = r.max_items, rolls = 1

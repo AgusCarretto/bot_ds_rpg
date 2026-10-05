@@ -91,7 +91,7 @@ public static class NpcDialogue
         [ShopkeeperLine.BoxWait] =
         [
             "Ya te vendí una caja hace poco. Dejame que me reponga el stock.",
-            "Una caja por hora, que si no me vacían el depósito. Volvé en un rato.",
+            "Una caja cada dos horas, que si no me vacían el depósito. Volvé en un rato.",
         ],
         [ShopkeeperLine.SellSuccess] =
         [
