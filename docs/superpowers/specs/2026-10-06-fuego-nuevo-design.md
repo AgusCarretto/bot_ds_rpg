@@ -42,17 +42,27 @@ Hace falta (a) un objetivo para quien termina la Zona 5, (b) una razón para vol
 
 ## 5. Los porcentajes de cada vuelta
 
-Decisión del dueño: suaves, **siempre iguales** (cada Fuego Nuevo suma lo mismo, así el FN 10 se nota muchísimo contra el FN 1) y **un % distinto para cada cosa**. Propuesta (cada paso es una constante):
+Decisión del dueño: suaves, **siempre iguales** (cada Fuego Nuevo suma lo mismo, así el FN 10 se nota muchísimo contra el FN 1) y **un % distinto para cada cosa**. Cada paso es una constante, y suma sobre la base (FN N = base × (1 + paso × N), no se compone).
+**Valores acordados el 2026-10-06:**
 
-| Cosa | Por Fuego Nuevo | FN 1 | FN 5 | FN 10 | FN 25 |
-|---|---|---|---|---|---|
-| Drop de monstruos (relativo, cacería y viaje; no el cofre del jefe) | +4 % | +4 | +20 | +40 | +100 |
-| Cantidad en `/chop` y `/mine` (se redondea al azar para que sea exacta en promedio) | +5 % | +5 | +25 | +50 | +125 |
-| EXP de las peleas (hunt, travel, boss, raid, autohunt) | +3 % | +3 | +15 | +30 | +75 |
-| Oro | — | | | | |
+| Cosa | Qué sube | Paso por FN | FN 1 | FN 5 | FN 10 | FN 20 |
+|---|---|---|---|---|---|---|
+| `/hunt` | la **chance** de que caiga el drop del monstruo (6 % de base) | ×1,30 | 7,8 % | 15 % | 24 % | 42 % |
+| `/travel` | la **chance** del drop (60 % de base), con tope en 100 % | ×1,05 | 63 % | 75 % | 90 % | 100 % |
+| `/chop` y `/mine` | la **cantidad** de unidades por acción (se redondea al azar para que sea exacta en promedio) | ×1,20 | ×1,2 | ×2 | ×3 | ×5 |
+| EXP de las peleas (hunt, travel, boss, raid, autohunt) | la EXP | +10 % (supuesto, no confirmado) | +10 % | +50 % | +100 % | +200 % |
+| Oro | — | sin % (el oro ya se queda entre vueltas y se acumularía sin parar) | | | | |
 
-- **Sin % de oro**: el oro ya se queda entre vueltas y se acumularía sin parar.
-- **Efecto en las recetas** (cuenta gruesa, supone mitad drops y mitad recolección; ~27 h de juego perfecto en la vuelta 1): FN 1 ≈ 26 h, FN 5 ≈ 22 h, FN 10 ≈ 19 h, FN 25 ≈ 13 h. Sin tope de entrada; si hace falta un techo se agrega después sin romper nada (supuesto: se decide cuando el primer jugador pase de FN 10).
+- **El cofre del jefe no cambia** (igual que con las mascotas). Los % del Fuego Nuevo se **multiplican** con los de las mascotas (la Salamandrita al máximo suma +6 % relativo a la chance de cacería y de viaje).
+- **Efecto en las recetas**, medido con `report_recipe_pacing.sql` (camino del arma de clase y el amuleto de las 5 zonas, promedio de las 4 clases, uno después del otro; el script da ~2.480 min = ~41 h en la vuelta 1, los objetivos escritos en `CLAUDE.md` daban menos):
+
+| FN | 0 | 1 | 2 | 3 | 5 | 7 | 10 | 14 | 20 | 30 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Tiempo vs. FN 0 | 100 % | 89 % | 81 % | 75 % | 65 % | 59 % | 51 % | 44 % | 42 % | 40 % |
+| Horas | 41 | 37 | 33 | 31 | 27 | 24 | 21 | 18 | 17 | 16 |
+
+- **El tope de `/travel`**: con +5 % por FN la chance llega a 100 % en el FN 14, y desde ahí las piezas que piden el drop de viaje (armas de clase y amuletos) solo mejoran con otras fuentes. Por eso el tiempo total se aplana en ~40-44 %. Es lo esperado: deja espacio para oficios y bendiciones. Antes del FN 14 se decide si lo que sobre de 100 % se convierte en un segundo drop por viaje (supuesto, no hace falta todavía).
+- Sin tope general; si hace falta un techo se agrega después sin romper nada.
 - Se aplican en los mismos puntos que las mascotas: `CombatRewardCalculator` (drop y EXP, que ya recibe un parámetro de bonus) y `GatheringYield` (hoy `RunMultiplier` es un entero fijo en 1; pasa a factor decimal con redondeo probabilístico).
 
 ## 6. Bendiciones
@@ -83,7 +93,7 @@ Queda para su propio diseño: la curva de XP (objetivo: ~4-6 semanas de uso regu
 
 ## 8. El presupuesto de multiplicadores
 
-Cada actividad tiene un multiplicador total = (1 + Fuego Nuevo) × (1 + oficio) × (1 + mascotas) × (1 + bendiciones) (los de poder aparte). Antes de cada versión se calcula el tiempo de recetas resultante con `report_recipe_pacing.sql` en tres casos (jugador nuevo, FN 10 con oficios en 50, y el techo teórico) y se compara con el objetivo: **ninguna receta de Zona 1-5 por debajo de ~30 % del tiempo de la vuelta 1**, para que la escalera siga teniendo sentido. Los topes de cada fuente salen de ahí.
+Cada actividad tiene un multiplicador total = (1 + Fuego Nuevo) × (1 + oficio) × (1 + mascotas) × (1 + bendiciones) (los de poder aparte). Antes de cada versión se calcula el tiempo de recetas resultante con `report_recipe_pacing.sql` en tres casos (jugador nuevo, FN 10 con oficios en 50, y el techo teórico) y se compara con el objetivo: **el camino de recetas de las 5 zonas no baja de ~30 % del tiempo de la vuelta 1**, para que la escalera siga teniendo sentido. Solo con Fuego Nuevo (sección 5) el piso queda en ~40-44 %: los ~10-14 puntos que sobran son el presupuesto de los oficios, las bendiciones y las mascotas. Los topes de cada fuente salen de ahí.
 
 ## 9. Cambios técnicos
 
@@ -102,7 +112,7 @@ Cada actividad tiene un multiplicador total = (1 + Fuego Nuevo) × (1 + oficio) 
 ## 11. Supuestos y preguntas abiertas
 
 - El Polvo se va con el reinicio (el dueño dijo «nada de polvo ni nada»). La pantalla de confirmación lo muestra para que nadie se sorprenda.
-- Costo y estadísticas del equipo del Fogón, los pasos de % y los números de las bendiciones son un borrador: salen de `report_recipe_pacing.sql` y `calibsim`.
-- Sin tope en los % de Fuego Nuevo por ahora.
+- Costo y estadísticas del equipo del Fogón y los números de las bendiciones son un borrador: salen de `report_recipe_pacing.sql` y `calibsim`. Los pasos de la sección 5 (hunt ×1,30, travel ×1,05, chop/mine ×1,20) los fijó el dueño; el de EXP (+10 %) es mío.
+- Sin tope general en los % de Fuego Nuevo; solo el tope natural de 100 % en la chance de `/travel` (FN 14).
 - El oro se queda y no tiene % de vuelta; hay que vigilar que haya en qué gastarlo (cajas de 120.000, comida de mascotas, encantamientos).
 - Riesgo principal: que la vuelta 2 sea solo repetir; lo mitigan la clase nueva, las bendiciones, los oficios y, más adelante, la Zona 6 y los desafíos.
