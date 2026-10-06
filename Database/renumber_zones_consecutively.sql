@@ -55,6 +55,11 @@ BEGIN
     UPDATE recipes  t SET zone_id = m.new_id FROM zone_id_map m WHERE t.zone_id = m.old_id;
     UPDATE users    t SET current_zone_id = m.new_id FROM zone_id_map m WHERE t.current_zone_id = m.old_id;
     UPDATE users    t SET highest_zone_cleared = m.new_id FROM zone_id_map m WHERE t.highest_zone_cleared = m.old_id;
+    -- v0.10.0: pet_species.zone_id (una especie por zona: UNIQUE, así que se pasa primero por +1000000 para que no choquen dos a mitad del UPDATE). Solo si la tabla existe.
+    IF to_regclass('pet_species') IS NOT NULL THEN
+        UPDATE pet_species SET zone_id = zone_id + 1000000;
+        UPDATE pet_species t SET zone_id = m.new_id FROM zone_id_map m WHERE t.zone_id = m.old_id + 1000000;
+    END IF;
 
     -- 3) Recrear las FK, idénticas a como estaban.
     FOR fk IN SELECT * FROM zone_fks LOOP

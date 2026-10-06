@@ -13,20 +13,22 @@ public class BoxModule(
     IBoxRepository boxRepository,
     IBoxContextService boxContextService,
     ICombatSessionService combatSessions,
-    IGameEvents gameEvents) : InteractionModuleBase<SocketInteractionContext>
+    IGameEvents gameEvents,
+    IPetRepository petRepository) : InteractionModuleBase<SocketInteractionContext>
 {
     public const int MaxOpenAtOnce = 10;
 
-    [SlashCommand("open", "Abrí cajas de tu inventario (hasta 10 juntas).")]
+    [SlashCommand("open", "Abrí cajas (hasta 10 juntas) o huevos de mascota de tu inventario.")]
     public async Task HandleOpenAsync(
-        [Summary("box", "Elegí la caja que querés abrir.")] [Autocomplete(typeof(BoxAutocompleteHandler))] string boxName,
+        [Summary("box", "Elegí la caja o el huevo que querés abrir.")] [Autocomplete(typeof(BoxAutocompleteHandler))] string boxName,
         [Summary("cantidad", "Cuántas abrís (1 a 10, por defecto 1).")] [MinValue(1)] [MaxValue(MaxOpenAtOnce)] int quantity = 1)
     {
         await DeferAsync();
 
         try
         {
-            var result = await ExecuteOpenAsync(itemRepository, boxRepository, boxContextService, combatSessions, gameEvents, Context.User.Id, boxName, quantity);
+            var result = await ExecuteOpenAsync(
+                itemRepository, boxRepository, boxContextService, combatSessions, gameEvents, Context.User.Id, boxName, quantity, petRepository: petRepository);
             await FollowupAsync(result.PlainMessage, embed: result.Embed, ephemeral: result.Embed is null);
         }
         catch (Exception ex)
@@ -43,7 +45,7 @@ public class BoxModule(
     // sorteo fijo; en el juego es el generador compartido.
     public static async Task<BoxActionResult> ExecuteOpenAsync(
         IItemRepository itemRepository, IBoxRepository boxRepository, IBoxContextService boxContextService, ICombatSessionService combatSessions, IGameEvents gameEvents,
-        ulong discordId, string boxName, int quantity, Random? rng = null)
+        ulong discordId, string boxName, int quantity, Random? rng = null, IPetRepository? petRepository = null)
     {
         // Misma regla que la tienda: en plena pelea no se puede parar a abrir cajas.
         if (combatSessions.Peek(discordId) is not null)
@@ -57,6 +59,14 @@ public class BoxModule(
         }
 
         var item = await itemRepository.GetByNameAsync(boxName);
+
+        // Los huevos de mascota (v0.10.0) se abren con el mismo comando: nace la mascota de la zona (ver Modules/PetModule.cs). Sin repositorio de mascotas (llamadores viejos) no se abren.
+        if (item is { Type: "Huevo" } && petRepository is not null)
+        {
+            var hatched = await PetModule.ExecuteHatchAsync(petRepository, gameEvents, discordId, item);
+            return new BoxActionResult(hatched.PlainMessage, hatched.Embed);
+        }
+
         if (item is null || item.Type != "Caja")
         {
             return new BoxActionResult($"**{boxName}** no es una caja. Mirá las que tenés con **/inventory** o comprá en **/shop view**.", null);

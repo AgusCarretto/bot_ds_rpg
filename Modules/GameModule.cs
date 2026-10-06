@@ -8,7 +8,9 @@ using Discord.Rest;
 using Discord.WebSocket;
 using BotDsRpg.Services;
 
-public class GameModule(IUserRepository userRepository, IInventoryRepository inventoryRepository, IItemRepository itemRepository, IZoneRepository zoneRepository, IBuffRepository buffRepository)
+public class GameModule(
+    IUserRepository userRepository, IInventoryRepository inventoryRepository, IItemRepository itemRepository, IZoneRepository zoneRepository, IBuffRepository buffRepository,
+    IPetRepository petRepository)
     : InteractionModuleBase<SocketInteractionContext>
 {
     // Comando barra: /profile [jugador]
@@ -34,7 +36,7 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
 
             var embed = await BuildProfileEmbedAsync(
                 userRepository, itemRepository, zoneRepository, buffRepository, target.Id, GetDisplayName(target),
-                target.GetAvatarUrl() ?? target.GetDefaultAvatarUrl());
+                target.GetAvatarUrl() ?? target.GetDefaultAvatarUrl(), petRepository);
             await FollowupAsync(embed: embed);
         }
         catch (Exception ex)
@@ -57,7 +59,7 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
     // embed en "aa profile" — acá vive tanto la lectura de datos como el embed.
     public static async Task<Embed> BuildProfileEmbedAsync(
         IUserRepository userRepository, IItemRepository itemRepository, IZoneRepository zoneRepository, IBuffRepository buffRepository,
-        ulong discordId, string username, string avatarUrl)
+        ulong discordId, string username, string avatarUrl, IPetRepository? petRepository = null)
     {
         // Si es la primera vez que este usuario ejecuta un comando, se crea acá
         // automáticamente con los valores por defecto (Nivel 1, 0 EXP, 50 de oro, 100/100 HP, Guerrero).
@@ -79,7 +81,23 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
         // El banquete activo (si lo hay) suma a lo que se ve igual que en el combate real.
         var buff = await buffRepository.GetActiveAttackAsync(discordId);
         int attack = AttackBuff.Apply(CombatStats.TotalAttack(player.Level, weaponDamage), buff?.AttackPercent ?? 0);
-        int defense = CombatStats.TotalDefense(player.Level, amuletDefense);
+        // Las mascotas (v0.10.0): la del Gólem suma a la defensa igual que en el combate real (PlayerCombatProfileCalculator.Resolve). Un perfil nunca se cae por esto: si la
+        // lectura falla se muestra sin mascotas.
+        IReadOnlyList<OwnedPet> pets = [];
+        if (petRepository is not null)
+        {
+            try
+            {
+                pets = await petRepository.GetOwnedAsync(discordId);
+            }
+            catch (Exception ex)
+            {
+                BotLog.Warn(ex);
+            }
+        }
+
+        var petBonuses = PetRules.Total(pets);
+        int defense = PetRules.Boost(CombatStats.TotalDefense(player.Level, amuletDefense), petBonuses.DefensePercent);
 
         var classDef = ClassCatalog.All.FirstOrDefault(c => c.Name == player.Class);
         var ability = ClassAbilities.For(player.Class);
@@ -92,7 +110,8 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
             + (buff is null ? string.Empty : $" 🍖 +{buff.AttackPercent}% ({Math.Max(1, (int)Math.Ceiling(buff.Remaining.TotalMinutes))} min)")
             + $"\n{(weapon is null ? "_Sin arma_" : ItemDisplay.Format(weapon.Emoji, weapon.Name))}"
             + EnchantLine("weapon", weapon is null ? 0 : player.WeaponEnchant);
-        string defenseText = $"**{defense}**\n{(amulet is null ? "_Sin amuleto_" : ItemDisplay.Format(amulet.Emoji, amulet.Name))}"
+        string defenseText = $"**{defense}**" + (petBonuses.DefensePercent > 0 ? $" 🐾 {PetRules.PercentText(petBonuses.DefensePercent)}" : string.Empty)
+            + $"\n{(amulet is null ? "_Sin amuleto_" : ItemDisplay.Format(amulet.Emoji, amulet.Name))}"
             + EnchantLine("amulet", amulet is null ? 0 : player.AmuletEnchant);
 
         // La zona va debajo del título, en una línea: "Zona 1: Praderas del Mate (máx. Zona 4)". Antes era un campo "Zona actual" que repetía la palabra.
@@ -122,6 +141,16 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
         if (player.Dust > 0)
         {
             embed.AddField("✨ Polvo", $"**{GameHistory.Number(player.Dust)}**", false);
+        }
+
+        // Las mascotas (/pet): una por renglón, con su nivel y lo que da ahora. Solo aparece el campo si tiene alguna.
+        if (pets.Count > 0)
+        {
+            embed.AddField(
+                "🐾 Mascotas",
+                string.Join('\n', pets.Select(p =>
+                    $"{p.Species.Emoji} **{p.Species.Name}** · nivel {PetRules.LevelFor(p.FeedPoints)} · {PetRules.PercentText(PetRules.BonusPercent(p))} de {PetRules.KindName(p.Species.BonusKind)}")),
+                false);
         }
 
         embed.AddField("🎁 Racha", player.DailyStreak > 0 ? $"día {player.DailyStreak}" : "_ninguna_", false);
@@ -198,9 +227,11 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
 
         var wood = Lines(entries.Where(e => e.Type == "Madera"));
         var minerals = Lines(entries.Where(e => e.Type == "Mineral"));
-        var food = Lines(entries.Where(e => e.Type == "Consumable"));
+        // La comida de las mascotas va con los consumibles y los huevos con las cajas (v0.10.0): los dos son cosas que se tienen en la mochila para usar después.
+        var food = Lines(entries.Where(e => e.Type is "Consumable" or "PetFood"));
         var drops = Lines(entries.Where(e => e.Type == "Material"));
-        var boxes = Lines(entries.Where(e => e.Type == "Caja"));
+        var boxes = Lines(entries.Where(e => e.Type is "Caja" or "Huevo"));
+        string boxTitle = entries.Any(e => e.Type == "Huevo" && e.Quantity > 0) ? "Cajas y huevos" : "Cajas";
 
         if (wood.Count + minerals.Count + food.Count + drops.Count + boxes.Count == 0)
         {
@@ -215,7 +246,7 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
         AddFields(right, "⛏️ Mineral", minerals);
         AddFields(left, "🩸 Drops de monstruo", drops);
 
-        string stacked = food.Count > 0 && boxes.Count > 0 ? string.Join('\n', food) + "\n\n📦 **Cajas**\n" + string.Join('\n', boxes) : string.Empty;
+        string stacked = food.Count > 0 && boxes.Count > 0 ? string.Join('\n', food) + $"\n\n📦 **{boxTitle}**\n" + string.Join('\n', boxes) : string.Empty;
         if (stacked.Length > 0 && stacked.Length <= FieldLimit)
         {
             right.Add(("🍖 Consumibles", stacked));
@@ -223,7 +254,7 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
         else
         {
             AddFields(right, "🍖 Consumibles", food);
-            AddFields(right, "📦 Cajas", boxes);
+            AddFields(right, $"📦 {boxTitle}", boxes);
         }
 
         if (left.Count > 0 && right.Count > 0)
@@ -247,7 +278,7 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
 
         if (boxes.Count > 0)
         {
-            embed.WithFooter("📦 Abrí tus cajas con /open");
+            embed.WithFooter(boxTitle == "Cajas" ? "📦 Abrí tus cajas con /open" : "📦 Abrí tus cajas y huevos con /open");
         }
 
         return embed.Build();

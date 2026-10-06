@@ -33,6 +33,7 @@ public static class ItemChoices
                 string missingGold = playerGold is int gold && gold < item.BuyPrice ? " (te falta oro)" : string.Empty;
                 string what = item.Type == "Caja"
                     ? ShopModule.BoxLine(item, unlockedZoneRank).Replace(" · " + GameHistory.Number(item.BuyPrice) + " oro", string.Empty)
+                    : item.Type == ShopCatalog.PetFoodType ? "para tus mascotas"
                     : buffs is not null && buffs.TryGetValue(item.ItemId, out var buff) ? $"cura {item.StatValue} HP y +{buff.AttackPercent}% ATQ" : $"cura {item.StatValue} HP";
                 return new AutocompleteResult(
                     Truncate($"{item.Name} — {what} · {GameHistory.Number(item.BuyPrice)} oro{missingGold}"), item.Name);
@@ -43,17 +44,20 @@ public static class ItemChoices
     // El nombre es el VALOR de la opción: ver AutocompleteText.FitsAsValue.
     private static bool FitsAsValue(Item item) => AutocompleteText.FitsAsValue(item.Name);
 
-    // Solo las cajas que el jugador TIENE, con cuántas, de la más rara a la más común (lo que quiere abrir primero).
+    // Solo las cajas (y los huevos de mascota, que /open también abre) que el jugador TIENE, con cuántas, de la más rara a la más común (lo que quiere abrir primero).
     public static IReadOnlyList<AutocompleteResult> ForOwnedBoxes(IEnumerable<OwnedItem> owned, string typed)
     {
         return owned
-            .Where(o => o.Item.Type == "Caja" && o.Quantity > 0 && FitsAsValue(o.Item) && Matches(o.Item.Name, typed))
+            .Where(o => o.Item.Type is "Caja" or "Huevo" && o.Quantity > 0 && FitsAsValue(o.Item) && Matches(o.Item.Name, typed))
             .OrderBy(o => Relevance(o.Item.Name, typed))
             .ThenByDescending(o => RarityCatalog.RankOf(o.Item.Rarity))
             .ThenBy(o => o.Item.Name, StringComparer.Ordinal)
             .Take(MaxChoices)
             .Select(o => new AutocompleteResult(
-                Truncate($"📦 {o.Item.Name} — tenés {o.Quantity}{(BoxCatalog.RangeText(o.Item.BoxMinItems, o.Item.BoxMaxItems) is { Length: > 0 } range ? " · " + range : string.Empty)}"), o.Item.Name))
+                o.Item.Type == "Huevo"
+                    ? Truncate($"🥚 {o.Item.Name} — tenés {o.Quantity} · nace tu mascota")
+                    : Truncate($"📦 {o.Item.Name} — tenés {o.Quantity}{(BoxCatalog.RangeText(o.Item.BoxMinItems, o.Item.BoxMaxItems) is { Length: > 0 } range ? " · " + range : string.Empty)}"),
+                o.Item.Name))
             .ToList();
     }
 
@@ -176,12 +180,13 @@ public sealed class HealFoodAutocompleteHandler : SafeAutocompleteHandler
     }
 }
 
-// Lista de /open: las cajas que el jugador TIENE, con cuántas.
+// Lista de /open: las cajas y los huevos de mascota que el jugador TIENE, con cuántos.
 public sealed class BoxAutocompleteHandler : SafeAutocompleteHandler
 {
     protected override async Task<IReadOnlyList<AutocompleteResult>> BuildAsync(ulong userId, string typed, IServiceProvider services)
     {
-        var owned = await services.GetRequiredService<IInventoryRepository>().GetOwnedByTypeAsync(userId, "Caja");
+        var inventory = services.GetRequiredService<IInventoryRepository>();
+        var owned = (await inventory.GetOwnedByTypeAsync(userId, "Caja")).Concat(await inventory.GetOwnedByTypeAsync(userId, "Huevo")).ToList();
         return ItemChoices.ForOwnedBoxes(owned, typed);
     }
 }

@@ -59,6 +59,10 @@ public static class GameEventKinds
     public const string Dismantle = "dismantle";            // amount = unidades desmanteladas; detail = el ítem
     public const string Enchant = "enchant";                // un intento de encantamiento; detail = "weapon:3" (de qué pieza y qué tier salió)
 
+    // v0.10.0: mascotas (GameData/PetRules.cs).
+    public const string PetHatched = "pet_hatched";         // abrió un huevo y nació una mascota; detail = el nombre de la especie
+    public const string PetFed = "pet_fed";                 // le dio de comer a una mascota (una por hora cada una); detail = el nombre de la especie
+
     // Las victorias de combate de las que sale un "enemigo vencido" (GameEventExtensions.RecordVictoryAsync suma el enemy_defeated con ellas).
     public static bool IsEnemyWin(string kind) => kind is HuntWin or TravelWin or BossWin or RaidWin;
 }

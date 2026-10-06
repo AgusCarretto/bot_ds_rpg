@@ -127,8 +127,25 @@ public sealed class AdventureRepository(IDbConnectionFactory connectionFactory) 
                 await InventoryUpsert.AddItemAsync(connection, transaction, discordId, droppedItemId.Value, droppedItemQuantity, cancellationToken);
             }
 
+            // El huevo de la zona (v0.10.0): la PRIMERA vez que este jugador vence a su jefe (current es la fila bloqueada, con el highest_zone_cleared de ANTES de esta
+            // victoria), en la misma transacción que el cofre. Si por algún motivo ya tiene esa mascota no se le da otro huevo.
+            PetSpecies? eggGranted = null;
+            if (clearedZoneId is { } clearedZone && current.HighestZoneCleared < clearedZone)
+            {
+                var species = await PetSql.FindByZoneAsync(connection, transaction, clearedZone, cancellationToken);
+                bool alreadyOwned = species is not null && await connection.ExecuteScalarAsync<bool>(new CommandDefinition(
+                    "SELECT EXISTS (SELECT 1 FROM player_pets WHERE discord_id = @DiscordId AND species_id = @SpeciesId);",
+                    new { DiscordId = (long)discordId, SpeciesId = species.SpeciesId }, transaction: transaction, cancellationToken: cancellationToken));
+
+                if (species is not null && !alreadyOwned)
+                {
+                    await InventoryUpsert.AddItemAsync(connection, transaction, discordId, species.EggItemId, 1, cancellationToken);
+                    eggGranted = species;
+                }
+            }
+
             await transaction.CommitAsync(cancellationToken);
-            return new LevelUpOutcome(finalUser, leveled.LevelsGained);
+            return new LevelUpOutcome(finalUser, leveled.LevelsGained, eggGranted);
         }
         catch
         {

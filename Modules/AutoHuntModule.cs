@@ -141,7 +141,7 @@ public class AutoHuntModule(
 
         if (monsterHp <= 0)
         {
-            var reward = CombatRewardCalculator.RollHuntReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus);
+            var reward = CombatRewardCalculator.RollHuntReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus, state.Pets);
             Item? droppedItem = await AdventureModule.ResolveDroppedItemAsync(itemRepository, state, reward);
 
             // Delta (no snapshot absoluto): igual que en /hunt por turnos, así compone bien con

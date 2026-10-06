@@ -12,6 +12,7 @@ public sealed class AdventureCombatStarter(
     IMonsterRepository monsterRepository,
     IZoneRepository zoneRepository,
     IBuffRepository buffRepository,
+    IPetRepository petRepository,
     ICombatSessionService combatSessions,
     IRaidSessionService raidSessions) : IAdventureCombatStarter
 {
@@ -129,7 +130,9 @@ public sealed class AdventureCombatStarter(
         // corresponde) de vuelta a unidades reales al persistir (ver Modules/AdventureModule.cs).
         // Si comió un banquete antes, su +% de ataque entra desde el primer golpe (vence solo: GetActiveAttackAsync no lo devuelve vencido).
         var buff = await buffRepository.GetActiveAttackAsync(discordId, cancellationToken);
-        var profile = PlayerCombatProfileCalculator.Resolve(player, weapon, amulet, buff?.AttackPercent ?? 0);
+        // Las mascotas (v0.10.0): valen todas a la vez; la defensa entra en el perfil y el oro/EXP/drop se aplican al ganar (viajan en el estado). Si la lectura falla pelea sin bonus.
+        var pets = await petRepository.GetBonusesAsync(discordId, cancellationToken);
+        var profile = PlayerCombatProfileCalculator.Resolve(player, weapon, amulet, buff?.AttackPercent ?? 0, pets);
 
         var monster = MonsterCatalog.RollFrom(monsterPool);
         int monsterMaxHp = Random.Shared.Next(monster.MinHp, monster.MaxHp + 1);
@@ -155,7 +158,8 @@ public sealed class AdventureCombatStarter(
             PlayerLevel: player.Level,
             PlayerClass: player.Class,
             Passives: profile.Passives,
-            AttackBuffPercent: profile.AttackBuffPercent);
+            AttackBuffPercent: profile.AttackBuffPercent,
+            Pets: pets);
 
         return new CombatStartOutcome(CombatStartStatus.Started, null, state);
     }

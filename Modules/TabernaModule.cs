@@ -424,7 +424,7 @@ public class TabernaModule(
         {
             components.WithSelectMenu(Menu(
                 BuyFood, discordId, "Comprar comida",
-                foodForSale.Select(i => (i.Name, $"Cura {i.StatValue} HP{BuffText(i, buffs)} · {i.BuyPrice} oro", i.Name))), row++);
+                foodForSale.Select(i => (i.Name, i.Type == ShopCatalog.PetFoodType ? ShopModule.PetFoodLine(i) : $"Cura {i.StatValue} HP{BuffText(i, buffs)} · {i.BuyPrice} oro", i.Name))), row++);
         }
 
         var boxesForSale = shopItems.Where(i => i.Type == "Caja").OrderBy(i => i.BuyPrice).Take(25).ToList();

@@ -33,6 +33,7 @@ public static class HelpTopics
         new("arena", "🏟️", "Arena y duelos", "el torneo diario y los duelos con amigos", ["pvp", "duelo", "duelos", "fight", "torneo"], Arena),
         new("trade", "🤝", "Intercambio", "cambiar materiales con otro jugador", ["cambio", "cambiar", "trueque", "intercambio"], Trade),
         new("exchange", "🔁", "Cambiar drops con el tabernero", "3 drops de una zona por 1 de la misma", ["canje", "canjear", "swap", "tabernero", "cambalache"], Exchange),
+        new("pets", "🐾", "Mascotas", "huevos, bonus pasivos y cómo alimentarlas", ["mascota", "mascotas", "pet", "huevo", "huevos", "egg", "eggs"], Pets),
         new("classes", "🎭", "Clases y habilidades", "qué hace cada clase", ["clase", "clases", "class", "habilidad", "habilidades"], Classes),
         new("gather", "🪓", "Recolección", "talar y minar: unidades y rarezas", ["chop", "mine", "talar", "minar", "recolectar", "recoleccion", "madera", "mineral"], Gather),
         new("daily", "🎁", "Diario y regalos", "la recompensa diaria, la racha y regalar oro", ["diario", "racha", "give", "dar", "regalo", "regalar"], Daily),
@@ -192,7 +193,8 @@ public static class HelpTopics
         "Cada zona tiene un jefe. Vencerlo la **primera vez** abre la zona siguiente.",
         ("👑 /boss",
             $"El jefe de tu zona, solo. Pide el nivel de la zona siguiente. Cooldown de **{Dur(CooldownCatalog.Boss.Duration)}** si ganás y de **{Dur(CooldownCatalog.Boss.RetryAfterFailure ?? CooldownCatalog.Boss.Duration)}** si perdés, huís o se acaba el tiempo. " +
-            $"Paga {CombatRewardCalculator.BossRewardMultiplier} cacerías (más el bono del jefe) y suelta el **cofre** de su zona: siempre la primera vez que lo vencés, {CombatRewardCalculator.BossChestRepeatPercent} % después."),
+            $"Paga {CombatRewardCalculator.BossRewardMultiplier} cacerías (más el bono del jefe) y suelta el **cofre** de su zona: siempre la primera vez que lo vencés, {CombatRewardCalculator.BossChestRepeatPercent} % después. " +
+            "Esa primera vez también te llega el **huevo** de la mascota de la zona (**/info tema:pets**)."),
         ("🛡️ /raid",
             $"El mismo jefe pero **cooperativo**, de {RaidSettings.MinParticipants} a {RaidSettings.MaxParticipants} jugadores. Quien lo arranca abre una sala de {(int)RaidModule.LobbyDuration.TotalSeconds} segundos y los demás tocan **Unirse**. " +
             "El jefe es mucho más duro y su vida crece con cada jugador; cada uno que pelea cobra la recompensa entera. Comparte cooldown con /boss."),
@@ -227,7 +229,7 @@ public static class HelpTopics
 
     private static Embed Shop() => Topic(Self("shop"),
         "Acá se compra y se vende todo lo que no se forja, y se cura la vida.",
-        ("🍺 /taberna (aa taberna)", "El tabernero te atiende con menús: comés algo de tu mochila, comprás comida y cajas, y vendés. Cada elección es de **una** unidad."),
+        ("🍺 /taberna (aa taberna)", "El tabernero te atiende con menús: comés algo de tu mochila, comprás comida y cajas, y vendés. Cada elección es de **una** unidad. También vende la **Comida para Mascotas** (**/info tema:pets**)."),
         ("🛒 /shop", "**view** muestra los precios, **buy** y **sell** compran y venden por nombre y cantidad, **sellall** vende todo lo vendible de la mochila (no lo que llevás puesto)."),
         ("🍖 Consumibles",
             "La comida cura HP y los **banquetes** (los Míticos) además dan un bonus de ataque por un rato: se comen con **/use** (el valor figura en **/shop view** y en tu **/profile** mientras dura; uno nuevo reemplaza al anterior)."),
@@ -268,6 +270,19 @@ public static class HelpTopics
             "Solo **drops de monstruos** (los de cacería y de viaje de cada zona), siempre de la **misma zona** y a uno **distinto** del que das. No sirve para madera ni minerales (eso es entre jugadores: **/info tema:trade**), ni para trofeos ni cajas."),
         ("⚖️ ¿Conviene?",
             $"Es {DropExchange.GiveAmount} por {DropExchange.GetAmount}: compensa la mala racha, no reemplaza al farmeo. Si el drop que te falta lo podés conseguir jugando, sale más barato jugar."));
+
+    private static Embed Pets() => Topic(Self("pets"),
+        "Cada zona tiene su **mascota**. Las que tengas valen **todas a la vez**: no ocupan lugar, no se pierden y no hay que sacarlas a pasear.",
+        ("🥚 Cómo se consiguen",
+            "La **primera vez** que vencés al jefe de una zona (**/boss** o **/raid**) te llega un **huevo** junto con el cofre. Lo abrís con **/open** y nace la mascota de esa zona: una por zona, cinco en total."),
+        ("🎁 Qué dan",
+            "Cada especie da un bonus distinto: **más oro**, **más EXP** o **más defensa** en las peleas contra monstruos, o **más chances de drop** en cacería y viaje. " +
+            $"Es relativo: un +6 % sobre un {CombatRewardCalculator.HuntDropChancePercent} % de drop da {Dec(CombatRewardCalculator.HuntDropChancePercent * 1.06)} %. El cofre del jefe no cambia, y en duelos y Arena no cuentan. " +
+            "Mirá cuál da cada una (y cuánto) con **/pet view**."),
+        ("🍖 Cómo crecen",
+            $"Comen **{PetRules.FoodItemName}** (se compra en la **/taberna**). Cada mascota puede comer **una vez por hora**; **/pet feed** alimenta a todas las que estén listas o elegís una. " +
+            $"Tienen nivel de 1 a {PetRules.MaxLevel} y el bonus crece con el nivel (nivel 1 = el 10 % de su tope, nivel {PetRules.MaxLevel} = el tope entero). Llegar al máximo lleva {PetRules.TotalFeedsToMax} comidas por mascota."),
+        ("📍 Comandos", "**/pet view** las muestra, **/pet feed** las alimenta y **/open** abre el huevo. En texto: `aa pet` y `aa pet feed`. También figuran en **/profile**."));
 
     private static Embed Classes()
     {

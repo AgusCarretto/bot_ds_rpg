@@ -1,6 +1,32 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-06 (v0.9.7: el trueque de drops con el tabernero)_
+_Última revisión: 2026-10-06 (v0.10.0: las mascotas)_
+
+## Mascotas (v0.10.0, 2026-10-06)
+
+- Pedido del dueño: una mascota por zona, **pasivas y todas a la vez**, que sigan después del reset, con **comida especial** (un consumible nuevo) que se les da **una vez por hora** («si el oro no es un impedimento se rompe rápido»),
+  con bonus de oro / EXP / defensa / drop de monstruos y **más EXP la del 5** (para que el reset sea más sencillo), y que **el huevo llegue con el cofre del jefe y se abra con /open**.
+- **Las cinco** (tabla `pet_species`; el catálogo lo carga `Database/seed_pets.sql`): Zona 1 **Ñandusito** 🐦 oro hasta +5 % · Zona 2 **Cachorro de Puma** 🐆 EXP +5 % · Zona 3 **Gólem de bolsillo** 🪨 defensa +6 % · Zona 4 **Salamandrita** 🦎
+  drop de monstruos +6 % (relativo) · Zona 5 **Quimerita** 🐉 EXP +10 % (con la del Puma suman +15 % de EXP).
+- **Cómo se consiguen**: la **primera vez** que un jugador vence al jefe de una zona (`/boss`, o `/raid` por participante) recibe el **huevo** de esa zona, en la MISMA transacción que el cofre (`items.type = 'Huevo'`, sin precio). Se abre con
+  **`/open`** (`aa open <huevo>`, también aparece en su lista desplegable): el huevo se gasta y nace la mascota en una sola transacción; si ya tenés esa especie, el huevo NO se gasta. `Database/add_pets.sql` entregó los huevos a quienes ya habían
+  vencido jefes (en la base real: 7 huevos para 3 jugadores).
+- **Cómo crecen**: nivel 1 a 10 (`GameData/PetRules.cs`); el bonus es el tope × nivel / 10 (nivel 1 = 10 % del tope). Comen **Comida para Mascotas** (`items.type = 'PetFood'`, **100 de oro** en la tienda y la taberna, se revende a 25): **una vez por hora
+  cada mascota** (el reloj es el de la base de datos). Comidas por nivel 1, 1, 2, 2, 3, 3, 4, 4, 5 = **25 por mascota** (25 horas seguidas; 125 comidas = 12.500 de oro para las cinco). El oro no acelera nada: el límite es la hora.
+- **Comandos**: `/pet view` (`aa pet`, `aa mascota`) muestra cada una con su nivel, bonus, progreso, «lista para comer» o «vuelve a comer en…», las que faltan descubrir y un botón **Alimentar**; `/pet feed [mascota]` alimenta a la elegida o, sin elegir, a todas las que
+  puedan (una comida cada una, hasta donde alcance). `/profile` suma el campo «🐾 Mascotas» y marca la defensa con el bonus (`🐾 +6 %`). `/info tema:pets` lo explica. Logros nuevos **Domador** (1 / 3 / 5 mascotas) y **Criador** (10 / 50 / 125 comidas = las cinco al máximo),
+  solo oro y XP: ahora son **19 logros**. El inventario muestra la comida con los consumibles y el huevo con las cajas («Cajas y huevos»).
+- **Dónde valen**: el oro y la EXP en `/hunt`, `/travel`, `/boss`, `/raid` y `/autohunt`, sobre la recompensa entera (ya con su ×15 o ×30); la defensa en esas mismas peleas (se fija al empezar, como el banquete); el drop **solo en cacería y viaje** y **relativo**
+  (+6 % sobre un 6 % = 6,36 %; sobre el 60 % del viaje, 63,6 %), el cofre del jefe NO. **No pelean en duelos ni en la Arena**: el balance PvP medido no se toca.
+- **Impacto sobre el balance** (hecho: lo que se puede calcular a mano; **no se simuló** contra la escalera): con las cinco al máximo la EXP rinde +15 % (subir de nivel ~13 % más rápido), el oro +5 %, y el drop solo acelera las recetas que dependen de un drop por
+  menos de ~6 %. La defensa +6 % del Gólem es lo único que toca la dificultad de las peleas y no se midió con `docs/calibration` (el resolvedor real); si hiciera falta, es el primer número a mirar. Se tarda mínimo ~25 horas en dejar a una mascota al máximo, así que
+  nadie llega a los topes de golpe, y las cinco recién cuando tenga las cinco zonas.
+- **Probado** (arnés `pettest` contra la base real con usuarios descartables, más la regresión de los otros 26 arneses): reglas de nivel y bonus, abrir y alimentar con **12 pedidos simultáneos** (pasa uno solo, la comida nunca queda en negativo, un huevo nunca se gasta de más), el huevo del jefe
+  (primera vez sí, después no, 8 victorias simultáneas = un solo huevo), las recompensas con y sin mascotas (medias y chances sorteadas), el cofre del jefe sin tocar, duelos/Arena sin mascotas, el botón con el `InteractionService` real y los límites de Discord de todos los mensajes.
+  La instalación limpia en una base nueva quedó idéntica a la real (incluida `pet_species`).
+- **Falta / ideas**: **fusión de mascotas o un bonus especial en el reset 3 o 5** (idea del dueño, no construida); íconos propios (emojis de la aplicación) para las cinco y los huevos (hoy son unicode 🐦🐆🪨🦎🐉 / 🥚 / 🦴); una pantalla con la imagen de cada mascota;
+  decidir si el bonus de defensa/EXP necesita recalibrar la escalera cuando se desbloquee el reset. Las misiones no incluyen «alimentar mascotas» a propósito (el pool exige que *cualquier* jugador pueda hacerlas y las mascotas piden haber vencido un jefe).
+- **Para desplegar**: correr `Database/add_pets.sql` ANTES de arrancar el bot nuevo (ver `DEPLOY.md`).
 
 ## El trueque de drops con el tabernero (v0.9.7, 2026-10-06)
 

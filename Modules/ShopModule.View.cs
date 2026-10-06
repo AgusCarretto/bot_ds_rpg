@@ -67,11 +67,16 @@ public partial class ShopModule
             $"{talk ?? NpcDialogue.Shopkeeper(ShopkeeperLine.Greeting)}{goldLine}\n\n" +
             "Las cajas se compran **de a una y una vez cada 2 horas**; abrilas con `/open`.");
 
-        AddColumn(embed, "Comida", items.Where(i => i.Type != "Caja"), i => $"Cura {i.StatValue} HP{BuffText(i, buffs)} · {i.BuyPrice} oro");
+        AddColumn(embed, "Comida", items.Where(i => i.Type is not ("Caja" or ShopCatalog.PetFoodType)), i => $"Cura {i.StatValue} HP{BuffText(i, buffs)} · {i.BuyPrice} oro");
         AddColumn(embed, "Cajas", items.Where(i => i.Type == "Caja"), i => BoxLine(i, unlockedZoneRank));
+        // La comida de las mascotas va en su propia columna (es la tercera del renglón, que quedaba vacía): no cura, se le da a una mascota con /pet feed.
+        AddColumn(embed, "Mascotas", items.Where(i => i.Type == ShopCatalog.PetFoodType), PetFoodLine);
 
         return embed.Build();
     }
+
+    // "Para tus mascotas · 100 oro": la comida de las mascotas no cura, así que no lleva el "Cura N HP" de la comida común.
+    public static string PetFoodLine(Item food) => $"Para tus mascotas · {GameHistory.Number(food.BuyPrice)} oro";
 
     // "entre 1 y 10 ítems · 1.000 oro", y si es de una zona que todavía no desbloqueaste, "🔒 Zona 2" adelante.
     public static string BoxLine(Item box, int? unlockedZoneRank)

@@ -220,9 +220,9 @@ public class AdventureModule(
                     && ((await userRepository.GetByDiscordIdAsync(Context.User.Id))?.HighestZoneCleared ?? 0) < clearedZone;
                 var reward = state.CommandName switch
                 {
-                    "travel" => CombatRewardCalculator.RollTravelReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus),
-                    "boss" => CombatRewardCalculator.RollBossReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus, firstBossClear),
-                    _ => CombatRewardCalculator.RollHuntReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus),
+                    "travel" => CombatRewardCalculator.RollTravelReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus, state.Pets),
+                    "boss" => CombatRewardCalculator.RollBossReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus, firstBossClear, state.Pets),
+                    _ => CombatRewardCalculator.RollHuntReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus, state.Pets),
                 };
 
                 Item? droppedItem = await ResolveDroppedItemAsync(itemRepository, state, reward);
@@ -572,6 +572,12 @@ public class AdventureModule(
         }
 
         // La subida de nivel NO va acá: sale como mensaje propio, apenas termina el combate (GameData/LevelUpCard.cs).
+
+        // La primera vez que se vence al jefe de la zona llega, junto con el cofre, el HUEVO de la mascota de esa zona (en la misma transacción que el premio).
+        if (outcome.EggGranted is { } egg)
+        {
+            embed.AddField("🥚 ¡Un huevo para vos!", $"{egg.EggName} — abrilo con `/open` y nace tu mascota.", false);
+        }
 
         if (state.CommandName == "boss")
         {

@@ -53,7 +53,10 @@ public sealed record CombatState(
     // para no apilar un segundo banquete sobre el primero (ver GameData/AttackBuff.Rescale).
     int AttackBuffPercent = 0,
     // La cara del monstruo (emoji de la aplicación "<:nombre:id>", ver MonsterTemplate.Portrait): miniatura de todos los mensajes de esta pelea. Null = sin cara.
-    string? MonsterPortrait = null)
+    string? MonsterPortrait = null,
+    // Los bonus de las mascotas del jugador al ARRANCAR la pelea (como el banquete): la defensa ya está dentro de PlayerDefense; oro, EXP y drop se aplican al ganar
+    // (CombatRewardCalculator). Null = sin mascotas.
+    PetBonuses? Pets = null)
 {
     // Convierte un delta de HP en unidades de COMBATE (ya escaladas por Passives.MaxHpMultiplier)
     // a unidades reales de base de datos, para pasarlo a IUserRepository.ApplyCombatHpDeltaAsync /

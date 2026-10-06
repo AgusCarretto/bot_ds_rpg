@@ -161,6 +161,11 @@ hay que resubirlos y regenerar los scripts. Después reiniciá el bot.
 `amulet_enchant`, que el código lee en CADA consulta de jugador: si arrancás primero, casi todos los comandos fallan). Es re-ejecutable y se verifica solo; una instalación nueva ya las trae en `schema.sql`. En Railway:
 `psql "<DATABASE_PUBLIC_URL>" -v ON_ERROR_STOP=1 -f add_bank_dust_enchants.sql` y recién ahí desplegá `main`. Hacé un backup antes (sección 6).
 
+**v0.9.7 → v0.10.0 (mascotas):** ANTES de arrancar el bot nuevo corré `Database/add_pets.sql` (crea las tablas `pet_species` y `player_pets`, carga los 5 huevos, la Comida para Mascotas y las 5 especies con `seed_pets.sql`,
+y le entrega un huevo a quien ya había vencido al jefe de alguna zona). El código lee esas tablas en CADA pelea y en `/profile`: si arrancás primero, las peleas no pueden armar el bono de mascotas (lo registran y siguen sin bono) pero `/pet`,
+`/open` de un huevo fallan, y **vencer a un jefe también** (el huevo se entrega en la misma transacción que el cofre, así que la victoria se revierte). Es re-ejecutable y se verifica solo (aborta si no quedan 5 especies, 5 huevos y la comida); una instalación nueva ya las trae (`schema.sql` + `seed_pets.sql` en
+`run_fresh_install.sql`). Corrélo desde la carpeta `Database/` (usa `\ir`, así que necesita `psql`): `psql "<DATABASE_PUBLIC_URL>" -v ON_ERROR_STOP=1 -f add_pets.sql` y recién ahí desplegá `main`. Hacé un backup antes (sección 6).
+
 La carpeta `Database/` del repo está montada en `/seed`, así que los scripts nuevos aparecen con el `git checkout`. Los seeds son
 re-ejecutables; **nunca** corras `run_fresh_install.sql` sobre una base con datos.
 

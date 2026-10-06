@@ -46,6 +46,7 @@ public partial class TextCommandModule(
     IFarmAdvisor farmAdvisor,
     IDuelService duelService,
     IArenaService arenaService,
+    IPetRepository petRepository,
     IGameEvents gameEvents) : ModuleBase<SocketCommandContext>
 {
     // ---- Onboarding / clase ----
@@ -116,7 +117,7 @@ public partial class TextCommandModule(
 
             string avatarUrl = target.GetAvatarUrl() ?? target.GetDefaultAvatarUrl();
             var embed = await GameModule.BuildProfileEmbedAsync(
-                userRepository, itemRepository, zoneRepository, buffRepository, target.Id, GameModule.GetDisplayName(target), avatarUrl);
+                userRepository, itemRepository, zoneRepository, buffRepository, target.Id, GameModule.GetDisplayName(target), avatarUrl, petRepository);
             await ReplyAsync(embed: embed);
         }
         catch (Exception ex)
