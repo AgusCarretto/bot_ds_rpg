@@ -1,6 +1,15 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-06 (v0.10.1: tragamonedas arregladas)_
+_Última revisión: 2026-10-06 (v0.10.2: el drop de /travel baja a 40 %)_
+
+## El drop de `/travel` baja de 60 % a 40 % (v0.10.2, 2026-10-06)
+
+- Pedido del dueño: «60 es una banda, tirálo a 40». Es `CombatRewardCalculator.TravelDropChancePercent`; `/drops` y `/info tema:hunt` leen la constante.
+- **Efecto medido** (`report_recipe_pacing.sql`, arma de clase + amuleto de las 5 zonas, promedio de las 4 clases, uno después del otro): de **~2.480 min (41 h) a ~3.120 min (52 h)**, un **26 % más largo**. Lo que se enlentece son las piezas que piden el drop de viaje (las armas de clase y los amuletos): ese material cae 1,5 veces más lento (1,33 % por minuto de cooldown, antes 2 %). Las armas generales, que solo piden drops de `/hunt`, no cambian.
+- **No se tocaron las cantidades de las recetas a propósito** (el dueño quiere que avanzar cueste). Si la vuelta 1 resulta demasiado larga para los jugadores, la forma de devolverlo es bajar las cantidades de drop de viaje en `rework_drops_and_recipes.sql` (y correr el script de ritmos).
+- Las cajas casi no se mueven (`report_box_economy.sql`, ya con el 40 %): el Cofre de Oro pasa de 60 % a 57 % de lo que vale su contenido; no hace falta cambiar precios. El trueque 3 por 1 sigue igual de útil, y más: el drop de viaje escaso es justo el que más cuesta.
+- La chance de las mascotas (+6 % relativo de la Salamandrita) y los % de Fuego Nuevo se aplican sobre el 40 %. Los porcentajes del trueque de la v0.9.7 («~23 % más rápido») eran con el 60 % y no se volvieron a medir.
+- Sin cambios de base de datos.
 
 ## Tragamonedas arregladas (v0.10.1, 2026-10-06)
 

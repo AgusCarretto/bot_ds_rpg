@@ -17,8 +17,10 @@ public static class CombatRewardCalculator
     // Era 10% hasta la v0.6.0: se bajó a 6% para que al llegar al nivel de una zona no sea tan fácil pasarla de largo, y haya que
     // quedarse un rato a farmear el equipo (las recetas que dependen de drops de /hunt tardan ~1,7 veces más).
     public const int HuntDropChancePercent = 6;
-    // 60% (era 20% con el travel de 10 minutos): con el cooldown en 30 minutos sigue cayendo 2% por minuto de cooldown, que es lo contra lo que están calibradas las recetas.
-    public const int TravelDropChancePercent = 60;
+    // 40% desde la v0.10.2 (el dueño: «60 es una banda», 2026-10-06). Era 60% hasta la v0.10.1 y 20% con el travel de 10 minutos: con el cooldown en 30 minutos, el 60% daba 2% de drop por minuto de
+    // cooldown, que es lo contra lo que se calibraron las recetas; con 40% son 1,33% por minuto, así que los materiales de viaje (los «escasos» de las armas de clase y los amuletos) tardan 1,5 veces más
+    // y el camino de recetas de las 5 zonas pasa de ~41 h a ~52 h de juego perfecto (medido con report_recipe_pacing.sql; las cantidades de las recetas NO se tocaron a propósito).
+    public const int TravelDropChancePercent = 40;
     // El jefe de zona ya no suelta un material sino un COFRE de su zona (monster_drops del jefe apunta a la caja, ver
     // Database/rework_drops_and_recipes.sql): la primera vez que ESE jugador lo derrota siempre cae; las siguientes, 40%.
     // Vale para el combate solitario y, por participante, para el raid.
