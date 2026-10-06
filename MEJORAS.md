@@ -1,6 +1,20 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-06 (v0.10.2: el drop de /travel baja a 40 %)_
+_Última revisión: 2026-10-06 (v0.11.0: El Fogón Eterno)_
+
+## El Fogón Eterno, la «Zona 0» (v0.11.0, 2026-10-06)
+
+- Es el primer paso del diseño aprobado de Fuego Nuevo (`docs/superpowers/specs/2026-10-06-fuego-nuevo-design.md`): **una puerta al final del mundo** que se abre al vencer al jefe de la última zona. Ganarle al jefe de la puerta es lo que va a habilitar el reinicio (Fuego Nuevo, v0.12); hoy solo deja el aviso y el logro.
+- **Cómo se entra**: `/zona 0` (`aa zona 0`; aparece en `/zonas` y en el autocompletado recién con la puerta abierta). Hace falta nivel **25** y llevar **PUESTOS** el **Trinche del Asador Eterno** (+128 ATQ) y la **Brasa del Fogón Eterno** (+120 DEF): uno solo de cada uno, iguales para todas las clases (sin sinergia: el salto ×1,6 sobre el equipo de Zona 5).
+  Como el equipo va en su casillero, hay que vender primero el de Zona 5 (el encantamiento se pierde; el Fuego Nuevo lo borra igual).
+- **El equipo es lo más caro del juego**: cada pieza pide los **10 drops de CACERÍA de las 5 zonas ×5**, madera/mineral Raros y Legendarios (Madera de Ébano ×4 + Hierro ×18 el arma; Gema de Zafiro ×4 + Carbón ×18 el amuleto) y **25.000 de oro**. Sin materiales Míticos (el 0,5 % por acción es una lotería demasiado cruel para exigirla). Medido con `report_recipe_pacing.sql -v gate=1`: ~14 h de juego perfecto (el
+  script muestra 571 min porque no cuenta que los drops hay que juntarlos zona por zona: 5 × 167 min). Aparece en el menú de la herrería, en la página de recetas de la última zona (su propio bloque «🔥 El Fogón Eterno») y en `/tips`, solo con la puerta abierta. Las zonas anteriores vuelven a servir: hay que volver a cazar en las 5.
+- **Adentro solo hay `/boss`**: contra **El Asador Eterno** (no hay cacería, viajes ni raid; `/autohunt` tampoco). Usa el cooldown del jefe (5 h si gana, 30 min si pierde, huye o se acaba el tiempo) y la penalidad por morir de siempre. **Calibrado con el resolvedor real a nivel 28** (el examen de cada jefe): con el equipo del Fogón pierde ~16 %, con el arma de clase y el amuleto de Zona 5 ~75 %. HP 2002-2401, daño 188-244, oro y EXP 1500/1500, sin drops.
+- **Ganarle** (en la MISMA transacción que el premio): `gate_cleared`, sale de la puerta y vuelve a la última zona (no toca `highest_zone_cleared`); la victoria dice que se habilitó el Fuego Nuevo y que todavía no está (llega en la v0.12). Evento `gate_win` y logro **Asador** (1/3/10, solo oro y XP; ahora son **20 logros**). También se avisa «se abrió El Fogón Eterno» la PRIMERA vez que vence al jefe de la última zona.
+- **Cómo no rompe lo demás**: la puerta es una fila de `zones` (id 0, `kind = 'gate'`) que `IZoneRepository.GetAllAsync` y `IMonsterRepository.GetAllAsync` no devuelven, y el jugador nunca tiene `current_zone_id = 0` (`users.in_gate` dice que está parado ahí): la escalera, los drops, las cajas, las mascotas, el trueque y todo lo que mira la zona actual no se enteran. Los scripts SQL que recorren zonas la ignoran (`zone_id > 0`).
+- **Probado** (arnés `fogontest`, 60+ chequeos contra la base real con un usuario descartable, y los 28 arneses de antes): la puerta y la escalera, las recetas, entrar (sin abrir / nivel / equipo / ok / ya estoy / salir), `/hunt` `/travel` `/raid` bloqueados, `/boss` con y sin equipo, la victoria transaccional con 6 a la vez, `Opened` solo la primera vez, el menú de la herrería, los límites de Discord y la ayuda (`/info tema:fogon`).
+- **Para desplegar**: correr `Database/add_fogon.sql` ANTES de arrancar el bot nuevo (ver `DEPLOY.md`). Ojo: la base viva ya la tiene aplicada desde el desarrollo; un bot v0.10.x que siga corriendo hasta reiniciarse vería «Zona 0» como una sexta zona en `/zonas` (cosmético: nadie la puede cruzar sin haber vencido al jefe de la 5).
+- **Falta / ideas**: íconos propios (emojis de la aplicación) para el equipo del Fogón y el Asador; el aviso de «dónde cazar cada drop» en `/tips` hoy solo dice el comando, no la zona; el reinicio (v0.12).
 
 ## El drop de `/travel` baja de 60 % a 40 % (v0.10.2, 2026-10-06)
 

@@ -343,6 +343,12 @@ public class RaidModule(
 
         var player = await userRepository.GetOrCreateUserAsync(discordId);
 
+        // Parado en El Fogón Eterno (zona 0) solo anda /boss contra el Asador: no hay raid.
+        if (player.InGate)
+        {
+            return new RaidRejection(null, AdventureModule.BuildInGateEmbed());
+        }
+
         if (player.CurrentHp <= 0)
         {
             return new RaidRejection(null, AdventureModule.BuildNoHpEmbed());
@@ -427,6 +433,11 @@ public class RaidModule(
         }
 
         var player = await userRepository.GetOrCreateUserAsync(discordId);
+
+        if (player.InGate)
+        {
+            return new RaidRejection(null, AdventureModule.BuildInGateEmbed());
+        }
 
         if (player.CurrentHp <= 0)
         {

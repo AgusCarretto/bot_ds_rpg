@@ -37,7 +37,8 @@ public sealed class MonsterRepository(IDbConnectionFactory connectionFactory) : 
                    max_hp AS "MaxHp", min_damage AS "MinDamage", max_damage AS "MaxDamage",
                    gold_reward AS "GoldBonus", xp_reward AS "XpBonus", is_boss AS "IsBoss", is_travel AS "IsTravel"
             FROM monsters
-            WHERE CAST(@ZoneId AS integer) IS NULL OR zone_id = CAST(@ZoneId AS integer)
+            WHERE (CAST(@ZoneId AS integer) IS NULL AND zone_id IN (SELECT zone_id FROM zones WHERE kind = 'normal'))
+               OR zone_id = CAST(@ZoneId AS integer)
             ORDER BY monster_id;
             """;
 
@@ -54,7 +55,8 @@ public sealed class MonsterRepository(IDbConnectionFactory connectionFactory) : 
             FROM monster_drops md
             JOIN monsters m ON m.monster_id = md.monster_id
             JOIN items i ON i.item_id = md.item_id
-            WHERE CAST(@ZoneId AS integer) IS NULL OR m.zone_id = CAST(@ZoneId AS integer)
+            WHERE (CAST(@ZoneId AS integer) IS NULL AND m.zone_id IN (SELECT zone_id FROM zones WHERE kind = 'normal'))
+               OR m.zone_id = CAST(@ZoneId AS integer)
             ORDER BY md.monster_id;
             """;
 

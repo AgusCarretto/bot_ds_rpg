@@ -9,7 +9,7 @@
 --   - El "PSQL Tool" de pgAdmin (el ícono de terminal, NO el "Query Tool" — ese último solo manda
 --     SQL crudo al servidor y no entiende \ir, va a tirar error de sintaxis).
 --   - DBeaver u otros clientes: probablemente NO sirve — correlos a mano, uno por uno, en el orden
---     de abajo (son los mismos 24 archivos, en esta carpeta).
+--     de abajo (son los mismos 25 archivos, en esta carpeta).
 --
 -- USAR SOLO CONTRA UNA BASE VACÍA. seed.sql, add_weapon_family.sql y
 -- seed_class_gear_and_monster_drops.sql NO son idempotentes (duplican filas si la base ya tiene
@@ -64,5 +64,7 @@
 \ir update_monster_portraits.sql
 -- Las mascotas (v0.10.0): los 5 huevos, la comida y las 5 especies. Las TABLAS están en schema.sql. Va al final: necesita zonas e ítems.
 \ir seed_pets.sql
+-- El Fogón Eterno (v0.11.0): la zona puerta (id 0), su equipo, sus recetas y el jefe. Usa los drops y los materiales de las 5 zonas: va al final.
+\ir seed_fogon.sql
 
 \echo 'Listo — base cargada completa: esquema, items, recetas, zonas/monstruos, catálogo final de consumibles y emojis.'

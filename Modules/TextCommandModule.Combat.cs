@@ -111,6 +111,12 @@ public partial class TextCommandModule
                 case CombatStartStatus.NotLeveledForBoss:
                     await ReplyAsync(embed: AdventureModule.BuildNotLeveledForBossEmbed(outcome.RequiredLevel!.Value));
                     return;
+                case CombatStartStatus.InGate:
+                    await ReplyAsync(embed: AdventureModule.BuildInGateEmbed());
+                    return;
+                case CombatStartStatus.GateGearMissing:
+                    await ReplyAsync(embed: AdventureModule.BuildGateGearMissingEmbed());
+                    return;
                 case CombatStartStatus.RaceLost:
                     await ReplyAsync("Justo se te adelantó otra ejecución de este comando, probá de nuevo en un toque.");
                     return;

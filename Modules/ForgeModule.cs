@@ -25,18 +25,18 @@ public static class ForgeModule
     // "aa forge recipes", o la que elija en el selector de zonas de /forge (ver Modules/BlacksmithModule.cs).
     public static async Task<Embed> BuildRecipesEmbed(
         IRecipeRepository recipeRepository, IZoneRepository zoneRepository, string playerClass, int currentZoneId,
-        IReadOnlyDictionary<string, int>? owned = null, int? playerGold = null, int? playerLevel = null)
+        IReadOnlyDictionary<string, int>? owned = null, int? playerGold = null, int? playerLevel = null, int? highestZoneCleared = null)
     {
         var recipes = await recipeRepository.GetAllAsync();
         var zones = await zoneRepository.GetAllAsync();
-        return RenderRecipesEmbed(recipes, zones, playerClass, currentZoneId, owned, playerGold, playerLevel);
+        return RenderRecipesEmbed(recipes, zones, playerClass, currentZoneId, owned, playerGold, playerLevel, highestZoneCleared: highestZoneCleared);
     }
 
     // Lo mismo sin tocar la base (el que ya tiene recetas y zonas cargadas, como la escena de la herrería, lo usa directo).
     // forgeHint: la frase de cómo forjar; la escena de /forge pone la suya (ya estás en la lista), y el resto el comando de siempre.
     public static Embed RenderRecipesEmbed(
         IReadOnlyList<RecipeDetails> recipes, IReadOnlyList<Zone> zones, string playerClass, int currentZoneId,
-        IReadOnlyDictionary<string, int>? owned = null, int? playerGold = null, int? playerLevel = null, string? forgeHint = null)
+        IReadOnlyDictionary<string, int>? owned = null, int? playerGold = null, int? playerLevel = null, string? forgeHint = null, int? highestZoneCleared = null)
     {
         var embed = new EmbedBuilder()
             .WithTitle("⚒️ Recetas del Herrero")
@@ -48,12 +48,18 @@ public static class ForgeModule
             return embed.Build();
         }
 
-        var view = RecipeCatalog.ViewFor(recipes, zones, playerClass, currentZoneId);
+        // El Fogón Eterno (v0.11.0): si ya venció al jefe de la última zona, la página de ESA zona suma, en su propio bloque, las recetas del equipo del Fogón.
+        var orderedZones = ZoneRanking.OrderByDifficulty(zones);
+        bool gateOpen = highestZoneCleared is int cleared && FogonRules.IsGateOpen(orderedZones, cleared);
+        var view = RecipeCatalog.ViewFor(recipes, zones, playerClass, currentZoneId, gateOpen);
         if (view.Zone is null)
         {
             embed.WithDescription("Todavía no hay recetas para tu zona.");
             return embed.Build();
         }
+
+        var gateRecipes = gateOpen && view.Zone.ZoneId == FogonRules.LastZone(orderedZones)?.ZoneId ? view.GateRecipes ?? [] : [];
+        var zoneRecipes = view.Recipes.Where(r => r.ZoneId != FogonRules.GateZoneId).ToList();
 
         string zoneName = $"{view.Zone.Emoji ?? "🗺️"} **Zona {view.Zone.ZoneId}: {view.Zone.Name}**";
         string fallbackNote = view.IsFallback
@@ -63,7 +69,7 @@ public static class ForgeModule
             ? $"\n🔒 _Esta zona pide nivel {view.Zone.MinLevel} (vos sos nivel {level}): mirá qué te espera._"
             : string.Empty;
 
-        if (view.Recipes.Count == 0)
+        if (zoneRecipes.Count == 0 && gateRecipes.Count == 0)
         {
             embed.WithDescription($"{zoneName}{fallbackNote}{lockNote}\nNo hay recetas para vos en esta zona todavía.");
             return embed.Build();
@@ -73,10 +79,18 @@ public static class ForgeModule
 
         // Sin íconos de espada / amuleto al lado del nombre: el ítem ya trae su propio emoji y dos íconos juntos lo achicaban. Qué tipo es cada uno
         // lo dice una etiqueta bajo el nombre.
-        AddRecipes(embed, view.Recipes, RecipeGroup.ClassWeapon, "arma de tu clase", playerClass, owned, playerGold);
-        AddRecipes(embed, view.Recipes, RecipeGroup.GeneralWeapon, "arma general", playerClass, owned, playerGold);
-        AddRecipes(embed, view.Recipes, RecipeGroup.Amulet, "amuleto", playerClass, owned, playerGold);
-        AddRecipes(embed, view.Recipes, RecipeGroup.Other, "otro", playerClass, owned, playerGold);
+        AddRecipes(embed, zoneRecipes, RecipeGroup.ClassWeapon, "arma de tu clase", playerClass, owned, playerGold);
+        AddRecipes(embed, zoneRecipes, RecipeGroup.GeneralWeapon, "arma general", playerClass, owned, playerGold);
+        AddRecipes(embed, zoneRecipes, RecipeGroup.Amulet, "amuleto", playerClass, owned, playerGold);
+        AddRecipes(embed, zoneRecipes, RecipeGroup.Other, "otro", playerClass, owned, playerGold);
+
+        // El equipo de El Fogón Eterno (zona 0): el arma y el amuleto que hay que llevar PUESTOS para entrar. Son caros a propósito (drops de las 5 zonas).
+        if (gateRecipes.Count > 0)
+        {
+            embed.AddField("🔥 El Fogón Eterno", $"Para entrar con **/zona 0** hay que llevar puestos los dos (no hay sinergia de clase). Mirá `/info tema:fogon`.", false);
+            AddRecipes(embed, gateRecipes, RecipeGroup.GeneralWeapon, "equipo del Fogón", playerClass, owned, playerGold);
+            AddRecipes(embed, gateRecipes, RecipeGroup.Amulet, "equipo del Fogón", playerClass, owned, playerGold);
+        }
 
         return embed.Build();
     }

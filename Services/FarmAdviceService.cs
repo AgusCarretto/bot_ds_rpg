@@ -38,7 +38,9 @@ public sealed class FarmAdviceService(
             }
 
             var statics = await GetStaticsAsync(cancellationToken);
-            var view = RecipeCatalog.ViewFor(statics.Recipes, statics.Zones, player.Class, player.CurrentZoneId);
+            // Con la puerta abierta (venció al jefe de la última zona) también aconseja el equipo del Fogón (GameData/FogonRules.cs).
+            bool gateOpen = FogonRules.IsGateOpen(ZoneRanking.OrderByDifficulty(statics.Zones), player.HighestZoneCleared);
+            var view = RecipeCatalog.ViewFor(statics.Recipes, statics.Zones, player.Class, player.CurrentZoneId, gateOpen);
             if (view.Zone is null || view.Recipes.Count == 0)
             {
                 return null;
@@ -87,7 +89,9 @@ public sealed class FarmAdviceService(
                     return FarmSource.Mine;
                 }
 
-                var dropper = zoneMonsters.FirstOrDefault(m => m.Monster.DropItemNames.Contains(itemName));
+                // Primero los de la zona de la receta; si no, de cualquier zona (el equipo del Fogón pide drops de las 5).
+                var dropper = zoneMonsters.FirstOrDefault(m => m.Monster.DropItemNames.Contains(itemName))
+                    ?? statics.Monsters.FirstOrDefault(m => m.Monster.DropItemNames.Contains(itemName));
                 return dropper?.Kind switch
                 {
                     MonsterKind.Hunt => FarmSource.Hunt,

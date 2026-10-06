@@ -143,7 +143,7 @@ public sealed class UserRepository(IDbConnectionFactory connectionFactory) : IUs
     {
         string sql = $"""
             UPDATE users
-            SET current_zone_id = @ZoneId
+            SET current_zone_id = @ZoneId, in_gate = false
             WHERE discord_id = @DiscordId
             RETURNING {UserSql.SelectColumns};
             """;
@@ -154,6 +154,20 @@ public sealed class UserRepository(IDbConnectionFactory connectionFactory) : IUs
             new { DiscordId = (long)discordId, ZoneId = zoneId },
             cancellationToken: cancellationToken);
         return await connection.QuerySingleAsync<User>(command);
+    }
+
+    public async Task<User> SetInGateAsync(ulong discordId, bool inGate, CancellationToken cancellationToken = default)
+    {
+        string sql = $"""
+            UPDATE users
+            SET in_gate = @InGate
+            WHERE discord_id = @DiscordId
+            RETURNING {UserSql.SelectColumns};
+            """;
+
+        using IDbConnection connection = connectionFactory.CreateConnection();
+        return await connection.QuerySingleAsync<User>(new CommandDefinition(
+            sql, new { DiscordId = (long)discordId, InGate = inGate }, cancellationToken: cancellationToken));
     }
 
     public async Task<DeathPenaltyOutcome?> ApplyDeathPenaltyAsync(ulong discordId, CancellationToken cancellationToken = default)

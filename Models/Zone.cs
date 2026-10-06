@@ -8,4 +8,6 @@ public sealed class Zone
     public string Description { get; init; } = string.Empty;
     public int MinLevel { get; init; }
     public string? Emoji { get; init; }
+    // "normal" = una zona de la escalera; "gate" = El Fogón Eterno (zona 0): las listas de zonas no la incluyen (ver IZoneRepository).
+    public string Kind { get; init; } = "normal";
 }

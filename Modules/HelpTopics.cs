@@ -33,6 +33,7 @@ public static class HelpTopics
         new("arena", "🏟️", "Arena y duelos", "el torneo diario y los duelos con amigos", ["pvp", "duelo", "duelos", "fight", "torneo"], Arena),
         new("trade", "🤝", "Intercambio", "cambiar materiales con otro jugador", ["cambio", "cambiar", "trueque", "intercambio"], Trade),
         new("exchange", "🔁", "Cambiar drops con el tabernero", "3 drops de una zona por 1 de la misma", ["canje", "canjear", "swap", "tabernero", "cambalache"], Exchange),
+        new("fogon", "🔥", "El Fogón Eterno", "la puerta del final del mundo y su equipo", ["fogón", "asador", "puerta", "zona0", "zona 0", "gate"], Fogon),
         new("pets", "🐾", "Mascotas", "huevos, bonus pasivos y cómo alimentarlas", ["mascota", "mascotas", "pet", "huevo", "huevos", "egg", "eggs"], Pets),
         new("classes", "🎭", "Clases y habilidades", "qué hace cada clase", ["clase", "clases", "class", "habilidad", "habilidades"], Classes),
         new("gather", "🪓", "Recolección", "talar y minar: unidades y rarezas", ["chop", "mine", "talar", "minar", "recolectar", "recoleccion", "madera", "mineral"], Gather),
@@ -272,6 +273,18 @@ public static class HelpTopics
             "Solo **drops de monstruos** (los de cacería y de viaje de cada zona), siempre de la **misma zona** y a uno **distinto** del que das. No sirve para madera ni minerales (eso es entre jugadores: **/info tema:trade**), ni para trofeos ni cajas."),
         ("⚖️ ¿Conviene?",
             $"Es {DropExchange.GiveAmount} por {DropExchange.GetAmount}: compensa la mala racha, no reemplaza al farmeo. Si el drop que te falta lo podés conseguir jugando, sale más barato jugar."));
+
+    private static Embed Fogon() => Topic(Self("fogon"),
+        "Al vencer al jefe de la **última zona** se abre **El Fogón Eterno**, la «Zona 0»: una puerta al final del mundo y el último paso antes del **Fuego Nuevo** (volver a empezar con más velocidad, tus mascotas y tu oro).",
+        ("🚪 Cómo se entra",
+            $"Con **/zona 0** (en texto `aa zona 0`). Hace falta haber vencido al jefe de la última zona, tener el nivel de la puerta (figura en **/zonas**) y llevar **puestos** el **{FogonRules.WeaponName}** y la **{FogonRules.AmuletName}**: uno solo de cada uno, iguales para todas las clases (sin sinergia de clase)."),
+        ("⚒️ El equipo",
+            "Se forja en la herrería (**/forge**) y es lo más caro del juego: pide los **drops de cacería de las 5 zonas**, bastante madera y mineral raros y mucho oro. Lo que te falta de cada cosa lo ves en **/forge** y en **/tips**. " +
+            "Como el equipo va en su casillero, hay que **vender primero el de la zona anterior** (sus encantamientos se pierden: es el último equipo, el Fuego Nuevo lo borra de todos modos)."),
+        ("⚔️ Adentro",
+            $"Solo **/boss**, contra **{FogonRules.BossName}**: no hay cacería, viajes ni raid. Usa el cooldown del jefe (**{Dur(CooldownCatalog.Boss.Duration)}** si ganás y **{Dur(CooldownCatalog.Boss.RetryAfterFailure ?? CooldownCatalog.Boss.Duration)}** si perdés, huís o se acaba el tiempo) y si perdés pagás la penalidad de siempre (**/info tema:death**). " +
+            "Está calibrado como cada jefe: con el equipo de la zona anterior casi siempre perdés, con el del Fogón es un desafío parejo."),
+        ("🏆 Al ganar", "Volvés a la última zona, se habilita el **Fuego Nuevo** y sumás el logro **Asador**. Para salir sin pelear, viajá a cualquier zona con **/zona**."));
 
     private static Embed Pets() => Topic(Self("pets"),
         "Cada zona tiene su **mascota**. Las que tengas valen **todas a la vez**: no ocupan lugar, no se pierden y no hay que sacarlas a pasear.",

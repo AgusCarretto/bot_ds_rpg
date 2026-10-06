@@ -46,13 +46,21 @@ public sealed class AdventureCombatStarter(
             CooldownCatalog.Boss,
             async player =>
             {
-                var boss = await monsterRepository.GetBossByZoneAsync(player.CurrentZoneId, cancellationToken);
+                var boss = await monsterRepository.GetBossByZoneAsync(player.InGate ? FogonRules.GateZoneId : player.CurrentZoneId, cancellationToken);
                 return boss is null ? [] : new[] { boss };
             },
             CombatStartStatus.NoBossInZone,
             isBossFight: true,
             extraGate: async player =>
             {
+                // En El Fogón Eterno (zona 0) el requisito es el equipo del Fogón PUESTO (se vuelve a comprobar acá: pudo venderlo después de entrar). El nivel ya se pidió al entrar.
+                if (player.InGate)
+                {
+                    var gateWeapon = player.WeaponId is int gw ? await itemRepository.GetByIdAsync(gw, cancellationToken) : null;
+                    var gateAmulet = player.AmuletId is int ga ? await itemRepository.GetByIdAsync(ga, cancellationToken) : null;
+                    return FogonRules.HasKeyGear(gateWeapon, gateAmulet) ? null : new CombatStartOutcome(CombatStartStatus.GateGearMissing, null, null);
+                }
+
                 // El jefe solo se puede desafiar una vez que el jugador ya está al nivel mínimo
                 // de la PRÓXIMA zona (a lo que ganarle te deja avanzar) — no antes. Ver
                 // GameData/ZoneRanking.cs (también la usa Modules/RaidModule.cs para el mismo gate
@@ -90,6 +98,12 @@ public sealed class AdventureCombatStarter(
 
         // Si es la primera vez que este usuario ejecuta un comando, se crea acá con los valores por defecto.
         var player = await userRepository.GetOrCreateUserAsync(discordId, cancellationToken: cancellationToken);
+
+        // Parado en El Fogón Eterno (zona 0) solo anda /boss: no hay cacería ni viajes.
+        if (player.InGate && !isBossFight)
+        {
+            return new CombatStartOutcome(CombatStartStatus.InGate, null, null);
+        }
 
         if (player.CurrentHp <= 0)
         {
@@ -149,7 +163,7 @@ public sealed class AdventureCombatStarter(
             MonsterDropItemNames: monster.DropItemNames,
             MonsterGoldBonus: monster.GoldBonus,
             MonsterXpBonus: monster.XpBonus,
-            BossZoneId: isBossFight ? player.CurrentZoneId : null,
+            BossZoneId: isBossFight ? (player.InGate ? FogonRules.GateZoneId : player.CurrentZoneId) : null,
             PlayerMaxHp: profile.CombatMaxHp,
             PlayerCurrentHp: profile.CombatCurrentHp,
             PlayerStartingHp: profile.CombatCurrentHp,

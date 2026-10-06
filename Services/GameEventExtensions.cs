@@ -23,6 +23,12 @@ public static class GameEventExtensions
             await events.RecordAsync(
                 discordId, GameEventKinds.LevelUp, outcome.Player.CurrentZoneId, outcome.LevelsGained, outcome.Player.Level.ToString());
         }
+
+        // Ganarle al Asador Eterno (El Fogón Eterno, v0.11.0): es el contador del logro Asador.
+        if (outcome.Gate == GateEvent.Cleared)
+        {
+            await events.RecordAsync(discordId, GameEventKinds.GateWin, outcome.Player.CurrentZoneId);
+        }
     }
 }
 

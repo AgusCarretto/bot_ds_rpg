@@ -23,6 +23,8 @@ internal static class UserSql
         bank_gold        AS "BankGold",
         dust             AS "Dust",
         weapon_enchant   AS "WeaponEnchant",
-        amulet_enchant   AS "AmuletEnchant"
+        amulet_enchant   AS "AmuletEnchant",
+        in_gate          AS "InGate",
+        gate_cleared     AS "GateCleared"
         """;
 }

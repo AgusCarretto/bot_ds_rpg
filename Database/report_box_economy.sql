@@ -33,7 +33,7 @@ gather AS (
                * 5000.0 / (m.w_farm * m.rinde)) AS minutos
     FROM mats m
 ),
-zonas AS (SELECT zone_id, ROW_NUMBER() OVER (ORDER BY min_level) AS rango FROM zones),
+zonas AS (SELECT zone_id, ROW_NUMBER() OVER (ORDER BY min_level) AS rango FROM zones WHERE zone_id > 0),
 -- cada drop de monstruo (sin jefes) con su peso en la caja y los minutos de farmeo de ESE ítem.
 drops AS (
     SELECT z.rango,

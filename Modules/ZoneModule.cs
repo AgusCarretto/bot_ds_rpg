@@ -10,7 +10,7 @@ using BotDsRpg.Services;
 // zonas disponibles con su nivel requerido. A partir de acá, /hunt, /travel y /boss enfrentan
 // exclusivamente monstruos de la zona actual (ver Services/AdventureCombatStarter.cs): un pool para
 // /hunt, un monstruo dedicado para /travel (Database/seed_travel_monsters.sql) y el jefe para /boss.
-public class ZoneModule(IUserRepository userRepository, IZoneRepository zoneRepository, IMonsterRepository monsterRepository)
+public class ZoneModule(IUserRepository userRepository, IZoneRepository zoneRepository, IMonsterRepository monsterRepository, IItemRepository itemRepository)
     : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("zona", "Viajá a otra zona del mundo (usá /zonas para ver los IDs disponibles).")]
@@ -22,7 +22,7 @@ public class ZoneModule(IUserRepository userRepository, IZoneRepository zoneRepo
 
         try
         {
-            var (message, embed) = await ExecuteTravelAsync(userRepository, zoneRepository, monsterRepository, Context.User.Id, zoneId);
+            var (message, embed) = await ExecuteTravelAsync(userRepository, zoneRepository, monsterRepository, Context.User.Id, zoneId, itemRepository);
             await FollowupAsync(message, embed: embed);
         }
         catch (Exception ex)
@@ -53,10 +53,17 @@ public class ZoneModule(IUserRepository userRepository, IZoneRepository zoneRepo
     // exactamente la misma lógica en "aa zona <id>". Devuelve texto plano O embed, nunca los dos:
     // los errores de validación (zona inexistente, nivel insuficiente, jefe no derrotado) son solo texto.
     public static async Task<(string? Message, Embed? Embed)> ExecuteTravelAsync(
-        IUserRepository userRepository, IZoneRepository zoneRepository, IMonsterRepository monsterRepository, ulong discordId, int zoneId)
+        IUserRepository userRepository, IZoneRepository zoneRepository, IMonsterRepository monsterRepository, ulong discordId, int zoneId,
+        IItemRepository? itemRepository = null)
     {
+        // La zona 0 es El Fogón Eterno (GameData/FogonRules.cs): otras reglas de entrada y no es una zona de la escalera.
+        if (zoneId == FogonRules.GateZoneId)
+        {
+            return await ExecuteEnterGateAsync(userRepository, zoneRepository, itemRepository, discordId);
+        }
+
         var zone = await zoneRepository.GetByIdAsync(zoneId);
-        if (zone is null)
+        if (zone is null || zone.Kind != "normal")
         {
             return ($"No existe ninguna zona con ID **{zoneId}**. Usá `/zonas` (o `aa zonas`) para ver las disponibles.", null);
         }
@@ -68,7 +75,7 @@ public class ZoneModule(IUserRepository userRepository, IZoneRepository zoneRepo
             return ($"🚫 **{zone.Name}** requiere nivel **{zone.MinLevel}** — todavía sos nivel {player.Level}. Seguí subiendo antes de cruzar.", null);
         }
 
-        if (player.CurrentZoneId == zone.ZoneId)
+        if (player.CurrentZoneId == zone.ZoneId && !player.InGate)
         {
             return ($"Ya estás en **{zone.Name}** {zone.Emoji}.", null);
         }
@@ -99,6 +106,49 @@ public class ZoneModule(IUserRepository userRepository, IZoneRepository zoneRepo
         return (null, BuildTravelEmbed(zone));
     }
 
+    // /zona 0: entrar a El Fogón Eterno. Hace falta haber vencido al jefe de la última zona, el nivel de la puerta y llevar PUESTOS el arma y el amuleto del Fogón. Entrar solo
+    // marca users.in_gate (la zona actual no cambia); salir es viajar a cualquier zona normal.
+    private static async Task<(string? Message, Embed? Embed)> ExecuteEnterGateAsync(
+        IUserRepository userRepository, IZoneRepository zoneRepository, IItemRepository? itemRepository, ulong discordId)
+    {
+        var gate = await zoneRepository.GetGateAsync();
+        if (gate is null)
+        {
+            return ($"No existe ninguna zona con ID **{FogonRules.GateZoneId}**. Usá `/zonas` (o `aa zonas`) para ver las disponibles.", null);
+        }
+
+        var player = await userRepository.GetOrCreateUserAsync(discordId);
+        var orderedZones = ZoneRanking.OrderByDifficulty(await zoneRepository.GetAllAsync());
+        var weapon = player.WeaponId is int weaponId && itemRepository is not null ? await itemRepository.GetByIdAsync(weaponId) : null;
+        var amulet = player.AmuletId is int amuletId && itemRepository is not null ? await itemRepository.GetByIdAsync(amuletId) : null;
+        var check = FogonRules.CheckEntry(orderedZones, gate, player.Level, player.HighestZoneCleared, weapon, amulet);
+
+        switch (check.Status)
+        {
+            case FogonRules.EntryStatus.NotOpen:
+                var last = FogonRules.LastZone(orderedZones);
+                return ($"🔒 **{gate.Name}** {gate.Emoji} se abre cuando vencés al jefe de **{last?.Name ?? "la última zona"}** — probá `/boss` estando ahí.", null);
+            case FogonRules.EntryStatus.LevelTooLow:
+                return ($"🚫 **{gate.Name}** requiere nivel **{gate.MinLevel}** — todavía sos nivel {player.Level}. Seguí subiendo antes de entrar.", null);
+            case FogonRules.EntryStatus.MissingGear:
+                return ($"🔥 Para entrar a **{gate.Name}** tenés que llevar PUESTOS {FogonRules.MissingText(check)}. Se forjan en la herrería (`/forge`) y quedan equipados solos; " +
+                    "los de la zona anterior hay que venderlos primero. Mirá cómo funciona con `/info tema:fogon`.", null);
+        }
+
+        if (player.InGate)
+        {
+            return ($"Ya estás en **{gate.Name}** {gate.Emoji}: enfrentá a **{FogonRules.BossName}** con `/boss`.", null);
+        }
+
+        await userRepository.SetInGateAsync(discordId, true);
+
+        return (null, new EmbedBuilder()
+            .WithTitle($"🔥 ¡Entraste a {gate.Name}!")
+            .WithColor(Color.DarkOrange)
+            .WithDescription($"{gate.Description}\n\nAcá no hay cacería, viajes ni raid. Enfrentá a **{FogonRules.BossName}** con **/boss**.\nPara salir, viajá a una zona con **/zona**.")
+            .Build());
+    }
+
     private static Embed BuildTravelEmbed(Zone zone)
     {
         return new EmbedBuilder()
@@ -123,11 +173,23 @@ public class ZoneModule(IUserRepository userRepository, IZoneRepository zoneRepo
 
         foreach (var zone in zones)
         {
-            string here = zone.ZoneId == player.CurrentZoneId ? " 📍 _(acá estás)_" : string.Empty;
+            string here = zone.ZoneId == player.CurrentZoneId && !player.InGate ? " 📍 _(acá estás)_" : string.Empty;
             string locked = player.Level < zone.MinLevel ? " 🔒" : string.Empty;
             embed.AddField(
                 $"{zone.Emoji} {zone.ZoneId}. {zone.Name}{here}{locked}",
                 $"Nivel mínimo: **{zone.MinLevel}**\n_{zone.Description}_",
+                false);
+        }
+
+        // El Fogón Eterno (zona 0): aparece recién cuando vencés al jefe de la última zona (hasta entonces es una sorpresa).
+        var gate = await zoneRepository.GetGateAsync();
+        if (gate is not null && FogonRules.IsGateOpen(ZoneRanking.OrderByDifficulty(zones), player.HighestZoneCleared))
+        {
+            string here = player.InGate ? " 📍 _(acá estás)_" : string.Empty;
+            string locked = player.Level < gate.MinLevel ? " 🔒" : string.Empty;
+            embed.AddField(
+                $"{gate.Emoji} {gate.ZoneId}. {gate.Name}{here}{locked}",
+                $"Nivel mínimo: **{gate.MinLevel}** · solo con el **{FogonRules.WeaponName}** y la **{FogonRules.AmuletName}** puestos\n_{gate.Description}_",
                 false);
         }
 

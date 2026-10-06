@@ -61,6 +61,12 @@ public class AdventureModule(
                 case CombatStartStatus.NotLeveledForBoss:
                     await FollowupAsync(embed: BuildNotLeveledForBossEmbed(outcome.RequiredLevel!.Value), ephemeral: true);
                     return;
+                case CombatStartStatus.InGate:
+                    await FollowupAsync(embed: BuildInGateEmbed(), ephemeral: true);
+                    return;
+                case CombatStartStatus.GateGearMissing:
+                    await FollowupAsync(embed: BuildGateGearMissingEmbed(), ephemeral: true);
+                    return;
                 case CombatStartStatus.RaceLost:
                     await FollowupAsync("Justo se te adelantó otra ejecución de este comando, probá de nuevo en un toque.", ephemeral: true);
                     return;
@@ -493,6 +499,24 @@ public class AdventureModule(
             .Build();
     }
 
+    // /hunt, /travel, /autohunt y /raid estando parado en El Fogón Eterno (zona 0, GameData/FogonRules.cs): ahí solo hay un enemigo.
+    public static Embed BuildInGateEmbed() =>
+        new EmbedBuilder()
+            .WithTitle("🔥 Estás en El Fogón Eterno")
+            .WithDescription($"Acá no hay cacería, viajes ni raid: solo te espera **{FogonRules.BossName}**. Enfrentalo con **/boss**, o salí del Fogón viajando a una zona con **/zona**.")
+            .WithColor(Color.DarkOrange)
+            .Build();
+
+    // /boss en el Fogón sin el equipo puesto (lo vendió después de entrar).
+    public static Embed BuildGateGearMissingEmbed() =>
+        new EmbedBuilder()
+            .WithTitle("🔥 Te falta el equipo del Fogón")
+            .WithDescription(
+                $"Para enfrentar a **{FogonRules.BossName}** tenés que llevar puestos el **{FogonRules.WeaponName}** y la **{FogonRules.AmuletName}**. " +
+                "Forjalos en la herrería (**/forge**). No se gastó el cooldown.")
+            .WithColor(Color.DarkOrange)
+            .Build();
+
     public static Embed BuildNotLeveledForBossEmbed(int requiredLevel)
     {
         return new EmbedBuilder()
@@ -583,10 +607,20 @@ public class AdventureModule(
         {
             // El jefe se despide; y solo la PRIMERA vez que cae se anuncia que se abre la próxima zona. Las siguientes es "volviste a ganar":
             // decir de nuevo "ya podés avanzar" sería mentira (esa zona ya estaba abierta).
-            string zoneLine = firstBossClear
-                ? "¡Se abrió el camino! Ya podés avanzar a la próxima zona con `/zona`."
-                : "¡Volviste a ganarle! El camino a la próxima zona ya lo tenías abierto.";
-            embed.AddField("👑 ¡Jefe de Zona derrotado!", $"{MonsterSays(state, NpcDialogue.BossLine.Defeated)}\n\n{zoneLine}", false);
+            if (outcome.Gate == GateEvent.Cleared)
+            {
+                // El Asador Eterno (zona 0): ganarle devuelve a la última zona y habilita el Fuego Nuevo (GameData/FogonRules.cs).
+                embed.AddField("🔥 ¡El Asador Eterno cayó!", $"{MonsterSays(state, NpcDialogue.BossLine.Defeated)}\n\n{FogonRules.ClearedText}", false);
+            }
+            else
+            {
+                string zoneLine = outcome.Gate == GateEvent.Opened
+                    ? FogonRules.OpenedText
+                    : firstBossClear
+                        ? "¡Se abrió el camino! Ya podés avanzar a la próxima zona con `/zona`."
+                        : "¡Volviste a ganarle! El camino a la próxima zona ya lo tenías abierto.";
+                embed.AddField("👑 ¡Jefe de Zona derrotado!", $"{MonsterSays(state, NpcDialogue.BossLine.Defeated)}\n\n{zoneLine}", false);
+            }
         }
 
         return embed.Build();

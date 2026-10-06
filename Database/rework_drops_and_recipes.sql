@@ -301,7 +301,7 @@ BEGIN
                  COUNT(*) FILTER (WHERE is_travel) AS travel,
                  COUNT(*) FILTER (WHERE is_boss) AS boss
           FROM monsters GROUP BY zone_id) x USING (zone_id)
-    WHERE NOT (x.hunt = 2 AND x.travel = 1 AND x.boss = 1);
+    WHERE z.zone_id > 0 AND NOT (x.hunt = 2 AND x.travel = 1 AND x.boss = 1);
     IF v_bad IS NOT NULL THEN
         RAISE EXCEPTION 'rework_drops_and_recipes: estas zonas no tienen 2 de hunt + 1 de travel + 1 jefe: [%]', v_bad;
     END IF;
@@ -334,7 +334,7 @@ BEGIN
                  COUNT(*) FILTER (WHERE NOT r.affinity AND i.type = 'Weapon') AS general,
                  COUNT(*) FILTER (WHERE i.type = 'Amulet') AS amuleto
           FROM recipes r JOIN items i ON i.item_id = r.result_item_id GROUP BY r.zone_id) x USING (zone_id)
-    WHERE NOT (x.clase = 4 AND x.general = 1 AND x.amuleto = 1);
+    WHERE z.zone_id > 0 AND NOT (x.clase = 4 AND x.general = 1 AND x.amuleto = 1);
     IF v_bad IS NOT NULL THEN
         RAISE EXCEPTION 'rework_drops_and_recipes: estas zonas no tienen 4 armas de clase + 1 general + 1 amuleto: [%]', v_bad;
     END IF;

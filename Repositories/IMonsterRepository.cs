@@ -17,7 +17,7 @@ public interface IMonsterRepository
     // separado del pool de /hunt, con sus propios drops. Null si la zona todavía no tiene uno cargado.
     Task<MonsterTemplate?> GetTravelMonsterByZoneAsync(int zoneId, CancellationToken cancellationToken = default);
 
-    // TODOS los monstruos de TODAS las zonas (hunt, jefes y travel), cada uno con su zona y su tipo y sus drops
-    // ya resueltos, en dos consultas. Lo usa /drops para listar qué suelta cada uno.
+    // TODOS los monstruos de TODAS las zonas de la escalera (hunt, jefes y travel), cada uno con su zona y su tipo y sus drops
+    // ya resueltos, en dos consultas. Lo usa /drops para listar qué suelta cada uno. NO incluye al Asador Eterno (zona puerta): se pide con GetBossByZoneAsync(0).
     Task<IReadOnlyList<ZoneMonster>> GetAllAsync(CancellationToken cancellationToken = default);
 }

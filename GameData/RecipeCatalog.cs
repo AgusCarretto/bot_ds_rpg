@@ -17,21 +17,30 @@ public static class RecipeCatalog
 {
     // La zona que se muestra (Zone null = no hay nada para mostrar), y si es una zona anterior a la del
     // jugador (IsFallback).
-    public sealed record RecipeView(Zone? Zone, bool IsFallback, IReadOnlyList<RecipeDetails> Recipes);
+    // GateRecipes (v0.11.0): las recetas de El Fogón Eterno (zona 0, GameData/FogonRules.cs) que el jugador puede ver; ya están DENTRO de Recipes (la lista que usan el menú y el
+    // autocompletado de /forge) y vienen aparte para que la página de recetas las muestre en su propio bloque.
+    public sealed record RecipeView(Zone? Zone, bool IsFallback, IReadOnlyList<RecipeDetails> Recipes, IReadOnlyList<RecipeDetails>? GateRecipes = null);
 
-    public static RecipeView ViewFor(IReadOnlyList<RecipeDetails> recipes, IReadOnlyList<Zone> zones, string playerClass, int currentZoneId)
+    // includeGate: el jugador ya venció al jefe de la última zona (FogonRules.IsGateOpen): se suman las recetas del Fogón (el equipo para entrar a la zona 0).
+    public static RecipeView ViewFor(
+        IReadOnlyList<RecipeDetails> recipes, IReadOnlyList<Zone> zones, string playerClass, int currentZoneId, bool includeGate = false)
     {
         var zone = ZoneToShow(zones, recipes, currentZoneId);
+        var gateRecipes = includeGate
+            ? recipes.Where(r => r.ZoneId == FogonRules.GateZoneId && IsVisibleTo(r, playerClass)).ToList()
+            : [];
+
         if (zone is null)
         {
-            return new RecipeView(null, false, []);
+            return new RecipeView(null, false, gateRecipes, gateRecipes);
         }
 
         var visible = recipes
             .Where(r => r.ZoneId == zone.ZoneId && IsVisibleTo(r, playerClass))
+            .Concat(gateRecipes)
             .ToList();
 
-        return new RecipeView(zone, zone.ZoneId != currentZoneId, visible);
+        return new RecipeView(zone, zone.ZoneId != currentZoneId, visible, gateRecipes);
     }
 
     // La zona actual del jugador; si esa todavía no tiene ninguna receta cargada (hoy solo hay de Zona 1),
