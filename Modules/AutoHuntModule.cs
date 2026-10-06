@@ -57,6 +57,13 @@ public class AutoHuntModule(
         IGameEvents gameEvents,
         ulong discordId)
     {
+        // Antes de reclamar el cooldown: /autohunt pelea solo y no puede huir, así que con poca vida (< AutoHuntRules.MinHpPercent) se pide curarse primero. No gasta nada.
+        var hurtPlayer = await userRepository.GetByDiscordIdAsync(discordId);
+        if (hurtPlayer is not null && AutoHuntRules.IsTooHurt(hurtPlayer.CurrentHp, hurtPlayer.MaxHp))
+        {
+            return new AutoHuntResult(null, BuildTooHurtEmbed(hurtPlayer.CurrentHp, hurtPlayer.MaxHp));
+        }
+
         // Misma preparación que /hunt: mismo cooldown (CooldownCatalog.Hunt → "hunt" en la tabla
         // cooldowns), mismo chequeo de "ya en combate" y de HP, misma resolución de
         // arma/sinergia/defensa/monstruo. Reclama el cooldown acá adentro.
@@ -153,6 +160,17 @@ public class AutoHuntModule(
         await gameEvents.RecordAsync(discordId, GameEventKinds.FightLost, detail: "hunt");
         return new AutoHuntResult(null, BuildDefeatEmbed(finalState, penalty));
     }
+
+    // Público y puro: se prueba sin Discord.
+    public static Embed BuildTooHurtEmbed(int currentHp, int maxHp) =>
+        new EmbedBuilder()
+            .WithTitle("🩹 Muy herido para auto-cazar")
+            .WithColor(Color.Orange)
+            .WithDescription(
+                $"Tenés **{currentHp}/{maxHp}** HP ({currentHp * 100 / Math.Max(1, maxHp)} %).\n\n" +
+                $"El auto-cacería pelea solo y no puede huir: por debajo del **{AutoHuntRules.MinHpPercent} %** de vida el riesgo de perder sube rápido, y perder te cuesta la EXP del nivel y el 5 % del oro.\n\n" +
+                "Curate con **/heal**, o peleá a mano con **/hunt**, donde podés huir. No se gastó el cooldown.")
+            .Build();
 
     private static Embed BuildVictoryEmbed(CombatState state, LevelUpOutcome outcome, CombatReward reward, Item? droppedItem)
     {

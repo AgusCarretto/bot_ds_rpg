@@ -33,8 +33,8 @@ public class DustModule(IUserRepository userRepository, IItemRepository itemRepo
 
     [SlashCommand("enchant", "Encantá tu arma o tu amuleto con oro y Polvo (sin elegir, ves cómo estás).")]
     public async Task HandleEnchantAsync(
-        [Summary("pieza", "Qué querés encantar. Si no elegís, mirás tus encantamientos y lo que cuesta cada intento.")]
-        [Choice("Arma", "weapon"), Choice("Amuleto", "amulet")] string? slot = null)
+        [Summary("pieza", "Qué encantar. Sin elegir ves lo tuyo; con Info, los tiers, sus chances y costos.")]
+        [Choice("Arma", "weapon"), Choice("Amuleto", "amulet"), Choice("Info: tiers, chances y costos", "info")] string? slot = null)
     {
         await DeferAsync();
 
@@ -99,6 +99,12 @@ public class DustModule(IUserRepository userRepository, IItemRepository itemRepo
         IUserRepository userRepository, IItemRepository itemRepository, IDustRepository dustRepository, IGameEvents gameEvents,
         ulong discordId, string? slot, Random? rng = null)
     {
+        // "info" (también "opciones"/"ayuda"): cómo funciona, los tiers con su chance y su bonus, y lo que cuesta cada intento. Es lo mismo para todos: no toca la cuenta.
+        if (IsInfoRequest(slot))
+        {
+            return new DustResult(null, BuildOptionsEmbed());
+        }
+
         var player = await userRepository.GetByDiscordIdAsync(discordId);
         if (player is null)
         {
@@ -153,6 +159,13 @@ public class DustModule(IUserRepository userRepository, IItemRepository itemRepo
         await gameEvents.RecordAsync(discordId, GameEventKinds.Enchant, detail: $"{slotKey}:{rolled}");
         return new DustResult(null, BuildResultEmbed(player, gear, slotKey, outcome, cost));
     }
+
+    // "info", "opciones", "ayuda" o "chances" (con o sin acento): lo que pide quien quiere ver cómo funciona el encantamiento.
+    public static bool IsInfoRequest(string? text) => text?.Trim().ToLowerInvariant() is "info" or "opciones" or "ayuda" or "chances" or "tiers";
+
+    // "aa info enchant" / "aa info encantar" / "aa info encantamientos": el tema de /info que lleva a la pantalla de encantamientos.
+    public static bool IsEnchantTopic(string? text) =>
+        text?.Trim().ToLowerInvariant() is "enchant" or "enchants" or "encantar" or "encanto" or "encantos" or "encantamiento" or "encantamientos";
 
     private static string? NormalizeSlot(string? slot) => slot?.Trim().ToLowerInvariant() switch
     {
@@ -219,6 +232,43 @@ public class DustModule(IUserRepository userRepository, IItemRepository itemRepo
             .AddField("🛡️ Amuleto", Line("amulet", amulet, player.AmuletEnchant), false)
             .AddField("✨ Tu Polvo", $"**{GameHistory.Number(player.Dust)}**", false)
             .AddField("🎲 Tiers posibles", tiers, false)
+            .WithFooter("Para ver el detalle de cada tier (chance y bonus) y lo que cuesta cada intento: /enchant info")
+            .Build();
+    }
+
+    // Público y puro: "/enchant info", "aa enchant info" y "aa info enchant". Todo lo que hay que saber antes de gastar: cómo funciona, los tiers con su CHANCE y su BONUS,
+    // cuántos intentos llevan en promedio, lo que cuesta cada intento según la zona de la pieza y de dónde sale el Polvo. Todos los números salen de GameData/Enchantments.cs
+    // y GameData/Dismantling.cs (nada escrito a mano acá), así que esta pantalla no se puede desactualizar si se retocan.
+    public static Embed BuildOptionsEmbed()
+    {
+        string Attempts(int tier)
+        {
+            double attempts = Enchantments.AttemptsToReach(tier);
+            return attempts <= 1.05 ? string.Empty : $" · ~{attempts.ToString(attempts < 10 ? "0.0" : "0", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',')} intentos para llegar";
+        }
+
+        string tiers = string.Join('\n', Enumerable.Range(1, Enchantments.MaxTier).Select(t =>
+            $"**{Enchantments.TierName(t)}** — bonus **+{Enchantments.BonusPercent(t)} %** — sale el **{Enchantments.ChancePercent(t).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',')} %**{Attempts(t)}"));
+
+        string costs = string.Join('\n', Enumerable.Range(1, 5).Select(rank =>
+        {
+            var cost = Enchantments.Cost(rank);
+            return $"Pieza de **Zona {rank}**: {GameHistory.Number(cost.Gold)} oro + {cost.Dust} Polvo";
+        }));
+
+        string dust = string.Join(" · ", new[] { "Común", "Raro", "Épico", "Legendario", "Mítico" }.Select(r => $"{r} {GameHistory.Number(Dismantling.DustPerUnit(r))}"));
+
+        return new EmbedBuilder()
+            .WithTitle("✨ Encantamientos: opciones")
+            .WithColor(Color.Purple)
+            .WithDescription(
+                "Mejorá tu **arma** (Filo) o tu **amuleto** (Guarda) gastando **Polvo** y oro: **/enchant arma** o **/enchant amuleto**.\n\n" +
+                "Cada intento sortea un tier **al azar**. El tier **nunca baja**: si sale uno peor que el que tenés, te quedás con el que tenés (pero el intento se paga igual).\n\n" +
+                "El bonus es un % del stat **de la pieza** (siempre suma al menos +1) y cuenta igual en el combate, en el perfil y en los duelos. Si vendés o cambiás la pieza, **pierde su encantamiento**.")
+            .AddField("🎲 Tiers: bonus y chance por intento", tiers, false)
+            .AddField("💸 Lo que cuesta cada intento", costs + "\n_La zona de la pieza sale de su rareza (Común = Zona 1 … Mítico = Zona 5)._", false)
+            .AddField("✨ De dónde sale el Polvo", $"Desmantelando materiales con **/dismantle** (de 1 a {Dismantling.MaxPerCommand} por vez). Polvo por unidad:\n{dust}", false)
+            .WithFooter("Mirá cómo estás vos con /enchant (sin elegir pieza).")
             .Build();
     }
 }

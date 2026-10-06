@@ -29,6 +29,23 @@ public static class Enchantments
 
     public static int BonusPercent(int tier) => tier is >= 1 and <= MaxTier ? Tiers[tier - 1].BonusPercent : 0;
 
+    // La chance (en %) de que UN intento saque justo ese tier: el peso de la tabla sobre el total (40 / 30 / 18 / 9 / 3 %). Es lo que muestra "/enchant info".
+    public static double ChancePercent(int tier) =>
+        tier is >= 1 and <= MaxTier ? 100.0 * Tiers[tier - 1].Weight / Tiers.Sum(t => t.Weight) : 0;
+
+    // Cuántos intentos hacen falta, en promedio, para llegar a ese tier o a uno mejor: 1 / (chance de sacarlo o algo mejor en un intento). Como el tier
+    // nunca baja, el progreso se acumula: Tibio es 1, Al Rojo ~1,7, Ardiente ~3,3, Incandescente ~8,3 y Soberano ~33.
+    public static double AttemptsToReach(int tier)
+    {
+        if (tier is < 1 or > MaxTier)
+        {
+            return 0;
+        }
+
+        double atLeast = Tiers.Skip(tier - 1).Sum(t => t.Weight) / (double)Tiers.Sum(t => t.Weight);
+        return 1.0 / atLeast;
+    }
+
     // El stat con el encantamiento aplicado: siempre suma al menos 1 si hay encantamiento (si no, un +4 % de un arma de +9 no se notaría).
     public static int Apply(int stat, int tier)
     {

@@ -25,12 +25,13 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
     }
 
     // Comando barra: /info
-    [SlashCommand("info", "Mostrá la lista completa de comandos, agrupados por categoría.")]
-    public async Task HandleInfoAsync()
+    [SlashCommand("info", "Mostrá la lista completa de comandos, agrupados por categoría (o elegí un tema).")]
+    public async Task HandleInfoAsync(
+        [Summary("tema", "Opcional: Encantamientos muestra los tiers, sus chances y costos.")] [Choice("Encantamientos", "enchant")] string? topic = null)
     {
         try
         {
-            await RespondAsync(embed: BuildInfoEmbed());
+            await RespondAsync(embed: BuildTopicEmbed(topic));
         }
         catch (Exception ex)
         {
@@ -38,6 +39,11 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             await RespondAsync("No pude cargar la ayuda ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
         }
     }
+
+    // /info y "aa info": la lista de comandos, o —con un tema— la pantalla de ese tema ("aa info enchant" / "/info tema:Encantamientos" = las opciones de encantamiento).
+    // Un tema que no existe cae en la lista de siempre (nunca queda sin respuesta).
+    public static Embed BuildTopicEmbed(string? topic) =>
+        DustModule.IsEnchantTopic(topic) ? DustModule.BuildOptionsEmbed() : BuildInfoEmbed();
 
     // Estáticos (sin dependencia de Context) para que Modules/TextCommandModule.cs arme los
     // mismos embeds en "aa tutorial"/"aa info".
@@ -81,7 +87,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 false)
             .AddField(
                 "⚔️ Aventura",
-                "`/hunt` / `aa ah` — Pelear en tu zona actual (manual/automático)\n`/travel` — Monstruo élite de tu zona: más difícil, recompensa x30 (cada 30 min)\n`/boss` — Enfrentar al Jefe de tu zona actual (cada 5 h)\n`/raid` — Jefe de zona cooperativo (2 a 6 jugadores)\n`/fight` — Duelo amistoso con otro jugador (no se gana ni se pierde nada)\n`/arena` — Torneo PvP diario: `join`, `listplayers` y `results` (se juega a las 00:00, hora de Uruguay)\n`/zona` — Viajar a otra zona del mundo\n`/zonas` — Ver todas las zonas y sus niveles\n`/drops` — Qué suelta cada monstruo de cada zona\n`/chop` — Recolectar madera\n`/mine` — Recolectar piedra/minerales",
+                "`/hunt` / `aa ah` — Pelear en tu zona actual (manual/automático; el automático pide al menos 65 % de vida)\n`/travel` — Monstruo élite de tu zona: más difícil, recompensa x30 (cada 30 min)\n`/boss` — Enfrentar al Jefe de tu zona actual (cada 5 h)\n`/raid` — Jefe de zona cooperativo (2 a 6 jugadores)\n`/fight` — Duelo amistoso con otro jugador (no se gana ni se pierde nada)\n`/arena` — Torneo PvP diario: `join`, `listplayers` y `results` (se juega a las 00:00, hora de Uruguay)\n`/zona` — Viajar a otra zona del mundo\n`/zonas` — Ver todas las zonas y sus niveles\n`/drops` — Qué suelta cada monstruo de cada zona\n`/chop` — Recolectar madera\n`/mine` — Recolectar piedra/minerales",
                 false)
             .AddField(
                 "📈 Progresión",
@@ -90,7 +96,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             .AddField(
                 "✨ Polvo y encantamientos",
                 "`/dismantle` — Desarmá de 1 a 5 materiales y quedate con su Polvo (`aa desmantelar 3 Hierro`)\n" +
-                "`/enchant` — Gastá Polvo y oro para encantar tu arma o tu amuleto: sale un tier al azar (Tibio ➜ Soberano) y solo reemplaza al actual si es mejor (`aa encantar arma`)\n" +
+                "`/enchant` — Gastá Polvo y oro para encantar tu arma o tu amuleto: sale un tier al azar (Tibio ➜ Soberano) y solo reemplaza al actual si es mejor (`aa encantar arma`). **`/enchant info`** (o `aa info enchant`) muestra los tiers con su chance y su bonus, y lo que cuesta cada intento\n" +
                 "💀 Si perdés un combate, la EXP del nivel vuelve a 0 y perdés el 5 % del oro de la billetera (el del banco no).",
                 false)
             .AddField(
