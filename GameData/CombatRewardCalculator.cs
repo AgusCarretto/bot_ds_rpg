@@ -31,8 +31,17 @@ public static class CombatRewardCalculator
     // Repositories/IMonsterRepository.cs) que se SUMA a la fórmula de siempre, no la reemplaza —
     // así un monstruo de Zona 1 con bonus 0/0 da exactamente lo mismo que antes de que existieran
     // las Zonas, y solo las zonas más difíciles (Bosque de Cenizas en adelante) suben la recompensa.
-    public static CombatReward RollHuntReward(int playerLevel, int monsterGoldBonus = 0, int monsterXpBonus = 0) =>
-        Roll(playerLevel, monsterGoldBonus, monsterXpBonus, multiplier: 1, HuntDropChancePercent);
+    // pets (v0.10.0, GameData/PetRules.cs): los bonus de las mascotas del jugador. Suben el oro y la EXP de TODA pelea contra un monstruo (cacería, viaje, jefe, raid, /autohunt) y,
+    // solo en cacería y viaje, la chance de drop (relativa: +6 % sobre un 6 % da 6,36 %). El cofre del jefe NO lo toca, y null = sin mascotas = las cuentas de siempre.
+    public static CombatReward RollHuntReward(int playerLevel, int monsterGoldBonus = 0, int monsterXpBonus = 0, PetBonuses? pets = null) =>
+        Roll(playerLevel, monsterGoldBonus, monsterXpBonus, multiplier: 1, HuntDropChance(pets), pets);
+
+    // Las chances de drop CON el bonus de mascotas (lo que de verdad se tira); sin mascotas son HuntDropChancePercent / TravelDropChancePercent.
+    public static double HuntDropChance(PetBonuses? pets) => WithDropBonus(HuntDropChancePercent, pets);
+
+    public static double TravelDropChance(PetBonuses? pets) => WithDropBonus(TravelDropChancePercent, pets);
+
+    private static double WithDropBonus(int basePercent, PetBonuses? pets) => Math.Min(100.0, basePercent * (1 + (pets?.DropPercent ?? 0) / 100.0));
 
     // Jefe de zona (/boss y /raid): la fórmula de /hunt (con el bono GRANDE del jefe, ver Database/seed_zone_bosses.sql) x6, y la chance del
     // cofre de la zona. Era x1 hasta la v0.6.0 y el jefe pagaba la MITAD que un /travel (en Zona 2: ~280 XP contra ~520): una pelea mucho más
@@ -44,8 +53,8 @@ public static class CombatRewardCalculator
     // minuto de cooldown ahora rinde bastante menos que un viaje (es el valor a subir si el jefe tiene que volver a sentirse "vale la espera").
     public const int BossRewardMultiplier = 15;
 
-    public static CombatReward RollBossReward(int playerLevel, int monsterGoldBonus, int monsterXpBonus, bool firstClear) =>
-        Roll(playerLevel, monsterGoldBonus, monsterXpBonus, BossRewardMultiplier, BossChestChancePercent(firstClear));
+    public static CombatReward RollBossReward(int playerLevel, int monsterGoldBonus, int monsterXpBonus, bool firstClear, PetBonuses? pets = null) =>
+        Roll(playerLevel, monsterGoldBonus, monsterXpBonus, BossRewardMultiplier, BossChestChancePercent(firstClear), pets);
 
     // /travel tiene 30 minutos de cooldown (30 veces el de /hunt; 10 hasta la v0.7.1) y enfrenta a un monstruo élite (HP
     // x1.25 / daño x1.1 de los comunes de la zona, ver Database/seed_travel_monsters.sql): la
@@ -56,15 +65,18 @@ public static class CombatRewardCalculator
     // En Zona 1 (bonus 0/0) queda casi igual que antes (~120 oro / ~150 XP a nivel 1).
     public const int TravelRewardMultiplier = 30;
 
-    public static CombatReward RollTravelReward(int playerLevel, int monsterGoldBonus = 0, int monsterXpBonus = 0) =>
-        Roll(playerLevel, monsterGoldBonus, monsterXpBonus, TravelRewardMultiplier, TravelDropChancePercent);
+    public static CombatReward RollTravelReward(int playerLevel, int monsterGoldBonus = 0, int monsterXpBonus = 0, PetBonuses? pets = null) =>
+        Roll(playerLevel, monsterGoldBonus, monsterXpBonus, TravelRewardMultiplier, TravelDropChance(pets), pets);
 
-    private static CombatReward Roll(int playerLevel, int monsterGoldBonus, int monsterXpBonus, int multiplier, int dropChancePercent)
+    private static CombatReward Roll(
+        int playerLevel, int monsterGoldBonus, int monsterXpBonus, int multiplier, double dropChancePercent, PetBonuses? pets)
     {
-        int gold = (Random.Shared.Next(5, 16) + (playerLevel * 2) + monsterGoldBonus) * multiplier;
-        int xp = (Random.Shared.Next(8, 21) + playerLevel + monsterXpBonus) * multiplier;
+        // El bonus de oro/EXP de las mascotas va sobre la recompensa ENTERA (con su multiplicador de viaje o de jefe), redondeado al más cercano.
+        int gold = PetRules.Boost((Random.Shared.Next(5, 16) + (playerLevel * 2) + monsterGoldBonus) * multiplier, pets?.GoldPercent ?? 0);
+        int xp = PetRules.Boost((Random.Shared.Next(8, 21) + playerLevel + monsterXpBonus) * multiplier, pets?.XpPercent ?? 0);
 
-        bool droppedSomething = Random.Shared.Next(100) < dropChancePercent;
+        // NextDouble() está en [0, 1): con 100 % siempre cae, con 0 % nunca (y con 6 % cae el 6 % de las veces, igual que con el viejo Next(100) < 6).
+        bool droppedSomething = Random.Shared.NextDouble() * 100 < dropChancePercent;
 
         return new CombatReward(gold, xp, droppedSomething);
     }

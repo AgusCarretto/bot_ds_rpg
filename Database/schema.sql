@@ -203,6 +203,31 @@ CREATE TABLE IF NOT EXISTS player_stats (
 );
 
 -- ---------------------------------------------------------
+-- pet_species / player_pets: las mascotas (v0.10.0). El catálogo (huevos, comida y las 5 especies) lo carga Database/seed_pets.sql; las reglas (niveles, el
+-- cooldown de una hora para alimentar, el bonus de cada nivel) viven en GameData/PetRules.cs. Una base vieja las crea con Database/add_pets.sql.
+--   pet_species    una por zona (zone_id UNIQUE): qué bonus da (gold / xp / defense / drop), hasta cuánto (max_bonus_percent, al nivel 10) y su huevo (un ítem).
+--   player_pets    las que tiene cada jugador. El NIVEL no se guarda: sale de feed_points (las comidas que se le dieron); last_fed_at manda el cooldown.
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS pet_species (
+    species_id         INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    zone_id            INTEGER NOT NULL UNIQUE REFERENCES zones (zone_id) ON DELETE CASCADE,
+    name               TEXT NOT NULL UNIQUE,
+    emoji              TEXT,
+    bonus_kind         TEXT NOT NULL CHECK (bonus_kind IN ('gold', 'xp', 'defense', 'drop')),
+    max_bonus_percent  DOUBLE PRECISION NOT NULL CHECK (max_bonus_percent > 0),
+    egg_item_id        INTEGER NOT NULL UNIQUE REFERENCES items (item_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS player_pets (
+    discord_id   BIGINT NOT NULL REFERENCES users (discord_id) ON DELETE CASCADE,
+    species_id   INTEGER NOT NULL REFERENCES pet_species (species_id) ON DELETE CASCADE,
+    feed_points  INTEGER NOT NULL DEFAULT 0 CHECK (feed_points >= 0),
+    last_fed_at  TIMESTAMPTZ,
+    hatched_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (discord_id, species_id)
+);
+
+-- ---------------------------------------------------------
 -- boxes / box_loot: cajas (items.type = 'Caja') y lo que pueden dar al abrirlas. Ver Database/add_boxes.sql (migración),
 -- Database/seed_boxes.sql y Modules/BoxModule.cs.
 -- ---------------------------------------------------------

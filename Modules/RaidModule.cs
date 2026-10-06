@@ -23,7 +23,8 @@ public class RaidModule(
     IRaidSessionService raidSessions,
     IGameEvents gameEvents,
     IBuffRepository buffRepository,
-    ICooldownRepository cooldownRepository) : InteractionModuleBase<SocketInteractionContext>
+    ICooldownRepository cooldownRepository,
+    IPetRepository petRepository) : InteractionModuleBase<SocketInteractionContext>
 {
     // Ver Services/RaidSettings.cs: el mínimo es configurable (2 por defecto).
     private static int MinParticipantsToStart => RaidSettings.MinParticipants;
@@ -45,7 +46,8 @@ public class RaidModule(
                 return;
             }
 
-            var session = await BuildSessionAsync(userRepository, itemRepository, monsterRepository, zoneRepository, buffRepository, Context.User.Id, GameModule.GetDisplayName(Context.User));
+            var session = await BuildSessionAsync(
+                userRepository, itemRepository, monsterRepository, zoneRepository, buffRepository, Context.User.Id, GameModule.GetDisplayName(Context.User), petRepository);
 
             if (!raidSessions.TryAdd(session) || !raidSessions.TryRegisterParticipant(Context.User.Id, session.RaidId))
             {
@@ -101,7 +103,8 @@ public class RaidModule(
                 return;
             }
 
-            var participant = await BuildParticipantAsync(userRepository, itemRepository, buffRepository, discordId, GameModule.GetDisplayName(Context.User));
+            var participant = await BuildParticipantAsync(
+                userRepository, itemRepository, buffRepository, discordId, GameModule.GetDisplayName(Context.User), petRepository);
 
             bool joined;
             lock (session.Lock)
@@ -367,7 +370,7 @@ public class RaidModule(
     // del servicio, así que no podía sumarse y "Empezar ya" decía que no había nadie).
     public static async Task<RaidSession> BuildSessionAsync(
         IUserRepository userRepository, IItemRepository itemRepository, IMonsterRepository monsterRepository,
-        IZoneRepository zoneRepository, IBuffRepository buffRepository, ulong starterId, string starterDisplayName)
+        IZoneRepository zoneRepository, IBuffRepository buffRepository, ulong starterId, string starterDisplayName, IPetRepository? petRepository = null)
     {
         var player = await userRepository.GetOrCreateUserAsync(starterId);
         var boss = (await monsterRepository.GetBossByZoneAsync(player.CurrentZoneId))!; // ValidateStartAsync ya confirmó que existe
@@ -403,7 +406,7 @@ public class RaidModule(
 
         // La sesión todavía no la ve ningún otro hilo (recién se publica en IRaidSessionService.TryAdd),
         // así que agregar sin lock es seguro.
-        session.Participants.Add(await BuildParticipantAsync(itemRepository, buffRepository, player, starterDisplayName));
+        session.Participants.Add(await BuildParticipantAsync(itemRepository, buffRepository, player, starterDisplayName, petRepository));
 
         return session;
     }
@@ -462,20 +465,24 @@ public class RaidModule(
             .Build();
 
     private static async Task<RaidParticipant> BuildParticipantAsync(
-        IUserRepository userRepository, IItemRepository itemRepository, IBuffRepository buffRepository, ulong discordId, string displayName) =>
-        await BuildParticipantAsync(itemRepository, buffRepository, await userRepository.GetOrCreateUserAsync(discordId), displayName);
+        IUserRepository userRepository, IItemRepository itemRepository, IBuffRepository buffRepository, ulong discordId, string displayName, IPetRepository? petRepository) =>
+        await BuildParticipantAsync(itemRepository, buffRepository, await userRepository.GetOrCreateUserAsync(discordId), displayName, petRepository);
 
-    private static async Task<RaidParticipant> BuildParticipantAsync(IItemRepository itemRepository, IBuffRepository buffRepository, User player, string displayName)
+    private static async Task<RaidParticipant> BuildParticipantAsync(
+        IItemRepository itemRepository, IBuffRepository buffRepository, User player, string displayName, IPetRepository? petRepository)
     {
         var weapon = player.WeaponId is int weaponId ? await itemRepository.GetByIdAsync(weaponId) : null;
         var amulet = player.AmuletId is int amuletId ? await itemRepository.GetByIdAsync(amuletId) : null;
         // El +% de ataque de un banquete activo vale en el raid desde el primer golpe. El ataque se fija al unirse: un banquete
         // comido después no cuenta para ese raid, y si el buff vence a mitad de raid igual dura hasta que termina.
         var buff = await buffRepository.GetActiveAttackAsync((ulong)player.DiscordId);
-        var profile = PlayerCombatProfileCalculator.Resolve(player, weapon, amulet, buff?.AttackPercent ?? 0);
+        // Las mascotas (v0.10.0) también quedan fijas al unirse: la defensa entra en el perfil; el oro y la EXP, al cobrar la victoria (ResolveVictoryAsync).
+        var pets = petRepository is null ? null : await petRepository.GetBonusesAsync((ulong)player.DiscordId);
+        var profile = PlayerCombatProfileCalculator.Resolve(player, weapon, amulet, buff?.AttackPercent ?? 0, pets);
 
         return new RaidParticipant
         {
+            Pets = pets,
             DiscordId = (ulong)player.DiscordId,
             DisplayName = displayName,
             Damage = profile.Damage,
@@ -727,7 +734,7 @@ public class RaidModule(
         {
             // "Primera vez" por participante: el cofre es 100% solo para quien nunca había derrotado a este jefe (se mira ANTES de aplicar la victoria).
             bool firstClear = ((await userRepository.GetByDiscordIdAsync(participant.DiscordId))?.HighestZoneCleared ?? 0) < session.ZoneId;
-            var reward = CombatRewardCalculator.RollBossReward(participant.Level, session.BossGoldBonus, session.BossXpBonus, firstClear);
+            var reward = CombatRewardCalculator.RollBossReward(participant.Level, session.BossGoldBonus, session.BossXpBonus, firstClear, participant.Pets);
 
             Item? drop = null;
             if (reward.DroppedSomething && session.BossDropItemNames.Count > 0)
@@ -863,10 +870,12 @@ public class RaidModule(
         {
             string dropLine = drop is not null ? $"\n🎁 {ItemDisplay.Format(drop.Emoji, drop.Name)}{(drop.Type == "Caja" ? " — abrilo con /open" : string.Empty)}" : string.Empty;
             string levelLine = outcome.LevelsGained > 0 ? $"\n🎉 ¡Subió a nivel {outcome.Player.Level}!" : string.Empty;
+            // La primera vez que ESE jugador vence al jefe de la zona, además del cofre recibe el huevo de su mascota (en la misma transacción que el premio).
+            string eggLine = outcome.EggGranted is { } egg ? $"\n🥚 {egg.EggName} — abrilo con /open" : string.Empty;
 
             embed.AddField(
                 participant.DisplayName,
-                $"💰 {reward.Gold} oro · 📊 {reward.Xp} XP{dropLine}{levelLine}",
+                $"💰 {reward.Gold} oro · 📊 {reward.Xp} XP{dropLine}{eggLine}{levelLine}",
                 true);
         }
 

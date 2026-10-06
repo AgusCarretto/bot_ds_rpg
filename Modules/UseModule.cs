@@ -54,6 +54,17 @@ public class UseModule(
             return new UseResult($"No encontré ningún ítem llamado **{itemName}**.", null);
         }
 
+        // Lo de las mascotas (v0.10.0) no se come: la comida es para ellas y el huevo se abre.
+        if (item.Type == ShopCatalog.PetFoodType)
+        {
+            return new UseResult($"**{ItemDisplay.Format(item.Emoji, item.Name)}** es para tus mascotas, no para vos: dásela con **/pet feed**.", null);
+        }
+
+        if (item.Type == "Huevo")
+        {
+            return new UseResult($"**{ItemDisplay.Format(item.Emoji, item.Name)}** no se usa: se abre con **/open**.", null);
+        }
+
         if (item.Type != "Consumable")
         {
             return new UseResult($"**{ItemDisplay.Format(item.Emoji, item.Name)}** es de tipo `{item.Type}` y no se puede usar (solo Consumibles).", null);

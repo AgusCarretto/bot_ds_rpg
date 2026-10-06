@@ -57,6 +57,11 @@ public static class AchievementCatalog
         new("encantador",    "Encantador",    "✨", GameEventKinds.Enchant,       "Intentá encantar tu arma o tu amuleto",            Plain(1, 10, 40)),
         new("afortunado",    "Afortunado",    "🎰", GameEventKinds.CasinoWin,     "Ganá oro en el casino con /play",                  Plain(500, 5000, 50000)),
         new("gladiador",     "Gladiador",     "🏟️", GameEventKinds.ArenaJoin,     "Anotate en el torneo diario con /arena join",      Plain(3, 15, 60)),
+
+        // v0.10.0: las mascotas (también solo oro y XP). Hay 5 especies, así que Domador termina en 5; para dejar a las cinco en el nivel máximo hacen falta
+        // 125 comidas (PetRules.TotalFeedsToMax × 5) y ese es el último tramo de Criador. Se alimenta a cada una una vez por hora: el contador no se infla.
+        new("domador",       "Domador",       "🐾", GameEventKinds.PetHatched,    "Abrí huevos y sumá mascotas con /open",            Plain(1, 3, 5)),
+        new("criador",       "Criador",       "🍖", GameEventKinds.PetFed,        "Alimentá a tus mascotas con /pet feed",            Plain(10, 50, 125)),
     ];
 
     // Los logros se muestran en páginas por tema (/achievements): cada logro está en exactamente una (lo chequea la prueba).
@@ -67,7 +72,7 @@ public static class AchievementCatalog
         new("Combate", "⚔️", ["cazador", "viajero", "matajefes", "exterminador", "gladiador"]),
         new("Oficios", "🔨", ["recolector", "herrero", "desmantelador", "encantador"]),
         new("Economía", "💰", ["comerciante", "generoso", "abridor", "coleccionista", "afortunado"]),
-        new("Constancia", "📅", ["constante", "comandante", "misionero"]),
+        new("Constancia", "📅", ["constante", "comandante", "misionero", "domador", "criador"]),
     ];
 
     // Los logros de una página (0..Categories.Count-1); una página fuera de rango se acota a la más cercana.

@@ -494,6 +494,7 @@ public static class ServiceProviderBuilder
             .AddSingleton<IBankRepository, BankRepository>()
             .AddSingleton<IDustRepository, DustRepository>()
             .AddSingleton<IDropExchangeRepository, DropExchangeRepository>()
+            .AddSingleton<IPetRepository, PetRepository>()
             .AddSingleton<IBuffRepository, BuffRepository>()
             .AddSingleton<IMissionRepository, MissionRepository>()
             .AddSingleton<IAchievementRepository, AchievementRepository>()
