@@ -19,12 +19,12 @@ public sealed record DailyClaimCalculation(
 // decide si corresponde rechazar, continuar la racha o reiniciarla, y calcula la recompensa.
 public static class DailyRewardCalculator
 {
-    private const int MaxStreakMultiplier = 10;
-    private const int GoldPerMultiplier = 100;
-    private const int XpPerMultiplier = 50;
+    public const int MaxStreakMultiplier = 10;
+    public const int GoldPerMultiplier = 100;
+    public const int XpPerMultiplier = 50;
 
-    private static readonly TimeSpan MinInterval = TimeSpan.FromHours(24);
-    private static readonly TimeSpan StreakGraceWindow = TimeSpan.FromHours(48);
+    public static readonly TimeSpan MinInterval = TimeSpan.FromHours(24);
+    public static readonly TimeSpan StreakGraceWindow = TimeSpan.FromHours(48);
 
     public static DailyClaimCalculation Evaluate(DateTime? lastClaimUtc, int currentStreak, DateTime nowUtc)
     {

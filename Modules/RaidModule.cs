@@ -28,7 +28,7 @@ public class RaidModule(
     // Ver Services/RaidSettings.cs: el mínimo es configurable (2 por defecto).
     private static int MinParticipantsToStart => RaidSettings.MinParticipants;
     private const int MaxParticipants = RaidSettings.MaxParticipants;
-    private static readonly TimeSpan LobbyDuration = TimeSpan.FromSeconds(60);
+    public static readonly TimeSpan LobbyDuration = TimeSpan.FromSeconds(60);
 
     [SlashCommand("raid", "Jefe de zona cooperativo: varios jugadores atacan al mismo jefe (mín. 2, cooldown de 5 h).")]
     public async Task HandleRaidAsync()

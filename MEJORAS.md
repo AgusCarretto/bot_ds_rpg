@@ -1,6 +1,15 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-06 (v0.9.5: desmantelar hasta 100 por vez)_
+_Última revisión: 2026-10-06 (v0.9.6: ayuda por tema con `/info`, arreglo de `info enchant`)_
+
+## Ayuda por tema (`/info tema:<tema>`) y arreglo de `info enchant` (v0.9.6, 2026-10-06)
+
+- **El error de `info enchant`**: no era del código publicado sino de un cambio local sin guardar (`Enchantments.MaxTier = 100` en la carpeta principal): la tabla tiene 5 tiers y `TierName(6)` se salía del arreglo. Para que no se pueda repetir, `MaxTier` ya no es un número suelto: sale del largo de la tabla de tiers (`IsValidTier` protege cada acceso), y hay prueba con los tiers 0, 6 y 100.
+- **Ayuda por tema**, como pidió el dueño («info enchant, info play, info xxx»): `/info tema:<tema>` (con lista desplegable) y `aa info <tema>` explican **cómo funciona** cada cosa, con sus comandos y sus números. **18 temas**: enchant, dismantle (Polvo), bank, death (penalidad), play (casino), hunt (combate, viaje, autohunt), boss (jefes y raids), forge (herrería y equipo), zone, boxes, shop (tienda, taberna, curarte), missions (y logros),
+  arena (y duelos), trade, classes (pasivas y habilidades), gather (talar y minar), daily (y regalar oro), stats (nivel, vida, ataque, defensa). Se encuentran por la clave, el nombre o un alias en español (`aa info casino`, `aa info polvo`, `aa info muerte`, `aa info ench`). Un tema que no existe responde con la lista de temas. `/info` sin tema sigue siendo la lista de comandos y ahora nombra los temas.
+- Los números **salen de las constantes del juego** (cooldowns, penalidad, banco, casino, encantamientos...), no están escritos a mano: si se retocan, la ayuda se actualiza sola. Lo que vive en la base y el dueño edita (precios y rangos de las cajas, niveles de las zonas) no se repite: la ayuda manda a `/shop view` y `/zonas`.
+- **Hallazgo importante (sin tocar, falta decidir): las tragamonedas regalan oro.** Con 4 símbolos, dos iguales salen el 56 % de las veces y pagan ×2, tres iguales el 6 % y pagan ×5, y tres distintos el 37,5 % (pierde): el retorno esperado es **×1,4375 lo apostado (+43,75 % por tirada)** y `/play` no tiene cooldown ni tope, así que `/play slots all` repetido duplica el oro en pocas tiradas. El coinflip es justo (×2 al 50 %).
+  La solución mínima es que el par devuelva la apuesta (×1) y dejar los tres iguales en ×5 (retorno 87,5 %, casa gana 12,5 %), o ajustar los multiplicadores; son las constantes `CasinoService.SlotsPairMultiplier` y `SlotsThreeMatchMultiplier` y la ayuda las lee, así que se cambian en un solo lugar. Hasta que se decida, `/info tema:play` solo dice lo que paga cada jugada.
 
 ## Desmantelar hasta 100 por vez (v0.9.5, 2026-10-06)
 

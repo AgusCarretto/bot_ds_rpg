@@ -9,7 +9,12 @@ namespace BotDsRpg.GameData;
 // segunda vuelta (después del reset), no los de la primera (el escalón entre zonas está medido, ver CLAUDE.md).
 public static class Enchantments
 {
-    public const int MaxTier = 5;
+    // Cuántos tiers hay: sale de la TABLA de abajo, no es un número aparte. Era una constante (5) y alguien que la subió a mano (100) rompió todo lo que recorre los tiers
+    // ("/enchant info" tiraba IndexOutOfRange): ahora no hay un número que desincronizar. Para agregar un tier se agrega una fila (y la base solo acepta 0 a 5: users_*_enchant_check).
+    public static int MaxTier => Tiers.Length;
+
+    // Un tier válido (1 hasta el último). Todas las cuentas de abajo y el perfil lo usan, así nadie indexa la tabla con un tier que no existe.
+    public static bool IsValidTier(int tier) => tier >= 1 && tier <= Tiers.Length;
 
     private static readonly (string Name, int BonusPercent, int Weight)[] Tiers =
     [
@@ -25,19 +30,19 @@ public static class Enchantments
     private static readonly int[] DustPerAttempt = [10, 15, 25, 40, 60];
     private const int GoldUnitsPerAttempt = 8;
 
-    public static string TierName(int tier) => tier is >= 1 and <= MaxTier ? Tiers[tier - 1].Name : "Sin encantar";
+    public static string TierName(int tier) => IsValidTier(tier) ? Tiers[tier - 1].Name : "Sin encantar";
 
-    public static int BonusPercent(int tier) => tier is >= 1 and <= MaxTier ? Tiers[tier - 1].BonusPercent : 0;
+    public static int BonusPercent(int tier) => IsValidTier(tier) ? Tiers[tier - 1].BonusPercent : 0;
 
     // La chance (en %) de que UN intento saque justo ese tier: el peso de la tabla sobre el total (40 / 30 / 18 / 9 / 3 %). Es lo que muestra "/enchant info".
     public static double ChancePercent(int tier) =>
-        tier is >= 1 and <= MaxTier ? 100.0 * Tiers[tier - 1].Weight / Tiers.Sum(t => t.Weight) : 0;
+        IsValidTier(tier) ? 100.0 * Tiers[tier - 1].Weight / Tiers.Sum(t => t.Weight) : 0;
 
     // Cuántos intentos hacen falta, en promedio, para llegar a ese tier o a uno mejor: 1 / (chance de sacarlo o algo mejor en un intento). Como el tier
     // nunca baja, el progreso se acumula: Tibio es 1, Al Rojo ~1,7, Ardiente ~3,3, Incandescente ~8,3 y Soberano ~33.
     public static double AttemptsToReach(int tier)
     {
-        if (tier is < 1 or > MaxTier)
+        if (!IsValidTier(tier))
         {
             return 0;
         }
@@ -60,7 +65,7 @@ public static class Enchantments
 
     // "Filo Ardiente" / "Guarda Ardiente": cómo se llama el encantamiento de cada pieza. slot: "weapon" o "amulet".
     public static string Label(string slot, int tier) =>
-        tier is >= 1 and <= MaxTier ? $"{(slot == "weapon" ? "Filo" : "Guarda")} {Tiers[tier - 1].Name}" : "Sin encantar";
+        IsValidTier(tier) ? $"{(slot == "weapon" ? "Filo" : "Guarda")} {Tiers[tier - 1].Name}" : "Sin encantar";
 
     // El tier de un intento (1..5) con los pesos 40 / 30 / 18 / 9 / 3.
     public static int Roll(Random? rng = null)
