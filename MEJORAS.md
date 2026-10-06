@@ -1,6 +1,14 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-06 (v0.9.4: calibración con la penalidad, `enchant info`, «Consumibles»)_
+_Última revisión: 2026-10-06 (v0.9.5: desmantelar hasta 100 por vez)_
+
+## Desmantelar hasta 100 por vez (v0.9.5, 2026-10-06)
+
+- `/dismantle` (y `aa desmantelar [cantidad] <ítem>`) ahora acepta de **1 a 100** unidades por comando (eran 5). Es la misma constante de siempre, `Dismantling.MaxPerCommand`, y los textos (ayuda, descripciones del comando, `/enchant info`) la leen de ahí.
+- **No cambia el ritmo del Polvo**: se paga por unidad y las unidades se gastan de verdad, así que solo hacen falta menos comandos. El caso más grande es 100 unidades Míticas = 50.000 de Polvo (entra de sobra en la columna).
+- Probado: 100 de golpe, pedir más de lo que tenés o más del tope (se rechaza sin tocar nada) y dos pedidos de 100 a la vez con solo 150 (paga uno solo, nunca queda negativo).
+- Ojo menor: el logro Desmantelador (20 / 150 / 1.000 unidades) se calculó con 5 por comando; ahora se llega en pocos comandos, pero igual hay que tener y gastar esas unidades.
+- Sin cambios de base de datos.
 
 ## Calibración de encantamientos y penalidad, `enchant info` y «Consumibles» (v0.9.4, 2026-10-06)
 

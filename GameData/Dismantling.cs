@@ -5,8 +5,9 @@ namespace BotDsRpg.GameData;
 // uno), y nada convierte Carbón en Hierro. Craftear quedó afuera (el dueño: "lo de craftear lo olvidamos").
 public static class Dismantling
 {
-    // De a cuántas unidades se desmantela por comando (1 a 5).
-    public const int MaxPerCommand = 5;
+    // De a cuántas unidades se desmantela por comando (1 a 100; eran 5 hasta la v0.9.4 y el dueño lo subió a 100: con cientos de Piedra o Pino en la mochila 5 por vez era
+    // eterno). Subirlo NO cambia el ritmo del Polvo (se paga por unidad, y las unidades se gastan de verdad), solo cuántos comandos hacen falta.
+    public const int MaxPerCommand = 100;
 
     // Qué tipos de ítem se pueden desmantelar: lo que se recolecta y lo que sueltan los monstruos. Las cajas se abren, la comida se come y el equipo se forja o se vende.
     public static bool CanDismantle(string itemType) => itemType is "Madera" or "Mineral" or "Material";

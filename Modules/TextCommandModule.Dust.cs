@@ -7,7 +7,7 @@ public partial class TextCommandModule
     // "aa dismantle <item>" o "aa dismantle <cantidad> <item...>" (alias "aa desmantelar") — misma lógica que /dismantle.
     [Command("dismantle")]
     [Alias("desmantelar")]
-    [Summary("Desmantelá un material para conseguir Polvo: \"aa dismantle <item>\" o \"aa dismantle <cantidad> <item>\" (de 1 a 5).")]
+    [Summary("Desmantelá un material para conseguir Polvo: \"aa dismantle <item>\" o \"aa dismantle <cantidad> <item>\" (de 1 a 100).")]
     public Task DismantleAsync([Remainder] string item) => DismantleAsync(1, item);
 
     [Command("dismantle")]
