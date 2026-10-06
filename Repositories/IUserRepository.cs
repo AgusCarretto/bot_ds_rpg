@@ -12,9 +12,14 @@ public interface IUserRepository
     // (Nivel 1, 0 EXP, 50 de oro, 100/100 HP, clase indicada o "Guerrero" por defecto).
     Task<User> GetOrCreateUserAsync(ulong discordId, string? chosenClass = null, CancellationToken cancellationToken = default);
 
-    // Crea al jugador con la clase elegida si no existe, o se la actualiza si ya existe
-    // (permite re-elegir clase desde /class en cualquier momento).
+    // Crea al jugador con la clase elegida si no existe, o se la actualiza si ya existe. Es lo que usa /start; desde la v0.12.0 /class NO la usa (ver TrySetClassWhileFreshAsync):
+    // este método pisa la clase sin preguntar.
     Task<User> SetClassAsync(ulong discordId, string className, CancellationToken cancellationToken = default);
+
+    // Cambia la clase SOLO si el jugador está empezando de cero (nivel 1 y 0 de EXP, GameData/FuegoNuevoRules.CanChangeClass): un solo UPDATE con la condición adentro, así
+    // nadie la cambia a mitad de una vuelta aunque un botón viejo siga en pantalla. null = no existe o ya no está en cero (el llamador lo explica). Con un Fuego Nuevo la clase se
+    // vuelve a elegir adentro de la transacción del reinicio (IFuegoNuevoRepository.RenewAsync), no por acá.
+    Task<User?> TrySetClassWhileFreshAsync(ulong discordId, string className, CancellationToken cancellationToken = default);
 
     // Restaura HP (tope: max_hp) — usado por /heal y /use fuera de combate; el consumible ya se
     // descontó del inventario antes de llamar acá (ver IInventoryRepository.TryConsumeAsync). Ya

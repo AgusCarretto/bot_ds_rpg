@@ -34,6 +34,7 @@ public static class HelpTopics
         new("trade", "🤝", "Intercambio", "cambiar materiales con otro jugador", ["cambio", "cambiar", "trueque", "intercambio"], Trade),
         new("exchange", "🔁", "Cambiar drops con el tabernero", "3 drops de una zona por 1 de la misma", ["canje", "canjear", "swap", "tabernero", "cambalache"], Exchange),
         new("fogon", "🔥", "El Fogón Eterno", "la puerta del final del mundo y su equipo", ["fogón", "asador", "puerta", "zona0", "zona 0", "gate"], Fogon),
+        new("fuego", "♻️", "Fuego Nuevo", "volver a empezar con bonus permanentes y bendiciones", ["fuegonuevo", "fuego nuevo", "fn", "reinicio", "reiniciar", "renacer", "reset", "vuelta", "bendicion", "bendiciones", "blessing", "blessings", "prestigio"], Fuego),
         new("pets", "🐾", "Mascotas", "huevos, bonus pasivos y cómo alimentarlas", ["mascota", "mascotas", "pet", "huevo", "huevos", "egg", "eggs"], Pets),
         new("classes", "🎭", "Clases y habilidades", "qué hace cada clase", ["clase", "clases", "class", "habilidad", "habilidades"], Classes),
         new("gather", "🪓", "Recolección", "talar y minar: unidades y rarezas", ["chop", "mine", "talar", "minar", "recolectar", "recoleccion", "madera", "mineral"], Gather),
@@ -284,7 +285,28 @@ public static class HelpTopics
         ("⚔️ Adentro",
             $"Solo **/boss**, contra **{FogonRules.BossName}**: no hay cacería, viajes ni raid. Usa el cooldown del jefe (**{Dur(CooldownCatalog.Boss.Duration)}** si ganás y **{Dur(CooldownCatalog.Boss.RetryAfterFailure ?? CooldownCatalog.Boss.Duration)}** si perdés, huís o se acaba el tiempo) y si perdés pagás la penalidad de siempre (**/info tema:death**). " +
             "Está calibrado como cada jefe: con el equipo de la zona anterior casi siempre perdés, con el del Fogón es un desafío parejo."),
-        ("🏆 Al ganar", "Volvés a la última zona, se habilita el **Fuego Nuevo** y sumás el logro **Asador**. Para salir sin pelear, viajá a cualquier zona con **/zona**."));
+        ("🏆 Al ganar", "Volvés a la última zona, se habilita el **Fuego Nuevo** (**/fuegonuevo**, y cómo funciona en **/info tema:fuego**) y sumás el logro **Asador**. Para salir sin pelear, viajá a cualquier zona con **/zona**."));
+
+    private static Embed Fuego() => Topic(Self("fuego"),
+        "El **Fuego Nuevo** es volver a empezar, pero más rápido: perdés el nivel, el equipo y los materiales y ganás **porcentajes permanentes** y una **bendición** por cada vuelta. " +
+        "Es voluntario y se habilita al vencer al **Asador Eterno** en **El Fogón Eterno** (**/info tema:fogon**).",
+        ("🔥 Cómo se hace",
+            "**/fuegonuevo** (en texto `aa fn`) muestra lo que se va, lo que se queda y lo que ganás, con el botón para hacerlo. Después elegís la **clase** de la vuelta nueva: tocarla confirma y no se deshace. " +
+            "No se puede en pleno combate o raid, y cada vuelta pide volver a vencer al Asador (el equipo del Fogón se forja de nuevo)."),
+        ("📈 Lo que ganás con cada uno",
+            $"🏹 Chance de drop en **/hunt**: **{FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.HuntDropStep)}** sobre la base por cada Fuego Nuevo (lineal: el 10.º es {FuegoNuevoRules.PercentText(FuegoNuevoRules.HuntDropMultiplier(10))}, no se compone)\n" +
+            $"🗺️ Chance de drop en **/travel**: arranca en **{FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.TravelStep(1))}** y cada vuelta suma un poco menos (el 10.º acumula {FuegoNuevoRules.PercentText(FuegoNuevoRules.TravelDropMultiplier(10))}, con piso de {FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.TravelStep(1000))} por vuelta)\n" +
+            $"🪓⛏️ Cantidad por **/chop** y **/mine**: **{FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.GatherStep)}** por Fuego Nuevo (el 10.º es ×{FuegoNuevoRules.GatherMultiplier(10).ToString("0.#", CultureInfo.InvariantCulture).Replace('.', ',')})\n" +
+            $"📊 EXP de las peleas: **{FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.XpStep)}** por Fuego Nuevo\n" +
+            $"Con la chance base de /hunt ({CombatRewardCalculator.HuntDropChancePercent} %) y de /travel ({CombatRewardCalculator.TravelDropChancePercent} %). El oro y el cofre del jefe no cambian."),
+        ("💨 Lo que se va",
+            "Nivel y EXP, la zona y los jefes vencidos, el arma y el amuleto (con sus encantamientos), todos los materiales, drops, cajas y consumibles, el Polvo, los banquetes y los enfriamientos. Sin reembolso."),
+        ("🔒 Lo que se queda",
+            "El oro (billetera y banco), las mascotas con sus huevos y su comida, los logros, las misiones cobradas, los trofeos, la racha diaria, las bendiciones y tus Fuegos Nuevos."),
+        ("🙏 Bendiciones",
+            $"Una por vuelta, elegida entre {BlessingCatalog.OfferSize} sorteadas ({BlessingCatalog.All.Count} en total); si repetís una sube de nivel hasta el {BlessingCatalog.RomanLevel(BlessingCatalog.MaxLevel)}. " +
+            "Las hay de velocidad (drop, cantidad, EXP), de poder chico (ataque, defensa y vida, solo contra monstruos), de mascotas, de oro, de ítems y cosméticas. **/blessings** las muestra todas."),
+        ("⚖️ Reglas", "Los duelos y la Arena no usan nada de esto: se juegan con nivel, equipo y clase. La clase solo se elige empezando de cero y con cada Fuego Nuevo (**/class**)."));
 
     private static Embed Pets() => Topic(Self("pets"),
         "Cada zona tiene su **mascota**. Las que tengas valen **todas a la vez**: no ocupan lugar, no se pierden y no hay que sacarlas a pasear.",
@@ -304,7 +326,7 @@ public static class HelpTopics
         var embed = new EmbedBuilder()
             .WithTitle($"{Self("classes").Emoji} {Self("classes").Name}")
             .WithColor(OnboardingModule.BrandColor)
-            .WithDescription("Elegís tu clase con **/class**. Cada una tiene una **pasiva** que siempre está y una **habilidad** que se usa con un botón en la pelea manual.");
+            .WithDescription("Elegís tu clase con **/class** (solo empezando de cero, nivel 1: después se vuelve a elegir con cada **Fuego Nuevo**). Cada una tiene una **pasiva** que siempre está y una **habilidad** que se usa con un botón en la pelea manual.");
 
         foreach (var cls in ClassCatalog.All)
         {

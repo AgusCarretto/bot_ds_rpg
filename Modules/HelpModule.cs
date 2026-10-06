@@ -103,13 +103,18 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "`/zona 0` — La puerta al final del mundo: se abre al vencer al jefe de la última zona y pide el equipo del Fogón puesto. Adentro solo hay `/boss` contra el Asador Eterno; ganarle habilita el Fuego Nuevo (`/info tema:fogon`)",
                 false)
             .AddField(
+                "♻️ Fuego Nuevo",
+                "`/fuegonuevo` — Volvé a empezar (`aa fn`): perdés nivel, equipo y materiales y ganás bonus permanentes y una bendición. Se habilita al vencer al Asador (`/info tema:fuego`)\n" +
+                "`/blessings` — Tus bendiciones, y la que tengas para elegir (`aa bendiciones`)",
+                false)
+            .AddField(
                 "🐾 Mascotas",
                 "`/pet view` — Tus mascotas: una por zona, y dan su bonus **todas a la vez** (`aa pet`)\n" +
                 "`/pet feed` — Dales Comida para Mascotas (se compra en la `/taberna`), una vez por hora cada una. El huevo llega la primera vez que vencés al jefe de cada zona: abrilo con `/open`",
                 false)
             .AddField(
                 "🛠️ Utilidad",
-                "`/start` — Empezar tu aventura\n`/class` — Elegir/cambiar de clase\n`/profile` — Ver tu ficha\n`/history` — Tu historial por juego: cuántas veces jugaste, ganaste y perdiste\n`/duels` — Tu récord de duelos y los últimos rivales\n`/inventory` — Ver tu inventario\n`/cd` — Ver tus cooldowns (y si ya te anotaste en la Arena de hoy)\n`/tips` — Qué te falta para tu próxima forja y de dónde sacarlo\n`/tutorial` — Este loop básico\n`/info` — Esta lista de comandos",
+                "`/start` — Empezar tu aventura\n`/class` — Elegir clase (solo con nivel 1; después, con cada Fuego Nuevo)\n`/profile` — Ver tu ficha\n`/history` — Tu historial por juego: cuántas veces jugaste, ganaste y perdiste\n`/duels` — Tu récord de duelos y los últimos rivales\n`/inventory` — Ver tu inventario\n`/cd` — Ver tus cooldowns (y si ya te anotaste en la Arena de hoy)\n`/tips` — Qué te falta para tu próxima forja y de dónde sacarlo\n`/tutorial` — Este loop básico\n`/info` — Esta lista de comandos",
                 false)
             .AddField(
                 "📚 Cómo funciona cada cosa",

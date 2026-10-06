@@ -24,4 +24,6 @@ public sealed class User
     public int AmuletEnchant { get; init; } // ídem del amuleto
     public bool InGate { get; init; }       // está parado en El Fogón Eterno (zona 0, GameData/FogonRules.cs): su CurrentZoneId sigue siendo la última zona normal
     public bool GateCleared { get; init; }  // ya le ganó al Asador Eterno en esta vuelta (habilita el Fuego Nuevo)
+    public int FuegoNuevo { get; init; }    // cuántos Fuegos Nuevos hizo (0 = ninguno; GameData/FuegoNuevoRules.cs)
+    public DateTime RunStartedAt { get; init; } // cuándo arrancó la vuelta actual (UTC)
 }

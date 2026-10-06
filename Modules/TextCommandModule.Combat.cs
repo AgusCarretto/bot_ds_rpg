@@ -43,7 +43,7 @@ public partial class TextCommandModule
             }
 
             var session = await RaidModule.BuildSessionAsync(
-                userRepository, itemRepository, monsterRepository, zoneRepository, buffRepository, Context.User.Id, GameModule.GetDisplayName(Context.User), petRepository);
+                userRepository, itemRepository, monsterRepository, zoneRepository, buffRepository, Context.User.Id, GameModule.GetDisplayName(Context.User), bonusService);
 
             // Igual que StartCombatAsync más abajo: el reply target necesita el mensaje ya enviado
             // para poder editarlo después, así que primero se manda y recién ahí se registra.

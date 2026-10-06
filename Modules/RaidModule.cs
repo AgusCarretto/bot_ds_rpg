@@ -24,7 +24,7 @@ public class RaidModule(
     IGameEvents gameEvents,
     IBuffRepository buffRepository,
     ICooldownRepository cooldownRepository,
-    IPetRepository petRepository) : InteractionModuleBase<SocketInteractionContext>
+    IPlayerBonusService bonusService) : InteractionModuleBase<SocketInteractionContext>
 {
     // Ver Services/RaidSettings.cs: el mínimo es configurable (2 por defecto).
     private static int MinParticipantsToStart => RaidSettings.MinParticipants;
@@ -47,7 +47,7 @@ public class RaidModule(
             }
 
             var session = await BuildSessionAsync(
-                userRepository, itemRepository, monsterRepository, zoneRepository, buffRepository, Context.User.Id, GameModule.GetDisplayName(Context.User), petRepository);
+                userRepository, itemRepository, monsterRepository, zoneRepository, buffRepository, Context.User.Id, GameModule.GetDisplayName(Context.User), bonusService);
 
             if (!raidSessions.TryAdd(session) || !raidSessions.TryRegisterParticipant(Context.User.Id, session.RaidId))
             {
@@ -104,7 +104,7 @@ public class RaidModule(
             }
 
             var participant = await BuildParticipantAsync(
-                userRepository, itemRepository, buffRepository, discordId, GameModule.GetDisplayName(Context.User), petRepository);
+                userRepository, itemRepository, buffRepository, discordId, GameModule.GetDisplayName(Context.User), bonusService);
 
             bool joined;
             lock (session.Lock)
@@ -376,7 +376,7 @@ public class RaidModule(
     // del servicio, así que no podía sumarse y "Empezar ya" decía que no había nadie).
     public static async Task<RaidSession> BuildSessionAsync(
         IUserRepository userRepository, IItemRepository itemRepository, IMonsterRepository monsterRepository,
-        IZoneRepository zoneRepository, IBuffRepository buffRepository, ulong starterId, string starterDisplayName, IPetRepository? petRepository = null)
+        IZoneRepository zoneRepository, IBuffRepository buffRepository, ulong starterId, string starterDisplayName, IPlayerBonusService? bonusService = null)
     {
         var player = await userRepository.GetOrCreateUserAsync(starterId);
         var boss = (await monsterRepository.GetBossByZoneAsync(player.CurrentZoneId))!; // ValidateStartAsync ya confirmó que existe
@@ -412,7 +412,7 @@ public class RaidModule(
 
         // La sesión todavía no la ve ningún otro hilo (recién se publica en IRaidSessionService.TryAdd),
         // así que agregar sin lock es seguro.
-        session.Participants.Add(await BuildParticipantAsync(itemRepository, buffRepository, player, starterDisplayName, petRepository));
+        session.Participants.Add(await BuildParticipantAsync(itemRepository, buffRepository, player, starterDisplayName, bonusService));
 
         return session;
     }
@@ -476,24 +476,24 @@ public class RaidModule(
             .Build();
 
     private static async Task<RaidParticipant> BuildParticipantAsync(
-        IUserRepository userRepository, IItemRepository itemRepository, IBuffRepository buffRepository, ulong discordId, string displayName, IPetRepository? petRepository) =>
-        await BuildParticipantAsync(itemRepository, buffRepository, await userRepository.GetOrCreateUserAsync(discordId), displayName, petRepository);
+        IUserRepository userRepository, IItemRepository itemRepository, IBuffRepository buffRepository, ulong discordId, string displayName, IPlayerBonusService? bonusService) =>
+        await BuildParticipantAsync(itemRepository, buffRepository, await userRepository.GetOrCreateUserAsync(discordId), displayName, bonusService);
 
     private static async Task<RaidParticipant> BuildParticipantAsync(
-        IItemRepository itemRepository, IBuffRepository buffRepository, User player, string displayName, IPetRepository? petRepository)
+        IItemRepository itemRepository, IBuffRepository buffRepository, User player, string displayName, IPlayerBonusService? bonusService)
     {
         var weapon = player.WeaponId is int weaponId ? await itemRepository.GetByIdAsync(weaponId) : null;
         var amulet = player.AmuletId is int amuletId ? await itemRepository.GetByIdAsync(amuletId) : null;
         // El +% de ataque de un banquete activo vale en el raid desde el primer golpe. El ataque se fija al unirse: un banquete
         // comido después no cuenta para ese raid, y si el buff vence a mitad de raid igual dura hasta que termina.
         var buff = await buffRepository.GetActiveAttackAsync((ulong)player.DiscordId);
-        // Las mascotas (v0.10.0) también quedan fijas al unirse: la defensa entra en el perfil; el oro y la EXP, al cobrar la victoria (ResolveVictoryAsync).
-        var pets = petRepository is null ? null : await petRepository.GetBonusesAsync((ulong)player.DiscordId);
-        var profile = PlayerCombatProfileCalculator.Resolve(player, weapon, amulet, buff?.AttackPercent ?? 0, pets);
+        // Lo permanente (mascotas v0.10.0, Fuego Nuevo y bendiciones v0.12.0) también queda fijo al unirse: ataque, defensa y vida entran en el perfil; el oro y la EXP, al cobrar la victoria (ResolveVictoryAsync).
+        var bonuses = bonusService is null ? null : await bonusService.GetAsync((ulong)player.DiscordId, player.FuegoNuevo);
+        var profile = PlayerCombatProfileCalculator.Resolve(player, weapon, amulet, buff?.AttackPercent ?? 0, bonuses);
 
         return new RaidParticipant
         {
-            Pets = pets,
+            Bonuses = bonuses,
             DiscordId = (ulong)player.DiscordId,
             DisplayName = displayName,
             Damage = profile.Damage,
@@ -745,7 +745,7 @@ public class RaidModule(
         {
             // "Primera vez" por participante: el cofre es 100% solo para quien nunca había derrotado a este jefe (se mira ANTES de aplicar la victoria).
             bool firstClear = ((await userRepository.GetByDiscordIdAsync(participant.DiscordId))?.HighestZoneCleared ?? 0) < session.ZoneId;
-            var reward = CombatRewardCalculator.RollBossReward(participant.Level, session.BossGoldBonus, session.BossXpBonus, firstClear, participant.Pets);
+            var reward = CombatRewardCalculator.RollBossReward(participant.Level, session.BossGoldBonus, session.BossXpBonus, firstClear, participant.Bonuses);
 
             Item? drop = null;
             if (reward.DroppedSomething && session.BossDropItemNames.Count > 0)

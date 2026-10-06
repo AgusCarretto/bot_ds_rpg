@@ -157,6 +157,9 @@ CREATE TABLE IF NOT EXISTS users (
     -- gate_cleared = ya le ganó al Asador Eterno en esta vuelta (habilita el Fuego Nuevo).
     in_gate           BOOLEAN NOT NULL DEFAULT false,
     gate_cleared      BOOLEAN NOT NULL DEFAULT false,
+    -- v0.12.0, Fuego Nuevo (el reinicio): cuántos hizo (0 = ninguno; "FN 3" = tres) y cuándo arrancó la vuelta actual (para el historial). Ver GameData/FuegoNuevoRules.cs.
+    fuego_nuevo       INTEGER NOT NULL DEFAULT 0 CHECK (fuego_nuevo >= 0),
+    run_started_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT chk_current_hp_within_max CHECK (current_hp <= max_hp)
 );
 
@@ -232,6 +235,40 @@ CREATE TABLE IF NOT EXISTS player_pets (
     last_fed_at  TIMESTAMPTZ,
     hatched_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (discord_id, species_id)
+);
+
+-- ---------------------------------------------------------
+-- fuego_nuevo_history / player_blessings / blessing_offers: Fuego Nuevo, el reinicio (v0.12.0, GameData/FuegoNuevoRules.cs y BlessingCatalog.cs). Una base vieja las crea con
+-- Database/add_fuego_nuevo.sql. No hay datos de catálogo: las bendiciones viven en el código (BlessingCatalog), la base solo guarda lo que cada jugador tiene y le ofrecieron.
+--   fuego_nuevo_history  una fila por Fuego Nuevo hecho (clase antes y después, nivel, cuánto tardó la vuelta)
+--   player_blessings     las bendiciones del jugador con su nivel (1 a 5)
+--   blessing_offers      las 3 bendiciones que se le ofrecieron en cada Fuego Nuevo (queda guardada hasta que elige; chosen_key NULL = pendiente)
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS fuego_nuevo_history (
+    discord_id    BIGINT NOT NULL REFERENCES users (discord_id) ON DELETE CASCADE,
+    number        INTEGER NOT NULL CHECK (number >= 1),
+    class_before  TEXT NOT NULL,
+    class_after   TEXT NOT NULL,
+    level_before  INTEGER NOT NULL CHECK (level_before >= 1),
+    started_at    TIMESTAMPTZ NOT NULL,
+    finished_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (discord_id, number)
+);
+
+CREATE TABLE IF NOT EXISTS player_blessings (
+    discord_id     BIGINT NOT NULL REFERENCES users (discord_id) ON DELETE CASCADE,
+    blessing_key   TEXT NOT NULL,
+    level          INTEGER NOT NULL CHECK (level BETWEEN 1 AND 5),
+    PRIMARY KEY (discord_id, blessing_key)
+);
+
+CREATE TABLE IF NOT EXISTS blessing_offers (
+    discord_id      BIGINT NOT NULL REFERENCES users (discord_id) ON DELETE CASCADE,
+    fuego_nuevo_no  INTEGER NOT NULL CHECK (fuego_nuevo_no >= 1),
+    offered_keys    TEXT NOT NULL,        -- las 3 claves separadas por coma ("manada,filo_antiguo,aprendiz")
+    chosen_key      TEXT,                 -- NULL = todavía no eligió
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (discord_id, fuego_nuevo_no)
 );
 
 -- ---------------------------------------------------------

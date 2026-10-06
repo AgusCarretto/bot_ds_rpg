@@ -1,6 +1,16 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-06 (v0.11.0: El Fogón Eterno)_
+_Última revisión: 2026-10-06 (v0.12.0: Fuego Nuevo y bendiciones)_
+
+## Fuego Nuevo y bendiciones (v0.12.0, 2026-10-06)
+
+- **Qué es**: el reinicio voluntario que se habilita al vencer al Asador Eterno (`/fuegonuevo`, `aa fn`). Pierdas nivel, equipo, materiales y Polvo; ganás porcentajes **permanentes** y una **bendición** por vuelta. Diseño aprobado por el dueño: `docs/superpowers/specs/2026-10-06-fuego-nuevo-design.md`. Detalle técnico en `CLAUDE.md` (párrafo «Fuego Nuevo»).
+- **Porcentajes** (lineales por vuelta, así el FN 10 se nota muchísimo contra el 1): chance de drop de `/hunt` +30 % de la base por Fuego Nuevo, la de `/travel` +10 % bajando 0,5 puntos por vuelta (piso +2 %), cantidad de `/chop` y `/mine` +20 %, EXP +10 %. El oro y el cofre del jefe no se tocan. Medido con el script de ritmo: el camino de recetas de las 5 zonas queda en ~49 % del tiempo de la vuelta 1 en el FN 10 y ~34 % en el FN 30.
+- **Bendiciones**: 13, de a una por vuelta entre 3 sorteadas, niveles I–V al repetir. De velocidad, de poder chico (solo contra monstruos), de mascotas, oro, ítems (Alforja del Fogonero) y cosmética (Brasa de Color). `/blessings` las muestra.
+- **Decisiones mías que hay que confirmar con el dueño**: (1) los **huevos y la comida de mascotas se quedan** al reiniciar (él dijo «mascotas se quedan»; perder un huevo sin abrir me pareció castigar justo eso); (2) **`/class` solo con nivel 1 y 0 de EXP** y, después, con cada Fuego Nuevo; (3) el paso de EXP (**+10 % por vuelta**) lo puse yo: él fijó hunt, travel, chop y mine; (4) la **forma del paso de `/travel`** (arranca en +10 % y baja 0,5 puntos por vuelta): él dijo «que arranque en 1,1 y vaya bajando por fn»; (5) saqué «Buen Mate» (curación) del pool de bendiciones para no ampliar la superficie.
+- **Para desplegar**: correr `Database/add_fuego_nuevo.sql` ANTES de arrancar el bot nuevo (`DEPLOY.md`). La base viva ya lo tiene aplicado desde el desarrollo; un bot v0.11.x que siga corriendo hasta reiniciarse no usa las columnas nuevas (no se rompe).
+- **Probado**: arnés `fntest` (141 chequeos contra la base real con un usuario descartable: reglas, matemática de recompensas y recolección medida, perfil de combate, el reinicio y la elección transaccionales, 20 reinicios y 20 clicks a la vez, la Alforja, mascotas con Buen Pienso, `/class`, pantallas dentro de los límites de Discord, ruteo de botones con el `InteractionService` real y armado de TODOS los módulos con la inyección de dependencias) y los 29 arneses de antes.
+- **Falta / ideas**: los **Oficios** (tablas de nivel por actividad hasta el 100, con «chop avanzado» al llegar; v0.13, necesita su propio diseño); el chequeo de «no estás en combate» del reinicio es en memoria y no es atómico con la transacción (aceptado: un combate solo toca la base con deltas de vida); íconos propios para las bendiciones; un anuncio público del Fuego Nuevo en el canal (hoy la pantalla es solo para quien la usa).
 
 ## El Fogón Eterno, la «Zona 0» (v0.11.0, 2026-10-06)
 

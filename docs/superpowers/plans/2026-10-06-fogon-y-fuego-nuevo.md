@@ -29,9 +29,9 @@
 
 ## v0.12.0 — Fuego Nuevo
 
-- [ ] **T9 Base de datos.** `users.fuego_nuevo`, `users.run_started_at`, `fuego_nuevo_history`, `player_blessings`, `blessing_offers`; `add_fuego_nuevo.sql`; esquema; instalación limpia.
-- [ ] **T10 Reglas puras.** `GameData/FuegoNuevoRules.cs` (pasos, multiplicadores, tabla de `/travel`), `GameData/BlessingCatalog.cs` (pool, niveles, sorteo de ofertas, efectos) y `PlayerBonuses` (mascotas + FN + bendiciones) que reemplaza a `PetBonuses` en recompensas y perfil de combate.
-- [ ] **T11 Repositorios.** `IFuegoNuevoRepository.RenewAsync` (una transacción) y `IBlessingRepository` (niveles, oferta pendiente, elegir).
-- [ ] **T12 Enganches.** Recompensas (drop de hunt y travel, EXP), cantidad de `/chop` y `/mine`, perfil de combate (ATQ, DEF y vida de las bendiciones, solo contra monstruos), mascotas (Manada, Buen Pienso), comida (Buen Mate), `/class` solo al reiniciar.
-- [ ] **T13 Comandos.** `/fuegonuevo` (resumen, clase, confirmación), `/blessings`, `aa fuegonuevo|fn`, botones, perfil («Fuego Nuevo ×N» y bendiciones), tema de ayuda, logros, eventos.
-- [ ] **T14 Pruebas, documentación y release v0.12.0.** Arnés `fntest` (transacción, doble click, qué se va y qué queda, ofertas, efectos), los 29 arneses, instalación limpia, docs, versión, release.
+- [x] **T9 Base de datos.** `users.fuego_nuevo`, `users.run_started_at`, `fuego_nuevo_history`, `player_blessings`, `blessing_offers`; `add_fuego_nuevo.sql`; esquema; instalación limpia.
+- [x] **T10 Reglas puras.** `GameData/FuegoNuevoRules.cs` (pasos, multiplicadores, tabla de `/travel`), `GameData/BlessingCatalog.cs` (pool, niveles, sorteo de ofertas, efectos) y `PlayerBonuses` (mascotas + FN + bendiciones) que reemplaza a `PetBonuses` en recompensas y perfil de combate.
+- [x] **T11 Repositorios.** `IFuegoNuevoRepository.RenewAsync` (una transacción) y `IBlessingRepository` (niveles, oferta pendiente, elegir).
+- [x] **T12 Enganches.** Recompensas (drop de hunt y travel, EXP), cantidad de `/chop` y `/mine`, perfil de combate (ATQ, DEF y vida de las bendiciones, solo contra monstruos), mascotas (Manada, Buen Pienso), comida (Buen Mate), `/class` solo al reiniciar.
+- [x] **T13 Comandos.** `/fuegonuevo` (resumen, clase, confirmación), `/blessings`, `aa fuegonuevo|fn`, botones, perfil («Fuego Nuevo ×N» y bendiciones), tema de ayuda, logros, eventos.
+- [x] **T14 Pruebas, documentación y release v0.12.0.** Arnés `fntest` (transacción, doble click, qué se va y qué queda, ofertas, efectos), los 29 arneses, instalación limpia, docs, versión, release.

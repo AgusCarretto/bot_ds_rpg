@@ -10,6 +10,7 @@ public class GatheringModule(
     IGatheringRepository gatheringRepository,
     IUserRepository userRepository,
     IItemRepository itemRepository,
+    IPlayerBonusService bonusService,
     IGameEvents gameEvents) : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("chop", "Talá madera cercana (cooldown de 5 minutos).")]
@@ -36,7 +37,7 @@ public class GatheringModule(
             }
 
             // Si es la primera vez que este usuario ejecuta un comando, se crea acá con los valores por defecto.
-            await userRepository.GetOrCreateUserAsync(Context.User.Id);
+            var player = await userRepository.GetOrCreateUserAsync(Context.User.Id);
 
             string rarity = RarityCatalog.RollGatheringRarity();
             var item = await itemRepository.GetRandomByTypeAndRarityAsync(itemType, rarity);
@@ -51,7 +52,7 @@ public class GatheringModule(
             }
 
             // Cuántas unidades salen depende de la rareza: lo común a montones, lo mejor de a una (GatheringYield).
-            int quantity = GatheringYield.Roll(item.Rarity);
+            int quantity = await RollQuantityAsync(bonusService, player, definition, item);
 
             bool applied = await gatheringRepository.ApplyGatheringRewardAsync(
                 Context.User.Id, definition.CommandName, definition.Duration, item.ItemId, quantity);
@@ -73,6 +74,15 @@ public class GatheringModule(
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
             await FollowupAsync("¡Upa! Algo falló procesando la recolección, intentá de nuevo en un momento.", ephemeral: true);
         }
+    }
+
+    // Cuántas unidades da esta recolección: el sorteo por rareza (GatheringYield) por el multiplicador del jugador — Fuego Nuevo y la bendición de ESE oficio (Mano de Leñador en /chop,
+    // Pico Fino en /mine), ver GameData/PlayerBonuses.cs. Pública para que "aa chop"/"aa mine" hagan exactamente lo mismo. Si no se pueden leer los bonus (el servicio nunca tira) da la cantidad base.
+    public static async Task<int> RollQuantityAsync(IPlayerBonusService bonusService, User player, CooldownDefinition definition, Item item)
+    {
+        var bonuses = await bonusService.GetAsync((ulong)player.DiscordId, player.FuegoNuevo);
+        double factor = definition.CommandName == CooldownCatalog.Chop.CommandName ? bonuses.ChopMultiplier : bonuses.MineMultiplier;
+        return GatheringYield.RollScaled(item.Rarity, factor);
     }
 
     // Públicos para que Modules/TextCommandModule.cs arme los mismos embeds en "aa chop"/"aa mine".

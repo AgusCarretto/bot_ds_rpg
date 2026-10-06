@@ -46,7 +46,7 @@ public sealed class UserRepository(IDbConnectionFactory connectionFactory) : IUs
     public async Task<User> SetClassAsync(ulong discordId, string className, CancellationToken cancellationToken = default)
     {
         // Mismo upsert atómico que GetOrCreateUserAsync, pero acá el DO UPDATE sí pisa
-        // la clase existente: /class permite al jugador re-elegir clase en cualquier momento.
+        // la clase existente (/start; /class pasa por TrySetClassWhileFreshAsync).
         string sql = $"""
             INSERT INTO users (discord_id, class, level, xp, gold, max_hp, current_hp)
             VALUES (@DiscordId, @Class, 1, 0, 50, 100, 100)
@@ -60,6 +60,23 @@ public sealed class UserRepository(IDbConnectionFactory connectionFactory) : IUs
             new { DiscordId = (long)discordId, Class = className },
             cancellationToken: cancellationToken);
         return await connection.QuerySingleAsync<User>(command);
+    }
+
+    public async Task<User?> TrySetClassWhileFreshAsync(ulong discordId, string className, CancellationToken cancellationToken = default)
+    {
+        // La condición va en el WHERE (la misma de FuegoNuevoRules.CanChangeClass: nivel 1 y 0 de EXP): si ya no se cumple no vuelve ninguna fila y no se toca nada.
+        string sql = $"""
+            UPDATE users SET class = @Class
+            WHERE discord_id = @DiscordId AND level <= 1 AND xp <= 0
+            RETURNING {UserSql.SelectColumns};
+            """;
+
+        using IDbConnection connection = connectionFactory.CreateConnection();
+        var command = new CommandDefinition(
+            sql,
+            new { DiscordId = (long)discordId, Class = className },
+            cancellationToken: cancellationToken);
+        return await connection.QuerySingleOrDefaultAsync<User>(command);
     }
 
     public async Task<User> RestoreHpAsync(ulong discordId, int hpRestored, CancellationToken cancellationToken = default)

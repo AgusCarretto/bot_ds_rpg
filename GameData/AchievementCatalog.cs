@@ -65,6 +65,9 @@ public static class AchievementCatalog
 
         // v0.11.0: El Fogón Eterno (también solo oro y XP; el contador sube una vez por victoria sobre el Asador, que tiene el cooldown del jefe).
         new("asador",        "Asador",        "🔥", GameEventKinds.GateWin,       "Vencé al Asador Eterno en El Fogón Eterno",        Plain(1, 3, 10)),
+
+        // v0.12.0: Fuego Nuevo (solo oro y XP; cada reinicio exige volver a vencer al Asador, así que el contador no se infla).
+        new("renacido",      "Renacido",      "♻️", GameEventKinds.FuegoNuevo,    "Hacé un Fuego Nuevo y empezá otra vuelta",         Plain(1, 5, 20)),
     ];
 
     // Los logros se muestran en páginas por tema (/achievements): cada logro está en exactamente una (lo chequea la prueba).
@@ -75,7 +78,7 @@ public static class AchievementCatalog
         new("Combate", "⚔️", ["cazador", "viajero", "matajefes", "exterminador", "gladiador", "asador"]),
         new("Oficios", "🔨", ["recolector", "herrero", "desmantelador", "encantador"]),
         new("Economía", "💰", ["comerciante", "generoso", "abridor", "coleccionista", "afortunado"]),
-        new("Constancia", "📅", ["constante", "comandante", "misionero", "domador", "criador"]),
+        new("Constancia", "📅", ["constante", "comandante", "misionero", "domador", "criador", "renacido"]),
     ];
 
     // Los logros de una página (0..Categories.Count-1); una página fuera de rango se acota a la más cercana.

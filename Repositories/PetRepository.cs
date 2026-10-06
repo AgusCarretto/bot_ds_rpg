@@ -112,7 +112,7 @@ public sealed class PetRepository(IDbConnectionFactory connectionFactory) : IPet
         }
     }
 
-    public async Task<FeedOutcome> FeedAsync(ulong discordId, int speciesId, CancellationToken cancellationToken = default)
+    public async Task<FeedOutcome> FeedAsync(ulong discordId, int speciesId, TimeSpan? cooldown = null, CancellationToken cancellationToken = default)
     {
         using DbConnection connection = connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
@@ -145,7 +145,7 @@ public sealed class PetRepository(IDbConnectionFactory connectionFactory) : IPet
                 SELECT COALESCE(GREATEST(0, EXTRACT(EPOCH FROM (last_fed_at + @Cooldown - now()))), 0)::double precision
                 FROM player_pets WHERE discord_id = @DiscordId AND species_id = @SpeciesId;
                 """,
-                new { DiscordId = (long)discordId, SpeciesId = speciesId, Cooldown = PetRules.FeedCooldown }, transaction: transaction, cancellationToken: cancellationToken));
+                new { DiscordId = (long)discordId, SpeciesId = speciesId, Cooldown = cooldown ?? PetRules.FeedCooldown }, transaction: transaction, cancellationToken: cancellationToken));
 
             if (secondsLeft > 0)
             {
@@ -182,7 +182,7 @@ public sealed class PetRepository(IDbConnectionFactory connectionFactory) : IPet
 
             await transaction.CommitAsync(cancellationToken);
             var after = new OwnedPet(pet.Species, fed.FeedPoints, DateTime.SpecifyKind(fed.LastFedAt, DateTimeKind.Utc));
-            return new FeedOutcome(FeedStatus.Ok, after, levelBefore, foodLeft.Value, PetRules.FeedCooldown);
+            return new FeedOutcome(FeedStatus.Ok, after, levelBefore, foodLeft.Value, cooldown ?? PetRules.FeedCooldown);
         }
         catch
         {

@@ -60,7 +60,8 @@ public static class FogonRules
         $"¡Se abrió **El Fogón Eterno**, la puerta al Fuego Nuevo! Forjá el **{WeaponName}** y la **{AmuletName}** en la herrería (**/forge**) y entrá con **/zona 0**. Mirá cómo funciona con **/info tema:fogon**.";
 
     public static readonly string ClearedText =
-        "Volviste a la última zona y se habilitó el **Fuego Nuevo**: volver a empezar, más rápido, con tus mascotas y tu oro. Todavía no está disponible (llega con la próxima versión); tu logro de haber vencido al Asador queda guardado.";
+        "Volviste a la última zona y se habilitó el **Fuego Nuevo**: volver a empezar, más rápido, con porcentajes permanentes, una bendición y todo lo que juntaste (mascotas, oro y logros). " +
+        "Es voluntario: mirá lo que se va y lo que se queda con **/fuegonuevo**, y cómo funciona con **/info tema:fuego**.";
 
     // Lo que falta, en palabras: "el Trinche del Asador Eterno y la Brasa del Fogón Eterno".
     public static string MissingText(EntryCheck check) => (check.MissingWeapon, check.MissingAmulet) switch

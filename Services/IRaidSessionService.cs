@@ -26,8 +26,8 @@ public sealed class RaidParticipant
     public required int StartingHp { get; init; } // HP de combate al unirse — nunca cambia, es la base del delta al persistir
     public int CurrentHp { get; set; }
 
-    // Los bonus de sus mascotas al unirse (como el banquete, quedan fijos para ese raid): la defensa ya está dentro de Defense; el oro y la EXP se aplican al cobrar. Null = sin mascotas.
-    public PetBonuses? Pets { get; init; }
+    // Todo lo permanente del jugador (mascotas, Fuego Nuevo, bendiciones) al unirse (como el banquete, queda fijo para ese raid): ataque, defensa y vida ya están dentro de Damage/Defense/MaxHp; el oro y la EXP se aplican al cobrar. Null = nada.
+    public PlayerBonuses? Bonuses { get; init; }
 
     // Estado de la habilidad de clase de ESTE participante (cada uno tiene el suyo, se actualiza
     // bajo RaidSession.Lock junto con el resto) — ver GameData/CombatTurnResolver.cs.

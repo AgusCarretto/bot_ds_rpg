@@ -10,7 +10,7 @@ using BotDsRpg.Services;
 
 public class GameModule(
     IUserRepository userRepository, IInventoryRepository inventoryRepository, IItemRepository itemRepository, IZoneRepository zoneRepository, IBuffRepository buffRepository,
-    IPetRepository petRepository)
+    IPetRepository petRepository, IPlayerBonusService bonusService)
     : InteractionModuleBase<SocketInteractionContext>
 {
     // Comando barra: /profile [jugador]
@@ -36,7 +36,7 @@ public class GameModule(
 
             var embed = await BuildProfileEmbedAsync(
                 userRepository, itemRepository, zoneRepository, buffRepository, target.Id, GetDisplayName(target),
-                target.GetAvatarUrl() ?? target.GetDefaultAvatarUrl(), petRepository);
+                target.GetAvatarUrl() ?? target.GetDefaultAvatarUrl(), petRepository, bonusService);
             await FollowupAsync(embed: embed);
         }
         catch (Exception ex)
@@ -59,7 +59,7 @@ public class GameModule(
     // embed en "aa profile" — acá vive tanto la lectura de datos como el embed.
     public static async Task<Embed> BuildProfileEmbedAsync(
         IUserRepository userRepository, IItemRepository itemRepository, IZoneRepository zoneRepository, IBuffRepository buffRepository,
-        ulong discordId, string username, string avatarUrl, IPetRepository? petRepository = null)
+        ulong discordId, string username, string avatarUrl, IPetRepository? petRepository = null, IPlayerBonusService? bonusService = null)
     {
         // Si es la primera vez que este usuario ejecuta un comando, se crea acá
         // automáticamente con los valores por defecto (Nivel 1, 0 EXP, 50 de oro, 100/100 HP, Guerrero).
@@ -75,12 +75,9 @@ public class GameModule(
 
         // Ataque/Defensa = Nivel (Base) + equipo (arma con sinergia de clase si corresponde /
         // amuleto), misma fórmula que usa el combate real — ver GameData/CombatStats.cs.
-        // El arma y el amuleto cuentan CON su encantamiento (/enchant): son las mismas dos cuentas del combate real.
-        int weaponDamage = PlayerCombatProfileCalculator.WeaponDamage(player, weapon);
-        int amuletDefense = PlayerCombatProfileCalculator.AmuletDefense(player, amulet);
+        // El arma y el amuleto cuentan CON su encantamiento (/enchant): son las mismas dos cuentas del combate real (PlayerCombatProfileCalculator.WeaponDamage/AmuletDefense, dentro de Resolve).
         // El banquete activo (si lo hay) suma a lo que se ve igual que en el combate real.
         var buff = await buffRepository.GetActiveAttackAsync(discordId);
-        int attack = AttackBuff.Apply(CombatStats.TotalAttack(player.Level, weaponDamage), buff?.AttackPercent ?? 0);
         // Las mascotas (v0.10.0): la del Gólem suma a la defensa igual que en el combate real (PlayerCombatProfileCalculator.Resolve). Un perfil nunca se cae por esto: si la
         // lectura falla se muestra sin mascotas.
         IReadOnlyList<OwnedPet> pets = [];
@@ -96,8 +93,13 @@ public class GameModule(
             }
         }
 
-        var petBonuses = PetRules.Total(pets);
-        int defense = PetRules.Boost(CombatStats.TotalDefense(player.Level, amuletDefense), petBonuses.DefensePercent);
+        // Todo lo permanente junto (v0.12.0: Fuego Nuevo y bendiciones además de las mascotas): el ataque y la defensa del perfil salen de la MISMA cuenta que usa el combate contra
+        // monstruos (PlayerCombatProfileCalculator.Resolve), así el número que se ve es el que pelea. Sin servicio (pruebas) cuenta solo las mascotas, como antes.
+        PlayerBonuses bonuses = bonusService is null ? PetRules.Total(pets) : await bonusService.GetAsync(discordId, player.FuegoNuevo);
+        var petBonuses = bonuses.Pets;
+        var combat = PlayerCombatProfileCalculator.Resolve(player, weapon, amulet, buff?.AttackPercent ?? 0, bonuses);
+        int attack = combat.Damage;
+        int defense = combat.Defense;
 
         var classDef = ClassCatalog.All.FirstOrDefault(c => c.Name == player.Class);
         var ability = ClassAbilities.For(player.Class);
@@ -108,9 +110,11 @@ public class GameModule(
         // que ya está sumado en el número grande. Una fila en blanco separa los bloques. El historial de PvP no va acá: está en /history y /duels.
         string attackText = $"**{attack}**" + (hasSynergy ? " ⚡" : string.Empty)
             + (buff is null ? string.Empty : $" 🍖 +{buff.AttackPercent}% ({Math.Max(1, (int)Math.Ceiling(buff.Remaining.TotalMinutes))} min)")
+            + (bonuses.AttackMultiplier > 1.0 ? $" 🔥 {FuegoNuevoRules.PercentText(bonuses.AttackMultiplier)}" : string.Empty)
             + $"\n{(weapon is null ? "_Sin arma_" : ItemDisplay.Format(weapon.Emoji, weapon.Name))}"
             + EnchantLine("weapon", weapon is null ? 0 : player.WeaponEnchant);
         string defenseText = $"**{defense}**" + (petBonuses.DefensePercent > 0 ? $" 🐾 {PetRules.PercentText(petBonuses.DefensePercent)}" : string.Empty)
+            + (bonuses.BlessingLevel(BlessingCatalog.DefenseKey) > 0 ? $" 🔥 {FuegoNuevoRules.PercentText(1 + (BlessingCatalog.DefensePerLevel * bonuses.BlessingLevel(BlessingCatalog.DefenseKey)))}" : string.Empty)
             + $"\n{(amulet is null ? "_Sin amuleto_" : ItemDisplay.Format(amulet.Emoji, amulet.Name))}"
             + EnchantLine("amulet", amulet is null ? 0 : player.AmuletEnchant);
 
@@ -130,11 +134,18 @@ public class GameModule(
             zoneLine += "\n🔥 _Venció al Asador Eterno._";
         }
 
+        // Brasa de Color (bendición cosmética): un título propio debajo de la zona y un color nuevo para el perfil, que cambian con su nivel.
+        int colorLevel = bonuses.BlessingLevel(BlessingCatalog.ColorKey);
+        if (colorLevel > 0)
+        {
+            zoneLine += $"\n🌈 _{BlessingCatalog.ColorTitle(colorLevel)}_";
+        }
+
         var embed = new EmbedBuilder()
             .WithAuthor(username, avatarUrl)
-            .WithTitle($"{classDef?.Emoji ?? "🔥"} {player.Class} — Nivel {player.Level}")
+            .WithTitle($"{classDef?.Emoji ?? "🔥"} {player.Class} — Nivel {player.Level}" + (player.FuegoNuevo > 0 ? $" · 🔥 FN {player.FuegoNuevo}" : string.Empty))
             .WithDescription(zoneLine)
-            .WithColor(Color.Orange) // Color cálido acorde al asado
+            .WithColor(colorLevel > 0 ? new Color((uint)BlessingCatalog.ColorValue(colorLevel)) : Color.Orange) // Color cálido acorde al asado
             .WithThumbnailUrl(avatarUrl)
             .AddField("📊 Experiencia", $"{ProgressBar.Render(player.Xp, requiredXp)}\n{player.Xp} / {requiredXp} XP", false)
             .AddField("❤️ Vida", $"{ProgressBar.Render(player.CurrentHp, player.MaxHp)}\n{player.CurrentHp} / {player.MaxHp} HP", false)
@@ -162,6 +173,19 @@ public class GameModule(
                 string.Join('\n', pets.Select(p =>
                     $"{p.Species.Emoji} **{p.Species.Name}** · nivel {PetRules.LevelFor(p.FeedPoints)} · {PetRules.PercentText(PetRules.BonusPercent(p))} de {PetRules.KindName(p.Species.BonusKind)}")),
                 false);
+        }
+
+        // Fuego Nuevo (v0.12.0): cuántos hizo y lo que da hoy, y debajo las bendiciones que juntó (un renglón cada una). Solo aparece con algo para mostrar; el detalle y la oferta están en /fuegonuevo y /blessings.
+        if (player.FuegoNuevo > 0)
+        {
+            embed.AddField($"🔥 Fuego Nuevo ×{player.FuegoNuevo}", FuegoNuevoRules.BonusLines(player.FuegoNuevo), false);
+        }
+
+        var blessingLines = BlessingCatalog.OwnedLines(bonuses.BlessingLevels);
+        if (blessingLines.Count > 0)
+        {
+            string blessingText = string.Join('\n', blessingLines);
+            embed.AddField("🙏 Bendiciones", blessingText.Length <= 1024 ? blessingText : blessingText[..1021] + "...", false);
         }
 
         embed.AddField("🎁 Racha", player.DailyStreak > 0 ? $"día {player.DailyStreak}" : "_ninguna_", false);
