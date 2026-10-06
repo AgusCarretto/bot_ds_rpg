@@ -15,8 +15,8 @@ public partial class TextCommandModule
             string action = accion.Trim().ToLowerInvariant();
             var result = action switch
             {
-                "" or "view" or "ver" => await PetModule.ExecuteViewAsync(userRepository, petRepository, inventoryRepository, Context.User.Id),
-                "feed" or "alimentar" or "comer" => await PetModule.ExecuteFeedAsync(userRepository, petRepository, gameEvents, Context.User.Id, mascota),
+                "" or "view" or "ver" => await PetModule.ExecuteViewAsync(userRepository, petRepository, inventoryRepository, Context.User.Id, bonusService: bonusService),
+                "feed" or "alimentar" or "comer" => await PetModule.ExecuteFeedAsync(userRepository, petRepository, gameEvents, Context.User.Id, mascota, bonusService),
                 _ => new PetModule.PetResult("No entendí: probá **aa pet** o **aa pet feed** (o **aa pet feed Ñandusito** para una sola).", null),
             };
 

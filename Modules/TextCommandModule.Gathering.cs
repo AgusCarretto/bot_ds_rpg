@@ -29,7 +29,7 @@ public partial class TextCommandModule
             }
 
             // Si es la primera vez que este usuario ejecuta un comando, se crea acá con los valores por defecto.
-            await userRepository.GetOrCreateUserAsync(Context.User.Id);
+            var player = await userRepository.GetOrCreateUserAsync(Context.User.Id);
 
             string rarity = RarityCatalog.RollGatheringRarity();
             var item = await itemRepository.GetRandomByTypeAndRarityAsync(itemType, rarity);
@@ -41,7 +41,7 @@ public partial class TextCommandModule
             }
 
             // Cuántas unidades salen depende de la rareza: lo común a montones, lo mejor de a una (GatheringYield).
-            int quantity = GatheringYield.Roll(item.Rarity);
+            int quantity = await GatheringModule.RollQuantityAsync(bonusService, player, definition, item);
 
             bool applied = await gatheringRepository.ApplyGatheringRewardAsync(
                 Context.User.Id, definition.CommandName, definition.Duration, item.ItemId, quantity);

@@ -17,6 +17,10 @@ public sealed record PetBonuses(double GoldPercent, double XpPercent, double Def
     public static readonly PetBonuses None = new(0, 0, 0, 0);
 
     public bool IsNone => GoldPercent == 0 && XpPercent == 0 && DefensePercent == 0 && DropPercent == 0;
+
+    // Todos los bonus multiplicados por un factor (la bendición Manada: ×1,1 por nivel).
+    public PetBonuses Scaled(double factor) =>
+        factor == 1.0 ? this : new PetBonuses(GoldPercent * factor, XpPercent * factor, DefensePercent * factor, DropPercent * factor);
 }
 
 // Las reglas de las mascotas, puras (v0.10.0). Los números están acá y en la base (los topes de cada especie en pet_species.max_bonus_percent):
@@ -68,15 +72,22 @@ public static class PetRules
         return level >= MaxLevel ? null : (feedPoints - PointsToReach(level), FeedsToNextLevel[level - 1]);
     }
 
-    // Lo que falta para que esa mascota pueda comer otra vez (cero = ya puede). nowUtc se pasa de afuera para probarlo; la regla de verdad la hace la base de datos
+    // Lo que falta para que esa mascota pueda comer otra vez (cero = ya puede). cooldown: la espera del jugador (PlayerBonuses.PetFeedCooldown: la hora menos lo de Buen Pienso); null = la hora de siempre. nowUtc se pasa de afuera para probarlo; la regla de verdad la hace la base de datos
     // al alimentar (PetRepository.FeedAsync), esto es solo para MOSTRAR y para saber a cuáles vale la pena intentarlo.
-    public static TimeSpan RemainingCooldown(OwnedPet pet, DateTime nowUtc) =>
-        pet.LastFedAtUtc is not { } fedAt ? TimeSpan.Zero : TimeSpan.FromTicks(Math.Max(0, (fedAt + FeedCooldown - nowUtc).Ticks));
+    public static TimeSpan RemainingCooldown(OwnedPet pet, DateTime nowUtc, TimeSpan? cooldown = null) =>
+        pet.LastFedAtUtc is not { } fedAt ? TimeSpan.Zero : TimeSpan.FromTicks(Math.Max(0, (fedAt + (cooldown ?? FeedCooldown) - nowUtc).Ticks));
+
+    // "1 hora" / "35 min": la espera entre comidas de una mascota, para los textos de la pantalla (con la bendición Buen Pienso baja de la hora).
+    public static string CooldownText(TimeSpan? cooldown)
+    {
+        var value = cooldown ?? FeedCooldown;
+        return value == FeedCooldown ? "1 hora" : $"{(int)Math.Round(value.TotalMinutes)} min";
+    }
 
     public static bool IsMaxLevel(OwnedPet pet) => LevelFor(pet.FeedPoints) >= MaxLevel;
 
     // Puede comer ahora: no está al máximo y pasó la hora desde la última comida.
-    public static bool CanEat(OwnedPet pet, DateTime nowUtc) => !IsMaxLevel(pet) && RemainingCooldown(pet, nowUtc) == TimeSpan.Zero;
+    public static bool CanEat(OwnedPet pet, DateTime nowUtc, TimeSpan? cooldown = null) => !IsMaxLevel(pet) && RemainingCooldown(pet, nowUtc, cooldown) == TimeSpan.Zero;
 
     // Lo que da esa especie al nivel dado: su tope × nivel / 10.
     public static double BonusPercent(PetSpecies species, int level) => species.MaxBonusPercent * Math.Clamp(level, 1, MaxLevel) / MaxLevel;

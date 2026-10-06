@@ -47,5 +47,6 @@ public interface IPetRepository
 
     // Le da UNA "Comida para Mascotas" a la mascota de esa especie: gasta la comida, suma un punto y arranca el cooldown de una hora de ESA mascota
     // (el reloj lo manda la base de datos, no el del bot).
-    Task<FeedOutcome> FeedAsync(ulong discordId, int speciesId, CancellationToken cancellationToken = default);
+    // cooldown: la espera de ESE jugador (la bendición Buen Pienso la acorta, PlayerBonuses.PetFeedCooldown); null = la hora de siempre (PetRules.FeedCooldown).
+    Task<FeedOutcome> FeedAsync(ulong discordId, int speciesId, TimeSpan? cooldown = null, CancellationToken cancellationToken = default);
 }

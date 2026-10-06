@@ -169,6 +169,10 @@ y le entrega un huevo a quien ya había vencido al jefe de alguna zona). El cód
 **v0.10.2 → v0.11.0 (El Fogón Eterno):** ANTES de arrancar el bot nuevo corré `Database/add_fogon.sql` (agrega `zones.kind`, `users.in_gate` y `users.gate_cleared`, que el código lee en CADA consulta de jugador o de zona: si arrancás primero, casi todos los comandos fallan; y carga la zona 0, el equipo del Fogón, sus recetas y el jefe con `seed_fogon.sql`).
 Es re-ejecutable y se verifica solo; una instalación nueva ya lo trae (`schema.sql` + `seed_fogon.sql` en `run_fresh_install.sql`). Mismo comando que el anterior desde `Database/`: `psql "<DATABASE_PUBLIC_URL>" -v ON_ERROR_STOP=1 -f add_fogon.sql` y recién ahí desplegá `main`. Hacé un backup antes (sección 6).
 
+**v0.11.0 → v0.12.0 (Fuego Nuevo):** ANTES de arrancar el bot nuevo corré `Database/add_fuego_nuevo.sql` (agrega `users.fuego_nuevo` y `users.run_started_at`, que el código lee en CADA consulta de jugador, y las tablas `fuego_nuevo_history`, `player_blessings` y `blessing_offers`, que se leen en cada pelea y en `/profile`: si arrancás primero, casi todos los comandos fallan).
+Es re-ejecutable y una instalación nueva ya lo trae (`schema.sql`; no hace falta correrlo en `run_fresh_install.sql`). Mismo comando que los anteriores desde `Database/`: `psql "<DATABASE_PUBLIC_URL>" -v ON_ERROR_STOP=1 -f add_fuego_nuevo.sql` y recién ahí desplegá `main`. Hacé un backup antes (sección 6).
+Ojo: `/class` deja de poder cambiar la clase de quien ya pasó del nivel 1 (la clase se vuelve a elegir con cada Fuego Nuevo); avisale a los jugadores.
+
 La carpeta `Database/` del repo está montada en `/seed`, así que los scripts nuevos aparecen con el `git checkout`. Los seeds son
 re-ejecutables; **nunca** corras `run_fresh_install.sql` sobre una base con datos.
 

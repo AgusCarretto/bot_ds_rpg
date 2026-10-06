@@ -1,3 +1,4 @@
+using BotDsRpg.GameData;
 using BotDsRpg.Repositories;
 using BotDsRpg.Services;
 using Discord;
@@ -47,6 +48,9 @@ public partial class TextCommandModule(
     IDuelService duelService,
     IArenaService arenaService,
     IPetRepository petRepository,
+    IPlayerBonusService bonusService,
+    IBlessingRepository blessingRepository,
+    IFuegoNuevoRepository fuegoNuevoRepository,
     IGameEvents gameEvents) : ModuleBase<SocketCommandContext>
 {
     // ---- Onboarding / clase ----
@@ -79,8 +83,17 @@ public partial class TextCommandModule(
     [Command("class")]
     [Alias("c")]
     [Summary("Elegí tu clase en Asado y Acero RPG.")]
-    public Task ClassAsync() =>
-        ReplyAsync(embed: ClassModule.BuildPromptEmbed(), components: ClassModule.BuildPromptButtons());
+    public async Task ClassAsync()
+    {
+        var player = await userRepository.GetByDiscordIdAsync(Context.User.Id);
+        if (player is not null && !FuegoNuevoRules.CanChangeClass(player.Level, player.Xp))
+        {
+            await ReplyAsync(ClassModule.BuildLockedMessage(player));
+            return;
+        }
+
+        await ReplyAsync(embed: ClassModule.BuildPromptEmbed(), components: ClassModule.BuildPromptButtons());
+    }
 
     // ---- Ayuda ----
 
@@ -117,7 +130,7 @@ public partial class TextCommandModule(
 
             string avatarUrl = target.GetAvatarUrl() ?? target.GetDefaultAvatarUrl();
             var embed = await GameModule.BuildProfileEmbedAsync(
-                userRepository, itemRepository, zoneRepository, buffRepository, target.Id, GameModule.GetDisplayName(target), avatarUrl, petRepository);
+                userRepository, itemRepository, zoneRepository, buffRepository, target.Id, GameModule.GetDisplayName(target), avatarUrl, petRepository, bonusService);
             await ReplyAsync(embed: embed);
         }
         catch (Exception ex)

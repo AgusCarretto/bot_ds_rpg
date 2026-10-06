@@ -25,6 +25,8 @@ internal static class UserSql
         weapon_enchant   AS "WeaponEnchant",
         amulet_enchant   AS "AmuletEnchant",
         in_gate          AS "InGate",
-        gate_cleared     AS "GateCleared"
+        gate_cleared     AS "GateCleared",
+        fuego_nuevo      AS "FuegoNuevo",
+        run_started_at   AS "RunStartedAt"
         """;
 }

@@ -38,4 +38,22 @@ public static class GatheringYield
         var (min, max) = RangeFor(rarity);
         return Random.Shared.Next(min, max + 1) * runMultiplier;
     }
+
+    // v0.12.0: la cantidad sorteada por un multiplicador NO entero (Fuego Nuevo ×1,2 por vuelta, bendiciones Mano de Leñador / Pico Fino, ver GameData/PlayerBonuses.cs). Se redondea AL AZAR en
+    // vez de al más cercano: con ×1,2 un material que da 1 daría siempre 1 (el Legendario nunca mejoraría), mientras que sorteando el decimal 1,2 es 1 el 80 % de las veces y 2 el 20 %,
+    // así que el PROMEDIO es exactamente el multiplicador (lo que midió report_recipe_pacing.sql). Con factor 1,0 (o menos) es el Roll de siempre. rng se inyecta para probarlo.
+    public static int RollScaled(string rarity, double factor, Random? rng = null)
+    {
+        rng ??= Random.Shared;
+        var (min, max) = RangeFor(rarity);
+        int baseRoll = rng.Next(min, max + 1);
+        if (factor <= 1.0)
+        {
+            return baseRoll;
+        }
+
+        double scaled = baseRoll * factor;
+        int whole = (int)Math.Floor(scaled);
+        return whole + (rng.NextDouble() < scaled - whole ? 1 : 0);
+    }
 }

@@ -11,16 +11,17 @@ using static AutocompleteText;
 // Todas las que tengas valen A LA VEZ (oro, EXP, defensa, drop de monstruos). Suben de nivel comiendo "Comida para Mascotas", y cada una puede comer UNA vez por hora.
 // Las reglas viven en los métodos estáticos de abajo (sin Context) para que "aa pet" haga exactamente lo mismo; alimentar es una transacción guardada en IPetRepository.
 [Group("pet", "Tus mascotas: mirá sus bonus y alimentalas (una vez por hora cada una).")]
-public class PetModule(IUserRepository userRepository, IPetRepository petRepository, IInventoryRepository inventoryRepository, IGameEvents gameEvents)
+public class PetModule(
+    IUserRepository userRepository, IPetRepository petRepository, IInventoryRepository inventoryRepository, IGameEvents gameEvents, IPlayerBonusService bonusService)
     : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("view", "Mirá tus mascotas, el bonus que da cada una y cuándo pueden comer.")]
-    public Task HandleViewAsync() => RunAsync(() => ExecuteViewAsync(userRepository, petRepository, inventoryRepository, Context.User.Id), ephemeral: false);
+    public Task HandleViewAsync() => RunAsync(() => ExecuteViewAsync(userRepository, petRepository, inventoryRepository, Context.User.Id, bonusService: bonusService), ephemeral: false);
 
     [SlashCommand("feed", "Dale Comida para Mascotas: a la que elijas o, sin elegir, a todas las que puedan comer.")]
     public Task HandleFeedAsync(
         [Summary("mascota", "Cuál alimentás. Si no elegís ninguna, comen todas las que estén listas.")] [Autocomplete(typeof(PetAutocompleteHandler))] string? pet = null) =>
-        RunAsync(() => ExecuteFeedAsync(userRepository, petRepository, gameEvents, Context.User.Id, pet), ephemeral: false);
+        RunAsync(() => ExecuteFeedAsync(userRepository, petRepository, gameEvents, Context.User.Id, pet, bonusService), ephemeral: false);
 
     private async Task RunAsync(Func<Task<PetResult>> action, bool ephemeral)
     {
@@ -45,13 +46,17 @@ public class PetModule(IUserRepository userRepository, IPetRepository petReposit
     private const string NoPets = "Todavía no tenés ninguna mascota. La primera vez que vencés al jefe de una zona (**/boss**) te llega un **huevo** además del cofre: abrilo con **/open** y nace.";
 
     // Lo que hace falta para dibujar la pantalla de mascotas (todo ya leído: el armado es puro).
+    // FeedCooldown: la espera entre comidas de ESTE jugador (null = la hora de siempre; la bendición Buen Pienso la baja). PackMultiplier: lo que multiplica la bendición Manada a los bonus (1 = nada).
     public sealed record PetViewData(
-        IReadOnlyList<PetSpecies> Species, IReadOnlyList<OwnedPet> Owned, int Food, IReadOnlySet<string> EggNamesHeld, DateTime NowUtc);
+        IReadOnlyList<PetSpecies> Species, IReadOnlyList<OwnedPet> Owned, int Food, IReadOnlySet<string> EggNamesHeld, DateTime NowUtc,
+        TimeSpan? FeedCooldown = null, double PackMultiplier = 1.0);
 
     public static async Task<PetResult> ExecuteViewAsync(
-        IUserRepository userRepository, IPetRepository petRepository, IInventoryRepository inventoryRepository, ulong discordId, string? headline = null)
+        IUserRepository userRepository, IPetRepository petRepository, IInventoryRepository inventoryRepository, ulong discordId, string? headline = null,
+        IPlayerBonusService? bonusService = null)
     {
-        if (await userRepository.GetByDiscordIdAsync(discordId) is null)
+        var player = await userRepository.GetByDiscordIdAsync(discordId);
+        if (player is null)
         {
             return new PetResult(NoAccount, null);
         }
@@ -63,7 +68,8 @@ public class PetModule(IUserRepository userRepository, IPetRepository petReposit
         int food = inventory.Where(e => e.ItemName == PetRules.FoodItemName).Sum(e => e.Quantity);
         var eggNames = inventory.Where(e => e.Quantity > 0 && e.Type == "Huevo").Select(e => e.ItemName).ToHashSet();
 
-        var data = new PetViewData(species, owned, food, eggNames, DateTime.UtcNow);
+        var bonuses = bonusService is null ? null : await bonusService.GetAsync(discordId, player.FuegoNuevo);
+        var data = new PetViewData(species, owned, food, eggNames, DateTime.UtcNow, bonuses?.PetFeedCooldown, bonuses?.PetsBlessingMultiplier ?? 1.0);
         return new PetResult(null, BuildViewEmbed(data, headline), BuildViewButtons(discordId, data));
     }
 
@@ -126,9 +132,10 @@ public class PetModule(IUserRepository userRepository, IPetRepository petReposit
         }
         else
         {
+            string pack = data.PackMultiplier > 1.0 ? $" (con tu bendición 🐾 Manada: {FuegoNuevoRules.PercentText(data.PackMultiplier)})" : string.Empty;
             embed.WithDescription(
-                $"{lead}Todas suman **a la vez**: {BonusSummary(PetRules.Total(data.Owned))}\n\n" +
-                $"Alimentalas con **/pet feed** (una vez por hora cada una).");
+                $"{lead}Todas suman **a la vez**: {BonusSummary(PetRules.Total(data.Owned).Scaled(data.PackMultiplier))}{pack}\n\n" +
+                $"Alimentalas con **/pet feed** (una vez cada {PetRules.CooldownText(data.FeedCooldown)} cada una).");
         }
 
         foreach (var pet in data.Owned)
@@ -141,7 +148,7 @@ public class PetModule(IUserRepository userRepository, IPetRepository petReposit
             string state;
             if (PetRules.ProgressToNextLevel(pet.FeedPoints) is { } progress)
             {
-                var remaining = PetRules.RemainingCooldown(pet, data.NowUtc);
+                var remaining = PetRules.RemainingCooldown(pet, data.NowUtc, data.FeedCooldown);
                 state = $"🍖 Comida para el próximo nivel: {progress.Have}/{progress.Need}\n" +
                     (remaining == TimeSpan.Zero ? "✅ Lista para comer" : $"⏳ Vuelve a comer en {TimeFormat.Remaining(remaining)}");
             }
@@ -173,7 +180,7 @@ public class PetModule(IUserRepository userRepository, IPetRepository petReposit
             return new ComponentBuilder().Build();
         }
 
-        bool canFeed = data.Food > 0 && data.Owned.Any(p => PetRules.CanEat(p, data.NowUtc));
+        bool canFeed = data.Food > 0 && data.Owned.Any(p => PetRules.CanEat(p, data.NowUtc, data.FeedCooldown));
         return new ComponentBuilder()
             .WithButton("Alimentar", $"pet_feed:{owner}", ButtonStyle.Success, new Emoji("🍖"), disabled: !canFeed)
             .Build();
@@ -181,12 +188,16 @@ public class PetModule(IUserRepository userRepository, IPetRepository petReposit
 
     // /pet feed [mascota]: con nombre, esa; sin nombre, TODAS las que puedan comer ahora (una comida cada una, hasta donde alcance la comida).
     public static async Task<PetResult> ExecuteFeedAsync(
-        IUserRepository userRepository, IPetRepository petRepository, IGameEvents gameEvents, ulong discordId, string? petName)
+        IUserRepository userRepository, IPetRepository petRepository, IGameEvents gameEvents, ulong discordId, string? petName, IPlayerBonusService? bonusService = null)
     {
-        if (await userRepository.GetByDiscordIdAsync(discordId) is null)
+        var player = await userRepository.GetByDiscordIdAsync(discordId);
+        if (player is null)
         {
             return new PetResult(NoAccount, null);
         }
+
+        // La espera entre comidas de ESTE jugador (la bendición Buen Pienso la baja de la hora); null = la hora de siempre.
+        TimeSpan? cooldown = bonusService is null ? null : (await bonusService.GetAsync(discordId, player.FuegoNuevo)).PetFeedCooldown;
 
         var owned = await petRepository.GetOwnedAsync(discordId);
         if (owned.Count == 0)
@@ -210,10 +221,10 @@ public class PetModule(IUserRepository userRepository, IPetRepository petReposit
         }
         else
         {
-            targets = owned.Where(p => PetRules.CanEat(p, now)).ToList();
+            targets = owned.Where(p => PetRules.CanEat(p, now, cooldown)).ToList();
             if (targets.Count == 0)
             {
-                return new PetResult(NoOneCanEatText(owned, now), null);
+                return new PetResult(NoOneCanEatText(owned, now, cooldown), null);
             }
         }
 
@@ -224,7 +235,7 @@ public class PetModule(IUserRepository userRepository, IPetRepository petReposit
 
         foreach (var target in targets)
         {
-            var outcome = await petRepository.FeedAsync(discordId, target.Species.SpeciesId);
+            var outcome = await petRepository.FeedAsync(discordId, target.Species.SpeciesId, cooldown);
             var species = target.Species;
 
             if (outcome.Status == FeedStatus.NoFood)
@@ -260,7 +271,7 @@ public class PetModule(IUserRepository userRepository, IPetRepository petReposit
         if (blocks.Count == 0)
         {
             // Nadie comió ni hay nada que contar (la base dijo que ninguna estaba lista, ej. otro comando las alimentó un instante antes).
-            return new PetResult(NoOneCanEatText(owned, now), null);
+            return new PetResult(NoOneCanEatText(owned, now, cooldown), null);
         }
 
         var embed = new EmbedBuilder()
@@ -273,7 +284,7 @@ public class PetModule(IUserRepository userRepository, IPetRepository petReposit
 
         if (foodLeft >= 0)
         {
-            embed.WithFooter($"Te quedan {foodLeft} de comida · cada mascota vuelve a comer en 1 hora");
+            embed.WithFooter($"Te quedan {foodLeft} de comida · cada mascota vuelve a comer en {PetRules.CooldownText(cooldown)}");
         }
 
         return new PetResult(null, embed.Build());
@@ -302,9 +313,9 @@ public class PetModule(IUserRepository userRepository, IPetRepository petReposit
     }
 
     // Nadie puede comer: o todas están al máximo, o hay que esperar (se dice cuánto falta para la primera que pueda).
-    public static string NoOneCanEatText(IReadOnlyList<OwnedPet> owned, DateTime nowUtc)
+    public static string NoOneCanEatText(IReadOnlyList<OwnedPet> owned, DateTime nowUtc, TimeSpan? cooldown = null)
     {
-        var waiting = owned.Where(p => !PetRules.IsMaxLevel(p)).Select(p => (Pet: p, Remaining: PetRules.RemainingCooldown(p, nowUtc))).ToList();
+        var waiting = owned.Where(p => !PetRules.IsMaxLevel(p)).Select(p => (Pet: p, Remaining: PetRules.RemainingCooldown(p, nowUtc, cooldown))).ToList();
         if (waiting.Count == 0)
         {
             return "🏆 Todas tus mascotas están en el **nivel máximo**: no necesitan más comida.";
@@ -317,7 +328,8 @@ public class PetModule(IUserRepository userRepository, IPetRepository petReposit
 
 // El botón "Alimentar" de /pet view. Va en su propia clase (sin [Group]) para que el id del botón sea exactamente "pet_feed:{dueño}": en un módulo con [Group] Discord.Net
 // le antepone el nombre del grupo al id. El id lleva el dueño, así nadie más usa tu pantalla.
-public class PetButtonsModule(IUserRepository userRepository, IPetRepository petRepository, IInventoryRepository inventoryRepository, IGameEvents gameEvents)
+public class PetButtonsModule(
+    IUserRepository userRepository, IPetRepository petRepository, IInventoryRepository inventoryRepository, IGameEvents gameEvents, IPlayerBonusService bonusService)
     : InteractionModuleBase<SocketInteractionContext>
 {
     [ComponentInteraction("pet_feed:*")]
@@ -333,8 +345,8 @@ public class PetButtonsModule(IUserRepository userRepository, IPetRepository pet
 
         try
         {
-            var feed = await PetModule.ExecuteFeedAsync(userRepository, petRepository, gameEvents, owner, petName: null);
-            var view = await PetModule.ExecuteViewAsync(userRepository, petRepository, inventoryRepository, owner);
+            var feed = await PetModule.ExecuteFeedAsync(userRepository, petRepository, gameEvents, owner, petName: null, bonusService);
+            var view = await PetModule.ExecuteViewAsync(userRepository, petRepository, inventoryRepository, owner, bonusService: bonusService);
 
             // La pantalla se refresca con el estado nuevo (niveles, botón) y lo que pasó va aparte, solo para quien clickeó.
             await ModifyOriginalResponseAsync(props =>
@@ -355,7 +367,7 @@ public class PetButtonsModule(IUserRepository userRepository, IPetRepository pet
 // La lista de /pet feed: las mascotas que tenés, con su nivel y si pueden comer ahora. Pura (sin Discord) para probarla.
 public static class PetChoices
 {
-    public static IReadOnlyList<AutocompleteResult> ForFeed(IEnumerable<OwnedPet> owned, DateTime nowUtc, string typed) =>
+    public static IReadOnlyList<AutocompleteResult> ForFeed(IEnumerable<OwnedPet> owned, DateTime nowUtc, string typed, TimeSpan? cooldown = null) =>
         owned
             .Where(p => FitsAsValue(p.Species.Name) && Matches(p.Species.Name, typed))
             .OrderBy(p => Relevance(p.Species.Name, typed))
@@ -364,7 +376,7 @@ public static class PetChoices
             .Select(p =>
             {
                 int level = PetRules.LevelFor(p.FeedPoints);
-                var remaining = PetRules.RemainingCooldown(p, nowUtc);
+                var remaining = PetRules.RemainingCooldown(p, nowUtc, cooldown);
                 string state = PetRules.IsMaxLevel(p) ? "nivel máximo" : remaining == TimeSpan.Zero ? "lista para comer" : $"come en {TimeFormat.Remaining(remaining)}";
                 return new AutocompleteResult(Truncate($"{p.Species.Emoji} {p.Species.Name} — nivel {level} · {state}"), p.Species.Name);
             })
@@ -376,6 +388,10 @@ public sealed class PetAutocompleteHandler : SafeAutocompleteHandler
     protected override async Task<IReadOnlyList<AutocompleteResult>> BuildAsync(ulong userId, string typed, IServiceProvider services)
     {
         var owned = await services.GetRequiredService<IPetRepository>().GetOwnedAsync(userId);
-        return PetChoices.ForFeed(owned, DateTime.UtcNow, typed);
+
+        // La espera de este jugador (Buen Pienso); sin cuenta o si falla la lectura, la hora de siempre. Nunca crea la cuenta (GetByDiscordIdAsync).
+        var player = await services.GetRequiredService<IUserRepository>().GetByDiscordIdAsync(userId);
+        TimeSpan? cooldown = player is null ? null : (await services.GetRequiredService<IPlayerBonusService>().GetAsync(userId, player.FuegoNuevo)).PetFeedCooldown;
+        return PetChoices.ForFeed(owned, DateTime.UtcNow, typed, cooldown);
     }
 }

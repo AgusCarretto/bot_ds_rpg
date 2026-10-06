@@ -86,7 +86,7 @@ public class OnboardingModule(IUserRepository userRepository, IGameEvents gameEv
     // Todo lo que sigue es estático (sin dependencia de Context) para que
     // Modules/TextCommandModule.cs arme exactamente los mismos mensajes en "aa start".
     public static string BuildAlreadyRegisteredMessage(BotDsRpg.Models.User existing) =>
-        $"Ya estás registrado como **{existing.Class}** (Nivel {existing.Level}). Usá `/class` si querés cambiar de clase, o `/profile` para ver tu estado.";
+        $"Ya estás registrado como **{existing.Class}** (Nivel {existing.Level}). La clase solo se cambia empezando de cero y con cada Fuego Nuevo (`/fuegonuevo`); mirá tu estado con `/profile`.";
 
     public static Embed BuildWelcomeEmbed()
     {

@@ -66,6 +66,10 @@ public static class GameEventKinds
     // v0.11.0: El Fogón Eterno.
     public const string GateWin = "gate_win";               // venció al Asador Eterno (se habilita el Fuego Nuevo)
 
+    // v0.12.0: Fuego Nuevo (GameData/FuegoNuevoRules.cs).
+    public const string FuegoNuevo = "fuego_nuevo";         // hizo un Fuego Nuevo (el reinicio); detail = la clase con la que arrancó la vuelta nueva
+    public const string BlessingChosen = "blessing_chosen"; // eligió una bendición; detail = su clave
+
     // Las victorias de combate de las que sale un "enemigo vencido" (GameEventExtensions.RecordVictoryAsync suma el enemy_defeated con ellas).
     public static bool IsEnemyWin(string kind) => kind is HuntWin or TravelWin or BossWin or RaidWin;
 }
