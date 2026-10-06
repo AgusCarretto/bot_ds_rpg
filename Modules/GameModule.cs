@@ -188,6 +188,13 @@ public class GameModule(
             embed.AddField("🙏 Bendiciones", blessingText.Length <= 1024 ? blessingText : blessingText[..1021] + "...", false);
         }
 
+        // Los oficios (v0.13.0, /professions): una sola línea con el nivel de cada uno, solo si ya sacó alguno.
+        var professionLevels = ProfessionCatalog.All.Select(p => (Profession: p, Level: bonuses.ProfessionLevel(p.Key))).ToList();
+        if (professionLevels.Any(p => p.Level > 0))
+        {
+            embed.AddField("🛠️ Oficios", string.Join(" · ", professionLevels.Select(p => $"{p.Profession.Emoji} {p.Profession.Name} **{p.Level}**")), false);
+        }
+
         embed.AddField("🎁 Racha", player.DailyStreak > 0 ? $"día {player.DailyStreak}" : "_ninguna_", false);
 
         return embed

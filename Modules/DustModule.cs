@@ -9,7 +9,8 @@ using Microsoft.Extensions.DependencyInjection;
 // /dismantle y /enchant: el Polvo. Desmantelar rompe un MATERIAL (madera, mineral, drop de monstruo o trofeo) y da Polvo (GameData/Dismantling.cs); encantar gasta
 // Polvo + oro en un intento de mejorar el arma o el amuleto (GameData/Enchantments.cs). Las reglas viven en los métodos estáticos de abajo (sin Context) para que
 // "aa dismantle" y "aa enchant" hagan exactamente lo mismo; el dinero y los ítems se mueven en IDustRepository con guardas atómicas.
-public class DustModule(IUserRepository userRepository, IItemRepository itemRepository, IDustRepository dustRepository, IGameEvents gameEvents)
+public class DustModule(
+    IUserRepository userRepository, IItemRepository itemRepository, IDustRepository dustRepository, IGameEvents gameEvents, IPlayerBonusService bonusService)
     : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("dismantle", "Desmantelá materiales para conseguir Polvo (de 1 a 100 por vez).")]
@@ -34,13 +35,16 @@ public class DustModule(IUserRepository userRepository, IItemRepository itemRepo
     [SlashCommand("enchant", "Encantá tu arma o tu amuleto con oro y Polvo (sin elegir, ves cómo estás).")]
     public async Task HandleEnchantAsync(
         [Summary("pieza", "Qué encantar. Sin elegir ves lo tuyo; con Info, los tiers, sus chances y costos.")]
-        [Choice("Arma", "weapon"), Choice("Amuleto", "amulet"), Choice("Info: tiers, chances y costos", "info")] string? slot = null)
+        [Choice("Arma", "weapon"), Choice("Amuleto", "amulet"), Choice("Info: tiers, chances y costos", "info")] string? slot = null,
+        [Summary("modo", "Normal, o Avanzado (2 tiradas, te quedás la mejor, 1,5× el costo; pide el oficio Encantador al 100).")]
+        [Choice("Normal", "normal"), Choice("Avanzado", "avanzado")] string modo = "normal")
     {
         await DeferAsync();
 
         try
         {
-            var result = await ExecuteEnchantAsync(userRepository, itemRepository, dustRepository, gameEvents, Context.User.Id, slot);
+            var result = await ExecuteEnchantAsync(
+                userRepository, itemRepository, dustRepository, gameEvents, Context.User.Id, slot, bonusService: bonusService, advanced: GatheringModule.ParseAdvanced(modo) ?? false);
             await FollowupAsync(result.PlainMessage, embed: result.Embed, ephemeral: result.Embed is null);
         }
         catch (Exception ex)
@@ -97,7 +101,7 @@ public class DustModule(IUserRepository userRepository, IItemRepository itemRepo
     // slot: "weapon" / "amulet" (o "arma" / "amuleto" desde "aa enchant"); null = solo mirar.
     public static async Task<DustResult> ExecuteEnchantAsync(
         IUserRepository userRepository, IItemRepository itemRepository, IDustRepository dustRepository, IGameEvents gameEvents,
-        ulong discordId, string? slot, Random? rng = null)
+        ulong discordId, string? slot, Random? rng = null, IPlayerBonusService? bonusService = null, bool advanced = false)
     {
         // "info" (también "opciones"/"ayuda"): cómo funciona, los tiers con su chance y su bonus, y lo que cuesta cada intento. Es lo mismo para todos: no toca la cuenta.
         if (IsInfoRequest(slot))
@@ -111,13 +115,18 @@ public class DustModule(IUserRepository userRepository, IItemRepository itemRepo
             return new DustResult(NoAccount, null);
         }
 
+        // El oficio Encantador (v0.13.0): su nivel baja el Polvo de cada intento y, al máximo, habilita el encantamiento avanzado. Sin servicio (llamadores viejos) no hay oficio.
+        var bonuses = bonusService is null ? null : await bonusService.GetAsync(discordId, player.FuegoNuevo);
+        var enchanter = ProfessionCatalog.Get(ProfessionCatalog.EnchanterKey);
+        var progressBefore = ProfessionRules.ProgressFor(bonuses?.ProfessionXpOf(enchanter.Key) ?? 0);
+
         var weapon = player.WeaponId is int weaponId ? await itemRepository.GetByIdAsync(weaponId) : null;
         var amulet = player.AmuletId is int amuletId ? await itemRepository.GetByIdAsync(amuletId) : null;
 
         string? slotKey = NormalizeSlot(slot);
         if (string.IsNullOrWhiteSpace(slot))
         {
-            return new DustResult(null, BuildInfoEmbed(player, weapon, amulet));
+            return new DustResult(null, BuildInfoEmbed(player, weapon, amulet, bonuses));
         }
 
         if (slotKey is null)
@@ -132,18 +141,27 @@ public class DustModule(IUserRepository userRepository, IItemRepository itemRepo
             return new DustResult($"No tenés {(isWeapon ? "un arma" : "un amuleto")} puesto para encantar: forjá uno con **/forge**.", null);
         }
 
-        var cost = Enchantments.Cost(Enchantments.GearRank(gear.Rarity));
+        if (advanced && !ProfessionRules.AdvancedUnlocked(progressBefore.Level))
+        {
+            return new DustResult(
+                $"El **{enchanter.AdvancedName.ToLowerInvariant()}** se desbloquea con el oficio **{enchanter.Name}** al nivel **{ProfessionRules.MaxLevel}** y el tuyo está en el **{progressBefore.Level}**. Mirá tu avance con **/professions**.", null);
+        }
+
+        // El Polvo de cada intento baja con el nivel del oficio; el avanzado cuesta 1,5 veces (oro y Polvo).
+        var cost = ProfessionRules.EnchantCost(Enchantments.Cost(Enchantments.GearRank(gear.Rarity)), progressBefore.Level, advanced);
         if (player.Gold < cost.Gold)
         {
-            return new DustResult($"No te alcanza el oro: cada intento sobre **{gear.Name}** cuesta **{GameHistory.Number(cost.Gold)}** de oro y **{cost.Dust}** de Polvo.", null);
+            return new DustResult($"No te alcanza el oro: cada intento{(advanced ? " avanzado" : string.Empty)} sobre **{gear.Name}** cuesta **{GameHistory.Number(cost.Gold)}** de oro y **{cost.Dust}** de Polvo.", null);
         }
 
         if (player.Dust < cost.Dust)
         {
-            return new DustResult($"Te falta Polvo: cada intento sobre **{gear.Name}** cuesta **{cost.Dust}** (tenés **{player.Dust}**). Juntalo desmantelando materiales con **/dismantle**.", null);
+            return new DustResult($"Te falta Polvo: cada intento{(advanced ? " avanzado" : string.Empty)} sobre **{gear.Name}** cuesta **{cost.Dust}** (tenés **{player.Dust}**). Juntalo desmantelando materiales con **/dismantle**.", null);
         }
 
-        int rolled = Enchantments.Roll(rng);
+        // Avanzado: dos tiradas y se queda la mejor (igual el tier final nunca baja el que ya tenía la pieza, eso lo decide TryEnchantAsync).
+        int[] rolls = Enumerable.Range(0, advanced ? ProfessionRules.AdvancedEnchantRolls : 1).Select(_ => Enchantments.Roll(rng)).ToArray();
+        int rolled = rolls.Max();
         var outcome = await dustRepository.TryEnchantAsync(discordId, slotKey, rolled, cost.Gold, cost.Dust);
         if (outcome.Status != EnchantStatus.Ok)
         {
@@ -156,8 +174,12 @@ public class DustModule(IUserRepository userRepository, IItemRepository itemRepo
             }, null);
         }
 
-        await gameEvents.RecordAsync(discordId, GameEventKinds.Enchant, detail: $"{slotKey}:{rolled}");
-        return new DustResult(null, BuildResultEmbed(player, gear, slotKey, outcome, cost));
+        // Cada tirada cuenta como un intento (el contador de «enchant» es la XP del oficio y el del logro Encantador).
+        await gameEvents.RecordAsync(discordId, GameEventKinds.Enchant, amount: rolls.Length, detail: $"{slotKey}:{rolled}");
+
+        var progressAfter = ProfessionRules.ProgressFor(progressBefore.TotalXp + ((long)rolls.Length * enchanter.XpPerAction));
+        string footer = GatheringModule.ProfessionFooter(enchanter, progressBefore, progressAfter);
+        return new DustResult(null, BuildResultEmbed(player, gear, slotKey, outcome, cost, footer, advanced ? rolls : null));
     }
 
     // "info", "opciones", "ayuda" o "chances" (con o sin acento): lo que pide quien quiere ver cómo funciona el encantamiento.
@@ -171,11 +193,16 @@ public class DustModule(IUserRepository userRepository, IItemRepository itemRepo
     };
 
     // Público y puro: se prueba sin Discord. Lo que rinde la pieza antes y después, con el encantamiento aplicado igual que en el combate.
-    public static Embed BuildResultEmbed(User playerBefore, Item gear, string slotKey, EnchantOutcome outcome, (int Gold, int Dust) cost)
+    // professionFooter: el pie del oficio Encantador (nivel y XP); sin él queda el de siempre. allRolls: las tiradas del encantamiento avanzado (se muestran las dos y se queda la mejor).
+    public static Embed BuildResultEmbed(
+        User playerBefore, Item gear, string slotKey, EnchantOutcome outcome, (int Gold, int Dust) cost, string? professionFooter = null, int[]? allRolls = null)
     {
         bool isWeapon = slotKey == "weapon";
         int previous = outcome.PreviousTier, rolled = outcome.RolledTier, now = outcome.NewTier;
         string rolledText = $"{Enchantments.Label(slotKey, rolled)} (+{Enchantments.BonusPercent(rolled)} %)";
+        string rollsText = allRolls is { Length: > 1 }
+            ? $"Tiraste {allRolls.Length} veces ({string.Join(" y ", allRolls.Select(r => Enchantments.TierName(r)))}) y te quedás con la mejor: **{rolledText}**."
+            : $"Sobre {ItemDisplay.Format(gear.Emoji, gear.Name)} salió **{rolledText}**.";
 
         string verdict = now > previous
             ? $"🔥 **¡Mejoró!** {Enchantments.Label(slotKey, previous)} ➜ **{Enchantments.Label(slotKey, now)}**"
@@ -191,17 +218,18 @@ public class DustModule(IUserRepository userRepository, IItemRepository itemRepo
             .WithTitle($"✨ Encantamiento: {(isWeapon ? "arma" : "amuleto")}")
             .WithColor(now > previous ? Color.Gold : Color.DarkGrey)
             .WithItemThumbnail(gear.Emoji)
-            .WithDescription($"Sobre {ItemDisplay.Format(gear.Emoji, gear.Name)} salió **{rolledText}**.\n\n{verdict}")
+            .WithDescription($"{(allRolls is { Length: > 1 } ? $"Sobre {ItemDisplay.Format(gear.Emoji, gear.Name)}: " : string.Empty)}{rollsText}\n\n{verdict}")
             .AddField(isWeapon ? "⚔️ ATQ del arma" : "🛡️ DEF del amuleto", before == after ? $"**{after}**" : $"{before} ➜ **{after}**", false)
             .AddField("💸 Costó", $"{GameHistory.Number(cost.Gold)} oro · {cost.Dust} Polvo", false)
             .AddField("🎒 Te quedan", $"{GameHistory.Number(outcome.User!.Gold)} oro · {GameHistory.Number(outcome.User.Dust)} Polvo", false)
-            .WithFooter("Cada intento se paga igual: el tier sale al azar y nunca baja.")
+            .WithFooter(string.IsNullOrWhiteSpace(professionFooter) ? "Cada intento se paga igual: el tier sale al azar y nunca baja." : professionFooter)
             .Build();
     }
 
     // Público y puro: lo que se ve con "/enchant" sin elegir pieza.
-    public static Embed BuildInfoEmbed(User player, Item? weapon, Item? amulet)
+    public static Embed BuildInfoEmbed(User player, Item? weapon, Item? amulet, PlayerBonuses? bonuses = null)
     {
+        int enchanterLevel = bonuses?.ProfessionLevel(ProfessionCatalog.EnchanterKey) ?? 0;
         string Line(string slotKey, Item? gear, int tier)
         {
             if (gear is null)
@@ -209,7 +237,8 @@ public class DustModule(IUserRepository userRepository, IItemRepository itemRepo
                 return $"_Sin {(slotKey == "weapon" ? "arma" : "amuleto")} puesto_";
             }
 
-            var cost = Enchantments.Cost(Enchantments.GearRank(gear.Rarity));
+            // El Polvo ya con el descuento del oficio Encantador.
+            var cost = ProfessionRules.EnchantCost(Enchantments.Cost(Enchantments.GearRank(gear.Rarity)), enchanterLevel, advanced: false);
             string current = tier > 0 ? $"{Enchantments.Label(slotKey, tier)} (+{Enchantments.BonusPercent(tier)} %)" : "Sin encantar";
             return $"{ItemDisplay.Format(gear.Emoji, gear.Name)}\n**{current}**\nPróximo intento: {GameHistory.Number(cost.Gold)} oro + {cost.Dust} Polvo";
         }
@@ -217,7 +246,7 @@ public class DustModule(IUserRepository userRepository, IItemRepository itemRepo
         // Los tiers, en dos renglones cortos (en uno solo se apretaban y se partían a mitad de nombre).
         string Tier(int t) => $"{Enchantments.TierName(t)} **+{Enchantments.BonusPercent(t)} %**";
         string tiers = $"{string.Join("  ·  ", Enumerable.Range(1, 3).Select(Tier))}\n{string.Join("  ·  ", Enumerable.Range(4, Enchantments.MaxTier - 3).Select(Tier))}";
-        return new EmbedBuilder()
+        var embed = new EmbedBuilder()
             .WithTitle("✨ Encantamientos")
             .WithColor(Color.Purple)
             .WithDescription(
@@ -226,7 +255,20 @@ public class DustModule(IUserRepository userRepository, IItemRepository itemRepo
                 "Cada intento sortea un tier al azar y **nunca baja** el que ya tenés: te quedás con el mejor.")
             .AddField("⚔️ Arma", Line("weapon", weapon, player.WeaponEnchant), false)
             .AddField("🛡️ Amuleto", Line("amulet", amulet, player.AmuletEnchant), false)
-            .AddField("✨ Tu Polvo", $"**{GameHistory.Number(player.Dust)}**", false)
+            .AddField("✨ Tu Polvo", $"**{GameHistory.Number(player.Dust)}**", false);
+
+        // El oficio Encantador (solo si el llamador lo pasó): su nivel y lo que ya te ahorra.
+        if (bonuses is not null)
+        {
+            var enchanter = ProfessionCatalog.Get(ProfessionCatalog.EnchanterKey);
+            var progress = ProfessionRules.ProgressFor(bonuses.ProfessionXpOf(enchanter.Key));
+            embed.AddField(
+                $"{enchanter.Emoji} {enchanter.Name} · nivel {progress.Level}",
+                progress.Level == 0 ? "Cada intento suma XP y baja el Polvo que cuesta el siguiente: **/professions**." : $"{ProfessionRules.DescribeEffect(enchanter, progress.Level)}.",
+                false);
+        }
+
+        return embed
             .AddField("🎲 Tiers posibles", tiers, false)
             .WithFooter("Para ver el detalle de cada tier (chance y bonus) y lo que cuesta cada intento: /enchant info")
             .Build();
@@ -264,6 +306,11 @@ public class DustModule(IUserRepository userRepository, IItemRepository itemRepo
             .AddField("🎲 Tiers: bonus y chance por intento", tiers, false)
             .AddField("💸 Lo que cuesta cada intento", costs + "\n_La zona de la pieza sale de su rareza (Común = Zona 1 … Mítico = Zona 5)._", false)
             .AddField("✨ De dónde sale el Polvo", $"Desmantelando materiales con **/dismantle** (de 1 a {Dismantling.MaxPerCommand} por vez). Polvo por unidad:\n{dust}", false)
+            .AddField(
+                $"{ProfessionCatalog.Get(ProfessionCatalog.EnchanterKey).Emoji} El oficio Encantador",
+                $"Cada intento sube tu oficio: por nivel, {ProfessionRules.DescribePerLevel(ProfessionCatalog.Get(ProfessionCatalog.EnchanterKey))}. Al nivel {ProfessionRules.MaxLevel}: " +
+                $"{ProfessionRules.DescribeAdvanced(ProfessionCatalog.Get(ProfessionCatalog.EnchanterKey))}. Tu avance: **/professions**.",
+                false)
             .WithFooter("Mirá cómo estás vos con /enchant (sin elegir pieza).")
             .Build();
     }

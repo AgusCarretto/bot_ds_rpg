@@ -5,7 +5,8 @@ namespace BotDsRpg.GameData;
 // empezar la pelea (Services/PlayerBonusService) y viaja en CombatState.Bonuses / RaidParticipant.Bonuses. Los duelos y la Arena NO lo reciben: se juegan con nivel + equipo + clase.
 // Todo son multiplicadores sobre la base (1,0 = sin efecto); los de cada fuente se MULTIPLICAN entre sí (Fuego Nuevo × mascotas × bendiciones), que es el "presupuesto de
 // multiplicadores" del spec. Las cuentas están acá y no repartidas: si una fuente cambia, cambia en un solo lugar.
-public sealed record PlayerBonuses(PetBonuses Pets, int FuegoNuevo = 0, IReadOnlyDictionary<string, int>? BlessingLevels = null)
+public sealed record PlayerBonuses(
+    PetBonuses Pets, int FuegoNuevo = 0, IReadOnlyDictionary<string, int>? BlessingLevels = null, IReadOnlyDictionary<string, long>? ProfessionXp = null)
 {
     public static readonly PlayerBonuses None = new(PetBonuses.None);
 
@@ -38,12 +39,27 @@ public sealed record PlayerBonuses(PetBonuses Pets, int FuegoNuevo = 0, IReadOnl
 
     public double MaxHpMultiplier => 1 + (BlessingCatalog.HpPerLevel * BlessingLevel(BlessingCatalog.HpKey));
 
-    // Recolección: cuántas unidades da un /chop o un /mine (se redondea al azar, ver GatheringYield.RollScaled).
+    // Los oficios (v0.13.0, GameData/ProfessionRules.cs): XP total de cada uno (la saca PlayerBonusService de los contadores) y su nivel. Sin datos = nivel 0 = sin efecto.
+    public long ProfessionXpOf(string key) => ProfessionXp is not null && ProfessionXp.TryGetValue(key, out long xp) ? Math.Max(0, xp) : 0;
+
+    public int ProfessionLevel(string key) => ProfessionRules.LevelFor(ProfessionXpOf(key));
+
+    // Recolección: cuántas unidades da un /chop o un /mine (se redondea al azar, ver GatheringYield.RollScaled). Multiplica Fuego Nuevo × bendición × oficio.
     public double ChopMultiplier =>
-        FuegoNuevoRules.GatherMultiplier(FuegoNuevo) * (1 + (BlessingCatalog.ChopPerLevel * BlessingLevel(BlessingCatalog.ChopKey)));
+        FuegoNuevoRules.GatherMultiplier(FuegoNuevo) * (1 + (BlessingCatalog.ChopPerLevel * BlessingLevel(BlessingCatalog.ChopKey)))
+        * ProfessionRules.QuantityMultiplier(ProfessionLevel(ProfessionCatalog.WoodcutterKey));
 
     public double MineMultiplier =>
-        FuegoNuevoRules.GatherMultiplier(FuegoNuevo) * (1 + (BlessingCatalog.MinePerLevel * BlessingLevel(BlessingCatalog.MineKey)));
+        FuegoNuevoRules.GatherMultiplier(FuegoNuevo) * (1 + (BlessingCatalog.MinePerLevel * BlessingLevel(BlessingCatalog.MineKey)))
+        * ProfessionRules.QuantityMultiplier(ProfessionLevel(ProfessionCatalog.MinerKey));
+
+    // La chance de que la rareza de lo recolectado suba un escalón (solo los oficios la dan).
+    public double ChopRarityUpgrade => ProfessionRules.RarityUpgradeChance(ProfessionLevel(ProfessionCatalog.WoodcutterKey));
+
+    public double MineRarityUpgrade => ProfessionRules.RarityUpgradeChance(ProfessionLevel(ProfessionCatalog.MinerKey));
+
+    // Cuánto Polvo cuesta un intento de encantamiento (1,0 = lo de siempre).
+    public double EnchantDustMultiplier => ProfessionRules.DustMultiplier(ProfessionLevel(ProfessionCatalog.EnchanterKey));
 
     // Cuánto hay que esperar para volver a alimentar a la MISMA mascota (la hora de siempre menos lo de Buen Pienso).
     public TimeSpan PetFeedCooldown =>
@@ -52,7 +68,9 @@ public sealed record PlayerBonuses(PetBonuses Pets, int FuegoNuevo = 0, IReadOnl
     // Cuánto multiplica la bendición Manada a los bonus de las mascotas (se aplica una vez, al armar Pets; está acá para mostrarlo).
     public double PetsBlessingMultiplier => 1 + (BlessingCatalog.PetsPerLevel * BlessingLevel(BlessingCatalog.PetsKey));
 
-    public bool IsNone => Pets.IsNone && FuegoNuevo == 0 && (BlessingLevels is null || BlessingLevels.Count == 0);
+    public bool IsNone =>
+        Pets.IsNone && FuegoNuevo == 0 && (BlessingLevels is null || BlessingLevels.Count == 0)
+        && ProfessionCatalog.All.All(p => ProfessionLevel(p.Key) == 0);
 
     // Aplica un multiplicador a una cantidad entera (oro, EXP, ataque, defensa), redondeando al más cercano. Con 1,0 o menos no toca nada.
     public static int Scale(int amount, double multiplier) =>

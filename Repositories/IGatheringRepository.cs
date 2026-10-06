@@ -13,4 +13,13 @@ public interface IGatheringRepository
         int itemId,
         int quantity,
         CancellationToken cancellationToken = default);
+
+    // Lo mismo para varios materiales a la vez (la recolección avanzada de los oficios, v0.13.0: 4 sorteos): UN solo cooldown y TODOS los materiales en la misma
+    // transacción, así que o entra todo o no entra nada.
+    Task<bool> ApplyGatheringBatchAsync(
+        ulong discordId,
+        string commandName,
+        TimeSpan cooldownDuration,
+        IReadOnlyList<(int ItemId, int Quantity)> items,
+        CancellationToken cancellationToken = default);
 }

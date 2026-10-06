@@ -29,12 +29,19 @@ public partial class TextCommandModule
     // "aa enchant" (mirar) o "aa enchant arma" / "aa enchant amuleto" (alias "aa encantar") — misma lógica que /enchant.
     [Command("enchant")]
     [Alias("encantar")]
-    [Summary("Encantá tu arma o tu amuleto con oro y Polvo: \"aa enchant\" para mirar, \"aa enchant arma\" o \"aa enchant amuleto\" para probar.")]
-    public async Task EnchantAsync(string pieza = "")
+    [Summary("Encantá tu arma o tu amuleto con oro y Polvo: \"aa enchant\" para mirar, \"aa enchant arma\" o \"aa enchant amuleto\" para probar (\"aa enchant arma avanzado\" con el oficio Encantador al 100).")]
+    public async Task EnchantAsync(string pieza = "", string modo = "")
     {
         try
         {
-            var result = await DustModule.ExecuteEnchantAsync(userRepository, itemRepository, dustRepository, gameEvents, Context.User.Id, pieza);
+            if (GatheringModule.ParseAdvanced(modo) is not bool advanced)
+            {
+                await ReplyAsync($"No entendí **{modo}**: usá `aa enchant {pieza}` o `aa enchant {pieza} avanzado`.");
+                return;
+            }
+
+            var result = await DustModule.ExecuteEnchantAsync(
+                userRepository, itemRepository, dustRepository, gameEvents, Context.User.Id, pieza, bonusService: bonusService, advanced: advanced);
             await ReplyAsync(result.PlainMessage, embed: result.Embed);
         }
         catch (Exception ex)

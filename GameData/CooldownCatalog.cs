@@ -29,5 +29,14 @@ public static class CooldownCatalog
     // cada cuánto se puede comprar, la duración de acá abajo es el único lugar.
     public static readonly CooldownDefinition BoxBuy = new("buybox", "Comprar caja", "📦", TimeSpan.FromHours(2));
 
+    // La versión avanzada de /chop y /mine (v0.13.0): solo con el oficio al nivel máximo (GameData/ProfessionRules.cs), con su PROPIO cooldown para no pisar al normal. No están en All:
+    // /cd las muestra solo a quien ya las desbloqueó.
+    public static readonly CooldownDefinition ChopAdvanced = new("chop_adv", "Tala avanzada", "🪓", ProfessionRules.AdvancedGatherCooldown);
+    public static readonly CooldownDefinition MineAdvanced = new("mine_adv", "Minería avanzada", "⛏️", ProfessionRules.AdvancedGatherCooldown);
+
     public static readonly IReadOnlyList<CooldownDefinition> All = [Hunt, Travel, Chop, Mine, Boss, BoxBuy];
+
+    // La versión avanzada de un cooldown de recolección (null si no tiene).
+    public static CooldownDefinition? AdvancedOf(CooldownDefinition definition) =>
+        definition.CommandName == Chop.CommandName ? ChopAdvanced : definition.CommandName == Mine.CommandName ? MineAdvanced : null;
 }
