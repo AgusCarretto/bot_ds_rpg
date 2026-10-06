@@ -174,7 +174,9 @@ public static class HelpTopics
         ("🪙 Coinflip",
             $"Elegís cara (**Heads**) o cruz (**Tails**) y sale al azar: 50 % de acertar. Si acertás cobrás **×{CasinoService.CoinflipMultiplier}** lo apostado."),
         ("🎰 Slots",
-            $"Salen tres símbolos al azar (🥩 🧉 🪵 🪙): tres iguales pagan **×{CasinoService.SlotsThreeMatchMultiplier}**, dos iguales **×{CasinoService.SlotsPairMultiplier}** y tres distintos pierden la apuesta."),
+            $"Salen tres símbolos al azar ({string.Join(' ', CasinoService.SlotsSymbolList)}): tres iguales ({Dec(CasinoService.SlotsThreeMatchChance * 100)} % de las veces) pagan **×{CasinoService.SlotsThreeMatchMultiplier}**, " +
+            $"dos iguales ({Dec(CasinoService.SlotsPairChance * 100)} %) pagan **×{Dec(CasinoService.SlotsPairMultiplier)}** y tres distintos ({Dec(CasinoService.SlotsAllDifferentChance * 100)} %) pierden la apuesta.\n" +
+            $"A la larga la casa se queda con el **{Dec((1 - CasinoService.SlotsReturnToPlayer) * 100)} %** de lo que se apuesta: es un juego de suerte, no una forma de juntar oro."),
         ("📈 Tus números", "**/history** muestra cuánto ganaste y perdiste en el casino, y la diferencia."));
 
     private static Embed Hunt() => Topic(Self("hunt"),
