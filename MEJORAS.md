@@ -1,6 +1,13 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-06 (v0.12.0: Fuego Nuevo y bendiciones)_
+_Última revisión: 2026-10-06 (v0.12.1: el par de las slots baja a ×1,1)_
+
+## Las slots: el par baja a ×1,1 (v0.12.1, 2026-10-06)
+
+- El dueño y un amigo juntaron mucho oro jugando slots y pidió bajar el premio de **dos iguales** a **×1,1** (solo las slots; el coinflip no se toca). Los tres iguales siguen en ×5.
+- Efecto medido con las chances exactas (5 símbolos: tres iguales 4 %, par 48 %, tres distintos 48 %): el retorno pasa de ×0,92 a **×0,728** por cada 1 apostado, o sea que la casa se queda con el **27 %** (antes el 8 %). Con la apuesta mínima (10) el par da 11: sigue sumando +1.
+- El par se calcula en `decimal` (1,1 no es exacto en binario): da exactamente `apuesta + apuesta/10` para cualquier apuesta (lo prueba `casinotest` con 200.000 apuestas). `/info tema:play` lee las constantes, así que ya muestra los números nuevos.
+- **Sin límite todavía**: `/play` sigue sin cooldown ni tope de apuesta; lo único que frena es la ventaja de la casa. Si vuelven a «romper» el casino (por cantidad de jugadas, no por las chances), el siguiente paso sería un cooldown corto o un tope por jugada.
 
 ## Fuego Nuevo y bendiciones (v0.12.0, 2026-10-06)
 

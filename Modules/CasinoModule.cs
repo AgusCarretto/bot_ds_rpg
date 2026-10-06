@@ -105,7 +105,7 @@ public class CasinoModule(IUserRepository userRepository, ICasinoRepository casi
         }
 
         // Para el historial (/history): cada jugada deja su evento DESPUÉS de que la apuesta quedó guardada. Ganar = el premio menos lo apostado (siempre
-        // positivo: el premio mínimo es ×1,5 y la apuesta mínima 10, o sea al menos +5); perder = lo apostado.
+        // positivo: el premio mínimo es ×1,1 y la apuesta mínima 10, o sea al menos +1); perder = lo apostado.
         if (gameEvents is not null)
         {
             if (result.Payout > 0)
