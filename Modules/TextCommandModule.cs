@@ -37,6 +37,7 @@ public partial class TextCommandModule(
     IBoxContextService boxContextService,
     IBankRepository bankRepository,
     IDustRepository dustRepository,
+    IDropExchangeRepository dropExchangeRepository,
     IBuffRepository buffRepository,
     IMissionRepository missionRepository,
     IAchievementRepository achievementRepository,

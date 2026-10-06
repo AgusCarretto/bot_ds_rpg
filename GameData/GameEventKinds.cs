@@ -35,6 +35,7 @@ public static class GameEventKinds
     public const string TrophyFound = "trophy_found";
     public const string MiniEvent = "mini_event";           // se sumó a un minievento y cobró; detail = el tipo (Stones / Wood / Silver)
     public const string Trade = "trade";                    // un cambio de materiales con otro jugador; detail = "lo que dio->lo que recibió"
+    public const string DropExchange = "drop_exchange";     // trueque con el tabernero (3 drops por 1 de la misma zona); amount = cuántos cambios; detail = "lo que dio->lo que recibió"
 
     // Casino: amount = el oro de la jugada (ganado neto en casino_win, perdido en casino_loss); detail = "slots" / "coinflip".
     public const string CasinoWin = "casino_win";

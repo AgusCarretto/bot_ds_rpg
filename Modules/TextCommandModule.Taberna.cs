@@ -13,7 +13,7 @@ public partial class TextCommandModule
     {
         try
         {
-            var scene = await TabernaModule.BuildSceneAsync(userRepository, itemRepository, inventoryRepository, buffRepository, Context.User.Id, null, boxContextService);
+            var scene = await TabernaModule.BuildSceneAsync(userRepository, itemRepository, inventoryRepository, buffRepository, Context.User.Id, null, boxContextService, dropExchangeRepository);
             await NpcImages.SendAsync(Context.Channel, scene.Embed, scene.Components);
         }
         catch (Exception ex)

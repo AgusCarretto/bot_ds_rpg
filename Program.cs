@@ -493,6 +493,7 @@ public static class ServiceProviderBuilder
             .AddSingleton<IBoxContextService, BoxContextService>()
             .AddSingleton<IBankRepository, BankRepository>()
             .AddSingleton<IDustRepository, DustRepository>()
+            .AddSingleton<IDropExchangeRepository, DropExchangeRepository>()
             .AddSingleton<IBuffRepository, BuffRepository>()
             .AddSingleton<IMissionRepository, MissionRepository>()
             .AddSingleton<IAchievementRepository, AchievementRepository>()
