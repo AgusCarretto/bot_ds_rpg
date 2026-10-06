@@ -7,7 +7,7 @@
 --   gather     un material de /chop o /mine: rareza sorteada con las chances de la caja (RarityCatalog + Mítico 0,1% por ítem),
 --              y su ritmo real = chance de la rareza x unidades por acción (GatheringYield) / ítems de esa rareza / 5 min de cooldown.
 --   zone_drop  un drop de monstruo de las zonas <= la de la caja: /hunt 6% por pelea (1 pelea por minuto, repartida entre los monstruos
---              de la zona) y /travel 60% por viaje (1 viaje cada 30 min); en la caja pesan 3 (cada hunt) y 2 (el travel).
+--              de la zona) y /travel 40% por viaje (60% hasta la v0.10.1; 1 viaje cada 30 min); en la caja pesan 3 (cada hunt) y 2 (el travel).
 --   item       comida y cajas de menor escalón valen lo que cuestan en la taberna; los trofeos (nadie los dropea) no se valoran (0).
 -- Los minutos se pasan a oro con lo que paga una hora de /hunt en la zona de la caja (MissionRewards.GoldPerHunt: 14/58/118/215/375).
 -- "precio_pct": el precio sobre ese valor total (farmeo + comida/cajas + bono de oro). El diseño apunta a ~70% (la eficiencia de un jugador
@@ -38,7 +38,7 @@ zonas AS (SELECT zone_id, ROW_NUMBER() OVER (ORDER BY min_level) AS rango FROM z
 drops AS (
     SELECT z.rango,
            CASE WHEN m.is_travel THEN 2 ELSE 3 END AS peso,
-           CASE WHEN m.is_travel THEN 1.0 / (0.60 / 30.0)
+           CASE WHEN m.is_travel THEN 1.0 / (0.40 / 30.0)
                 ELSE (SELECT COUNT(*) FROM monsters h WHERE h.zone_id = m.zone_id AND NOT h.is_boss AND NOT h.is_travel) / 0.06 END AS minutos
     FROM monster_drops d
     JOIN monsters m ON m.monster_id = d.monster_id AND NOT m.is_boss

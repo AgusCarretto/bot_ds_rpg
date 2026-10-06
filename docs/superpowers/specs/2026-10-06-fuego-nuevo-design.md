@@ -42,26 +42,28 @@ Hace falta (a) un objetivo para quien termina la Zona 5, (b) una razón para vol
 
 ## 5. Los porcentajes de cada vuelta
 
-Decisión del dueño: suaves, **siempre iguales** (cada Fuego Nuevo suma lo mismo, así el FN 10 se nota muchísimo contra el FN 1) y **un % distinto para cada cosa**. Cada paso es una constante, y suma sobre la base (FN N = base × (1 + paso × N), no se compone).
+Decisión del dueño: suaves, **siempre iguales** (cada Fuego Nuevo suma lo mismo, así el FN 10 se nota muchísimo contra el FN 1) y **un % distinto para cada cosa**. Cada paso es una constante, y suma sobre la base (FN N = base × (1 + paso × N), no se compone); la única excepción es `/travel`, cuyo paso baja con cada FN (se suman los pasos de los N reinicios).
 **Valores acordados el 2026-10-06:**
 
 | Cosa | Qué sube | Paso por FN | FN 1 | FN 5 | FN 10 | FN 20 |
 |---|---|---|---|---|---|---|
 | `/hunt` | la **chance** de que caiga el drop del monstruo (6 % de base) | ×1,30 | 7,8 % | 15 % | 24 % | 42 % |
-| `/travel` | la **chance** del drop (60 % de base), con tope en 100 % | ×1,05 | 63 % | 75 % | 90 % | 100 % |
+| `/travel` | la **chance** del drop (**40 % de base desde la v0.10.2**; era 60 %), con tope en 100 % | **paso que baja**: +10 % el FN 1 y 0,5 puntos menos en cada FN siguiente (+9,5, +9, ... hasta un mínimo de +2 %, desde el FN 17) | 44 % | 58 % | 71 % | 83,2 % |
 | `/chop` y `/mine` | la **cantidad** de unidades por acción (se redondea al azar para que sea exacta en promedio) | ×1,20 | ×1,2 | ×2 | ×3 | ×5 |
 | EXP de las peleas (hunt, travel, boss, raid, autohunt) | la EXP | +10 % (supuesto, no confirmado) | +10 % | +50 % | +100 % | +200 % |
 | Oro | — | sin % (el oro ya se queda entre vueltas y se acumularía sin parar) | | | | |
 
 - **El cofre del jefe no cambia** (igual que con las mascotas). Los % del Fuego Nuevo se **multiplican** con los de las mascotas (la Salamandrita al máximo suma +6 % relativo a la chance de cacería y de viaje).
-- **Efecto en las recetas**, medido con `report_recipe_pacing.sql` (camino del arma de clase y el amuleto de las 5 zonas, promedio de las 4 clases, uno después del otro; el script da ~2.480 min = ~41 h en la vuelta 1, los objetivos escritos en `CLAUDE.md` daban menos):
+- **Efecto en las recetas**, medido con `report_recipe_pacing.sql` (camino del arma de clase y el amuleto de las 5 zonas, promedio de las 4 clases, uno después del otro). Con el drop de viaje en 40 % la vuelta 1 mide **~3.120 min = ~52 h** (eran ~41 h con el 60 %):
 
-| FN | 0 | 1 | 2 | 3 | 5 | 7 | 10 | 14 | 20 | 30 |
-|---|---|---|---|---|---|---|---|---|---|---|
-| Tiempo vs. FN 0 | 100 % | 89 % | 81 % | 75 % | 65 % | 59 % | 51 % | 44 % | 42 % | 40 % |
-| Horas | 41 | 37 | 33 | 31 | 27 | 24 | 21 | 18 | 17 | 16 |
+| FN | 0 | 1 | 2 | 3 | 5 | 10 | 17 | 20 | 30 | 40 | 50 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Chance de `/travel` | 40 % | 44 % | 47,8 % | 51,4 % | 58 % | 71 % | 80,8 % | 83,2 % | 91,2 % | 99,2 % | 100 % |
+| Tiempo vs. FN 0 | 100 % | 88 % | 79 % | 72 % | 62 % | 49 % | 41 % | 39 % | 34 % | 31 % | 30 % |
+| Horas | 52 | 46 | 41 | 38 | 32 | 25 | 21 | 20 | 18 | 16 | 15,5 |
 
-- **El tope de `/travel`**: con +5 % por FN la chance llega a 100 % en el FN 14, y desde ahí las piezas que piden el drop de viaje (armas de clase y amuletos) solo mejoran con otras fuentes. Por eso el tiempo total se aplana en ~40-44 %. Es lo esperado: deja espacio para oficios y bendiciones. Antes del FN 14 se decide si lo que sobre de 100 % se convierte en un segundo drop por viaje (supuesto, no hace falta todavía).
+- **Lo que se logra**: unos 30 Fuegos Nuevos con un desafío real (el FN 30 todavía pide el 34 % del tiempo de la vuelta 1) y recién después empieza a ser mucho más rápido. La chance de `/travel` llega a 100 % recién en el FN 41; hasta entonces las piezas que piden el drop de viaje (armas de clase y amuletos) siguen mejorando, cada vez menos por vuelta. Es el cuello de botella del juego a propósito.
+- **Qué pasa pasado el FN 41**: el drop de viaje queda en 100 % y esas piezas solo mejoran con otras fuentes (oficios, bendiciones). Si hace falta, lo que sobre de 100 % se convierte en un segundo drop por viaje (supuesto; no hace falta todavía).
 - Sin tope general; si hace falta un techo se agrega después sin romper nada.
 - Se aplican en los mismos puntos que las mascotas: `CombatRewardCalculator` (drop y EXP, que ya recibe un parámetro de bonus) y `GatheringYield` (hoy `RunMultiplier` es un entero fijo en 1; pasa a factor decimal con redondeo probabilístico).
 
@@ -93,7 +95,7 @@ Queda para su propio diseño: la curva de XP (objetivo: ~4-6 semanas de uso regu
 
 ## 8. El presupuesto de multiplicadores
 
-Cada actividad tiene un multiplicador total = (1 + Fuego Nuevo) × (1 + oficio) × (1 + mascotas) × (1 + bendiciones) (los de poder aparte). Antes de cada versión se calcula el tiempo de recetas resultante con `report_recipe_pacing.sql` en tres casos (jugador nuevo, FN 10 con oficios en 50, y el techo teórico) y se compara con el objetivo: **el camino de recetas de las 5 zonas no baja de ~30 % del tiempo de la vuelta 1**, para que la escalera siga teniendo sentido. Solo con Fuego Nuevo (sección 5) el piso queda en ~40-44 %: los ~10-14 puntos que sobran son el presupuesto de los oficios, las bendiciones y las mascotas. Los topes de cada fuente salen de ahí.
+Cada actividad tiene un multiplicador total = (1 + Fuego Nuevo) × (1 + oficio) × (1 + mascotas) × (1 + bendiciones) (los de poder aparte). Antes de cada versión se calcula el tiempo de recetas resultante con `report_recipe_pacing.sql` en tres casos (jugador nuevo, FN 10 con oficios en 50, y el techo teórico) y se compara con el objetivo: **el camino de recetas de las 5 zonas no baja de ~30 % del tiempo de la vuelta 1**, para que la escalera siga teniendo sentido. Solo con Fuego Nuevo (sección 5) el FN 30 queda en ~34 % y el FN 50 en ~30 %: el margen hasta el piso es el presupuesto de los oficios, las bendiciones y las mascotas, así que conviene que sumen de a poco y no todos a la vez. Los topes de cada fuente salen de ahí.
 
 ## 9. Cambios técnicos
 
@@ -112,7 +114,8 @@ Cada actividad tiene un multiplicador total = (1 + Fuego Nuevo) × (1 + oficio) 
 ## 11. Supuestos y preguntas abiertas
 
 - El Polvo se va con el reinicio (el dueño dijo «nada de polvo ni nada»). La pantalla de confirmación lo muestra para que nadie se sorprenda.
-- Costo y estadísticas del equipo del Fogón y los números de las bendiciones son un borrador: salen de `report_recipe_pacing.sql` y `calibsim`. Los pasos de la sección 5 (hunt ×1,30, travel ×1,05, chop/mine ×1,20) los fijó el dueño; el de EXP (+10 %) es mío.
-- Sin tope general en los % de Fuego Nuevo; solo el tope natural de 100 % en la chance de `/travel` (FN 14).
+- Costo y estadísticas del equipo del Fogón y los números de las bendiciones son un borrador: salen de `report_recipe_pacing.sql` y `calibsim`. Los pasos de la sección 5 (hunt ×1,30, chop/mine ×1,20, travel base 40 % y empezando en +10 % con un paso que baja) los fijó el dueño; la forma exacta de bajar el paso de `/travel` (0,5 puntos menos por FN, mínimo +2 %) y el +10 % de EXP son míos.
+- Sin tope general en los % de Fuego Nuevo; solo el tope natural de 100 % en la chance de `/travel` (FN 41).
+- El drop de `/travel` bajó a 40 % en la v0.10.2 (hecho, no es parte de esta versión): la vuelta 1 pasa de ~41 h a ~52 h de recetas.
 - El oro se queda y no tiene % de vuelta; hay que vigilar que haya en qué gastarlo (cajas de 120.000, comida de mascotas, encantamientos).
 - Riesgo principal: que la vuelta 2 sea solo repetir; lo mitigan la clase nueva, las bendiciones, los oficios y, más adelante, la Zona 6 y los desafíos.
