@@ -163,10 +163,6 @@ public class DustModule(IUserRepository userRepository, IItemRepository itemRepo
     // "info", "opciones", "ayuda" o "chances" (con o sin acento): lo que pide quien quiere ver cómo funciona el encantamiento.
     public static bool IsInfoRequest(string? text) => text?.Trim().ToLowerInvariant() is "info" or "opciones" or "ayuda" or "chances" or "tiers";
 
-    // "aa info enchant" / "aa info encantar" / "aa info encantamientos": el tema de /info que lleva a la pantalla de encantamientos.
-    public static bool IsEnchantTopic(string? text) =>
-        text?.Trim().ToLowerInvariant() is "enchant" or "enchants" or "encantar" or "encanto" or "encantos" or "encantamiento" or "encantamientos";
-
     private static string? NormalizeSlot(string? slot) => slot?.Trim().ToLowerInvariant() switch
     {
         "weapon" or "arma" => "weapon",

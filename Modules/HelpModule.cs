@@ -25,9 +25,9 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
     }
 
     // Comando barra: /info
-    [SlashCommand("info", "Mostrá la lista completa de comandos, agrupados por categoría (o elegí un tema).")]
+    [SlashCommand("info", "La lista de comandos, o con un tema te explica cómo funciona algo (enchant, play, bank...).")]
     public async Task HandleInfoAsync(
-        [Summary("tema", "Opcional: Encantamientos muestra los tiers, sus chances y costos.")] [Choice("Encantamientos", "enchant")] string? topic = null)
+        [Summary("tema", "Opcional: de qué querés saber cómo funciona (elegí de la lista o escribilo).")] [Autocomplete(typeof(InfoTopicAutocompleteHandler))] string? topic = null)
     {
         try
         {
@@ -40,10 +40,9 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
         }
     }
 
-    // /info y "aa info": la lista de comandos, o —con un tema— la pantalla de ese tema ("aa info enchant" / "/info tema:Encantamientos" = las opciones de encantamiento).
-    // Un tema que no existe cae en la lista de siempre (nunca queda sin respuesta).
-    public static Embed BuildTopicEmbed(string? topic) =>
-        DustModule.IsEnchantTopic(topic) ? DustModule.BuildOptionsEmbed() : BuildInfoEmbed();
+    // /info y "aa info": la lista de comandos sin tema; con un tema ("aa info enchant", "aa info play", "/info tema:bank"), la explicación de cómo funciona (Modules/HelpTopics.cs);
+    // con un tema que no existe, la lista de temas avisando que no lo encontró (nunca queda sin respuesta).
+    public static Embed BuildTopicEmbed(string? topic) => HelpTopics.Resolve(topic);
 
     // Estáticos (sin dependencia de Context) para que Modules/TextCommandModule.cs arme los
     // mismos embeds en "aa tutorial"/"aa info".
@@ -102,6 +101,10 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             .AddField(
                 "🛠️ Utilidad",
                 "`/start` — Empezar tu aventura\n`/class` — Elegir/cambiar de clase\n`/profile` — Ver tu ficha\n`/history` — Tu historial por juego: cuántas veces jugaste, ganaste y perdiste\n`/duels` — Tu récord de duelos y los últimos rivales\n`/inventory` — Ver tu inventario\n`/cd` — Ver tus cooldowns (y si ya te anotaste en la Arena de hoy)\n`/tips` — Qué te falta para tu próxima forja y de dónde sacarlo\n`/tutorial` — Este loop básico\n`/info` — Esta lista de comandos",
+                false)
+            .AddField(
+                "📚 Cómo funciona cada cosa",
+                $"**/info tema:<tema>** o `aa info <tema>` explica un tema con sus números. Temas: {HelpTopics.KeysLine()}.",
                 false)
             .WithFooter($"Asado y Acero RPG v{BotVersion.Current}")
             .Build();

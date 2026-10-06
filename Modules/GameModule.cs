@@ -140,7 +140,7 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
 
     // "\n✨ Filo Ardiente (+13 %)" debajo de la pieza si está encantada; sin encantamiento no agrega nada (el perfil no se llena de "sin encantar").
     private static string EnchantLine(string slot, int tier) =>
-        tier is >= 1 and <= Enchantments.MaxTier ? $"\n✨ {Enchantments.Label(slot, tier)} (+{Enchantments.BonusPercent(tier)} %)" : string.Empty;
+        Enchantments.IsValidTier(tier) ? $"\n✨ {Enchantments.Label(slot, tier)} (+{Enchantments.BonusPercent(tier)} %)" : string.Empty;
 
     // Comando barra: /inventory [jugador]
     [SlashCommand("inventory", "Mostrá los materiales que tenés guardados (o los de otro jugador del server).")]

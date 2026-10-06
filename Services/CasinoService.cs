@@ -4,6 +4,12 @@ public sealed class CasinoService : ICasinoService
 {
     private static readonly string[] SlotSymbols = ["🥩", "🧉", "🪵", "🪙"];
 
+    // Lo que paga cada jugada, multiplicando la apuesta (lo que vuelve a tu billetera, apuesta incluida). Están acá, con nombre, para que la ayuda ("/info play") lea
+    // los mismos números que el juego y no se desincronicen si se retocan.
+    public const int CoinflipMultiplier = 2;
+    public const int SlotsThreeMatchMultiplier = 5;
+    public const int SlotsPairMultiplier = 2;
+
     public CasinoResult PlayCoinflip(int bet, string? predictedSide)
     {
         bool landedHeads = Random.Shared.Next(2) == 0; // 50% de probabilidad
@@ -13,7 +19,7 @@ public sealed class CasinoService : ICasinoService
             ? landedHeads
             : string.Equals(predictedSide, landedSide, StringComparison.OrdinalIgnoreCase);
 
-        int payout = won ? bet * 2 : 0;
+        int payout = won ? bet * CoinflipMultiplier : 0;
         return new CasinoResult(won, payout, [landedSide]);
     }
 
@@ -31,8 +37,8 @@ public sealed class CasinoService : ICasinoService
 
         int payout = maxMatches switch
         {
-            3 => bet * 5,
-            2 => bet * 2,
+            3 => bet * SlotsThreeMatchMultiplier,
+            2 => bet * SlotsPairMultiplier,
             _ => 0,
         };
 
