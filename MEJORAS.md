@@ -1,6 +1,12 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-05 (v0.9.2: sin huecos enormes en el perfil)_
+_Última revisión: 2026-10-06 (v0.9.3: el inventario en dos columnas)_
+
+## El inventario en dos columnas (v0.9.3, 2026-10-06)
+
+- Pedido del dueño: orden madera, minerales, drops, consumibles, con los consumibles «en una columna sola debajo de minerales» y solo dos columnas. Queda: **izquierda Madera y debajo los Drops de monstruo; derecha Mineral y debajo la Comida (con las Cajas)**, un ítem por renglón.
+- Discord pone los campos en línea de a tres por fila y cada uno ocupa un tercio del ancho; para que queden dos, cada fila lleva un tercer campo en línea vacío que la cierra (al costado no suma altura). **Ojo con el costo**: cada columna sigue siendo angosta, así que un nombre largo («Cuero Curtido de Pradera») se parte en dos renglones dentro de su columna. Si molesta, la vuelta atrás es el diseño de la v0.9.2 (drops a ancho completo).
+- Sin cambios de base de datos.
 
 ## Sin huecos enormes en el perfil (v0.9.2, 2026-10-05)
 
