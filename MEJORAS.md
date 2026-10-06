@@ -1,6 +1,15 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-06 (v0.10.0: las mascotas)_
+_Última revisión: 2026-10-06 (v0.10.1: tragamonedas arregladas)_
+
+## Tragamonedas arregladas (v0.10.1, 2026-10-06)
+
+- El hallazgo de la v0.9.6 (las slots regalaban oro: ×1,4375 por tirada) quedó resuelto. Pedido del dueño: arreglarlas, pero que el par pague **×1,5** («sacarle todo es de rata»), no devolver la apuesta pelada.
+- Con 4 símbolos eso solo no alcanza (par ×1,5 + tres iguales ×5 sigue dando ×1,156), así que se sumó un **5.º símbolo, el 🔥** (las brasas del asado) y las cuentas quedaron: tres iguales **4 %** × 5, par **48 %** × 1,5, tres distintos **48 %** pierden =
+  **retorno ×0,92: la casa se queda con el 8 %** (`CasinoService.SlotsReturnToPlayer`, calculado de las mismas constantes). El par se redondea hacia abajo (apuesta mínima 10 → paga 15) y ganar siempre deja al menos +5. El coinflip no cambia (×2 al 50 %).
+  La ayuda (`/info tema:play`) lee todo de `CasinoService` (símbolos, chances, multiplicadores y la ventaja de la casa), así que no se desincroniza.
+- Probado con el arnés `casinotest`: chances exactas, premios, 2 millones de tiradas (4,02 % / 47,98 % / 48,00 %, retorno ×0,9207) y el viejo agujero cerrado (jugar «all» repetido ya no multiplica el oro).
+- Sin cambios de base de datos. Si se quiere otra ventaja de la casa: los tres números son constantes (`SlotsThreeMatchMultiplier`, `SlotsPairMultiplier` y la lista de símbolos).
 
 ## Mascotas (v0.10.0, 2026-10-06)
 
@@ -42,7 +51,7 @@ _Última revisión: 2026-10-06 (v0.10.0: las mascotas)_
 - **Ayuda por tema**, como pidió el dueño («info enchant, info play, info xxx»): `/info tema:<tema>` (con lista desplegable) y `aa info <tema>` explican **cómo funciona** cada cosa, con sus comandos y sus números. **18 temas**: enchant, dismantle (Polvo), bank, death (penalidad), play (casino), hunt (combate, viaje, autohunt), boss (jefes y raids), forge (herrería y equipo), zone, boxes, shop (tienda, taberna, curarte), missions (y logros),
   arena (y duelos), trade, classes (pasivas y habilidades), gather (talar y minar), daily (y regalar oro), stats (nivel, vida, ataque, defensa). Se encuentran por la clave, el nombre o un alias en español (`aa info casino`, `aa info polvo`, `aa info muerte`, `aa info ench`). Un tema que no existe responde con la lista de temas. `/info` sin tema sigue siendo la lista de comandos y ahora nombra los temas.
 - Los números **salen de las constantes del juego** (cooldowns, penalidad, banco, casino, encantamientos...), no están escritos a mano: si se retocan, la ayuda se actualiza sola. Lo que vive en la base y el dueño edita (precios y rangos de las cajas, niveles de las zonas) no se repite: la ayuda manda a `/shop view` y `/zonas`.
-- **Hallazgo importante (sin tocar, falta decidir): las tragamonedas regalan oro.** Con 4 símbolos, dos iguales salen el 56 % de las veces y pagan ×2, tres iguales el 6 % y pagan ×5, y tres distintos el 37,5 % (pierde): el retorno esperado es **×1,4375 lo apostado (+43,75 % por tirada)** y `/play` no tiene cooldown ni tope, así que `/play slots all` repetido duplica el oro en pocas tiradas. El coinflip es justo (×2 al 50 %).
+- **Hallazgo importante (RESUELTO en la v0.10.1, ver arriba): las tragamonedas regalaban oro.** Con 4 símbolos, dos iguales salen el 56 % de las veces y pagan ×2, tres iguales el 6 % y pagan ×5, y tres distintos el 37,5 % (pierde): el retorno esperado es **×1,4375 lo apostado (+43,75 % por tirada)** y `/play` no tiene cooldown ni tope, así que `/play slots all` repetido duplica el oro en pocas tiradas. El coinflip es justo (×2 al 50 %).
   La solución mínima es que el par devuelva la apuesta (×1) y dejar los tres iguales en ×5 (retorno 87,5 %, casa gana 12,5 %), o ajustar los multiplicadores; son las constantes `CasinoService.SlotsPairMultiplier` y `SlotsThreeMatchMultiplier` y la ayuda las lee, así que se cambian en un solo lugar. Hasta que se decida, `/info tema:play` solo dice lo que paga cada jugada.
 
 ## Desmantelar hasta 100 por vez (v0.9.5, 2026-10-06)
