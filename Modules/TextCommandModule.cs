@@ -91,8 +91,8 @@ public partial class TextCommandModule(
     // "aa info" / "aa in" — misma lógica que HelpModule.HandleInfoAsync.
     [Command("info")]
     [Alias("in")]
-    [Summary("Mostrá la lista completa de comandos, agrupados por categoría.")]
-    public Task InfoAsync() => ReplyAsync(embed: HelpModule.BuildInfoEmbed());
+    [Summary("Mostrá la lista completa de comandos, agrupados por categoría (\"aa info enchant\" para ver los encantamientos).")]
+    public Task InfoAsync([Remainder] string tema = "") => ReplyAsync(embed: HelpModule.BuildTopicEmbed(tema));
 
     // ---- Perfil ----
 

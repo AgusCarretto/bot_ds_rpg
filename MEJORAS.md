@@ -1,6 +1,18 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-06 (v0.9.3: el inventario en dos columnas)_
+_Última revisión: 2026-10-06 (v0.9.4: calibración con la penalidad, `enchant info`, «Consumibles»)_
+
+## Calibración de encantamientos y penalidad, `enchant info` y «Consumibles» (v0.9.4, 2026-10-06)
+
+- **«Consumibles»** en el inventario (en vez de «Comida»). `/shop` y la taberna siguen diciendo Comida.
+- **`/enchant info`** (también `aa enchant info`, `aa encantar info` y `aa info enchant`; `/info tema:Encantamientos`): los 5 tiers con su **bonus** y su **chance** por intento, cuántos intentos llevan en promedio, lo que cuesta cada intento según la zona de la pieza y de dónde sale el Polvo. Sale de las mismas constantes que el juego. `/enchant` sin elegir pieza sigue mostrando tu estado y manda a `/enchant info`.
+- **Calibración** (simulación con el resolvedor real y los monstruos reales de la base, 600 peleas por clase y monstruo; el programa y los resultados completos quedaron en `docs/calibration/`):
+  - **Encantamientos: no se tocó nada.** La escalera sigue intacta con tier 0 (comunes 13-18 % de vida, jefe ~16 % de derrota con el equipo propio; entrar con el equipo anterior ~47 % y 69-87 % de derrota del jefe). Con tier 5 en arma y amuleto los comunes cuestan la mitad (7-10 %) y el jefe propio casi no se pierde (16 % ➜ 1-2 %); con el equipo ANTERIOR al tier 5 el jefe siguiente se pierde 44-61 % (antes 69-87 %): suaviza un escalón de equipo pero no lo salta.
+    Cuesta mucho a propósito: el Soberano son ~33 intentos (~11 h de Polvo en Zona 1, ~67 h en Zona 5). Ojo: el oro pesa poco en el costo (8 cacerías por intento contra 20-120 minutos de Polvo); si querés que sea un sumidero de oro de verdad, se sube `GoldUnitsPerAttempt`.
+  - **Penalidad por morir: no es una espiral.** Una muerte promedio cuesta ~15-22 minutos de juego (la mitad de un nivel son ~15-22 cacerías) y el 5 % del oro son ~2,5 cacerías. En peleas normales casi no se pierde (0 % de derrota con vida llena en las zonas propias). El jefe con el equipo anterior sigue siendo valor esperado ~0 en EXP (se gana más de un nivel de EXP si ganás, se pierde medio si perdés) y con el propio es +60 cacerías.
+  - **Lo único que había que arreglar: `/autohunt` con poca vida.** Pelea solo y no puede huir, cada cacería cuesta ~16 % de la vida y la chance de PERDER sube rápido: con 65 % de vida o más no pasa de ~2 % en ninguna zona, con 50 % ya es 3-10 % y con 25 % es 38-57 %. Como una muerte vale ~20 cacerías y una cacería rinde 1, el valor esperado se daba vuelta por debajo de ~5 %. Ahora **`/autohunt` (y `aa ah`) pide al menos 65 % de vida**
+    (`AutoHuntRules.MinHpPercent`), avisa que te cures con `/heal` o pelees a mano con `/hunt` (donde podés huir), y NO gasta el cooldown. Es una sola constante: si no te gusta, se saca o se baja. `/hunt` a mano no tiene la regla.
+- Sin cambios de base de datos.
 
 ## El inventario en dos columnas (v0.9.3, 2026-10-06)
 

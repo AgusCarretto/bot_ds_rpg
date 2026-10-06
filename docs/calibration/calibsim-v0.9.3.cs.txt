@@ -1,0 +1,153 @@
+using System.Globalization;
+using BotDsRpg.GameData;
+using Dapper;
+using Npgsql;
+
+// CALIBRACIÓN v0.9.x: encantamientos y penalidad por muerte, con el CombatTurnResolver REAL y los monstruos REALES de la base viva.
+// Un solo combate, vida llena (salvo la parte 3), SIN consumibles, promedio de las 4 clases con su arma de afinidad (el caso normal).
+//   1) PROPIO:  equipo de la zona Z (arma + amuleto) con tier 0..5 en AMBOS, contra los comunes y el jefe de Z.
+//   2) ENTRAR:  equipo de la zona Z-1 con tier 0..5 contra los comunes y el jefe de Z (¿un encantamiento salta un escalón?).
+//   3) VIDA:    probabilidad de PERDER (= pagar la penalidad) según la vida con la que se empieza, con /autohunt (solo ataque) y a mano (con habilidad).
+//   4) COSTO:   lo que cuesta una muerte en minutos de juego (EXP del nivel + 5 % del oro) y el valor de intentar el jefe.
+// Uso: calibsim [n]
+CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+int N = args.Length > 0 ? int.Parse(args[0]) : 600;
+string[] Classes = ["Guerrero", "Hechicero", "Ninja", "Arquero"];
+string Family(string cls) => cls switch { "Guerrero" => "Espadas", "Ninja" => "Dagas", "Arquero" => "Arcos", _ => "Grimorios" };
+
+string conn = File.ReadAllLines(@"C:\Users\Soporte_IT\Desktop\Proyectos AC\bot_ds_rpg\.env")
+    .Where(l => l.StartsWith("Postgres__ConnectionString=")).Select(l => l["Postgres__ConnectionString=".Length..].Trim().Trim('"')).First();
+await using var db = new NpgsqlConnection(conn);
+var rows = (await db.QueryAsync<(int rank, string name, string kind, int hpMin, int hpMax, int dMin, int dMax, int gold, int xp)>(
+    @"SELECT (DENSE_RANK() OVER (ORDER BY z.min_level))::int, m.name, CASE WHEN m.is_boss THEN 'boss' WHEN m.is_travel THEN 'travel' ELSE 'hunt' END,
+             m.min_hp, m.max_hp, m.min_damage, m.max_damage, m.gold_reward, m.xp_reward
+      FROM monsters m JOIN zones z USING (zone_id) ORDER BY z.min_level, m.name")).ToList();
+Mon[] Of(int rank, string kind) => rows.Where(r => r.rank == rank && r.kind == kind).Select(r => new Mon(r.name, r.hpMin, r.hpMax, r.dMin, r.dMax, r.gold, r.xp)).ToArray();
+
+// Equipo base por zona (rework_drops_and_recipes.sql): arma ATQ y amuleto DEF; niveles (entrada, medio, del jefe) de cada zona (los de la escalera).
+int[] W = [9, 20, 32, 50, 80], A = [10, 18, 30, 46, 75];
+(int In, int Mid, int Boss)[] L = [(1, 3, 5), (5, 7, 10), (10, 12, 15), (15, 17, 20), (20, 22, 25)];
+
+Console.WriteLine($"=== 1) EQUIPO PROPIO de la zona, tier en arma y amuleto (n = {N} por clase y monstruo) ===");
+Console.WriteLine("Objetivo calibrado en tier 0: comunes cuestan ~13-18% de la vida; jefe ~16% de derrota con el equipo propio.\n");
+Console.WriteLine("Zona | tier | comunes: %vida perdida / %derrota | viaje: %vida / %derrota | jefe: %vida / %derrota");
+for (int z = 1; z <= 5; z++)
+{
+    for (int tier = 0; tier <= 5; tier++)
+    {
+        var c = Fight(L[z - 1].Mid, W[z - 1], tier, A[z - 1], tier, Of(z, "hunt"));
+        var t = Fight(L[z - 1].Mid, W[z - 1], tier, A[z - 1], tier, Of(z, "travel"));
+        var b = Fight(L[z - 1].Boss, W[z - 1], tier, A[z - 1], tier, Of(z, "boss"));
+        Console.WriteLine($"  Z{z} |  {tier}   | {c.Lost,5:F1}% / {c.Lose,5:F1}%       | {t.Lost,5:F1}% / {t.Lose,5:F1}%    | {b.Lost,5:F1}% / {b.Lose,5:F1}%");
+    }
+}
+
+Console.WriteLine("\n=== 2) ENTRAR a la zona Z con el equipo de la Z-1 (tier en ambos) ===");
+Console.WriteLine("Objetivo calibrado en tier 0: comunes ~47% de la vida; jefe 67-87% de derrota. Si el tier 5 baja mucho el jefe, el encantamiento 'salta' un escalón de equipo.\n");
+Console.WriteLine("Zona | tier | comunes: %vida / %derrota | jefe: %vida / %derrota");
+for (int z = 2; z <= 5; z++)
+{
+    for (int tier = 0; tier <= 5; tier++)
+    {
+        var c = Fight(L[z - 1].In, W[z - 2], tier, A[z - 2], tier, Of(z, "hunt"));
+        var b = Fight(L[z - 1].Boss, W[z - 2], tier, A[z - 2], tier, Of(z, "boss"));
+        Console.WriteLine($"  Z{z} |  {tier}   | {c.Lost,5:F1}% / {c.Lose,5:F1}%        | {b.Lost,5:F1}% / {b.Lose,5:F1}%");
+    }
+}
+
+Console.WriteLine("\n=== 3) ¿Con cuánta vida es seguro pelear? % de DERROTA según la vida con la que empezás (comunes de la zona, equipo propio sin encantar) ===");
+Console.WriteLine("autohunt = solo ataque básico (no usa la habilidad); a mano = usa la habilidad cuando está lista.\n");
+double[] fracs = [1.0, 0.75, 0.5, 0.35, 0.25, 0.15];
+Console.WriteLine("Zona | modo     | " + string.Join(" | ", fracs.Select(f => $"vida {f * 100,3:F0}%")));
+for (int z = 1; z <= 5; z++)
+{
+    foreach (bool ability in new[] { false, true })
+    {
+        var cells = fracs.Select(f => Fight(L[z - 1].Mid, W[z - 1], 0, A[z - 1], 0, Of(z, "hunt"), startHp: f, ability: ability).Lose);
+        Console.WriteLine($"  Z{z} | {(ability ? "a mano  " : "autohunt")} | " + string.Join(" | ", cells.Select(x => $"{x,7:F1}%")));
+    }
+}
+
+Console.WriteLine("\n=== 3b) /autohunt: el umbral de vida. % de DERROTA con ataque básico, equipo propio sin encantar, más fino ===");
+double[] fine = [0.9, 0.8, 0.7, 0.65, 0.6, 0.55, 0.5];
+Console.WriteLine("Zona | " + string.Join(" | ", fine.Select(f => $"vida {f * 100,3:F0}%")));
+for (int z = 2; z <= 5; z++)
+{
+    var cells = fine.Select(f => Fight(L[z - 1].Mid, W[z - 1], 0, A[z - 1], 0, Of(z, "hunt"), startHp: f, ability: false, nPer: 3000).Lose);
+    Console.WriteLine($"  Z{z} | " + string.Join(" | ", cells.Select(x => $"{x,7:F2}%")));
+}
+
+Console.WriteLine("\n=== 4) LO QUE CUESTA UNA MUERTE, en minutos de juego (1 cacería por minuto: el cooldown de /hunt es 1 min) ===");
+Console.WriteLine("EXP perdida = la EXP del nivel actual (promedio: la mitad de lo que pide el nivel; peor caso: casi todo).\n");
+Console.WriteLine("Zona (nivel) | EXP por cacería | cacerías por nivel | muerte promedio = min | peor caso = min | oro por cacería | 5 % de una billetera de 50 cacerías");
+for (int z = 1; z <= 5; z++)
+{
+    int lvl = L[z - 1].Mid; var hunts = Of(z, "hunt");
+    double xpHunt = hunts.Average(m => Enumerable.Range(0, 4000).Average(_ => CombatRewardCalculator.RollHuntReward(lvl, m.GoldBonus, m.XpBonus).Xp));
+    double goldHunt = hunts.Average(m => Enumerable.Range(0, 4000).Average(_ => CombatRewardCalculator.RollHuntReward(lvl, m.GoldBonus, m.XpBonus).Gold));
+    int req = LevelingCalculator.RequiredXpForLevel(lvl);
+    Console.WriteLine($"  Z{z} (nv {lvl,2}) | {xpHunt,8:F0}         | {req / xpHunt,8:F1}           | {req / 2 / xpHunt,6:F1}              | {req / xpHunt,6:F1}          | {goldHunt,8:F0}        | {0.05 * 50 * goldHunt,8:F0} oro (= {0.05 * 50:F1} cacerías)");
+}
+
+Console.WriteLine("\n=== 5) ¿Vale la pena intentar el jefe? Valor esperado en cacerías de EXP (EXP ganada - EXP perdida si perdés), primera vez ===");
+Console.WriteLine("Con la penalidad: perder = pagar la mitad del nivel (promedio). Gana = RollBossReward (x15 del hunt + bono del jefe).\n");
+Console.WriteLine("Zona | equipo           | %derrota | EXP si ganás | EXP perdida si perdés (prom) | valor esperado (EXP) | = cacerías");
+for (int z = 1; z <= 5; z++)
+{
+    var boss = Of(z, "boss")[0]; int lvl = L[z - 1].Boss; int req = LevelingCalculator.RequiredXpForLevel(lvl);
+    double winXp = Enumerable.Range(0, 4000).Average(_ => CombatRewardCalculator.RollBossReward(lvl, boss.GoldBonus, boss.XpBonus, true).Xp);
+    double xpHunt = Of(z, "hunt").Average(m => Enumerable.Range(0, 2000).Average(_ => CombatRewardCalculator.RollHuntReward(lvl, m.GoldBonus, m.XpBonus).Xp));
+    var gears = new List<(string Label, int w, int a)> { ("propio sin encantar", W[z - 1], A[z - 1]) };
+    if (z >= 2) gears.Add(("de la zona ANTERIOR", W[z - 2], A[z - 2]));
+    foreach (var g in gears)
+    {
+        var b = Fight(lvl, g.w, 0, g.a, 0, [boss]);
+        double lose = b.Lose / 100.0, ev = (1 - lose) * winXp - lose * (req / 2.0);
+        Console.WriteLine($"  Z{z} | {g.Label,-19} | {b.Lose,6:F1}%  | {winXp,10:F0}   | {req / 2.0,12:F0}                 | {ev,12:F0}         | {ev / xpHunt,6:F1}");
+    }
+}
+
+Console.WriteLine("\n=== 6) Cuánto cuesta ENCANTAR en minutos de farmeo (el Polvo vale ~0,5 por minuto) y cuántos intentos llevan ===");
+Console.WriteLine("Tier | chance | intentos promedio | zona 1: oro + min de Polvo | zona 5: oro + min de Polvo");
+for (int t = 1; t <= 5; t++)
+{
+    var c1 = Enchantments.Cost(1); var c5 = Enchantments.Cost(5); double att = Enchantments.AttemptsToReach(t);
+    Console.WriteLine($"  {Enchantments.TierName(t),-13} | {Enchantments.ChancePercent(t),4:F0}% | {att,8:F1}          | {c1.Gold * att,7:F0} oro + {c1.Dust * att / 0.5,6:F0} min | {c5.Gold * att,7:F0} oro + {c5.Dust * att / 0.5,6:F0} min");
+}
+
+(double Turns, double Lost, double Lose) Fight(int level, int weapon, int wTier, int amulet, int aTier, Mon[] pool, double startHp = 1.0, bool ability = true, int nPer = 0)
+{
+    int per = nPer > 0 ? nPer : N;
+    double turns = 0, lost = 0, lose = 0; int n = 0;
+    foreach (string cls in Classes)
+    {
+        var pas = ClassPassives.For(cls);
+        // La misma cuenta del juego (PlayerCombatProfileCalculator): arma con la sinergia de su clase y DESPUÉS el encantamiento.
+        int wd = Enchantments.Apply(ClassWeaponSynergy.ApplyBonus(weapon, cls, Family(cls)), wTier);
+        int ad = Enchantments.Apply(amulet, aTier);
+        var prof = new CombatantProfile(CombatStats.TotalAttack(level, wd), CombatStats.TotalDefense(level, ad), cls, pas);
+        int maxHp = (int)Math.Round((100 + 15 * (level - 1)) * pas.MaxHpMultiplier);
+        int hp0 = Math.Max(1, (int)Math.Round(maxHp * startHp));
+        for (int i = 0; i < per * pool.Length; i++)
+        {
+            var m = pool[i % pool.Length];
+            int mHp = Random.Shared.Next(m.HpMin, m.HpMax + 1), mDmg = Random.Shared.Next(m.DmgMin, m.DmgMax + 1);
+            int hp = hp0, t = 0; var st = default(AbilityState);
+            while (true)
+            {
+                t++;
+                bool ab = ability && CombatTurnResolver.CheckAbility(cls, st) == AbilityAvailability.Ready;
+                var r = CombatTurnResolver.ResolveTurn(prof, st, ab ? PlayerAction.Ability : PlayerAction.Attack, hp, maxHp, mHp, mDmg);
+                hp = r.PlayerHpAfter; mHp = r.MonsterHpAfter; st = r.StatusAfter;
+                if (mHp <= 0) break;
+                if (hp <= 0) { lose++; break; }
+            }
+
+            turns += t; lost += (double)(maxHp - Math.Max(0, hp)) / maxHp; n++;
+        }
+    }
+
+    return (turns / n, 100.0 * lost / n, 100.0 * lose / n);
+}
+
+record Mon(string Name, int HpMin, int HpMax, int DmgMin, int DmgMax, int GoldBonus, int XpBonus);

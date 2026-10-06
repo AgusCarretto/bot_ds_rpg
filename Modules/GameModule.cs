@@ -173,7 +173,7 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
     //
     // El inventario va en DOS COLUMNAS (pedido del dueño, v0.9.3: "madera, minerales, drops, consumibles; los consumibles en una columna sola debajo de minerales"):
     //     🪵 Madera                    ⛏️ Mineral
-    //     🩸 Drops de monstruo         🍖 Comida (con las 📦 Cajas debajo)
+    //     🩸 Drops de monstruo         🍖 Consumibles (con las 📦 Cajas debajo)
     // Discord acomoda los campos en línea de a TRES por fila y cada uno ocupa un tercio del ancho, así que para que queden solo dos por fila cada fila lleva un
     // tercer campo en línea VACÍO (nombre y texto de ancho cero) que la cierra: al estar al costado no suma altura (lo que dejaba huecos enormes, v0.9.1, eran los
     // campos vacíos APILADOS, en su propia fila). Las dos columnas siguen siendo angostas (~19 caracteres): un nombre largo como "Cuero Curtido de Pradera"
@@ -218,11 +218,11 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
         string stacked = food.Count > 0 && boxes.Count > 0 ? string.Join('\n', food) + "\n\n📦 **Cajas**\n" + string.Join('\n', boxes) : string.Empty;
         if (stacked.Length > 0 && stacked.Length <= FieldLimit)
         {
-            right.Add(("🍖 Comida", stacked));
+            right.Add(("🍖 Consumibles", stacked));
         }
         else
         {
-            AddFields(right, "🍖 Comida", food);
+            AddFields(right, "🍖 Consumibles", food);
             AddFields(right, "📦 Cajas", boxes);
         }
 
