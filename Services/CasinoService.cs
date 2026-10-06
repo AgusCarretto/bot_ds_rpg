@@ -9,8 +9,9 @@ public sealed class CasinoService : ICasinoService
     // los mismos números que el juego y no se desincronicen si se retocan.
     public const int CoinflipMultiplier = 2;
     public const int SlotsThreeMatchMultiplier = 5;
-    // El par paga ×1,5 (la apuesta y la mitad más, redondeado hacia abajo): ganar siempre da algo, pero ya no regala oro (ver SlotsReturnToPlayer).
-    public const double SlotsPairMultiplier = 1.5;
+    // El par paga ×1,1 (la apuesta y un 10 % más, redondeado hacia abajo): ganar siempre da algo, pero casi nada. Era ×1,5 hasta la v0.12.0 y el dueño lo bajó a ×1,1 (2026-10-06:
+    // «ganamos mucho»: con un amigo juntaron oro de más jugando slots). Con la apuesta mínima de 10 el premio es 11, o sea que ganar el par sigue sumando al menos +1.
+    public const double SlotsPairMultiplier = 1.1;
 
     public static IReadOnlyList<string> SlotsSymbolList => SlotSymbols;
 
@@ -21,7 +22,7 @@ public sealed class CasinoService : ICasinoService
 
     public static double SlotsPairChance => 1.0 - SlotsThreeMatchChance - SlotsAllDifferentChance;
 
-    // Lo que vuelve de cada 1 apostado, en promedio (sin redondeos): con 5 símbolos es 0,92 = la casa se queda con el 8 %. Tiene que ser MENOR que 1: con 4 símbolos y el par en
+    // Lo que vuelve de cada 1 apostado, en promedio (sin redondeos): con 5 símbolos y el par en ×1,1 es 0,728 = la casa se queda con el 27 % (con el par en ×1,5 era 0,92). Tiene que ser MENOR que 1: con 4 símbolos y el par en
     // ×2 daba 1,4375 y /play slots all repetido duplicaba el oro. Una prueba lo sortea y comprueba que no vuelva a pasar.
     public static double SlotsReturnToPlayer => (SlotsThreeMatchChance * SlotsThreeMatchMultiplier) + (SlotsPairChance * SlotsPairMultiplier);
 
@@ -61,7 +62,8 @@ public sealed class CasinoService : ICasinoService
         long payout = maxMatches switch
         {
             3 => (long)bet * SlotsThreeMatchMultiplier,
-            2 => (long)Math.Floor(bet * SlotsPairMultiplier),
+            // En decimal (no en double): 1,1 no es exacto en binario y un redondeo hacia abajo podría quitarle 1 de oro a una apuesta que da un entero justo.
+            2 => (long)Math.Floor((decimal)bet * (decimal)SlotsPairMultiplier),
             _ => 0,
         };
 
