@@ -32,6 +32,7 @@ public static class HelpTopics
         new("missions", "📋", "Misiones y logros", "qué se reclama, cuándo se reinicia y cuánto pagan", ["mision", "misiones", "logro", "logros", "achievements", "missions"], Missions),
         new("arena", "🏟️", "Arena y duelos", "el torneo diario y los duelos con amigos", ["pvp", "duelo", "duelos", "fight", "torneo"], Arena),
         new("trade", "🤝", "Intercambio", "cambiar materiales con otro jugador", ["cambio", "cambiar", "trueque", "intercambio"], Trade),
+        new("exchange", "🔁", "Cambiar drops con el tabernero", "3 drops de una zona por 1 de la misma", ["canje", "canjear", "swap", "tabernero", "cambalache"], Exchange),
         new("classes", "🎭", "Clases y habilidades", "qué hace cada clase", ["clase", "clases", "class", "habilidad", "habilidades"], Classes),
         new("gather", "🪓", "Recolección", "talar y minar: unidades y rarezas", ["chop", "mine", "talar", "minar", "recolectar", "recoleccion", "madera", "mineral"], Gather),
         new("daily", "🎁", "Diario y regalos", "la recompensa diaria, la racha y regalar oro", ["diario", "racha", "give", "dar", "regalo", "regalar"], Daily),
@@ -255,7 +256,18 @@ public static class HelpTopics
         ("🤝 Cómo", "**/trade @jugador** y elegís lo que das y lo que querés. En texto: `aa trade @jugador \"Hierro\" \"Carbón\"`."),
         ("📏 Las reglas",
             "Solo **madera y minerales**, de la **misma rareza** y distintos entre sí (Roble por Hierro, Pino por Piedra...). Nada de drops, comida ni equipo."),
-        ("⏱️ La oferta", $"El otro jugador acepta o rechaza con botones. Dura {(int)TradeOfferService.Lifetime.TotalMinutes} minutos y tenés una abierta a la vez."));
+        ("⏱️ La oferta", $"El otro jugador acepta o rechaza con botones. Dura {(int)TradeOfferService.Lifetime.TotalMinutes} minutos y tenés una abierta a la vez."),
+        ("🍺 ¿Y con el tabernero?", $"Los **drops de monstruos** se cambian con él, de a {DropExchange.GiveAmount} por {DropExchange.GetAmount}: **/info tema:exchange**."));
+
+    private static Embed Exchange() => Topic(Self("exchange"),
+        $"El tabernero te cambia **{DropExchange.GiveAmount} drops de una zona por {DropExchange.GetAmount} de esa misma zona**: para cuando te sobra de uno y te falta otro, o la suerte no te acompañó.",
+        ("🔁 Cómo",
+            $"**/exchange** con **dar** (el drop que entregás, de a {DropExchange.GiveAmount}), **recibir** (otro drop de la misma zona) y **veces** (de 1 a {DropExchange.MaxTimes} cambios juntos). Las listas te muestran solo lo que podés hacer.\n" +
+            "En texto: `aa exchange \"Pluma de Ñandú\" \"Cuero Grueso\" 2`. En la **/taberna** hay una lista \"Cambiar drops\" para hacer un cambio de una."),
+        ("📏 Las reglas",
+            "Solo **drops de monstruos** (los de cacería y de viaje de cada zona), siempre de la **misma zona** y a uno **distinto** del que das. No sirve para madera ni minerales (eso es entre jugadores: **/info tema:trade**), ni para trofeos ni cajas."),
+        ("⚖️ ¿Conviene?",
+            $"Es {DropExchange.GiveAmount} por {DropExchange.GetAmount}: compensa la mala racha, no reemplaza al farmeo. Si el drop que te falta lo podés conseguir jugando, sale más barato jugar."));
 
     private static Embed Classes()
     {

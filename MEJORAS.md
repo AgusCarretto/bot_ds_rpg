@@ -1,6 +1,14 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-06 (v0.9.6: ayuda por tema con `/info`, arreglo de `info enchant`)_
+_Última revisión: 2026-10-06 (v0.9.7: el trueque de drops con el tabernero)_
+
+## El trueque de drops con el tabernero (v0.9.7, 2026-10-06)
+
+- Pedido del dueño: «que me cambie 3 drops x 1: cambiás 3 de una zona por 1 de la misma; así, si tenés mucha mala suerte, compensás». **`/exchange dar recibir [veces]`** (en texto `aa exchange "Pluma de Ñandú" "Cuero Grueso" 2`, alias `aa canje`): entregás **3 de un drop de una zona** y te llevás **1 distinto de la misma zona**, hasta 50 cambios juntos. Las listas desplegables te muestran solo lo que podés hacer (en «recibir», los otros dos drops de la zona del que elegiste).
+  En la **/taberna** hay una lista nueva «Cambiar drops (3 por 1)» (aparece si tenés al menos 3 de algún drop): elegís qué das y después qué querés, y hace un cambio. `/info tema:exchange` lo explica.
+- **Qué entra**: solo los **15 drops de monstruos** (los dos de cacería y el de viaje de cada zona). **No** madera ni minerales (eso es entre jugadores, `/trade`), ni los trofeos de las cajas (no tienen zona), ni los cofres de los jefes. Las reglas se validan en la base dentro de la misma transacción que el cobro: se prueba con 20 pedidos a la vez sobre 30 drops y salen exactamente 10 cambios.
+- **Efecto medido sobre las recetas reales** (juego perfecto: cazar sin parar y viajar cada 30 minutos): el **arma de clase** se junta ~23 % más rápido (150 ➜ ~116 min) y el **amuleto** ~17 % (200 ➜ ~167); el arma general no cambia (pide los dos drops de cacería por igual). Es un empujón moderado, pensado para la mala racha. Si se siente mucho, subir `DropExchange.GiveAmount` a 4 lo deja en ~14 %.
+- Sin cambios de base de datos.
 
 ## Ayuda por tema (`/info tema:<tema>`) y arreglo de `info enchant` (v0.9.6, 2026-10-06)
 

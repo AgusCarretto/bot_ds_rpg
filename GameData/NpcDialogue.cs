@@ -2,7 +2,7 @@ namespace BotDsRpg.GameData;
 
 public enum BlacksmithLine { Greeting, Success, NotEnough, UnknownRecipe, WrongClass, NoRecipes, SlotTaken, AlreadyEquipped }
 
-public enum ShopkeeperLine { Greeting, BuySuccess, NoGold, BoxWait, SellSuccess, SellAll, NothingToSell, NotForSale, NotOwned, Unsellable, GearConfirm, GearKept }
+public enum ShopkeeperLine { Greeting, BuySuccess, NoGold, BoxWait, SellSuccess, SellAll, NothingToSell, NotForSale, NotOwned, Unsellable, GearConfirm, GearKept, Exchange }
 
 public enum InnkeeperLine { Healed, NothingToEat, FullHp, InCombat }
 
@@ -128,6 +128,12 @@ public static class NpcDialogue
         [
             "Hacés bien, quedate con tu pieza. Cuando quieras cambiar, acá estoy.",
             "Sensato. Mejor guardarla hasta tener la próxima lista.",
+        ],
+        [ShopkeeperLine.Exchange] =
+        [
+            "Tres por uno, trato hecho. La mala racha se compensa con un buen cambalache.",
+            "Mala suerte con los drops, ¿eh? Tomá, algo es algo.",
+            "Cambalache cerrado: yo me quedo con tres y vos con lo que te faltaba.",
         ],
         [ShopkeeperLine.Unsellable] =
         [

@@ -17,9 +17,14 @@ public sealed record TabernaScene(Embed Embed, MessageComponent? Components, str
 // las cajas, los eventos para misiones y logros... Nada se reimplementa acá.
 public class TabernaModule(
     IUserRepository userRepository, IItemRepository itemRepository, IInventoryRepository inventoryRepository, IShopRepository shopRepository,
-    IBuffRepository buffRepository, ICombatSessionService combatSessions, IGameEvents gameEvents, IBoxContextService boxContextService)
+    IBuffRepository buffRepository, ICombatSessionService combatSessions, IGameEvents gameEvents, IBoxContextService boxContextService,
+    IDropExchangeRepository dropExchangeRepository)
     : InteractionModuleBase<SocketInteractionContext>
 {
+    // El trueque va en DOS pasos (hay que elegir qué entregás y qué querés a cambio): la lista "Cambiar drops" (Swap) y, debajo de lo que elegiste, una lista solo tuya
+    // (SwapGet) con los otros drops de esa zona. El id de la segunda lleva a qué entregás.
+    private const string Swap = "taberna_swap";
+    private const string SwapGet = "taberna_swapget";
     private const string Eat = "taberna_eat";
     private const string BuyFood = "taberna_buy";
     private const string BuyBox = "taberna_box";
@@ -37,7 +42,7 @@ public class TabernaModule(
         try
         {
             var scene = await BuildSceneAsync(
-                userRepository, itemRepository, inventoryRepository, buffRepository, Context.User.Id, null, boxContextService);
+                userRepository, itemRepository, inventoryRepository, buffRepository, Context.User.Id, null, boxContextService, dropExchangeRepository);
 
             if (scene.AttachmentPath is { } file)
             {
@@ -67,6 +72,102 @@ public class TabernaModule(
 
     [ComponentInteraction($"{Sell}:*")]
     public Task HandleSellAsync(string ownerRaw, string[] selected) => RunAsync(Sell, ownerRaw, selected);
+
+    // Paso 1 del trueque: elegiste QUÉ entregás. Te sale (solo a vos) la lista de lo que podés recibir a cambio: los otros drops de esa misma zona.
+    [ComponentInteraction($"{Swap}:*")]
+    public async Task HandleSwapAsync(string ownerRaw, string[] selected)
+    {
+        await DeferAsync();
+
+        try
+        {
+            if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
+            {
+                await FollowupAsync("Esa charla es de otra persona: pasá por la taberna con **/taberna**.", ephemeral: true);
+                return;
+            }
+
+            var question = await BuildSwapQuestionAsync(itemRepository, inventoryRepository, dropExchangeRepository, Context.User.Id, selected.FirstOrDefault() ?? string.Empty);
+            if (question is null)
+            {
+                await FollowupAsync(embed: BuildAnswerEmbed(NpcDialogue.Shopkeeper(ShopkeeperLine.NotOwned)), ephemeral: true);
+                return;
+            }
+
+            await FollowupAsync(embed: question.Value.Embed, components: question.Value.Components, ephemeral: true);
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            await FollowupAsync("¡Upa! No pude abrir el cambio, intentá de nuevo en un momento.", ephemeral: true);
+        }
+    }
+
+    // Paso 2: elegiste qué querés recibir. Se hace UN cambio (3 por 1) con la misma lógica de /exchange y la respuesta del tabernero reemplaza la pregunta.
+    [ComponentInteraction($"{SwapGet}:*:*")]
+    public async Task HandleSwapGetAsync(string ownerRaw, string giveIdRaw, string[] selected)
+    {
+        await DeferAsync();
+
+        try
+        {
+            if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
+            {
+                await FollowupAsync("Esa charla es de otra persona: pasá por la taberna con **/taberna**.", ephemeral: true);
+                return;
+            }
+
+            if (!int.TryParse(giveIdRaw, out int giveId) || await itemRepository.GetByIdAsync(giveId) is not { } give)
+            {
+                await FollowupAsync("No encuentro ese drop: probá de nuevo desde la taberna.", ephemeral: true);
+                return;
+            }
+
+            var result = await ExchangeModule.ExecuteExchangeAsync(
+                userRepository, itemRepository, dropExchangeRepository, gameEvents, Context.User.Id, give.Name, selected.FirstOrDefault() ?? string.Empty, 1);
+
+            await ModifyOriginalResponseAsync(p =>
+            {
+                p.Embed = result.Embed ?? BuildAnswerEmbed(NpcDialogue.Say("El Tabernero", "🍺", (result.PlainMessage ?? string.Empty).Replace("**", string.Empty)));
+                p.Components = new ComponentBuilder().Build();
+            });
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            await FollowupAsync("¡Upa! No pude hacer el cambio, intentá de nuevo en un momento.", ephemeral: true);
+        }
+    }
+
+    // La pregunta del paso 2: "¿y qué querés a cambio?" con los otros drops de la zona de lo que entregás. Null si no tiene 3 de ese drop (o no es un drop cambiable).
+    // Pública y sin Context para probarla.
+    public static async Task<(Embed Embed, MessageComponent Components)?> BuildSwapQuestionAsync(
+        IItemRepository itemRepository, IInventoryRepository inventoryRepository, IDropExchangeRepository dropExchangeRepository, ulong discordId, string giveName)
+    {
+        var drops = await dropExchangeRepository.GetExchangeableDropsAsync();
+        var give = drops.FirstOrDefault(d => AutocompleteText.SameName(d.Name, giveName));
+        var inventory = await inventoryRepository.GetByDiscordIdAsync(discordId);
+        if (give is null || inventory.FirstOrDefault(e => e.ItemName == give.Name)?.Quantity < DropExchange.GiveAmount)
+        {
+            return null;
+        }
+
+        var receivable = ExchangeChoices.Receivable(drops, give.Name);
+        var have = inventory.ToDictionary(e => e.ItemName, e => e.Quantity, StringComparer.Ordinal);
+        var menu = Menu(
+            SwapGet, discordId, $"¿Qué querés a cambio de {DropExchange.GiveAmount}×?",
+            receivable.Select(d => (d.Name, $"Recibís {DropExchange.GetAmount} · tenés {have.GetValueOrDefault(d.Name)}", d.Name)));
+        // Esta lista lleva en el id, además del dueño, QUÉ entregás (Menu arma solo "prefijo:dueño").
+        menu.WithCustomId($"{SwapGet}:{discordId}:{give.ItemId}");
+
+        var embed = new EmbedBuilder()
+            .WithTitle("🔁 Cambiar drops")
+            .WithColor(Color.Gold)
+            .WithDescription(
+                $"{NpcDialogue.Say("El Tabernero", "🍺", $"Me das {DropExchange.GiveAmount} de {give.Name} (tenés {have[give.Name]}) y te doy {DropExchange.GetAmount} de lo que quieras de {give.ZoneName}. ¿Cuál va a ser?")}")
+            .Build();
+        return (embed, new ComponentBuilder().WithSelectMenu(menu).Build());
+    }
 
     // Vender el arma o el amuleto EQUIPADOS pide confirmación (un click de más te deja sin tu pieza, y forjarla vale más que lo que pagan).
     [ComponentInteraction($"{GearYes}:*:*")]
@@ -154,7 +255,7 @@ public class TabernaModule(
                 Context.User.Id, selected.FirstOrDefault() ?? string.Empty, boxContextService);
 
             // La escena se refresca (tu oro y tus listas al día) y la respuesta va en un mensaje aparte.
-            var scene = await BuildSceneAsync(userRepository, itemRepository, inventoryRepository, buffRepository, Context.User.Id, null, boxContextService);
+            var scene = await BuildSceneAsync(userRepository, itemRepository, inventoryRepository, buffRepository, Context.User.Id, null, boxContextService, dropExchangeRepository);
 
             await ModifyOriginalResponseAsync(p =>
             {
@@ -280,7 +381,7 @@ public class TabernaModule(
     // que "aa taberna" muestre exactamente lo mismo.
     public static async Task<TabernaScene> BuildSceneAsync(
         IUserRepository userRepository, IItemRepository itemRepository, IInventoryRepository inventoryRepository,
-        IBuffRepository buffRepository, ulong discordId, string? talk, IBoxContextService? boxContext = null)
+        IBuffRepository buffRepository, ulong discordId, string? talk, IBoxContextService? boxContext = null, IDropExchangeRepository? dropExchange = null)
     {
         var player = await userRepository.GetByDiscordIdAsync(discordId);
         if (player is null)
@@ -343,7 +444,19 @@ public class TabernaModule(
             components.WithSelectMenu(Menu(
                 Sell, discordId, "Vender algo (de a una unidad)",
                 equippedGear.Select(i => ($"{(i.Type == "Weapon" ? "🗡️" : "📿")} {i.Name} (equipad{(i.Type == "Weapon" ? "a" : "o")})", $"⚠️ Lo que llevás puesto · {i.SellPrice} oro", i.Name))
-                    .Concat(sellable.Select(e => ($"{e.ItemName} ×{e.Quantity}", $"{e.SellPrice} oro c/u", e.ItemName)))), row);
+                    .Concat(sellable.Select(e => ($"{e.ItemName} ×{e.Quantity}", $"{e.SellPrice} oro c/u", e.ItemName)))), row++);
+        }
+
+        // El trueque (GameData/DropExchange.cs): solo aparece si tenés al menos 3 de algún drop de monstruo. Es la quinta y última fila que admite Discord.
+        if (dropExchange is not null)
+        {
+            var givable = ExchangeChoices.Givable(inventory, await dropExchange.GetExchangeableDropsAsync());
+            if (givable.Count > 0 && row <= 4)
+            {
+                components.WithSelectMenu(Menu(
+                    Swap, discordId, $"Cambiar drops ({DropExchange.GiveAmount} por {DropExchange.GetAmount}, de la misma zona)",
+                    givable.Take(25).Select(x => ($"{x.Drop.Name} ×{x.Have}", $"Entregás {DropExchange.GiveAmount} · recibís {DropExchange.GetAmount} de {x.Drop.ZoneName}", x.Drop.Name))), row);
+            }
         }
 
         return new TabernaScene(embed, components.Build(), NpcImages.AttachmentPathFor(embed));
