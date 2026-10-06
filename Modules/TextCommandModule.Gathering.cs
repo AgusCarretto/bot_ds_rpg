@@ -5,56 +5,31 @@ using BotDsRpg.Services;
 // Tercera parte de TextCommandModule (ver el comentario en TextCommandModule.cs): recolección.
 public partial class TextCommandModule
 {
-    // "aa chop" / "aa ch" — misma lógica que GatheringModule.HandleChopAsync.
+    // "aa chop" / "aa ch" — misma lógica que GatheringModule.HandleChopAsync. "aa chop avanzada" (o "adv") es la tala avanzada del oficio Leñador al nivel 100.
     [Command("chop")]
     [Alias("ch")]
-    [Summary("Talá madera cercana (cooldown de 5 minutos).")]
-    public Task ChopAsync() => GatherAsync(CooldownCatalog.Chop, itemType: "Madera");
+    [Summary("Talá madera cercana (cooldown de 5 minutos). \"aa chop avanzada\" con el oficio Leñador al nivel 100.")]
+    public Task ChopAsync(string modo = "") => GatherAsync(CooldownCatalog.Chop, itemType: "Madera", modo);
 
-    // "aa mine" / "aa m" — misma lógica que GatheringModule.HandleMineAsync.
+    // "aa mine" / "aa m" — misma lógica que GatheringModule.HandleMineAsync. "aa mine avanzada" es la minería avanzada del oficio Minero al nivel 100.
     [Command("mine")]
     [Alias("m")]
-    [Summary("Miná materiales cercanos (cooldown de 5 minutos).")]
-    public Task MineAsync() => GatherAsync(CooldownCatalog.Mine, itemType: "Mineral");
+    [Summary("Miná materiales cercanos (cooldown de 5 minutos). \"aa mine avanzada\" con el oficio Minero al nivel 100.")]
+    public Task MineAsync(string modo = "") => GatherAsync(CooldownCatalog.Mine, itemType: "Mineral", modo);
 
-    private async Task GatherAsync(CooldownDefinition definition, string itemType)
+    private async Task GatherAsync(CooldownDefinition definition, string itemType, string modo)
     {
         try
         {
-            var remaining = await cooldownRepository.GetRemainingAsync(Context.User.Id, definition.CommandName, definition.Duration);
-            if (remaining is not null)
+            if (GatheringModule.ParseAdvanced(modo) is not bool advanced)
             {
-                await ReplyAsync(embed: GatheringModule.BuildCooldownEmbed(definition, remaining.Value));
+                await ReplyAsync($"No entendí **{modo}**: usá `aa {definition.CommandName}` o `aa {definition.CommandName} avanzada`.");
                 return;
             }
 
-            // Si es la primera vez que este usuario ejecuta un comando, se crea acá con los valores por defecto.
-            var player = await userRepository.GetOrCreateUserAsync(Context.User.Id);
-
-            string rarity = RarityCatalog.RollGatheringRarity();
-            var item = await itemRepository.GetRandomByTypeAndRarityAsync(itemType, rarity);
-
-            if (item is null)
-            {
-                await ReplyAsync($"Todavía no hay materiales de tipo **{itemType}** y rareza **{rarity}** cargados en el catálogo.");
-                return;
-            }
-
-            // Cuántas unidades salen depende de la rareza: lo común a montones, lo mejor de a una (GatheringYield).
-            int quantity = await GatheringModule.RollQuantityAsync(bonusService, player, definition, item);
-
-            bool applied = await gatheringRepository.ApplyGatheringRewardAsync(
-                Context.User.Id, definition.CommandName, definition.Duration, item.ItemId, quantity);
-
-            if (!applied)
-            {
-                await ReplyAsync("Justo se te adelantó otra ejecución de este comando, probá de nuevo en un toque.");
-                return;
-            }
-
-            await GatheringEvents.RecordAsync(gameEvents, Context.User.Id, definition, item, quantity);
-
-            await ReplyAsync(embed: GatheringModule.BuildResultEmbed(definition, item, quantity));
+            var result = await GatheringModule.ExecuteGatherAsync(
+                cooldownRepository, gatheringRepository, userRepository, itemRepository, bonusService, gameEvents, Context.User.Id, definition, itemType, advanced);
+            await ReplyAsync(result.PlainMessage, embed: result.Embed);
         }
         catch (Exception ex)
         {

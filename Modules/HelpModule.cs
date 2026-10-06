@@ -108,6 +108,10 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "`/blessings` — Tus bendiciones, y la que tengas para elegir (`aa bendiciones`)",
                 false)
             .AddField(
+                "🛠️ Oficios",
+                "`/professions` — Leñador, Minero y Encantador (`aa professions`, `aa oficios`): suben solos al usar `/chop`, `/mine` y `/enchant`, dan más cantidad, mejor rareza y menos Polvo, y al nivel 100 desbloquean la versión avanzada (`/info tema:oficios`)",
+                false)
+            .AddField(
                 "🐾 Mascotas",
                 "`/pet view` — Tus mascotas: una por zona, y dan su bonus **todas a la vez** (`aa pet`)\n" +
                 "`/pet feed` — Dales Comida para Mascotas (se compra en la `/taberna`), una vez por hora cada una. El huevo llega la primera vez que vencés al jefe de cada zona: abrilo con `/open`",

@@ -35,6 +35,7 @@ public static class HelpTopics
         new("exchange", "🔁", "Cambiar drops con el tabernero", "3 drops de una zona por 1 de la misma", ["canje", "canjear", "swap", "tabernero", "cambalache"], Exchange),
         new("fogon", "🔥", "El Fogón Eterno", "la puerta del final del mundo y su equipo", ["fogón", "asador", "puerta", "zona0", "zona 0", "gate"], Fogon),
         new("fuego", "♻️", "Fuego Nuevo", "volver a empezar con bonus permanentes y bendiciones", ["fuegonuevo", "fuego nuevo", "fn", "reinicio", "reiniciar", "renacer", "reset", "vuelta", "bendicion", "bendiciones", "blessing", "blessings", "prestigio"], Fuego),
+        new("professions", "🛠️", "Oficios", "Leñador, Minero y Encantador: nivel, XP y la versión avanzada", ["oficios", "oficio", "profesion", "profesiones", "prof", "lenador", "leñador", "woodcutter"], Professions),
         new("pets", "🐾", "Mascotas", "huevos, bonus pasivos y cómo alimentarlas", ["mascota", "mascotas", "pet", "huevo", "huevos", "egg", "eggs"], Pets),
         new("classes", "🎭", "Clases y habilidades", "qué hace cada clase", ["clase", "clases", "class", "habilidad", "habilidades"], Classes),
         new("gather", "🪓", "Recolección", "talar y minar: unidades y rarezas", ["chop", "mine", "talar", "minar", "recolectar", "recoleccion", "madera", "mineral"], Gather),
@@ -286,6 +287,30 @@ public static class HelpTopics
             $"Solo **/boss**, contra **{FogonRules.BossName}**: no hay cacería, viajes ni raid. Usa el cooldown del jefe (**{Dur(CooldownCatalog.Boss.Duration)}** si ganás y **{Dur(CooldownCatalog.Boss.RetryAfterFailure ?? CooldownCatalog.Boss.Duration)}** si perdés, huís o se acaba el tiempo) y si perdés pagás la penalidad de siempre (**/info tema:death**). " +
             "Está calibrado como cada jefe: con el equipo de la zona anterior casi siempre perdés, con el del Fogón es un desafío parejo."),
         ("🏆 Al ganar", "Volvés a la última zona, se habilita el **Fuego Nuevo** (**/fuegonuevo**, y cómo funciona en **/info tema:fuego**) y sumás el logro **Asador**. Para salir sin pelear, viajá a cualquier zona con **/zona**."));
+
+    private static Embed Professions()
+    {
+        var woodcutter = ProfessionCatalog.Get(ProfessionCatalog.WoodcutterKey);
+        var miner = ProfessionCatalog.Get(ProfessionCatalog.MinerKey);
+        var enchanter = ProfessionCatalog.Get(ProfessionCatalog.EnchanterKey);
+        long total = ProfessionRules.TotalXpToMax;
+
+        return Topic(Self("professions"),
+            "Los **oficios** suben solos cuando usás su comando: cuanto más talás, minás o encantás, mejor te sale. Cada uno va del nivel 0 al " + ProfessionRules.MaxLevel + ".",
+            ("📈 Cómo suben",
+                $"{woodcutter.Emoji} **{woodcutter.Name}** con **{woodcutter.Command}** ({woodcutter.XpPerAction} XP por uso), {miner.Emoji} **{miner.Name}** con **{miner.Command}** ({miner.XpPerAction}) y " +
+                $"{enchanter.Emoji} **{enchanter.Name}** con cada intento de **{enchanter.Command}** ({enchanter.XpPerAction}).\n" +
+                $"Llegar al {ProfessionRules.MaxLevel} son ~{GameHistory.Number(total)} de XP: unos {GameHistory.Number(total / woodcutter.XpPerAction)} usos de tala o minería, o {GameHistory.Number(total / enchanter.XpPerAction)} intentos de encantamiento. " +
+                "Lo que hiciste antes de que existieran los oficios también cuenta."),
+            ("🎁 Lo que da cada nivel",
+                $"{woodcutter.Emoji} {miner.Emoji} **{woodcutter.Name} y {miner.Name}**: {ProfessionRules.DescribePerLevel(woodcutter)}. Lo de la rareza sube un escalón (Común → Raro → Épico → Legendario); el Mítico nunca se mejora.\n" +
+                $"{enchanter.Emoji} **{enchanter.Name}**: {ProfessionRules.DescribePerLevel(enchanter)}.\n" +
+                "Todo suma a lo de Fuego Nuevo y las bendiciones."),
+            ($"⭐ Al nivel {ProfessionRules.MaxLevel}",
+                $"{ProfessionRules.DescribeAdvanced(woodcutter)}.\n{ProfessionRules.DescribeAdvanced(miner)}.\n{ProfessionRules.DescribeAdvanced(enchanter)}."),
+            ("🔄 Y el Fuego Nuevo", "Los oficios **se quedan** cuando hacés un Fuego Nuevo: tu nivel no se pierde."),
+            ("📍 Comandos", "**/professions** (en texto `aa professions` o `aa oficios`) muestra tu nivel, tu XP y lo que ya te dan. También figuran en **/profile** y el avance sale al pie de cada **/chop**, **/mine** y **/enchant**."));
+    }
 
     private static Embed Fuego() => Topic(Self("fuego"),
         "El **Fuego Nuevo** es volver a empezar, pero más rápido: perdés el nivel, el equipo y los materiales y ganás **porcentajes permanentes** y una **bendición** por cada vuelta. " +

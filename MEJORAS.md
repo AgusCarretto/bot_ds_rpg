@@ -1,6 +1,16 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-06 (v0.12.1: el par de las slots baja a ×1,1)_
+_Última revisión: 2026-10-06 (v0.13.0: Oficios)_
+
+## Oficios: Leñador, Minero y Encantador (v0.13.0, 2026-10-06)
+
+- **Qué es**: `/professions` (`aa professions`, `aa oficios`). Tres oficios de nivel 0 a 100 que suben solos al usar `/chop`, `/mine` y `/enchant` (10, 10 y 50 de XP por uso). Diseño y presupuesto medido: `docs/superpowers/specs/2026-10-06-oficios-design.md`.
+- **Sin migración**: la XP sale de los contadores que ya existen (`player_stats`: `chop`, `mine`, `enchant`), así que **lo que cada jugador ya hizo cuenta**: quien talló 100 veces arranca en el nivel ~37. Fuego Nuevo no los toca.
+- **Lo que da cada nivel**: Leñador/Minero +0,2 % de cantidad y +0,1 % de chance de subir un escalón la rareza (el Mítico nunca se mejora); Encantador −0,25 % de Polvo por intento. Al 100: **tala/minería avanzada** (`/chop modo:Avanzada`: 4 sorteos juntos, cooldown propio de 1 h) y **encantamiento avanzado** (`/enchant modo:Avanzado`: 2 tiradas, se queda con la mejor, 1,5× el costo).
+- **Decisiones mías que hay que confirmar con el dueño** (están todas como constantes en `GameData/ProfessionRules.cs`): la curva (≈ 810 usos de tala o minería, ≈ 160 intentos de encantar, para llegar al 100); los porcentajes por nivel; que la avanzada de recolección sean 4 sorteos por hora (+33 % de ritmo); que la del encantador sea «dos tiradas, la mejor, a 1,5×»; y que cada uso avanzado cuente como 4 (o 2) usos para la XP y para las misiones.
+- **Presupuesto**: el camino de recetas de las 5 zonas está trabado por los drops de los monstruos, así que los oficios de recolección lo bajan solo ~12 % con todo al 100 (el Fuego Nuevo 30 con oficios queda en el ~30 % de la vuelta 1, justo en el piso del spec). Donde sí se nota es en el Polvo y en lo que cuesta encantar.
+- **Sin cambios de base de datos**: nada que correr antes de arrancar. Para desplegar alcanza con reiniciar el bot.
+- **Falta / ideas**: más oficios (Cazador, Herrero, Mascotero…: una fila en `ProfessionCatalog`), logros por nivel de oficio, un aviso público al llegar al 100, y que el tema `/info tema:gather` y el de `enchant` lo mencionen más.
 
 ## Las slots: el par baja a ×1,1 (v0.12.1, 2026-10-06)
 

@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <UserSecretsId>d69ec704-0863-42b1-a8be-eb5f90b13a3c</UserSecretsId>
     <!-- Versión del bot: se muestra en /info y en el log de arranque (Services/BotVersion.cs). -->
-    <Version>0.12.1</Version>
+    <Version>0.13.0</Version>
   </PropertyGroup>
 
   <!-- Las imágenes de los personajes (Assets/npc) viajan con el bot, tanto en dotnet run como en el publish de Docker. -->

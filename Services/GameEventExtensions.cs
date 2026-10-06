@@ -35,9 +35,16 @@ public static class GameEventExtensions
 // Lo que se registra al recolectar (/chop y /mine, por slash y por texto): el éxito y las unidades que dio.
 public static class GatheringEvents
 {
-    public static async Task RecordAsync(IGameEvents events, ulong discordId, CooldownDefinition definition, Item item, int quantity)
+    public static Task RecordAsync(IGameEvents events, ulong discordId, CooldownDefinition definition, Item item, int quantity) =>
+        RecordAsync(events, discordId, definition, [(item, quantity)], rolls: 1);
+
+    // rolls: cuántos usos cuenta esta recolección (1 la normal, 4 la avanzada de los oficios): el contador de /chop o /mine sube eso, y de ese contador sale la XP del oficio
+    // (GameData/ProfessionRules.cs). Las unidades son la suma de todo lo que dio.
+    public static async Task RecordAsync(IGameEvents events, ulong discordId, CooldownDefinition definition, IReadOnlyList<(Item Item, int Quantity)> drops, int rolls)
     {
-        await events.RecordAsync(discordId, definition.CommandName == "chop" ? GameEventKinds.Chop : GameEventKinds.Mine, detail: item.Name);
-        await events.RecordAsync(discordId, GameEventKinds.GatheredUnits, amount: quantity, detail: item.Name);
+        string names = string.Join(", ", drops.Select(d => d.Item.Name).Distinct());
+        bool isChop = definition.CommandName == "chop" || definition.CommandName == "chop_adv";
+        await events.RecordAsync(discordId, isChop ? GameEventKinds.Chop : GameEventKinds.Mine, amount: rolls, detail: names);
+        await events.RecordAsync(discordId, GameEventKinds.GatheredUnits, amount: drops.Sum(d => d.Quantity), detail: names);
     }
 }
