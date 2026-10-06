@@ -12,10 +12,10 @@ using Microsoft.Extensions.DependencyInjection;
 public class DustModule(IUserRepository userRepository, IItemRepository itemRepository, IDustRepository dustRepository, IGameEvents gameEvents)
     : InteractionModuleBase<SocketInteractionContext>
 {
-    [SlashCommand("dismantle", "Desmantelá materiales para conseguir Polvo (de 1 a 5 por vez).")]
+    [SlashCommand("dismantle", "Desmantelá materiales para conseguir Polvo (de 1 a 100 por vez).")]
     public async Task HandleDismantleAsync(
         [Summary("item", "Elegí de la lista el material que querés desmantelar.")] [Autocomplete(typeof(DismantleItemAutocompleteHandler))] string itemName,
-        [Summary("cantidad", "Cuántos desmantelás, de 1 a 5 (por defecto 1).")] [MinValue(1)] [MaxValue(Dismantling.MaxPerCommand)] int quantity = 1)
+        [Summary("cantidad", "Cuántos desmantelás, de 1 a 100 (por defecto 1).")] [MinValue(1)] [MaxValue(Dismantling.MaxPerCommand)] int quantity = 1)
     {
         await DeferAsync();
 
