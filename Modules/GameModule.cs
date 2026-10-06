@@ -171,21 +171,22 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
 
     // Estático (sin dependencia de Context) para que Modules/TextCommandModule.cs arme el mismo embed en "aa inventory".
     //
-    // El inventario va en COLUMNAS arriba (lo corto) y los drops UNO POR LÍNEA, a ancho completo, abajo:
-    //     🪵 Madera           ⛏️ Mineral           🍖 Comida (con las 📦 Cajas debajo)       <- campos en línea, de a tres por fila
-    //     🩸 Drops de monstruo                                                               <- campo de ancho completo
-    //     ícono **Nombre**: 3
-    //     ícono **Otro nombre**: 1
-    // POR QUÉ los drops van cada uno en su renglón: primero eran columnas angostas (~19 caracteres) que partían los nombres largos ("Collar de Cuero /
-    // Viejo: 3"); después "fichas" con espacios que no se cortan (U+00A0), pero Discord igual corta entre el ícono (que es una imagen) y el texto, y el
-    // ícono de un ítem quedaba al final del renglón anterior, pegado al ítem equivocado (captura del dueño, v0.9.0). Un ítem por renglón no puede
-    // desarmarse: es la única forma segura, y es lo que el dueño pidió ("más espaciado, con saltos de línea"). NO volver a fichas ni a columnas para los drops.
-    // Cada ítem es "ícono **Nombre**: cantidad" (nombre en negrita, cantidad con separador de miles). Un campo de embed admite 1024 caracteres y el
-    // código de un emoji ocupa ~45, así que los drops (~32 ítems) se reparten en varios campos: el primero con título y los demás con título invisible
-    // (nunca "(1/2)"). Solo aparece lo que tiene algo. El type "Material" ES, por diseño de todo el juego, exactamente lo que sueltan los monstruos (nunca
-    // madera ni piedra, ver Database/seed_class_gear_and_monster_drops.sql). La rareza se ve con el emoji del ítem (o un círculo de color si todavía no
-    // tiene). Las armas y los amuletos no están acá: se forjan directo a equipamiento (ver /profile). Los íconos no se pueden agrandar: dentro de un
-    // texto Discord los dibuja siempre de 22 px.
+    // El inventario va en DOS COLUMNAS (pedido del dueño, v0.9.3: "madera, minerales, drops, consumibles; los consumibles en una columna sola debajo de minerales"):
+    //     🪵 Madera                    ⛏️ Mineral
+    //     🩸 Drops de monstruo         🍖 Comida (con las 📦 Cajas debajo)
+    // Discord acomoda los campos en línea de a TRES por fila y cada uno ocupa un tercio del ancho, así que para que queden solo dos por fila cada fila lleva un
+    // tercer campo en línea VACÍO (nombre y texto de ancho cero) que la cierra: al estar al costado no suma altura (lo que dejaba huecos enormes, v0.9.1, eran los
+    // campos vacíos APILADOS, en su propia fila). Las dos columnas siguen siendo angostas (~19 caracteres): un nombre largo como "Cuero Curtido de Pradera"
+    // se parte en dos renglones dentro de su columna. Eso ya se probó antes (v0.8.3) y por eso se probaron las alternativas: las "fichas" con espacios que no
+    // se cortan (U+00A0) no aguantaron (Discord corta entre el ícono, que es una imagen, y el texto, y el ícono de un ítem quedaba al final del renglón anterior,
+    // pegado al ítem equivocado, v0.9.0) y los drops uno por renglón a ancho completo (v0.9.0-v0.9.2) sí andaban. Si los nombres partidos molestan, la salida es
+    // volver a esos (git: v0.9.2). NO usar fichas.
+    // Cada ítem es "ícono **Nombre**: cantidad" (nombre en negrita, cantidad con separador de miles), uno por renglón. Un campo de embed admite 1024 caracteres y el
+    // código de un emoji ocupa ~45, así que una columna larga (los ~15 drops de las 5 zonas) se reparte en varios campos: el primero con título y los demás con
+    // título invisible (nunca "(1/2)"), cada uno en su fila. Solo aparece lo que tiene algo; si solo hay una de las dos columnas, va a ancho completo. El type "Material"
+    // ES, por diseño de todo el juego, exactamente lo que sueltan los monstruos (nunca madera ni piedra, ver Database/seed_class_gear_and_monster_drops.sql). La
+    // rareza se ve con el emoji del ítem (o un círculo de color si todavía no tiene). Las armas y los amuletos no están acá: se forjan directo a equipamiento
+    // (ver /profile). Los íconos no se pueden agrandar: dentro de un texto Discord los dibuja siempre de 22 px.
     public static async Task<Embed> BuildInventoryEmbedAsync(IInventoryRepository inventoryRepository, ulong discordId, string username)
     {
         var entries = await inventoryRepository.GetByDiscordIdAsync(discordId);
@@ -207,31 +208,41 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
             return embed.Build();
         }
 
-        // El orden de los campos ES la distribución (Discord los acomoda de a tres por fila): primero lo corto (la primera fila), después los drops a ancho
-        // completo. Comida y Cajas comparten la tercera columna de la primera fila si entran juntas en un campo (si no, las cajas van al final, aparte).
-        AddColumn(embed, "🪵 Madera", wood);
-        AddColumn(embed, "⛏️ Mineral", minerals);
+        // Columna izquierda: Madera y, debajo, los drops. Columna derecha: Mineral y, debajo, los consumibles. Las Cajas van con la comida (en el mismo campo) si entran juntas.
+        var left = new List<(string Name, string Value)>();
+        var right = new List<(string Name, string Value)>();
+        AddFields(left, "🪵 Madera", wood);
+        AddFields(right, "⛏️ Mineral", minerals);
+        AddFields(left, "🩸 Drops de monstruo", drops);
 
         string stacked = food.Count > 0 && boxes.Count > 0 ? string.Join('\n', food) + "\n\n📦 **Cajas**\n" + string.Join('\n', boxes) : string.Empty;
-        bool boxesUnderFood = stacked.Length > 0 && stacked.Length <= FieldLimit;
-        if (boxesUnderFood)
+        if (stacked.Length > 0 && stacked.Length <= FieldLimit)
         {
-            embed.AddField("🍖 Comida", stacked, true);
+            right.Add(("🍖 Comida", stacked));
         }
         else
         {
-            AddColumn(embed, "🍖 Comida", food);
+            AddFields(right, "🍖 Comida", food);
+            AddFields(right, "📦 Cajas", boxes);
         }
 
-        var dropFields = PackLines(drops);
-        for (int i = 0; i < dropFields.Count; i++)
+        if (left.Count > 0 && right.Count > 0)
         {
-            embed.AddField(i == 0 ? "🩸 Drops de monstruo" : Blank, dropFields[i], false);
+            // Fila por fila: el campo de la izquierda, el de la derecha y un tercero vacío que cierra la fila (si una columna es más larga, la otra se rellena con vacíos).
+            for (int row = 0; row < Math.Max(left.Count, right.Count); row++)
+            {
+                var (leftName, leftValue) = row < left.Count ? left[row] : (Blank, Blank);
+                var (rightName, rightValue) = row < right.Count ? right[row] : (Blank, Blank);
+                embed.AddField(leftName, leftValue, true).AddField(rightName, rightValue, true).AddField(Blank, Blank, true);
+            }
         }
-
-        if (!boxesUnderFood)
+        else
         {
-            AddColumn(embed, "📦 Cajas", boxes);
+            // Una sola columna con algo: a ancho completo (angosta no tiene sentido).
+            foreach (var (name, value) in left.Concat(right))
+            {
+                embed.AddField(name, value, false);
+            }
         }
 
         if (boxes.Count > 0)
@@ -248,33 +259,14 @@ public class GameModule(IUserRepository userRepository, IInventoryRepository inv
     // El límite de un campo de embed es 1024 caracteres; un poco de margen.
     private const int FieldLimit = 1000;
 
-    // Una columna (campo en línea) con su título, o nada si no hay renglones. Si no entrara en un campo, sigue en columnas sin título.
-    private static void AddColumn(EmbedBuilder embed, string title, IReadOnlyList<string> lines)
+    // Los renglones de una lista, repartidos en los campos que hagan falta (de a lo sumo FieldLimit caracteres): el primero lleva el título y los demás un título
+    // invisible. No agrega nada si no hay renglones.
+    private static void AddFields(List<(string Name, string Value)> column, string title, IReadOnlyList<string> lines)
     {
-        var columns = SplitIntoColumns(lines);
-        for (int i = 0; i < columns.Count; i++)
+        var fields = PackLines(lines);
+        for (int i = 0; i < fields.Count; i++)
         {
-            embed.AddField(i == 0 ? title : Blank, columns[i], true);
-        }
-    }
-
-    // Reparte los renglones en columnas PAREJAS (las mismas filas en cada una, la última puede quedar más corta): 1 columna hasta 8 renglones, 2 hasta 16
-    // y 3 de ahí en adelante; y si alguna se pasa de FieldLimit caracteres (ítems con nombre largo y emoji de la aplicación) se agregan columnas hasta que entren.
-    internal static List<string> SplitIntoColumns(IReadOnlyList<string> lines)
-    {
-        if (lines.Count == 0)
-        {
-            return [];
-        }
-
-        for (int columns = lines.Count <= 8 ? 1 : lines.Count <= 16 ? 2 : 3; ; columns++)
-        {
-            int perColumn = (int)Math.Ceiling(lines.Count / (double)columns);
-            var result = lines.Chunk(perColumn).Select(chunk => string.Join('\n', chunk)).ToList();
-            if (result.All(text => text.Length <= FieldLimit) || perColumn == 1)
-            {
-                return result;
-            }
+            column.Add((i == 0 ? title : Blank, fields[i]));
         }
     }
 
