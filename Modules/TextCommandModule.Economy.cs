@@ -135,7 +135,8 @@ public partial class TextCommandModule
             var player = await userRepository.GetOrCreateUserAsync(Context.User.Id);
             await ReplyAsync(embed: await ForgeModule.BuildRecipesEmbed(
                 recipeRepository, zoneRepository, player.Class, zoneId ?? player.CurrentZoneId,
-                (await inventoryRepository.GetByDiscordIdAsync(Context.User.Id)).ToDictionary(e => e.ItemName, e => e.Quantity), player.Gold, player.Level));
+                (await inventoryRepository.GetByDiscordIdAsync(Context.User.Id)).ToDictionary(e => e.ItemName, e => e.Quantity), player.Gold, player.Level,
+                player.HighestZoneCleared));
         }
         catch (Exception ex)
         {

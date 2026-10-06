@@ -35,7 +35,11 @@ public interface IUserRepository
 
     // Cambia la zona actual del jugador (/zona ya validó min_level antes de llamar acá) — a partir
     // de esto, /hunt caza monstruos de la nueva zona (ver Repositories/IMonsterRepository.cs).
+    // También lo saca del Fogón (users.in_gate = false): viajar a cualquier zona normal es salir de la puerta.
     Task<User> ChangeZoneAsync(ulong discordId, int zoneId, CancellationToken cancellationToken = default);
+
+    // Lo para (true) o lo saca (false) de El Fogón Eterno (/zona 0). Su zona actual NO cambia: sigue siendo la última normal.
+    Task<User> SetInGateAsync(ulong discordId, bool inGate, CancellationToken cancellationToken = default);
 
     // La penalidad por morir (GameData/DeathPenalty.cs): la EXP del nivel actual vuelve a 0 y se pierde el 5 % del oro de la billetera (el banco no se toca;
     // el nivel tampoco baja). Atómica. Devuelve lo que se perdió, o null si el jugador no existe.

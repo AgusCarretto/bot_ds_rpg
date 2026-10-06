@@ -2,7 +2,7 @@ using BotDsRpg.GameData;
 
 namespace BotDsRpg.Services;
 
-public enum CombatStartStatus { Started, AlreadyInCombat, OnCooldown, NoHp, RaceLost, NoMonstersInZone, NoBossInZone, NotLeveledForBoss }
+public enum CombatStartStatus { Started, AlreadyInCombat, OnCooldown, NoHp, RaceLost, NoMonstersInZone, NoBossInZone, NotLeveledForBoss, InGate, GateGearMissing }
 
 // CooldownRemaining: solo si Status == OnCooldown. State: solo si Status == Started.
 // RequiredLevel: solo si Status == NotLeveledForBoss (nivel mínimo de la PRÓXIMA zona, ver

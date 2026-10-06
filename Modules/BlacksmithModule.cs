@@ -159,7 +159,8 @@ public class BlacksmithModule(
             // La página de recetas de la zona elegida (con lo que tenés de cada material). La frase de cómo forjar es la de la escena.
             embed = ForgeModule.RenderRecipesEmbed(
                     recipes, zones, player.Class, zoneId, owned, player.Gold, player.Level,
-                    forgeHint: choices.Count > 0 ? "Forjá desde la primera lista (✅ lo que ya podés hacer)." : "Todavía no tenés nada para forjar en tu zona.")
+                    forgeHint: choices.Count > 0 ? "Forjá desde la primera lista (✅ lo que ya podés hacer)." : "Todavía no tenés nada para forjar en tu zona.",
+                    highestZoneCleared: player.HighestZoneCleared)
                 .ToEmbedBuilder()
                 .WithColor(Color.Orange);
         }

@@ -21,7 +21,13 @@
 -- 2-3 veces más rápido). min_total = el más lento de los tres.
 -- Referencia de la run 1 (hunt 10% / travel 20% / jefe 15%): armas de afinidad, amuletos bajos y general de zonas 2-5
 -- ~80-100 min de drops; amuleto alto (con drop de jefe) ~200.
+-- gate (opcional, 0 por defecto): 0 = las recetas de las 5 zonas de la escalera; 1 = SOLO las del Fogón Eterno (zona 0, v0.11.0): -v gate=1.
+-- Desde la v0.10.2 el drop de /travel es 40 % (-v pt=0.40): con el 60 % de antes los números de arriba eran otros (el camino de las 5 zonas pasó de ~41 h a ~52 h).
 -- =========================================================
+\if :{?gate}
+\else
+    \set gate 0
+\endif
 \if :{?wc}
 \else
     \set wc 0.680
@@ -81,6 +87,7 @@ WITH hunt_n AS (
     JOIN recipe_ingredients ri ON ri.recipe_id = r.recipe_id
     LEFT JOIN drop_rate dr ON dr.item_id = ri.item_id
     LEFT JOIN gather_rate gr ON gr.item_id = ri.item_id
+    WHERE (z.zone_id = 0) = (:gate = 1)
     GROUP BY r.recipe_id, z.min_level, r.affinity, i.type, i.name
 )
 SELECT nv, tipo, resultado,

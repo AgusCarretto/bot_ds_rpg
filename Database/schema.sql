@@ -68,7 +68,10 @@ CREATE TABLE IF NOT EXISTS zones (
     name        TEXT NOT NULL UNIQUE,
     description TEXT NOT NULL DEFAULT '',
     min_level   INTEGER NOT NULL DEFAULT 1 CHECK (min_level >= 1),
-    emoji       TEXT
+    emoji       TEXT,
+    -- v0.11.0: 'normal' = una zona de la escalera; 'gate' = El Fogón Eterno (zone_id 0, Database/seed_fogon.sql), la puerta al Fuego Nuevo. IZoneRepository.GetAllAsync y
+    -- IMonsterRepository.GetAllAsync solo devuelven las normales: la escalera, /zonas, las recetas por zona, los drops y las cajas no ven la puerta.
+    kind        TEXT NOT NULL DEFAULT 'normal' CHECK (kind IN ('normal', 'gate'))
 );
 
 -- recipes.zone_id: a qué zona pertenece la receta (de dónde salen sus materiales y contra qué se
@@ -150,6 +153,10 @@ CREATE TABLE IF NOT EXISTS users (
     -- Tier del encantamiento (0 = sin encantar, 1..5, ver GameData/Enchantments.cs) de la pieza que lleva puesta. Es de la PIEZA: al venderla vuelve a 0.
     weapon_enchant    INTEGER NOT NULL DEFAULT 0 CHECK (weapon_enchant BETWEEN 0 AND 5),
     amulet_enchant    INTEGER NOT NULL DEFAULT 0 CHECK (amulet_enchant BETWEEN 0 AND 5),
+    -- v0.11.0, El Fogón Eterno (zona 0): in_gate = está parado en la puerta (su current_zone_id sigue siendo la última zona normal: /hunt, /travel y /raid no andan y /boss pelea al Asador);
+    -- gate_cleared = ya le ganó al Asador Eterno en esta vuelta (habilita el Fuego Nuevo).
+    in_gate           BOOLEAN NOT NULL DEFAULT false,
+    gate_cleared      BOOLEAN NOT NULL DEFAULT false,
     CONSTRAINT chk_current_hp_within_max CHECK (current_hp <= max_hp)
 );
 

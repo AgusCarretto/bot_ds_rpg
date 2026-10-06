@@ -16,18 +16,18 @@ public static class ZoneChoices
     // bossNameByZoneId: nombre del jefe de cada zona que actúa de "guardián" (solo hace falta el de las
     // zonas que frenan el paso a otra; ver ZoneRanking.PendingGatekeeperZone).
     public static IReadOnlyList<AutocompleteResult> For(
-        IReadOnlyList<Zone> zones, User player, IReadOnlyDictionary<int, string> bossNameByZoneId, string typed)
+        IReadOnlyList<Zone> zones, User player, IReadOnlyDictionary<int, string> bossNameByZoneId, string typed, Zone? gate = null)
     {
         var ordered = ZoneRanking.OrderByDifficulty(zones);
 
-        return ordered
+        var choices = ordered
             .Where(zone => MatchesTyped(zone, typed))
             .Take(MaxChoices)
             .Select(zone =>
             {
                 string status = string.Empty;
 
-                if (zone.ZoneId == player.CurrentZoneId)
+                if (zone.ZoneId == player.CurrentZoneId && !player.InGate)
                 {
                     status = " · 📍 estás acá";
                 }
@@ -48,6 +48,15 @@ public static class ZoneChoices
                     Truncate($"{emoji} {zone.ZoneId}. {zone.Name} (nivel {zone.MinLevel}){status}"), zone.ZoneId);
             })
             .ToList();
+
+        // El Fogón Eterno (zona 0, GameData/FogonRules.cs): solo se ofrece cuando ya venció al jefe de la última zona.
+        if (gate is not null && FogonRules.IsGateOpen(ordered, player.HighestZoneCleared) && MatchesTyped(gate, typed) && choices.Count < MaxChoices)
+        {
+            string gateStatus = player.InGate ? " · 📍 estás acá" : player.Level < gate.MinLevel ? " · 🔒 te falta nivel" : " · con el equipo del Fogón puesto";
+            choices.Add(new AutocompleteResult(Truncate($"{gate.Emoji} {gate.ZoneId}. {gate.Name} (nivel {gate.MinLevel}){gateStatus}"), gate.ZoneId));
+        }
+
+        return choices;
     }
 
     // Se puede buscar por nombre ("bosque") o por ID ("4"): el parámetro de /zona es el ID numérico.
@@ -83,6 +92,6 @@ public sealed class ZoneAutocompleteHandler : SafeAutocompleteHandler
             }
         }
 
-        return ZoneChoices.For(zones, player, bossNames, typed);
+        return ZoneChoices.For(zones, player, bossNames, typed, await services.GetRequiredService<IZoneRepository>().GetGateAsync());
     }
 }

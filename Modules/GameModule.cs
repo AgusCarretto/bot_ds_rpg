@@ -119,6 +119,17 @@ public class GameModule(
             ? "_Zona desconocida_"
             : $"{zone.Emoji} **Zona {zone.ZoneId}: {zone.Name}**" + (maxZone is null ? string.Empty : $" (máx. Zona {maxZone.ZoneId})");
 
+        // Parado en El Fogón Eterno (zona 0, GameData/FogonRules.cs): la zona de siempre sigue siendo la última normal, pero el jugador está en la puerta.
+        if (player.InGate)
+        {
+            zoneLine = $"🔥 **Zona 0: El Fogón Eterno** _(tu zona: {zone?.Name ?? "?"})_";
+        }
+
+        if (player.GateCleared)
+        {
+            zoneLine += "\n🔥 _Venció al Asador Eterno._";
+        }
+
         var embed = new EmbedBuilder()
             .WithAuthor(username, avatarUrl)
             .WithTitle($"{classDef?.Emoji ?? "🔥"} {player.Class} — Nivel {player.Level}")

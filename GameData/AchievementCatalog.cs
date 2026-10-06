@@ -62,6 +62,9 @@ public static class AchievementCatalog
         // 125 comidas (PetRules.TotalFeedsToMax × 5) y ese es el último tramo de Criador. Se alimenta a cada una una vez por hora: el contador no se infla.
         new("domador",       "Domador",       "🐾", GameEventKinds.PetHatched,    "Abrí huevos y sumá mascotas con /open",            Plain(1, 3, 5)),
         new("criador",       "Criador",       "🍖", GameEventKinds.PetFed,        "Alimentá a tus mascotas con /pet feed",            Plain(10, 50, 125)),
+
+        // v0.11.0: El Fogón Eterno (también solo oro y XP; el contador sube una vez por victoria sobre el Asador, que tiene el cooldown del jefe).
+        new("asador",        "Asador",        "🔥", GameEventKinds.GateWin,       "Vencé al Asador Eterno en El Fogón Eterno",        Plain(1, 3, 10)),
     ];
 
     // Los logros se muestran en páginas por tema (/achievements): cada logro está en exactamente una (lo chequea la prueba).
@@ -69,7 +72,7 @@ public static class AchievementCatalog
 
     public static readonly IReadOnlyList<AchievementCategory> Categories =
     [
-        new("Combate", "⚔️", ["cazador", "viajero", "matajefes", "exterminador", "gladiador"]),
+        new("Combate", "⚔️", ["cazador", "viajero", "matajefes", "exterminador", "gladiador", "asador"]),
         new("Oficios", "🔨", ["recolector", "herrero", "desmantelador", "encantador"]),
         new("Economía", "💰", ["comerciante", "generoso", "abridor", "coleccionista", "afortunado"]),
         new("Constancia", "📅", ["constante", "comandante", "misionero", "domador", "criador"]),

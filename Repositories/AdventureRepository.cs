@@ -1,6 +1,7 @@
 using System.Data;
 using System.Data.Common;
 using BotDsRpg.Data;
+using BotDsRpg.GameData;
 using BotDsRpg.Models;
 using Dapper;
 
@@ -144,8 +145,39 @@ public sealed class AdventureRepository(IDbConnectionFactory connectionFactory) 
                 }
             }
 
+            // El Fogón Eterno (v0.11.0), en la MISMA transacción que el premio: ganarle al Asador (la zona puerta) deja gate_cleared en true, lo saca de la puerta y lo manda de vuelta
+            // a la última zona de la escalera (no toca highest_zone_cleared: el 0 de la puerta no pesa en el GREATEST de arriba). Y la primera vez que vence al jefe de la última
+            // zona se avisa que la puerta se abrió (GameData/FogonRules.IsGateOpen sale de ese mismo highest_zone_cleared).
+            var gate = GateEvent.None;
+            if (clearedZoneId is { } fought)
+            {
+                bool isGateFight = await connection.ExecuteScalarAsync<bool>(new CommandDefinition(
+                    "SELECT EXISTS (SELECT 1 FROM zones WHERE zone_id = @ZoneId AND kind = 'gate');",
+                    new { ZoneId = fought }, transaction: transaction, cancellationToken: cancellationToken));
+
+                if (isGateFight)
+                {
+                    finalUser = await connection.QuerySingleAsync<User>(new CommandDefinition(
+                        $"""
+                        UPDATE users
+                        SET gate_cleared = true, in_gate = false,
+                            current_zone_id = (SELECT zone_id FROM zones WHERE kind = 'normal' ORDER BY min_level DESC LIMIT 1)
+                        WHERE discord_id = @DiscordId
+                        RETURNING {UserSql.SelectColumns};
+                        """,
+                        new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
+                    gate = GateEvent.Cleared;
+                }
+                else if (current.HighestZoneCleared < fought && await connection.ExecuteScalarAsync<bool>(new CommandDefinition(
+                    "SELECT @ZoneId = (SELECT zone_id FROM zones WHERE kind = 'normal' ORDER BY min_level DESC LIMIT 1);",
+                    new { ZoneId = fought }, transaction: transaction, cancellationToken: cancellationToken)))
+                {
+                    gate = GateEvent.Opened;
+                }
+            }
+
             await transaction.CommitAsync(cancellationToken);
-            return new LevelUpOutcome(finalUser, leveled.LevelsGained, eggGranted);
+            return new LevelUpOutcome(finalUser, leveled.LevelsGained, eggGranted, gate);
         }
         catch
         {

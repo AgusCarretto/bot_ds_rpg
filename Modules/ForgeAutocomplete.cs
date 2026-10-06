@@ -21,7 +21,9 @@ public static class ForgeChoices
     {
         // Exactamente las recetas que muestra /forge recipes: las de la zona actual del jugador (ver
         // GameData/RecipeCatalog.cs) que le corresponden a su clase.
-        return RecipeCatalog.ViewFor(recipes, zones, player.Class, player.CurrentZoneId).Recipes
+        // + las recetas del Fogón Eterno cuando ya venció al jefe de la última zona (GameData/FogonRules.cs).
+        bool gateOpen = FogonRules.IsGateOpen(ZoneRanking.OrderByDifficulty(zones), player.HighestZoneCleared);
+        return RecipeCatalog.ViewFor(recipes, zones, player.Class, player.CurrentZoneId, gateOpen).Recipes
             .Where(recipe => FitsAsValue(recipe.ResultItem.Name) && Matches(recipe.ResultItem.Name, typed))
             .Select(recipe => new Candidate(recipe, player, owned))
             .OrderBy(c => c.Group)

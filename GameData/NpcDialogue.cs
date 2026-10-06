@@ -209,6 +209,13 @@ public static class NpcDialogue
             [BossLine.Defeated] = ["Mi reino... se desmorona... sos digno...", "Así que existe alguien más fuerte..."],
             [BossLine.Victory] = ["Ahora sos escoria, como todos.", "El abismo te reclama."],
         },
+        // El jefe de El Fogón Eterno (zona 0, v0.11.0).
+        ["El Asador Eterno"] = new()
+        {
+            [BossLine.Intro] = ["Hace mil años que doy vuelta la misma brasa. Hoy te toca a vos.", "Pasá, pasá. Siempre hay lugar en la parrilla para uno más."],
+            [BossLine.Defeated] = ["La brasa... sigue viva. Dale vuelta vos ahora.", "Mil años de fuego... y me apagás vos. Que arda bien lo que sigue."],
+            [BossLine.Victory] = ["Punto justo: bien hecho. Y vos, bien cocido.", "Una vuelta más al fuego. Volvé cuando estés a punto."],
+        },
     };
 
     // Para un jefe que no está en la tabla (uno nuevo en la base): frases genéricas, así nunca queda mudo.

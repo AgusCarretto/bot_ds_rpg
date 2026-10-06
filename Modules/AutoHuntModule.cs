@@ -79,6 +79,8 @@ public class AutoHuntModule(
                 return new AutoHuntResult(null, AdventureModule.BuildNoHpEmbed());
             case CombatStartStatus.NoMonstersInZone:
                 return new AutoHuntResult(null, AdventureModule.BuildNoMonstersInZoneEmbed());
+            case CombatStartStatus.InGate:
+                return new AutoHuntResult(null, AdventureModule.BuildInGateEmbed());
             case CombatStartStatus.RaceLost:
                 return new AutoHuntResult("Justo se te adelantó otra ejecución de este comando, probá de nuevo en un toque.", null);
         }

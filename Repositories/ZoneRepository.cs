@@ -12,6 +12,7 @@ public sealed class ZoneRepository(IDbConnectionFactory connectionFactory) : IZo
         string sql = $"""
             SELECT {ZoneSql.SelectColumns}
             FROM zones
+            WHERE kind = 'normal'
             ORDER BY min_level;
             """;
 
@@ -32,5 +33,19 @@ public sealed class ZoneRepository(IDbConnectionFactory connectionFactory) : IZo
         using IDbConnection connection = connectionFactory.CreateConnection();
         var command = new CommandDefinition(sql, new { ZoneId = zoneId }, cancellationToken: cancellationToken);
         return await connection.QuerySingleOrDefaultAsync<Zone>(command);
+    }
+
+    public async Task<Zone?> GetGateAsync(CancellationToken cancellationToken = default)
+    {
+        string sql = $"""
+            SELECT {ZoneSql.SelectColumns}
+            FROM zones
+            WHERE kind = 'gate'
+            ORDER BY zone_id
+            LIMIT 1;
+            """;
+
+        using IDbConnection connection = connectionFactory.CreateConnection();
+        return await connection.QuerySingleOrDefaultAsync<Zone>(new CommandDefinition(sql, cancellationToken: cancellationToken));
     }
 }

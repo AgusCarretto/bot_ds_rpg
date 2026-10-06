@@ -99,6 +99,10 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "💀 Si perdés un combate, la EXP del nivel vuelve a 0 y perdés el 5 % del oro de la billetera (el del banco no).",
                 false)
             .AddField(
+                "🔥 El Fogón Eterno",
+                "`/zona 0` — La puerta al final del mundo: se abre al vencer al jefe de la última zona y pide el equipo del Fogón puesto. Adentro solo hay `/boss` contra el Asador Eterno; ganarle habilita el Fuego Nuevo (`/info tema:fogon`)",
+                false)
+            .AddField(
                 "🐾 Mascotas",
                 "`/pet view` — Tus mascotas: una por zona, y dan su bonus **todas a la vez** (`aa pet`)\n" +
                 "`/pet feed` — Dales Comida para Mascotas (se compra en la `/taberna`), una vez por hora cada una. El huevo llega la primera vez que vencés al jefe de cada zona: abrilo con `/open`",

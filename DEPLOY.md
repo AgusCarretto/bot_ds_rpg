@@ -166,6 +166,9 @@ y le entrega un huevo a quien ya había vencido al jefe de alguna zona). El cód
 `/open` de un huevo fallan, y **vencer a un jefe también** (el huevo se entrega en la misma transacción que el cofre, así que la victoria se revierte). Es re-ejecutable y se verifica solo (aborta si no quedan 5 especies, 5 huevos y la comida); una instalación nueva ya las trae (`schema.sql` + `seed_pets.sql` en
 `run_fresh_install.sql`). Corrélo desde la carpeta `Database/` (usa `\ir`, así que necesita `psql`): `psql "<DATABASE_PUBLIC_URL>" -v ON_ERROR_STOP=1 -f add_pets.sql` y recién ahí desplegá `main`. Hacé un backup antes (sección 6).
 
+**v0.10.2 → v0.11.0 (El Fogón Eterno):** ANTES de arrancar el bot nuevo corré `Database/add_fogon.sql` (agrega `zones.kind`, `users.in_gate` y `users.gate_cleared`, que el código lee en CADA consulta de jugador o de zona: si arrancás primero, casi todos los comandos fallan; y carga la zona 0, el equipo del Fogón, sus recetas y el jefe con `seed_fogon.sql`).
+Es re-ejecutable y se verifica solo; una instalación nueva ya lo trae (`schema.sql` + `seed_fogon.sql` en `run_fresh_install.sql`). Mismo comando que el anterior desde `Database/`: `psql "<DATABASE_PUBLIC_URL>" -v ON_ERROR_STOP=1 -f add_fogon.sql` y recién ahí desplegá `main`. Hacé un backup antes (sección 6).
+
 La carpeta `Database/` del repo está montada en `/seed`, así que los scripts nuevos aparecen con el `git checkout`. Los seeds son
 re-ejecutables; **nunca** corras `run_fresh_install.sql` sobre una base con datos.
 

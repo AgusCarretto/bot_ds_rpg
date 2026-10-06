@@ -63,6 +63,9 @@ public static class GameEventKinds
     public const string PetHatched = "pet_hatched";         // abrió un huevo y nació una mascota; detail = el nombre de la especie
     public const string PetFed = "pet_fed";                 // le dio de comer a una mascota (una por hora cada una); detail = el nombre de la especie
 
+    // v0.11.0: El Fogón Eterno.
+    public const string GateWin = "gate_win";               // venció al Asador Eterno (se habilita el Fuego Nuevo)
+
     // Las victorias de combate de las que sale un "enemigo vencido" (GameEventExtensions.RecordVictoryAsync suma el enemy_defeated con ellas).
     public static bool IsEnemyWin(string kind) => kind is HuntWin or TravelWin or BossWin or RaidWin;
 }
