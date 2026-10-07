@@ -175,6 +175,8 @@ Ojo: `/class` deja de poder cambiar la clase de quien ya pasó del nivel 1 (la c
 
 **v0.13.0 → v0.14.0 (cofres parejos):** ANTES de arrancar el bot nuevo corré `Database/add_zone_boxes.sql` (crea la tabla `zone_boxes` que el código lee en CADA premio de misión, logro y Arena y en cada repetición de jefe, permite el bono `gather` en `pet_species`, y carga con `seed_zone_boxes.sql` las cajas Cofre de Escoria y Brasero del Fogón, la sexta mascota con su huevo y las 26 filas de `zone_boxes`; cambia además lo que paga el Asador a 3000 de oro / 300 de XP). Es re-ejecutable y se verifica solo; una instalación nueva ya lo trae (`schema.sql` + `seed_zone_boxes.sql` al final de `run_fresh_install.sql`). Mismo comando que los anteriores desde `Database/`: `psql "<DATABASE_PUBLIC_URL>" -v ON_ERROR_STOP=1 -f add_zone_boxes.sql` y recién ahí desplegá `main`. Hacé un backup antes (sección 6). Después de editar `zone_boxes` a mano, el bot tarda hasta 5 minutos en notarlo (caché).
 
+**v0.14.1 → v0.14.2 (arma general más barata):** no cambia el esquema ni hace falta reiniciar el bot, pero **corré `Database/rebalance_general_weapons.sql`** en la base (`psql "<DATABASE_PUBLIC_URL>" -v ON_ERROR_STOP=1 -f rebalance_general_weapons.sql`, desde `Database/`): baja a 2 de cada ingrediente las cuatro armas generales de las zonas 2 a 5. Es re-ejecutable y se verifica solo; una instalación nueva ya lo trae. Backup antes (sección 6).
+
 La carpeta `Database/` del repo está montada en `/seed`, así que los scripts nuevos aparecen con el `git checkout`. Los seeds son
 re-ejecutables; **nunca** corras `run_fresh_install.sql` sobre una base con datos.
 

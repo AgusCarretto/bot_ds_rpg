@@ -224,7 +224,7 @@ public static class HelpTopics
         ("🧬 Qué hay en cada una", "Dos monstruos de cacería, un élite (para /travel) y un jefe. Con **/drops** ves qué suelta cada uno."));
 
     private static Embed Boxes() => Topic(Self("boxes"),
-        "Las cajas dan varios ítems de una. Hay cinco, de Común a Mítica, y cada una dice cuántos da: **/shop view** muestra los rangos y los precios. Además hay dos que no se compran: el **Cofre de Escoria** (jefe de la Zona 5) y el **Brasero del Fogón** (el Asador Eterno).",
+        "Las cajas dan varios ítems de una. Hay cinco, de Común a Mítica, y cada una dice cuántos da: **/shop view** muestra los rangos y los precios. Además hay cajas especiales que no se compran: las sueltan los jefes.",
         ("📦 Abrirlas", $"**/open** elegís la caja y cuántas (de 1 a {BoxModule.MaxOpenAtOnce} por vez). En texto: `aa open <caja> 3`."),
         ("🛒 Conseguirlas",
             $"Se compran en la **/taberna** o con **/shop buy**: **{ShopCatalog.BoxesPerPurchase} por compra y una compra cada {Dur(CooldownCatalog.BoxBuy.Duration)}**, y solo de las zonas que ya desbloqueaste (🔒 si todavía no). " +
@@ -336,9 +336,9 @@ public static class HelpTopics
     private static Embed Pets() => Topic(Self("pets"),
         "Cada zona tiene su **mascota**. Las que tengas valen **todas a la vez**: no ocupan lugar, no se pierden y no hay que sacarlas a pasear.",
         ("🥚 Cómo se consiguen",
-            "La **primera vez** que vencés al jefe de una zona (**/boss** o **/raid**) te llega un **huevo** junto con el cofre. Lo abrís con **/open** y nace la mascota de esa zona: una por zona, y la sexta es la del **Fogón Eterno** (la trae el Asador, la primera vez de cada vuelta que no la tengas)."),
+            "La **primera vez** que vencés al jefe de una zona (**/boss** o **/raid**) te llega un **huevo** junto con el cofre. Lo abrís con **/open** y nace la mascota de esa zona: una por zona. Cuáles son y qué dan lo descubrís jugando."),
         ("🎁 Qué dan",
-            "Cada especie da un bonus distinto: **más oro**, **más EXP** o **más defensa** en las peleas contra monstruos, **más chances de drop** en cacería y viaje, o **más recolección** en /chop y /mine. " +
+            "Cada especie da un bonus distinto, por ejemplo **más oro**, **más EXP**, **más defensa** en las peleas contra monstruos o **más chances de drop** en cacería y viaje. " +
             $"Es relativo: un +6 % sobre un {CombatRewardCalculator.HuntDropChancePercent} % de drop da {Dec(CombatRewardCalculator.HuntDropChancePercent * 1.06)} %. El cofre del jefe no cambia, y en duelos y Arena no cuentan. " +
             "Mirá cuál da cada una (y cuánto) con **/pet view**."),
         ("🍖 Cómo crecen",

@@ -43,7 +43,7 @@ public class PetModule(
     public sealed record PetResult(string? PlainMessage, Embed? Embed, MessageComponent? Components = null);
 
     private const string NoAccount = "Todavía no tenés cuenta: empezá con **/start**.";
-    private const string NoPets = "Todavía no tenés ninguna mascota. La primera vez que vencés al jefe de una zona (**/boss**) —y al Asador Eterno del Fogón— te llega un **huevo** además del cofre: abrilo con **/open** y nace.";
+    private const string NoPets = "Todavía no tenés ninguna mascota. La primera vez que vencés al jefe de una zona (**/boss**) te llega un **huevo** además del cofre: abrilo con **/open** y nace.";
 
     // Lo que hace falta para dibujar la pantalla de mascotas (todo ya leído: el armado es puro).
     // FeedCooldown: la espera entre comidas de ESTE jugador (null = la hora de siempre; la bendición Buen Pienso la baja). PackMultiplier: lo que multiplica la bendición Manada a los bonus (1 = nada).
@@ -121,7 +121,7 @@ public class PetModule(
         return string.Join(" · ", parts);
     }
 
-    // Público y puro: se prueba sin Discord. Una mascota por campo (apiladas, nada en columnas) y lo que todavía no tenés al final.
+    // Público y puro: se prueba sin Discord. Una mascota por campo (apiladas, nada en columnas); solo las que ya tenés (y un aviso si guardás un huevo sin abrir).
     public static Embed BuildViewEmbed(PetViewData data, string? headline = null)
     {
         var embed = new EmbedBuilder().WithTitle("🐾 Tus mascotas").WithColor(Color.Gold);
@@ -161,13 +161,15 @@ public class PetModule(
             embed.AddField($"{species.Emoji} {species.Name} · nivel {level}/{PetRules.MaxLevel}", $"{bonus}\n{state}", false);
         }
 
-        var missing = data.Species.Where(s => data.Owned.All(o => o.Species.SpeciesId != s.SpeciesId)).ToList();
-        if (missing.Count > 0)
+        // Las mascotas que todavía no tenés NO se listan (el dueño no quiere spoilers: cuántas hay, cómo se llaman y qué dan se descubre jugando). Solo se avisa de un huevo
+        // que ya tenés en la mochila sin abrir, que es algo que el jugador ya conoce.
+        var eggsToOpen = data.Species
+            .Where(s => data.Owned.All(o => o.Species.SpeciesId != s.SpeciesId) && data.EggNamesHeld.Contains(s.EggName))
+            .Select(s => $"**{s.EggName}**")
+            .ToList();
+        if (eggsToOpen.Count > 0)
         {
-            string lines = string.Join('\n', missing.Select(s =>
-                $"{s.Emoji} **{s.Name}** ({PetRules.PercentText(s.MaxBonusPercent)} de {PetRules.KindName(s.BonusKind)} al máximo) — " +
-                (data.EggNamesHeld.Contains(s.EggName) ? "ya tenés su huevo: abrilo con **/open**" : $"vencé al jefe de {s.ZoneName}")));
-            embed.AddField("🥚 Por descubrir", lines, false);
+            embed.AddField("🥚 Huevos sin abrir", $"Tenés {string.Join(" y ", eggsToOpen)} en la mochila: abrilo con **/open**.", false);
         }
 
         return embed.WithFooter($"🦴 {PetRules.FoodItemName} en tu mochila: {data.Food} · se compra en la taberna").Build();
