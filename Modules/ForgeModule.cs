@@ -98,7 +98,7 @@ public static class ForgeModule
     // UNA receta por bloque (un field no en línea), en vez de una línea larga por receta: el título lleva el ítem, y
     // abajo van lo que suma, el oro y cada ingrediente en su propia línea. Con las cantidades de la recolección (Hierro
     // x10...) la línea única era una pared de texto.
-    private static void AddRecipes(
+    internal static void AddRecipes(
         EmbedBuilder embed, IEnumerable<RecipeDetails> recipes, RecipeGroup group, string groupLabel, string playerClass,
         IReadOnlyDictionary<string, int>? owned, int? playerGold)
     {

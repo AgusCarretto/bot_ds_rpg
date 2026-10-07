@@ -1,6 +1,13 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-07 (v0.14.0: cofres parejos)_
+_Última revisión: 2026-10-07 (v0.14.1: slots y forge especial)_
+
+## Slots con 6 símbolos y forge especial (v0.14.1, 2026-10-07)
+
+- **Slots**: sexto símbolo (🍷), el par paga ×1,3 y el trío ×5 (pedido del dueño). Chances: trío 2,78 %, par 41,67 %, nada 55,56 %; vuelve ×0,681 de lo apostado (la casa se queda con el 32 %, medido con 2 millones de tiradas). Antes, con 5 símbolos y el par en ×1,1, volvía ×0,728. El sexto símbolo es lo que permite pagar más el par sin volver a regalar oro. `/play` sigue sin cooldown ni tope.
+- **`/forge-special`** (`aa forgespecial`): el Trinche del Asador Eterno y la Brasa del Fogón Eterno **siempre a la vista, desde el nivel 1**, con lo que tenés de cada ingrediente (✅/❌) y un aviso de no desmantelar ni vender esos materiales. Solo para mirar: se forjan en `/forge` cuando la puerta ya está abierta. Sin cambios de base de datos.
+- **Idea sin construir**: que `/dismantle` avise cuando el ítem que vas a desmantelar es un ingrediente del equipo del Fogón.
+
 
 ## Cofres parejos (v0.14.0, 2026-10-07)
 
