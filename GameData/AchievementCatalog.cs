@@ -58,10 +58,10 @@ public static class AchievementCatalog
         new("afortunado",    "Afortunado",    "🎰", GameEventKinds.CasinoWin,     "Ganá oro en el casino con /play",                  Plain(500, 5000, 50000)),
         new("gladiador",     "Gladiador",     "🏟️", GameEventKinds.ArenaJoin,     "Anotate en el torneo diario con /arena join",      Plain(3, 15, 60)),
 
-        // v0.10.0: las mascotas (también solo oro y XP). Hay 5 especies, así que Domador termina en 5; para dejar a las cinco en el nivel máximo hacen falta
-        // 125 comidas (PetRules.TotalFeedsToMax × 5) y ese es el último tramo de Criador. Se alimenta a cada una una vez por hora: el contador no se infla.
-        new("domador",       "Domador",       "🐾", GameEventKinds.PetHatched,    "Abrí huevos y sumá mascotas con /open",            Plain(1, 3, 5)),
-        new("criador",       "Criador",       "🍖", GameEventKinds.PetFed,        "Alimentá a tus mascotas con /pet feed",            Plain(10, 50, 125)),
+        // v0.10.0: las mascotas (también solo oro y XP). Hay 6 especies desde la v0.14.0 (la del Fogón Eterno), así que Domador termina en 6; para dejar a las seis en el nivel máximo hacen falta
+        // 150 comidas (PetRules.TotalFeedsToMax × 6) y ese es el último tramo de Criador. Se alimenta a cada una una vez por hora: el contador no se infla.
+        new("domador",       "Domador",       "🐾", GameEventKinds.PetHatched,    "Abrí huevos y sumá mascotas con /open",            Plain(1, 3, 6)),
+        new("criador",       "Criador",       "🍖", GameEventKinds.PetFed,        "Alimentá a tus mascotas con /pet feed",            Plain(10, 50, 150)),
 
         // v0.11.0: El Fogón Eterno (también solo oro y XP; el contador sube una vez por victoria sobre el Asador, que tiene el cooldown del jefe).
         new("asador",        "Asador",        "🔥", GameEventKinds.GateWin,       "Vencé al Asador Eterno en El Fogón Eterno",        Plain(1, 3, 10)),

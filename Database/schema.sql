@@ -223,7 +223,7 @@ CREATE TABLE IF NOT EXISTS pet_species (
     zone_id            INTEGER NOT NULL UNIQUE REFERENCES zones (zone_id) ON DELETE CASCADE,
     name               TEXT NOT NULL UNIQUE,
     emoji              TEXT,
-    bonus_kind         TEXT NOT NULL CHECK (bonus_kind IN ('gold', 'xp', 'defense', 'drop')),
+    bonus_kind         TEXT NOT NULL CHECK (bonus_kind IN ('gold', 'xp', 'defense', 'drop', 'gather')),
     max_bonus_percent  DOUBLE PRECISION NOT NULL CHECK (max_bonus_percent > 0),
     egg_item_id        INTEGER NOT NULL UNIQUE REFERENCES items (item_id) ON DELETE CASCADE
 );
@@ -299,6 +299,18 @@ CREATE TABLE IF NOT EXISTS box_loot (
 CREATE UNIQUE INDEX IF NOT EXISTS ux_box_loot_item ON box_loot (box_item_id, item_id) WHERE kind = 'item';
 CREATE UNIQUE INDEX IF NOT EXISTS ux_box_loot_gold ON box_loot (box_item_id, min_qty, max_qty) WHERE kind = 'gold';
 CREATE INDEX IF NOT EXISTS idx_box_loot_box ON box_loot (box_item_id);
+
+-- zone_boxes (v0.14.0): qué caja da cada zona en cada rol, y con qué chance. La fuente de verdad de las cajas GRATIS (el cofre de la primera vez por vuelta de cada jefe es su fila de monster_drops):
+--   repeat     lo que da cada victoria repetida sobre el jefe    daily / weekly   el premio por completar todas las misiones del día / de la semana
+--   prize      logros (tramo II) y campeón de la Arena           prize_top        logros (tramo III)
+-- Una zona nueva necesita sus filas (el arranque del bot avisa en el log si falta alguna). Las carga Database/seed_zone_boxes.sql.
+CREATE TABLE IF NOT EXISTS zone_boxes (
+    zone_id        INTEGER NOT NULL REFERENCES zones (zone_id) ON DELETE CASCADE,
+    role           TEXT NOT NULL CHECK (role IN ('repeat', 'daily', 'weekly', 'prize', 'prize_top')),
+    box_item_id    INTEGER NOT NULL REFERENCES boxes (box_item_id) ON DELETE CASCADE,
+    chance_percent INTEGER NOT NULL DEFAULT 100 CHECK (chance_percent BETWEEN 1 AND 100),
+    PRIMARY KEY (zone_id, role)
+);
 
 -- ---------------------------------------------------------
 -- item_buffs / player_buffs: buffs temporales (el +% de ataque de los banquetes). Ver Database/add_buffs.sql (migración) y

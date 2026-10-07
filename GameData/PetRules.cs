@@ -9,18 +9,19 @@ public static class PetBonusKind
     public const string Xp = "xp";           // % más de EXP en esas mismas peleas
     public const string Defense = "defense"; // % más de la defensa total, en peleas contra monstruos (no en duelos ni en la Arena)
     public const string Drop = "drop";       // % MÁS chances de drop de los monstruos de cacería y viaje (relativo: 6 % sobre un 6 % da 6,36 %); no los cofres de jefe
+    public const string Gather = "gather";   // % más unidades en cada /chop y /mine (v0.14.0, la mascota del Fogón Eterno: se queda en los Fuegos Nuevos, donde la recolección se vuelve a hacer)
 }
 
 // La suma de todas las mascotas que tiene un jugador: valen TODAS a la vez (pedido del dueño). Porcentajes (5,5 = 5,5 %).
-public sealed record PetBonuses(double GoldPercent, double XpPercent, double DefensePercent, double DropPercent)
+public sealed record PetBonuses(double GoldPercent, double XpPercent, double DefensePercent, double DropPercent, double GatherPercent = 0)
 {
     public static readonly PetBonuses None = new(0, 0, 0, 0);
 
-    public bool IsNone => GoldPercent == 0 && XpPercent == 0 && DefensePercent == 0 && DropPercent == 0;
+    public bool IsNone => GoldPercent == 0 && XpPercent == 0 && DefensePercent == 0 && DropPercent == 0 && GatherPercent == 0;
 
     // Todos los bonus multiplicados por un factor (la bendición Manada: ×1,1 por nivel).
     public PetBonuses Scaled(double factor) =>
-        factor == 1.0 ? this : new PetBonuses(GoldPercent * factor, XpPercent * factor, DefensePercent * factor, DropPercent * factor);
+        factor == 1.0 ? this : new PetBonuses(GoldPercent * factor, XpPercent * factor, DefensePercent * factor, DropPercent * factor, GatherPercent * factor);
 }
 
 // Las reglas de las mascotas, puras (v0.10.0). Los números están acá y en la base (los topes de cada especie en pet_species.max_bonus_percent):
@@ -97,7 +98,7 @@ public static class PetRules
     // Todas las mascotas del jugador, sumadas por tipo de bonus.
     public static PetBonuses Total(IEnumerable<OwnedPet> pets)
     {
-        double gold = 0, xp = 0, defense = 0, drop = 0;
+        double gold = 0, xp = 0, defense = 0, drop = 0, gather = 0;
         foreach (var pet in pets)
         {
             double percent = BonusPercent(pet);
@@ -107,10 +108,11 @@ public static class PetRules
                 case PetBonusKind.Xp: xp += percent; break;
                 case PetBonusKind.Defense: defense += percent; break;
                 case PetBonusKind.Drop: drop += percent; break;
+                case PetBonusKind.Gather: gather += percent; break;
             }
         }
 
-        return new PetBonuses(gold, xp, defense, drop);
+        return new PetBonuses(gold, xp, defense, drop, gather);
     }
 
     // Sube una cantidad un porcentaje (redondeando al más cercano: 38 con +5 % son 40). Con 0 % o menos no toca nada.
@@ -124,6 +126,7 @@ public static class PetRules
         PetBonusKind.Xp => "EXP",
         PetBonusKind.Defense => "defensa",
         PetBonusKind.Drop => "drop de monstruos",
+        PetBonusKind.Gather => "recolección",
         _ => bonusKind,
     };
 

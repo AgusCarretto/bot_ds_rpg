@@ -15,7 +15,11 @@ internal static class RewardPayer
     public static async Task<RewardReceipt> PayAsync(
         DbConnection connection, DbTransaction transaction, User current, RewardSpec spec, int zoneRank, CancellationToken cancellationToken)
     {
-        var reward = MissionRewards.Resolve(spec, zoneRank, current.Level);
+        // La caja de la zona sale de zone_boxes, leída en ESTA transacción (el premio se paga con la misma tabla que se lee). Los premios sin caja de zona no la consultan.
+        var boxes = spec.Box is BoxGrant.None or BoxGrant.Mythic
+            ? ZoneBoxTable.Empty
+            : await ZoneBoxQueries.LoadAsync(connection, transaction, cancellationToken);
+        var reward = MissionRewards.Resolve(spec, zoneRank, current.Level, boxes);
 
         int levelsGained = 0;
         int newLevel = current.Level;

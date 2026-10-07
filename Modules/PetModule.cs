@@ -43,7 +43,7 @@ public class PetModule(
     public sealed record PetResult(string? PlainMessage, Embed? Embed, MessageComponent? Components = null);
 
     private const string NoAccount = "Todavía no tenés cuenta: empezá con **/start**.";
-    private const string NoPets = "Todavía no tenés ninguna mascota. La primera vez que vencés al jefe de una zona (**/boss**) te llega un **huevo** además del cofre: abrilo con **/open** y nace.";
+    private const string NoPets = "Todavía no tenés ninguna mascota. La primera vez que vencés al jefe de una zona (**/boss**) —y al Asador Eterno del Fogón— te llega un **huevo** además del cofre: abrilo con **/open** y nace.";
 
     // Lo que hace falta para dibujar la pantalla de mascotas (todo ya leído: el armado es puro).
     // FeedCooldown: la espera entre comidas de ESTE jugador (null = la hora de siempre; la bendición Buen Pienso la baja). PackMultiplier: lo que multiplica la bendición Manada a los bonus (1 = nada).
@@ -117,6 +117,7 @@ public class PetModule(
         if (bonuses.XpPercent > 0) parts.Add($"📊 {PetRules.PercentText(bonuses.XpPercent)} de EXP");
         if (bonuses.DefensePercent > 0) parts.Add($"🛡️ {PetRules.PercentText(bonuses.DefensePercent)} de defensa");
         if (bonuses.DropPercent > 0) parts.Add($"🎲 {PetRules.PercentText(bonuses.DropPercent)} de drop de monstruos");
+        if (bonuses.GatherPercent > 0) parts.Add($"🪓 {PetRules.PercentText(bonuses.GatherPercent)} de recolección (/chop y /mine)");
         return string.Join(" · ", parts);
     }
 
@@ -371,7 +372,8 @@ public static class PetChoices
         owned
             .Where(p => FitsAsValue(p.Species.Name) && Matches(p.Species.Name, typed))
             .OrderBy(p => Relevance(p.Species.Name, typed))
-            .ThenBy(p => p.Species.ZoneId)
+            // La mascota del Fogón Eterno (zona 0) va DESPUÉS de las de la escalera, como en /pet view (el repositorio ordena por min_level): ordenar por el id la pondría primera.
+            .ThenBy(p => p.Species.ZoneId == FogonRules.GateZoneId ? int.MaxValue : p.Species.ZoneId)
             .Take(MaxChoices)
             .Select(p =>
             {

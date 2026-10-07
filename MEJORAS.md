@@ -1,6 +1,15 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-06 (v0.13.0: Oficios)_
+_Última revisión: 2026-10-07 (v0.14.0: cofres parejos)_
+
+## Cofres parejos (v0.14.0, 2026-10-07)
+
+- **Qué cambió**: el dueño notó que el Cofre de Oro «sale muy poco para lo que da» y que la Zona 0 no tenía una recompensa pensada para los reinicios. Medido con `Database/report_box_economy.sql`: un Cofre de Oro vale ~211k «minutos de farmeo», más que 2 horas perfectas de juego en la Zona 5, y se regalaba por misiones, logros y como 40 % de cada repetición del jefe. Ahora las cajas gratis salen de la tabla `zone_boxes` (una fila por zona y rol: `repeat`, `daily`, `weekly`, `prize`, `prize_top`, con su chance) y el Cofre de Oro solo aparece desde la Zona 3. Diseño y números: `docs/superpowers/specs/2026-10-07-cofres-parejos-design.md`.
+- **Cajas nuevas** (no se compran ni se venden): **Cofre de Escoria** (el cofre del jefe de la Zona 5, 35–65 ítems) y **Brasero del Fogón** (el del Asador Eterno: lo que sobrevive al Fuego Nuevo, o sea oro y comida de mascotas). **Sexta mascota**: Chispa del Asador (+10 % de cantidad en `/chop` y `/mine`), su huevo llega con la primera victoria sobre el Asador de cada vuelta si no la tenés. El Asador paga ahora 3000 de oro y 300 de XP (el XP se borra con el reinicio, el oro no).
+- **Hay que correr `Database/add_zone_boxes.sql` ANTES del binario v0.14.0** (ya está aplicado en la base de desarrollo). Detalle en `DEPLOY.md`.
+- **Para confirmar con el dueño**: `Database/report_economy.sql` muestra que lo gratis sigue desparejo entre zonas (3,5 a 9,9 sesiones de 2 h por semana; la Zona 4 es la más generosa por su caja diaria de Arcón de Hierro). Es dato, se corrige con un `UPDATE` en `zone_boxes`. Los tres ítems nuevos (Cofre de Escoria, Brasero del Fogón, Huevo del Fogón) **no tienen emoji propio todavía**: se ven con un emoji común hasta que se suba el pixel art al portal y se agregue su `UPDATE` a `update_item_emojis.sql`. Los topes de `Domador` y `Criador` subieron a 6 y 150 (hay 6 mascotas).
+- **Pendiente / ideas**: `GoldPerHunt`, `DustPerAttempt` y `Enchantments` siguen siendo arreglos de 5 elementos en código: una zona nueva necesita que los extiendan además de sus filas en la base. La idea del dueño de espaciar las zonas a ~10 niveles (con más XP por zona y monstruos reajustados) es un proyecto aparte: obliga a volver a medir TODOS los monstruos, jefes, raids y el Asador con el `CombatTurnResolver` real.
+
 
 ## Oficios: Leñador, Minero y Encantador (v0.13.0, 2026-10-06)
 

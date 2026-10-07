@@ -22,7 +22,7 @@ public partial class TextCommandModule
                 return;
             }
 
-            var view = await MissionsModule.BuildViewAsync(userRepository, zoneRepository, missionRepository, Context.User.Id, DateTime.UtcNow);
+            var view = await MissionsModule.BuildViewAsync(userRepository, zoneRepository, missionRepository, zoneBoxService, Context.User.Id, DateTime.UtcNow);
             await ReplyAsync(embed: view.Embed, components: view.Components);
         }
         catch (Exception ex)

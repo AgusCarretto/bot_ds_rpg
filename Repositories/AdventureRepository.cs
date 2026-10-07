@@ -128,15 +128,24 @@ public sealed class AdventureRepository(IDbConnectionFactory connectionFactory) 
                 await InventoryUpsert.AddItemAsync(connection, transaction, discordId, droppedItemId.Value, droppedItemQuantity, cancellationToken);
             }
 
-            // El huevo de la zona (v0.10.0): la PRIMERA vez que este jugador vence a su jefe (current es la fila bloqueada, con el highest_zone_cleared de ANTES de esta
-            // victoria), en la misma transacción que el cofre. Si por algún motivo ya tiene esa mascota no se le da otro huevo.
+            // ¿Es la pelea del Fogón Eterno (la zona puerta)? Se mira antes del huevo porque el Asador también da el suyo (v0.14.0), y su "primera vez" no sale de highest_zone_cleared.
+            bool isGateFight = clearedZoneId is { } fightedZone && await connection.ExecuteScalarAsync<bool>(new CommandDefinition(
+                "SELECT EXISTS (SELECT 1 FROM zones WHERE zone_id = @ZoneId AND kind = 'gate');",
+                new { ZoneId = fightedZone }, transaction: transaction, cancellationToken: cancellationToken));
+
+            // El huevo de la zona (v0.10.0): la PRIMERA vez que este jugador vence a su jefe (current es la fila bloqueada, con el highest_zone_cleared / gate_cleared de ANTES de esta
+            // victoria), en la misma transacción que el cofre. En el Fogón (v0.14.0) la primera vez es de cada vuelta (gate_cleared vuelve a false con el Fuego Nuevo), pero la mascota
+            // se queda: si ya tiene esa mascota, o ya guarda su huevo sin abrir, no se le da otro.
             PetSpecies? eggGranted = null;
-            if (clearedZoneId is { } clearedZone && current.HighestZoneCleared < clearedZone)
+            if (clearedZoneId is { } clearedZone && (isGateFight ? !current.GateCleared : current.HighestZoneCleared < clearedZone))
             {
                 var species = await PetSql.FindByZoneAsync(connection, transaction, clearedZone, cancellationToken);
                 bool alreadyOwned = species is not null && await connection.ExecuteScalarAsync<bool>(new CommandDefinition(
-                    "SELECT EXISTS (SELECT 1 FROM player_pets WHERE discord_id = @DiscordId AND species_id = @SpeciesId);",
-                    new { DiscordId = (long)discordId, SpeciesId = species.SpeciesId }, transaction: transaction, cancellationToken: cancellationToken));
+                    """
+                    SELECT EXISTS (SELECT 1 FROM player_pets WHERE discord_id = @DiscordId AND species_id = @SpeciesId)
+                        OR EXISTS (SELECT 1 FROM inventory WHERE discord_id = @DiscordId AND item_id = @EggItemId AND quantity > 0);
+                    """,
+                    new { DiscordId = (long)discordId, SpeciesId = species.SpeciesId, EggItemId = species.EggItemId }, transaction: transaction, cancellationToken: cancellationToken));
 
                 if (species is not null && !alreadyOwned)
                 {
@@ -151,10 +160,6 @@ public sealed class AdventureRepository(IDbConnectionFactory connectionFactory) 
             var gate = GateEvent.None;
             if (clearedZoneId is { } fought)
             {
-                bool isGateFight = await connection.ExecuteScalarAsync<bool>(new CommandDefinition(
-                    "SELECT EXISTS (SELECT 1 FROM zones WHERE zone_id = @ZoneId AND kind = 'gate');",
-                    new { ZoneId = fought }, transaction: transaction, cancellationToken: cancellationToken));
-
                 if (isGateFight)
                 {
                     finalUser = await connection.QuerySingleAsync<User>(new CommandDefinition(

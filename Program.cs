@@ -189,6 +189,21 @@ class Program
             {
                 BotLog.Info("ATENCIÓN: la base está vacía. Falta correr Database/run_fresh_install.sql (ver DEPLOY.md).");
             }
+
+            // Cofres parejos (v0.14.0): cada zona necesita sus cajas en zone_boxes (misiones, logros, jefe). Si falta alguna (una zona nueva sin sus filas, o sin correr
+            // Database/add_zone_boxes.sql) el premio de esa zona fallaría recién al cobrarlo: se avisa ACÁ, al arrancar, sin cortar el bot.
+            try
+            {
+                var missing = await _services.GetRequiredService<IZoneBoxService>().MissingAsync();
+                if (missing.Count > 0)
+                {
+                    BotLog.Info($"ATENCIÓN: faltan cajas en zone_boxes ({string.Join(", ", missing)}). Corré Database/add_zone_boxes.sql o cargá las filas de la zona nueva (ver DEPLOY.md).");
+                }
+            }
+            catch (Exception zoneBoxesEx)
+            {
+                BotLog.Warn(zoneBoxesEx);
+            }
         }
         catch (Exception ex)
         {
@@ -491,6 +506,7 @@ public static class ServiceProviderBuilder
             .AddSingleton<ITransferRepository, TransferRepository>()
             .AddSingleton<IBoxRepository, BoxRepository>()
             .AddSingleton<IBoxContextService, BoxContextService>()
+            .AddSingleton<IZoneBoxService, ZoneBoxService>()
             .AddSingleton<IBankRepository, BankRepository>()
             .AddSingleton<IDustRepository, DustRepository>()
             .AddSingleton<IDropExchangeRepository, DropExchangeRepository>()

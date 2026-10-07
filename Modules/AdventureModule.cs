@@ -13,7 +13,8 @@ public class AdventureModule(
     ICombatSessionService combatSessions,
     IAdventureCombatStarter combatStarter,
     IGameEvents gameEvents,
-    IBuffRepository buffRepository) : InteractionModuleBase<SocketInteractionContext>
+    IBuffRepository buffRepository,
+    IZoneBoxService zoneBoxService) : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("hunt", "Salí a cazar monstruos cercanos (cooldown de 1 minuto).")]
     public Task HandleHuntAsync() =>
@@ -220,18 +221,24 @@ public class AdventureModule(
                 // Las tres recompensas salen de la MISMA fórmula (nivel + bonus del monstruo); /travel la
                 // multiplica y cada tipo de pelea tiene su chance de drop (ver GameData/CombatRewardCalculator.cs),
                 // así sube junto con la zona.
-                // Primera vez que cae el jefe de esta zona (la que abre la siguiente) o repetición: cambia el cofre (100% / 40%) y el mensaje.
-                // Se mira ANTES de aplicar la victoria, que es lo que sube highest_zone_cleared.
+                // Primera vez (de esta vuelta) que cae el jefe de esta zona o repetición: cambia el cofre y el mensaje (Services/BossChest.cs). La primera vez cae el cofre de la zona
+                // siempre; las repeticiones dan la caja de zone_boxes con su chance. Se mira ANTES de aplicar la victoria, que es lo que sube highest_zone_cleared.
                 bool firstBossClear = state.CommandName == "boss" && state.BossZoneId is int clearedZone
-                    && ((await userRepository.GetByDiscordIdAsync(Context.User.Id))?.HighestZoneCleared ?? 0) < clearedZone;
+                    && BossChest.IsFirstClear(await userRepository.GetByDiscordIdAsync(Context.User.Id), clearedZone);
+                var repeat = state.CommandName == "boss" && !firstBossClear && state.BossZoneId is int repeatZone
+                    ? await BossChest.RepeatAsync(zoneBoxService, repeatZone)
+                    : (ChancePercent: 0, BoxName: (string?)null);
                 var reward = state.CommandName switch
                 {
                     "travel" => CombatRewardCalculator.RollTravelReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus, state.Bonuses),
-                    "boss" => CombatRewardCalculator.RollBossReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus, firstBossClear, state.Bonuses),
+                    "boss" => CombatRewardCalculator.RollBossReward(
+                        state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus, firstBossClear, state.Bonuses, repeat.ChancePercent),
                     _ => CombatRewardCalculator.RollHuntReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus, state.Bonuses),
                 };
 
-                Item? droppedItem = await ResolveDroppedItemAsync(itemRepository, state, reward);
+                Item? droppedItem = state.CommandName == "boss" && !firstBossClear
+                    ? (reward.DroppedSomething && repeat.BoxName is not null ? await itemRepository.GetByNameAsync(repeat.BoxName) : null)
+                    : await ResolveDroppedItemAsync(itemRepository, state, reward);
 
                 if (!combatSessions.TryAdvance(Context.User.Id, session, null, null))
                 {

@@ -30,7 +30,7 @@ public partial class TextCommandModule
     {
         try
         {
-            var message = await DropsModule.BuildDropsMessageAsync(userRepository, zoneRepository, monsterRepository, itemRepository, Context.User.Id);
+            var message = await DropsModule.BuildDropsMessageAsync(userRepository, zoneRepository, monsterRepository, itemRepository, Context.User.Id, zoneBoxService);
             await ReplyAsync(message.Text, embeds: message.Embeds);
         }
         catch (Exception ex)

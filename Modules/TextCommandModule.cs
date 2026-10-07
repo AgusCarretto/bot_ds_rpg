@@ -49,6 +49,7 @@ public partial class TextCommandModule(
     IArenaService arenaService,
     IPetRepository petRepository,
     IPlayerBonusService bonusService,
+    IZoneBoxService zoneBoxService,
     IBlessingRepository blessingRepository,
     IFuegoNuevoRepository fuegoNuevoRepository,
     IGameEvents gameEvents) : ModuleBase<SocketCommandContext>
