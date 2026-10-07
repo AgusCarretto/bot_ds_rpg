@@ -48,10 +48,10 @@ BEGIN
     SELECT count(*) INTO v_eggs FROM items WHERE type = 'Huevo';
     SELECT count(*) INTO v_food FROM items WHERE type = 'PetFood' AND name = 'Comida para Mascotas';
 
-    IF v_species <> 5 THEN
-        RAISE EXCEPTION 'seed_pets: hay % especies y tienen que ser 5 (¿falta alguna zona? los nombres de zona tienen que coincidir)', v_species;
+    IF v_species NOT IN (5, 6) THEN
+        RAISE EXCEPTION 'seed_pets: hay % especies y tienen que ser 5 (o 6 con la de la Zona 0; ¿falta alguna zona? los nombres de zona tienen que coincidir)', v_species;
     END IF;
-    IF v_eggs <> 5 OR v_food <> 1 THEN
+    IF v_eggs NOT IN (5, 6) OR v_food <> 1 THEN
         RAISE EXCEPTION 'seed_pets: hay % huevos (tienen que ser 5) y % comidas para mascotas (tiene que ser 1)', v_eggs, v_food;
     END IF;
     IF EXISTS (SELECT 1 FROM pet_species ps JOIN items i ON i.item_id = ps.egg_item_id WHERE i.type <> 'Huevo') THEN

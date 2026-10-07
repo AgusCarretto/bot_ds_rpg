@@ -24,7 +24,8 @@ public class RaidModule(
     IGameEvents gameEvents,
     IBuffRepository buffRepository,
     ICooldownRepository cooldownRepository,
-    IPlayerBonusService bonusService) : InteractionModuleBase<SocketInteractionContext>
+    IPlayerBonusService bonusService,
+    IZoneBoxService zoneBoxService) : InteractionModuleBase<SocketInteractionContext>
 {
     // Ver Services/RaidSettings.cs: el mínimo es configurable (2 por defecto).
     private static int MinParticipantsToStart => RaidSettings.MinParticipants;
@@ -246,7 +247,7 @@ public class RaidModule(
                     await session.ReplyTarget.UpdateAsync(BuildCombatEmbed(session, outcome.LogLine!), BuildCombatButtons(raidId));
                     return;
                 case AttackOutcomeKind.Victory:
-                    await ResolveVictoryAsync(session, outcome.LogLine!, userRepository, itemRepository, adventureRepository, raidSessions, gameEvents);
+                    await ResolveVictoryAsync(session, outcome.LogLine!, userRepository, itemRepository, adventureRepository, raidSessions, gameEvents, zoneBoxService);
                     return;
                 case AttackOutcomeKind.Wipe:
                     await ResolveWipeAsync(session, outcome.LogLine!, userRepository, raidSessions, gameEvents);
@@ -730,10 +731,13 @@ public class RaidModule(
 
     private static async Task ResolveVictoryAsync(
         RaidSession session, string logLine, IUserRepository userRepository, IItemRepository itemRepository,
-        IAdventureRepository adventureRepository, IRaidSessionService raidSessions, IGameEvents gameEvents)
+        IAdventureRepository adventureRepository, IRaidSessionService raidSessions, IGameEvents gameEvents, IZoneBoxService zoneBoxService)
     {
         // session.Phase ya quedó en Resolved dentro del lock de ResolveParticipantTurn.
         raidSessions.Remove(session.RaidId);
+
+        // La caja de las repeticiones es la misma para todos los participantes: se lee una vez (Services/BossChest.cs).
+        var repeat = await BossChest.RepeatAsync(zoneBoxService, session.ZoneId);
 
         var results =new List<(RaidParticipant Participant, CombatReward Reward, Item? Drop, LevelUpOutcome Outcome)>();
 
@@ -743,15 +747,24 @@ public class RaidModule(
         // transacción, tanto su HP final como el oro/XP/drop y el highest_zone_cleared.
         foreach (var participant in session.Participants.Where(p => p.Contributed && !p.HasFled))
         {
-            // "Primera vez" por participante: el cofre es 100% solo para quien nunca había derrotado a este jefe (se mira ANTES de aplicar la victoria).
-            bool firstClear = ((await userRepository.GetByDiscordIdAsync(participant.DiscordId))?.HighestZoneCleared ?? 0) < session.ZoneId;
-            var reward = CombatRewardCalculator.RollBossReward(participant.Level, session.BossGoldBonus, session.BossXpBonus, firstClear, participant.Bonuses);
+            // "Primera vez" por participante: el cofre de la zona es 100% solo para quien nunca había derrotado a este jefe en esta vuelta (se mira ANTES de aplicar la victoria);
+            // las repeticiones dan la caja más chica de zone_boxes con su chance.
+            bool firstClear = BossChest.IsFirstClear(await userRepository.GetByDiscordIdAsync(participant.DiscordId), session.ZoneId);
+            var reward = CombatRewardCalculator.RollBossReward(
+                participant.Level, session.BossGoldBonus, session.BossXpBonus, firstClear, participant.Bonuses, firstClear ? 0 : repeat.ChancePercent);
 
             Item? drop = null;
-            if (reward.DroppedSomething && session.BossDropItemNames.Count > 0)
+            if (reward.DroppedSomething)
             {
-                string dropName = session.BossDropItemNames[Random.Shared.Next(session.BossDropItemNames.Count)];
-                drop = await itemRepository.GetByNameAsync(dropName);
+                if (firstClear && session.BossDropItemNames.Count > 0)
+                {
+                    string dropName = session.BossDropItemNames[Random.Shared.Next(session.BossDropItemNames.Count)];
+                    drop = await itemRepository.GetByNameAsync(dropName);
+                }
+                else if (!firstClear && repeat.BoxName is not null)
+                {
+                    drop = await itemRepository.GetByNameAsync(repeat.BoxName);
+                }
             }
 
             int hpDelta = participant.ToDbHpDelta(participant.CurrentHp - participant.StartingHp);

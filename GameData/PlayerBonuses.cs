@@ -44,14 +44,16 @@ public sealed record PlayerBonuses(
 
     public int ProfessionLevel(string key) => ProfessionRules.LevelFor(ProfessionXpOf(key));
 
-    // Recolección: cuántas unidades da un /chop o un /mine (se redondea al azar, ver GatheringYield.RollScaled). Multiplica Fuego Nuevo × bendición × oficio.
+    // Recolección: cuántas unidades da un /chop o un /mine (se redondea al azar, ver GatheringYield.RollScaled). Multiplica Fuego Nuevo × bendición × oficio × la mascota del Fogón.
     public double ChopMultiplier =>
         FuegoNuevoRules.GatherMultiplier(FuegoNuevo) * (1 + (BlessingCatalog.ChopPerLevel * BlessingLevel(BlessingCatalog.ChopKey)))
-        * ProfessionRules.QuantityMultiplier(ProfessionLevel(ProfessionCatalog.WoodcutterKey));
+        * ProfessionRules.QuantityMultiplier(ProfessionLevel(ProfessionCatalog.WoodcutterKey)) * PetGather;
 
     public double MineMultiplier =>
         FuegoNuevoRules.GatherMultiplier(FuegoNuevo) * (1 + (BlessingCatalog.MinePerLevel * BlessingLevel(BlessingCatalog.MineKey)))
-        * ProfessionRules.QuantityMultiplier(ProfessionLevel(ProfessionCatalog.MinerKey));
+        * ProfessionRules.QuantityMultiplier(ProfessionLevel(ProfessionCatalog.MinerKey)) * PetGather;
+
+    private double PetGather => 1 + (Pets.GatherPercent / 100.0);
 
     // La chance de que la rareza de lo recolectado suba un escalón (solo los oficios la dan).
     public double ChopRarityUpgrade => ProfessionRules.RarityUpgradeChance(ProfessionLevel(ProfessionCatalog.WoodcutterKey));

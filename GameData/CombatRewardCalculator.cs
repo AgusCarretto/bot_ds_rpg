@@ -21,13 +21,14 @@ public static class CombatRewardCalculator
     // cooldown, que es lo contra lo que se calibraron las recetas; con 40% son 1,33% por minuto, así que los materiales de viaje (los «escasos» de las armas de clase y los amuletos) tardan 1,5 veces más
     // y el camino de recetas de las 5 zonas pasa de ~41 h a ~52 h de juego perfecto (medido con report_recipe_pacing.sql; las cantidades de las recetas NO se tocaron a propósito).
     public const int TravelDropChancePercent = 40;
-    // El jefe de zona ya no suelta un material sino un COFRE de su zona (monster_drops del jefe apunta a la caja, ver
-    // Database/rework_drops_and_recipes.sql): la primera vez que ESE jugador lo derrota siempre cae; las siguientes, 40%.
-    // Vale para el combate solitario y, por participante, para el raid.
+    // El jefe de zona ya no suelta un material sino un COFRE (monster_drops del jefe apunta a la caja, ver Database/rework_drops_and_recipes.sql y seed_zone_boxes.sql): la primera vez
+    // POR VUELTA que ESE jugador lo derrota siempre cae. Las repeticiones (v0.14.0) dan la caja de zone_boxes (rol "repeat") con SU chance, que sale de la base (GameData/ZoneBoxes.cs,
+    // Services/BossChest.cs); era "40 % del cofre grande" para todas las zonas. Vale para el combate solitario y, por participante, para el raid.
     public const int BossChestFirstClearPercent = 100;
-    public const int BossChestRepeatPercent = 40;
 
-    public static int BossChestChancePercent(bool firstClear) => firstClear ? BossChestFirstClearPercent : BossChestRepeatPercent;
+    // La chance (en %) de que caiga cofre: 100 la primera vez; en una repetición, la que diga la tabla de cajas de esa zona (0 = ninguna).
+    public static int BossChestChancePercent(bool firstClear, int repeatChancePercent) =>
+        firstClear ? BossChestFirstClearPercent : Math.Clamp(repeatChancePercent, 0, 100);
 
     // monsterGoldBonus/monsterXpBonus: bonus fijo del monstruo (ver GameData/MonsterCatalog.cs y
     // Repositories/IMonsterRepository.cs) que se SUMA a la fórmula de siempre, no la reemplaza —
@@ -54,8 +55,10 @@ public static class CombatRewardCalculator
     // minuto de cooldown ahora rinde bastante menos que un viaje (es el valor a subir si el jefe tiene que volver a sentirse "vale la espera").
     public const int BossRewardMultiplier = 15;
 
-    public static CombatReward RollBossReward(int playerLevel, int monsterGoldBonus, int monsterXpBonus, bool firstClear, PlayerBonuses? bonuses = null) =>
-        Roll(playerLevel, monsterGoldBonus, monsterXpBonus, BossRewardMultiplier, BossChestChancePercent(firstClear), bonuses);
+    // repeatChancePercent: la chance de la caja de repetición de ESA zona (ZoneBoxRole.Repeat); solo cuenta si no es la primera vez.
+    public static CombatReward RollBossReward(
+        int playerLevel, int monsterGoldBonus, int monsterXpBonus, bool firstClear, PlayerBonuses? bonuses = null, int repeatChancePercent = 0) =>
+        Roll(playerLevel, monsterGoldBonus, monsterXpBonus, BossRewardMultiplier, BossChestChancePercent(firstClear, repeatChancePercent), bonuses);
 
     // /travel tiene 30 minutos de cooldown (30 veces el de /hunt; 10 hasta la v0.7.1) y enfrenta a un monstruo élite (HP
     // x1.25 / daño x1.1 de los comunes de la zona, ver Database/seed_travel_monsters.sql): la

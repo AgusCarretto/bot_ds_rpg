@@ -10,7 +10,8 @@ public class DropsModule(
     IUserRepository userRepository,
     IZoneRepository zoneRepository,
     IMonsterRepository monsterRepository,
-    IItemRepository itemRepository) : InteractionModuleBase<SocketInteractionContext>
+    IItemRepository itemRepository,
+    IZoneBoxService zoneBoxService) : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("drops", "Mirá qué suelta cada monstruo de cada zona (cazar, viajar y jefe) y con qué chance.")]
     public async Task HandleDropsAsync()
@@ -19,7 +20,7 @@ public class DropsModule(
 
         try
         {
-            var message = await BuildDropsMessageAsync(userRepository, zoneRepository, monsterRepository, itemRepository, Context.User.Id);
+            var message = await BuildDropsMessageAsync(userRepository, zoneRepository, monsterRepository, itemRepository, Context.User.Id, zoneBoxService);
             await FollowupAsync(message.Text, embeds: message.Embeds);
         }
         catch (Exception ex)
@@ -43,7 +44,8 @@ public class DropsModule(
         IZoneRepository zoneRepository,
         IMonsterRepository monsterRepository,
         IItemRepository itemRepository,
-        ulong discordId)
+        ulong discordId,
+        IZoneBoxService? zoneBoxService = null)
     {
         var player = await userRepository.GetByDiscordIdAsync(discordId);
         var zones = ZoneRanking.OrderByDifficulty(await zoneRepository.GetAllAsync());
@@ -51,6 +53,20 @@ public class DropsModule(
         // Materiales y cofres: el jefe suelta un cofre, y tiene que salir con su emoji igual que un material.
         var dropItems = (await itemRepository.GetAllByTypeAsync("Material")).Concat(await itemRepository.GetAllByTypeAsync("Caja"))
             .ToDictionary(item => item.Name, item => new DropItemInfo(item.Name, item.Rarity, item.Emoji));
+
+        // La caja de las repeticiones del jefe sale de zone_boxes; si no se puede leer, el bloque del jefe solo dice qué pasa la primera vez.
+        ZoneBoxTable? boxTable = null;
+        if (zoneBoxService is not null)
+        {
+            try
+            {
+                boxTable = await zoneBoxService.GetAsync();
+            }
+            catch (Exception ex)
+            {
+                BotLog.Warn(ex);
+            }
+        }
 
         var embeds = new List<Embed>();
         for (int i = 0; i < zones.Count; i++)
@@ -67,7 +83,8 @@ public class DropsModule(
                 embed.WithDescription(here.Trim());
             }
 
-            var blocks = DropsCatalog.BuildZoneBlocks(monsters.Where(m => m.ZoneId == zone.ZoneId), dropItems);
+            var blocks = DropsCatalog.BuildZoneBlocks(
+                monsters.Where(m => m.ZoneId == zone.ZoneId), dropItems, boxTable?.ForZone(zone.ZoneId, ZoneBoxRole.Repeat));
             if (blocks.Count == 0)
             {
                 embed.AddField("Sin monstruos", "_Todavía no hay monstruos cargados en esta zona._", false);

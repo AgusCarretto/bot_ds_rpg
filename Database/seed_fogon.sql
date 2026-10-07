@@ -30,7 +30,7 @@ ON CONFLICT (name) DO UPDATE
 
 -- El jefe.
 INSERT INTO monsters (zone_id, name, emoji, min_hp, max_hp, min_damage, max_damage, gold_reward, xp_reward, is_boss, is_travel)
-VALUES (0, 'El Asador Eterno', '🔥', 2002, 2401, 188, 244, 1500, 1500, true, false)
+VALUES (0, 'El Asador Eterno', '🔥', 2002, 2401, 188, 244, 3000, 300, true, false)
 ON CONFLICT (name) DO UPDATE
     SET zone_id = EXCLUDED.zone_id, emoji = EXCLUDED.emoji, min_hp = EXCLUDED.min_hp, max_hp = EXCLUDED.max_hp, min_damage = EXCLUDED.min_damage,
         max_damage = EXCLUDED.max_damage, gold_reward = EXCLUDED.gold_reward, xp_reward = EXCLUDED.xp_reward, is_boss = true, is_travel = false;

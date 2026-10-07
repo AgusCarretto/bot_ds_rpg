@@ -29,7 +29,7 @@ public sealed record MissionClaimResult(string? PlainMessage, Embed? Embed);
 // función pura del día (GameData/MissionCatalog.cs, las mismas para todos); el progreso sale del registro de eventos y lo único que
 // se guarda es qué ya se cobró (Repositories/MissionRepository.cs). Se reinician a medianoche hora de Uruguay.
 public class MissionsModule(
-    IUserRepository userRepository, IZoneRepository zoneRepository, IMissionRepository missionRepository, IGameEvents gameEvents)
+    IUserRepository userRepository, IZoneRepository zoneRepository, IMissionRepository missionRepository, IGameEvents gameEvents, IZoneBoxService zoneBoxService)
     : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("missions", "Tus misiones del día y de la semana (se reinician a medianoche, hora de Uruguay).")]
@@ -39,7 +39,7 @@ public class MissionsModule(
 
         try
         {
-            var view = await BuildViewAsync(userRepository, zoneRepository, missionRepository, Context.User.Id, DateTime.UtcNow);
+            var view = await BuildViewAsync(userRepository, zoneRepository, missionRepository, zoneBoxService, Context.User.Id, DateTime.UtcNow);
             await FollowupAsync(embed: view.Embed, components: view.Components);
         }
         catch (Exception ex)
@@ -64,7 +64,7 @@ public class MissionsModule(
             }
 
             var result = await ExecuteClaimAsync(userRepository, zoneRepository, missionRepository, gameEvents, Context.User.Id, DateTime.UtcNow);
-            var view = await BuildViewAsync(userRepository, zoneRepository, missionRepository, Context.User.Id, DateTime.UtcNow);
+            var view = await BuildViewAsync(userRepository, zoneRepository, missionRepository, zoneBoxService, Context.User.Id, DateTime.UtcNow);
 
             // La pantalla se actualiza en su lugar (sin el botón si ya no queda nada) y el recibo sale aparte.
             await ModifyOriginalResponseAsync(p =>
@@ -84,10 +84,11 @@ public class MissionsModule(
     // ---- Lógica compartida con "aa missions" (sin Context) ----
 
     public static async Task<MissionsView> BuildViewAsync(
-        IUserRepository userRepository, IZoneRepository zoneRepository, IMissionRepository missionRepository, ulong discordId, DateTime utcNow)
+        IUserRepository userRepository, IZoneRepository zoneRepository, IMissionRepository missionRepository, IZoneBoxService zoneBoxService, ulong discordId, DateTime utcNow)
     {
         var player = await userRepository.GetOrCreateUserAsync(discordId);
         int zoneRank = await ResolveZoneRankAsync(zoneRepository, player.CurrentZoneId);
+        var boxes = await zoneBoxService.GetAsync();
 
         var states = new List<MissionPeriodState>();
         foreach (var period in new[] { MissionPeriod.Daily, MissionPeriod.Weekly })
@@ -98,12 +99,12 @@ public class MissionsModule(
             var claimed = await missionRepository.GetClaimedAsync(discordId, period, start);
 
             var rows = missions
-                .Select(m => new MissionRow(m, progress.GetValueOrDefault(m.Kind), claimed.Contains(m.Key), MissionRewards.Resolve(m.Reward, zoneRank, player.Level)))
+                .Select(m => new MissionRow(m, progress.GetValueOrDefault(m.Kind), claimed.Contains(m.Key), MissionRewards.Resolve(m.Reward, zoneRank, player.Level, boxes)))
                 .ToList();
 
             states.Add(new MissionPeriodState(
                 period, start, end, rows, claimed.Contains(MissionCatalog.BonusKey),
-                MissionRewards.Resolve(MissionCatalog.BonusFor(period), zoneRank, player.Level)));
+                MissionRewards.Resolve(MissionCatalog.BonusFor(period), zoneRank, player.Level, boxes)));
         }
 
         int claimable = states.Sum(s => s.ClaimableCount);

@@ -19,21 +19,26 @@ public static class DropsCatalog
     public const int FieldLimit = 1024;
 
     // Los bloques de UNA zona, en orden Cazar / Viajar / Jefe; los tipos sin monstruos cargados no aparecen.
-    public static IReadOnlyList<DropsBlock> BuildZoneBlocks(IEnumerable<ZoneMonster> zoneMonsters, IReadOnlyDictionary<string, DropItemInfo> items)
+    // bossRepeat: la fila "repeat" de zone_boxes de la zona (la caja que cae al volver a vencer al jefe); null si no se conoce (el bloque del jefe solo dice qué pasa la primera vez).
+    public static IReadOnlyList<DropsBlock> BuildZoneBlocks(
+        IEnumerable<ZoneMonster> zoneMonsters, IReadOnlyDictionary<string, DropItemInfo> items, ZoneBoxRow? bossRepeat = null)
     {
         var monsters = zoneMonsters.ToList();
         var blocks = new List<DropsBlock>();
 
         AddBlock(blocks, "🏹 Cazar", $"{CombatRewardCalculator.HuntDropChancePercent}% al ganar", monsters, MonsterKind.Hunt, items);
         AddBlock(blocks, "🗺️ Viajar (élite)", $"{CombatRewardCalculator.TravelDropChancePercent}% al ganar", monsters, MonsterKind.Travel, items);
-        AddBlock(blocks, "👑 Jefe", $"cofre: {CombatRewardCalculator.BossChestFirstClearPercent}% la 1.ª vez, {CombatRewardCalculator.BossChestRepeatPercent}% después", monsters, MonsterKind.Boss, items);
+        string bossRepeatLine = bossRepeat is null
+            ? string.Empty
+            : $"\n\n🔁 Si ya lo vencías: {bossRepeat.ChancePercent}% de {DescribeItem(bossRepeat.BoxName, items)}";
+        AddBlock(blocks, "👑 Jefe", $"cofre: {CombatRewardCalculator.BossChestFirstClearPercent}% la 1.ª vez", monsters, MonsterKind.Boss, items, bossRepeatLine);
 
         return blocks;
     }
 
     private static void AddBlock(
         List<DropsBlock> blocks, string title, string chanceText, List<ZoneMonster> monsters, MonsterKind kind,
-        IReadOnlyDictionary<string, DropItemInfo> items)
+        IReadOnlyDictionary<string, DropItemInfo> items, string extraLine = "")
     {
         var ofKind = monsters.Where(m => m.Kind == kind).ToList();
         if (ofKind.Count == 0)
@@ -50,7 +55,7 @@ public static class DropsCatalog
             return $"{monster.Emoji} **{monster.Name}**\n└ {drops}";
         });
 
-        string text = string.Join("\n\n", entries);
+        string text = string.Join("\n\n", entries) + extraLine;
         blocks.Add(new DropsBlock(
             $"{title} · {chanceText}",
             text.Length <= FieldLimit ? text : text[..(FieldLimit - 1)] + "…"));

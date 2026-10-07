@@ -9,7 +9,7 @@
 --   - El "PSQL Tool" de pgAdmin (el ícono de terminal, NO el "Query Tool" — ese último solo manda
 --     SQL crudo al servidor y no entiende \ir, va a tirar error de sintaxis).
 --   - DBeaver u otros clientes: probablemente NO sirve — correlos a mano, uno por uno, en el orden
---     de abajo (son los mismos 25 archivos, en esta carpeta).
+--     de abajo (son los mismos 26 archivos, en esta carpeta).
 --
 -- USAR SOLO CONTRA UNA BASE VACÍA. seed.sql, add_weapon_family.sql y
 -- seed_class_gear_and_monster_drops.sql NO son idempotentes (duplican filas si la base ya tiene
@@ -66,5 +66,7 @@
 \ir seed_pets.sql
 -- El Fogón Eterno (v0.11.0): la zona puerta (id 0), su equipo, sus recetas y el jefe. Usa los drops y los materiales de las 5 zonas: va al final.
 \ir seed_fogon.sql
+-- Cofres parejos (v0.14.0): las cajas Cofre de Escoria y Brasero del Fogón, la caja que da cada zona (zone_boxes), el premio del Asador y la 6.ª mascota. Va al final: pisa el cofre del jefe de la 5.
+\ir seed_zone_boxes.sql
 
 \echo 'Listo — base cargada completa: esquema, items, recetas, zonas/monstruos, catálogo final de consumibles y emojis.'

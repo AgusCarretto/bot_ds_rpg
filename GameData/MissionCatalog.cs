@@ -27,8 +27,8 @@ public static class MissionCatalog
     // La clave con la que se reclama el premio por completar todas las misiones del período.
     public const string BonusKey = "_bonus";
 
-    public static readonly RewardSpec DailyBonus = new(0, 0, BoxGrant.ZoneTier);
-    public static readonly RewardSpec WeeklyBonus = new(0, 0, BoxGrant.ZoneTierPlusOne);
+    public static readonly RewardSpec DailyBonus = new(0, 0, BoxGrant.Daily);
+    public static readonly RewardSpec WeeklyBonus = new(0, 0, BoxGrant.Weekly);
 
     public static readonly IReadOnlyList<MissionTemplate> DailyPool =
     [
