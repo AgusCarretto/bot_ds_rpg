@@ -6,7 +6,7 @@ public partial class TextCommandModule
 {
     // "aa pet" (alias "aa mascota", "aa mascotas") — ver las mascotas; "aa pet feed" alimenta a todas las que puedan comer y "aa pet feed Ñandusito" a una. Misma lógica que /pet.
     [Command("pet")]
-    [Alias("mascota", "mascotas")]
+    [Alias("mascota", "mascotas", "pets")]
     [Summary("Tus mascotas: \"aa pet\" para verlas, \"aa pet feed\" para alimentar a las que puedan comer o \"aa pet feed Ñandusito\" para una sola.")]
     public async Task PetAsync(string accion = "", [Remainder] string mascota = "")
     {

@@ -298,6 +298,12 @@ public class FuegoNuevoModule(
                 .AddField("💨 Lo que se va", Cut(LostText(preview)), false)
                 .AddField("🔒 Lo que se queda", Cut(KeptText(preview)), false)
                 .WithFooter("No se puede deshacer, y lo que se va no se reembolsa.");
+
+            // Lo que ya te da hoy (desde la v0.14.3 el perfil no lo muestra: se mira acá).
+            if (preview.FuegoNuevo > 0)
+            {
+                embed.AddField($"🔥 Lo que te da hoy (Fuego Nuevo ×{preview.FuegoNuevo})", FuegoNuevoRules.BonusLines(preview.FuegoNuevo), false);
+            }
         }
         else
         {
@@ -310,6 +316,13 @@ public class FuegoNuevoModule(
             {
                 embed.AddField($"🔥 Lo que te da hoy (Fuego Nuevo ×{preview.FuegoNuevo})", FuegoNuevoRules.BonusLines(preview.FuegoNuevo), false);
             }
+        }
+
+        // Las bendiciones que ya juntó (desde la v0.14.3 el perfil no las lista: los bufs del Fuego Nuevo se miran acá; el detalle de cada una y las que existen están en /blessings).
+        var ownedBlessings = BlessingCatalog.OwnedLines(levels);
+        if (ownedBlessings.Count > 0)
+        {
+            embed.AddField("🙏 Tus bendiciones", Cut(string.Join('\n', ownedBlessings)), false);
         }
 
         if (offer is not null)

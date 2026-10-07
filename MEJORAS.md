@@ -1,6 +1,13 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-07 (v0.14.2: arma general más barata, mascotas sin spoilers)_
+_Última revisión: 2026-10-07 (v0.14.3: perfil más limpio)_
+
+## Perfil más limpio (v0.14.3, 2026-10-07)
+
+- **`/profile` ya no muestra** las mascotas, los porcentajes del Fuego Nuevo, las bendiciones ni los oficios (pedido del dueño: «dejalas aparte»). Se ven con `aa pet` (o `aa pets`), `aa fn`, `aa bendiciones` y `aa oficios`. El perfil sigue con lo básico, el número que pelea (el ataque y la defensa siguen mostrando sus extras 🔥/🐾), «FN N» en el título y el color y título cosméticos de Brasa de Color.
+- **`aa fn`** ahora muestra «Lo que te da hoy (Fuego Nuevo ×N)» también cuando ya podés volver a reiniciar (antes solo mostraba lo que ganarías con el próximo) y lista tus bendiciones.
+- Sin cambios de base de datos.
+
 
 ## Arma general más barata y mascotas sin spoilers (v0.14.2, 2026-10-07)
 

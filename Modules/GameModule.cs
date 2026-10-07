@@ -165,36 +165,9 @@ public class GameModule(
             embed.AddField("✨ Polvo", $"**{GameHistory.Number(player.Dust)}**", false);
         }
 
-        // Las mascotas (/pet): una por renglón, con su nivel y lo que da ahora. Solo aparece el campo si tiene alguna.
-        if (pets.Count > 0)
-        {
-            embed.AddField(
-                "🐾 Mascotas",
-                string.Join('\n', pets.Select(p =>
-                    $"{p.Species.Emoji} **{p.Species.Name}** · nivel {PetRules.LevelFor(p.FeedPoints)} · {PetRules.PercentText(PetRules.BonusPercent(p))} de {PetRules.KindName(p.Species.BonusKind)}")),
-                false);
-        }
-
-        // Fuego Nuevo (v0.12.0): cuántos hizo y lo que da hoy, y debajo las bendiciones que juntó (un renglón cada una). Solo aparece con algo para mostrar; el detalle y la oferta están en /fuegonuevo y /blessings.
-        if (player.FuegoNuevo > 0)
-        {
-            embed.AddField($"🔥 Fuego Nuevo ×{player.FuegoNuevo}", FuegoNuevoRules.BonusLines(player.FuegoNuevo), false);
-        }
-
-        var blessingLines = BlessingCatalog.OwnedLines(bonuses.BlessingLevels);
-        if (blessingLines.Count > 0)
-        {
-            string blessingText = string.Join('\n', blessingLines);
-            embed.AddField("🙏 Bendiciones", blessingText.Length <= 1024 ? blessingText : blessingText[..1021] + "...", false);
-        }
-
-        // Los oficios (v0.13.0, /professions): una sola línea con el nivel de cada uno, solo si ya sacó alguno.
-        var professionLevels = ProfessionCatalog.All.Select(p => (Profession: p, Level: bonuses.ProfessionLevel(p.Key))).ToList();
-        if (professionLevels.Any(p => p.Level > 0))
-        {
-            embed.AddField("🛠️ Oficios", string.Join(" · ", professionLevels.Select(p => $"{p.Profession.Emoji} {p.Profession.Name} **{p.Level}**")), false);
-        }
-
+        // Las mascotas, los porcentajes del Fuego Nuevo, las bendiciones y los oficios YA NO van en el perfil (el dueño, 2026-10-07: «dejalas aparte»): cada uno tiene su comando propio,
+        // /pet (aa pet), /fuegonuevo (aa fn), /blessings (aa bendiciones) y /professions (aa oficios). El perfil queda con lo básico y el número que pelea: el ataque y la defensa siguen
+        // mostrando sus extras (🔥 / 🐾) en la misma línea, y el título y el color de la bendición Brasa de Color son cosméticos de acá arriba.
         embed.AddField("🎁 Racha", player.DailyStreak > 0 ? $"día {player.DailyStreak}" : "_ninguna_", false);
 
         return embed
