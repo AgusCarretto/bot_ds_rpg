@@ -1,6 +1,14 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-07 (v0.14.1: slots y forge especial)_
+_Última revisión: 2026-10-07 (v0.14.2: arma general más barata, mascotas sin spoilers)_
+
+## Arma general más barata y mascotas sin spoilers (v0.14.2, 2026-10-07)
+
+- **Arma general (zonas 2 a 5)**: pide 2 de cada ingrediente en vez de 3 o 4 (~67 min de juego perfecto en lugar de ~100). El arma de clase (×1,5, ~225 min) no se tocó. Motivo: «nunca nadie haría la general». Elegí abaratar la general y no encarecer la de clase porque esa ya era 1,5 veces más lenta que lo diseñado desde que el drop de `/travel` bajó al 40 % y subirla alargaría las ~52 h del camino de las 5 zonas; además no perjudica a nadie que ya esté juntando materiales. Zona 1 igual (su general ya era la más barata, ~48 min). **Si preferís el otro camino (encarecer la de clase)**, es un `UPDATE` sobre `recipe_ingredients`; el reporte para medir es `report_recipe_pacing.sql`.
+- **Para correr en una base que ya existe**: `Database/rebalance_general_weapons.sql` (re-ejecutable, se verifica solo, no hace falta reiniciar el bot). Una instalación nueva ya lo trae en `rework_drops_and_recipes.sql`.
+- **`/pet view` ya no lista las mascotas que faltan** («por descubrir»): solo las que tenés, más un aviso si guardás un huevo sin abrir. Sin spoilers también en la ayuda (`/info tema:pets` y `tema:boxes`): ya no dicen cuántas hay, cuál es la del Fogón ni que existen cajas con nombre propio.
+- **Qué mirar jugando**: si con la general barata la gente la forja de verdad o la saltea; si pasa lo segundo, el siguiente paso sería encarecer la de clase.
+
 
 ## Slots con 6 símbolos y forge especial (v0.14.1, 2026-10-07)
 

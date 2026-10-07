@@ -158,7 +158,7 @@ raise drop % and material quantity. **Recipe quantities are calibrated against t
 a monster or a drop means re-running `Database/report_recipe_pacing.sql` (minutes of farming per recipe; pass the
 chances as `-v ph= -v pt=`; `pb` no longer matters) and retuning the recipes in the rework script. Note the trap this avoids: with one item per monster each
 specific item drops *more* often than with two, so lowering the percentages alone would have made progress faster,
-not slower. Targets in continuous-play minutes (the pacing script's model): general weapon ~100 (Zone 1 ~50), class weapon ~150 (Zone 1 ~100), amulet ~200 (Zone 1 ~130).
+not slower. Targets in continuous-play minutes (the pacing script's model): general weapon ~100 (Zone 1 ~50) until v0.14.1 and **~67 min (Zones 2–5, 2 of each ingredient) since v0.14.2**, class weapon ~150 designed (Zone 1 ~100; **~225 measured since the travel drop went to 40 %**), amulet ~200 designed (Zone 1 ~130; ~300 measured).
 
 **Co-op zone bosses (`/raid`)**: `Modules/RaidModule.cs` + `Services/RaidSessionService.cs`. Same
 in-memory philosophy as solo combat, but a *different concurrency model on purpose*: solo combat's
@@ -217,7 +217,7 @@ Recipes (stats, gold, ingredients) are owned by `rework_drops_and_recipes.sql`, 
 
 **Forge recipes: 6 per zone, and a player only sees their own zone's** (`recipes.zone_id` + `recipes.affinity`;
 `add_recipe_zone_and_affinity.sql` for old DBs). The per-zone template is **4 class weapons (one per class — the weapon family of that class, class-locked with `class_requirement`) + 1 general weapon + 1 amulet** (30 recipes in all).
-The *general* weapon has the SAME base ATQ as the class weapons but **no family** (nobody gets the class boost with it) and the easiest recipe (1 gathered + the 2 hunt drops, ~100 min): it is the way to start. The *class* weapon
+The *general* weapon has the SAME base ATQ as the class weapons but **no family** (nobody gets the class boost with it) and the easiest recipe (1 gathered + the 2 hunt drops, 2 of each since v0.14.2 → ~67 min; it was 3–4 of each and ~100 min until v0.14.1, when the owner saw "nobody would ever make the general": the class weapon is ×1.5 and costs ~225 min, so the general had to become the cheap BRIDGE into a zone while the class weapon stays the goal. `Database/rebalance_general_weapons.sql` migrates a live database, `rework_drops_and_recipes.sql` already carries the new numbers. I lowered the general and did NOT raise the class weapon: it was already 1.5× slower than designed and raising it would stretch the ~52 h five-zone path; if the owner prefers the other lever it is one UPDATE on the class recipes): it is the way to start. The *class* weapon
 (2 gathered + the hunt drop of its route + the travel drop, ~150 min) is stronger through the ×1.5 boost. The *amulet* is the heaviest piece: 1 gathered + ALL 3 drops of the zone (~200 min). Max 4 ingredient types per recipe.
 `affinity` is an explicit flag (set by the rework script) rather than inferred from the item. A player sees 3: their class's weapon + the general + the amulet, for
 their **current zone** (falling back to the nearest earlier zone that has recipes, with a note). That view lives in
