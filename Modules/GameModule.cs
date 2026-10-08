@@ -250,7 +250,7 @@ public class GameModule(
 
         if (wood.Count + minerals.Count + food.Count + drops.Count + boxes.Count == 0)
         {
-            embed.WithDescription("Todavía no tenés ningún material. ¡Probá /chop, /mine o /travel!");
+            embed.WithDescription("Todavía no tenés ningún material. ¡Probá /hunt, /chop o /mine!");
             return embed.Build();
         }
 

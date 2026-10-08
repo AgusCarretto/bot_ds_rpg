@@ -20,7 +20,7 @@ public class AdventureModule(
     public Task HandleHuntAsync() =>
         StartCombatAsync(CooldownCatalog.Hunt, () => combatStarter.PrepareHuntAsync(Context.User.Id));
 
-    [SlashCommand("travel", "Enfrentá al monstruo élite de tu zona: más difícil, recompensa x10 (cooldown de 10 minutos).")]
+    [SlashCommand("travel", "Enfrentá al monstruo élite de tu zona: más difícil, recompensa x30 (cooldown de 30 minutos).")]
     public Task HandleTravelAsync() =>
         StartCombatAsync(CooldownCatalog.Travel, () => combatStarter.PrepareTravelAsync(Context.User.Id));
 
