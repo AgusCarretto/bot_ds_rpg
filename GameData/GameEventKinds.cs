@@ -70,6 +70,9 @@ public static class GameEventKinds
     public const string FuegoNuevo = "fuego_nuevo";         // hizo un Fuego Nuevo (el reinicio); detail = la clase con la que arrancó la vuelta nueva
     public const string BlessingChosen = "blessing_chosen"; // eligió una bendición; detail = su clave
 
+    // v0.15.0: la historia (GameData/Lore.cs). Se abrió un capítulo del Acto I (la PRIMERA vez que vence a ese jefe; detail = la clave del capítulo): de este evento sale el aviso "📖 Capítulo desbloqueado".
+    public const string StoryChapter = "story_chapter";
+
     // Las victorias de combate de las que sale un "enemigo vencido" (GameEventExtensions.RecordVictoryAsync suma el enemy_defeated con ellas).
     public static bool IsEnemyWin(string kind) => kind is HuntWin or TravelWin or BossWin or RaidWin;
 }

@@ -168,7 +168,7 @@ public class BlacksmithModule(
         {
             string talk = choices.Count == 0
                 ? NpcDialogue.Blacksmith(BlacksmithLine.NoRecipes)
-                : $"{NpcDialogue.Blacksmith(BlacksmithLine.Greeting)}\n\n_✅ lo que ya podés forjar · ❌ lo que todavía te falta (te digo qué)_";
+                : $"{NpcDialogue.Blacksmith(BlacksmithLine.Greeting, fuegoNuevo: player.FuegoNuevo)}\n\n_✅ lo que ya podés forjar · ❌ lo que todavía te falta (te digo qué)_";
 
             if (zonesWithRecipes.Count > 0)
             {

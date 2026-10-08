@@ -279,8 +279,12 @@ public class AdventureModule(
                     finalState.CommandName switch { "travel" => GameEventKinds.TravelWin, "boss" => GameEventKinds.BossWin, _ => GameEventKinds.HuntWin },
                     outcome);
 
+                // La historia (GameData/Lore.cs): la primera vez que vence a este jefe se le abre su capítulo (el aviso sale solo, por el evento) y la pantalla cuenta la escena.
+                var openedChapter = await gameEvents.RecordStoryChapterAsync(
+                    discordId, finalState.CommandName == "boss" ? finalState.MonsterName : null, firstBossClear, outcome);
+
                 await output.ShowAsync(
-                    BuildVictoryEmbed(finalState, turn, reward, droppedItem, outcome, firstBossClear), new ComponentBuilder().Build(), null, session.ReplyTarget);
+                    BuildVictoryEmbedWithStory(finalState, turn, reward, droppedItem, outcome, firstBossClear, openedChapter), new ComponentBuilder().Build(), null, session.ReplyTarget);
                 return;
             }
 
@@ -575,8 +579,14 @@ public class AdventureModule(
         return WithAbilityField(embed, state).Build();
     }
 
+    // La victoria sin capítulo nuevo (la firma de siempre: los arneses de prueba la invocan por reflexión con estos 6 argumentos).
     private static Embed BuildVictoryEmbed(
-        CombatState state, TurnResult turn, CombatReward reward, Item? droppedItem, LevelUpOutcome outcome, bool firstBossClear = true)
+        CombatState state, TurnResult turn, CombatReward reward, Item? droppedItem, LevelUpOutcome outcome, bool firstBossClear = true) =>
+        BuildVictoryEmbedWithStory(state, turn, reward, droppedItem, outcome, firstBossClear, null);
+
+    // openedChapter: el capítulo de la historia que esta victoria abrió (GameData/Lore.cs), o null; su escena va dentro del campo del jefe.
+    private static Embed BuildVictoryEmbedWithStory(
+        CombatState state, TurnResult turn, CombatReward reward, Item? droppedItem, LevelUpOutcome outcome, bool firstBossClear, LoreChapter? openedChapter)
     {
         var player = outcome.Player;
 
@@ -615,7 +625,7 @@ public class AdventureModule(
             if (outcome.Gate == GateEvent.Cleared)
             {
                 // El Asador Eterno (zona 0): ganarle devuelve a la última zona y habilita el Fuego Nuevo (GameData/FogonRules.cs).
-                embed.AddField("🔥 ¡El Asador Eterno cayó!", $"{MonsterSays(state, NpcDialogue.BossLine.Defeated)}\n\n{FogonRules.ClearedText}", false);
+                embed.AddField("🔥 ¡El Asador Eterno cayó!", $"{MonsterSays(state, NpcDialogue.BossLine.Defeated)}{StoryScene(openedChapter)}\n\n{FogonRules.ClearedText}", false);
             }
             else
             {
@@ -624,7 +634,7 @@ public class AdventureModule(
                     : firstBossClear
                         ? "¡Se abrió el camino! Ya podés avanzar a la próxima zona con `/zona`."
                         : "¡Volviste a ganarle! El camino a la próxima zona ya lo tenías abierto.";
-                embed.AddField("👑 ¡Jefe de Zona derrotado!", $"{MonsterSays(state, NpcDialogue.BossLine.Defeated)}\n\n{zoneLine}", false);
+                embed.AddField("👑 ¡Jefe de Zona derrotado!", $"{MonsterSays(state, NpcDialogue.BossLine.Defeated)}{StoryScene(openedChapter)}\n\n{zoneLine}", false);
             }
         }
 
@@ -728,10 +738,14 @@ public class AdventureModule(
         return $"⏱️ {state.TurnsElapsed} turno(s) · 🗡️ {state.TotalDamageDealt} de daño hecho · 🩸 {state.TotalDamageTaken} de daño recibido{critText}{dodgeText}{healText}";
     }
 
+    // La escena de la primera victoria sobre un jefe (GameData/Lore.cs, FirstClearLine), en cursiva y con su aire; vacía si esta victoria no abrió ningún capítulo. El aviso
+    // "📖 Capítulo desbloqueado" no va acá: sale como mensaje propio al terminar el comando (Services/ProgressNotifier.cs).
+    private static string StoryScene(LoreChapter? chapter) => chapter is null ? string.Empty : $"\n\n*{chapter.FirstClearLine}*";
+
     // Lo que dice el monstruo de ESTA pelea (cacería, viaje o jefe) al aparecer, al caer o cuando te vence: todos hablan. Público para que /use y /autohunt
-    // usen exactamente las mismas frases.
+    // usen exactamente las mismas frases. El Asador Eterno cambia lo que dice según cuántos Fuegos Nuevos hizo el jugador (el estado lleva sus bonificaciones).
     public static string MonsterSays(CombatState state, NpcDialogue.BossLine line) =>
-        NpcDialogue.Monster(state.MonsterName, state.MonsterEmoji, line, isBoss: state.CommandName == "boss");
+        NpcDialogue.Monster(state.MonsterName, state.MonsterEmoji, line, isBoss: state.CommandName == "boss", fuegoNuevo: state.Bonuses?.FuegoNuevo ?? 0);
 
     private static string HpLine(int current, int max) => $"{ProgressBar.Render(current, max)}\n{current}/{max}";
 }

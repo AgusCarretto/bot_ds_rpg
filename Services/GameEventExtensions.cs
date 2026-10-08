@@ -30,6 +30,22 @@ public static class GameEventExtensions
             await events.RecordAsync(discordId, GameEventKinds.GateWin, outcome.Player.CurrentZoneId);
         }
     }
+
+    // La historia (GameData/Lore.cs): la PRIMERA vez que el jugador vence a un jefe se le abre su capítulo. firstClearThisLap es lo que ya calculan el combate solitario y el raid
+    // (Services/BossChest.IsFirstClear, mirado ANTES de aplicar la victoria); con un Fuego Nuevo hecho todo el Acto I ya está abierto, así que no hay nada nuevo que avisar.
+    // Devuelve el capítulo abierto (null si no se abrió ninguno) para que la pantalla de la victoria pueda mostrar su escena.
+    public static async Task<LoreChapter?> RecordStoryChapterAsync(
+        this IGameEvents events, ulong discordId, string? bossName, bool firstClearThisLap, LevelUpOutcome outcome)
+    {
+        var chapter = Lore.ChapterForBoss(bossName);
+        if (chapter is null || !firstClearThisLap || outcome.Player.FuegoNuevo > 0)
+        {
+            return null;
+        }
+
+        await events.RecordAsync(discordId, GameEventKinds.StoryChapter, outcome.Player.CurrentZoneId, detail: chapter.Key);
+        return chapter;
+    }
 }
 
 // Lo que se registra al recolectar (/chop y /mine, por slash y por texto): el éxito y las unidades que dio.

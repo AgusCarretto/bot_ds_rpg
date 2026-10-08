@@ -1,6 +1,15 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-08 (v0.14.6: primera hora más amable)_
+_Última revisión: 2026-10-08 (v0.15.0: la historia, y el Ninja y el Arquero contra monstruos)_
+
+## Las Crónicas del Fogón y ajuste de clases contra monstruos (v0.15.0, 2026-10-08)
+
+- **La historia** (`/story`, `aa historia`): el Tabernero cuenta, junto al fuego, por qué el mundo es de cenizas. **Acto I** (prólogo + un capítulo por jefe de zona + el del Asador, abiertos la PRIMERA vez que se vence a cada uno), **Acto II** (cada Fuego Nuevo le saca 1 % de pesar al Asador y en 12 vueltas se abre una escena —13 escenas, dos de ellas en la vuelta 1—: 1, 2, 3, 5, 10, 15, 25, 35, 50, 75, 90, 99) y **Acto III** (Fuego Nuevo 100, final con puertas abiertas). Lo sellado no muestra ni el título. La historia **no da poder** (ni stats, ni oro, ni drops). Diseño y razones: `docs/lore/cronicas-del-fogon.md`; los textos están en `GameData/Lore.cs`.
+- **La historia salta mientras jugás**: aviso privado «📖 Capítulo desbloqueado» / «Escena nueva del fuego» al terminar el comando (mismo camino que los logros: evento `story_chapter` y el contador de `fuego_nuevo` → `ProgressNotifier`), una frase del Tabernero al abrir tu primera mascota y otra del Herrero al forjar tu primera pieza, la escena de la primera victoria sobre cada jefe en su pantalla, y el pesar del Asador en `/fuegonuevo`. **Desde la vuelta 1** el Herrero y el Tabernero saludan distinto y **el Asador cambia sus frases** en la pelea (escalones 10, 25, 50 y 90).
+- **Logros nuevos** (22 en total, solo oro y XP): **Compañero del Asador** (Fuego Nuevo 10 / 25 / 50) y **El que volvió** (75 / 90 / 100), en la página Constancia.
+- **Clases contra monstruos** (`GameData/PveTuning.cs`): el dueño notó que el Ninja pasaba la escalera con el equipo atrás. Medido con el resolver real: el Ninja perdona la falta de equipo mejor que nadie y el Arquero es la clase floja de verdad. Ahora, **solo contra monstruos** (el PvP queda como estaba medido): Ninja **×0,95** de vida y Arquero **×1,15** (el dueño pidió no pasarse con el Arquero: «el crítico pega mucho según cómo se juegue»; ×1,25 lo dejaba entre el Guerrero y el Hechicero, ×1,15 lo deja a la par del Hechicero con equipo propio). Se aplica en `PlayerCombatProfileCalculator.Resolve` solo cuando hay bonificaciones, y la vida de combate se destraduce a vida real como la del Guerrero.
+- **Pendiente / abierto a propósito**: qué cambia concretamente en el juego al llegar al Fuego Nuevo 100 (título, nombre del mundo, el Asador como personaje del campamento), la causa real de la caída de la Fragua, volver a encender la Gran Fragua y quién es de verdad el Tabernero. Con el ritmo actual, 100 vueltas son más de mil horas: el peso emocional está en las primeras 25.
+- Sin cambios de base de datos.
 
 ## Primera hora más amable (v0.14.6, 2026-10-08)
 

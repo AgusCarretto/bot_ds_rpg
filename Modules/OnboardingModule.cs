@@ -133,7 +133,7 @@ public class OnboardingModule(IUserRepository userRepository, IGameEvents gameEv
                 "del fuego, el olor a carne asada y un buen mate mantienen viva la esperanza.\n\n" +
                 "Has llegado al Campamento Base con las manos vacías. Tu misión es recolectar recursos, forjar " +
                 "tu equipamiento y sobrevivir.\n\n" +
-                "Escribí `/tutorial` o `aa tutorial` para aprender lo básico.")
+                "Escribí `/tutorial` o `aa tutorial` para aprender lo básico. " + Lore.WelcomeHint)
             .AddField("🎭 Tu clase", $"**{player.Class}** {classDef.Emoji} — especialista en {classDef.WeaponType}", true)
             .AddField("📊 Estado inicial", $"Nivel {player.Level} · {player.CurrentHp}/{player.MaxHp} HP · {player.Gold} de oro", true);
 

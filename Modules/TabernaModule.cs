@@ -398,6 +398,8 @@ public class TabernaModule(
         var foodItems = await inventoryRepository.GetOwnedByTypeAsync(discordId, "Consumable");
 
         int? unlockedRank = boxContext is null ? null : await boxContext.MaxUnlockedRankAsync(discordId);
+        // Quien ya hizo un Fuego Nuevo recibe el saludo del que lo reconoce (la historia, GameData/Lore.cs); los demás, el de siempre.
+        talk ??= player.FuegoNuevo >= 1 ? NpcDialogue.Shopkeeper(ShopkeeperLine.Greeting, fuegoNuevo: player.FuegoNuevo) : null;
         var embed = NpcImages.Decorate(ShopModule.BuildViewEmbed(shopItems, buffs, talk, player.Gold, unlockedRank), NpcImages.Innkeeper);
 
         var components = new ComponentBuilder();

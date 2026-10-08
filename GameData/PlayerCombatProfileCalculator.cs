@@ -26,6 +26,12 @@ public static class PlayerCombatProfileCalculator
             passives = passives with { MaxHpMultiplier = passives.MaxHpMultiplier * bonuses.MaxHpMultiplier };
         }
 
+        // El ajuste de vida por clase SOLO contra monstruos (GameData/PveTuning.cs): como los bonuses solo los pasan esas peleas, el PvP queda como estaba medido.
+        if (bonuses is not null && PveTuning.HpFactor(player.Class) is var pveFactor && pveFactor != 1.0)
+        {
+            passives = passives with { MaxHpMultiplier = passives.MaxHpMultiplier * pveFactor };
+        }
+
         int combatMaxHp = (int)Math.Round(player.MaxHp * passives.MaxHpMultiplier);
         int combatCurrentHp = (int)Math.Round(player.CurrentHp * passives.MaxHpMultiplier);
 

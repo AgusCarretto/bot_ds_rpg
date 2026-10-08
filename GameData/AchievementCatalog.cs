@@ -64,6 +64,11 @@ public static class AchievementCatalog
 
         // v0.12.0: Fuego Nuevo (solo oro y XP; cada reinicio exige volver a vencer al Asador, así que el contador no se infla).
         new("renacido",      "Renacido",      "♻️", GameEventKinds.FuegoNuevo,    "Hacé un Fuego Nuevo y empezá otra vuelta",         Plain(1, 5, 20)),
+
+        // v0.15.0: la historia (GameData/Lore.cs). Mismo contador que Renacido (cada Fuego Nuevo exige volver a vencer al Asador, no se infla; solo oro y XP) con tramos más
+        // adelante: caen en vueltas donde el fuego cuenta algo nuevo del Asador. El último tramo de "El que volvió" es el Fuego Nuevo 100, el final de la historia.
+        new("companero",     "Compañero del Asador", "🫂", GameEventKinds.FuegoNuevo, "Seguí volviendo al Fogón: cada vuelta le saca pesar al Asador", Plain(10, 25, 50)),
+        new("volvio",        "El que volvió", "🪑", GameEventKinds.FuegoNuevo,    "Llegá hasta el final de la historia del Fogón",   Plain(75, 90, Lore.FinalFuegoNuevo)),
     ];
 
     // Los logros se muestran en páginas por tema (/achievements): cada logro está en exactamente una (lo chequea la prueba).
@@ -74,7 +79,7 @@ public static class AchievementCatalog
         new("Combate", "⚔️", ["cazador", "viajero", "matajefes", "exterminador", "gladiador", "asador"]),
         new("Oficios", "🔨", ["recolector", "herrero", "desmantelador", "encantador"]),
         new("Economía", "💰", ["comerciante", "generoso", "abridor", "afortunado"]),
-        new("Constancia", "📅", ["constante", "comandante", "misionero", "domador", "criador", "renacido"]),
+        new("Constancia", "📅", ["constante", "comandante", "misionero", "domador", "criador", "renacido", "companero", "volvio"]),
     ];
 
     // Los logros de una página (0..Categories.Count-1); una página fuera de rango se acota a la más cercana.

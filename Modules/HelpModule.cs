@@ -118,7 +118,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 false)
             .AddField(
                 "🛠️ Utilidad",
-                "`/start` — Empezar tu aventura\n`/class` — Elegir clase (solo con nivel 1; después, con cada Fuego Nuevo)\n`/profile` — Ver tu ficha\n`/history` — Tu historial por juego: cuántas veces jugaste, ganaste y perdiste\n`/duels` — Tu récord de duelos y los últimos rivales\n`/inventory` — Ver tu inventario\n`/cd` — Ver tus cooldowns (y si ya te anotaste en la Arena de hoy)\n`/tips` — Qué te falta para tu próxima forja y de dónde sacarlo\n`/tutorial` — Este loop básico\n`/info` — Esta lista de comandos",
+                "`/start` — Empezar tu aventura\n`/class` — Elegir clase (solo con nivel 1; después, con cada Fuego Nuevo)\n`/profile` — Ver tu ficha\n`/history` — Tu historial por juego: cuántas veces jugaste, ganaste y perdiste\n`/duels` — Tu récord de duelos y los últimos rivales\n`/inventory` — Ver tu inventario\n`/cd` — Ver tus cooldowns (y si ya te anotaste en la Arena de hoy)\n`/tips` — Qué te falta para tu próxima forja y de dónde sacarlo\n`/story` — La historia del juego, capítulo por capítulo (`aa historia`)\n`/tutorial` — Este loop básico\n`/info` — Esta lista de comandos",
                 false)
             .AddField(
                 "📚 Cómo funciona cada cosa",
