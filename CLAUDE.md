@@ -39,7 +39,7 @@ schema.sql → seed.sql → add_weapon_family.sql → seed_class_gear_and_monste
   → finalize_consumable_catalog.sql → remove_legacy_consumables.sql → rebalance_consumable_prices.sql
   → rework_food_catalog.sql → seed_boxes.sql → rework_drops_and_recipes.sql → rework_boxes.sql
   → update_item_emojis.sql → update_monster_portraits.sql → seed_pets.sql → seed_fogon.sql
-  → seed_zone_boxes.sql
+  → seed_zone_boxes.sql → retire_box_trophies.sql
 ```
 
 `seed_recipes.sql` must come after every seed that creates items it uses: a recipe whose result or ingredient
@@ -47,7 +47,7 @@ item doesn't exist yet would be silently skipped (or created *without* that ingr
 itself and raises instead. (`seed_zone_bosses.sql` used to be missing from this list, so a fresh install had no
 zone bosses at all.)
 
-`Database/run_fresh_install.sql` runs all twenty-six in this exact order in one shot via `psql` (or
+`Database/run_fresh_install.sql` runs all twenty-seven in this exact order in one shot via `psql` (or
 pgAdmin's "PSQL Tool", NOT its plain Query Tool — both need real `psql`, since it uses the `\ir`
 meta-command) — **only against a genuinely empty database**, never against one with existing data
 (see below, several of these are not safe to re-run).
@@ -329,13 +329,15 @@ Cofre de Oro 25–60 (120.000) and the Mítica ("Arca del Soberano") 60–100 (r
 a boss chest must not be a gold source). `/open` / `aa open <caja> [n]` (`Modules/BoxModule.cs`, 1–10 at a time) consumes the box and pays the loot in ONE transaction (`Repositories/BoxRepository.OpenAsync`: guarded decrement, then gold + items); the roll is the
 pure `GameData/BoxLoot.cs` (`BoxLootRoller.Roll(box, context, rng)`). **An opening is N draws, N uniform in `boxes.min_items..max_items`** (gold is NOT a draw), and each draw picks ONE `box_loot` entry by weight (the weights of the non-gold entries add up to 1000 per box). Entry kinds:
 `gather` (a Madera/Mineral rolled exactly like `/chop` and `/mine`: the same rarity table, `RarityCatalog.GatheringChances`, **except the Mítico, which is 0.2% in total = 0.1% per item** — a test compares the other four with RarityCatalog so they cannot drift), `zone_drop` (a monster drop from zone ≤
-min(the box's zone, the player's highest UNLOCKED zone); hunt drops weigh 3 and the travel drop 2, the real farming proportion), `item` (food, a trophy that no monster drops, or the box one tier below) and `gold` (NOT a draw: a rare bonus per opening whose `weight` is its chance in per mille, 3% in the shop boxes).
+min(the box's zone, the player's highest UNLOCKED zone); hunt drops weigh 3 and the travel drop 2, the real farming proportion), `item` (food, or the box one tier below; there used to be "trophies" here, see below) and `gold` (NOT a draw: a rare bonus per opening whose `weight` is its chance in per mille, 3% in the shop boxes).
 **Zone gating, two places, one rule**: a box belongs to the zone of its rarity (Común = 1 … Legendario = 4, Mítico = 5, `BoxCatalog.RequiredZoneRank`) and you can only BUY it once that zone is unlocked (`ShopModule.ExecuteBuyAsync` answers "🔒 es una caja de la Zona N" BEFORE charging gold or burning the box-buy cooldown; the shop, the tavern menu and `/shop buy` autocomplete mark the closed ones with 🔒); and what comes OUT only includes drops of zones
 you have unlocked, even if the box is from a higher zone (so a box won from a boss or a mission never hands out zone-5 materials to a level-3 player). "Unlocked" is the same rule as `/zona` (`ZoneRanking.MaxUnlockedRank`: level ≥ `min_level` and no pending gatekeeper boss), resolved by `Services/BoxContextService.cs` (cached pools of gatherable items and zone drops, 5 minutes;
 the player's rank is read fresh each time). Loot lives in the DB (`Database/rework_boxes.sql` is the source of truth, it also adds the `min_items/max_items` columns and verifies itself): **boxes now DO hand out zone drops and gathering materials** (rule changed in v0.8.0; the old "never give zone drops" existed because a 1000-gold box would have made buying ~5× faster than farming — the new prices and the zone/rarity limits are what keep it honest).
 Prices come from minutes of farming: `Database/report_box_economy.sql` values a box in farming minutes (each item at its real drop/gather rate) × the gold of an hour of `/hunt` in the box's zone, and the price is ~70% of that (measured 60–79%, buying is never faster than playing). Re-run it if the weights, the ranges, the drop chances, the gather yields or the prices change. Rules that must keep holding: (1) a box never pays gold as a main prize (3% bonus, ~0.5% of the price in expectation); (2) Corteza del Árbol de Vida / Fragmento de Meteorito (the very-long-term goals) are fixed items only in the Mítica box (which can't be bought);
 in the others they come only through the 0.1% gather draw. The zone bosses give the zone's chest (first clear 100%, then 40% per fight, one boss fight per hour, see Drops), which adds to that supply.
 
+
+**Box trophies retired (v0.14.4; `Database/retire_box_trophies.sql`)** — the owner: "dentro de las cajas hay items que no se usan en nada, ni en recetas ni nada… quiero que la gente que juegue no tenga eso al pedo". The 17 **trophies** (Garra Maldita, Collar de Cuero Viejo, Hueso Añejo, Corona de Escoria Viva… materials that no monster dropped and no recipe used; they could only be sold, dismantled or collected for the Coleccionista achievement) are gone from the catalog. The script does it in ONE transaction: aborts if any of them is used somewhere (recipe, drop, pet, buff, worn gear), **refunds** holders at the sell price (deleting an item cascades its inventory), gives each box's freed loot weight (3–6 % of the 1000) to ITS `gather` entry (the useful base material, so every box still sums 1000 and now pays a little more in useful materials), deletes the entries and the items, and verifies. Re-runnable (no trophies left = no-op); it is the 27th and last file of `run_fresh_install.sql`. **Consequences**: the Coleccionista achievement was removed with them (the Arca del Soberano now comes only from Matajefes III), `AchievementCatalog.TrophyTotal` is gone, and the `trophy_found`/`player_collection` mechanism in `BoxRepository`/`BoxModule` stays dormant on purpose ("luego vemos de poner en otro lado eso"). **Never re-run `rework_boxes.sql` or `seed_zone_boxes.sql` alone on a database that already went through it**: they name the trophies and would fail (or bring them back); on a new database they go in the `run_fresh_install.sql` order and the retirement closes it.
 **Food: 6 items, and the two Mítica ones are "banquetes" with an attack buff** — the catalog was cut from 9 to 6 (Pan Casero, Choripán
 and Vacío al Disco removed by `Database/rework_food_catalog.sql`, which refunds their gold value to anyone holding them *before* the
 cascade delete). Banquetes (Asado Completo del Domingo en Familia 2100, Mate Dulce de la Abuela 2800 — ~3× the heal curve) also give
@@ -352,8 +354,8 @@ one — it works even at full HP because the buff is the point — and `/heal` d
 **Missions & achievements (`/missions`, `/achievements`)** — *progress is never stored*: a mission's progress is `SUM(game_events.amount)` of its
 kind since the period started, and an achievement is "the `player_stats` counter reached N", so the event pipeline stays the single
 source of truth and there is no assignment/progress row that can drift. The DB holds only what was **claimed** (`mission_claims`,
-`achievement_claims`) plus `player_collection` (distinct trophies — materials no monster drops, i.e. the ones only boxes give; it
-feeds the `trophy_found` counter of the Coleccionista achievement, and `AchievementCatalog.TrophyTotal` must match the real count).
+`achievement_claims`) plus `player_collection` (distinct "trophies" — materials no monster drops, i.e. the ones only boxes give; **there are none since v0.14.4**, see "Box trophies retired" below; it
+fed the `trophy_found` counter of the Coleccionista achievement, which was removed with them; the mechanism in `BoxRepository`/`BoxModule` is dormant, kept in case they come back somewhere else).
 Which missions apply is a pure function of the period start (`GameData/MissionCatalog.ForPeriod`, seeded SplitMix64 — identical for
 everyone and across .NET versions; don't swap in `System.Random`, its seeded sequence is not guaranteed stable): 3 daily + 2 weekly,
 never two of the same event kind, and every pool entry must be doable by *any* player (so no boss missions — level-gated — and no
@@ -368,7 +370,7 @@ hunt in that zone — 14/58/118/215/375, the same unit the box prices use; XP = 
 zone ladder). Boxes are bought **one per purchase and one purchase every 2 hours** (it was 1 hour until v0.8.0; `CooldownCatalog.BoxBuy` in `/cd`, `ShopCatalog.BoxesPerPurchase`;
 `ShopRepository.BuyItemWithCooldownAsync` claims the cooldown, spends the gold and adds the box in ONE transaction, so a purchase that
 fails for lack of gold never burns the cooldown); food has no limit. Cooldown times are shown with days/hours/minutes
-(`GameData/TimeFormat.Remaining`, the one formatter for every cooldown message). The Mythic box (Arca del Soberano) is paid only by the tier-III achievements Matajefes and Coleccionista — it holds the
+(`GameData/TimeFormat.Remaining`, the one formatter for every cooldown message). The Mythic box (Arca del Soberano) is paid only by the tier-III achievement Matajefes (Coleccionista, the other one, went away with the trophies in v0.14.4) — it holds the
 very-long-term goals and must stay unbuyable. Achievements count from the day event tracking went live (v0.6), not before. The
 "¡Misión completada!" / "¡Logro desbloqueado!" notices come from `Services/ProgressNotifier.cs`, called by `GameEventService` right
 after each saved event: it compares the counter before and after the event, so it fires exactly when a goal is crossed and stores
@@ -552,7 +554,7 @@ fight players**: `DuelFighterFactory` calls `Resolve` without pets, so duels and
 the drop bonus only speeds drop-gated recipes by at most ~6 % when fully levelled, and the +15 % XP / +5 % gold / +6 % defense were not simulated against the ladder (use `docs/calibration/calibsim` if it matters). Events `pet_hatched`/`pet_fed`; achievements Domador (hatched 1/3/6) and Criador (fed 10/50/150 = six pets maxed), `Plain` tiers (gold+XP only).
 The `pet_feed:{owner}` button lives in `PetButtonsModule` (NOT in the `[Group("pet")]` module: Discord.Net prefixes the group name onto component ids inside a group — the routing was checked with the real `InteractionService`).
 
-**Achievements v0.9.0: 17 (21 since v0.12.0: Domador, Criador, Asador and Renacido), in four pages** — `GameData/AchievementCatalog.cs` keeps the 10 original ones and adds 7 (Comandante `command_used`, Exterminador `enemy_defeated`, Misionero `mission_claimed`, Desmantelador `dismantle`, Encantador `enchant`,
+**Achievements v0.9.0: 17 (21 since v0.12.0: Domador, Criador, Asador and Renacido; 20 since v0.14.4, which removed Coleccionista), in four pages** — `GameData/AchievementCatalog.cs` keeps the 10 original ones and adds 7 (Comandante `command_used`, Exterminador `enemy_defeated`, Misionero `mission_claimed`, Desmantelador `dismantle`, Encantador `enchant`,
 Afortunado `casino_win` = net gold won, Gladiador `arena_join`) that pay **only gold and XP, small, never a box** (`Plain` tiers): their counters can be inflated (a command counts even if it only looks at something; an enemy already counts for
 Cazador/Viajero/Matajefes) so a box per tier would be farmable. Do not pay boxes from these. Two new counters have ONE place that records them: `command_used` (`Services/CommandCounter.cs`: slash commands from `NoticeDelivery.Attach`'s single
 `InteractionExecuted` handler BEFORE it delivers notices — same handler on purpose, so the order is safe — and text commands from `Program.HandleTextMessageAsync`; `/start` and buttons never count, a command that ran and answered an error does) and

@@ -26,7 +26,7 @@ public class AchievementsModule(
     IAchievementRepository achievementRepository, IGameEvents gameEvents)
     : InteractionModuleBase<SocketInteractionContext>
 {
-    [SlashCommand("achievements", "Tus logros: cazador, herrero, coleccionista... con su progreso y premios.")]
+    [SlashCommand("achievements", "Tus logros: cazador, herrero, recolector... con su progreso y premios.")]
     public async Task HandleAchievementsAsync()
     {
         await DeferAsync();

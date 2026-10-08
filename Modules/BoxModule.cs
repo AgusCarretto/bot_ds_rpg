@@ -118,7 +118,7 @@ public class BoxModule(
 
         await gameEvents.RecordAsync(discordId, GameEventKinds.BoxOpened, amount: opened, detail: item.Name);
 
-        // Trofeos que no tenía nunca: cuentan para el logro Coleccionista (distintos, no repetidos).
+        // Trofeos que no tenía nunca: se anotan en player_collection y suman al contador trophy_found (hoy no queda ninguno: se retiraron en la v0.14.4, y el logro Coleccionista con ellos).
         if (newTrophies.Count > 0)
         {
             await gameEvents.RecordAsync(discordId, GameEventKinds.TrophyFound, amount: newTrophies.Count, detail: string.Join(", ", newTrophies));

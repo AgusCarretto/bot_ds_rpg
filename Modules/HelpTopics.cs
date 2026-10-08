@@ -146,7 +146,7 @@ public static class HelpTopics
         ("🛠️ Cómo se hace",
             $"**/dismantle** y elegís el ítem de la lista (solo aparecen los que tenés) y la cantidad, de 1 a {Dismantling.MaxPerCommand} por vez.\nEn texto: `aa desmantelar 30 Piedra`."),
         ("🧱 Qué se puede romper",
-            "Madera, minerales, drops de monstruos y trofeos de las cajas. **No** las cajas, la comida ni el equipo. Es de una sola mano: el Polvo no vuelve a convertirse en material."),
+            "Madera, minerales y drops de monstruos. **No** las cajas, la comida ni el equipo. Es de una sola mano: el Polvo no vuelve a convertirse en material."),
         ("✨ Cuánto Polvo da cada unidad",
             string.Join(" · ", new[] { "Común", "Raro", "Épico", "Legendario", "Mítico" }.Select(r => $"{r} {Num(Dismantling.DustPerUnit(r))}")) +
             "\nRinde parecido por minuto de farmeo en todas las rarezas, así que no hay una «mejor» para romper."),
@@ -230,7 +230,7 @@ public static class HelpTopics
             $"Se compran en la **/taberna** o con **/shop buy**: **{ShopCatalog.BoxesPerPurchase} por compra y una compra cada {Dur(CooldownCatalog.BoxBuy.Duration)}**, y solo de las zonas que ya desbloqueaste (🔒 si todavía no). " +
             "Los jefes sueltan el cofre de su zona, y las misiones y logros también dan cajas. **No se pueden revender.**"),
         ("🎁 Qué traen",
-            "Madera y minerales, drops de las zonas que ya desbloqueaste, **trofeos** (materiales que ningún monstruo suelta), comida, cajas más chicas y, muy de vez en cuando, un poco de oro. La **Arca del Soberano** (Mítica) no se compra: la dan solo los logros más difíciles."));
+            "Madera y minerales, drops de las zonas que ya desbloqueaste, comida, cajas más chicas y, muy de vez en cuando, un poco de oro. La **Arca del Soberano** (Mítica) no se compra: la dan solo los logros más difíciles."));
 
     private static Embed Shop() => Topic(Self("shop"),
         "Acá se compra y se vende todo lo que no se forja, y se cura la vida.",
@@ -272,7 +272,7 @@ public static class HelpTopics
             $"**/exchange** con **dar** (el drop que entregás, de a {DropExchange.GiveAmount}), **recibir** (otro drop de la misma zona) y **veces** (de 1 a {DropExchange.MaxTimes} cambios juntos). Las listas te muestran solo lo que podés hacer.\n" +
             "En texto: `aa exchange \"Pluma de Ñandú\" \"Cuero Grueso\" 2`. En la **/taberna** hay una lista \"Cambiar drops\" para hacer un cambio de una."),
         ("📏 Las reglas",
-            "Solo **drops de monstruos** (los de cacería y de viaje de cada zona), siempre de la **misma zona** y a uno **distinto** del que das. No sirve para madera ni minerales (eso es entre jugadores: **/info tema:trade**), ni para trofeos ni cajas."),
+            "Solo **drops de monstruos** (los de cacería y de viaje de cada zona), siempre de la **misma zona** y a uno **distinto** del que das. No sirve para madera ni minerales (eso es entre jugadores: **/info tema:trade**), ni para cajas."),
         ("⚖️ ¿Conviene?",
             $"Es {DropExchange.GiveAmount} por {DropExchange.GetAmount}: compensa la mala racha, no reemplaza al farmeo. Si el drop que te falta lo podés conseguir jugando, sale más barato jugar."));
 
@@ -327,7 +327,7 @@ public static class HelpTopics
         ("💨 Lo que se va",
             "Nivel y EXP, la zona y los jefes vencidos, el arma y el amuleto (con sus encantamientos), todos los materiales, drops, cajas y consumibles, el Polvo, los banquetes y los enfriamientos. Sin reembolso."),
         ("🔒 Lo que se queda",
-            "El oro (billetera y banco), las mascotas con sus huevos y su comida, los logros, las misiones cobradas, los trofeos, la racha diaria, las bendiciones y tus Fuegos Nuevos."),
+            "El oro (billetera y banco), las mascotas con sus huevos y su comida, los logros, las misiones cobradas, la racha diaria, las bendiciones y tus Fuegos Nuevos."),
         ("🙏 Bendiciones",
             $"Una por vuelta, elegida entre {BlessingCatalog.OfferSize} sorteadas ({BlessingCatalog.All.Count} en total); si repetís una sube de nivel hasta el {BlessingCatalog.RomanLevel(BlessingCatalog.MaxLevel)}. " +
             "Las hay de velocidad (drop, cantidad, EXP), de poder chico (ataque, defensa y vida, solo contra monstruos), de mascotas, de oro, de ítems y cosméticas. **/blessings** las muestra todas."),

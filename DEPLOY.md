@@ -177,6 +177,8 @@ Ojo: `/class` deja de poder cambiar la clase de quien ya pasó del nivel 1 (la c
 
 **v0.14.1 → v0.14.2 (arma general más barata):** no cambia el esquema ni hace falta reiniciar el bot, pero **corré `Database/rebalance_general_weapons.sql`** en la base (`psql "<DATABASE_PUBLIC_URL>" -v ON_ERROR_STOP=1 -f rebalance_general_weapons.sql`, desde `Database/`): baja a 2 de cada ingrediente las cuatro armas generales de las zonas 2 a 5. Es re-ejecutable y se verifica solo; una instalación nueva ya lo trae. Backup antes (sección 6).
 
+**v0.14.3 → v0.14.4 (trofeos de las cajas):** corré **`Database/retire_box_trophies.sql`** en la base (`psql "<DATABASE_PUBLIC_URL>" -v ON_ERROR_STOP=1 -f retire_box_trophies.sql`, desde `Database/`; en pgAdmin sirve el Query Tool porque no usa comandos de `psql`). Borra los 17 trofeos de las cajas, **reembolsa en oro** (a su precio de venta) a quien tenga alguno y reparte el peso liberado en cada caja. Es re-ejecutable y se verifica solo; una instalación nueva ya lo trae. Backup antes (sección 6). Podés correrlo antes o después de subir el código: los dos funcionan con la base vieja o la nueva.
+
 La carpeta `Database/` del repo está montada en `/seed`, así que los scripts nuevos aparecen con el `git checkout`. Los seeds son
 re-ejecutables; **nunca** corras `run_fresh_install.sql` sobre una base con datos.
 

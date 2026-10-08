@@ -67,7 +67,7 @@ public class ExchangeModule(IUserRepository userRepository, IItemRepository item
             case ExchangeStatus.SameItem:
                 return new ExchangeResult("Entregás y recibís el mismo ítem: elegí un drop **distinto** de la misma zona.", null);
             case ExchangeStatus.NotExchangeable:
-                return new ExchangeResult("El tabernero solo cambia **drops de monstruos** (los de cacería y de viaje): no madera ni minerales, ni trofeos, ni cajas.", null);
+                return new ExchangeResult("El tabernero solo cambia **drops de monstruos** (los de cacería y de viaje): no madera ni minerales, ni cajas.", null);
             case ExchangeStatus.DifferentZones:
             {
                 var zones = (await exchangeRepository.GetExchangeableDropsAsync()).ToDictionary(d => d.ItemId, d => d.ZoneName);

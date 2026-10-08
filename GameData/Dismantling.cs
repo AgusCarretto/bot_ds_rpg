@@ -1,6 +1,6 @@
 namespace BotDsRpg.GameData;
 
-// Desmantelar (/dismantle): se rompe un MATERIAL (madera, mineral, drop de monstruo o trofeo) y da Polvo, que solo sirve para encantar (GameData/Enchantments.cs).
+// Desmantelar (/dismantle): se rompe un MATERIAL (madera, mineral o drop de monstruo) y da Polvo, que solo sirve para encantar (GameData/Enchantments.cs).
 // El camino es de UNA sola mano: el Polvo nunca vuelve a ser material ni drop (las recetas están calibradas con 3 drops por zona y no se puede fabricar
 // uno), y nada convierte Carbón en Hierro. Craftear quedó afuera (el dueño: "lo de craftear lo olvidamos").
 public static class Dismantling

@@ -14,14 +14,11 @@ public sealed record AchievementDefinition(
 // hasta ese día no se sabe, así que los logros se miden desde ahí.
 //
 // PREMIOS: tramo I chico (oro y XP), II con una caja de su zona, III más grande. Se pagan según la zona del jugador AL RECLAMAR.
-// Dos tramos III dan el Arca del Soberano (la caja Mítica, la única con los objetivos larguísimos): son los más difíciles y los
-// únicos premios de esa caja, a propósito — no se compra y no hay otra forma de conseguirla.
+// El tramo III de Matajefes da el Arca del Soberano (la caja Mítica, la única con los objetivos larguísimos): es el más difícil y el
+// único premio de esa caja, a propósito — no se compra y no hay otra forma de conseguirla. (Hasta la v0.14.3 también la daba Coleccionista, que se juntaba con los
+// 17 trofeos de las cajas; los trofeos se retiraron en la v0.14.4 porque no servían para nada — Database/retire_box_trophies.sql — y con ellos el logro.)
 public static class AchievementCatalog
 {
-    // Cuántos trofeos hay (los materiales que ningún monstruo suelta y solo salen de las cajas, ver Database/seed_boxes.sql).
-    // Los tramos del coleccionista son contra este número: si se agrega o saca un trofeo hay que actualizarlo (lo chequea la prueba).
-    public const int TrophyTotal = 17;
-
     private static readonly RewardSpec TierOne = new(12, 4);
     private static readonly RewardSpec TierTwo = new(40, 8, BoxGrant.ZoneTier);
     private static readonly RewardSpec TierThree = new(100, 15, BoxGrant.ZoneTierPlusOne);
@@ -46,7 +43,6 @@ public static class AchievementCatalog
         new("comerciante",   "Comerciante",   "🛒", GameEventKinds.ShopGoldSpent, "Gastá oro en la tienda (/shop)",                   Standard(1000, 25000, 250000)),
         new("generoso",      "Generoso",      "🤝", GameEventKinds.GoldGiven,     "Regalá monedas a otros jugadores con /give",       Standard(500, 5000, 50000)),
         new("abridor",       "Abridor",       "📦", GameEventKinds.BoxOpened,     "Abrí cajas con /open",                            Standard(5, 30, 150)),
-        new("coleccionista", "Coleccionista", "🏺", GameEventKinds.TrophyFound,   "Conseguí trofeos distintos en las cajas",          Standard(6, 12, TrophyTotal, mythicTop: true)),
         new("constante",     "Constante",     "📅", GameEventKinds.DailyClaim,    "Reclamá tu recompensa diaria con /daily",          Standard(7, 30, 100)),
 
         // v0.9.0 (premios solo de oro y XP, ver Plain).
@@ -77,7 +73,7 @@ public static class AchievementCatalog
     [
         new("Combate", "⚔️", ["cazador", "viajero", "matajefes", "exterminador", "gladiador", "asador"]),
         new("Oficios", "🔨", ["recolector", "herrero", "desmantelador", "encantador"]),
-        new("Economía", "💰", ["comerciante", "generoso", "abridor", "coleccionista", "afortunado"]),
+        new("Economía", "💰", ["comerciante", "generoso", "abridor", "afortunado"]),
         new("Constancia", "📅", ["constante", "comandante", "misionero", "domador", "criador", "renacido"]),
     ];
 
