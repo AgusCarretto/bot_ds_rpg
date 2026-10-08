@@ -190,6 +190,9 @@ public static class HelpTopics
             $"Un monstruo élite de tu zona, más duro. Cooldown de {Dur(CooldownCatalog.Travel.Duration)}. Paga {CombatRewardCalculator.TravelRewardMultiplier} cacerías juntas y suelta su material el {CombatRewardCalculator.TravelDropChancePercent} % de las veces."),
         ("🤖 /autohunt (aa ah)",
             $"Resuelve una cacería de una sola vez: solo ataque básico, sin habilidad y sin poder huir. Comparte cooldown con /hunt y pide al menos **{AutoHuntRules.MinHpPercent} %** de vida."),
+        ("⌨️ Si un botón se traba",
+            "Escribí **`aa attack`**, **`aa ability`** (la habilidad de tu clase) o **`aa flee`** (huir): juegan el mismo turno que el botón y el resultado sale en un mensaje nuevo con botones nuevos. " +
+            "Sirve en /hunt, /travel, /boss y /raid. Tenés **60 segundos** por turno: si no actuás en ese tiempo el combate se abandona."),
         ("❤️ Tu vida",
             "La vida no se recupera sola: curate con **/heal**, **/use** o en la **/taberna**. Con 0 HP no podés pelear. En /travel y /boss solo podés comer **una vez por pelea**."),
         ("☠️ Si perdés", $"Perdés la EXP del nivel y el {DeathPenalty.GoldPercent} % del oro: **/info tema:death**."));

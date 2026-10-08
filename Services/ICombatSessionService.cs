@@ -67,7 +67,7 @@ public sealed record CombatState(
 }
 
 // ReplyTarget: dónde editar el mensaje del combate más adelante (ver ICombatReplyTarget).
-// TimeoutCts: se cancela y se reemplaza en cada turno para "reiniciar el reloj" de 30s.
+// TimeoutCts: se cancela y se reemplaza en cada turno para "reiniciar el reloj" de 60s (CombatSessionService.TurnTimeout).
 public sealed class CombatSession
 {
     public required CombatState State { get; init; }
