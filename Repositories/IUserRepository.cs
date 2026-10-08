@@ -3,6 +3,9 @@ using BotDsRpg.Models;
 
 namespace BotDsRpg.Repositories;
 
+// El resultado de crear una cuenta con /start: el jugador y si en ESTA llamada se le entregó el kit inicial (GameData/StarterKit.cs; false si la cuenta ya existía).
+public sealed record NewAccountResult(User Player, bool KitGranted);
+
 public interface IUserRepository
 {
     // Devuelve null si el jugador todavía no existe en la base.
@@ -15,6 +18,10 @@ public interface IUserRepository
     // Crea al jugador con la clase elegida si no existe, o se la actualiza si ya existe. Es lo que usa /start; desde la v0.12.0 /class NO la usa (ver TrySetClassWhileFreshAsync):
     // este método pisa la clase sin preguntar.
     Task<User> SetClassAsync(ulong discordId, string className, CancellationToken cancellationToken = default);
+
+    // Lo que usa /start desde la v0.14.6: lo mismo que SetClassAsync (crea la cuenta con la clase elegida) y, SOLO si la fila de users es realmente nueva, le entrega el kit inicial
+    // (GameData/StarterKit.cs) en la MISMA instrucción SQL: un doble clic o dos botones a la vez no lo duplican, y una cuenta que ya existía no lo vuelve a recibir.
+    Task<NewAccountResult> CreateAccountAsync(ulong discordId, string className, CancellationToken cancellationToken = default);
 
     // Cambia la clase SOLO si el jugador está empezando de cero (nivel 1 y 0 de EXP, GameData/FuegoNuevoRules.CanChangeClass): un solo UPDATE con la condición adentro, así
     // nadie la cambia a mitad de una vuelta aunque un botón viejo siga en pantalla. null = no existe o ya no está en cero (el llamador lo explica). Con un Fuego Nuevo la clase se

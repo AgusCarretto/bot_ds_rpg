@@ -62,6 +62,38 @@ public sealed class UserRepository(IDbConnectionFactory connectionFactory) : IUs
         return await connection.QuerySingleAsync<User>(command);
     }
 
+    public async Task<NewAccountResult> CreateAccountAsync(ulong discordId, string className, CancellationToken cancellationToken = default)
+    {
+        // UNA sola instrucción: el upsert de siempre y, si la fila es nueva (en un INSERT ... ON CONFLICT DO UPDATE, xmax = 0 solo en la fila insertada), el kit. Las instrucciones
+        // de modificación dentro de un WITH se ejecutan siempre y hasta el final, aunque la consulta de afuera no las lea. ON CONFLICT DO NOTHING: nunca suma dos veces.
+        const string sql = """
+            WITH up AS (
+                INSERT INTO users (discord_id, class, level, xp, gold, max_hp, current_hp)
+                VALUES (@DiscordId, @Class, 1, 0, 50, 100, 100)
+                ON CONFLICT (discord_id) DO UPDATE SET class = EXCLUDED.class
+                RETURNING (xmax = 0) AS inserted
+            ), kit AS (
+                INSERT INTO inventory (discord_id, item_id, quantity)
+                SELECT @DiscordId, i.item_id, @KitQuantity
+                FROM items i
+                WHERE i.name = @KitItem AND (SELECT inserted FROM up)
+                ON CONFLICT (discord_id, item_id) DO NOTHING
+                RETURNING 1
+            )
+            SELECT (SELECT count(*) FROM kit)::int;
+            """;
+
+        using IDbConnection connection = connectionFactory.CreateConnection();
+        int kitRows = await connection.QuerySingleAsync<int>(new CommandDefinition(
+            sql,
+            new { DiscordId = (long)discordId, Class = className, KitItem = StarterKit.FoodItemName, KitQuantity = StarterKit.FoodQuantity },
+            cancellationToken: cancellationToken));
+
+        var player = await GetByDiscordIdAsync(discordId, cancellationToken)
+            ?? throw new InvalidOperationException($"La cuenta {discordId} no existe justo después de crearla.");
+        return new NewAccountResult(player, kitRows > 0);
+    }
+
     public async Task<User?> TrySetClassWhileFreshAsync(ulong discordId, string className, CancellationToken cancellationToken = default)
     {
         // La condición va en el WHERE (la misma de FuegoNuevoRules.CanChangeClass: nivel 1 y 0 de EXP): si ya no se cumple no vuelve ninguna fila y no se toca nada.

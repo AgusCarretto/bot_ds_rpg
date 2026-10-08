@@ -66,13 +66,14 @@ public class OnboardingModule(IUserRepository userRepository, IGameEvents gameEv
                 return;
             }
 
-            // Mismo upsert atómico que usa /class (Nivel 1, 0 EXP, 50 de oro, 100/100 HP).
-            var player = await userRepository.SetClassAsync(Context.User.Id, classDef.Name);
+            // El upsert atómico de siempre (Nivel 1, 0 EXP, 50 de oro, 100/100 HP) y, si la cuenta es nueva, el kit inicial (GameData/StarterKit.cs) en la misma instrucción.
+            var created = await userRepository.CreateAccountAsync(Context.User.Id, classDef.Name);
+            var player = created.Player;
             await gameEvents.RecordAsync(Context.User.Id, GameEventKinds.Start, player.CurrentZoneId, detail: classDef.Name);
 
             await ModifyOriginalResponseAsync(props =>
             {
-                props.Embed = BuildConfirmationEmbed(Context.User.Username, player, classDef);
+                props.Embed = BuildConfirmationEmbed(Context.User.Username, player, classDef, created.KitGranted);
                 props.Components = new ComponentBuilder().Build();
             });
         }
@@ -119,9 +120,10 @@ public class OnboardingModule(IUserRepository userRepository, IGameEvents gameEv
         return components.Build();
     }
 
-    private static Embed BuildConfirmationEmbed(string username, BotDsRpg.Models.User player, ClassDefinition classDef)
+    // kitGranted: se le entregó el kit inicial en esta llamada (cuenta nueva): se lo dice, con lo único que necesita saber para usarlo (/heal). Sin kit (cuenta que ya existía) no aparece nada.
+    private static Embed BuildConfirmationEmbed(string username, BotDsRpg.Models.User player, ClassDefinition classDef, bool kitGranted = false)
     {
-        return new EmbedBuilder()
+        var embed = new EmbedBuilder()
             .WithTitle("🔥 Bienvenido a las Tierras de Cenizas")
             .WithColor(BrandColor)
             .WithDescription(
@@ -133,7 +135,14 @@ public class OnboardingModule(IUserRepository userRepository, IGameEvents gameEv
                 "tu equipamiento y sobrevivir.\n\n" +
                 "Escribí `/tutorial` o `aa tutorial` para aprender lo básico.")
             .AddField("🎭 Tu clase", $"**{player.Class}** {classDef.Emoji} — especialista en {classDef.WeaponType}", true)
-            .AddField("📊 Estado inicial", $"Nivel {player.Level} · {player.CurrentHp}/{player.MaxHp} HP · {player.Gold} de oro", true)
+            .AddField("📊 Estado inicial", $"Nivel {player.Level} · {player.CurrentHp}/{player.MaxHp} HP · {player.Gold} de oro", true);
+
+        if (kitGranted)
+        {
+            embed.AddField("🎁 Kit inicial", $"**{StarterKit.FoodQuantity}× {StarterKit.FoodItemName}** en tu mochila: usá `/heal` cuando te falte vida.", false);
+        }
+
+        return embed
             .WithFooter($"{username}, que el fuego te acompañe.")
             .Build();
     }

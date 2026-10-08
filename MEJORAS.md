@@ -1,6 +1,14 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-08 (v0.14.5: combate escribiendo y 60 s por turno)_
+_Última revisión: 2026-10-08 (v0.14.6: primera hora más amable)_
+
+## Primera hora más amable (v0.14.6, 2026-10-08)
+
+- **Kit inicial**: `/start` ahora regala **5 Mate Amargo** (una vez por cuenta; la bienvenida lo avisa y apunta a `/heal`). Medido con las reglas reales: en nivel 1 una pelea cuesta 30–53 % de la vida, la vida no se recupera sola y curarla con comida costaba más oro del que la pelea paga; sin curarse, la 2.ª pelea seguida se perdía entre 8 % (Ninja) y 28 % (Arquero).
+- **Textos corregidos**: `/travel` y `aa travel` decían «x10, 10 minutos» (son x30 y 30 minutos); la bienvenida pasó a voseo («Preparate… Acá»); el inventario vacío sugiere `/hunt`, `/chop` o `/mine`.
+- **Lo que el dueño NO quiso** (no insistir): consejo de vida baja al ganar y descripciones de clase que adviertan fragilidad.
+- Sin cambios de base de datos.
+
 
 ## Jugar el combate escribiendo y 60 segundos por turno (v0.14.5, 2026-10-08)
 
