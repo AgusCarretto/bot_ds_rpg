@@ -157,12 +157,24 @@ public class AdventureModule(
         // componente, sin importar si el combate arrancó por slash command o por "aa hunt".
         await DeferAsync();
 
+        await ResolveTurnCoreAsync(
+            combatSessions, userRepository, itemRepository, adventureRepository, inventoryRepository, buffRepository, gameEvents, zoneBoxService,
+            Context.User.Id, fled, useAbility, new InteractionCombatTurnOutput(Context.Interaction));
+    }
+
+    // El turno de un combate solitario (hunt, travel y boss), SIN dependencia de Context: lo usan el botón (Atacar / Habilidad / Huir, con la pantalla editada en el mismo mensaje) y los
+    // comandos de texto "aa attack", "aa ability" y "aa flee" (mensaje nuevo con botones nuevos, ver Services/CombatTurnOutput.cs). Es UN solo lugar: no se vuelve a copiar la lógica.
+    public static async Task ResolveTurnCoreAsync(
+        ICombatSessionService combatSessions, IUserRepository userRepository, IItemRepository itemRepository, IAdventureRepository adventureRepository,
+        IInventoryRepository inventoryRepository, IBuffRepository buffRepository, IGameEvents gameEvents, IZoneBoxService zoneBoxService,
+        ulong discordId, bool fled, bool useAbility, ICombatTurnOutput output)
+    {
         try
         {
-            var session = combatSessions.Peek(Context.User.Id);
+            var session = combatSessions.Peek(discordId);
             if (session is null)
             {
-                await FollowupAsync("No tenés ningún combate activo. Empezá uno con /hunt, /travel, o \"aa hunt\".", ephemeral: true);
+                await output.NoteAsync("No tenés ningún combate activo. Empezá uno con /hunt, /travel, o \"aa hunt\".");
                 return;
             }
 
@@ -170,24 +182,20 @@ public class AdventureModule(
 
             if (fled)
             {
-                if (!combatSessions.TryAdvance(Context.User.Id, session, null, null))
+                if (!combatSessions.TryAdvance(discordId, session, null, null))
                 {
-                    await FollowupAsync("Justo se resolvió tu combate por otra vía, revisá el mensaje.", ephemeral: true);
+                    await output.NoteAsync("Justo se resolvió tu combate por otra vía, revisá el mensaje.");
                     return;
                 }
 
                 // Delta (no snapshot): así una curación con /use a mitad de combate no se pierde
                 // si el HP en base ya reflejaba otra cosa (ver IUserRepository.ApplyCombatHpDeltaAsync).
                 await userRepository.ApplyCombatHpDeltaAsync(
-                    Context.User.Id, state.ToDbHpDelta(state.PlayerCurrentHp - state.PlayerStartingHp));
+                    discordId, state.ToDbHpDelta(state.PlayerCurrentHp - state.PlayerStartingHp));
 
-                await ModifyOriginalResponseAsync(props =>
-                {
-                    // No se acumula nada nuevo acá: huir no dispara golpe del monstruo, así que el
-                    // resumen es tal cual venía de los turnos anteriores.
-                    props.Embed = BuildFleeEmbed(state);
-                    props.Components = new ComponentBuilder().Build();
-                });
+                // No se acumula nada nuevo acá: huir no dispara golpe del monstruo, así que el
+                // resumen es tal cual venía de los turnos anteriores.
+                await output.ShowAsync(BuildFleeEmbed(state), new ComponentBuilder().Build(), null, session.ReplyTarget);
                 return;
             }
 
@@ -195,7 +203,7 @@ public class AdventureModule(
             // sin habilidad): se rechaza sin gastar el turno.
             if (useAbility && CombatTurnResolver.CheckAbility(state.PlayerClass, state.Ability) != AbilityAvailability.Ready)
             {
-                await FollowupAsync("Tu habilidad todavía está en enfriamiento.", ephemeral: true);
+                await output.NoteAsync("Tu habilidad todavía está en enfriamiento.");
                 return;
             }
 
@@ -224,7 +232,7 @@ public class AdventureModule(
                 // Primera vez (de esta vuelta) que cae el jefe de esta zona o repetición: cambia el cofre y el mensaje (Services/BossChest.cs). La primera vez cae el cofre de la zona
                 // siempre; las repeticiones dan la caja de zone_boxes con su chance. Se mira ANTES de aplicar la victoria, que es lo que sube highest_zone_cleared.
                 bool firstBossClear = state.CommandName == "boss" && state.BossZoneId is int clearedZone
-                    && BossChest.IsFirstClear(await userRepository.GetByDiscordIdAsync(Context.User.Id), clearedZone);
+                    && BossChest.IsFirstClear(await userRepository.GetByDiscordIdAsync(discordId), clearedZone);
                 var repeat = state.CommandName == "boss" && !firstBossClear && state.BossZoneId is int repeatZone
                     ? await BossChest.RepeatAsync(zoneBoxService, repeatZone)
                     : (ChancePercent: 0, BoxName: (string?)null);
@@ -240,9 +248,9 @@ public class AdventureModule(
                     ? (reward.DroppedSomething && repeat.BoxName is not null ? await itemRepository.GetByNameAsync(repeat.BoxName) : null)
                     : await ResolveDroppedItemAsync(itemRepository, state, reward);
 
-                if (!combatSessions.TryAdvance(Context.User.Id, session, null, null))
+                if (!combatSessions.TryAdvance(discordId, session, null, null))
                 {
-                    await FollowupAsync("Justo se resolvió tu combate por otra vía, revisá el mensaje.", ephemeral: true);
+                    await output.NoteAsync("Justo se resolvió tu combate por otra vía, revisá el mensaje.");
                     return;
                 }
 
@@ -262,20 +270,17 @@ public class AdventureModule(
                 int hpDelta = finalState.ToDbHpDelta(finalState.PlayerCurrentHp - finalState.PlayerStartingHp);
                 var outcome = finalState.CommandName == "boss"
                     ? await adventureRepository.ApplyBossVictoryAsync(
-                        Context.User.Id, reward.Gold, reward.Xp, hpDelta, droppedItem?.ItemId, droppedItemQuantity: 1, finalState.BossZoneId!.Value)
+                        discordId, reward.Gold, reward.Xp, hpDelta, droppedItem?.ItemId, droppedItemQuantity: 1, finalState.BossZoneId!.Value)
                     : await adventureRepository.ApplyVictoryAsync(
-                        Context.User.Id, reward.Gold, reward.Xp, hpDelta, droppedItem?.ItemId, droppedItemQuantity: 1);
+                        discordId, reward.Gold, reward.Xp, hpDelta, droppedItem?.ItemId, droppedItemQuantity: 1);
 
                 await gameEvents.RecordVictoryAsync(
-                    Context.User.Id,
+                    discordId,
                     finalState.CommandName switch { "travel" => GameEventKinds.TravelWin, "boss" => GameEventKinds.BossWin, _ => GameEventKinds.HuntWin },
                     outcome);
 
-                await ModifyOriginalResponseAsync(props =>
-                {
-                    props.Embed = BuildVictoryEmbed(finalState, turn, reward, droppedItem, outcome, firstBossClear);
-                    props.Components = new ComponentBuilder().Build();
-                });
+                await output.ShowAsync(
+                    BuildVictoryEmbed(finalState, turn, reward, droppedItem, outcome, firstBossClear), new ComponentBuilder().Build(), null, session.ReplyTarget);
                 return;
             }
 
@@ -289,9 +294,9 @@ public class AdventureModule(
 
             if (playerHpAfter <= 0)
             {
-                if (!combatSessions.TryAdvance(Context.User.Id, session, null, null))
+                if (!combatSessions.TryAdvance(discordId, session, null, null))
                 {
-                    await FollowupAsync("Justo se resolvió tu combate por otra vía, revisá el mensaje.", ephemeral: true);
+                    await output.NoteAsync("Justo se resolvió tu combate por otra vía, revisá el mensaje.");
                     return;
                 }
 
@@ -307,16 +312,12 @@ public class AdventureModule(
                 };
 
                 await userRepository.ApplyCombatHpDeltaAsync(
-                    Context.User.Id, finalState.ToDbHpDelta(playerHpAfter - state.PlayerStartingHp));
+                    discordId, finalState.ToDbHpDelta(playerHpAfter - state.PlayerStartingHp));
 
-                var penalty = await ApplyDeathPenaltyAsync(userRepository, Context.User.Id);
-                await gameEvents.RecordAsync(Context.User.Id, GameEventKinds.FightLost, detail: finalState.CommandName);
+                var penalty = await ApplyDeathPenaltyAsync(userRepository, discordId);
+                await gameEvents.RecordAsync(discordId, GameEventKinds.FightLost, detail: finalState.CommandName);
 
-                await ModifyOriginalResponseAsync(props =>
-                {
-                    props.Embed = BuildDefeatEmbed(finalState, turn, penalty);
-                    props.Components = new ComponentBuilder().Build();
-                });
+                await output.ShowAsync(BuildDefeatEmbed(finalState, turn, penalty), new ComponentBuilder().Build(), null, session.ReplyTarget);
                 return;
             }
 
@@ -334,25 +335,22 @@ public class AdventureModule(
                 Ability = turn.StatusAfter,
             };
 
-            if (!combatSessions.TryAdvance(Context.User.Id, session, nextState, new InteractionCombatReplyTarget(Context.Interaction)))
+            var nextTarget = output.NextReplyTarget(session.ReplyTarget);
+            if (!combatSessions.TryAdvance(discordId, session, nextState, nextTarget))
             {
-                await FollowupAsync("Justo se resolvió tu combate por otra vía, revisá el mensaje.", ephemeral: true);
+                await output.NoteAsync("Justo se resolvió tu combate por otra vía, revisá el mensaje.");
                 return;
             }
 
             // La comida se vuelve a leer en cada turno: lo que comprás o vendés a mitad de pelea se refleja.
-            var healOptions = await LoadHealOptionsAsync(inventoryRepository, buffRepository, Context.User.Id, nextState);
-            await ModifyOriginalResponseAsync(props =>
-            {
-                props.Embed = BuildOngoingEmbed(nextState, turn);
-                props.Components = BuildCombatButtons(nextState, healOptions);
-            });
+            var healOptions = await LoadHealOptionsAsync(inventoryRepository, buffRepository, discordId, nextState);
+            await output.ShowAsync(BuildOngoingEmbed(nextState, turn), BuildCombatButtons(nextState, healOptions), nextTarget, session.ReplyTarget);
         }
         catch (Exception ex)
         {
             BotLog.Error(ex);
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
-            await FollowupAsync("¡Upa! Algo falló procesando el combate, intentá de nuevo en un momento.", ephemeral: true);
+            await output.NoteAsync("¡Upa! Algo falló procesando el combate, intentá de nuevo en un momento.");
         }
     }
 

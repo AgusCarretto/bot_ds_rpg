@@ -1,6 +1,15 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-07 (v0.14.4: trofeos de las cajas retirados)_
+_Última revisión: 2026-10-08 (v0.14.5: combate escribiendo y 60 s por turno)_
+
+## Jugar el combate escribiendo y 60 segundos por turno (v0.14.5, 2026-10-08)
+
+- **Por qué**: a veces el botón del combate «no respondió» o carga un rato: Discord le da al bot 3 segundos para contestar un clic. Un comando de texto no tiene ese límite.
+- **Qué hay**: `aa attack` (`atk`, `atacar`), `aa ability` (`skill`, `hab`, `habilidad`) y `aa flee` (`huir`) para `/hunt`, `/travel`, `/boss` y `/raid`. Juegan el MISMO turno que el botón (es un solo método compartido) y el resultado sale como **un mensaje nuevo con botones nuevos**; al mensaje viejo se le sacan los botones. Está explicado en `/info tema:hunt`.
+- **60 segundos por turno** (eran 30): pasado ese tiempo sin actuar el combate se abandona. Está en un solo número (`CombatSessionService.TurnTimeout`).
+- **Límite que hay que saber**: solo sirve si el combate sigue en la memoria del bot. Un reinicio (cada subida a `main`) corta todos los combates, con botones o sin ellos.
+- **Sin cambios de base de datos.**
+
 
 ## Trofeos de las cajas retirados (v0.14.4, 2026-10-07)
 

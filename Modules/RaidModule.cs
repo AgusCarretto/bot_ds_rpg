@@ -200,15 +200,30 @@ public class RaidModule(
     {
         await DeferAsync();
 
+        var output = new InteractionRaidTurnOutput(Context.Interaction);
+        if (!Guid.TryParse(raidIdRaw, out var parsedRaidId))
+        {
+            await output.NoteAsync("Ese raid ya no existe.");
+            return;
+        }
+
+        await ResolveAttackCoreAsync(raidSessions, userRepository, itemRepository, adventureRepository, gameEvents, zoneBoxService, parsedRaidId, Context.User.Id, useAbility, output);
+    }
+
+    // El ataque o la habilidad de un participante del raid, SIN dependencia de Context: lo usan el botón (edita el mensaje compartido) y los comandos de texto "aa attack" / "aa ability"
+    // (mensaje nuevo con botones nuevos, ver Services/RaidTurnOutput.cs). La resolución del turno es la misma (ResolveParticipantTurn).
+    public static async Task ResolveAttackCoreAsync(
+        IRaidSessionService raidSessions, IUserRepository userRepository, IItemRepository itemRepository, IAdventureRepository adventureRepository,
+        IGameEvents gameEvents, IZoneBoxService zoneBoxService, Guid raidId, ulong discordId, bool useAbility, IRaidTurnOutput output)
+    {
         try
         {
-            if (!Guid.TryParse(raidIdRaw, out var raidId) || raidSessions.Peek(raidId) is not { } session)
+            if (raidSessions.Peek(raidId) is not { } session)
             {
-                await FollowupAsync("Ese raid ya no existe.", ephemeral: true);
+                await output.NoteAsync("Ese raid ya no existe.");
                 return;
             }
 
-            ulong discordId = Context.User.Id;
             AttackOutcome outcome;
 
             lock (session.Lock)
@@ -232,24 +247,26 @@ public class RaidModule(
             switch (outcome.Kind)
             {
                 case AttackOutcomeKind.NotActive:
-                    await FollowupAsync("Este raid todavía no arrancó (o ya terminó).", ephemeral: true);
+                    await output.NoteAsync("Este raid todavía no arrancó (o ya terminó).");
                     return;
                 case AttackOutcomeKind.NotAParticipant:
-                    await FollowupAsync("Todavía no te sumaste a este raid — clickeá \"Unirse\" antes de que arranque.", ephemeral: true);
+                    await output.NoteAsync("Todavía no te sumaste a este raid — clickeá \"Unirse\" antes de que arranque.");
                     return;
                 case AttackOutcomeKind.ParticipantInactive:
-                    await FollowupAsync("Ya no podés seguir peleando en este raid (te derribaron o te retiraste).", ephemeral: true);
+                    await output.NoteAsync("Ya no podés seguir peleando en este raid (te derribaron o te retiraste).");
                     return;
                 case AttackOutcomeKind.AbilityUnavailable:
-                    await FollowupAsync(outcome.LogLine!, ephemeral: true);
+                    await output.NoteAsync(outcome.LogLine!);
                     return;
                 case AttackOutcomeKind.Continues:
-                    await session.ReplyTarget.UpdateAsync(BuildCombatEmbed(session, outcome.LogLine!), BuildCombatButtons(raidId));
+                    await output.ShowAsync(session, BuildCombatEmbed(session, outcome.LogLine!), BuildCombatButtons(raidId));
                     return;
                 case AttackOutcomeKind.Victory:
+                    await output.PrepareFinalAsync(session);
                     await ResolveVictoryAsync(session, outcome.LogLine!, userRepository, itemRepository, adventureRepository, raidSessions, gameEvents, zoneBoxService);
                     return;
                 case AttackOutcomeKind.Wipe:
+                    await output.PrepareFinalAsync(session);
                     await ResolveWipeAsync(session, outcome.LogLine!, userRepository, raidSessions, gameEvents);
                     return;
             }
@@ -257,7 +274,7 @@ public class RaidModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! Algo falló procesando tu ataque, intentá de nuevo en un momento.", ephemeral: true);
+            await output.NoteAsync("¡Upa! Algo falló procesando tu ataque, intentá de nuevo en un momento.");
         }
     }
 
@@ -266,15 +283,27 @@ public class RaidModule(
     {
         await DeferAsync();
 
+        var output = new InteractionRaidTurnOutput(Context.Interaction);
+        if (!Guid.TryParse(raidIdRaw, out var parsedRaidId))
+        {
+            await output.NoteAsync("Ese raid ya no existe.");
+            return;
+        }
+
+        await ResolveFleeCoreAsync(raidSessions, userRepository, parsedRaidId, Context.User.Id, output);
+    }
+
+    // Retirarse del raid (el botón "Huir" o "aa flee"), SIN dependencia de Context.
+    public static async Task ResolveFleeCoreAsync(IRaidSessionService raidSessions, IUserRepository userRepository, Guid raidId, ulong discordId, IRaidTurnOutput output)
+    {
         try
         {
-            if (!Guid.TryParse(raidIdRaw, out var raidId) || raidSessions.Peek(raidId) is not { } session)
+            if (raidSessions.Peek(raidId) is not { } session)
             {
-                await FollowupAsync("Ese raid ya no existe.", ephemeral: true);
+                await output.NoteAsync("Ese raid ya no existe.");
                 return;
             }
 
-            ulong discordId = Context.User.Id;
             RaidParticipant? participant = null;
             bool raidEnded = false;
 
@@ -295,7 +324,7 @@ public class RaidModule(
 
             if (participant is null)
             {
-                await FollowupAsync("No podés retirarte de este raid ahora mismo.", ephemeral: true);
+                await output.NoteAsync("No podés retirarte de este raid ahora mismo.");
                 return;
             }
 
@@ -306,16 +335,17 @@ public class RaidModule(
             if (raidEnded)
             {
                 raidSessions.Remove(session.RaidId);
+                await output.PrepareFinalAsync(session);
                 await session.ReplyTarget.UpdateAsync(BuildAbandonedEmbed(session), new ComponentBuilder().Build());
                 return;
             }
 
-            await session.ReplyTarget.UpdateAsync(BuildCombatEmbed(session, $"🏃 **{participant.DisplayName}** se retiró del raid."), BuildCombatButtons(raidId));
+            await output.ShowAsync(session, BuildCombatEmbed(session, $"🏃 **{participant.DisplayName}** se retiró del raid."), BuildCombatButtons(raidId));
         }
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No te pude retirar del raid, intentá de nuevo en un momento.", ephemeral: true);
+            await output.NoteAsync("¡Upa! No te pude retirar del raid, intentá de nuevo en un momento.");
         }
     }
 

@@ -9,6 +9,8 @@ public sealed class RaidSessionService : IRaidSessionService
 
     public bool IsInAnyRaid(ulong discordId) => _playerRaid.ContainsKey(discordId);
 
+    public Guid? RaidIdOf(ulong discordId) => _playerRaid.TryGetValue(discordId, out var raidId) ? raidId : null;
+
     public bool TryRegisterParticipant(ulong discordId, Guid raidId) => _playerRaid.TryAdd(discordId, raidId);
 
     public void UnregisterParticipant(ulong discordId) => _playerRaid.TryRemove(discordId, out _);

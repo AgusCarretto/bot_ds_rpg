@@ -108,6 +108,9 @@ public interface IRaidSessionService
     // nadie puede estar en dos combates a la vez.
     bool IsInAnyRaid(ulong discordId);
 
+    // El id del raid en el que está el jugador (lobby o pelea activa), o null si no está en ninguno. Lo usan "aa attack", "aa ability" y "aa flee" (no hay botón que lleve el id).
+    Guid? RaidIdOf(ulong discordId);
+
     // Registra a un jugador como ocupado en ese raid. false si ya estaba en otro (guarda atómica
     // final, aunque el llamador ya haya chequeado IsInAnyRaid antes).
     bool TryRegisterParticipant(ulong discordId, Guid raidId);

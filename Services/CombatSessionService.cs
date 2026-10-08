@@ -6,7 +6,8 @@ namespace BotDsRpg.Services;
 
 public sealed class CombatSessionService(IUserRepository userRepository) : ICombatSessionService
 {
-    private static readonly TimeSpan TurnTimeout = TimeSpan.FromSeconds(30);
+    // 60 segundos por turno (eran 30 hasta la v0.14.5): con lag o desde el celular 30 se quedaban cortos. Sin actuar en ese tiempo el combate termina como "Combate abandonado".
+    private static readonly TimeSpan TurnTimeout = TimeSpan.FromSeconds(60);
 
     private readonly ConcurrentDictionary<ulong, CombatSession> _sessions = new();
 
@@ -66,7 +67,7 @@ public sealed class CombatSessionService(IUserRepository userRepository) : IComb
                 return; // El jugador actuó a tiempo: se canceló el timer de este turno.
             }
 
-            // Pasaron 30s sin respuesta: el combate termina como si el jugador se hubiera retirado
+            // Pasó el tiempo del turno (60 s) sin respuesta: el combate termina como si el jugador se hubiera retirado
             // (sin recompensa, pero el HP perdido durante la pelea sigue contando).
             var collection = (ICollection<KeyValuePair<ulong, CombatSession>>)_sessions;
             if (!collection.Remove(new KeyValuePair<ulong, CombatSession>(discordId, session)))
