@@ -1,6 +1,14 @@
 # Las Crónicas del Fogón — borrador v1 (la tragedia del Asador, para que lo corrijas)
 
-Estado: **borrador**. Nada de esto está en el juego todavía. Acá está la historia, los textos que se leerían y cómo "saltaría" mientras jugás; después de que lo leas y lo cambies, se programa.
+Estado: **aprobado por el dueño el 2026-10-08 y construido en la v0.15.0**. Lo que se lee en el juego está en `GameData/Lore.cs` (esa es la fuente de verdad de los textos; este documento es el diseño y el porqué). Cómo quedó respecto de este borrador:
+
+- Hay **más escenas de Fuego Nuevo** de las que había acá (el dueño pidió «cada tantos fn logros y partes de historia»): 1 (dos), 2, 3, 5, 10, 15, 25, 35, 50, 75, 90, 99 y el final del 100. Los textos de la 2, la 5, la 15, la 35, la 90 y la 100 son nuevos; el resto son los de abajo con retoques.
+- Hay **dos logros nuevos** sobre el contador de Fuegos Nuevos: **Compañero del Asador** (10 / 25 / 50) y **El que volvió** (75 / 90 / 100). Solo pagan oro y XP.
+- El comando es **`/story`** (con `aa historia`), como se propuso en la pregunta 5.
+- Las sensaciones de «la segunda vuelta» son reales: el Herrero y el Tabernero **saludan distinto** desde el Fuego Nuevo 1 y el Asador **cambia sus frases en la pelea** (escalones 10, 25, 50 y 90).
+- El **final del 100** quedó escrito corto y con puertas abiertas (lo que cambia en el juego —un título, el nombre del mundo, el Asador en el campamento— sigue sin decidirse).
+
+El resto de este documento es el borrador tal como se aprobó.
 
 ## 0. Qué cambió desde la v0
 

@@ -35,6 +35,7 @@ public static class HelpTopics
         new("exchange", "🔁", "Cambiar drops con el tabernero", "3 drops de una zona por 1 de la misma", ["canje", "canjear", "swap", "tabernero", "cambalache"], Exchange),
         new("fogon", "🔥", "El Fogón Eterno", "la puerta del final del mundo y su equipo", ["fogón", "asador", "puerta", "zona0", "zona 0", "gate"], Fogon),
         new("fuego", "♻️", "Fuego Nuevo", "volver a empezar con bonus permanentes y bendiciones", ["fuegonuevo", "fuego nuevo", "fn", "reinicio", "reiniciar", "renacer", "reset", "vuelta", "bendicion", "bendiciones", "blessing", "blessings", "prestigio"], Fuego),
+        new("story", "📖", "Las Crónicas del Fogón", "la historia del juego: capítulos, escenas y cómo se abren", ["historia", "cronicas", "crónicas", "lore", "cuento"], Story),
         new("professions", "🛠️", "Oficios", "Leñador, Minero y Encantador: nivel, XP y la versión avanzada", ["oficios", "oficio", "profesion", "profesiones", "prof", "lenador", "leñador", "woodcutter"], Professions),
         new("pets", "🐾", "Mascotas", "huevos, bonus pasivos y cómo alimentarlas", ["mascota", "mascotas", "pet", "huevo", "huevos", "egg", "eggs"], Pets),
         new("classes", "🎭", "Clases y habilidades", "qué hace cada clase", ["clase", "clases", "class", "habilidad", "habilidades"], Classes),
@@ -335,6 +336,18 @@ public static class HelpTopics
             $"Una por vuelta, elegida entre {BlessingCatalog.OfferSize} sorteadas ({BlessingCatalog.All.Count} en total); si repetís una sube de nivel hasta el {BlessingCatalog.RomanLevel(BlessingCatalog.MaxLevel)}. " +
             "Las hay de velocidad (drop, cantidad, EXP), de poder chico (ataque, defensa y vida, solo contra monstruos), de mascotas, de oro, de ítems y cosméticas. **/blessings** las muestra todas."),
         ("⚖️ Reglas", "Los duelos y la Arena no usan nada de esto: se juegan con nivel, equipo y clase. La clase solo se elige empezando de cero y con cada Fuego Nuevo (**/class**)."));
+
+    private static Embed Story() => Topic(Self("story"),
+        "Las **Crónicas del Fogón** son la historia del juego: la cuenta el Tabernero junto al fuego y se va abriendo mientras jugás. No da poder (ni stats, ni oro, ni drops): da sentido. " +
+        "**/story** (en texto `aa historia`) abre el índice con una lista para leer lo que ya abriste.",
+        ("📖 Acto I · Subir",
+            $"El prólogo y un capítulo por cada jefe de zona (los {Lore.LadderChapters} de la escalera) más el del Asador Eterno. Cada uno se abre la **primera vez** que lo vencés (**/boss** o **/raid**) y te llega un aviso aparte. " +
+            "Lo que todavía no abriste sale 🔒 sellado, sin título, para que nadie se spoilee."),
+        ("🔥 Acto II · Soltar",
+            $"El Asador carga con un pesar enorme. Cada **Fuego Nuevo** (**/info tema:fuego**) le saca un 1 %: con {Lore.FinalFuegoNuevo} vueltas queda libre. En ciertas vueltas se abre una escena nueva " +
+            "y, desde la segunda, el Herrero, el Tabernero y el propio Asador hablan distinto. Hay logros en esas vueltas (**/achievements**)."),
+        ("🪑 Acto III",
+            $"Se abre en el Fuego Nuevo **{Lore.FinalFuegoNuevo}**. Qué es, lo descubrís llegando."));
 
     private static Embed Pets() => Topic(Self("pets"),
         "Cada zona tiene su **mascota**. Las que tengas valen **todas a la vez**: no ocupan lugar, no se pierden y no hay que sacarlas a pasear.",

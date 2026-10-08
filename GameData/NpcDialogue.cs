@@ -65,7 +65,17 @@ public static class NpcDialogue
         ],
     };
 
-    public static string Blacksmith(BlacksmithLine line, Random? rng = null) => Say("El Herrero", "🔨", Pick(BlacksmithLines[line], rng));
+    // El saludo de quien ya hizo un Fuego Nuevo (la historia, GameData/Lore.cs): el Herrero le confesó lo de la parrilla y duerme mejor.
+    private static readonly string[] BlacksmithReturningGreetings =
+    [
+        "Pase, pase. Desde que me saqué eso de adentro duermo mejor. ¿Qué le forjo?",
+        "El yunque está caliente y yo, más liviano. ¿Qué necesita?",
+        "Otra vuelta, ¿eh? Elija de la lista; el que fue aprendiz del Soberano le da forma.",
+    ];
+
+    // fuegoNuevo: con 1 o más, el saludo es el de quien volvió (solo el saludo; el resto de las situaciones no cambia).
+    public static string Blacksmith(BlacksmithLine line, Random? rng = null, int fuegoNuevo = 0) =>
+        Say("El Herrero", "🔨", Pick(line == BlacksmithLine.Greeting && fuegoNuevo >= 1 ? BlacksmithReturningGreetings : BlacksmithLines[line], rng));
 
     // ---------------- El Tendero ----------------
     private static readonly Dictionary<ShopkeeperLine, string[]> ShopkeeperLines = new()
@@ -143,7 +153,17 @@ public static class NpcDialogue
     };
 
     // El que atiende la tienda ES el tabernero (una sola taberna, un solo personaje).
-    public static string Shopkeeper(ShopkeeperLine line, Random? rng = null) => Say("El Tabernero", "🍺", Pick(ShopkeeperLines[line], rng));
+    // El saludo de quien ya hizo un Fuego Nuevo (la historia, GameData/Lore.cs): el Tabernero lo reconoce, aunque haga como que no.
+    private static readonly string[] ShopkeeperReturningGreetings =
+    [
+        "Pasá, pasá. Ya te serví el mate; el otro es para nadie, no preguntes.",
+        "Mirá quién volvió. Siempre volvés vos. ¿Algo para comer, o un mate?",
+        "Buenas. Hoy el fuego del campamento anda más tranquilo. ¿Qué te sirvo?",
+    ];
+
+    // fuegoNuevo: con 1 o más, el saludo es el de quien volvió (solo el saludo; el resto de las situaciones no cambia).
+    public static string Shopkeeper(ShopkeeperLine line, Random? rng = null, int fuegoNuevo = 0) =>
+        Say("El Tabernero", "🍺", Pick(line == ShopkeeperLine.Greeting && fuegoNuevo >= 1 ? ShopkeeperReturningGreetings : ShopkeeperLines[line], rng));
 
     // ---------------- El Tabernero (/heal) ----------------
     private static readonly Dictionary<InnkeeperLine, string[]> InnkeeperLines = new()
@@ -209,14 +229,51 @@ public static class NpcDialogue
             [BossLine.Defeated] = ["Mi reino... se desmorona... sos digno...", "Así que existe alguien más fuerte..."],
             [BossLine.Victory] = ["Ahora sos escoria, como todos.", "El abismo te reclama."],
         },
-        // El jefe de El Fogón Eterno (zona 0, v0.11.0).
-        ["El Asador Eterno"] = new()
+        // El jefe de El Fogón Eterno (zona 0, v0.11.0). Es la VUELTA 1: desde la v0.15.0 es el Asador de la tragedia (GameData/Lore.cs); con los Fuegos Nuevos habla distinto (AsadorStages).
+        [FogonRules.BossName] = new()
         {
-            [BossLine.Intro] = ["Hace mil años que doy vuelta la misma brasa. Hoy te toca a vos.", "Pasá, pasá. Siempre hay lugar en la parrilla para uno más."],
-            [BossLine.Defeated] = ["La brasa... sigue viva. Dale vuelta vos ahora.", "Mil años de fuego... y me apagás vos. Que arda bien lo que sigue."],
-            [BossLine.Victory] = ["Punto justo: bien hecho. Y vos, bien cocido.", "Una vuelta más al fuego. Volvé cuando estés a punto."],
+            [BossLine.Intro] = ["Pasá, pasá. Todavía no llegaron los demás, pero la mesa está lista.", "La brasa no se apaga. No se tiene que apagar. ¿Entendés? ¡No se tiene que apagar!"],
+            [BossLine.Defeated] = ["¿Van a venir? Decime que van a venir...", "Llevate el carbón. Pero dejame la mesa puesta."],
+            [BossLine.Victory] = ["Quedate. Hay lugar en la mesa para uno más.", "Descansá acá, que afuera hace frío. Yo te cocino."],
         },
     };
+
+    // Lo que dice el Asador Eterno según cuántos Fuegos Nuevos hizo el jugador (la historia, GameData/Lore.cs): cada escalón reemplaza al anterior desde ese Fuego Nuevo. El primero (0) es el de
+    // BossLines; los demás empiezan en las vueltas 10, 25, 50 y 90, las mismas en que el fuego cuenta algo nuevo del Asador.
+    private static readonly (int FromFuegoNuevo, Dictionary<BossLine, string[]> Lines)[] AsadorStages =
+    [
+        (10, new()
+        {
+            [BossLine.Intro] = ["Vos otra vez. Siempre volvés vos.", "Ya te conozco la cara. Pasá, que hay para uno más."],
+            [BossLine.Defeated] = ["Otra vez el carbón... Está bien. Llevalo.", "Ya no duele tanto como antes. Raro."],
+            [BossLine.Victory] = ["Quedate un rato. Contame cómo está el mundo.", "Hoy no. Hoy quedate a comer."],
+        }),
+        (25, new()
+        {
+            [BossLine.Intro] = ["Levanté diez platos. Todavía me acuerdo de cada nombre.", "Pasá. Hoy la mesa está más liviana."],
+            [BossLine.Defeated] = ["Ramona hubiera querido que me ganaras.", "Un plato menos por cada vez que volvés. Seguí."],
+            [BossLine.Victory] = ["No te vayas todavía. Falta poco para cenar.", "Descansá. Yo cuido el fuego."],
+        }),
+        (50, new()
+        {
+            [BossLine.Intro] = ["Pasá. Ya no hace falta que pelees... pero sé que querés.", "El fuego se mantiene solo, ¿viste? Tardé años en notarlo."],
+            [BossLine.Defeated] = ["Gracias por volver. Acá siempre sos bienvenido.", "No es un adiós. Es un hasta la próxima vuelta."],
+            [BossLine.Victory] = ["Sentate. Hoy cocino yo y vos mirás.", "Descansá, que mañana hay otra vuelta."],
+        }),
+        (90, new()
+        {
+            [BossLine.Intro] = ["Estaba esperándote. No a los demás: a vos.", "Por fin entendí quién era el que llegaba."],
+            [BossLine.Defeated] = ["Ya casi. Una vuelta más y me siento.", "Guardame un lugar en la próxima."],
+            [BossLine.Victory] = ["No pasa nada. Hay tiempo. Siempre hubo tiempo.", "Descansá. Yo no me voy a ningún lado."],
+        }),
+    ];
+
+    // Las frases del Asador para esa cantidad de Fuegos Nuevos: el escalón más alto que ya alcanzó, o las de la vuelta 1.
+    private static string[] AsadorLines(BossLine line, int fuegoNuevo)
+    {
+        var stage = AsadorStages.LastOrDefault(s => fuegoNuevo >= s.FromFuegoNuevo);
+        return stage.Lines is null ? BossLines[FogonRules.BossName][line] : stage.Lines[line];
+    }
 
     // Para un jefe que no está en la tabla (uno nuevo en la base): frases genéricas, así nunca queda mudo.
     private static readonly Dictionary<BossLine, string[]> GenericBossLines = new()
@@ -344,9 +401,11 @@ public static class NpcDialogue
     };
 
     // Lo que dice CUALQUIER monstruo (de cacería, de viaje o jefe) en esa situación. isBoss solo importa si no está en ninguna tabla: elige qué genéricas usar.
-    public static string Monster(string name, string emoji, BossLine line, bool isBoss = false, Random? rng = null)
+    // fuegoNuevo: solo le importa al Asador Eterno, que habla distinto con cada escalón de vueltas (AsadorStages).
+    public static string Monster(string name, string emoji, BossLine line, bool isBoss = false, Random? rng = null, int fuegoNuevo = 0)
     {
         string[] lines =
+            name == FogonRules.BossName ? AsadorLines(line, fuegoNuevo) :
             BossLines.TryGetValue(name, out var boss) ? boss[line] :
             MonsterLines.TryGetValue(name, out var own) ? own[line] :
             isBoss ? GenericBossLines[line] : GenericMonsterLines[line];
@@ -356,9 +415,11 @@ public static class NpcDialogue
     // Para las pruebas: toda tabla de frases (nombre -> lista).
     public static IEnumerable<(string Key, IReadOnlyList<string> Lines)> AllTables() =>
         BlacksmithLines.Select(kv => ($"herrero:{kv.Key}", (IReadOnlyList<string>)kv.Value))
+            .Concat([("herrero:Greeting@FN1", (IReadOnlyList<string>)BlacksmithReturningGreetings), ("tendero:Greeting@FN1", ShopkeeperReturningGreetings)])
             .Concat(ShopkeeperLines.Select(kv => ($"tendero:{kv.Key}", (IReadOnlyList<string>)kv.Value)))
             .Concat(InnkeeperLines.Select(kv => ($"tabernero:{kv.Key}", (IReadOnlyList<string>)kv.Value)))
             .Concat(BossLines.SelectMany(b => b.Value.Select(kv => ($"{b.Key}:{kv.Key}", (IReadOnlyList<string>)kv.Value))))
+            .Concat(AsadorStages.SelectMany(s => s.Lines.Select(kv => ($"{FogonRules.BossName}@FN{s.FromFuegoNuevo}:{kv.Key}", (IReadOnlyList<string>)kv.Value))))
             .Concat(GenericBossLines.Select(kv => ($"jefe-genérico:{kv.Key}", (IReadOnlyList<string>)kv.Value)))
             .Concat(MonsterLines.SelectMany(m => m.Value.Select(kv => ($"{m.Key}:{kv.Key}", (IReadOnlyList<string>)kv.Value))))
             .Concat(GenericMonsterLines.Select(kv => ($"monstruo-genérico:{kv.Key}", (IReadOnlyList<string>)kv.Value)));

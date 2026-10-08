@@ -38,6 +38,8 @@ public sealed class ProgressNotifier(IMissionRepository missionRepository, IZone
             notices.Add(await BuildLevelUpNoticeAsync(discordId, newLevel, (int)amount, utcNow));
         }
 
+        notices.AddRange(StoryNotices(kind, amount, newTotal, utcNow, detail));
+
         // Logros: salen del contador de toda la vida, que ya viene calculado (sin consultar la base).
         foreach (var (achievement, tier) in AchievementCatalog.Crossed(kind, newTotal - amount, newTotal))
         {
@@ -66,6 +68,34 @@ public sealed class ProgressNotifier(IMissionRepository missionRepository, IZone
         }
 
         return notices;
+    }
+
+    // Cuánto viven los avisos de la historia que quedan sin entregar (un raid: solo quien dio el golpe final tiene una interacción para contestar). Un capítulo nuevo sigue siendo
+    // cierto horas después, a diferencia de un festejo de nivel; igual se descarta para que no le llegue pegado a algo que no tiene nada que ver.
+    private static readonly TimeSpan StoryNoticeLifetime = TimeSpan.FromHours(1);
+
+    // La historia (GameData/Lore.cs). Todo sale del evento que ya se guardó, sin consultar la base, y son avisos PRIVADOS y cortos: el texto se lee con /story.
+    //   · story_chapter: se abrió un capítulo del Acto I (la primera victoria sobre un jefe; lo registra GameEventExtensions.RecordStoryChapterAsync).
+    //   · fuego_nuevo: llegó a un Fuego Nuevo donde se abre una escena (newTotal es el contador de Fuegos Nuevos, uno por reinicio).
+    //   · pet_hatched / craft en 1: las frases de la primera mascota y la primera pieza forjada (se avisa justo al cruzar de 0 a 1).
+    private static IEnumerable<GameNotice> StoryNotices(string kind, long amount, long newTotal, DateTime utcNow, string? detail)
+    {
+        if (kind == GameEventKinds.StoryChapter && Lore.FindChapter(detail) is { } chapter)
+        {
+            yield return new GameNotice(Lore.ChapterNotice(chapter), Public: false, ExpiresUtc: utcNow + StoryNoticeLifetime);
+        }
+        else if (kind == GameEventKinds.FuegoNuevo && amount > 0 && Lore.SceneNotice((int)newTotal) is { } scenes)
+        {
+            yield return new GameNotice(scenes, Public: false, ExpiresUtc: utcNow + StoryNoticeLifetime);
+        }
+        else if (kind == GameEventKinds.PetHatched && amount > 0 && newTotal - amount == 0)
+        {
+            yield return new GameNotice(Lore.FirstPetLine, Public: false, ExpiresUtc: utcNow + LevelUpNoticeLifetime);
+        }
+        else if (kind == GameEventKinds.Craft && amount > 0 && newTotal - amount == 0)
+        {
+            yield return new GameNotice(Lore.FirstForgeLine, Public: false, ExpiresUtc: utcNow + LevelUpNoticeLifetime);
+        }
     }
 
     // La tarjeta de subida de nivel (GameData/LevelUpCard.cs) como un mensaje público y con vencimiento.
