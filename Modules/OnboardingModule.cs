@@ -94,8 +94,8 @@ public class OnboardingModule(IUserRepository userRepository, IGameEvents gameEv
             .WithTitle("🔥 ¡Bienvenido a Asado y Acero RPG! ⚔️")
             .WithColor(BrandColor)
             .WithDescription(
-                "Prepárate para adentrarte en un mundo donde el acero forja leyendas y un buen asado te " +
-                "salva la vida. Aquí vas a talar bosques, picar piedra, cazar bestias salvajes, forjar " +
+                "Preparate para adentrarte en un mundo donde el acero forja leyendas y un buen asado te " +
+                "salva la vida. Acá vas a talar bosques, picar piedra, cazar bestias salvajes, forjar " +
                 "equipamiento pesado y sobrevivir a base de mate y milanesas.\n\n" +
                 "Pero antes de empuñar tu primera espada o prender el fuego para la parrilla, necesitamos saber quién sos.")
             .WithFooter("Hacé clic en uno de los botones abajo para elegir tu camino y reclamar tus 50 monedas de oro iniciales.");
