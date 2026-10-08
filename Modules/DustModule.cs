@@ -6,7 +6,7 @@ using Discord;
 using Discord.Interactions;
 using Microsoft.Extensions.DependencyInjection;
 
-// /dismantle y /enchant: el Polvo. Desmantelar rompe un MATERIAL (madera, mineral, drop de monstruo o trofeo) y da Polvo (GameData/Dismantling.cs); encantar gasta
+// /dismantle y /enchant: el Polvo. Desmantelar rompe un MATERIAL (madera, mineral o drop de monstruo) y da Polvo (GameData/Dismantling.cs); encantar gasta
 // Polvo + oro en un intento de mejorar el arma o el amuleto (GameData/Enchantments.cs). Las reglas viven en los métodos estáticos de abajo (sin Context) para que
 // "aa dismantle" y "aa enchant" hagan exactamente lo mismo; el dinero y los ítems se mueven en IDustRepository con guardas atómicas.
 public class DustModule(

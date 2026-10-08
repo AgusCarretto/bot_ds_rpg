@@ -83,7 +83,7 @@ public sealed class BoxRepository(IDbConnectionFactory connectionFactory) : IBox
         }
 
         // La colección de trofeos (materiales que ningún monstruo suelta, o sea los que solo salen de cajas): se anotan los que
-        // el jugador no tenía NUNCA, en la misma transacción que el botín. Alimenta el logro Coleccionista (GameData/AchievementCatalog).
+        // el jugador no tenía NUNCA, en la misma transacción que el botín. Hoy no hay ningún trofeo (v0.14.4) y el logro Coleccionista ya no existe: el mecanismo queda por si se vuelve a poner en otro lado.
         var newTrophies = (await connection.QueryAsync<string>(new CommandDefinition(
             """
             WITH added AS (

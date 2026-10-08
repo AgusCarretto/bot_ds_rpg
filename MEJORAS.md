@@ -1,6 +1,14 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-07 (v0.14.3: perfil más limpio)_
+_Última revisión: 2026-10-07 (v0.14.4: trofeos de las cajas retirados)_
+
+## Trofeos de las cajas retirados (v0.14.4, 2026-10-07)
+
+- **Qué es**: 17 materiales que solo salían de las cajas y no servían para nada (ni recetas ni drops de monstruos): Collar de Cuero Viejo, Garra Maldita, Hueso Añejo, Corona de Escoria Viva... Se borraron del catálogo y de los botines. El peso que ocupaban (3 a 6 % de cada caja) pasó a la recolección de la misma caja, así que las cajas dan un poco más de material útil.
+- **Consecuencia que hay que saber**: el logro **Coleccionista** (juntar los 17 trofeos) desaparece, porque sin trofeos no se puede completar. El **Arca del Soberano** ahora sale solo de **Matajefes III** (20 jefes vencidos).
+- **Para correr en una base que ya existe**: `Database/retire_box_trophies.sql` (re-ejecutable, una transacción, **reembolsa en oro al precio de venta** a quien tenga alguno en la mochila). Hacer backup antes. Una instalación nueva ya lo trae. El código nuevo funciona con la base vieja y al revés, pero conviene correr primero el script.
+- **Idea sin construir**: «luego vemos de poner en otro lado eso» (el dueño). El mecanismo de colección (`player_collection`, `trophy_found`) quedó latente por si vuelve algo parecido.
+
 
 ## Perfil más limpio (v0.14.3, 2026-10-07)
 

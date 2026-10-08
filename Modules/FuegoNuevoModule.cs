@@ -506,7 +506,7 @@ public class FuegoNuevoModule(
             "🐾 Tus mascotas" + (preview.Pets > 0 ? $" ({preview.Pets})" : string.Empty)
                 + (preview.KeptEggs > 0 ? $", tus huevos ({GameHistory.Number(preview.KeptEggs)})" : string.Empty)
                 + (preview.KeptPetFood > 0 ? $" y su comida ({GameHistory.Number(preview.KeptPetFood)})" : string.Empty),
-            "🏆 Tus logros, las misiones ya cobradas y tus trofeos",
+            "🏆 Tus logros y las misiones ya cobradas",
             "🎁 Tu racha diaria",
         };
 

@@ -9,7 +9,7 @@
 --   - El "PSQL Tool" de pgAdmin (el ícono de terminal, NO el "Query Tool" — ese último solo manda
 --     SQL crudo al servidor y no entiende \ir, va a tirar error de sintaxis).
 --   - DBeaver u otros clientes: probablemente NO sirve — correlos a mano, uno por uno, en el orden
---     de abajo (son los mismos 26 archivos, en esta carpeta).
+--     de abajo (son los mismos 27 archivos, en esta carpeta).
 --
 -- USAR SOLO CONTRA UNA BASE VACÍA. seed.sql, add_weapon_family.sql y
 -- seed_class_gear_and_monster_drops.sql NO son idempotentes (duplican filas si la base ya tiene
@@ -68,5 +68,7 @@
 \ir seed_fogon.sql
 -- Cofres parejos (v0.14.0): las cajas Cofre de Escoria y Brasero del Fogón, la caja que da cada zona (zone_boxes), el premio del Asador y la 6.ª mascota. Va al final: pisa el cofre del jefe de la 5.
 \ir seed_zone_boxes.sql
+-- Se retiran los 17 trofeos de las cajas (v0.14.4): materiales que solo salían de las cajas y no sirven para nada. Va DESPUÉS de seed_zone_boxes.sql (que todavía los nombra) y de rework_boxes.sql.
+\ir retire_box_trophies.sql
 
 \echo 'Listo — base cargada completa: esquema, items, recetas, zonas/monstruos, catálogo final de consumibles y emojis.'
