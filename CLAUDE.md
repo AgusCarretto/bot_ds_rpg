@@ -39,15 +39,17 @@ schema.sql → seed.sql → add_weapon_family.sql → seed_class_gear_and_monste
   → finalize_consumable_catalog.sql → remove_legacy_consumables.sql → rebalance_consumable_prices.sql
   → rework_food_catalog.sql → seed_boxes.sql → rework_drops_and_recipes.sql → rework_boxes.sql
   → update_item_emojis.sql → update_monster_portraits.sql → seed_pets.sql → seed_fogon.sql
-  → seed_zone_boxes.sql → retire_box_trophies.sql → rebalance_dust.sql
+  → seed_zone_boxes.sql → retire_box_trophies.sql → rebalance_dust.sql → update_item_emojis.sql (again)
 ```
+
+**The emoji script runs TWICE on purpose**: `update_item_emojis.sql` sits at position 21, but `seed_pets.sql`, `seed_fogon.sql` and `seed_zone_boxes.sql` create items AFTER it, so its UPDATEs-by-name found nothing for the Trinche, the Brasa, the eggs and the two new boxes and a fresh install ended with them empty (found on 2026-10-09 when the Fogón pair got its art). The last line of `run_fresh_install.sql` runs it again, and the scratch-vs-live comparison of `name=emoji` for every item came out identical. Any item created late in the order gets its emoji in `update_item_emojis.sql` and nothing else.
 
 `seed_recipes.sql` must come after every seed that creates items it uses: a recipe whose result or ingredient
 item doesn't exist yet would be silently skipped (or created *without* that ingredient), so the seed verifies
 itself and raises instead. (`seed_zone_bosses.sql` used to be missing from this list, so a fresh install had no
 zone bosses at all.)
 
-`Database/run_fresh_install.sql` runs all twenty-eight in this exact order in one shot via `psql` (or
+`Database/run_fresh_install.sql` runs all twenty-eight in this exact order (plus the emoji script once more at the end) in one shot via `psql` (or
 pgAdmin's "PSQL Tool", NOT its plain Query Tool — both need real `psql`, since it uses the `\ir`
 meta-command) — **only against a genuinely empty database**, never against one with existing data
 (see below, several of these are not safe to re-run).
@@ -456,7 +458,7 @@ guild the bot is in. They belong to the *application*: a different bot applicati
 **Monster faces** (v0.8.2): the 20 monsters have a portrait emoji in `monsters.portrait_emoji` (`Database/update_monster_portraits.sql`, UPDATEs by monster name, verifies all 20 exist) — a SEPARATE column from `monsters.emoji`, which stays the
 unicode that messages write inside the text. `MonsterTemplate.Portrait` → `CombatState.MonsterPortrait` / `RaidSession.BossPortrait` → `EmbedBuilder.WithMonsterPortrait` (same CDN-thumbnail mechanic as the item icons) on every message of a
 fight: `/hunt`, `/travel`, `/boss`, `/use` mid-fight, `/autohunt`, the raid lobby/fight/victory/wipe and the abandoned-combat notice; the monster's face is ALWAYS the thumbnail, also on a victory WITH a drop (v0.8.3 — the owner wants the monster there; the drop is announced in its own field), and a monster without a face just
-sends the message without a thumbnail. Coverage (2026-10-05, 86 of 93 items): Weapon 25/28 (every weapon that can be forged, zones 1–5; the 3 without are legacy items nobody can obtain: Arco Largo del Cazador, Báculo del Aprendiz, Dagas Gemelas de Sombra), Amulet 7/11 (all 5 forgeable + 2 extra; the other 4 are legacy and not obtainable: Bombilla de Hierro Maldito, Botas de Silencio, Collar de Hueso, Ojo de Jabalí), everything else complete. All item emojis were checked against the portal's list with the bot token (`GET /applications/{id}/emojis`). A NULL emoji is harmless
+sends the message without a thumbnail. Coverage (2026-10-05, 86 of 93 items; **2026-10-09: the Trinche del Asador Eterno and the Brasa del Fogón Eterno got theirs, `trinche_eternal` / `amuleto_eternal` — the owner's art, black iron with yellow-orange molten cracks, a matching pair; pending art: the Asador's face (`monsters.portrait_emoji` NULL), the two new boxes (placeholder 📦), the six eggs (🥚) and the pet food (🦴)**): Weapon 25/28 (every weapon that can be forged, zones 1–5; the 3 without are legacy items nobody can obtain: Arco Largo del Cazador, Báculo del Aprendiz, Dagas Gemelas de Sombra), Amulet 7/11 (all 5 forgeable + 2 extra; the other 4 are legacy and not obtainable: Bombilla de Hierro Maldito, Botas de Silencio, Collar de Hueso, Ojo de Jabalí), everything else complete. All item emojis were checked against the portal's list with the bot token (`GET /applications/{id}/emojis`). A NULL emoji is harmless
 (`ItemDisplay.Format` prints just the name). To add one: upload it in the portal with a clear name, copy its id, add the UPDATE to the script and run it. Never put an emoji in a select-menu option (a rejected emoji kills the whole message).
 **Item icons are small and Discord cannot enlarge them in text** (22 px; only a message made of nothing but emojis is "jumbo"), so where ONE item is the hero of a message the embed carries its image as the thumbnail — `ItemDisplay.ImageUrl` (pure: the CDN URL built from the emoji id, `null` if the item has no emoji) + `EmbedBuilder.WithItemThumbnail` (`Modules/ItemEmbedExtensions.cs`): `/chop` and `/mine` results, a forge, food eaten with `/use`, the box of `/open`. NPC scenes already use the thumbnail for the character photo, so they do not get one. Do not stack a unicode weapon/amulet marker next to an item that has its own emoji (profile and recipe pages used to show 🗡️ / 📿 / 🎯 / ⚔️ next to it, which shrank it): the recipe type is now an italic label under the name ("arma de tu clase" / "arma general" / "amuleto"). Class icons (⚔️ Guerrero...) and the select-menu options are unchanged.
 

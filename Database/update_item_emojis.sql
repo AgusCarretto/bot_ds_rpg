@@ -86,7 +86,7 @@ UPDATE items SET emoji = '<:corona_escoriaviva:1555593539260391445>' WHERE name 
 UPDATE items SET emoji = '<:drop_miticos_escoriacrater:1555578379271409715>' WHERE name = 'Escoria Pura del Cráter';
 UPDATE items SET emoji = '<:drop_miticos_fragmentoalma:1555578387827785818>' WHERE name = 'Fragmento de Alma';
 
--- ⚔️ Weapon (25/28): las 5 zonas completas (las 25 armas que se consiguen forjando). Sin emoji y sin forma de conseguirlas: Arco Largo del Cazador, Báculo del Aprendiz, Dagas Gemelas de Sombra
+-- ⚔️ Weapon (26/29): las 5 zonas completas (las 25 armas que se consiguen forjando) + el Trinche del Asador Eterno del Fogón (2026-10-09). Sin emoji y sin forma de conseguirlas: Arco Largo del Cazador, Báculo del Aprendiz, Dagas Gemelas de Sombra
 UPDATE items SET emoji = '<:espada_madera:1555633462432636958>' WHERE name = 'Espada de Madera';
 UPDATE items SET emoji = '<:daga_oxidada:1555633460947984394>' WHERE name = 'Daga Oxidada';
 UPDATE items SET emoji = '<:arco_corto_sauce:1555633459232510022>' WHERE name = 'Arco Corto de Sauce';
@@ -113,8 +113,10 @@ UPDATE items SET emoji = '<:colmillo_crater:1556675296768303135>' WHERE name = '
 UPDATE items SET emoji = '<:arco_alma_errante:1556675294918746243>' WHERE name = 'Arco del Alma Errante';
 UPDATE items SET emoji = '<:baculo_arbol_vida:1556675289960943786>' WHERE name = 'Báculo del Árbol de Vida';
 UPDATE items SET emoji = '<:martillo_titan:1556675288442609747>' WHERE name = 'Martillo del Titán';
+-- El Fogón Eterno (Zona 0), cargado el 2026-10-09: el arma y el amuleto del Fogón son un par, mismo hierro negro y mismas grietas de fuego amarillo-naranja.
+UPDATE items SET emoji = '<:trinche_eternal:1558166216479080631>' WHERE name = 'Trinche del Asador Eterno';
 
--- 📿 Amulet (7/11): los 5 que se consiguen forjando (uno por zona) + Capa y Carcaj de Pelaje Oscuro (hoy no se consiguen, pero el emoji ya estaba hecho). Sin emoji y sin forma de conseguirlos: Bombilla de Hierro Maldito, Botas de Silencio, Collar de Hueso, Ojo de Jabalí. Los 5 amuletos "bajos" salieron en la v0.7.0 (emojis libres: amuleto_collar_basico, mate_ceniza, casco_capataz, coraza_escamas_ignea, egidia_deborador)
+-- 📿 Amulet (8/12): los 5 que se consiguen forjando (uno por zona) + la Brasa del Fogón Eterno (2026-10-09) + Capa y Carcaj de Pelaje Oscuro (hoy no se consiguen, pero el emoji ya estaba hecho). Sin emoji y sin forma de conseguirlos: Bombilla de Hierro Maldito, Botas de Silencio, Collar de Hueso, Ojo de Jabalí. Los 5 amuletos "bajos" salieron en la v0.7.0 (emojis libres: amuleto_collar_basico, mate_ceniza, casco_capataz, coraza_escamas_ignea, egidia_deborador)
 UPDATE items SET emoji = '<:amuleto_hombreras:1555578432006652005>' WHERE name = 'Hombreras de Cuero Grueso';
 UPDATE items SET emoji = '<:talizman_ceniza:1555615173484748860>' WHERE name = 'Talismán de Ceniza Bendita';
 UPDATE items SET emoji = '<:peto_escoria_templaria:1555615171689455676>' WHERE name = 'Peto de Escoria Templada';
@@ -122,6 +124,7 @@ UPDATE items SET emoji = '<:talizman_volcan:1555616984899784774>' WHERE name = '
 UPDATE items SET emoji = '<:corazon_titan_acorazado:1555616981447614514>' WHERE name = 'Corazón de Titán Engarzado';
 UPDATE items SET emoji = '<:amuleto_capa:1555578429959577601>' WHERE name = 'Capa de Pelaje Oscuro';
 UPDATE items SET emoji = '<:amuleto_flechas:1555578434606997564>' WHERE name = 'Carcaj de Pelaje Oscuro';
+UPDATE items SET emoji = '<:amuleto_eternal:1558166214889709608>' WHERE name = 'Brasa del Fogón Eterno';
 
 -- Chequeo rápido: cuántos ítems totales todavía están en NULL, por tipo.
 -- SELECT type, COUNT(*) FROM items WHERE emoji IS NULL GROUP BY type ORDER BY type;

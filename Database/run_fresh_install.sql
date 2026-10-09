@@ -72,5 +72,7 @@
 \ir retire_box_trophies.sql
 -- El Polvo de los drops de monstruo por su origen, no por una rareza que no tienen (v0.15.1). Va al final: necesita los drops de las 5 zonas. La columna items.dust_value está en schema.sql.
 \ir rebalance_dust.sql
+-- Los emojis de los ítems OTRA VEZ, ahora que existen TODOS: update_item_emojis.sql corre antes (arriba) y seed_pets / seed_fogon / seed_zone_boxes crean ítems DESPUÉS, así que sus UPDATE por nombre no encontraban el Trinche, la Brasa, los huevos ni las cajas nuevas y quedaban sin emoji (esa deriva ya pasó con otros ítems). Es re-ejecutable.
+\ir update_item_emojis.sql
 
 \echo 'Listo — base cargada completa: esquema, items, recetas, zonas/monstruos, catálogo final de consumibles y emojis.'
