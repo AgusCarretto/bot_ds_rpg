@@ -96,7 +96,7 @@ class Program
 
         // Los avisos de los comandos de barra y de los botones (¡SUBISTE DE NIVEL!, misiones, logros) salen cuando el comando TERMINA: ver
         // Services/NoticeDelivery.cs (entregarlos justo después de ExecuteCommandAsync llegaba antes de que el comando hubiera registrado nada).
-        NoticeDelivery.Attach(_commands, _services.GetRequiredService<IGameEvents>());
+        NoticeDelivery.Attach(_commands, _services.GetRequiredService<IGameEvents>(), _services.GetRequiredService<IReminderService>());
 
         // Falla rápido y claro si la base no está o no tiene el esquema: sin esto el bot se conecta a Discord igual y
         // CADA comando responde "¡Upa! Algo falló" sin que se vea el motivo.
@@ -243,6 +243,10 @@ class Program
         // El reloj de la Arena: juega los torneos de días anteriores (a las 00:00 de Uruguay, o apenas vuelve el bot si estuvo apagado).
         _services.GetRequiredService<ArenaScheduler>().Start();
 
+        // El reloj de los recordatorios: cada 5 s avisa en el canal las esperas que terminaron (cacería, viaje, talar, minar, jefe, caja, mascotas, diario).
+        _services.GetRequiredService<ReminderScheduler>().Start();
+        RaidModule.Reminders = _services.GetRequiredService<IReminderService>();
+
         // Si hay un servidor de pruebas configurado, registramos los comandos ahí:
         // se propagan al instante, ideal para iterar rápido en desarrollo.
         // Sin esa config, se registran globalmente (pueden tardar hasta 1h en aparecer).
@@ -367,6 +371,12 @@ class Program
             await DeliverNoticesAsync(
                 message.Author.Id,
                 async notice => await message.Channel.SendMessageAsync(string.IsNullOrEmpty(notice.Text) ? null : notice.Text, embed: notice.Embed));
+
+            // Los recordatorios de cooldown (Services/ReminderService.cs): se arman con el estado de la base DESPUÉS del comando. Nunca tira.
+            if (result.IsSuccess)
+            {
+                await _services.GetRequiredService<IReminderService>().SyncAsync(message.Author.Id, message.Channel.Id, commandText);
+            }
 
             if (message.Channel is SocketGuildChannel)
             {
@@ -523,6 +533,9 @@ public static class ServiceProviderBuilder
             .AddSingleton<IDuelFighterFactory, DuelFighterFactory>()
             .AddSingleton<IDuelService, DuelService>()
             .AddSingleton<IArenaService, ArenaService>()
+            .AddSingleton<IReminderRepository, ReminderRepository>()
+            .AddSingleton<IReminderService, ReminderService>()
+            .AddSingleton<ReminderScheduler>()
             .AddSingleton<ArenaScheduler>()
             .AddSingleton<IFarmAdvisor, FarmAdviceService>()
             .AddSingleton<IMiniEventRepository, MiniEventRepository>()

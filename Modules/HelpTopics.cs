@@ -38,6 +38,7 @@ public static class HelpTopics
         new("story", "📖", "Las Crónicas del Fogón", "la historia del juego: capítulos, escenas y cómo se abren", ["historia", "cronicas", "crónicas", "lore", "cuento"], Story),
         new("professions", "🛠️", "Oficios", "Leñador, Minero y Encantador: nivel, XP y la versión avanzada", ["oficios", "oficio", "profesion", "profesiones", "prof", "lenador", "leñador", "woodcutter"], Professions),
         new("pets", "🐾", "Mascotas", "huevos, bonus pasivos y cómo alimentarlas", ["mascota", "mascotas", "pet", "huevo", "huevos", "egg", "eggs"], Pets),
+        new("reminders", "⏰", "Recordatorios", "los avisos del bot cuando termina una espera", ["recordatorio", "recordatorios", "reminder", "reminders", "aviso", "avisos", "alarma", "alarmas"], Reminders),
         new("classes", "🎭", "Clases y habilidades", "qué hace cada clase", ["clase", "clases", "class", "habilidad", "habilidades"], Classes),
         new("gather", "🪓", "Recolección", "talar y minar: unidades y rarezas", ["chop", "mine", "talar", "minar", "recolectar", "recoleccion", "madera", "mineral"], Gather),
         new("daily", "🎁", "Diario y regalos", "la recompensa diaria, la racha y regalar oro", ["diario", "racha", "give", "dar", "regalo", "regalar"], Daily),
@@ -362,6 +363,24 @@ public static class HelpTopics
             $"Comen **{PetRules.FoodItemName}** (se compra en la **/taberna**). Cada mascota puede comer **una vez por hora**; **/pet feed** alimenta a todas las que estén listas o elegís una. " +
             $"Tienen nivel de 1 a {PetRules.MaxLevel} y el bonus crece con el nivel (nivel 1 = el 10 % de su tope, nivel {PetRules.MaxLevel} = el tope entero). Llegar al máximo lleva {PetRules.TotalFeedsToMax} comidas por mascota."),
         ("📍 Comandos", "**/pet view** las muestra, **/pet feed** las alimenta y **/open** abre el huevo. En texto: `aa pet` y `aa pet feed`. También figuran en **/profile**."));
+
+    private static Embed Reminders()
+    {
+        var waits = ReminderCatalog.All.Select(k => $"{k.Emoji} **{k.Name}** — cada {ReminderCatalog.WaitLabel(ReminderCatalog.WaitOf(k.Key)!.Value)}");
+        int shortMinutes = (int)ReminderCatalog.ShortLived.TotalMinutes;
+
+        return Topic(Self("reminders"),
+            "El bot te **avisa solo** cuando termina una espera, así no tenés que andar mirando **/cd**.",
+            ("🔔 Cuándo avisa",
+                "Después de usar un comando que deja una espera, el bot te escribe en **ese mismo canal** cuando termina:\n" + string.Join('\n', waits)),
+            ("🧹 Sin ensuciar el canal",
+                $"Los de **cacería, talar y minar** (esperas cortas) se borran solos a los {shortMinutes} minutos, y no avisan si justo estás peleando o acabás de usar un comando. Los demás se quedan. " +
+                "Si terminan varias esperas juntas, llegan en un solo mensaje. En una **raid**, el aviso del jefe les llega a todos los que pelearon."),
+            ("⚙️ Elegir cuáles",
+                "**/reminders** (en texto `aa recordatorios` o `aa avisos`) abre una lista donde marcás cuáles querés recibir, con botones para recibir o silenciar todos. Al apagar uno se borra el aviso que estaba pendiente."),
+            ("📌 Cosas a saber",
+                "El aviso se arma cuando usás el comando y sobrevive a un reinicio del bot; si el bot estuvo apagado y el aviso llega muy tarde, se descarta. Para las **mascotas** avisa cuando la primera que pueda subir de nivel puede comer de nuevo."));
+    }
 
     private static Embed Classes()
     {

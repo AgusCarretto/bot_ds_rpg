@@ -117,6 +117,10 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "`/pet feed` — Dales Comida para Mascotas (se compra en la `/taberna`), una vez por hora cada una. El huevo llega la primera vez que vencés al jefe de cada zona: abrilo con `/open`",
                 false)
             .AddField(
+                "⏰ Recordatorios",
+                "`/reminders` — El bot te avisa en el canal cuando termina una espera (cacería, viaje, talar, minar, jefe/raid, caja, mascotas, diario). Elegí cuáles recibir (`aa recordatorios`, `/info tema:recordatorios`)",
+                false)
+            .AddField(
                 "🛠️ Utilidad",
                 "`/start` — Empezar tu aventura\n`/class` — Elegir clase (solo con nivel 1; después, con cada Fuego Nuevo)\n`/profile` — Ver tu ficha\n`/history` — Tu historial por juego: cuántas veces jugaste, ganaste y perdiste\n`/duels` — Tu récord de duelos y los últimos rivales\n`/inventory` — Ver tu inventario\n`/cd` — Ver tus cooldowns (y si ya te anotaste en la Arena de hoy)\n`/tips` — Qué te falta para tu próxima forja y de dónde sacarlo\n`/story` — La historia del juego, capítulo por capítulo (`aa historia`)\n`/tutorial` — Este loop básico\n`/info` — Esta lista de comandos",
                 false)

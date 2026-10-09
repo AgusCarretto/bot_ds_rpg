@@ -29,4 +29,24 @@ public sealed class CooldownRepository(IDbConnectionFactory connectionFactory) :
         var remaining = cooldownDuration - (DateTime.UtcNow - lastExecutedAt.Value);
         return remaining > TimeSpan.Zero ? remaining : null;
     }
+
+    private sealed class CooldownDbRow
+    {
+        public string Command { get; set; } = string.Empty;
+        public DateTime LastExecutedAt { get; set; }
+    }
+
+    public async Task<IReadOnlyList<CooldownRow>> GetAllAsync(ulong discordId, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT command_name AS "Command", last_executed_at AS "LastExecutedAt"
+            FROM cooldowns
+            WHERE discord_id = @DiscordId;
+            """;
+
+        using IDbConnection connection = connectionFactory.CreateConnection();
+        var rows = await connection.QueryAsync<CooldownDbRow>(
+            new CommandDefinition(sql, new { DiscordId = (long)discordId }, cancellationToken: cancellationToken));
+        return rows.Select(r => new CooldownRow(r.Command, DateTime.SpecifyKind(r.LastExecutedAt, DateTimeKind.Utc))).ToList();
+    }
 }

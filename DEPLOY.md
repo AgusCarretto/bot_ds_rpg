@@ -179,6 +179,10 @@ Ojo: `/class` deja de poder cambiar la clase de quien ya pasó del nivel 1 (la c
 
 **v0.14.3 → v0.14.4 (trofeos de las cajas):** corré **`Database/retire_box_trophies.sql`** en la base (`psql "<DATABASE_PUBLIC_URL>" -v ON_ERROR_STOP=1 -f retire_box_trophies.sql`, desde `Database/`; en pgAdmin sirve el Query Tool porque no usa comandos de `psql`). Borra los 17 trofeos de las cajas, **reembolsa en oro** (a su precio de venta) a quien tenga alguno y reparte el peso liberado en cada caja. Es re-ejecutable y se verifica solo; una instalación nueva ya lo trae. Backup antes (sección 6). Podés correrlo antes o después de subir el código: los dos funcionan con la base vieja o la nueva.
 
+**v0.15.0 → v0.15.1 (crafteo, amuletos y Polvo):** ANTES de arrancar el bot nuevo corré **`Database/apply_v0151.sql`** (un solo comando que ejecuta, en orden, `rebalance_dust.sql` — agrega la columna `items.dust_value`, que el binario nuevo lee en CADA consulta de ítems —, `rebalance_crafting.sql` y `rebalance_amulets.sql`): `psql "<DATABASE_PUBLIC_URL>" -v ON_ERROR_STOP=1 -f apply_v0151.sql`, desde `Database/` (necesita `psql`, usa `\ir`). Es re-ejecutable y se verifica solo; una instalación nueva ya lo trae. Backup antes (sección 6).
+
+**v0.15.1 → v0.16.0 (recordatorios):** ANTES de arrancar el bot nuevo corré **`Database/add_reminders.sql`** (crea `reminders` y `reminder_settings`, que el código lee y escribe después de CADA comando: si arrancás primero, los comandos salen igual pero no hay avisos, `/reminders` falla y el log se llena de errores cada 5 segundos). `psql "<DATABASE_PUBLIC_URL>" -v ON_ERROR_STOP=1 -f add_reminders.sql`, desde `Database/` (en pgAdmin sirve el Query Tool: no usa comandos de `psql`). Re-ejecutable; una instalación nueva ya lo trae (`schema.sql`).
+
 La carpeta `Database/` del repo está montada en `/seed`, así que los scripts nuevos aparecen con el `git checkout`. Los seeds son
 re-ejecutables; **nunca** corras `run_fresh_install.sql` sobre una base con datos.
 

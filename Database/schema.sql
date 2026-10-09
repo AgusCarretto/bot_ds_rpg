@@ -406,3 +406,23 @@ CREATE TABLE IF NOT EXISTS arena_matches (
 );
 
 CREATE INDEX IF NOT EXISTS idx_arena_days_status ON arena_days (status, day);
+
+-- ---------------------------------------------------------
+-- Recordatorios de cooldown (v0.16.0, GameData/Reminders.cs): cuando termina la espera de algo (cacería, viaje, talar, minar, jefe/raid, caja, mascotas, diario) el bot avisa en el canal donde
+-- se usó. reminders = lo que está por avisar (UNA fila por jugador y tipo: un comando nuevo pisa el aviso anterior; el reloj la borra al avisarla). reminder_settings = los tipos que el jugador
+-- APAGÓ (sin fila, o con la lista vacía, recibe todos; un tipo nuevo del futuro arranca prendido). Migración para una base que ya existe: Database/add_reminders.sql.
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS reminders (
+    discord_id BIGINT      NOT NULL REFERENCES users (discord_id) ON DELETE CASCADE,
+    kind       TEXT        NOT NULL,                 -- 'hunt', 'travel', 'chop', 'mine', 'boss', 'buybox', 'chop_adv', 'mine_adv', 'pet' o 'daily'
+    channel_id BIGINT      NOT NULL,                 -- el canal donde se usó el comando que lo generó
+    due_at     TIMESTAMPTZ NOT NULL,                 -- cuándo termina la espera
+    PRIMARY KEY (discord_id, kind)
+);
+
+CREATE INDEX IF NOT EXISTS idx_reminders_due_at ON reminders (due_at);
+
+CREATE TABLE IF NOT EXISTS reminder_settings (
+    discord_id BIGINT PRIMARY KEY REFERENCES users (discord_id) ON DELETE CASCADE,
+    off_kinds  TEXT[] NOT NULL DEFAULT '{}'
+);
