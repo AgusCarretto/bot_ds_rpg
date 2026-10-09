@@ -74,5 +74,7 @@
 \ir rebalance_dust.sql
 -- Los emojis de los ítems OTRA VEZ, ahora que existen TODOS: update_item_emojis.sql corre antes (arriba) y seed_pets / seed_fogon / seed_zone_boxes crean ítems DESPUÉS, así que sus UPDATE por nombre no encontraban el Trinche, la Brasa, los huevos ni las cajas nuevas y quedaban sin emoji (esa deriva ya pasó con otros ítems). Es re-ejecutable.
 \ir update_item_emojis.sql
+-- Y la cara de El Asador Eterno, que se crea en seed_fogon.sql (después del puesto en el que corre update_monster_portraits.sql arriba).
+\ir update_monster_portraits.sql
 
 \echo 'Listo — base cargada completa: esquema, items, recetas, zonas/monstruos, catálogo final de consumibles y emojis.'

@@ -4,8 +4,8 @@
 -- Es una columna APARTE de monsters.emoji a propósito: ese es el emoji unicode que los mensajes escriben en el texto ("¡Un Jabalí 🐗 aparece!"),
 -- y esta es la imagen grande de la miniatura (GameData/ItemDisplay.ImageUrl arma la URL del CDN a partir del código "<:nombre:id>").
 --
--- Auto-contenido y re-ejecutable: agrega la columna si falta y carga las 20 caras POR NOMBRE (monsters.name es UNIQUE). Falla en voz alta si
--- alguno de los 20 monstruos de la lista no existe (una cara que no se cargó se vería como "no pasó nada"). Va DESPUÉS de los scripts que
+-- Auto-contenido y re-ejecutable: agrega la columna si falta y carga las 20 caras de la escalera POR NOMBRE (monsters.name es UNIQUE) y la del Asador Eterno
+-- (ver abajo). Falla en voz alta si alguno de los 20 monstruos de la lista no existe (una cara que no se cargó se vería como "no pasó nada"). Va DESPUÉS de los scripts que
 -- crean los monstruos (rework_drops_and_recipes.sql) y de update_item_emojis.sql. Un monstruo nuevo sin cara no rompe nada: el mensaje sale
 -- sin miniatura. Para sumar uno: subir la imagen al portal, y agregar su fila a la lista de abajo.
 -- =========================================================
@@ -57,6 +57,11 @@ FROM mp_faces f
 WHERE m.name = f.monster_name;
 
 DROP TABLE mp_faces;
+
+-- La cara de El Asador Eterno (2026-10-09, el retrato `asadorfinal` del dueño). Va APARTE de la lista de arriba a propósito: ese monstruo lo crea seed_fogon.sql,
+-- que en una instalación nueva corre DESPUÉS de este script, así que exigir que exista haría fallar la instalación. run_fresh_install.sql corre este script
+-- otra vez al final (cuando ya existe) y en una base viva está desde la v0.11.0.
+UPDATE monsters SET portrait_emoji = '<:asadorfinal:1558168786677403709>' WHERE name = 'El Asador Eterno';
 
 -- Chequeo rápido: monstruos que todavía no tienen cara (debería salir vacío).
 -- SELECT name FROM monsters WHERE portrait_emoji IS NULL ORDER BY monster_id;
