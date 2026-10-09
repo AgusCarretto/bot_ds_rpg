@@ -16,7 +16,8 @@ public static class NoticeDelivery
     // Engancha la entrega al final de cada comando de barra y de cada botón/menú. Se llama una vez al armar el bot.
     // Antes de entregar cuenta el comando (Services/CommandCounter.cs): va en el MISMO manejador y no en otra suscripción para que el orden sea seguro,
     // porque ese conteo puede cruzar un tramo de logro y su aviso tiene que estar en la cola cuando se entrega.
-    public static void Attach(InteractionService commands, IGameEvents events) =>
+    // reminders (opcional): después de entregar, deja armados los recordatorios de cooldown del jugador (Services/ReminderService.cs).
+    public static void Attach(InteractionService commands, IGameEvents events, IReminderService? reminders = null) =>
         commands.InteractionExecuted += async (_, context, result) =>
         {
             try
@@ -29,7 +30,31 @@ public static class NoticeDelivery
             }
 
             await DeliverAfterInteractionAsync(events, context);
+            await SyncRemindersAsync(reminders, context);
         };
+
+    // Los recordatorios salen del estado de los cooldowns DESPUÉS del comando (un botón de pelea que gana un jefe también cuenta). Nunca tira: SyncAsync atrapa todo.
+    private static async Task SyncRemindersAsync(IReminderService? reminders, IInteractionContext context)
+    {
+        if (reminders is null)
+        {
+            return;
+        }
+
+        var interaction = context.Interaction;
+        string? hint = interaction switch
+        {
+            IApplicationCommandInteraction command => command.Data.Name,
+            IComponentInteraction component => component.Data.CustomId,
+            _ => null, // los autocompletados no ejecutan nada
+        };
+        if (hint is null || interaction.ChannelId is not { } channelId)
+        {
+            return;
+        }
+
+        await reminders.SyncAsync(interaction.User.Id, channelId, hint);
+    }
 
     private static async Task DeliverAfterInteractionAsync(IGameEvents events, IInteractionContext context)
     {

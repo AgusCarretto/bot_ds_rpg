@@ -52,6 +52,7 @@ public partial class TextCommandModule(
     IZoneBoxService zoneBoxService,
     IBlessingRepository blessingRepository,
     IFuegoNuevoRepository fuegoNuevoRepository,
+    IReminderRepository reminderRepository,
     IGameEvents gameEvents) : ModuleBase<SocketCommandContext>
 {
     // ---- Onboarding / clase ----

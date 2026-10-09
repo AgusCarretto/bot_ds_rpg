@@ -29,6 +29,15 @@ public class RaidModule(
 {
     // Ver Services/RaidSettings.cs: el mínimo es configurable (2 por defecto).
     private static int MinParticipantsToStart => RaidSettings.MinParticipants;
+
+    // Los recordatorios de cooldown (Services/ReminderService.cs): los participantes de un raid no tienen todos una interacción propia al terminar, así que el raid les arma el aviso del jefe
+    // al arrancar y al resolverse. Lo asigna Program.cs al arrancar; nulo (las pruebas) = no hace nada.
+    public static IReminderService? Reminders { get; set; }
+
+    private static Task SyncRemindersAsync(RaidSession session, IReadOnlyCollection<ulong> players) =>
+        Reminders is { } reminders && session.ChannelId != 0
+            ? reminders.SyncManyAsync(players, session.ChannelId, "raid")
+            : Task.CompletedTask;
     private const int MaxParticipants = RaidSettings.MaxParticipants;
     public static readonly TimeSpan LobbyDuration = TimeSpan.FromSeconds(60);
 
@@ -57,6 +66,7 @@ public class RaidModule(
             }
 
             session.ReplyTarget = new InteractionCombatReplyTarget(Context.Interaction);
+            session.ChannelId = Context.Channel?.Id ?? 0;
             ScheduleLobbyTimeout(session, raidSessions, adventureRepository);
 
             await FollowupAsync(embed: BuildLobbyEmbed(session), components: BuildLobbyButtons(session.RaidId));
@@ -607,6 +617,9 @@ public class RaidModule(
                 : "¡El jefe entra en combate!";
 
             await session.ReplyTarget.UpdateAsync(BuildCombatEmbed(session, startLine), BuildCombatButtons(session.RaidId));
+
+            // Todos los que pelean ya tienen el cooldown del jefe corriendo (la espera corta de una derrota; la victoria la alarga después).
+            await SyncRemindersAsync(session, session.Participants.Select(p => p.DiscordId).ToList());
         }
         catch
         {
@@ -810,6 +823,9 @@ public class RaidModule(
         }
 
         await session.ReplyTarget.UpdateAsync(BuildVictoryEmbed(session, logLine, results), new ComponentBuilder().Build());
+
+        // La victoria dejó el cooldown del jefe en su espera larga: se vuelve a armar el aviso de cada participante (el que pegó el último golpe lo arma también su interacción).
+        await SyncRemindersAsync(session, session.Participants.Select(p => p.DiscordId).ToList());
     }
 
     private static async Task ResolveWipeAsync(
@@ -831,6 +847,7 @@ public class RaidModule(
         }
 
         await session.ReplyTarget.UpdateAsync(BuildWipeEmbed(session, logLine), new ComponentBuilder().Build());
+        await SyncRemindersAsync(session, session.Participants.Select(p => p.DiscordId).ToList());
     }
 
     // ============================================================

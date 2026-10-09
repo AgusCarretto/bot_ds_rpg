@@ -85,6 +85,10 @@ public sealed class RaidSession
     // TryAdd), nunca queda sin asignar mientras el raid está en uso.
     public ICombatReplyTarget ReplyTarget { get; set; } = null!;
 
+    // El canal donde se armó el lobby (0 = no se sabe): los recordatorios de cooldown de TODOS los participantes se avisan ahí (Services/ReminderService.cs); solo el que pega el último golpe
+    // tiene una interacción propia al terminar, así que los demás no se podrían enterar de otra forma.
+    public ulong ChannelId { get; set; }
+
     public int BossCurrentHp { get; set; }
     public RaidPhase Phase { get; set; } = RaidPhase.Lobby;
 

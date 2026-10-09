@@ -49,6 +49,7 @@ public partial class TextCommandModule
             // para poder editarlo después, así que primero se manda y recién ahí se registra.
             var message = await ReplyAsync(embed: RaidModule.BuildLobbyEmbed(session), components: RaidModule.BuildLobbyButtons(session.RaidId));
             session.ReplyTarget = new MessageCombatReplyTarget(message);
+            session.ChannelId = Context.Channel.Id;
 
             if (!raidSessions.TryAdd(session) || !raidSessions.TryRegisterParticipant(Context.User.Id, session.RaidId))
             {
