@@ -65,13 +65,13 @@ public static class ItemChoices
     public static IReadOnlyList<AutocompleteResult> ForDismantle(IEnumerable<InventoryEntry> inventory, string typed)
     {
         return inventory
-            .Where(e => e.Quantity > 0 && Dismantling.CanDismantle(e.Type) && Dismantling.DustPerUnit(e.Rarity) > 0 && AutocompleteText.FitsAsValue(e.ItemName) && Matches(e.ItemName, typed))
+            .Where(e => e.Quantity > 0 && Dismantling.CanDismantle(e.Type) && Dismantling.DustPerUnit(e.Rarity, e.DustValue) > 0 && AutocompleteText.FitsAsValue(e.ItemName) && Matches(e.ItemName, typed))
             .OrderBy(e => Relevance(e.ItemName, typed))
-            .ThenByDescending(e => Dismantling.DustPerUnit(e.Rarity))
+            .ThenByDescending(e => Dismantling.DustPerUnit(e.Rarity, e.DustValue))
             .ThenBy(e => e.ItemName, StringComparer.Ordinal)
             .Take(MaxChoices)
             .Select(e => new AutocompleteResult(
-                Truncate($"{e.ItemName} — tenés {e.Quantity} · +{Dismantling.DustPerUnit(e.Rarity)} Polvo c/u ({e.Rarity})"), e.ItemName))
+                Truncate($"{e.ItemName} — tenés {e.Quantity} · +{Dismantling.DustPerUnit(e.Rarity, e.DustValue)} Polvo c/u{(e.DustValue is null ? $" ({e.Rarity})" : string.Empty)}"), e.ItemName))
             .ToList();
     }
 
@@ -92,7 +92,7 @@ public static class ItemChoices
             .ThenByDescending(e => (long)e.SellPrice * e.Quantity)
             .ThenBy(e => e.ItemName, StringComparer.Ordinal)
             .Select(e => new AutocompleteResult(
-                Truncate($"{e.ItemName} — tenés {e.Quantity} · {e.SellPrice} oro c/u ({e.Rarity})"), e.ItemName));
+                Truncate($"{e.ItemName} — tenés {e.Quantity} · {e.SellPrice} oro c/u{(e.Type == "Material" ? string.Empty : $" ({e.Rarity})")}"), e.ItemName));
 
         return gear.Concat(stock).Take(MaxChoices).ToList();
     }

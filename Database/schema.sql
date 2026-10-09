@@ -35,7 +35,10 @@ CREATE TABLE IF NOT EXISTS items (
     class_requirement TEXT CHECK (class_requirement IN ('Guerrero', 'Ninja', 'Arquero', 'Hechicero')),
     -- Emoji personalizado de Discord ("<:nombre:id>"), NULL = todavía sin pixel art cargado
     -- (GameData/ItemDisplay.cs cae a mostrar solo el nombre en ese caso).
-    emoji VARCHAR(100)
+    emoji VARCHAR(100),
+    -- Polvo que da UNA unidad al desmantelarla (/dismantle, GameData/Dismantling.cs). NULL = lo que diga su rareza (así se paga la madera y el mineral). Los drops de monstruo lo traen puesto
+    -- (Database/rebalance_dust.sql): un drop de monstruo no tiene rareza, cae con la misma chance en la Zona 1 que en la 5, así que paga por su origen (cacería o viaje).
+    dust_value INTEGER CHECK (dust_value IS NULL OR dust_value >= 0)
 );
 
 -- ---------------------------------------------------------

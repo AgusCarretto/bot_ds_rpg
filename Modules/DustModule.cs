@@ -73,7 +73,7 @@ public class DustModule(
         }
 
         var item = await itemRepository.GetByNameAsync(itemName);
-        int dustGained = item is null ? 0 : Dismantling.DustFor(item.Rarity, quantity);
+        int dustGained = item is null ? 0 : Dismantling.DustFor(item.Rarity, quantity, item.DustValue);
         if (item is null || !Dismantling.CanDismantle(item.Type) || dustGained <= 0)
         {
             return new DustResult($"**{itemName.Trim()}** no se puede desmantelar: solo se desmantelan materiales (madera, minerales y drops de monstruos).", null);
@@ -294,7 +294,8 @@ public class DustModule(
             return $"Pieza de **Zona {rank}**: {GameHistory.Number(cost.Gold)} oro + {cost.Dust} Polvo";
         }));
 
-        string dust = string.Join(" · ", new[] { "Común", "Raro", "Épico", "Legendario", "Mítico" }.Select(r => $"{r} {GameHistory.Number(Dismantling.DustPerUnit(r))}"));
+        string dust = string.Join(" · ", new[] { "Común", "Raro", "Épico", "Legendario", "Mítico" }.Select(r => $"{r} {GameHistory.Number(Dismantling.DustPerUnit(r))}"))
+            + $"\nDrops de monstruos (no tienen rareza): **{Dismantling.HuntDropDust}** los de cacería y **{Dismantling.TravelDropDust}** los de viaje.";
 
         return new EmbedBuilder()
             .WithTitle("✨ Encantamientos: opciones")
