@@ -7,7 +7,9 @@
 --   · El equipo para entrar (PUESTO, uno solo de cada uno, igual para todas las clases, sin sinergia): Trinche del Asador Eterno (+128 ATQ) y Brasa del Fogón Eterno (+120 DEF),
 --     el salto x1,6 de la escalera sobre la Zona 5 (80 / 75). Rareza Mítico.
 --   · Sus recetas (zona 0, no son de afinidad): CUESTAN MUCHÍSIMO a propósito, con los drops de CAZA de las 5 zonas (x5 cada uno) más madera/mineral Legendarios y Raros y 25.000 de
---     oro. Nada de materiales Míticos (el 0,5 % por acción es una lotería demasiado cruel para exigirla). El camino mide ~14 h de juego perfecto (report_recipe_pacing.sql -v gate=1).
+--     oro. Desde la v0.15.1 (el dueño: «la corteza y el meteorito tienen que usarse para algo») cada pieza pide UN material Mítico de recolección: la Corteza del Árbol de Vida en el
+--     Trinche y el Fragmento de Meteorito en la Brasa (0,5 % por acción, un solo ítem Mítico por tipo: ~1000 min cada uno, en paralelo porque /chop y /mine tienen cooldown aparte; se
+--     juntan mientras se hace el resto, por eso conviene no desmantelarlos). Antes de eso el camino medía ~14 h de juego perfecto (report_recipe_pacing.sql -v gate=1).
 --   · El jefe: El Asador Eterno, calibrado con el CombatTurnResolver real a nivel 28 (el examen de cada jefe de la escalera): con el equipo del Fogón pierde ~16 % y con el de
 --     Zona 5 (arma de clase + amuleto) ~75 %. HP y daño = los del jefe de Zona 5 x1,3 y x1,2. No suelta nada (monster_drops vacío): ganarle abre el Fuego Nuevo.
 -- =========================================================
@@ -54,13 +56,15 @@ INSERT INTO fogon_ingredients VALUES
     ('Trinche del Asador Eterno', 'Corazón de Titán', 5),
     ('Trinche del Asador Eterno', 'Madera de Ébano', 4),
     ('Trinche del Asador Eterno', 'Hierro', 18),
+    ('Trinche del Asador Eterno', 'Corteza del Árbol de Vida', 1),
     ('Brasa del Fogón Eterno', 'Pluma de Ñandú', 5),
     ('Brasa del Fogón Eterno', 'Esencia Espectral', 5),
     ('Brasa del Fogón Eterno', 'Gema en Bruto', 5),
     ('Brasa del Fogón Eterno', 'Escama Ígnea', 5),
     ('Brasa del Fogón Eterno', 'Fragmento de Alma', 5),
     ('Brasa del Fogón Eterno', 'Gema de Zafiro', 4),
-    ('Brasa del Fogón Eterno', 'Carbón', 18);
+    ('Brasa del Fogón Eterno', 'Carbón', 18),
+    ('Brasa del Fogón Eterno', 'Fragmento de Meteorito', 1);
 
 DO $$
 DECLARE
@@ -93,10 +97,10 @@ BEGIN
     SELECT count(*) INTO v_boss FROM monsters WHERE zone_id = 0 AND is_boss AND NOT is_travel;
     SELECT count(*) INTO v_drops FROM monster_drops md JOIN monsters m USING (monster_id) WHERE m.zone_id = 0;
     SELECT count(*) INTO v_recipes FROM recipes WHERE zone_id = 0 AND NOT affinity;
-    SELECT count(*) INTO v_bad FROM recipes r WHERE r.zone_id = 0 AND (SELECT count(*) FROM recipe_ingredients ri WHERE ri.recipe_id = r.recipe_id) <> 7;
+    SELECT count(*) INTO v_bad FROM recipes r WHERE r.zone_id = 0 AND (SELECT count(*) FROM recipe_ingredients ri WHERE ri.recipe_id = r.recipe_id) <> 8;
 
     IF v_zone <> 1 OR v_boss <> 1 OR v_drops <> 0 OR v_recipes <> 2 OR v_bad <> 0 THEN
-        RAISE EXCEPTION 'seed_fogon: estado final inesperado (zona 0 = %, jefes = %, drops del jefe = %, recetas = %, recetas sin 7 ingredientes = %)', v_zone, v_boss, v_drops, v_recipes, v_bad;
+        RAISE EXCEPTION 'seed_fogon: estado final inesperado (zona 0 = %, jefes = %, drops del jefe = %, recetas = %, recetas sin 8 ingredientes = %)', v_zone, v_boss, v_drops, v_recipes, v_bad;
     END IF;
 END $$;
 
