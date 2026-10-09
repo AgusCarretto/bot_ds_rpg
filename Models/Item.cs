@@ -14,4 +14,5 @@ public sealed class Item
     public string? Emoji { get; init; } // emoji personalizado de Discord ("<:nombre:id>"); NULL = sin pixel art cargado todavía, ver GameData/ItemDisplay.cs
     public int? BoxMinItems { get; init; } // solo si Type == "Caja": cuántos ítems trae como mínimo (boxes.min_items)
     public int? BoxMaxItems { get; init; } // ... y como máximo (boxes.max_items); ver GameData/BoxLoot.cs (BoxCatalog.RangeText)
+    public int? DustValue { get; init; }    // Polvo por unidad al desmantelar (items.dust_value); null = el de su rareza (GameData/Dismantling.cs). Los drops de monstruo lo traen: no tienen rareza.
 }

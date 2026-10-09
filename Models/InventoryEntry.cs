@@ -9,4 +9,6 @@ public sealed class InventoryEntry
     // Cuánto paga la tienda por UNA unidad (items.sell_price; 0 = no se puede vender, es un premio).
     public int SellPrice { get; init; }
     public string? Emoji { get; init; }
+    // Polvo por unidad al desmantelar (items.dust_value); null = el de su rareza. Los drops de monstruo lo traen (no tienen rareza).
+    public int? DustValue { get; init; }
 }

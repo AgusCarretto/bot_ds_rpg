@@ -70,5 +70,7 @@
 \ir seed_zone_boxes.sql
 -- Se retiran los 17 trofeos de las cajas (v0.14.4): materiales que solo salían de las cajas y no sirven para nada. Va DESPUÉS de seed_zone_boxes.sql (que todavía los nombra) y de rework_boxes.sql.
 \ir retire_box_trophies.sql
+-- El Polvo de los drops de monstruo por su origen, no por una rareza que no tienen (v0.15.1). Va al final: necesita los drops de las 5 zonas. La columna items.dust_value está en schema.sql.
+\ir rebalance_dust.sql
 
 \echo 'Listo — base cargada completa: esquema, items, recetas, zonas/monstruos, catálogo final de consumibles y emojis.'

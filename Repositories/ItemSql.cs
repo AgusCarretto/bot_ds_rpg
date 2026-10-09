@@ -20,6 +20,7 @@ internal static class ItemSql
         i.weapon_family AS "WeaponFamily",
         i.class_requirement AS "ClassRequirement",
         i.emoji AS "Emoji",
+        i.dust_value AS "DustValue",
         (SELECT bx.min_items FROM boxes bx WHERE bx.box_item_id = i.item_id) AS "BoxMinItems",
         (SELECT bx.max_items FROM boxes bx WHERE bx.box_item_id = i.item_id) AS "BoxMaxItems"
         """;

@@ -150,6 +150,7 @@ public static class HelpTopics
             "Madera, minerales y drops de monstruos. **No** las cajas, la comida ni el equipo. Es de una sola mano: el Polvo no vuelve a convertirse en material."),
         ("✨ Cuánto Polvo da cada unidad",
             string.Join(" · ", new[] { "Común", "Raro", "Épico", "Legendario", "Mítico" }.Select(r => $"{r} {Num(Dismantling.DustPerUnit(r))}")) +
+            $"\nLos **drops de monstruos** no tienen rareza (caen igual en la Zona 1 que en la 5): dan **{Dismantling.HuntDropDust}** los de cacería y **{Dismantling.TravelDropDust}** los de viaje." +
             "\nRinde parecido por minuto de farmeo en todas las rarezas, así que no hay una «mejor» para romper."),
         ("🎯 Para qué", "Cada intento de **/enchant** gasta Polvo y oro. Mirá cómo funciona con **/info tema:enchant**. Tu Polvo figura en **/profile**."));
 
