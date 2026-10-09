@@ -1,7 +1,13 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-09 (v0.16.0: recordatorios de cooldown)_
+_Última revisión: 2026-10-09 (v0.16.1: una sola curación por pelea también en /hunt)_
 
+## Una sola curación por pelea, también en `/hunt` (v0.16.1, 2026-10-09)
+
+- **Qué pasaba** (lo vio el dueño: «el use comida en plenas peleas ilimitadamente… acordate que es 1 vez sola por pelea»): el límite de una curación valía en `/travel` y `/boss`, pero en `/hunt` el `/use` escrito en plena pelea seguía **sin límite**. Fue decisión mía de la v0.8 (la anoté acá como «decidí sin preguntar»: el pedido era que el desplegable no existiera en `/hunt`, no que se prohibiera curarse) y estaba mal tomada: con una cacería de un minuto de cooldown, comer hasta ganar saltaba el costo de las peleas.
+- **Qué cambió**: `GameData/CombatHeal.cs` separa dos cosas que antes eran una (`IsLimited`): `HasMenu` (el desplegable «Curar»: solo `/travel` y `/boss`) e `IsLimited` (el límite de UNA curación por pelea: ahora `/hunt`, `/travel` y `/boss`). `/use` escrito (`aa use`) y el desplegable comparten el mismo límite; la segunda curación se rechaza («Ya te curaste en esta pelea: solo se puede **una vez** por combate») sin gastar comida ni turno, con cualquier comida. La pelea siguiente arranca limpia. El encuentro de `/hunt` lleva el pie «🍖 Podés curarte UNA vez en esta pelea con /use». `/info tema:hunt` lo dice.
+- **Sin tocar**: fuera de combate `/use` y `/heal` siguen sin límite (es el ciclo de recursos entre peleas); `/autohunt` no se cura (no tiene turnos del jugador); el raid no tiene curación en la pelea (un `/use` dentro de un raid no toca la vida de la pelea, que vive en memoria).
+- **Para la base viva**: nada (sin migración). Se despliega con el binario.
 ## Recordatorios de cooldown (v0.16.0, 2026-10-09)
 
 - **Qué es** (idea del dueño: «que el bot mismo te lea… y te diga luego de `/hunt` al minuto que la cacería está lista; lo mismo con travel, chop, mine, boss/raid, caja, pet feed»): cuando termina una espera, el bot manda un mensaje en **el canal donde usaste el comando** y te menciona. Diez tipos: cacería (1 min), viaje (30 min), talar (5 min), minar (5 min), jefe/raid (5 h; 30 min si perdiste), comprar caja (2 h), tala y minería avanzadas (1 h), comida de las mascotas (1 h) y el diario (24 h). Los de **cacería, talar y minar se borran solos a los 2 minutos** (si no, un jugador activo llena el canal); los demás se quedan.

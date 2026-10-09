@@ -113,12 +113,12 @@ public class UseModule(
         // ilimitada sin ningún costo mientras dure el inventario). ---
         var state = session.State;
 
-        // En /travel y /boss te curás UNA sola vez por pelea, sea con el desplegable del combate (que pasa por acá) o
-        // escribiendo /use: los dos comparten el límite (ver GameData/CombatHeal.cs). En /hunt no hay límite.
+        // En /hunt, /travel y /boss te curás UNA sola vez por pelea, sea con el desplegable del combate (que pasa por acá) o
+        // escribiendo /use: los dos comparten el límite (ver GameData/CombatHeal.cs).
         bool healLimited = CombatHeal.IsLimited(state.CommandName);
         if (healLimited && state.HealUsed)
         {
-            return new UseResult("🍖 Ya te curaste en esta pelea: en /travel y /boss solo se puede **una vez** por combate.", null);
+            return new UseResult("🍖 Ya te curaste en esta pelea: solo se puede **una vez** por combate.", null);
         }
 
         if (state.PlayerCurrentHp >= state.PlayerMaxHp && buff is null)

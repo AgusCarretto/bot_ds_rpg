@@ -112,7 +112,7 @@ public class AdventureModule(
                 return;
             }
 
-            if (!CombatHeal.IsLimited(session.State.CommandName))
+            if (!CombatHeal.HasMenu(session.State.CommandName))
             {
                 await FollowupAsync("Curarte con el desplegable solo se puede en /travel y /boss.", ephemeral: true);
                 return;
@@ -397,7 +397,7 @@ public class AdventureModule(
 
         builder.WithButton("Huir", "btn_flee", ButtonStyle.Danger, new Emoji("🏃"));
 
-        if (CombatHeal.IsLimited(state.CommandName))
+        if (CombatHeal.HasMenu(state.CommandName))
         {
             builder.WithSelectMenu(BuildHealMenu(state, healOptions), row: 1);
         }
@@ -410,7 +410,7 @@ public class AdventureModule(
     public static async Task<IReadOnlyList<HealOption>?> LoadHealOptionsAsync(
         IInventoryRepository inventoryRepository, IBuffRepository buffRepository, ulong discordId, CombatState state)
     {
-        if (!CombatHeal.IsLimited(state.CommandName) || state.HealUsed)
+        if (!CombatHeal.HasMenu(state.CommandName) || state.HealUsed)
         {
             return null;
         }
@@ -552,9 +552,13 @@ public class AdventureModule(
             .AddField("❤️ Tu HP", HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
             .AddField($"{state.MonsterEmoji} HP de {state.MonsterName}", HpLine(state.MonsterCurrentHp, state.MonsterMaxHp), true);
 
-        if (CombatHeal.IsLimited(state.CommandName))
+        if (CombatHeal.HasMenu(state.CommandName))
         {
             embed.WithFooter("🍖 Podés curarte UNA vez en esta pelea con el desplegable de abajo.");
+        }
+        else if (CombatHeal.IsLimited(state.CommandName))
+        {
+            embed.WithFooter("🍖 Podés curarte UNA vez en esta pelea con /use.");
         }
 
         return WithAbilityField(embed, state).Build();
