@@ -127,7 +127,8 @@ public class BoxModule(
         return new BoxActionResult(null, BuildOpenedEmbed(item, opened, quantity, totalGold, totalItems.Values, goldAfter, newTrophies));
     }
 
-    // Público y puro: se prueba sin Discord. Lo mejor (rareza más alta) arriba, y un ✨ en lo Épico o mejor para que se note.
+    // Público y puro: se prueba sin Discord. Lo mejor (rareza más alta) arriba, y un ✨ en lo Épico o mejor para que se note. Sin la rareza escrita (v0.15.1, el dueño: «el drop de
+    // monstruo NO tiene rareza, el % de caída es el mismo en la Zona 1 y en la 5»): la etiqueta de un drop de la Zona 5 decía «Mítico» y no tiene nada de raro, así que no se muestra.
     public static Embed BuildOpenedEmbed(
         Item box, int opened, int requested, int gold, IEnumerable<LootedItem> items, int goldAfter,
         IReadOnlyList<string>? newTrophies = null)
@@ -142,7 +143,7 @@ public class BoxModule(
         foreach (var looted in items.OrderByDescending(i => RarityCatalog.RankOf(i.Rarity)).ThenBy(i => i.Name))
         {
             string shine = RarityCatalog.RankOf(looted.Rarity) >= RarityCatalog.RankOf("Épico") ? " ✨" : string.Empty;
-            lines.Add($"• **{looted.Quantity}×** {ItemDisplay.Format(looted.Emoji, looted.Name)} _({looted.Rarity})_{shine}");
+            lines.Add($"• **{looted.Quantity}×** {ItemDisplay.Format(looted.Emoji, looted.Name)}{shine}");
         }
 
         if (lines.Count == 0)

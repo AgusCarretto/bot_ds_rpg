@@ -1,6 +1,15 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-08 (v0.15.0: la historia, y el Ninja y el Arquero contra monstruos)_
+_Última revisión: 2026-10-09 (v0.15.1: el crafteo baja a su ritmo de diseño)_
+
+## Crafteo más corto y cajas sin rareza (v0.15.1, 2026-10-09)
+
+- **Por qué**: el dueño sentía el crafteo «bravo». Revisión de balance completa (simulación de recorridos enteros con el combate real, los drops, la recolección, las recetas y el cooldown de jefe): el set de armas de clase + amuleto de las cinco zonas llevaba **~40 h de juego perfecto** (rango 34–48), el cuello de botella de TODA receta de las zonas 2 a 5 era el drop de `/travel` (40 % cada 30 min = 75 min por unidad; las recetas se calibraron con el 60 % y al bajarlo en la v0.10.2 nadie las retocó) y el arma de clase de la Zona 5 pedía un material **Mítico de recolección** (0,5 % por acción: ~1000 min de mediana y una cola de ~40 h).
+- **Qué cambió** (solo recetas, `Database/rebalance_crafting.sql` para la base viva y `rework_drops_and_recipes.sql` para instalaciones nuevas): cada arma de clase de las zonas 2 a 5 pide **1 drop de viaje menos** (3 → 2: ~150 min, el diseño original); cada amuleto, 1 menos (4 → 3: ~225 min); y las cuatro armas de clase de la Zona 5 **ya no piden Fragmento de Meteorito / Corteza del Árbol de Vida**: las de mineral piden Gema de Zafiro ×1 y las de madera Madera de Nogal ×3 (como la Zona 4). Medido: set de las cinco zonas **~31 h** (p90 ~35 h); la Zona 1 y las armas generales no cambian. Corteza y Meteorito siguen cayendo (0,5 %) y valen 500 de Polvo cada uno.
+- **Apertura de cajas sin rareza**: `/open` ya no escribe «(Raro)», «(Mítico)»… al lado de cada ítem (el drop de monstruo no tiene rareza: cae igual en la Zona 1 que en la 5). El ✨ de lo Épico o mejor y el orden quedan.
+- **Agujero conocido, sin tocar (falta decisión)**: el Polvo de `/dismantle` también paga por esa etiqueta, así que un drop de cacería de la Zona 5 (Mítico, 6 %) vale 500 Polvo = ~30 Polvo por cacería, 60 veces el ritmo para el que se calibró la tabla (0,5 Polvo/min en materiales recolectados). Propuesta: que los drops de monstruo paguen por su origen (cacería / viaje) y no por la etiqueta.
+- **Para la base viva**: correr `Database/rebalance_crafting.sql` (re-ejecutable, se verifica sola). No hace falta antes del binario: el código no lee estas cantidades de forma especial.
+- **Lo que quedó sin tocar, con números** (la revisión completa): clases (con habilidad y comida, jefe con equipo propio: Guerrero 8 %, Ninja 8 %, Hechicero 11 %, Arquero 13 % de perder; con el de la zona anterior 53 / 42 / 55 / 63 %), oro (sobra desde la Zona 2: las recetas cuestan <10 min de ingresos), XP (nivel 25 en ~12 h, mucho antes que el equipo; sin equipo hacen falta +10 niveles para el jefe de la Zona 2 y +14 para el de la 3). El piso del cooldown de jefe (5 h global) sigue en 20,8 h hasta vencer al jefe 5.
 
 ## Las Crónicas del Fogón y ajuste de clases contra monstruos (v0.15.0, 2026-10-08)
 
