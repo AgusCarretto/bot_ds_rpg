@@ -4,7 +4,7 @@
 --
 --   · La zona: una fila de "zones" con zone_id = 0 y kind = 'gate'. IZoneRepository.GetAllAsync y IMonsterRepository.GetAllAsync NO la devuelven, así que la escalera, /zonas,
 --     las recetas por zona, los drops, las cajas y las mascotas no la ven (solo /zona 0 y /boss, GameData/FogonRules.cs).
---   · El equipo para entrar (PUESTO, uno solo de cada uno, igual para todas las clases, sin sinergia): Trinche del Asador Eterno (+128 ATQ) y Brasa del Fogón Eterno (+120 DEF),
+--   · El equipo para entrar (PUESTO, uno solo de cada uno, igual para todas las clases, sin sinergia): Trinche del Asador Eterno (+128 ATQ) y Brasa del Fogón Eterno (+165 DEF; era +120 hasta la v0.15.1, cuando todos los amuletos subieron y el Asador pegó +45),
 --     el salto x1,6 de la escalera sobre la Zona 5 (80 / 75). Rareza Mítico.
 --   · Sus recetas (zona 0, no son de afinidad): CUESTAN MUCHÍSIMO a propósito, con los drops de CAZA de las 5 zonas (x5 cada uno) más madera/mineral Legendarios y Raros y 25.000 de
 --     oro. Desde la v0.15.1 (el dueño: «la corteza y el meteorito tienen que usarse para algo») cada pieza pide UN material Mítico de recolección: la Corteza del Árbol de Vida en el
@@ -25,14 +25,14 @@ ON CONFLICT (zone_id) DO UPDATE
 INSERT INTO items (name, type, rarity, stat_value, sell_price, buy_price, weapon_family, class_requirement)
 VALUES
     ('Trinche del Asador Eterno', 'Weapon', 'Mítico', 128, 1000, 1300, NULL, NULL),
-    ('Brasa del Fogón Eterno',    'Amulet', 'Mítico', 120, 1000, 1300, NULL, NULL)
+    ('Brasa del Fogón Eterno',    'Amulet', 'Mítico', 165, 1000, 1300, NULL, NULL)
 ON CONFLICT (name) DO UPDATE
     SET type = EXCLUDED.type, rarity = EXCLUDED.rarity, stat_value = EXCLUDED.stat_value, sell_price = EXCLUDED.sell_price,
         buy_price = EXCLUDED.buy_price, weapon_family = EXCLUDED.weapon_family, class_requirement = EXCLUDED.class_requirement;
 
 -- El jefe.
 INSERT INTO monsters (zone_id, name, emoji, min_hp, max_hp, min_damage, max_damage, gold_reward, xp_reward, is_boss, is_travel)
-VALUES (0, 'El Asador Eterno', '🔥', 2002, 2401, 188, 244, 3000, 300, true, false)
+VALUES (0, 'El Asador Eterno', '🔥', 2002, 2401, 233, 289, 3000, 300, true, false)
 ON CONFLICT (name) DO UPDATE
     SET zone_id = EXCLUDED.zone_id, emoji = EXCLUDED.emoji, min_hp = EXCLUDED.min_hp, max_hp = EXCLUDED.max_hp, min_damage = EXCLUDED.min_damage,
         max_damage = EXCLUDED.max_damage, gold_reward = EXCLUDED.gold_reward, xp_reward = EXCLUDED.xp_reward, is_boss = true, is_travel = false;

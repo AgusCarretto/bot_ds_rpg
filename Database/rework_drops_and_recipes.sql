@@ -7,7 +7,7 @@
 --   · el jefe NO suelta material: su único "drop" es el COFRE de su zona (la chance 100% la primera vez / 40% después
 --     vive en GameData/CombatRewardCalculator, no acá);
 --   · 6 recetas por zona (30 en total): 4 armas de clase, 1 general SIN familia (no recibe el boost de clase) y 1 amuleto
---     que pide los 3 drops de la zona; ATQ base 9/20/32/50/80 y DEF 10/18/30/46/75 (las de la escalera de zonas);
+--     que pide los 3 drops de la zona; ATQ base 9/20/32/50/80 y DEF 10/35/60/85/120 (la escalera de zonas; la DEF era 10/18/30/46/75 hasta la v0.15.1);
 --   · salen 6 materiales (Colmillo de Cimarrón y los 5 drops de jefe) y 5 amuletos (los "bajos" de cada zona).
 -- Las cantidades salen del modelo de Database/report_recipe_pacing.sql con el rendimiento de GatheringYield (Común 1-5, Raro 1-3,
 -- Épico 1-2, Legendario/Mítico 1): general ~100 min, de clase ~150, amuleto ~200 (Zona 1 más corto). Se generó desde ese modelo.
@@ -16,6 +16,9 @@
 -- Ahora cada arma de clase de las zonas 2 a 5 pide UNA unidad menos del drop de viaje de su zona (3 → 2: ~150 min otra vez) y cada amuleto UNA menos (4 → 3: ~225 min), y las armas de
 -- clase de la Zona 5 ya no piden el material MÍTICO de recolección (Fragmento de Meteorito / Corteza del Árbol de Vida: 0,5 % por acción, ~1000 min y una cola de hasta 40 h de mala suerte):
 -- piden lo mismo que las de la Zona 4 (Gema de Zafiro, o Madera de Nogal ×3 con Ébano). Migración para la base viva: rebalance_crafting.sql.
+-- v0.15.1 (amuletos): la DEF de los amuletos de las zonas 2 a 5 sube de 18/30/46/75 a 35/60/85/120 (el dueño: «no se siente el amuleto; con el puesto se debería poder hacer autohunt sin perder
+-- vida casi»): una cacería común con el amuleto de la zona cuesta ~3 % de la vida en vez de ~11-20 %. La defensa se RESTA del golpe 1 a 1, así que cada jefe sube su daño en lo mismo que su
+-- amuleto (seed_zone_bosses.sql) y el examen del jefe queda igual. Migración para la base viva: rebalance_amulets.sql.
 --
 -- DESTRUCTIVO A PROPÓSITO (el dueño lo autorizó: todo lo de la base viva es reemplazable): borrar un ítem se lleva en cascada las
 -- mochilas, recetas y drops que lo usaban, y deja en NULL el arma/amuleto equipado de quien lo llevaba puesto. SIN reembolso. Avisa por
@@ -41,25 +44,25 @@ INSERT INTO rw_gear VALUES
     ('Colmillo Nocturno', 'clase', 'Bosque de Cenizas', 20, 400),
     ('Arco Élfico Ancestral', 'clase', 'Bosque de Cenizas', 20, 400),
     ('Grimorio de las Tormentas', 'clase', 'Bosque de Cenizas', 20, 400),
-    ('Talismán de Ceniza Bendita', 'amuleto', 'Bosque de Cenizas', 18, 400),
+    ('Talismán de Ceniza Bendita', 'amuleto', 'Bosque de Cenizas', 35, 400),
     ('Pico de Minero Reforzado', 'general', 'Minas del Yunque', 32, 450),
     ('Mazo de Escoria', 'clase', 'Minas del Yunque', 32, 600),
     ('Dagas de Garra Maldita', 'clase', 'Minas del Yunque', 32, 600),
     ('Boleadoras de Escoria', 'clase', 'Minas del Yunque', 32, 600),
     ('Báculo de Tizón', 'clase', 'Minas del Yunque', 32, 600),
-    ('Peto de Escoria Templada', 'amuleto', 'Minas del Yunque', 30, 650),
+    ('Peto de Escoria Templada', 'amuleto', 'Minas del Yunque', 60, 650),
     ('Lanza de Magma', 'general', 'Cordillera del Fuego', 50, 700),
     ('Facón de Hueso Añejo', 'clase', 'Cordillera del Fuego', 50, 900),
     ('Cuchillos de Ceniza', 'clase', 'Cordillera del Fuego', 50, 900),
     ('Arco de Caza Mayor', 'clase', 'Cordillera del Fuego', 50, 900),
     ('Códice de las Brasas', 'clase', 'Cordillera del Fuego', 50, 900),
-    ('Talismán del Volcán', 'amuleto', 'Cordillera del Fuego', 46, 1000),
+    ('Talismán del Volcán', 'amuleto', 'Cordillera del Fuego', 85, 1000),
     ('Martillo del Titán', 'general', 'Cráter de la Escoria', 80, 1100),
     ('Espada del Abismo', 'clase', 'Cráter de la Escoria', 80, 1400),
     ('Colmillo del Cráter', 'clase', 'Cráter de la Escoria', 80, 1400),
     ('Arco del Alma Errante', 'clase', 'Cráter de la Escoria', 80, 1400),
     ('Báculo del Árbol de Vida', 'clase', 'Cráter de la Escoria', 80, 1400),
-    ('Corazón de Titán Engarzado', 'amuleto', 'Cráter de la Escoria', 75, 1500);
+    ('Corazón de Titán Engarzado', 'amuleto', 'Cráter de la Escoria', 120, 1500);
 
 CREATE TEMP TABLE rw_ingredients (result_name TEXT, ingredient_name TEXT, quantity INTEGER);
 INSERT INTO rw_ingredients VALUES

@@ -14,6 +14,10 @@
 --
 -- Re-ejecutable (mismo patrón WITH...ON CONFLICT que seed_zones_and_monsters.sql).
 --
+-- v0.15.1: el DAÑO de los jefes de las zonas 2 a 5 subió +17 / +30 / +39 / +45 (54-79 → 71-96, 78-112 → 108-142, 112-149 → 151-188, 157-203 → 202-248). Es lo que subió la DEF del amuleto de
+-- cada zona (18 → 35, 30 → 60, 46 → 85, 75 → 120, ver rework_drops_and_recipes.sql): la defensa se resta del golpe 1 a 1, así que sumarle al jefe lo mismo que le suma el amuleto deja el examen del
+-- jefe EXACTAMENTE como estaba (con el equipo propio se pierde ~2-13 %, con el de la zona anterior ~50-84 %, medido con el combate real), mientras las cacerías comunes pasan a costar ~3 % de vida.
+--
 -- gold_reward / xp_reward de un jefe son un BONUS que se suma a la fórmula normal de /hunt
 -- (GameData/CombatRewardCalculator.RollHuntReward), y el total se multiplica x6 (CombatRewardCalculator.BossRewardMultiplier: desde la v0.6.0 el
 -- jefe paga ~3,2 veces un /travel de su zona; con x1 pagaba la mitad). Triplicados respecto de los originales: un jefe
@@ -72,7 +76,7 @@ ON CONFLICT DO NOTHING;
 -- ---------------------------------------------------------
 WITH monster AS (
     INSERT INTO monsters (zone_id, name, emoji, min_hp, max_hp, min_damage, max_damage, gold_reward, xp_reward, is_boss)
-    SELECT zone_id, 'Lobisón Alfa', '👑🐺', 499, 635, 54, 79, 300, 255, true FROM zones WHERE name = 'Bosque de Cenizas'
+    SELECT zone_id, 'Lobisón Alfa', '👑🐺', 499, 635, 71, 96, 300, 255, true FROM zones WHERE name = 'Bosque de Cenizas'
     ON CONFLICT (name) DO UPDATE SET zone_id = EXCLUDED.zone_id, emoji = EXCLUDED.emoji,
         min_hp = EXCLUDED.min_hp, max_hp = EXCLUDED.max_hp, min_damage = EXCLUDED.min_damage,
         max_damage = EXCLUDED.max_damage, gold_reward = EXCLUDED.gold_reward, xp_reward = EXCLUDED.xp_reward,
@@ -92,7 +96,7 @@ ON CONFLICT DO NOTHING;
 -- ---------------------------------------------------------
 WITH monster AS (
     INSERT INTO monsters (zone_id, name, emoji, min_hp, max_hp, min_damage, max_damage, gold_reward, xp_reward, is_boss)
-    SELECT zone_id, 'Capataz de Hierro', '👑⚒️', 743, 929, 78, 112, 600, 510, true FROM zones WHERE name = 'Minas del Yunque'
+    SELECT zone_id, 'Capataz de Hierro', '👑⚒️', 743, 929, 108, 142, 600, 510, true FROM zones WHERE name = 'Minas del Yunque'
     ON CONFLICT (name) DO UPDATE SET zone_id = EXCLUDED.zone_id, emoji = EXCLUDED.emoji,
         min_hp = EXCLUDED.min_hp, max_hp = EXCLUDED.max_hp, min_damage = EXCLUDED.min_damage,
         max_damage = EXCLUDED.max_damage, gold_reward = EXCLUDED.gold_reward, xp_reward = EXCLUDED.xp_reward,
@@ -113,7 +117,7 @@ ON CONFLICT DO NOTHING;
 -- ---------------------------------------------------------
 WITH monster AS (
     INSERT INTO monsters (zone_id, name, emoji, min_hp, max_hp, min_damage, max_damage, gold_reward, xp_reward, is_boss)
-    SELECT zone_id, 'Señor del Volcán', '👑🌋', 1072, 1310, 112, 149, 950, 900, true FROM zones WHERE name = 'Cordillera del Fuego'
+    SELECT zone_id, 'Señor del Volcán', '👑🌋', 1072, 1310, 151, 188, 950, 900, true FROM zones WHERE name = 'Cordillera del Fuego'
     ON CONFLICT (name) DO UPDATE SET zone_id = EXCLUDED.zone_id, emoji = EXCLUDED.emoji,
         min_hp = EXCLUDED.min_hp, max_hp = EXCLUDED.max_hp, min_damage = EXCLUDED.min_damage,
         max_damage = EXCLUDED.max_damage, gold_reward = EXCLUDED.gold_reward, xp_reward = EXCLUDED.xp_reward,
@@ -135,7 +139,7 @@ ON CONFLICT DO NOTHING;
 -- ---------------------------------------------------------
 WITH monster AS (
     INSERT INTO monsters (zone_id, name, emoji, min_hp, max_hp, min_damage, max_damage, gold_reward, xp_reward, is_boss)
-    SELECT zone_id, 'Soberano de la Escoria', '👑☠️', 1540, 1847, 157, 203, 1500, 1500, true FROM zones WHERE name = 'Cráter de la Escoria'
+    SELECT zone_id, 'Soberano de la Escoria', '👑☠️', 1540, 1847, 202, 248, 1500, 1500, true FROM zones WHERE name = 'Cráter de la Escoria'
     ON CONFLICT (name) DO UPDATE SET zone_id = EXCLUDED.zone_id, emoji = EXCLUDED.emoji,
         min_hp = EXCLUDED.min_hp, max_hp = EXCLUDED.max_hp, min_damage = EXCLUDED.min_damage,
         max_damage = EXCLUDED.max_damage, gold_reward = EXCLUDED.gold_reward, xp_reward = EXCLUDED.xp_reward,

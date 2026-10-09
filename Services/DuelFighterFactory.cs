@@ -26,7 +26,8 @@ public sealed class DuelFighterFactory(IUserRepository userRepository, IItemRepo
         var amulet = player.AmuletId is int amuletId ? await itemRepository.GetByIdAsync(amuletId, cancellationToken) : null;
         var buff = await buffRepository.GetActiveAttackAsync(discordId, cancellationToken);
 
-        var profile = PlayerCombatProfileCalculator.Resolve(player, weapon, amulet, buff?.AttackPercent ?? 0);
+        // El amuleto cuenta con su DEF de PvP (la escalera vieja, ver PvpTuning.Amulet): el balance de duelos y Arena se midió con esa.
+        var profile = PlayerCombatProfileCalculator.Resolve(player, weapon, PvpTuning.Amulet(amulet), buff?.AttackPercent ?? 0);
 
         return new DuelFighter(
             discordId, displayName, player.Level, player.Class,
