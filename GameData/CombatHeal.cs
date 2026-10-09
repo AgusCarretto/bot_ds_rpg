@@ -5,11 +5,13 @@ public sealed record HealOption(string Name, int HealHp, int Quantity, int BuffP
 
 // Reglas PURAS de la curación en combate (el desplegable "Curar" y /use dentro de una pelea).
 //
-// En /travel y /boss te podés curar UNA sola vez por pelea (CombatState.HealUsed): si fueran dos o más, comer
-// hasta ganar sería demasiado fácil — las peleas caras son las que tienen que costar. En /hunt el desplegable no
-// existe (se farmea en cantidad y curarse con comida entre peleas es justo el ciclo de recursos) y en el raid
-// tampoco (el mensaje es compartido). Para no dejar una puerta trasera, /use escrito en plena pelea de
-// /travel o /boss cuenta como ESA curación: botón y comando comparten el mismo límite.
+// En /hunt, /travel y /boss te podés curar UNA sola vez por pelea (CombatState.HealUsed): si fueran dos o más, comer
+// hasta ganar sería demasiado fácil — las peleas son las que tienen que costar. El desplegable "Curar" existe solo en
+// /travel y /boss (en /hunt la curación es el /use escrito: se farmea en cantidad y el mensaje no lleva menús) y en el
+// raid no existe (el mensaje es compartido; ahí /use no toca la vida de la pelea, que vive en memoria). Para no dejar
+// una puerta trasera, /use escrito en plena pelea cuenta como ESA curación: botón y comando comparten el mismo límite.
+// (Hasta la v0.16.0 el /use de /hunt no tenía límite: era una decisión mía de la v0.8 — «el desplegable no existe ahí,
+// no que se prohíba curarse» — y el dueño la corrigió: una vez por pelea, en todas.)
 public static class CombatHeal
 {
     public const string MenuCustomId = "combat_heal";
@@ -17,8 +19,11 @@ public static class CombatHeal
     // Discord permite hasta 25 opciones por desplegable.
     public const int MaxOptions = 25;
 
-    // true = este tipo de pelea tiene el desplegable y el límite de una curación.
-    public static bool IsLimited(string commandName) => commandName is "travel" or "boss";
+    // true = este tipo de pelea tiene el desplegable "Curar" (/travel y /boss).
+    public static bool HasMenu(string commandName) => commandName is "travel" or "boss";
+
+    // true = en este tipo de pelea te curás UNA sola vez, con el desplegable o con /use (/hunt, /travel y /boss).
+    public static bool IsLimited(string commandName) => commandName is "hunt" or "travel" or "boss";
 
     // Las comidas del desplegable: las que MÁS curan primero (lo que uno quiere elegir en una pelea grande), y las
     // que no curan nada (stat_value 0) ni tienen stock, afuera. Recorta a las que entran en un desplegable.

@@ -262,12 +262,12 @@ is the anchor for that delta calculation.
 
 **Starter kit (v0.14.6; `GameData/StarterKit.cs`, `IUserRepository.CreateAccountAsync`)** — measured with the real resolver on a new character (no gear, Zone 1, `Database`-free simulation): a fight at level 1 costs 30–53 % of the HP, HP never regenerates, and healing it with the cheapest food (Mate Amargo, 8 gold for +15 HP) costs ~19 gold against a 12-gold reward, so a player who does not know to heal loses the 2nd fight in a row 8 % (Ninja) – 28 % (Archer) of the time. `/start` therefore also hands out **5 Mate Amargo, once per account** (the confirmation embed says so and points to `/heal`). It is ONE SQL statement (`WITH up AS (INSERT ... ON CONFLICT DO UPDATE ... RETURNING (xmax = 0)), kit AS (INSERT INTO inventory ... WHERE inserted)`): the kit goes only with a genuinely NEW `users` row, 12 simultaneous clicks hand it out exactly once, and a Fuego Nuevo or a class change never repeats it. `SetClassAsync` stays for tests/old callers; `/start` uses `CreateAccountAsync`. The owner **declined** two other ideas from the same audit — a "low HP" tip in the victory embed and honest "fragile at the start" class descriptions ("ya dice qué tiene cada clase") — so do not add them.
 
-**Mid-fight healing is limited to ONE use per fight in `/travel` and `/boss`** (`GameData/CombatHeal.cs`,
+**Mid-fight healing is limited to ONE use per fight in `/hunt`, `/travel` and `/boss`** (`GameData/CombatHeal.cs`: `IsLimited` = the one-heal limit, `HasMenu` = the dropdown; `CombatState.HealUsed`;
 `CombatState.HealUsed`): the combat message gets a select menu ("🍖 Curarte con comida") with the food in the player's
 bag (re-read every turn, biggest heal first; `AdventureModule.HandleHealAsync`), and once used it stays on screen
 disabled. The menu and a typed `/use` are the **same code path** (`UseModule.ExecuteUseAsync`) and share the limit —
-otherwise the command would be a back door. `/hunt` has no menu and its `/use` is unchanged (unlimited); the raid has
-neither. Healing still costs the turn (the monster counterattacks). The menu options deliberately carry no custom
+otherwise the command would be a back door. `/hunt` has no menu (its heal is the typed `/use`, and the encounter footer says so) but the SAME limit since v0.16.1 — until v0.16.0 its `/use` was unlimited, my call in v0.8 ("the dropdown does not exist there, not that healing is forbidden"), which the owner corrected ("es 1 vez sola por pelea"); the raid has
+neither (and a `/use` typed inside a raid does not touch the fight's HP, which lives in memory). Outside a fight `/use` has no limit. Healing still costs the turn (the monster counterattacks). The menu options deliberately carry no custom
 emoji: if the bot can't access one, Discord rejects the WHOLE message, which would break starting every travel/boss.
 Food prices (`rebalance_consumable_prices.sql`) rise faster than the heal (~0.5 gold/HP for the smallest, ~3 for the
 biggest) because with one heal per fight the big one is worth much more.
