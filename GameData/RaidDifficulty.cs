@@ -22,8 +22,11 @@ public static class RaidDifficulty
     // Cuánto más duro es el jefe de raid que el /boss solitario de la misma zona.
     public sealed record Scale(double HpMultiplier, double DamageMultiplier);
 
-    private static readonly Scale FirstZone = new(2.2, 1.35);
-    private static readonly Scale LadderZones = new(1.5, 1.1);
+    // v0.17.1: la vida GUARDADA de los jefes subió ×1,25 (Database/rebalance_boss_hp.sql) y los multiplicadores de VIDA de abajo se dividieron por 1,25 (eran 2,2 y 1,5), así que el jefe del RAID queda
+    // exactamente con la misma vida y la misma dificultad que ya estaba medida arriba (2,2 / 1,25 × 1,25 = 2,2; 1,2 × 1,25 = 1,5). Si se vuelve a tocar la vida de los jefes, tocar esto con el mismo factor
+    // (o decidir a propósito un raid más duro: con ×1,25 de más, un grupo de tres de las zonas 2 a 5 pasaba de ganar ~49 % a ~16 %).
+    private static readonly Scale FirstZone = new(1.76, 1.35);
+    private static readonly Scale LadderZones = new(1.2, 1.1);
 
     // zoneRank: posición 1-indexada de la zona por dificultad (ZoneRanking.RankOf); 0 (desconocida) cuenta como 1.
     public static Scale ForZoneRank(int zoneRank) => zoneRank <= 1 ? FirstZone : LadderZones;
