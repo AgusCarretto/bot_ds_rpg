@@ -5,6 +5,11 @@ namespace BotDsRpg.Repositories;
 // Lo que dejó un desmantelado: el Polvo que tiene ahora y cuántas unidades le quedan de ese ítem (0 = se acabó).
 public sealed record DismantleOutcome(int DustAfter, int QuantityLeft);
 
+public enum DustSpendStatus { Ok, NoAccount, NotEnoughDust }
+
+// Lo que dejó una compra con Polvo: el Polvo que le queda (solo con Ok).
+public sealed record DustSpendOutcome(DustSpendStatus Status, int DustAfter);
+
 public enum EnchantStatus
 {
     Ok,
@@ -27,6 +32,10 @@ public interface IDustRepository
 
     // Rompe `quantity` unidades del ítem y suma `dust` de Polvo. null si ya no tiene esa cantidad (no se toca nada).
     Task<DismantleOutcome?> DismantleAsync(ulong discordId, int itemId, int quantity, int dust, CancellationToken cancellationToken = default);
+
+    // Compra con Polvo (el Tabernero del Inframundo, GameData/DeepShop.cs): cobra `dustCost` y suma `quantity` unidades del ítem en UNA transacción. La resta es guardada
+    // (WHERE dust >= costo): dos compras a la vez con Polvo para una sola pagan una sola, y si no alcanza no se toca nada.
+    Task<DustSpendOutcome> BuyWithDustAsync(ulong discordId, int itemId, int quantity, int dustCost, CancellationToken cancellationToken = default);
 
     // Un intento de encantamiento: cobra oro y Polvo SIEMPRE (salga lo que salga) y deja el mayor entre el tier que tenía y el que salió (rolledTier). slot: "weapon" o "amulet".
     Task<EnchantOutcome> TryEnchantAsync(ulong discordId, string slot, int rolledTier, int goldCost, int dustCost, CancellationToken cancellationToken = default);

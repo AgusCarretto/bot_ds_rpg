@@ -57,6 +57,7 @@ public static class GameEventKinds
     public const string BankOpened = "bank_opened";         // compró la cuenta del banco
     public const string BankDeposit = "bank_deposit";       // amount = oro depositado
     public const string Dismantle = "dismantle";            // amount = unidades desmanteladas; detail = el ítem
+    public const string DeepShopBuy = "deepshop_buy";       // compró en el Tabernero del Inframundo (v0.17.0); amount = unidades; detail = el ítem
     public const string Enchant = "enchant";                // un intento de encantamiento; detail = "weapon:3" (de qué pieza y qué tier salió)
 
     // v0.10.0: mascotas (GameData/PetRules.cs).

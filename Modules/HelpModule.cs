@@ -99,6 +99,10 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "💀 Si perdés un combate, la EXP del nivel vuelve a 0 y perdés el 5 % del oro de la billetera (el del banco no).",
                 false)
             .AddField(
+                "🕯️ El Tabernero del Inframundo",
+                "`/deepshop` — Al vencer al jefe de la última zona se conoce a alguien que vende con Polvo la Corteza y el Meteorito que pide el equipo del Fogón (`aa deepshop`, `/info tema:fogon`)",
+                false)
+            .AddField(
                 "🔥 El Fogón Eterno",
                 "`/zona 0` — La puerta al final del mundo: se abre al vencer al jefe de la última zona y pide el equipo del Fogón puesto. Adentro solo hay `/boss` contra el Asador Eterno; ganarle habilita el Fuego Nuevo (`/info tema:fogon`)",
                 false)

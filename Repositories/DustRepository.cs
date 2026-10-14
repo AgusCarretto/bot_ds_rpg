@@ -7,6 +7,39 @@ namespace BotDsRpg.Repositories;
 
 public sealed class DustRepository(IDbConnectionFactory connectionFactory) : IDustRepository
 {
+    public async Task<DustSpendOutcome> BuyWithDustAsync(ulong discordId, int itemId, int quantity, int dustCost, CancellationToken cancellationToken = default)
+    {
+        using DbConnection connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        using DbTransaction transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            // La guarda de siempre: si ya no tiene el Polvo, el WHERE no deja actualizar y no vuelve fila.
+            int? dustAfter = await connection.QuerySingleOrDefaultAsync<int?>(new CommandDefinition(
+                "UPDATE users SET dust = dust - @Cost WHERE discord_id = @DiscordId AND dust >= @Cost RETURNING dust;",
+                new { DiscordId = (long)discordId, Cost = dustCost }, transaction: transaction, cancellationToken: cancellationToken));
+
+            if (dustAfter is null)
+            {
+                bool exists = await connection.QuerySingleAsync<bool>(new CommandDefinition(
+                    "SELECT EXISTS (SELECT 1 FROM users WHERE discord_id = @DiscordId);",
+                    new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
+                await transaction.RollbackAsync(cancellationToken);
+                return new DustSpendOutcome(exists ? DustSpendStatus.NotEnoughDust : DustSpendStatus.NoAccount, 0);
+            }
+
+            await InventoryUpsert.AddItemAsync(connection, transaction, discordId, itemId, quantity, cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return new DustSpendOutcome(DustSpendStatus.Ok, dustAfter.Value);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
+
     public async Task<int> GetQuantityAsync(ulong discordId, int itemId, CancellationToken cancellationToken = default)
     {
         using DbConnection connection = connectionFactory.CreateConnection();

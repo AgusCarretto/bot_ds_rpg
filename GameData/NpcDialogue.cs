@@ -6,6 +6,8 @@ public enum ShopkeeperLine { Greeting, BuySuccess, NoGold, BoxWait, SellSuccess,
 
 public enum InnkeeperLine { Healed, NothingToEat, FullHp, InCombat }
 
+public enum DeepShopkeeperLine { Greeting, BuySuccess, NoDust, NotFound }
+
 // Lo que dicen los personajes con los que se interactúa: el herrero, el tendero, el tabernero y los jefes de zona. Cada situación tiene
 // varias frases y se elige una al azar (así no se lee siempre lo mismo). Puro: se prueba sin Discord (el Random se puede inyectar).
 // Para sumar frases basta con agregarlas a la lista de la situación; para un personaje nuevo, un enum y una tabla acá.
@@ -164,6 +166,38 @@ public static class NpcDialogue
     // fuegoNuevo: con 1 o más, el saludo es el de quien volvió (solo el saludo; el resto de las situaciones no cambia).
     public static string Shopkeeper(ShopkeeperLine line, Random? rng = null, int fuegoNuevo = 0) =>
         Say("El Tabernero", "🍺", Pick(line == ShopkeeperLine.Greeting && fuegoNuevo >= 1 ? ShopkeeperReturningGreetings : ShopkeeperLines[line], rng));
+
+    // ---------------- El Tabernero del Inframundo (/deepshop, v0.17.0) ----------------
+    // Habla como el de arriba pero más seco: acá abajo no se fía y se paga en Polvo.
+    private static readonly Dictionary<DeepShopkeeperLine, string[]> DeepShopkeeperLines = new()
+    {
+        [DeepShopkeeperLine.Greeting] =
+        [
+            "Pasá, pasá. Acá abajo no hay mate, pero hay lo que arriba no se consigue.",
+            "Llegaste hasta el fondo. Pocos llegan. ¿Qué te falta?",
+            "Cerrá la puerta, que se va el calor. Mirá lo que tengo.",
+        ],
+        [DeepShopkeeperLine.BuySuccess] =
+        [
+            "Hecho. No preguntes de dónde sale: acá abajo nadie pregunta.",
+            "Tuyo. Cuidalo, que no hay otro igual en toda la superficie.",
+            "Un placer. El Polvo siempre es bienvenido.",
+        ],
+        [DeepShopkeeperLine.NoDust] =
+        [
+            "Con eso no alcanza ni para la mitad. Volvé con más Polvo.",
+            "Acá abajo no se fía, forastero. Desmantelá algo y volvé.",
+            "Me falta Polvo, y a vos también. Andá a juntar.",
+        ],
+        [DeepShopkeeperLine.NotFound] =
+        [
+            "Eso no lo vendo. Tengo la Corteza y el Meteorito, nada más.",
+            "No sé de qué hablás. Corteza o Meteorito, elegí.",
+        ],
+    };
+
+    public static string DeepShopkeeper(DeepShopkeeperLine line, Random? rng = null) =>
+        Say("El Tabernero del Inframundo", "🕯️", Pick(DeepShopkeeperLines[line], rng));
 
     // ---------------- El Tabernero (/heal) ----------------
     private static readonly Dictionary<InnkeeperLine, string[]> InnkeeperLines = new()
@@ -442,6 +476,9 @@ public static class NpcImages
 {
     public static NpcImage? Blacksmith => Find("Images__Blacksmith", "blacksmith.jpg");
     public static NpcImage? Innkeeper => Find("Images__Innkeeper", "innkeeper.jpg");
+
+    // El Tabernero del Inframundo (v0.17.0): sin foto hasta que haya un Assets/npc/deepshop.jpg (256x256) o un Images__DeepShopkeeper; mientras tanto la escena sale solo con texto.
+    public static NpcImage? DeepShopkeeper => Find("Images__DeepShopkeeper", "deepshop.jpg");
 
     private static NpcImage? Find(string urlKey, string? fileName)
     {

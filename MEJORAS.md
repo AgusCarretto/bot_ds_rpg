@@ -1,7 +1,15 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-14 (v0.16.2: desmantelar sin tope)_
+_Última revisión: 2026-10-14 (v0.17.0: el Tabernero del Inframundo)_
 
+## El Tabernero del Inframundo: los Míticos por Polvo (v0.17.0, 2026-10-14)
+
+- **Por qué** (el dueño, tras una vuelta con 5 Meteoritos y 0 Cortezas): el Trinche y la Brasa del Fogón piden UNA Corteza del Árbol de Vida y UN Fragmento de Meteorito cada vuelta (el Fuego Nuevo borra la mochila) y salen al 0,5 % por `/chop` y `/mine`: juntar los dos tarda de media **25 h** de recolección sin parar (mediana 20 h, una de cada diez vueltas pasa de 49 h, una de cada cien de 88 h) y no baja con las vueltas, mientras que el resto de la vuelta sí (~31 h → ~15 h en el Fuego Nuevo 10). Revisé el código y el catálogo: no hay error ni sesgo, un Mítico por tipo y la misma chance (en mi base local salió 0,87 % y 0,68 % con ~300 usos); con ~500 usos de cada uno, 0 árboles pasa el 8 % de las veces y 5 o más meteoritos el 11 %. **No tengo acceso a la base de Railway**; `Database/report_mythic_finds.sql` (solo lectura) deja ver las chances reales por jugador.
+- **Qué es**: `/deepshop` (`aa deepshop`, también `aa inframundo`): una escena como la taberna con **El Tabernero del Inframundo**, que vende la **Corteza** y el **Meteorito** a **3.000 de Polvo cada uno** (el dueño: «todo lo que farmeo me da para mucho más; luego vemos si lo dejamos más caro»). Desmantelar un Mítico da 500: nadie puede desmantelar y recomprar en círculo. Lista desplegable (de a una) o `/deepshop item:… cantidad:…` (hasta 10); el Polvo sale de `/dismantle` (que ahora no tiene tope).
+- **Cuándo se conoce**: al vencer al jefe de la **última zona** (la misma regla que abre El Fogón); con un Fuego Nuevo hecho, **para siempre**. No pide el equipo del Fogón (ese equipo necesita justo lo que vende). Antes de eso solo dice que no sabés de qué hablan.
+- **Sin foto todavía**: para ponérsela, un `Assets/npc/deepshop.jpg` de 256x256 (o la variable `Images__DeepShopkeeper`); sin ella la escena sale solo con texto.
+- **Para la base viva**: nada (sin migración, solo el binario; incluye también el `/dismantle` sin tope de la v0.16.2).
+- **Pendiente / hablado y no hecho**: dos jefes (Árbol y Meteoro) en la Zona 0 con el drop asegurado la primera vez por vuelta (hace falta cambiar la entrada y darles un cooldown propio: el global de 5 h sumaría 10 h por vuelta); que la chance Mítica suba con el Fuego Nuevo. **Dos cosas que dijo y quedan por aclarar**: los jefes le resultan muy fáciles a nivel 60 (las zonas están calibradas con nivel parecido al mínimo de la zona: a nivel 60 la defensa es 60 + el amuleto, y el Asador pega 233–289), y que los monstruos «siempre pegan 1 de daño mínimo» (`CombatMath.ResolveMonsterHit` nunca baja de 1, ni con la defensa por encima del golpe).
 ## Desmantelar sin tope (v0.16.2, 2026-10-14)
 
 - **Qué pasaba** (el dueño: «que se pueda desmantelar sin máximo de 100»): `/dismantle` aceptaba de 1 a 100 por comando (`Dismantling.MaxPerCommand`; eran 5 hasta la v0.9.4). Con cientos de Piedra o Pino en la mochila eran decenas de comandos.
