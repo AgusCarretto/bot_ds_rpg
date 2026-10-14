@@ -18,6 +18,10 @@
 -- cada zona (18 → 35, 30 → 60, 46 → 85, 75 → 120, ver rework_drops_and_recipes.sql): la defensa se resta del golpe 1 a 1, así que sumarle al jefe lo mismo que le suma el amuleto deja el examen del
 -- jefe EXACTAMENTE como estaba (con el equipo propio se pierde ~2-13 %, con el de la zona anterior ~50-84 %, medido con el combate real), mientras las cacerías comunes pasan a costar ~3 % de vida.
 --
+-- v0.17.1: la VIDA de los seis jefes (estos cinco y El Asador Eterno de seed_fogon.sql) subió ×1,25 y el daño NO se tocó (el dueño, a nivel 60: «dale más vida a todos, daño dejalo igual»): 140-196 → 175-245,
+-- 499-635 → 624-794, 743-929 → 929-1161, 1072-1310 → 1340-1638, 1540-1847 → 1925-2309. Para una base viva está Database/rebalance_boss_hp.sql (valores absolutos, re-ejecutable). Los multiplicadores del RAID
+-- (GameData/RaidDifficulty.cs) se dividieron por 1,25 en el mismo cambio, así que el raid queda exactamente igual de difícil que antes.
+--
 -- gold_reward / xp_reward de un jefe son un BONUS que se suma a la fórmula normal de /hunt
 -- (GameData/CombatRewardCalculator.RollHuntReward), y el total se multiplica x6 (CombatRewardCalculator.BossRewardMultiplier: desde la v0.6.0 el
 -- jefe paga ~3,2 veces un /travel de su zona; con x1 pagaba la mitad). Triplicados respecto de los originales: un jefe
@@ -54,7 +58,7 @@ ON CONFLICT (name) DO NOTHING;
 -- ---------------------------------------------------------
 WITH monster AS (
     INSERT INTO monsters (zone_id, name, emoji, min_hp, max_hp, min_damage, max_damage, gold_reward, xp_reward, is_boss)
-    SELECT zone_id, 'Rey Jabalí', '👑🐗', 140, 196, 23, 37, 150, 135, true FROM zones WHERE name = 'Praderas del Mate'
+    SELECT zone_id, 'Rey Jabalí', '👑🐗', 175, 245, 23, 37, 150, 135, true FROM zones WHERE name = 'Praderas del Mate'
     ON CONFLICT (name) DO UPDATE SET zone_id = EXCLUDED.zone_id, emoji = EXCLUDED.emoji,
         min_hp = EXCLUDED.min_hp, max_hp = EXCLUDED.max_hp, min_damage = EXCLUDED.min_damage,
         max_damage = EXCLUDED.max_damage, gold_reward = EXCLUDED.gold_reward, xp_reward = EXCLUDED.xp_reward,
@@ -76,7 +80,7 @@ ON CONFLICT DO NOTHING;
 -- ---------------------------------------------------------
 WITH monster AS (
     INSERT INTO monsters (zone_id, name, emoji, min_hp, max_hp, min_damage, max_damage, gold_reward, xp_reward, is_boss)
-    SELECT zone_id, 'Lobisón Alfa', '👑🐺', 499, 635, 71, 96, 300, 255, true FROM zones WHERE name = 'Bosque de Cenizas'
+    SELECT zone_id, 'Lobisón Alfa', '👑🐺', 624, 794, 71, 96, 300, 255, true FROM zones WHERE name = 'Bosque de Cenizas'
     ON CONFLICT (name) DO UPDATE SET zone_id = EXCLUDED.zone_id, emoji = EXCLUDED.emoji,
         min_hp = EXCLUDED.min_hp, max_hp = EXCLUDED.max_hp, min_damage = EXCLUDED.min_damage,
         max_damage = EXCLUDED.max_damage, gold_reward = EXCLUDED.gold_reward, xp_reward = EXCLUDED.xp_reward,
@@ -96,7 +100,7 @@ ON CONFLICT DO NOTHING;
 -- ---------------------------------------------------------
 WITH monster AS (
     INSERT INTO monsters (zone_id, name, emoji, min_hp, max_hp, min_damage, max_damage, gold_reward, xp_reward, is_boss)
-    SELECT zone_id, 'Capataz de Hierro', '👑⚒️', 743, 929, 108, 142, 600, 510, true FROM zones WHERE name = 'Minas del Yunque'
+    SELECT zone_id, 'Capataz de Hierro', '👑⚒️', 929, 1161, 108, 142, 600, 510, true FROM zones WHERE name = 'Minas del Yunque'
     ON CONFLICT (name) DO UPDATE SET zone_id = EXCLUDED.zone_id, emoji = EXCLUDED.emoji,
         min_hp = EXCLUDED.min_hp, max_hp = EXCLUDED.max_hp, min_damage = EXCLUDED.min_damage,
         max_damage = EXCLUDED.max_damage, gold_reward = EXCLUDED.gold_reward, xp_reward = EXCLUDED.xp_reward,
@@ -117,7 +121,7 @@ ON CONFLICT DO NOTHING;
 -- ---------------------------------------------------------
 WITH monster AS (
     INSERT INTO monsters (zone_id, name, emoji, min_hp, max_hp, min_damage, max_damage, gold_reward, xp_reward, is_boss)
-    SELECT zone_id, 'Señor del Volcán', '👑🌋', 1072, 1310, 151, 188, 950, 900, true FROM zones WHERE name = 'Cordillera del Fuego'
+    SELECT zone_id, 'Señor del Volcán', '👑🌋', 1340, 1638, 151, 188, 950, 900, true FROM zones WHERE name = 'Cordillera del Fuego'
     ON CONFLICT (name) DO UPDATE SET zone_id = EXCLUDED.zone_id, emoji = EXCLUDED.emoji,
         min_hp = EXCLUDED.min_hp, max_hp = EXCLUDED.max_hp, min_damage = EXCLUDED.min_damage,
         max_damage = EXCLUDED.max_damage, gold_reward = EXCLUDED.gold_reward, xp_reward = EXCLUDED.xp_reward,
@@ -139,7 +143,7 @@ ON CONFLICT DO NOTHING;
 -- ---------------------------------------------------------
 WITH monster AS (
     INSERT INTO monsters (zone_id, name, emoji, min_hp, max_hp, min_damage, max_damage, gold_reward, xp_reward, is_boss)
-    SELECT zone_id, 'Soberano de la Escoria', '👑☠️', 1540, 1847, 202, 248, 1500, 1500, true FROM zones WHERE name = 'Cráter de la Escoria'
+    SELECT zone_id, 'Soberano de la Escoria', '👑☠️', 1925, 2309, 202, 248, 1500, 1500, true FROM zones WHERE name = 'Cráter de la Escoria'
     ON CONFLICT (name) DO UPDATE SET zone_id = EXCLUDED.zone_id, emoji = EXCLUDED.emoji,
         min_hp = EXCLUDED.min_hp, max_hp = EXCLUDED.max_hp, min_damage = EXCLUDED.min_damage,
         max_damage = EXCLUDED.max_damage, gold_reward = EXCLUDED.gold_reward, xp_reward = EXCLUDED.xp_reward,

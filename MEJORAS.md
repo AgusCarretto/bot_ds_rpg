@@ -1,7 +1,14 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-14 (v0.17.0: el Tabernero del Inframundo)_
+_Última revisión: 2026-10-14 (v0.17.1: +25 % de vida a los jefes)_
 
+## Más vida a los jefes (v0.17.1, 2026-10-14)
+
+- **Qué pasó** (el dueño, a nivel 60: «aumentemos la dificultad de TODOS los jefes un poco, dale más vida a todos. Daño dejalo igual»): los seis jefes (Rey Jabalí, Lobisón Alfa, Capataz de Hierro, Señor del Volcán, Soberano de la Escoria y El Asador Eterno) tienen **+25 % de vida** y el mismo daño. Los monstruos comunes y de viaje no se tocaron.
+- **Cuánto cambia el examen** (combate real, 4 clases, equipo propio, habilidad y una comida; % de PERDER): a nivel mínimo+3 pasa de 0 / 5 / 7 / 11 / 24 % (zonas 1 a 5) y 11 % (Asador) a **0 / 22 / 24 / 31 / 55 %** y **35 %**; a mínimo+8, donde suele estar la gente cuando ya tiene el equipo, de 0 / 0 / 0 / 1 / 5 % a 0 / 0 / 2 / 5 / 21 % y 9 % en el Asador; a mínimo+15 todo queda ≤ 1 %.
+- **Lo que NO arregla**: con el daño igual, alguien MUY por encima del nivel de la zona no corre riesgo (a nivel 60 el jefe de la zona 5 le cuesta 15 % de la vida en vez de 11 %, el Asador 16 % en vez de 13 %; con el doble de vida, 25 %). Más vida solo alarga la pelea (de ~6 a ~7-8 turnos). Para que un jugador sobrado sienta algo hace falta que el jefe escale con SU nivel, o daño; quedó hablado, no hecho.
+- **El raid no se tocó a propósito**: sus multiplicadores de vida se dividieron por 1,25 (2,2 → 1,76 y 1,5 → 1,2), así que el jefe del raid tiene la misma vida que ya estaba medida (con +25 % encima, tres jugadores en las zonas 2 a 5 pasaban de ganar ~49 % a ~16 %). Si el dueño quiere raids más duros, es cambiar esos dos números.
+- **Para la base viva**: correr `Database/rebalance_boss_hp.sql` (solo vida, re-ejecutable, se verifica sola). No es previo al binario: el binario nuevo solo cambia el multiplicador de los raids; si uno de los dos va primero, los raids quedan unos minutos más fáciles o más difíciles, nada se rompe. Una instalación nueva ya trae los valores.
 ## El Tabernero del Inframundo: los Míticos por Polvo (v0.17.0, 2026-10-14)
 
 - **Por qué** (el dueño, tras una vuelta con 5 Meteoritos y 0 Cortezas): el Trinche y la Brasa del Fogón piden UNA Corteza del Árbol de Vida y UN Fragmento de Meteorito cada vuelta (el Fuego Nuevo borra la mochila) y salen al 0,5 % por `/chop` y `/mine`: juntar los dos tarda de media **25 h** de recolección sin parar (mediana 20 h, una de cada diez vueltas pasa de 49 h, una de cada cien de 88 h) y no baja con las vueltas, mientras que el resto de la vuelta sí (~31 h → ~15 h en el Fuego Nuevo 10). Revisé el código y el catálogo: no hay error ni sesgo, un Mítico por tipo y la misma chance (en mi base local salió 0,87 % y 0,68 % con ~300 usos); con ~500 usos de cada uno, 0 árboles pasa el 8 % de las veces y 5 o más meteoritos el 11 %. **No tengo acceso a la base de Railway**; `Database/report_mythic_finds.sql` (solo lectura) deja ver las chances reales por jugador.
