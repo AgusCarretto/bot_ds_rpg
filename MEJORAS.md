@@ -1,7 +1,13 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-09 (v0.16.1: una sola curación por pelea también en /hunt)_
+_Última revisión: 2026-10-14 (v0.16.2: desmantelar sin tope)_
 
+## Desmantelar sin tope (v0.16.2, 2026-10-14)
+
+- **Qué pasaba** (el dueño: «que se pueda desmantelar sin máximo de 100»): `/dismantle` aceptaba de 1 a 100 por comando (`Dismantling.MaxPerCommand`; eran 5 hasta la v0.9.4). Con cientos de Piedra o Pino en la mochila eran decenas de comandos.
+- **Qué cambió**: no hay tope. `cantidad` ahora es **texto**: un número (`30`, `1.000`) o **`todo`** (también `all`/`max`) = todas las unidades que tenés de ese ítem. En texto: `aa desmantelar 30 Piedra`, `aa desmantelar todo Piedra` o `aa desmantelar Madera de Pino` (una). La lectura del pedido es pura (`GameData/DismantleRequest.Parse`). El único límite es la mochila: la resta sigue guardada (`WHERE quantity >= n`), «todo» nunca deja la mochila negativa ni paga dos veces (probado con dos pedidos a la vez), y una cantidad absurda no desborda el Polvo (la cuenta es en `long` y se rechaza antes de tocar la base).
+- **Ojo**: «todo» es explícito pero no pide confirmación. Los ingredientes de las recetas (sobre todo los del Fogón) se pueden desmantelar igual que antes; `/forge-special` ya avisa que no se hagan.
+- **Para la base viva**: nada (sin migración, solo el binario).
 ## Una sola curación por pelea, también en `/hunt` (v0.16.1, 2026-10-09)
 
 - **Qué pasaba** (lo vio el dueño: «el use comida en plenas peleas ilimitadamente… acordate que es 1 vez sola por pelea»): el límite de una curación valía en `/travel` y `/boss`, pero en `/hunt` el `/use` escrito en plena pelea seguía **sin límite**. Fue decisión mía de la v0.8 (la anoté acá como «decidí sin preguntar»: el pedido era que el desplegable no existiera en `/hunt`, no que se prohibiera curarse) y estaba mal tomada: con una cacería de un minuto de cooldown, comer hasta ganar saltaba el costo de las peleas.

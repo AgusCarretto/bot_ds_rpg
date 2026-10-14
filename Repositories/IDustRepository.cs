@@ -22,6 +22,9 @@ public sealed record EnchantOutcome(EnchantStatus Status, int PreviousTier, int 
 // con guardas (nada se descuenta si la precondición ya no vale), así que dos clicks simultáneos no gastan lo que no hay.
 public interface IDustRepository
 {
+    // Cuántas unidades del ítem tiene el jugador (0 si no tiene): para "desmantelar todo". Es solo lectura; la resta de DismantleAsync sigue siendo guardada.
+    Task<int> GetQuantityAsync(ulong discordId, int itemId, CancellationToken cancellationToken = default);
+
     // Rompe `quantity` unidades del ítem y suma `dust` de Polvo. null si ya no tiene esa cantidad (no se toca nada).
     Task<DismantleOutcome?> DismantleAsync(ulong discordId, int itemId, int quantity, int dust, CancellationToken cancellationToken = default);
 

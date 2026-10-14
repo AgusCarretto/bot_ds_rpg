@@ -10,6 +10,9 @@ public static class AmountParser
 {
     private static readonly string[] AllWords = ["all", "todo", "toda", "todos", "todas", "max", "maximo", "máximo"];
 
+    // true si el texto es una de las palabras de "todo" (all, todo, toda, max...). Lo usa también /dismantle ("todo" = todas las unidades de ese ítem).
+    public static bool IsAllWord(string? text) => AllWords.Contains((text ?? string.Empty).Trim().ToLowerInvariant());
+
     public static AmountParse Parse(string? text, int available)
     {
         string raw = (text ?? string.Empty).Trim();

@@ -146,7 +146,7 @@ public static class HelpTopics
     private static Embed Dismantle() => Topic(Self("dismantle"),
         "Desmantelar rompe materiales para sacarles **Polvo**, y el Polvo sirve para **encantar** tu arma y tu amuleto.",
         ("🛠️ Cómo se hace",
-            $"**/dismantle** y elegís el ítem de la lista (solo aparecen los que tenés) y la cantidad, de 1 a {Dismantling.MaxPerCommand} por vez.\nEn texto: `aa desmantelar 30 Piedra`."),
+            "**/dismantle** y elegís el ítem de la lista (solo aparecen los que tenés) y la cantidad: la que quieras, sin tope, o `todo` para todas las que tengas.\nEn texto: `aa desmantelar 30 Piedra` o `aa desmantelar todo Piedra`."),
         ("🧱 Qué se puede romper",
             "Madera, minerales y drops de monstruos. **No** las cajas, la comida ni el equipo. Es de una sola mano: el Polvo no vuelve a convertirse en material."),
         ("✨ Cuánto Polvo da cada unidad",

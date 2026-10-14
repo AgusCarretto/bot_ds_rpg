@@ -7,6 +7,14 @@ namespace BotDsRpg.Repositories;
 
 public sealed class DustRepository(IDbConnectionFactory connectionFactory) : IDustRepository
 {
+    public async Task<int> GetQuantityAsync(ulong discordId, int itemId, CancellationToken cancellationToken = default)
+    {
+        using DbConnection connection = connectionFactory.CreateConnection();
+        return await connection.QuerySingleAsync<int>(new CommandDefinition(
+            "SELECT COALESCE(SUM(quantity), 0)::int FROM inventory WHERE discord_id = @DiscordId AND item_id = @ItemId;",
+            new { DiscordId = (long)discordId, ItemId = itemId }, cancellationToken: cancellationToken));
+    }
+
     public async Task<DismantleOutcome?> DismantleAsync(ulong discordId, int itemId, int quantity, int dust, CancellationToken cancellationToken = default)
     {
         using DbConnection connection = connectionFactory.CreateConnection();
