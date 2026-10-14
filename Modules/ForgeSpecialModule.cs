@@ -76,6 +76,6 @@ public class ForgeSpecialModule(
         ForgeModule.AddRecipes(embed, gateRecipes, RecipeGroup.GeneralWeapon, "equipo del Fogón", playerClass, owned, player?.Gold);
         ForgeModule.AddRecipes(embed, gateRecipes, RecipeGroup.Amulet, "equipo del Fogón", playerClass, owned, player?.Gold);
 
-        return embed.WithFooter("Dónde cae cada material: /drops · qué te falta primero: /tips · cómo funciona el Fogón: /info tema:fogon").Build();
+        return embed.WithFooter("Dónde cae cada material: /drops · qué te falta primero: /tips · cómo funciona el Fogón: /info tema:fogon · ¿te falta la Corteza o el Meteorito? /deepshop (Polvo)").Build();
     }
 }

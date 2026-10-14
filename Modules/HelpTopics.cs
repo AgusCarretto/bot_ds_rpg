@@ -146,7 +146,7 @@ public static class HelpTopics
     private static Embed Dismantle() => Topic(Self("dismantle"),
         "Desmantelar rompe materiales para sacarles **Polvo**, y el Polvo sirve para **encantar** tu arma y tu amuleto.",
         ("🛠️ Cómo se hace",
-            $"**/dismantle** y elegís el ítem de la lista (solo aparecen los que tenés) y la cantidad, de 1 a {Dismantling.MaxPerCommand} por vez.\nEn texto: `aa desmantelar 30 Piedra`."),
+            "**/dismantle** y elegís el ítem de la lista (solo aparecen los que tenés) y la cantidad: la que quieras, sin tope, o `todo` para todas las que tengas.\nEn texto: `aa desmantelar 30 Piedra` o `aa desmantelar todo Piedra`."),
         ("🧱 Qué se puede romper",
             "Madera, minerales y drops de monstruos. **No** las cajas, la comida ni el equipo. Es de una sola mano: el Polvo no vuelve a convertirse en material."),
         ("✨ Cuánto Polvo da cada unidad",
@@ -292,6 +292,8 @@ public static class HelpTopics
         ("⚔️ Adentro",
             $"Solo **/boss**, contra **{FogonRules.BossName}**: no hay cacería, viajes ni raid. Usa el cooldown del jefe (**{Dur(CooldownCatalog.Boss.Duration)}** si ganás y **{Dur(CooldownCatalog.Boss.RetryAfterFailure ?? CooldownCatalog.Boss.Duration)}** si perdés, huís o se acaba el tiempo) y si perdés pagás la penalidad de siempre (**/info tema:death**). " +
             "Está calibrado como cada jefe: con el equipo de la zona anterior casi siempre perdés, con el del Fogón es un desafío parejo."),
+        ("🕯️ ¿Te falta un Mítico?",
+            $"La Corteza y el Meteorito salen al {Dec(RarityCatalog.GatheringChances.Last(c => c.Rarity == "Mítico").Percent)} % por **/chop** y **/mine**, y hace falta uno de cada uno por vuelta. Al vencer al jefe de la última zona se conoce al **Tabernero del Inframundo** (**/deepshop**, en texto `aa deepshop`): vende cada uno por **{Num(DeepShop.PricePerUnit)}** de Polvo (el Polvo sale de **/dismantle**; desmantelar un Mítico da solo {Num(Dismantling.DustPerUnit("Mítico"))}). Una vez que hacés un Fuego Nuevo ya lo conocés para siempre."),
         ("🏆 Al ganar", "Volvés a la última zona, se habilita el **Fuego Nuevo** (**/fuegonuevo**, y cómo funciona en **/info tema:fuego**) y sumás el logro **Asador**. Para salir sin pelear, viajá a cualquier zona con **/zona**."));
 
     private static Embed Professions()

@@ -13,10 +13,10 @@ public class DustModule(
     IUserRepository userRepository, IItemRepository itemRepository, IDustRepository dustRepository, IGameEvents gameEvents, IPlayerBonusService bonusService)
     : InteractionModuleBase<SocketInteractionContext>
 {
-    [SlashCommand("dismantle", "Desmantelá materiales para conseguir Polvo (de 1 a 100 por vez).")]
+    [SlashCommand("dismantle", "Desmantelá materiales para conseguir Polvo (la cantidad que quieras, o todo).")]
     public async Task HandleDismantleAsync(
         [Summary("item", "Elegí de la lista el material que querés desmantelar.")] [Autocomplete(typeof(DismantleItemAutocompleteHandler))] string itemName,
-        [Summary("cantidad", "Cuántos desmantelás, de 1 a 100 (por defecto 1).")] [MinValue(1)] [MaxValue(Dismantling.MaxPerCommand)] int quantity = 1)
+        [Summary("cantidad", "Cuántos desmantelás: un número o \"todo\" (por defecto 1).")] string quantity = "1")
     {
         await DeferAsync();
 
@@ -58,6 +58,47 @@ public class DustModule(
     public sealed record DustResult(string? PlainMessage, Embed? Embed);
 
     private const string NoAccount = "Todavía no tenés cuenta: empezá con **/start**.";
+
+    // La cantidad como la escribe el jugador (v0.16.2): un número ("30", "1.000") o "todo" (también all/max: TODAS las unidades que tiene de ese ítem). Sin tope por comando:
+    // el único límite es lo que hay en la mochila, y la resta sigue siendo guardada (si en el medio cambió, se rechaza y no se toca nada).
+    public static async Task<DustResult> ExecuteDismantleAsync(
+        IUserRepository userRepository, IItemRepository itemRepository, IDustRepository dustRepository, IGameEvents gameEvents,
+        ulong discordId, string itemName, string quantityText)
+    {
+        if (string.IsNullOrWhiteSpace(itemName))
+        {
+            return new DustResult("¿Qué querés desmantelar? Por ejemplo `aa desmantelar 30 Piedra` o `aa desmantelar todo Piedra`.", null);
+        }
+
+        if (AmountParser.IsAllWord(quantityText))
+        {
+            if (await userRepository.GetByDiscordIdAsync(discordId) is null)
+            {
+                return new DustResult(NoAccount, null);
+            }
+
+            var wanted = await itemRepository.GetByNameAsync(itemName);
+            int held = wanted is null ? 0 : await dustRepository.GetQuantityAsync(discordId, wanted.ItemId);
+            if (wanted is not null && Dismantling.CanDismantle(wanted.Type) && held < 1)
+            {
+                return new DustResult($"No tenés **{ItemDisplay.Format(wanted.Emoji, wanted.Name)}** para desmantelar: mirá qué tenés en **/inventory**.", null);
+            }
+
+            // Un ítem que no existe o que no se desmantela (held = 0) cae al camino de siempre, que lo explica.
+            return await ExecuteDismantleAsync(userRepository, itemRepository, dustRepository, gameEvents, discordId, itemName, Math.Max(held, 1));
+        }
+
+        var parsed = AmountParser.Parse(quantityText, int.MaxValue);
+        if (!parsed.Ok)
+        {
+            bool numeric = !string.IsNullOrWhiteSpace(quantityText) && quantityText.Trim().All(c => char.IsDigit(c) || c is '.' or ',' or ' ' or '_');
+            return new DustResult(
+                numeric ? parsed.Error! : $"No entendí la cantidad **{quantityText.Trim()}**: escribí un número (por ejemplo 30) o **todo**.", null);
+        }
+
+        return await ExecuteDismantleAsync(userRepository, itemRepository, dustRepository, gameEvents, discordId, itemName, parsed.Amount);
+    }
+
     public static async Task<DustResult> ExecuteDismantleAsync(
         IUserRepository userRepository, IItemRepository itemRepository, IDustRepository dustRepository, IGameEvents gameEvents,
         ulong discordId, string itemName, int quantity)
@@ -67,17 +108,26 @@ public class DustModule(
             return new DustResult(NoAccount, null);
         }
 
-        if (quantity < 1 || quantity > Dismantling.MaxPerCommand)
+        if (quantity < 1)
         {
-            return new DustResult($"Podés desmantelar de 1 a {Dismantling.MaxPerCommand} por vez.", null);
+            return new DustResult("La cantidad tiene que ser al menos 1.", null);
         }
 
         var item = await itemRepository.GetByNameAsync(itemName);
-        int dustGained = item is null ? 0 : Dismantling.DustFor(item.Rarity, quantity, item.DustValue);
-        if (item is null || !Dismantling.CanDismantle(item.Type) || dustGained <= 0)
+        int dustPerUnit = item is null ? 0 : Dismantling.DustPerUnit(item.Rarity, item.DustValue);
+        if (item is null || !Dismantling.CanDismantle(item.Type) || dustPerUnit <= 0)
         {
             return new DustResult($"**{itemName.Trim()}** no se puede desmantelar: solo se desmantelan materiales (madera, minerales y drops de monstruos).", null);
         }
+
+        // Sin tope por comando, la cuenta se hace en long: una cantidad absurda no puede desbordar el Polvo ni salir negativa.
+        long dustLong = (long)dustPerUnit * quantity;
+        if (dustLong > int.MaxValue)
+        {
+            return new DustResult("Esa cantidad es demasiado grande.", null);
+        }
+
+        int dustGained = (int)dustLong;
 
         var outcome = await dustRepository.DismantleAsync(discordId, item.ItemId, quantity, dustGained);
         if (outcome is null)
@@ -306,7 +356,7 @@ public class DustModule(
                 "El bonus es un % del stat **de la pieza** (siempre suma al menos +1) y cuenta igual en el combate, en el perfil y en los duelos. Si vendés o cambiás la pieza, **pierde su encantamiento**.")
             .AddField("🎲 Tiers: bonus y chance por intento", tiers, false)
             .AddField("💸 Lo que cuesta cada intento", costs + "\n_La zona de la pieza sale de su rareza (Común = Zona 1 … Mítico = Zona 5)._", false)
-            .AddField("✨ De dónde sale el Polvo", $"Desmantelando materiales con **/dismantle** (de 1 a {Dismantling.MaxPerCommand} por vez). Polvo por unidad:\n{dust}", false)
+            .AddField("✨ De dónde sale el Polvo", $"Desmantelando materiales con **/dismantle** (la cantidad que quieras, o `todo`). Polvo por unidad:\n{dust}", false)
             .AddField(
                 $"{ProfessionCatalog.Get(ProfessionCatalog.EnchanterKey).Emoji} El oficio Encantador",
                 $"Cada intento sube tu oficio: por nivel, {ProfessionRules.DescribePerLevel(ProfessionCatalog.Get(ProfessionCatalog.EnchanterKey))}. Al nivel {ProfessionRules.MaxLevel}: " +

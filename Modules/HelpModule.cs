@@ -94,9 +94,13 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 false)
             .AddField(
                 "✨ Polvo y encantamientos",
-                "`/dismantle` — Desarmá de 1 a 100 materiales y quedate con su Polvo (`aa desmantelar 30 Piedra`)\n" +
+                "`/dismantle` — Desarmá la cantidad que quieras (o `todo`) de un material y quedate con su Polvo (`aa desmantelar 30 Piedra`, `aa desmantelar todo Piedra`)\n" +
                 "`/enchant` — Gastá Polvo y oro para encantar tu arma o tu amuleto: sale un tier al azar (Tibio ➜ Soberano) y solo reemplaza al actual si es mejor (`aa encantar arma`). **`/enchant info`** (o `aa info enchant`) muestra los tiers con su chance y su bonus, y lo que cuesta cada intento\n" +
                 "💀 Si perdés un combate, la EXP del nivel vuelve a 0 y perdés el 5 % del oro de la billetera (el del banco no).",
+                false)
+            .AddField(
+                "🕯️ El Tabernero del Inframundo",
+                "`/deepshop` — Al vencer al jefe de la última zona se conoce a alguien que vende con Polvo la Corteza y el Meteorito que pide el equipo del Fogón (`aa deepshop`, `/info tema:fogon`)",
                 false)
             .AddField(
                 "🔥 El Fogón Eterno",

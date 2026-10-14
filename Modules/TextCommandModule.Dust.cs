@@ -1,22 +1,20 @@
+using BotDsRpg.GameData;
 using BotDsRpg.Services;
 using Discord.Commands;
 
 // Parte de TextCommandModule (ver el comentario en TextCommandModule.cs): desmantelar y encantar.
 public partial class TextCommandModule
 {
-    // "aa dismantle <item>" o "aa dismantle <cantidad> <item...>" (alias "aa desmantelar") — misma lógica que /dismantle.
+    // "aa dismantle <item>", "aa dismantle <cantidad> <item...>" o "aa dismantle todo <item...>" (alias "aa desmantelar") — misma lógica que /dismantle. Sin tope por comando (v0.16.2).
     [Command("dismantle")]
     [Alias("desmantelar")]
-    [Summary("Desmantelá un material para conseguir Polvo: \"aa dismantle <item>\" o \"aa dismantle <cantidad> <item>\" (de 1 a 100).")]
-    public Task DismantleAsync([Remainder] string item) => DismantleAsync(1, item);
-
-    [Command("dismantle")]
-    [Alias("desmantelar")]
-    public async Task DismantleAsync(int cantidad, [Remainder] string item)
+    [Summary("Desmantelá un material para conseguir Polvo: \"aa dismantle <item>\", \"aa dismantle <cantidad> <item>\" o \"aa dismantle todo <item>\".")]
+    public async Task DismantleAsync([Remainder] string args = "")
     {
         try
         {
-            var result = await DustModule.ExecuteDismantleAsync(userRepository, itemRepository, dustRepository, gameEvents, Context.User.Id, item, cantidad);
+            var (quantity, item) = DismantleRequest.Parse(args);
+            var result = await DustModule.ExecuteDismantleAsync(userRepository, itemRepository, dustRepository, gameEvents, Context.User.Id, item, quantity);
             await ReplyAsync(result.PlainMessage, embed: result.Embed);
         }
         catch (Exception ex)
