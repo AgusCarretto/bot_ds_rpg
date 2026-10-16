@@ -440,7 +440,7 @@ Check(AllText(info).Contains("/fuegonuevo") && AllText(info).Contains("fuego") &
 Check(AllText(HelpTopics.Find("fogon")!.Build()).Contains("/fuegonuevo") && !FogonRules.ClearedText.Contains("próxima versión") && FogonRules.ClearedText.Contains("/fuegonuevo"), "el tema del Fogón y el mensaje de victoria ya apuntan a /fuegonuevo (no dicen «próxima versión»)");
 Check(AllText(HelpTopics.Find("classes")!.Build()).Contains("Fuego Nuevo"), "el tema de clases avisa que la clase se vuelve a elegir con cada Fuego Nuevo");
 var ren = AchievementCatalog.Find("renacido");
-Check(ren is not null && ren.Tiers.Select(t => t.Threshold).SequenceEqual([1L, 5L, 20L]) && ren.Tiers.All(t => t.Reward.Box == BoxGrant.None) && ren.StatKind == GameEventKinds.FuegoNuevo && AchievementCatalog.Categories[3].Keys.Contains("renacido") && AchievementCatalog.All.Count == 22, "logro Renacido (1/5/20 Fuegos Nuevos): solo oro y XP, en Constancia (22 logros en total desde la v0.15.0)");
+Check(ren is not null && ren.Tiers.Select(t => t.Threshold).SequenceEqual([1L, 5L, 20L]) && ren.Tiers.All(t => t.Reward.Box == BoxGrant.None) && ren.StatKind == GameEventKinds.FuegoNuevo && AchievementCatalog.Categories[3].Keys.Contains("renacido") && AchievementCatalog.All.Count == 23, "logro Renacido (1/5/20 Fuegos Nuevos): solo oro y XP, en Constancia (23 logros en total desde la v0.18.3)");
 Check(AchievementCatalog.Categories.SelectMany(c => c.Keys).OrderBy(k => k).SequenceEqual(AchievementCatalog.All.Select(a => a.Key).OrderBy(k => k)), "cada logro está en exactamente una página");
 
 await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)U });

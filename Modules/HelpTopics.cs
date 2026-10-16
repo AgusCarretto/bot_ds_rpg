@@ -445,7 +445,7 @@ public static class HelpTopics
         ("🎁 /daily",
             $"Una vez cada {Dur(DailyRewardCalculator.MinInterval)}. Cada día seguido suma a la **racha**, y el premio **escala con tu zona y tu nivel**: el oro se mide en cacerías de tu zona y la EXP en % de lo que te falta para subir. " +
             $"Del día 1 al 7 va de {DailyRewardCalculator.BaseGoldUnitsFor(1)} a {DailyRewardCalculator.BaseGoldUnitsFor(DailyRewardCalculator.WeekLength)} cacerías de oro y de {DailyRewardCalculator.XpPercentFor(1)} % a {DailyRewardCalculator.XpPercentFor(DailyRewardCalculator.WeekLength)} % de EXP, y desde el día {DailyRewardCalculator.WeekLength + 1} se queda en el del día {DailyRewardCalculator.WeekLength}. " +
-            $"Si pasan más de {Dur(DailyRewardCalculator.StreakGraceWindow)} sin reclamar, la racha vuelve al día 1. **/cd** te dice cuándo podés volver."),
+            $"Si pasan más de {Dur(DailyRewardCalculator.StreakGraceWindow)} sin reclamar, la racha vuelve al día 1. **/cd** te dice cuándo podés volver. Tu racha más larga cuenta para el logro **Racha** (**/achievements**)."),
         ("🏆 Hitos de la racha",
             $"**Día {DailyRewardCalculator.ThreeDayStreak}**: +{DailyRewardCalculator.ThreeDayBonusUnits} cacerías de oro extra.\n" +
             $"**Día {DailyRewardCalculator.IronBoxFromDay}** y todos los días que siguen: la **caja diaria** de tu zona.\n" +

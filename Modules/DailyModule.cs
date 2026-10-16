@@ -5,7 +5,9 @@ using Discord;
 using Discord.Interactions;
 using BotDsRpg.Services;
 
-public class DailyModule(IUserRepository userRepository, IProgressionRepository progressionRepository, IZoneRepository zoneRepository, IGameEvents gameEvents) : InteractionModuleBase<SocketInteractionContext>
+public class DailyModule(
+    IUserRepository userRepository, IProgressionRepository progressionRepository, IZoneRepository zoneRepository, IGameEventRepository gameEventRepository, IGameEvents gameEvents)
+    : InteractionModuleBase<SocketInteractionContext>
 {
     // Comando barra: /daily
     [SlashCommand("daily", "Reclamá tu recompensa diaria: más oro y EXP con la racha, y cajas desde el día 6.")]
@@ -30,6 +32,7 @@ public class DailyModule(IUserRepository userRepository, IProgressionRepository 
             }
 
             await gameEvents.RecordVictoryAsync(Context.User.Id, GameEventKinds.DailyClaim, outcome.Result!);
+            await gameEvents.RecordDailyStreakAsync(gameEventRepository, Context.User.Id, calculation.NewStreak);
 
             await FollowupAsync(embed: BuildResultEmbed(calculation, outcome.Result!, outcome.Receipt!));
         }

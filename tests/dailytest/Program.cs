@@ -200,6 +200,37 @@ await Reset(level: 10, streak: 3, hoursAgo: 2);
 var cdEmbed = await CooldownModule.BuildStatusEmbedAsync(new CooldownRepository(factory), users, U);
 Check(AllText(cdEmbed).Contains("🎁 **Diario**:") && AllText(cdEmbed).Contains("restantes"), "/cd sigue contando lo que falta para el daily");
 
+Console.WriteLine("\n== 7. El logro Racha (la racha más larga del /daily) ==");
+var racha = AchievementCatalog.Find("racha")!;
+Check(racha.StatKind == GameEventKinds.DailyStreakBest && racha.Tiers.Select(t => t.Threshold).SequenceEqual([7L, 30L, 100L]) && AchievementCatalog.Categories.Single(c => c.Name == "Constancia").Keys.Contains("racha")
+      && AchievementCatalog.All.Count == 23, "el logro «Racha» existe: cuenta la racha más larga, con tramos en 7, 30 y 100 días, en la página Constancia");
+Check(AchievementCatalog.Categories.SelectMany(c => c.Keys).Count() == AchievementCatalog.All.Count && AchievementCatalog.Categories.SelectMany(c => c.Keys).Distinct().Count() == AchievementCatalog.All.Count, "todos los logros siguen estando en exactamente una página");
+Check(DailyRewardCalculator.StreakBestDelta(0, 5) == 5 && DailyRewardCalculator.StreakBestDelta(5, 6) == 1 && DailyRewardCalculator.StreakBestDelta(9, 1) == 0 && DailyRewardCalculator.StreakBestDelta(9, 9) == 0 && DailyRewardCalculator.StreakBestDelta(-3, 4) == 4,
+    "la diferencia con el récord: suma lo que falta, nada si no lo superó");
+var evRepo = new GameEventRepository(factory);
+var ev = new GameEventService(evRepo);
+await Reset(level: 10, streak: 0, hoursAgo: null);
+await db.ExecuteAsync("DELETE FROM game_events WHERE discord_id = @id", new { id = (long)U }); // game_events no tiene clave a users: quedan filas de corridas anteriores
+async Task<long> Best() => (await evRepo.GetStatsAsync(U)).GetValueOrDefault(GameEventKinds.DailyStreakBest);
+await ev.RecordDailyStreakAsync(evRepo, U, 1);
+long b1 = await Best();
+await ev.RecordDailyStreakAsync(evRepo, U, 2);
+await ev.RecordDailyStreakAsync(evRepo, U, 3);
+long b3 = await Best();
+await ev.RecordDailyStreakAsync(evRepo, U, 1); // perdió la racha y vuelve al día 1
+await ev.RecordDailyStreakAsync(evRepo, U, 2);
+long bLost = await Best();
+await ev.RecordDailyStreakAsync(evRepo, U, 9); // (por ejemplo, un jugador que ya traía una racha larga antes de que existiera el logro)
+long b9 = await Best();
+await ev.RecordDailyStreakAsync(evRepo, U, 9); // reclamar el mismo día de racha otra vez no suma
+long b9again = await Best();
+Check(b1 == 1 && b3 == 3 && bLost == 3 && b9 == 9 && b9again == 9, $"el contador sigue la racha más larga: 1, 3, sigue en 3 si la racha se pierde, salta a 9 de una y no suma dos veces ({b1}/{b3}/{bLost}/{b9}/{b9again})");
+Check(AchievementCatalog.Crossed(GameEventKinds.DailyStreakBest, 6, 7).Any(c => c.Achievement.Key == "racha" && c.Tier == 1) && !AchievementCatalog.Crossed(GameEventKinds.DailyStreakBest, 7, 8).Any(), "al pasar de 6 a 7 días se cruza el tramo I de «Racha» (y de 7 a 8 no se cruza nada)");
+var evRows = await db.ExecuteScalarAsync<int>("SELECT count(*)::int FROM game_events WHERE discord_id = @id AND kind = 'daily_streak_best'", new { id = (long)U });
+Check(evRows == 4, $"se guardaron 4 eventos (los días 1, 2 y 3 y el salto a 9), ninguno por repetir o por perder la racha ({evRows})");
+
+await db.ExecuteAsync("DELETE FROM game_events WHERE discord_id = @id", new { id = (long)U });
+await db.ExecuteAsync("DELETE FROM player_stats WHERE discord_id = @id", new { id = (long)U });
 await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)U });
 Check(true, "(limpieza) usuario descartable borrado");
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");

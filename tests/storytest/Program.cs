@@ -134,7 +134,7 @@ Check(nRenacido.Any(n => n.Text.Contains("Renacido I")), "(el logro Renacido sig
 
 Console.WriteLine("\n== 6. Logros nuevos ==");
 var comp = AchievementCatalog.Find("companero")!; var vol = AchievementCatalog.Find("volvio")!;
-Check(AchievementCatalog.All.Count == 22 && comp.StatKind == GameEventKinds.FuegoNuevo && vol.StatKind == GameEventKinds.FuegoNuevo
+Check(AchievementCatalog.All.Count == 23 && comp.StatKind == GameEventKinds.FuegoNuevo && vol.StatKind == GameEventKinds.FuegoNuevo
         && comp.Tiers.Select(t => t.Threshold).SequenceEqual([10L, 25, 50]) && vol.Tiers.Select(t => t.Threshold).SequenceEqual([75L, 90, 100]),
     "22 logros; Compañero del Asador (10/25/50) y El que volvió (75/90/100) cuentan los Fuegos Nuevos");
 Check(comp.Tiers.Concat(vol.Tiers).All(t => t.Reward.Box == BoxGrant.None), "pagan solo oro y XP (nunca una caja: el contador es de pocas vueltas pero cada una pide vencer al Asador)");

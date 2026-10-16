@@ -74,6 +74,9 @@ public static class DailyRewardCalculator
         XpPercentFor(streakDay),
         BoxFor(streakDay) switch { DailyBox.Gold => BoxGrant.Weekly, DailyBox.Iron => BoxGrant.Daily, _ => BoxGrant.None });
 
+    // El logro "Racha" cuenta la racha MÁS LARGA: el contador solo sube. Dada la racha de hoy y lo que ya lleva el contador, cuánto hay que sumarle (0 si no superó su récord).
+    public static long StreakBestDelta(long counterNow, int newStreak) => Math.Max(0, newStreak - Math.Max(0, counterNow));
+
     // Una línea para el mensaje: qué trae el día siguiente de la racha, si trae algo especial (null si es un día común).
     public static string? NextDayHint(int currentStreak)
     {

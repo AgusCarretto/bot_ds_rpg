@@ -1,6 +1,13 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-16 (v0.18.2: el daily escala con la zona y el nivel, con hitos de racha y cajas)_
+_Última revisión: 2026-10-16 (v0.18.3: las pruebas pasan al repo y el logro «Racha»)_
+
+## Las pruebas pasan al repo y el logro «Racha» (v0.18.3, 2026-10-16)
+
+- **Las pruebas viven en el repo** (el dueño: «dale, vamos 1 y 2»): los ~40 arneses de verificación que se citan por nombre en todo `CLAUDE.md` estaban en una carpeta temporal fuera del repo, y «cero tests» figuraba como deuda desde siempre. Ahora son **`tests/<nombre>/`** (un `csproj` mínimo + `Program.cs`, que usa el bot real por `ProjectReference`, sin Discord), con lo común en `tests/Directory.Build.props` y la cadena de conexión / `RepoRoot` en `tests/Shared/TestEnv.cs` (sin rutas absolutas), y el simulador de calibración como **`tools/balance2`** (partes A–J, incluida la J: cada jefe contra el equipo de la zona anterior). Se corren con **`tests/run-all.ps1`** (o `tests/run-all.sh`; `-Only nombre1,nombre2` para algunos) y dejan `tests/.logs/` (ignorado por git). Detalle y cómo sumar uno: `tests/README.md`.
+- **Se niegan a correr contra una base que no sea local** (`TestEnv`, salvo `HARNESS_ALLOW_REMOTE=1`): escriben y borran datos y algunos tocan un instante el catálogo o `cooldowns`. El csproj del bot excluye `tests/**` y `tools/**` de su compilación, `.dockerignore` los saca de la imagen, y `dotnet publish` del bot no cambió (se comprobó). Hubo que ajustar dos arneses (`stage6test`, `stage10test`) porque ahora las fotos de `Assets/npc` llegan a su carpeta de salida y ellos prueban primero el caso SIN foto, y tres (`choicetest`, `leaktest`, `raidtest`) por la ruta del dll. Sigue sin haber CI (necesitan una base local con la instalación completa).
+- **El logro «Racha»** (página Constancia): cuenta la racha **más larga** del `/daily`, con tramos en **7, 30 y 100 días** y los premios de los logros estándar (oro y EXP; el tramo II y el III dan caja de tu zona). Los contadores solo suman, así que al reclamar se registra la **diferencia** con el récord (`GameEventExtensions.RecordDailyStreakAsync`: nada si no lo superó, así que perder la racha no baja nada ni reclamar dos veces no suma). Quien ya traía una racha larga la cobra completa en su próximo `/daily` (un jugador en el día 9 desbloquea el tramo I). Sin migración. Total: 23 logros.
+- **Para la base viva**: nada (sin migración, solo el binario).
 
 ## El daily: escala con la zona y el nivel, hitos de racha y cajas (v0.18.2, 2026-10-16)
 
@@ -9,7 +16,7 @@ _Última revisión: 2026-10-16 (v0.18.2: el daily escala con la zona y el nivel,
 - **Hitos de la racha** (lo pidió el dueño): el **día 3**, +15 cacerías de oro. El **día 6** y **todos los días después del 7** que no caigan en múltiplo de 7: la **caja diaria** de tu zona (Cajón de Pino / Baúl de Roble / Baúl de Roble / Arcón de Hierro / Arcón de Hierro en las zonas 1 a 5; «el de hierro»). El **día 7 y cada 7 días en racha** (14, 21, 28…): la **caja grande** de tu zona (Baúl de Roble / Arcón de Hierro / Arcón de Hierro / Cofre de Oro / Cofre de Oro; «el de oro») y +30 cacerías de oro. Del día 1 al 5 no hay caja. Las reglas de la racha no cambian (24 h de espera, 48 h para no perderla, el Fuego Nuevo no la borra). Las cajas salen de la tabla `zone_boxes` (roles `daily` y `weekly`, las mismas de las misiones), así que se retocan por datos.
 - **Todo en UNA transacción** (`RewardPayer`, el mismo de misiones y logros): oro, EXP con subida de nivel, caja y racha; si la caja del día no existe se revierte TODO, racha incluida; 12 `/daily` a la vez pagan una sola vez. La zona que cuenta es la actual del jugador (como en las misiones).
 - **Economía, medida**: en régimen, quien reclama todos los días suma por semana 6 cajas diarias + 1 grande + 170 cacerías de oro = **~15k / 102k / 112k / 506k / 533k** de oro-equivalente en las zonas 1 a 5, o sea **~2× lo gratis en cajas que ya había** (13k / 100k / 100k / 512k / 512k), y vale 4,5 / 7,3 / 4,0 / 9,8 / 5,9 sesiones perfectas de 2 h por semana. El dueño lo eligió sabiendo eso (se le propuso la caja diaria solo la primera semana y la grande cada 7 días). **Palancas si resulta mucho**: sacar la caja diaria de después del día 7 (`DailyRewardCalculator.BoxFor`), bajar las unidades de oro, o cambiar las filas `daily`/`weekly` de `zone_boxes`.
-- **Sin hacer**: logros de racha (el logro «Constante» sigue contando reclamos totales 7/30/100); los hitos viven en el propio reclamo y se ven en el mensaje.
+- **Logros de racha**: se hicieron en la v0.18.3 (el logro «Racha», arriba); los hitos de cada día siguen viviendo en el propio reclamo y se ven en el mensaje.
 - **Para la base viva**: nada (sin migración, solo el binario).
 
 
