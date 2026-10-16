@@ -40,7 +40,7 @@ public sealed class ProgressionRepository(IDbConnectionFactory connectionFactory
         }
     }
 
-    public async Task<DailyClaimOutcome> ClaimDailyAsync(ulong discordId, CancellationToken cancellationToken = default)
+    public async Task<DailyClaimOutcome> ClaimDailyAsync(ulong discordId, int zoneRank, CancellationToken cancellationToken = default)
     {
         using DbConnection connection = connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
@@ -69,26 +69,26 @@ public sealed class ProgressionRepository(IDbConnectionFactory connectionFactory
                 return new DailyClaimOutcome(calculation, null);
             }
 
-            var leveled = await LevelingApplier.ApplyAsync(connection, transaction, current, calculation.XpReward, hpDelta: 0, cancellationToken);
+            // v0.18.2: el premio del día (oro, EXP con subida de nivel y la caja que toque) escala con la zona y el nivel, y lo paga el mismo RewardPayer que usan las misiones y los logros,
+            // DENTRO de esta transacción: si la caja del día no existe (zone_boxes o items mal cargados) tira y se revierte TODO, incluida la racha, en vez de cobrar sin la caja.
+            var receipt = await RewardPayer.PayAsync(connection, transaction, current, DailyRewardCalculator.SpecFor(calculation.NewStreak), zoneRank, cancellationToken);
 
-            // Segunda UPDATE para las columnas que no son de nivelado (oro, racha, timestamp del
-            // claim): separada de LevelingApplier a propósito, para que ese helper quede genérico
-            // y lo puedan reusar operaciones que no tocan racha diaria (ej. AddXpAsync arriba).
+            // Segunda UPDATE para las columnas de la racha (daily_streak y el momento del claim): el oro y la EXP ya los puso el pago de arriba. Devuelve la fila final del jugador.
             string updateExtrasSql = $"""
                 UPDATE users
-                SET gold = gold + @Gold, daily_streak = @Streak, last_daily_claim = @Now
+                SET daily_streak = @Streak, last_daily_claim = @Now
                 WHERE discord_id = @DiscordId
                 RETURNING {UserSql.SelectColumns};
                 """;
 
             var finalUser = await connection.QuerySingleAsync<User>(new CommandDefinition(
                 updateExtrasSql,
-                new { DiscordId = (long)discordId, Gold = calculation.GoldReward, Streak = calculation.NewStreak, Now = now },
+                new { DiscordId = (long)discordId, Streak = calculation.NewStreak, Now = now },
                 transaction: transaction,
                 cancellationToken: cancellationToken));
 
             await transaction.CommitAsync(cancellationToken);
-            return new DailyClaimOutcome(calculation, new LevelUpOutcome(finalUser, leveled.LevelsGained));
+            return new DailyClaimOutcome(calculation, new LevelUpOutcome(finalUser, receipt.LevelsGained), receipt);
         }
         catch
         {

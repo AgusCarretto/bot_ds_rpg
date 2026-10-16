@@ -13,5 +13,7 @@ public interface IProgressionRepository
 
     // Evalúa y aplica /daily de forma atómica (ver GameData/DailyRewardCalculator): si todavía
     // no pasaron 24h, no aplica ningún cambio y Result queda en null.
-    Task<DailyClaimOutcome> ClaimDailyAsync(ulong discordId, CancellationToken cancellationToken = default);
+    // zoneRank (v0.18.2): la posición por dificultad de la zona actual del jugador (0 si no se conoce: cuenta como la primera). El premio del día (oro, EXP y caja) escala con ella y con el nivel,
+    // y se paga en la MISMA transacción que la racha (GameData/MissionRewards, Repositories/RewardPayer).
+    Task<DailyClaimOutcome> ClaimDailyAsync(ulong discordId, int zoneRank, CancellationToken cancellationToken = default);
 }

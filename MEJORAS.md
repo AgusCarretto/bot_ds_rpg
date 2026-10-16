@@ -1,6 +1,17 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-16 (v0.18.1: la EXP de las peleas, a la mitad)_
+_Última revisión: 2026-10-16 (v0.18.2: el daily escala con la zona y el nivel, con hitos de racha y cajas)_
+
+## El daily: escala con la zona y el nivel, hitos de racha y cajas (v0.18.2, 2026-10-16)
+
+- **Qué pasaba** (el dueño, en FN 2 y día 8 de racha: «el daily es muy poco, hay que mejorar mucho»): pagaba un monto fijo, 100 de oro y 50 de EXP por día de racha (tope en el día 10: 1.000 y 500), sin mirar la zona ni el nivel. En la zona 5 una cacería sola paga 375, así que el tope eran ~2 cacerías (1-2 minutos de juego), y 500 de EXP es ~1 % de un nivel a nivel 60. (El dueño leyó 800 de EXP el día 8: el código daba 400.)
+- **Qué es ahora**: el premio del día es un `RewardSpec` (la misma unidad que las misiones y los logros): **oro en «cacerías de oro» de tu zona** y **EXP como % del nivel que estás subiendo** (así no lo toca la EXP de peleas partida a la mitad). Del día 1 al 7: **oro 6 / 8 / 10 / 12 / 14 / 16 / 20 cacerías** y **EXP 2 / 2 / 3 / 3 / 4 / 4 / 6 %**; del día 8 en adelante queda el valor del día 7. En la zona 5 el día 8 son 7.500 de oro (antes 800); a nivel 60 el día 7 son ~2.800 de EXP (antes 500).
+- **Hitos de la racha** (lo pidió el dueño): el **día 3**, +15 cacerías de oro. El **día 6** y **todos los días después del 7** que no caigan en múltiplo de 7: la **caja diaria** de tu zona (Cajón de Pino / Baúl de Roble / Baúl de Roble / Arcón de Hierro / Arcón de Hierro en las zonas 1 a 5; «el de hierro»). El **día 7 y cada 7 días en racha** (14, 21, 28…): la **caja grande** de tu zona (Baúl de Roble / Arcón de Hierro / Arcón de Hierro / Cofre de Oro / Cofre de Oro; «el de oro») y +30 cacerías de oro. Del día 1 al 5 no hay caja. Las reglas de la racha no cambian (24 h de espera, 48 h para no perderla, el Fuego Nuevo no la borra). Las cajas salen de la tabla `zone_boxes` (roles `daily` y `weekly`, las mismas de las misiones), así que se retocan por datos.
+- **Todo en UNA transacción** (`RewardPayer`, el mismo de misiones y logros): oro, EXP con subida de nivel, caja y racha; si la caja del día no existe se revierte TODO, racha incluida; 12 `/daily` a la vez pagan una sola vez. La zona que cuenta es la actual del jugador (como en las misiones).
+- **Economía, medida**: en régimen, quien reclama todos los días suma por semana 6 cajas diarias + 1 grande + 170 cacerías de oro = **~15k / 102k / 112k / 506k / 533k** de oro-equivalente en las zonas 1 a 5, o sea **~2× lo gratis en cajas que ya había** (13k / 100k / 100k / 512k / 512k), y vale 4,5 / 7,3 / 4,0 / 9,8 / 5,9 sesiones perfectas de 2 h por semana. El dueño lo eligió sabiendo eso (se le propuso la caja diaria solo la primera semana y la grande cada 7 días). **Palancas si resulta mucho**: sacar la caja diaria de después del día 7 (`DailyRewardCalculator.BoxFor`), bajar las unidades de oro, o cambiar las filas `daily`/`weekly` de `zone_boxes`.
+- **Sin hacer**: logros de racha (el logro «Constante» sigue contando reclamos totales 7/30/100); los hitos viven en el propio reclamo y se ven en el mensaje.
+- **Para la base viva**: nada (sin migración, solo el binario).
+
 
 ## La EXP de las peleas, a la mitad (v0.18.1, 2026-10-16)
 

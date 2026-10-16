@@ -443,9 +443,14 @@ public static class HelpTopics
     private static Embed Daily() => Topic(Self("daily"),
         "Una recompensa por día y la posibilidad de regalar oro.",
         ("🎁 /daily",
-            $"Una vez cada {Dur(DailyRewardCalculator.MinInterval)}. Cada día seguido suma a la **racha**: el día N paga {DailyRewardCalculator.GoldPerMultiplier} × N de oro y {DailyRewardCalculator.XpPerMultiplier} × N de EXP, hasta el día {DailyRewardCalculator.MaxStreakMultiplier} " +
-            $"({Num(DailyRewardCalculator.GoldPerMultiplier * DailyRewardCalculator.MaxStreakMultiplier)} de oro y {Num(DailyRewardCalculator.XpPerMultiplier * DailyRewardCalculator.MaxStreakMultiplier)} de EXP). " +
+            $"Una vez cada {Dur(DailyRewardCalculator.MinInterval)}. Cada día seguido suma a la **racha**, y el premio **escala con tu zona y tu nivel**: el oro se mide en cacerías de tu zona y la EXP en % de lo que te falta para subir. " +
+            $"Del día 1 al 7 va de {DailyRewardCalculator.BaseGoldUnitsFor(1)} a {DailyRewardCalculator.BaseGoldUnitsFor(DailyRewardCalculator.WeekLength)} cacerías de oro y de {DailyRewardCalculator.XpPercentFor(1)} % a {DailyRewardCalculator.XpPercentFor(DailyRewardCalculator.WeekLength)} % de EXP, y desde el día {DailyRewardCalculator.WeekLength + 1} se queda en el del día {DailyRewardCalculator.WeekLength}. " +
             $"Si pasan más de {Dur(DailyRewardCalculator.StreakGraceWindow)} sin reclamar, la racha vuelve al día 1. **/cd** te dice cuándo podés volver."),
+        ("🏆 Hitos de la racha",
+            $"**Día {DailyRewardCalculator.ThreeDayStreak}**: +{DailyRewardCalculator.ThreeDayBonusUnits} cacerías de oro extra.\n" +
+            $"**Día {DailyRewardCalculator.IronBoxFromDay}** y todos los días que siguen: la **caja diaria** de tu zona.\n" +
+            $"**Día {DailyRewardCalculator.WeekLength}** y cada {DailyRewardCalculator.WeekLength} días seguidos ({DailyRewardCalculator.WeekLength * 2}, {DailyRewardCalculator.WeekLength * 3}…): la **caja grande** de tu zona y +{DailyRewardCalculator.WeekBonusUnits} cacerías de oro. " +
+            "Las cajas se abren con **/open**; cuáles son depende de tu zona (las mismas que dan las misiones diarias y semanales)."),
         ("🤝 /give @jugador cantidad", "Le regalás oro a otro jugador (una cantidad o **all**). Sale de tu billetera; no a vos mismo. En texto: `aa give @jugador 100`."));
 
     private static Embed Stats() => Topic(Self("stats"),
