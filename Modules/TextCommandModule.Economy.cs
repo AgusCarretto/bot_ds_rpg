@@ -9,15 +9,16 @@ public partial class TextCommandModule
     // "aa daily" / "aa d" — misma lógica que DailyModule.HandleDailyAsync.
     [Command("daily")]
     [Alias("d")]
-    [Summary("Reclamá tu recompensa diaria (la racha multiplica la recompensa hasta el día 10).")]
+    [Summary("Reclamá tu recompensa diaria: más oro y EXP con la racha, y cajas desde el día 6.")]
     public async Task DailyAsync()
     {
         try
         {
             // Si es la primera vez que este usuario ejecuta un comando, se crea acá con los valores por defecto.
-            await userRepository.GetOrCreateUserAsync(Context.User.Id);
+            var player = await userRepository.GetOrCreateUserAsync(Context.User.Id);
 
-            var outcome = await progressionRepository.ClaimDailyAsync(Context.User.Id);
+            int zoneRank = await MissionsModule.ResolveZoneRankAsync(zoneRepository, player.CurrentZoneId);
+            var outcome = await progressionRepository.ClaimDailyAsync(Context.User.Id, zoneRank);
             var calculation = outcome.Calculation;
 
             if (calculation.Status == DailyClaimStatus.TooSoon)
@@ -29,7 +30,7 @@ public partial class TextCommandModule
             // Antes solo /daily registraba el evento: con "aa daily" la misión "Reclamá tu /daily" y el logro Constante no avanzaban.
             await gameEvents.RecordVictoryAsync(Context.User.Id, GameEventKinds.DailyClaim, outcome.Result!);
 
-            await ReplyAsync(embed: DailyModule.BuildResultEmbed(calculation, outcome.Result!));
+            await ReplyAsync(embed: DailyModule.BuildResultEmbed(calculation, outcome.Result!, outcome.Receipt!));
         }
         catch (Exception ex)
         {
