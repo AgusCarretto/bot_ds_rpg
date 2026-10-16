@@ -1,0 +1,21 @@
+<Project>
+  <!-- Común a TODOS los arneses de tests/ (y de tools/, que lo importa): cada uno es una consola que usa el bot de verdad (ProjectReference), sin Discord, contra una base LOCAL. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)..\bot_ds_rpg.csproj" />
+    <Compile Include="$(MSBuildThisFileDirectory)Shared\TestEnv.cs" Link="TestEnv.cs" />
+    <PackageReference Include="Dapper" Version="2.1.79" />
+    <PackageReference Include="Npgsql" Version="10.0.3" />
+    <PackageReference Include="Discord.Net" Version="3.20.1" />
+    <PackageReference Include="Discord.Net.Interactions" Version="3.20.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" />
+  </ItemGroup>
+</Project>

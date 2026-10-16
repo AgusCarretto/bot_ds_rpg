@@ -1203,8 +1203,8 @@ Todo esto ya compila y bootea limpio contra Discord.
   máquina, hay que acordarse de correrlas todas en orden a mano. Una tabla `schema_migrations`
   simple (o una herramienta tipo DbUp) resolvería esto sin mucho esfuerzo — cada vez que sumamos
   una feature con cambio de esquema, esta lista crece.
-- 🟢 Cero tests. `LevelingCalculator`, `RarityCatalog` y `CombatService` son lógica pura (sin DB)
-  y son los candidatos más baratos para empezar — hoy el único chequeo es "compila y bootea".
+- ✅ (resuelto en la v0.18.3, ver arriba) ~~Cero tests.~~ Los ~40 arneses de verificación ya viven en `tests/` (y el simulador de calibración en `tools/balance2`); se corren con `tests/run-all.ps1`.
+  Sigue sin haber CI (necesitan una base local con la instalación completa) ni un framework de pruebas a propósito: son consolas que se leen de corrido.
 - 🟢 Logging es `Console.WriteLine` sin niveles ni persistencia. Alcanza para desarrollo; para un
   bot corriendo 24/7 en un server, conviene algo que deje rastro cuando vos no estás mirando la
   consola.

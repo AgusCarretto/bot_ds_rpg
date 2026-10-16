@@ -2,6 +2,9 @@
 bin/
 obj/
 
+## Resultados de la última corrida de los arneses (tests/run-all.ps1)
+tests/.logs/
+
 ## IDE
 .vs/
 .vscode/

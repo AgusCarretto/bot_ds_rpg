@@ -11,12 +11,19 @@ PostgreSQL via Dapper/Npgsql (no EF Core). Code comments and all user-facing tex
 ## Commands
 
 ```
-dotnet build              # compile — do this after any change, nothing else validates the code
+dotnet build              # compile — do this after any change
 dotnet run                # start the bot (needs .env or User Secrets configured, see below)
+.\tests\run-all.ps1       # the 40 verification harnesses against a LOCAL database (or tests/run-all.sh); -Only name1,name2 for some
 ```
 
-There are no automated tests in this repo (see `MEJORAS.md` — acknowledged gap, not an oversight
-to silently fix). `dotnet build` succeeding is the only mechanical check available.
+**Tests (since v0.18.3; `tests/`, `tools/`, design in `tests/README.md`)** — until v0.18.2 the ~40 harnesses mentioned all over this file ("Harness: `dailytest`", "`typedtest`"...) lived outside the repo, in a temporary folder of whoever was
+working, and `MEJORAS.md` counted "zero tests" as a debt. Now each is a console project `tests/<name>/<name>.csproj` + `Program.cs` that references the real bot project (no Discord) and prints `[OK]`/`[FALLA]` per check, ending with `TODO OK`
+(exit 0) or `N FALLAS` (exit 1); they are deliberately plain scripts, not a test framework. `tests/Directory.Build.props` holds everything the csprojs share, `tests/Shared/TestEnv.cs` the connection string (the `Postgres__ConnectionString`
+variable, or the `.env` of the repo root, or — in a git worktree — the main folder's) and `RepoRoot`; **never write an absolute path in a harness**. **They write and delete data** (disposable users `999000000000xxxxx`, and a few touch the
+catalog or `cooldowns` for a moment), so `TestEnv` **refuses a non-local database** unless `HARNESS_ALLOW_REMOTE=1`: never point them at production. The main csproj excludes `tests/**` and `tools/**` from its own compilation (`Compile
+Remove`) and `.dockerignore` keeps them out of the image. **`dotnet build` plus `.\tests\run-all.ps1` is the mechanical check now**; when a change breaks a harness, first decide whether the harness encoded the OLD behaviour on purpose (update it, like the
+XP ranges in `stage11test`) or the code is wrong. `tools/balance2` is the calibration simulator (the real `CombatTurnResolver` and the local monsters): parts A–J, e.g. `dotnet run --project tools/balance2 -- J` measures every boss against
+the previous zone's gear.
 
 ### Configuration
 
@@ -219,7 +226,7 @@ tuned so that **entering** with the previous zone's gear costs (~5 turns, ~47% o
 own gear leaves commons at 13-18% HP (comfortable, never a walkover), and the **boss** is the exam (67-87% defeat
 with the previous zone's gear, ~16% with its own). Numbers come from a simulation that drives the real
 `CombatTurnResolver`: fix a nominal, strictly increasing gear ladder, then bisect the monsters' HP and damage factors
-until the entry fight hits those targets (the scratchpad harness is not in the repo — rebuild it; the sensitivity to
+until the entry fight hits those targets (the simulator is `tools/balance2` since v0.18.3; the ladder-solving bisection was a one-off script that is NOT in the repo — rebuild it; the sensitivity to
 remember is that the "exit" target controls how fast the ladder inflates, because each zone is entered with the
 previous zone's exit gear). Never retune a zone's monsters without its gear (recipes) shipping with it, or it becomes
 a wall, and re-measure that zone's raid when its boss changes. The whole ladder is the **run-1 baseline**: a future

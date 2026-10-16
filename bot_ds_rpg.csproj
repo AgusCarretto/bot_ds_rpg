@@ -10,6 +10,13 @@
     <Version>0.18.2</Version>
   </PropertyGroup>
 
+  <!-- Los arneses de pruebas (tests/) y las herramientas de calibración (tools/) son proyectos APARTE, cada uno con su csproj: sin esto el globbing del SDK compilaría sus .cs dentro del bot. -->
+  <ItemGroup>
+    <Compile Remove="tests\**;tools\**" />
+    <EmbeddedResource Remove="tests\**;tools\**" />
+    <None Remove="tests\**;tools\**" />
+  </ItemGroup>
+
   <!-- Las imágenes de los personajes (Assets/npc) viajan con el bot, tanto en dotnet run como en el publish de Docker. -->
   <ItemGroup>
     <Content Include="Assets\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
