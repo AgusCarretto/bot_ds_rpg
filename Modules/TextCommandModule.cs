@@ -53,6 +53,8 @@ public partial class TextCommandModule(
     IBlessingRepository blessingRepository,
     IFuegoNuevoRepository fuegoNuevoRepository,
     IReminderRepository reminderRepository,
+    IVoteRepository voteRepository,
+    ITopGgVoteClient voteClient,
     IGameEvents gameEvents) : ModuleBase<SocketCommandContext>
 {
     // ---- Onboarding / clase ----
@@ -176,7 +178,7 @@ public partial class TextCommandModule(
     {
         try
         {
-            var embed = await CooldownModule.BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id, arenaService, bonusService);
+            var embed = await CooldownModule.BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id, arenaService, bonusService, voteClient.Enabled);
             await ReplyAsync(embed: embed);
         }
         catch (Exception ex)

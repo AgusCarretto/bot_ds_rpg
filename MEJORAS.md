@@ -1,6 +1,15 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-14 (v0.17.1: +25 % de vida a los jefes)_
+_Última revisión: 2026-10-16 (v0.18.0: `/vote`)_
+
+## Votar por el bot: `/vote` (v0.18.0, 2026-10-16)
+
+- **Qué es** (el dueño: «que poniendo `aa vote` te dé un mensajito de lo que te da el vote, que es una caja (Baúl de Roble), y te resetea el boss»): `/vote` (`aa vote`, también `aa votar` y `aa voto`) cuenta qué da votar en top.gg, da el link y, si ya hay un voto vigente sin cobrar, lo **cobra**: **1 Baúl de Roble** y **el cooldown del jefe/raid se borra** (si corría). Se vota cada 12 h; aparece en `/cd` y tiene su aviso en `/reminders`.
+- **Cómo sabe que votaste, sin webhook ni puerto**: le pregunta a top.gg `GET /projects/@me/votes/{id}?source=discord` (token del proyecto en `TopGg__Token`; 200 con `created_at`/`expires_at`/`weight`, 404 si nunca votó o venció). Un voto se cobra UNA vez: la fila de cooldown `vote` guarda el `created_at` del último voto cobrado y el cobro es `INSERT … ON CONFLICT DO UPDATE … WHERE last_executed_at < nuevo` en UNA transacción con la caja y el borrado del cooldown del jefe (20 cobros a la vez del mismo voto → exactamente uno paga; si falta la caja en el catálogo se revierte todo). Un voto sin cobrar se pierde cuando vence (~12 h).
+- **Dormido hasta que top.gg apruebe el bot**: sin `TopGg__Token` (y mientras el proyecto esté «en revisión» no hay página pública donde votar) `/vote` solo explica el premio y `/cd` no muestra la línea. Se prende solo con cargar el token en Railway y reiniciar, sin tocar código.
+- **Ojo con la economía** (medido con `Database/report_economy.sql`): un Baúl de Roble vale ~8.200 de oro-equivalente; con voto cada 12 h son ~115k a la semana, que **duplica o más lo gratis de las zonas 1 a 3** (13k / 100k / 100k por semana hoy). El reseteo del jefe vale más que la caja en las zonas altas: es una victoria extra, o sea la caja de repetición de la zona (en la 5 un Arcón de Hierro, ~43k); con voto cada 12 h el combo más o menos duplica lo gratis en todas las zonas, y baja el piso de 20,8 h hasta el jefe de la zona 5 a ~11 h (el equipo sigue limitando la vuelta, ~31 h). Si resulta mucho: que el reseteo solo valga una vez por día, o cambiar `VoteRules.RewardBoxName` (un solo lugar).
+- **Para la base viva**: nada (sin migración, solo el binario). `/cd` y los avisos usan la tabla `cooldowns`, que ya existe.
+- **Sin hacer**: el link de voto lo trae `TopGg__VoteUrl` (sin él el mensaje manda a buscar el bot en top.gg); no se usa el `weight` (los fines de semana top.gg cuenta doble: hoy no cambia el premio); no hay webhook (si algún día se quiere cobrar el voto al instante, sin que escriban `/vote`, hace falta un puerto público en Railway).
 
 ## Más vida a los jefes (v0.17.1, 2026-10-14)
 

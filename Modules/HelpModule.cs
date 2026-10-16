@@ -121,8 +121,12 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "`/pet feed` — Dales Comida para Mascotas (se compra en la `/taberna`), una vez por hora cada una. El huevo llega la primera vez que vencés al jefe de cada zona: abrilo con `/open`",
                 false)
             .AddField(
+                "🗳️ Votar por el bot",
+                "`/vote` — Votá en top.gg y cobrá un Baúl de Roble más el reseteo del jefe (`aa vote`, `/info tema:votar`)",
+                false)
+            .AddField(
                 "⏰ Recordatorios",
-                "`/reminders` — El bot te avisa en el canal cuando termina una espera (cacería, viaje, talar, minar, jefe/raid, caja, mascotas, diario). Elegí cuáles recibir (`aa recordatorios`, `/info tema:recordatorios`)",
+                "`/reminders` — El bot te avisa en el canal cuando termina una espera (cacería, viaje, talar, minar, jefe/raid, caja, mascotas, diario, voto). Elegí cuáles recibir (`aa recordatorios`, `/info tema:recordatorios`)",
                 false)
             .AddField(
                 "🛠️ Utilidad",

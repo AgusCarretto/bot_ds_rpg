@@ -43,6 +43,9 @@ public static class HelpTopics
         new("gather", "🪓", "Recolección", "talar y minar: unidades y rarezas", ["chop", "mine", "talar", "minar", "recolectar", "recoleccion", "madera", "mineral"], Gather),
         new("daily", "🎁", "Diario y regalos", "la recompensa diaria, la racha y regalar oro", ["diario", "racha", "give", "dar", "regalo", "regalar"], Daily),
         new("stats", "📊", "Nivel y estadísticas", "EXP, vida, ataque y defensa", ["nivel", "exp", "xp", "ataque", "defensa", "vida", "hp", "perfil", "level"], Stats),
+        // OJO: Discord muestra como máximo 25 sugerencias, así que con 26 temas la lista desplegable SIN escribir nada deja afuera el último (este). Se encuentra escribiendo («votar») y figura en /info;
+        // el próximo tema que se sume no tiene lugar sin sacar otro o fundirlo con uno existente.
+        new("vote", "🗳️", "Votar por el bot", "qué da cada voto y cómo se cobra", ["votar", "voto", "votos", "votacion", "votación", "topgg", "top.gg"], Vote),
     ];
 
     // Lo que se escribe para elegir un tema: su clave, su nombre y sus alias.
@@ -383,6 +386,16 @@ public static class HelpTopics
             ("📌 Cosas a saber",
                 "El aviso se arma cuando usás el comando y sobrevive a un reinicio del bot; si el bot estuvo apagado y el aviso llega muy tarde, se descarta. Para las **mascotas** avisa cuando la primera que pueda subir de nivel puede comer de nuevo."));
     }
+
+    private static Embed Vote() => Topic(Self("vote"),
+        "Votar por el bot en **top.gg** ayuda a que más gente lo encuentre, y el bot te devuelve el favor.",
+        ("🎁 Qué da cada voto",
+            $"**{VoteRules.RewardBoxes}× {VoteRules.RewardBoxName}** (se abre con **/open**) y **el jefe se resetea**: si el cooldown de **/boss** o **/raid** ({Dur(CooldownCatalog.Boss.Duration)} tras ganar) estaba corriendo, queda listo al instante."),
+        ("🗳️ Cómo se cobra",
+            "**/vote** (en texto `aa vote`) te muestra el link para votar. Después de votar, escribí **/vote** otra vez: el bot le pregunta a top.gg y te paga. Cada voto se cobra **una sola vez**, y si no lo cobrás antes de que venza (unas 12 horas) se pierde."),
+        ("⏳ Cada cuánto",
+            $"Se puede votar cada **{Dur(VoteRules.Interval)}**; **/cd** te dice cuánto falta y el bot te avisa cuando ya podés (**/reminders**). Mientras no esté habilitado el voto, **/vote** solo cuenta qué te llevarías."),
+        ("💡 Truco", "El reseteo rinde más si cobrás el voto justo después de ganarle al jefe: así te ahorrás la espera. Si el jefe ya estaba listo, igual te llevás la caja."));
 
     private static Embed Classes()
     {

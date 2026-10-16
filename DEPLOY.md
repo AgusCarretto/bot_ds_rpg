@@ -115,6 +115,12 @@ Usan el mismo `Dockerfile` (servicio tipo *worker*, sin puerto ni healthcheck) y
 | `Discord__TestGuildId` | el ID del servidor |
 | `Postgres__ConnectionString` | `Server=<host>;Port=<puerto>;Database=<base>;User Id=<usuario>;Password=<clave>` (formato clave=valor, no URL) |
 | `Raid__MinParticipants` | no la pongas (por defecto 2) |
+| `TopGg__Token`, `TopGg__VoteUrl` | opcionales: prenden `/vote` (ver abajo). Sin el token el voto queda dormido |
+
+**Votar por el bot (`/vote`, v0.18.0).** El bot NO recibe webhooks ni abre ningún puerto: cuando alguien escribe `/vote` le pregunta a top.gg (`GET https://top.gg/api/v1/projects/@me/votes/{id}?source=discord`,
+con `Authorization: Bearer <token>`) si tiene un voto vigente. Para prenderlo hace falta que el bot tenga su página en top.gg (el proyecto aprobado), copiar el **token del proyecto** a la variable `TopGg__Token` del
+servicio (nunca al repo ni a un chat) y, si querés que el mensaje lleve el link, `TopGg__VoteUrl`. Se reinicia el servicio y listo; sin el token todo sigue igual y `/vote` solo explica el premio. Si el token está mal
+cargado, `/vote` contesta «no pude confirmar tu voto» y el log dice `top.gg no dio un voto usable (HTTP 401)` (nunca imprime el token).
 
 La base hay que cargarla **una vez desde tu PC** (necesita `psql`), parado en la carpeta `Database/`:
 

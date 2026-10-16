@@ -6,7 +6,7 @@ namespace BotDsRpg.GameData;
 // el guardado está en Repositories/ReminderRepository.cs, el reloj en Services/ReminderScheduler.cs y la pantalla de ajustes en Modules/ReminderModule.cs.
 //
 // Un recordatorio es una fila (jugador, tipo, canal, cuándo): el tipo es la misma clave que usa el cooldown de la base ("hunt", "travel", "chop", "mine", "boss", "buybox", "chop_adv",
-// "mine_adv") más dos que no viven en la tabla de cooldowns: "pet" (la comida de las mascotas, una hora por mascota) y "daily" (la recompensa diaria, 24 horas).
+// "mine_adv", y "vote" desde la v0.18.0) más dos que no viven en la tabla de cooldowns: "pet" (la comida de las mascotas, una hora por mascota) y "daily" (la recompensa diaria, 24 horas).
 // AutoDelete: los avisos de esperas CORTAS (cacería, talar, minar) se borran solos a los pocos minutos para no ensuciar el canal; los de esperas largas se quedan.
 public sealed record ReminderKind(string Key, string Emoji, string Name, string Command, string ReadyText, TimeSpan? AutoDelete);
 
@@ -30,6 +30,7 @@ public static class ReminderCatalog
         new("mine_adv", "⛏️", "Minería avanzada", "/mine", "¡La minería avanzada está lista! `/mine modo:Avanzada`.", null),
         new("pet", "🐾", "Mascotas", "/pet feed", "¡Tus mascotas ya pueden comer! Dales de comer con `/pet feed`.", null),
         new("daily", "🎁", "Diario", "/daily", "¡Tu recompensa diaria está lista! Reclamala con `/daily`.", null),
+        new("vote", "🗳️", "Votar", "/vote", "¡Ya podés votar de nuevo! Votá por el bot y cobrá con `/vote`: un Baúl de Roble y el jefe reseteado.", null),
     ];
 
     public static ReminderKind? Find(string? key) => All.FirstOrDefault(k => k.Key == key);
@@ -38,7 +39,7 @@ public static class ReminderCatalog
 
     // Las esperas que viven en la tabla de cooldowns, con su duración (la misma de CooldownCatalog, que es la que cobra cada comando).
     private static readonly IReadOnlyList<CooldownDefinition> StoredCooldowns =
-        [.. CooldownCatalog.All, CooldownCatalog.ChopAdvanced, CooldownCatalog.MineAdvanced];
+        [.. CooldownCatalog.All, CooldownCatalog.ChopAdvanced, CooldownCatalog.MineAdvanced, CooldownCatalog.Vote];
 
     // De las filas de cooldown del jugador (comando, última vez) saca cuáles TODAVÍA corren y cuándo terminan. Lo que ya terminó no genera aviso (el jugador ya puede usarlo).
     // Un cooldown que se guardó con la espera "corta" de un jefe perdido ya viene acomodado en last_executed_at (ver CooldownCatalog.Boss), así que acá es siempre última vez + duración.

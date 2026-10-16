@@ -4,7 +4,7 @@ using Discord;
 using Discord.Interactions;
 using BotDsRpg.Services;
 
-public class CooldownModule(ICooldownRepository cooldownRepository, IUserRepository userRepository, IArenaService arenaService, IPlayerBonusService bonusService)
+public class CooldownModule(ICooldownRepository cooldownRepository, IUserRepository userRepository, IArenaService arenaService, IPlayerBonusService bonusService, ITopGgVoteClient voteClient)
     : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("cd", "Mirá tus cooldowns: cazar, viajar, talar, minar, jefe, raid, cajas, diario y la Arena de hoy.")]
@@ -14,7 +14,7 @@ public class CooldownModule(ICooldownRepository cooldownRepository, IUserReposit
 
         try
         {
-            var embed = await BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id, arenaService, bonusService);
+            var embed = await BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id, arenaService, bonusService, voteClient.Enabled);
             await FollowupAsync(embed: embed, ephemeral: true);
         }
         catch (Exception ex)
@@ -30,8 +30,9 @@ public class CooldownModule(ICooldownRepository cooldownRepository, IUserReposit
     // arenaService: con él, la última línea dice si ya estás anotado en la Arena de hoy y cuánto falta para que se juegue (para que nadie se olvide de
     // anotarse). Sin él (o si falla) la línea simplemente no sale: /cd nunca se rompe por la Arena.
     // bonusService (v0.13.0): con él, la tala y la minería avanzadas (oficios al nivel 100) aparecen en la lista solo para quien ya las desbloqueó.
+    // voteEnabled (v0.18.0): con el voto habilitado (hay token de top.gg), la lista suma la línea de "Votar"; mientras no se pueda votar no se muestra.
     public static async Task<Embed> BuildStatusEmbedAsync(
-        ICooldownRepository cooldownRepository, IUserRepository userRepository, ulong discordId, IArenaService? arenaService = null, IPlayerBonusService? bonusService = null)
+        ICooldownRepository cooldownRepository, IUserRepository userRepository, ulong discordId, IArenaService? arenaService = null, IPlayerBonusService? bonusService = null, bool voteEnabled = false)
     {
         var lines = new List<string>();
         var player = await userRepository.GetOrCreateUserAsync(discordId);
@@ -64,6 +65,11 @@ public class CooldownModule(ICooldownRepository cooldownRepository, IUserReposit
             {
                 await AddLineAsync(CooldownCatalog.MineAdvanced);
             }
+        }
+
+        if (voteEnabled)
+        {
+            await AddLineAsync(CooldownCatalog.Vote);
         }
 
         // /daily no usa la tabla cooldowns (tiene su propia columna last_daily_claim con
