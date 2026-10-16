@@ -533,6 +533,8 @@ public static class ServiceProviderBuilder
             .AddSingleton<IDuelFighterFactory, DuelFighterFactory>()
             .AddSingleton<IDuelService, DuelService>()
             .AddSingleton<IArenaService, ArenaService>()
+            .AddSingleton<IVoteRepository, VoteRepository>()
+            .AddSingleton<ITopGgVoteClient, TopGgVoteClient>()
             .AddSingleton<IReminderRepository, ReminderRepository>()
             .AddSingleton<IReminderService, ReminderService>()
             .AddSingleton<ReminderScheduler>()

@@ -34,6 +34,10 @@ public static class CooldownCatalog
     public static readonly CooldownDefinition ChopAdvanced = new("chop_adv", "Tala avanzada", "🪓", ProfessionRules.AdvancedGatherCooldown);
     public static readonly CooldownDefinition MineAdvanced = new("mine_adv", "Minería avanzada", "⛏️", ProfessionRules.AdvancedGatherCooldown);
 
+    // Votar por el bot (v0.18.0, GameData/Vote.cs). La fila guarda el momento del último voto COBRADO (el created_at de top.gg), así que "última vez + 12 h" es cuándo se puede votar de nuevo.
+    // No está en All a propósito: /cd la muestra solo cuando el voto está habilitado (hay token de top.gg), para no listar algo que todavía no se puede hacer.
+    public static readonly CooldownDefinition Vote = new("vote", "Votar", "🗳️", VoteRules.Interval);
+
     public static readonly IReadOnlyList<CooldownDefinition> All = [Hunt, Travel, Chop, Mine, Boss, BoxBuy];
 
     // La versión avanzada de un cooldown de recolección (null si no tiene).
