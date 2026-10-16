@@ -8,14 +8,14 @@ using Discord.Interactions;
 // Exactamente uno de los dos campos viene con valor (mismo patrón que DeepShopResult).
 public sealed record VoteResult(string? PlainMessage, Embed? Embed);
 
-// /vote (aa vote, alias aa votar y aa voto): votar por el bot en top.gg da un Baúl de Roble y resetea el cooldown del jefe/raid (v0.18.0). Un solo comando para todo: si no votaste (o no se
+// /vote (aa vote, alias aa votar y aa voto): votar en top.gg (por el bot o por el servidor, según el token que se cargue) da un Baúl de Roble y resetea el cooldown del jefe/raid (v0.18.0). Un solo comando para todo: si no votaste (o no se
 // puede votar todavía) cuenta qué te llevás y dónde votar; si hay un voto vigente sin cobrar, lo cobra. Cómo se sabe que votaste, las reglas del cobro y por qué no hay webhook:
 // GameData/Vote.cs. La lógica vive en métodos estáticos para que el comando de texto use exactamente la misma.
 public class VoteModule(
     IItemRepository itemRepository, IVoteRepository voteRepository, ICooldownRepository cooldownRepository, ITopGgVoteClient voteClient, IGameEvents gameEvents)
     : InteractionModuleBase<SocketInteractionContext>
 {
-    [SlashCommand("vote", "Votá por el bot: te llevás un Baúl de Roble y el jefe se resetea.")]
+    [SlashCommand("vote", "Votá en top.gg: te llevás un Baúl de Roble y el jefe se resetea.")]
     public async Task HandleVoteAsync()
     {
         await DeferAsync(ephemeral: true);
@@ -95,7 +95,7 @@ public class VoteModule(
             VoteScreen.NotAvailable => "Todavía no se puede votar: se habilita muy pronto. ¡Estate atento!",
             VoteScreen.Waiting => $"⏳ Podés volver a votar en **{TimeFormat.Remaining(wait ?? TimeSpan.Zero)}**.",
             VoteScreen.AlreadyClaimed => $"✅ Ya cobraste este voto. Podés volver a votar en **{TimeFormat.Remaining(wait ?? TimeSpan.Zero)}**.",
-            _ => (string.IsNullOrWhiteSpace(voteUrl) ? "🔗 Buscá el bot en **top.gg** y votá ahí." : $"🔗 **Votá acá:** {voteUrl}")
+            _ => (string.IsNullOrWhiteSpace(voteUrl) ? "🔗 Buscá Asado y Acero en **top.gg** y votá ahí." : $"🔗 **Votá acá:** {voteUrl}")
                  + "\n\nDespués escribí **/vote** otra vez para cobrar (el voto vale unas 12 horas).",
         };
 
@@ -103,7 +103,7 @@ public class VoteModule(
             .WithTitle("🗳️ Votá por Asado y Acero RPG")
             .WithColor(OnboardingModule.BrandColor)
             .WithDescription(
-                "Votar ayuda a que más gente encuentre el bot. Como agradecimiento te da:\n\n" +
+                "Votar en top.gg ayuda a que más gente nos encuentre. Como agradecimiento te da:\n\n" +
                 $"📦 **{VoteRules.RewardBoxes}× {VoteRules.RewardBoxName}** — se abre con **/open**\n" +
                 "👑 **El jefe se resetea** — si el cooldown de **/boss** o **/raid** estaba corriendo, queda listo al instante\n\n" +
                 status)

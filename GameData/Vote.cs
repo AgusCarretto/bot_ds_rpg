@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace BotDsRpg.GameData;
 
-// /vote (v0.18.0): votar por el bot en top.gg da una caja y resetea el cooldown del jefe. Todo lo que se decide sin base de datos ni red vive acá; el pedido a top.gg está en
+// /vote (v0.18.0): votar en top.gg (por el bot o por el servidor: lo decide el token que se cargue, el código es el mismo) da una caja y resetea el cooldown del jefe. Todo lo que se decide sin base de datos ni red vive acá; el pedido a top.gg está en
 // Services/TopGgVoteClient.cs, el cobro (UNA transacción) en Repositories/VoteRepository.cs y la pantalla en Modules/VoteModule.cs.
 //
 // Cómo sabe el bot que votaste: le pregunta a top.gg (GET /projects/@me/votes/{id}?source=discord, con el token del proyecto) cuando escribís /vote. NO hay webhook ni puerto abierto:

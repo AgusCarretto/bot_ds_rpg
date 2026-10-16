@@ -45,7 +45,7 @@ public static class HelpTopics
         new("stats", "📊", "Nivel y estadísticas", "EXP, vida, ataque y defensa", ["nivel", "exp", "xp", "ataque", "defensa", "vida", "hp", "perfil", "level"], Stats),
         // OJO: Discord muestra como máximo 25 sugerencias, así que con 26 temas la lista desplegable SIN escribir nada deja afuera el último (este). Se encuentra escribiendo («votar») y figura en /info;
         // el próximo tema que se sume no tiene lugar sin sacar otro o fundirlo con uno existente.
-        new("vote", "🗳️", "Votar por el bot", "qué da cada voto y cómo se cobra", ["votar", "voto", "votos", "votacion", "votación", "topgg", "top.gg"], Vote),
+        new("vote", "🗳️", "Votar en top.gg", "qué da cada voto y cómo se cobra", ["votar", "voto", "votos", "votacion", "votación", "topgg", "top.gg"], Vote),
     ];
 
     // Lo que se escribe para elegir un tema: su clave, su nombre y sus alias.
@@ -388,7 +388,7 @@ public static class HelpTopics
     }
 
     private static Embed Vote() => Topic(Self("vote"),
-        "Votar por el bot en **top.gg** ayuda a que más gente lo encuentre, y el bot te devuelve el favor.",
+        "Votar en **top.gg** ayuda a que más gente encuentre el juego, y te devolvemos el favor.",
         ("🎁 Qué da cada voto",
             $"**{VoteRules.RewardBoxes}× {VoteRules.RewardBoxName}** (se abre con **/open**) y **el jefe se resetea**: si el cooldown de **/boss** o **/raid** ({Dur(CooldownCatalog.Boss.Duration)} tras ganar) estaba corriendo, queda listo al instante."),
         ("🗳️ Cómo se cobra",

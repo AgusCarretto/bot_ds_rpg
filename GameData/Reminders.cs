@@ -30,7 +30,7 @@ public static class ReminderCatalog
         new("mine_adv", "⛏️", "Minería avanzada", "/mine", "¡La minería avanzada está lista! `/mine modo:Avanzada`.", null),
         new("pet", "🐾", "Mascotas", "/pet feed", "¡Tus mascotas ya pueden comer! Dales de comer con `/pet feed`.", null),
         new("daily", "🎁", "Diario", "/daily", "¡Tu recompensa diaria está lista! Reclamala con `/daily`.", null),
-        new("vote", "🗳️", "Votar", "/vote", "¡Ya podés votar de nuevo! Votá por el bot y cobrá con `/vote`: un Baúl de Roble y el jefe reseteado.", null),
+        new("vote", "🗳️", "Votar", "/vote", "¡Ya podés votar de nuevo! Votá en top.gg y cobrá con `/vote`: un Baúl de Roble y el jefe reseteado.", null),
     ];
 
     public static ReminderKind? Find(string? key) => All.FirstOrDefault(k => k.Key == key);

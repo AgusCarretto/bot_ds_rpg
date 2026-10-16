@@ -5,8 +5,8 @@ using BotDsRpg.GameData;
 namespace BotDsRpg.Services;
 
 // La configuración del voto, del .env o de las variables del servicio (mismo criterio que MiniEventSettings):
-//   TopGg__Token    el token del PROYECTO en top.gg (un secreto: nunca se imprime ni se guarda en el repo). Sin él, votar queda "dormido": /vote solo cuenta qué se lleva quien vote.
-//   TopGg__VoteUrl  el link donde se vota (https://top.gg/...). Sin él, el mensaje dice que busquen el bot en top.gg.
+//   TopGg__Token    el token del PROYECTO en top.gg (el bot O el servidor: la API v1 llama «proyecto» a los dos; un secreto: nunca se imprime ni se guarda en el repo). Sin él, votar queda "dormido": /vote solo cuenta qué se lleva quien vote.
+//   TopGg__VoteUrl  el link donde se vota (https://top.gg/...). Sin él, el mensaje dice que busquen Asado y Acero en top.gg.
 //   TopGg__ApiBase  solo para probar contra un servidor falso; por defecto la API real.
 public sealed record VoteSettings(string? Token, string? VoteUrl, string ApiBase)
 {
