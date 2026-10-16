@@ -74,68 +74,23 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             .Build();
     }
 
+    // /info sin tema (v0.18.0, achicado a pedido del dueño: «tenemos que achicarlo, poné lo más importante»): solo los NOMBRES de los comandos, agrupados, una línea por grupo. Qué hace cada uno ya lo dice
+    // Discord al elegirlo de la lista de "/" y, para entender cómo funciona algo, está "/info tema:<tema>" (HelpTopics). Antes eran 14 campos con una explicación por comando, que se salía de la pantalla.
+    // Lo que NO figura acá (/shop, /zonas, /history, /duels, /blessings...) sigue funcionando: está en los temas de ayuda y en la lista de Discord.
     public static Embed BuildInfoEmbed()
     {
         return new EmbedBuilder()
             .WithTitle("📜 Comandos de Asado y Acero RPG")
             .WithColor(OnboardingModule.BrandColor)
-            .WithDescription("Todo comando de barra tiene su versión de texto con el prefijo `aa ` (ej. `aa hunt`). Usá `/tutorial` para el loop básico.")
-            .AddField(
-                "💰 Economía y Suerte",
-                "`/daily` — Recompensa diaria\n`/shop` — Comprar comida y cajas, y vender (view/buy/sell/sellall)\n`/open` — Abrir cajas de tu inventario (`aa open <caja>`)\n`/play` — Casino (slots/coinflip)\n`/give` — Dale monedas a otro jugador (`aa give @jugador 100`)\n`/exchange` — El tabernero te cambia 3 drops de una zona por 1 de la misma (`aa exchange \"drop\" \"otro drop\"`)\n`/bank` — Tu cuenta del banco (se abre con 1.000 de oro): guardá oro a salvo de la penalidad por morir (`aa bank`)",
-                false)
-            .AddField(
-                "⚔️ Aventura",
-                "`/hunt` / `aa ah` — Pelear en tu zona actual (manual/automático; el automático pide al menos 65 % de vida)\n`/travel` — Monstruo élite de tu zona: más difícil, recompensa x30 (cada 30 min)\n`/boss` — Enfrentar al Jefe de tu zona actual (cada 5 h)\n`/raid` — Jefe de zona cooperativo (2 a 6 jugadores)\n`/fight` — Duelo amistoso con otro jugador (no se gana ni se pierde nada)\n`/arena` — Torneo PvP diario: `join`, `listplayers` y `results` (se juega a las 00:00, hora de Uruguay)\n`/zona` — Viajar a otra zona del mundo\n`/zonas` — Ver todas las zonas y sus niveles\n`/drops` — Qué suelta cada monstruo de cada zona\n`/chop` — Recolectar madera\n`/mine` — Recolectar piedra/minerales",
-                false)
-            .AddField(
-                "📈 Progresión",
-                "`/forge` (`aa herrero`) — Pasá por la herrería: forjá armas y amuletos (quedan equipados solos) y mirá las recetas de cada zona\n`/forge-special` (`aa forgespecial`) — El equipo del Fogón Eterno (Zona 0) a la vista desde el principio: qué materiales guardar\n`/taberna` — Comé, comprá comida y cajas y vendé con el tabernero (también tu arma o amuleto equipados, para poder forjar otro)\n`/heal` — Curarte toda la vida de una con lo necesario de tu inventario (no en combate; podés elegir la comida)\n`/use` — Curarte con un consumible (en combate: en `/travel` y `/boss` una sola vez por pelea, también desde el desplegable). Los banquetes Míticos suman +15% de ataque por 30 min\n`/missions` — Misiones diarias y semanales (reclamás los premios ahí)\n`/achievements` — Tus logros por tramos\n`/trade` — Cambiá 1 material por 1 de la misma rareza con otro jugador\n`/leaderboard` — Ranking del server",
-                false)
-            .AddField(
-                "✨ Polvo y encantamientos",
-                "`/dismantle` — Desarmá la cantidad que quieras (o `todo`) de un material y quedate con su Polvo (`aa desmantelar 30 Piedra`, `aa desmantelar todo Piedra`)\n" +
-                "`/enchant` — Gastá Polvo y oro para encantar tu arma o tu amuleto: sale un tier al azar (Tibio ➜ Soberano) y solo reemplaza al actual si es mejor (`aa encantar arma`). **`/enchant info`** (o `aa info enchant`) muestra los tiers con su chance y su bonus, y lo que cuesta cada intento\n" +
-                "💀 Si perdés un combate, la EXP del nivel vuelve a 0 y perdés el 5 % del oro de la billetera (el del banco no).",
-                false)
-            .AddField(
-                "🕯️ El Tabernero del Inframundo",
-                "`/deepshop` — Al vencer al jefe de la última zona se conoce a alguien que vende con Polvo la Corteza y el Meteorito que pide el equipo del Fogón (`aa deepshop`, `/info tema:fogon`)",
-                false)
-            .AddField(
-                "🔥 El Fogón Eterno",
-                "`/zona 0` — La puerta al final del mundo: se abre al vencer al jefe de la última zona y pide el equipo del Fogón puesto. Adentro solo hay `/boss` contra el Asador Eterno; ganarle habilita el Fuego Nuevo (`/info tema:fogon`)",
-                false)
-            .AddField(
-                "♻️ Fuego Nuevo",
-                "`/fuegonuevo` — Volvé a empezar (`aa fn`): perdés nivel, equipo y materiales y ganás bonus permanentes y una bendición. Se habilita al vencer al Asador (`/info tema:fuego`)\n" +
-                "`/blessings` — Tus bendiciones, y la que tengas para elegir (`aa bendiciones`)",
-                false)
-            .AddField(
-                "🛠️ Oficios",
-                "`/professions` — Leñador, Minero y Encantador (`aa professions`, `aa oficios`): suben solos al usar `/chop`, `/mine` y `/enchant`, dan más cantidad, mejor rareza y menos Polvo, y al nivel 100 desbloquean la versión avanzada (`/info tema:oficios`)",
-                false)
-            .AddField(
-                "🐾 Mascotas",
-                "`/pet view` — Tus mascotas: una por zona, y dan su bonus **todas a la vez** (`aa pet`)\n" +
-                "`/pet feed` — Dales Comida para Mascotas (se compra en la `/taberna`), una vez por hora cada una. El huevo llega la primera vez que vencés al jefe de cada zona: abrilo con `/open`",
-                false)
-            .AddField(
-                "🗳️ Votar por el bot",
-                "`/vote` — Votá en top.gg y cobrá un Baúl de Roble más el reseteo del jefe (`aa vote`, `/info tema:votar`)",
-                false)
-            .AddField(
-                "⏰ Recordatorios",
-                "`/reminders` — El bot te avisa en el canal cuando termina una espera (cacería, viaje, talar, minar, jefe/raid, caja, mascotas, diario, voto). Elegí cuáles recibir (`aa recordatorios`, `/info tema:recordatorios`)",
-                false)
-            .AddField(
-                "🛠️ Utilidad",
-                "`/start` — Empezar tu aventura\n`/class` — Elegir clase (solo con nivel 1; después, con cada Fuego Nuevo)\n`/profile` — Ver tu ficha\n`/history` — Tu historial por juego: cuántas veces jugaste, ganaste y perdiste\n`/duels` — Tu récord de duelos y los últimos rivales\n`/inventory` — Ver tu inventario\n`/cd` — Ver tus cooldowns (y si ya te anotaste en la Arena de hoy)\n`/tips` — Qué te falta para tu próxima forja y de dónde sacarlo\n`/story` — La historia del juego, capítulo por capítulo (`aa historia`)\n`/tutorial` — Este loop básico\n`/info` — Esta lista de comandos",
-                false)
-            .AddField(
-                "📚 Cómo funciona cada cosa",
-                $"**/info tema:<tema>** o `aa info <tema>` explica un tema con sus números. Temas: {HelpTopics.KeysLine()}.",
-                false)
+            .WithDescription("Todo comando de barra tiene su versión de texto con el prefijo `aa ` (ej. `aa hunt`). Para saber **cómo funciona** algo: `/info tema:<tema>`.")
+            .AddField("⚔️ Pelear", "`/hunt` (`aa ah` es el automático) · `/travel` · `/boss` · `/raid` · `/zona` · `/drops`", false)
+            .AddField("🪓 Recolectar y forjar", "`/chop` · `/mine` · `/forge` · `/enchant` · `/dismantle` · `/tips` (qué te falta farmear)", false)
+            .AddField("🍖 Comida y plata", "`/taberna` (comer, comprar y vender) · `/heal` · `/use` · `/open` · `/daily` · `/bank` · `/play`", false)
+            .AddField("📋 Progreso", "`/missions` · `/achievements` · `/pet` · `/professions` · `/story` · `/leaderboard`", false)
+            .AddField("👥 Con otros jugadores", "`/fight` · `/arena` · `/raid` · `/give` · `/trade` · `/exchange`", false)
+            .AddField("🔥 Final del juego", "`/forge-special` · `/zona 0` · `/fuegonuevo` · `/deepshop`", false)
+            .AddField("🛠️ Tu cuenta", "`/start` · `/class` · `/profile` · `/inventory` · `/cd` · `/reminders` · `/vote` · `/tutorial`", false)
+            .AddField("📚 Cómo funciona cada cosa", $"`/info tema:<tema>` o `aa info <tema>`. Temas: {HelpTopics.KeysLine()}.", false)
             .WithFooter($"Asado y Acero RPG v{BotVersion.Current}")
             .Build();
     }
