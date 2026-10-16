@@ -1,6 +1,16 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-16 (v0.18.0: `/vote`)_
+_Última revisión: 2026-10-16 (v0.18.1: la EXP de las peleas, a la mitad)_
+
+## La EXP de las peleas, a la mitad (v0.18.1, 2026-10-16)
+
+- **Qué pasó** (el dueño: «el boss de la zona 3 para pasar a la 4 está muy fácil con el equipo de zona 2, capaz subirle la vida o el daño»; después: «puede ser que se suba de nivel muy rápido»; al ver los números: «0,33 es una banda, dejémoslo en 0,5»): se midió con el combate real (balance2, parte J, promedio de las 4 clases, con habilidad y una comida) el jefe de la zona 3 (Capataz de Hierro) con el equipo de la zona 2 (arma de clase + amuleto) y **a nivel parejo es una pared**: pierde el 99 % a nivel 10, 95 % a nivel 13, 78 % a 16, 39 % a 20, 4 % a 25 y 0 % desde el 30 (a nivel 60 le cuesta el 8 % de la vida). No es más blando que los otros jefes (con 15 niveles de más, el de la zona 2 pierde 1 % y el de la zona 3, 3 %): el problema es que **se llega con 15 niveles de más**.
+- **El nivel le gana al equipo**: en juego perfecto (cacería cada minuto, viaje cada 30 min ×30, jefe cada 5 h ×15, siempre en la zona más alta que deja el nivel; cota optimista, el mismo supuesto de las 31 h del equipo de las cinco zonas) el nivel era **22 a las 6 h, 36 a las 12 h, 49 a las 20 h y 60 a las 31 h**, y la escalera de zonas pide los niveles 1/5/10/15/20 (el Fogón, 25). El nivel dejaba de frenar a las 6-7 h y cualquier jefe se hacía a fuerza de nivel con el equipo viejo.
+- **Qué se hizo**: `CombatRewardCalculator.FightXpScale = 0.5`: la EXP de TODA pelea contra un monstruo (`/hunt`, `/travel`, `/boss`, `/raid`, `/autohunt`) vale la mitad, antes de los bonus del jugador (mascotas, Fuego Nuevo, bendiciones). Con el mismo modelo: nivel **13 / 22 / 33 / 43 a las 6 / 12 / 20 / 31 h** (con 0,33 serían 9 / 15 / 25 / 34; con 0,5 a las 6 h, cuando se tiene el equipo de zona 2, se está en nivel 13 y el jefe de la zona 3 pierde el 95 %: hace falta el equipo de la zona 3).
+- **Lo que NO cambia**: el oro, los drops y los cofres; los niveles ya ganados (nadie baja: solo la EXP nueva rinde menos); las misiones, los logros, `/daily` y el premio de la Arena, que pagan su EXP aparte sin escalar (pesan relativamente más). **Lo que sí**: llegar al nivel 25 del Fogón pasa de ~7 h a ~14 h de juego perfecto (el equipo del Fogón igual tarda más), y la penalidad por morir (la EXP de TODO el nivel) vale el doble de cacerías (~40 en vez de ~20).
+- **Descartado, con números**: subirle vida/daño al jefe. No molesta al que sube de más (con vida ×1,25 y daño ×1,15 sigue perdiendo 0 % desde el nivel 40) y castiga al que lo hizo bien (zona 3 con su equipo propio a nivel 13: de 23 % a 87 % de derrota). **Ofrecido y sin hacer**: que los jefes escalen con el nivel que le sobra al jugador sobre el mínimo de la zona (la palanca real para alguien de nivel 60, pero cambia todos los jefes y los raids).
+- **Para la base viva**: nada (sin migración, solo el binario). Las pruebas que miraban cantidades de EXP de una pelea se ajustaron.
+
 
 ## Votar en top.gg: `/vote` (v0.18.0, 2026-10-16)
 

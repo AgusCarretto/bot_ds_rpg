@@ -55,6 +55,14 @@ public static class CombatRewardCalculator
     // minuto de cooldown ahora rinde bastante menos que un viaje (es el valor a subir si el jefe tiene que volver a sentirse "vale la espera").
     public const int BossRewardMultiplier = 15;
 
+    // v0.18.1: la EXP de TODA pelea contra un monstruo (cacería, viaje, jefe, raid y /autohunt) vale la MITAD. El dueño notó que el jefe de la zona 3 era «muy fácil» con el equipo de la zona 2; medido con el
+    // combate real, a nivel parejo es una pared (95-99 % de derrotas con ese equipo de nivel 10 a 13) y solo se vuelve fácil con ~15 niveles de más: en juego perfecto se llega al nivel 22 a las 6 h
+    // y al 60 a las 31 h, que es lo que lleva juntar el equipo de clase de las cinco zonas, así que el nivel dejaba de frenar a las 6-7 h (la zona 5 pide nivel 20) y cualquier jefe se hacía a fuerza de nivel.
+    // Con ×0,5: nivel 13 / 22 / 33 / 43 a las 6 / 12 / 20 / 31 h. Sube más lento TODO lo que viene de peleas, y nadie baja de nivel; el oro y los drops no cambian, y las misiones, los logros, el diario y el
+    // premio de la Arena pagan su EXP aparte (sin escalar). Se aplica ANTES de los bonus del jugador (mascotas, Fuego Nuevo, bendiciones), que siguen multiplicando encima. Es el único lugar para retocarlo
+    // (el dueño descartó ×0,33 por ser «una banda»). Si se toca, repetir la medición de nivel por hora (MEJORAS.md) y la de los jefes con el equipo anterior (balance2, parte J).
+    public const double FightXpScale = 0.5;
+
     // repeatChancePercent: la chance de la caja de repetición de ESA zona (ZoneBoxRole.Repeat); solo cuenta si no es la primera vez.
     public static CombatReward RollBossReward(
         int playerLevel, int monsterGoldBonus, int monsterXpBonus, bool firstClear, PlayerBonuses? bonuses = null, int repeatChancePercent = 0) =>
@@ -77,7 +85,8 @@ public static class CombatRewardCalculator
     {
         // Los bonus de oro/EXP van sobre la recompensa ENTERA (con su multiplicador de viaje o de jefe), redondeados al más cercano.
         int gold = PlayerBonuses.Scale((Random.Shared.Next(5, 16) + (playerLevel * 2) + monsterGoldBonus) * multiplier, bonuses?.GoldMultiplier ?? 1.0);
-        int xp = PlayerBonuses.Scale((Random.Shared.Next(8, 21) + playerLevel + monsterXpBonus) * multiplier, bonuses?.XpMultiplier ?? 1.0);
+        int baseXp = (int)Math.Round((Random.Shared.Next(8, 21) + playerLevel + monsterXpBonus) * multiplier * FightXpScale, MidpointRounding.AwayFromZero);
+        int xp = PlayerBonuses.Scale(baseXp, bonuses?.XpMultiplier ?? 1.0);
 
         // NextDouble() está en [0, 1): con 100 % siempre cae, con 0 % nunca (y con 6 % cae el 6 % de las veces, igual que con el viejo Next(100) < 6).
         bool droppedSomething = Random.Shared.NextDouble() * 100 < dropChancePercent;
