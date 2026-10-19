@@ -1,20 +1,22 @@
 using BotDsRpg.GameData;
+using BotDsRpg.Models;
 using BotDsRpg.Repositories;
 using Discord;
 using Discord.Interactions;
 using BotDsRpg.Services;
 
-public class CooldownModule(ICooldownRepository cooldownRepository, IUserRepository userRepository, IArenaService arenaService, IPlayerBonusService bonusService, ITopGgVoteClient voteClient)
+public class CooldownModule(
+    ICooldownRepository cooldownRepository, IUserRepository userRepository, IArenaService arenaService, IPlayerBonusService bonusService, ITopGgVoteClient voteClient, IPetRepository petRepository)
     : InteractionModuleBase<SocketInteractionContext>
 {
-    [SlashCommand("cd", "Mirá tus cooldowns: cazar, viajar, talar, minar, jefe, raid, cajas, diario y la Arena de hoy.")]
+    [SlashCommand("cd", "Mirá tus cooldowns: cazar, viajar, talar, minar, jefe, cajas, mascotas, diario y la Arena de hoy.")]
     public async Task HandleCooldownsAsync()
     {
         await DeferAsync(ephemeral: true);
 
         try
         {
-            var embed = await BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id, arenaService, bonusService, voteClient.Enabled);
+            var embed = await BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id, arenaService, bonusService, voteClient.Enabled, petRepository);
             await FollowupAsync(embed: embed, ephemeral: true);
         }
         catch (Exception ex)
@@ -31,8 +33,11 @@ public class CooldownModule(ICooldownRepository cooldownRepository, IUserReposit
     // anotarse). Sin él (o si falla) la línea simplemente no sale: /cd nunca se rompe por la Arena.
     // bonusService (v0.13.0): con él, la tala y la minería avanzadas (oficios al nivel 100) aparecen en la lista solo para quien ya las desbloqueó.
     // voteEnabled (v0.18.0): con el voto habilitado (hay token de top.gg), la lista suma la línea de "Votar"; mientras no se pueda votar no se muestra.
+    // petRepository (v0.18.4, sugerencia de Adiofh en #sugerencias): con él, la línea de "Mascotas" dice si ya se puede alimentar o cuánto falta (con la espera propia del jugador, la del Buen Pienso);
+    // sin mascotas que puedan subir de nivel la línea no sale, y si falla leerlas tampoco: /cd nunca se rompe por esto.
     public static async Task<Embed> BuildStatusEmbedAsync(
-        ICooldownRepository cooldownRepository, IUserRepository userRepository, ulong discordId, IArenaService? arenaService = null, IPlayerBonusService? bonusService = null, bool voteEnabled = false)
+        ICooldownRepository cooldownRepository, IUserRepository userRepository, ulong discordId, IArenaService? arenaService = null, IPlayerBonusService? bonusService = null, bool voteEnabled = false,
+        IPetRepository? petRepository = null)
     {
         var lines = new List<string>();
         var player = await userRepository.GetOrCreateUserAsync(discordId);
@@ -53,9 +58,10 @@ public class CooldownModule(ICooldownRepository cooldownRepository, IUserReposit
         }
 
         // Las versiones avanzadas de /chop y /mine: solo con el oficio al nivel máximo (GameData/ProfessionRules.cs).
+        PlayerBonuses? bonuses = null;
         if (bonusService is not null)
         {
-            var bonuses = await bonusService.GetAsync(discordId, player.FuegoNuevo);
+            bonuses = await bonusService.GetAsync(discordId, player.FuegoNuevo);
             if (ProfessionRules.AdvancedUnlocked(bonuses.ProfessionLevel(ProfessionCatalog.WoodcutterKey)))
             {
                 await AddLineAsync(CooldownCatalog.ChopAdvanced);
@@ -70,6 +76,12 @@ public class CooldownModule(ICooldownRepository cooldownRepository, IUserReposit
         if (voteEnabled)
         {
             await AddLineAsync(CooldownCatalog.Vote);
+        }
+
+        // La comida de las mascotas: una hora por mascota (menos con la bendición Buen Pienso), y no vive en la tabla cooldowns sino en player_pets.
+        if (await TryBuildPetLineAsync(petRepository, discordId, bonuses?.PetFeedCooldown) is { } petLine)
+        {
+            lines.Add(petLine);
         }
 
         // /daily no usa la tabla cooldowns (tiene su propia columna last_daily_claim con
@@ -90,6 +102,44 @@ public class CooldownModule(ICooldownRepository cooldownRepository, IUserReposit
             .WithColor(Color.Teal)
             .WithDescription(string.Join('\n', lines))
             .Build();
+    }
+
+    private static async Task<string?> TryBuildPetLineAsync(IPetRepository? petRepository, ulong discordId, TimeSpan? feedCooldown)
+    {
+        if (petRepository is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return PetLine(await petRepository.GetOwnedAsync(discordId), feedCooldown, DateTime.UtcNow);
+        }
+        catch (Exception ex)
+        {
+            BotLog.Warn(ex);
+            return null;
+        }
+    }
+
+    // La línea de las mascotas (pura, para probarla sin base): «¡Listo!» si alguna de las que todavía pueden subir de nivel puede comer ahora (y cuántas), o lo que falta para la PRIMERA que pueda.
+    // Null si no hay mascotas o todas están al máximo: no hay nada que alimentar y no se muestra una línea inútil.
+    public static string? PetLine(IReadOnlyList<OwnedPet> pets, TimeSpan? feedCooldown, DateTime nowUtc)
+    {
+        var growing = pets.Where(p => !PetRules.IsMaxLevel(p)).ToList();
+        if (growing.Count == 0)
+        {
+            return null;
+        }
+
+        int ready = growing.Count(p => PetRules.CanEat(p, nowUtc, feedCooldown));
+        if (ready > 0)
+        {
+            return $"🐾 **Mascotas**: **¡Listo!** ✅ — {(ready == 1 ? "1 puede comer" : $"{ready} pueden comer")} (**/pet feed**)";
+        }
+
+        var next = growing.Min(p => PetRules.RemainingCooldown(p, nowUtc, feedCooldown));
+        return $"🐾 **Mascotas**: {TimeFormat.Remaining(next)} restantes{(growing.Count > 1 ? " (la primera)" : string.Empty)}";
     }
 
     private static async Task<string?> TryBuildArenaLineAsync(IArenaService? arenaService, ulong discordId)

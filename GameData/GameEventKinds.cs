@@ -25,6 +25,7 @@ public static class GameEventKinds
 
     // Economía.
     public const string DailyClaim = "daily_claim";
+    public const string DailyStreakBest = "daily_streak_best"; // la racha MÁS LARGA del /daily (v0.18.3): el contador sube hasta el máximo, así que cada evento trae la DIFERENCIA con el récord (ver GameEventExtensions.RecordDailyStreakAsync)
     public const string ShopGoldSpent = "shop_gold_spent";  // amount = oro gastado en la tienda; detail = ítem
     public const string ShopGoldEarned = "shop_gold_earned";// amount = oro ganado vendiendo; detail = ítem
     public const string GoldGiven = "gold_given";           // amount = oro que dio a otro jugador

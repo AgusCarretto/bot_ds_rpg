@@ -44,6 +44,8 @@ public static class AchievementCatalog
         new("generoso",      "Generoso",      "🤝", GameEventKinds.GoldGiven,     "Regalá monedas a otros jugadores con /give",       Standard(500, 5000, 50000)),
         new("abridor",       "Abridor",       "📦", GameEventKinds.BoxOpened,     "Abrí cajas con /open",                            Standard(5, 30, 150)),
         new("constante",     "Constante",     "📅", GameEventKinds.DailyClaim,    "Reclamá tu recompensa diaria con /daily",          Standard(7, 30, 100)),
+        // v0.18.3: la racha más larga del /daily. Es un contador de MÁXIMO (no se puede inflar: hace falta reclamar de verdad día tras día), por eso paga cajas como los logros estándar.
+        new("racha",         "Racha",         "🔥", GameEventKinds.DailyStreakBest, "Llegá a 7, 30 y 100 días seguidos reclamando tu /daily", Standard(7, 30, 100)),
 
         // v0.9.0 (premios solo de oro y XP, ver Plain).
         new("comandante",    "Comandante",    "⌨️", GameEventKinds.CommandUsed,   "Usá comandos del bot (de barra o con aa)",          Plain(100, 1000, 10000)),
@@ -79,7 +81,7 @@ public static class AchievementCatalog
         new("Combate", "⚔️", ["cazador", "viajero", "matajefes", "exterminador", "gladiador", "asador"]),
         new("Oficios", "🔨", ["recolector", "herrero", "desmantelador", "encantador"]),
         new("Economía", "💰", ["comerciante", "generoso", "abridor", "afortunado"]),
-        new("Constancia", "📅", ["constante", "comandante", "misionero", "domador", "criador", "renacido", "companero", "volvio"]),
+        new("Constancia", "📅", ["constante", "racha", "comandante", "misionero", "domador", "criador", "renacido", "companero", "volvio"]),
     ];
 
     // Los logros de una página (0..Categories.Count-1); una página fuera de rango se acota a la más cercana.

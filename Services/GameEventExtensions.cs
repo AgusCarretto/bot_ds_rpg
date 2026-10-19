@@ -1,11 +1,31 @@
 using BotDsRpg.GameData;
 using BotDsRpg.Models;
+using BotDsRpg.Repositories;
 
 namespace BotDsRpg.Services;
 
 // Atajos para los eventos que se repiten en muchos comandos, así cada uno registra lo mismo de la misma manera.
 public static class GameEventExtensions
 {
+    // La racha del /daily (v0.18.3): alimenta el logro "Racha", que cuenta la racha MÁS LARGA. Los contadores solo suman, así que se registra la DIFERENCIA entre la racha de hoy y el récord que ya tiene el
+    // contador (nada si no lo superó). Nunca tira: un fallo midiendo no puede costarle nada a quien reclamó.
+    public static async Task RecordDailyStreakAsync(this IGameEvents events, IGameEventRepository stats, ulong discordId, int newStreak)
+    {
+        try
+        {
+            var current = await stats.GetStatsAsync(discordId);
+            long delta = DailyRewardCalculator.StreakBestDelta(current.GetValueOrDefault(GameEventKinds.DailyStreakBest), newStreak);
+            if (delta > 0)
+            {
+                await events.RecordAsync(discordId, GameEventKinds.DailyStreakBest, amount: delta, detail: newStreak.ToString());
+            }
+        }
+        catch (Exception ex)
+        {
+            BotLog.Warn(ex);
+        }
+    }
+
     // Una victoria o una recompensa que da XP: registra el evento ("hunt_win", "daily_claim"...) y, si además subió de
     // nivel, el "level_up" con el nivel nuevo. La zona sale del propio jugador, que ya viene resuelto en el resultado.
     public static async Task RecordVictoryAsync(this IGameEvents events, ulong discordId, string kind, LevelUpOutcome outcome)

@@ -11,6 +11,10 @@ public interface IAdventureRepository
     Task<bool> TryClaimCooldownAsync(
         ulong discordId, string commandName, TimeSpan cooldownDuration, TimeSpan? remainingIfNotCompleted = null, CancellationToken cancellationToken = default);
 
+    // Suelta un cooldown que se acaba de reclamar y no llegó a usarse (v0.18.4: un raid que se cancela por falta de gente o falla al arrancar no puede dejar a nadie sin /boss por 30 minutos).
+    // Solo borra la fila si SIGUE corriendo (last_executed_at dentro de cooldownDuration): un cooldown que ya había vencido no se toca. Es idempotente: soltar dos veces no hace nada la segunda.
+    Task ReleaseCooldownAsync(ulong discordId, string commandName, TimeSpan cooldownDuration, CancellationToken cancellationToken = default);
+
     // Aplica de forma atómica el resultado de ganar un combate: suma oro, aplica la XP (con
     // nivelado y curación de HP al subir de nivel) y si corresponde agrega un material al
     // inventario. hpDelta es el daño neto (negativo) o curación neta (positiva) que el jugador

@@ -1,0 +1,4 @@
+<Project>
+  <!-- Las herramientas de calibración de tools/ se arman igual que los arneses de tests/. -->
+  <Import Project="$(MSBuildThisFileDirectory)..\tests\Directory.Build.props" />
+</Project>

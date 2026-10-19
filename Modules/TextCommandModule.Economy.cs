@@ -29,6 +29,7 @@ public partial class TextCommandModule
 
             // Antes solo /daily registraba el evento: con "aa daily" la misión "Reclamá tu /daily" y el logro Constante no avanzaban.
             await gameEvents.RecordVictoryAsync(Context.User.Id, GameEventKinds.DailyClaim, outcome.Result!);
+            await gameEvents.RecordDailyStreakAsync(gameEventRepository, Context.User.Id, calculation.NewStreak);
 
             await ReplyAsync(embed: DailyModule.BuildResultEmbed(calculation, outcome.Result!, outcome.Receipt!));
         }
