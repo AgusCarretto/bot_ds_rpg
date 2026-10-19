@@ -94,5 +94,27 @@ var three = LevelUpCard.Compose(1UL, 12, 3, []);
 Check(Field(three, "Ataque") == $"**+{CombatStats.BaseAttack(12) - CombatStats.BaseAttack(9)}**" && Field(three, "Defensa") == $"**+{CombatStats.BaseDefense(12) - CombatStats.BaseDefense(9)}**" && Field(three, "Vida máxima") == "**+45**", $"tres niveles de una: suma los tres (ATQ {Field(three, "Ataque")}, DEF {Field(three, "Defensa")}, vida {Field(three, "Vida máxima")})");
 Check(one.Fields.Where(f => f.Inline).Count() == 3 && one.Fields.Count(f => !f.Inline) == 1, "tres columnas (vida máxima, ataque, defensa) y 'tu vida' a todo el ancho abajo");
 
+Console.WriteLine("\n== v0.18.5: el arte que faltaba (cofres, huevos, comida de mascotas) y la foto del Tabernero ==");
+var legacy = new[] { "Bombilla de Hierro Maldito", "Botas de Silencio", "Collar de Hueso", "Ojo de Jabalí", "Arco Largo del Cazador", "Báculo del Aprendiz", "Dagas Gemelas de Sombra" };
+await using var rawDb = new Npgsql.NpgsqlConnection(conn);
+await rawDb.OpenAsync();
+var allItems = (await Dapper.SqlMapper.QueryAsync<(string Name, string? Emoji)>(rawDb, "SELECT name, emoji FROM items")).ToList();
+var noArt = allItems.Where(i => !legacy.Contains(i.Name) && !System.Text.RegularExpressions.Regex.IsMatch(i.Emoji ?? string.Empty, @"^<a?:[A-Za-z0-9_]+:[0-9]+>$")).Select(i => i.Name).ToList();
+Check(noArt.Count == 0, $"todo ítem que se puede conseguir tiene arte propio (sin arte: {string.Join(", ", noArt)})");
+var nine = new Dictionary<string, string>
+{
+    ["Cofre de Escoria"] = "cofre_escoria:1561758887038820615", ["Brasero del Fogón"] = "brasero:1561758888951418940", ["Huevo de la Pradera"] = "huevo_1:1561758588609888376",
+    ["Huevo del Bosque de Cenizas"] = "huevo_2:1561758586936365086", ["Huevo de las Minas"] = "huevo_3:1561758584994402426", ["Huevo de la Cordillera"] = "huevo_4:1561758583316549642",
+    ["Huevo del Cráter"] = "huevo_5:1561758581702008842", ["Huevo del Fogón"] = "huevo_6:1561758579680092312", ["Comida para Mascotas"] = "comida_pets:1561758577952039072",
+};
+Check(nine.All(kv => allItems.FirstOrDefault(i => i.Name == kv.Key).Emoji == $"<:{kv.Value}>"), "los 9 ítems nuevos tienen el código exacto que pasó el dueño (2 cajas, 6 huevos en el orden de las zonas, comida)");
+Check(nine.All(kv => ItemDisplay.ImageUrl(allItems.First(i => i.Name == kv.Key).Emoji) is { } url && url.StartsWith("https://cdn.discordapp.com/emojis/", StringComparison.Ordinal)), "y todos arman su miniatura del CDN");
+Environment.SetEnvironmentVariable("Images__DeepShopkeeper", null);
+var tab = NpcImages.DeepShopkeeper;
+Check(tab is not null && tab.LocalPath is null && tab.Reference == "https://cdn.discordapp.com/emojis/1561756257898209311.png?size=256", $"el Tabernero del Inframundo sale con su foto (el emoji tabernero_deep, a 256 px) sin variable ni archivo ({tab?.Reference})");
+Environment.SetEnvironmentVariable("Images__DeepShopkeeper", "https://example.com/otra.jpg");
+Check(NpcImages.DeepShopkeeper?.Reference == "https://example.com/otra.jpg", "una variable Images__DeepShopkeeper gana sobre el emoji");
+Environment.SetEnvironmentVariable("Images__DeepShopkeeper", null);
+
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;

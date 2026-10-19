@@ -51,6 +51,10 @@ UPDATE items SET emoji = '<:cofre_raro:1555578515754061944>' WHERE name = 'Baúl
 UPDATE items SET emoji = '<:cofre_epico:1555578511996092466>' WHERE name = 'Arcón de Hierro';
 UPDATE items SET emoji = '<:cofre_legendario:1555578509601280113>' WHERE name = 'Cofre de Oro';
 UPDATE items SET emoji = '<:cofre_mitico:1555578518115590245>' WHERE name = 'Arca del Soberano';
+-- Las dos cajas de premio nuevas (v0.14.0), con su arte propio desde el 2026-10-19: el Cofre de Escoria (el cofre del jefe de la Zona 5, de escoria volcánica) y el Brasero del Fogón (el cofre de El Asador Eterno,
+-- un brasero de hierro negro con grietas amarillo-naranja, hermano del Trinche y la Brasa).
+UPDATE items SET emoji = '<:cofre_escoria:1561758887038820615>' WHERE name = 'Cofre de Escoria';
+UPDATE items SET emoji = '<:brasero:1561758888951418940>' WHERE name = 'Brasero del Fogón';
 
 -- 🩸 Material — drops de monstruo (los 15 de las zonas) y trofeos de caja (32/32 completo). El rework de la v0.7.0 retiró 6 (Colmillo de Cimarrón y los 5 drops de jefe): sus emojis quedan libres en el portal (drop_comunes_colmillo, drops_raros_colmilloreyjabali, pelaje_plateado_alfa, forja_hierro, brasa_eterna, corazon_del_soberano)
 UPDATE items SET emoji = '<:drop_comunes_collarCuero:1555578362704036010>' WHERE name = 'Collar de Cuero Viejo';
@@ -125,6 +129,16 @@ UPDATE items SET emoji = '<:corazon_titan_acorazado:1555616981447614514>' WHERE 
 UPDATE items SET emoji = '<:amuleto_capa:1555578429959577601>' WHERE name = 'Capa de Pelaje Oscuro';
 UPDATE items SET emoji = '<:amuleto_flechas:1555578434606997564>' WHERE name = 'Carcaj de Pelaje Oscuro';
 UPDATE items SET emoji = '<:amuleto_eternal:1558166214889709608>' WHERE name = 'Brasa del Fogón Eterno';
+
+-- 🥚 Huevos de mascota (6/6) y 🦴 Comida para Mascotas, cargados el 2026-10-19. Los huevos van en el orden de las zonas (huevo_1 = Pradera ... huevo_6 = Fogón, el mismo orden de los prompts); si alguno quedó
+-- cruzado, es cambiar el nombre de ese UPDATE y volver a correr apply_emojis.sql.
+UPDATE items SET emoji = '<:huevo_1:1561758588609888376>' WHERE name = 'Huevo de la Pradera';
+UPDATE items SET emoji = '<:huevo_2:1561758586936365086>' WHERE name = 'Huevo del Bosque de Cenizas';
+UPDATE items SET emoji = '<:huevo_3:1561758584994402426>' WHERE name = 'Huevo de las Minas';
+UPDATE items SET emoji = '<:huevo_4:1561758583316549642>' WHERE name = 'Huevo de la Cordillera';
+UPDATE items SET emoji = '<:huevo_5:1561758581702008842>' WHERE name = 'Huevo del Cráter';
+UPDATE items SET emoji = '<:huevo_6:1561758579680092312>' WHERE name = 'Huevo del Fogón';
+UPDATE items SET emoji = '<:comida_pets:1561758577952039072>' WHERE name = 'Comida para Mascotas';
 
 -- Chequeo rápido: cuántos ítems totales todavía están en NULL, por tipo.
 -- SELECT type, COUNT(*) FROM items WHERE emoji IS NULL GROUP BY type ORDER BY type;

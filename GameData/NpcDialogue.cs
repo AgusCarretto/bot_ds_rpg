@@ -477,8 +477,13 @@ public static class NpcImages
     public static NpcImage? Blacksmith => Find("Images__Blacksmith", "blacksmith.jpg");
     public static NpcImage? Innkeeper => Find("Images__Innkeeper", "innkeeper.jpg");
 
-    // El Tabernero del Inframundo (v0.17.0): sin foto hasta que haya un Assets/npc/deepshop.jpg (256x256) o un Images__DeepShopkeeper; mientras tanto la escena sale solo con texto.
-    public static NpcImage? DeepShopkeeper => Find("Images__DeepShopkeeper", "deepshop.jpg");
+    // El Tabernero del Inframundo (v0.17.0): su foto es un emoji de la APLICACIÓN (tabernero_deep, subido al portal el 2026-10-19), así que no hay que alojar nada: la miniatura sale de la URL del CDN de ese emoji, igual
+    // que las caras de los monstruos y los íconos de los ítems. Una variable Images__DeepShopkeeper (URL) o un Assets/npc/deepshop.jpg (256x256) ganan si existen.
+    public const string DeepShopkeeperEmoji = "<:tabernero_deep:1561756257898209311>";
+
+    public static NpcImage? DeepShopkeeper =>
+        Find("Images__DeepShopkeeper", "deepshop.jpg")
+        ?? (ItemDisplay.ImageUrl(DeepShopkeeperEmoji, size: 256) is { } emojiUrl ? new NpcImage(emojiUrl, null) : null);
 
     private static NpcImage? Find(string urlKey, string? fileName)
     {
