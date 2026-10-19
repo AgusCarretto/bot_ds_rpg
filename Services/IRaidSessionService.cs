@@ -117,6 +117,9 @@ public sealed class RaidSession
     public CancellationTokenSource? TurnCts { get; set; }
     public RaidTurnContext? Turns { get; set; }
 
+    // Cómo borrar el último aviso de turno ("🎯 @fulano ¡es tu turno!") que el bot mandó: cada turno nuevo borra el anterior, así el canal no se llena (ver RaidModule.PingTurnAsync).
+    public Func<Task>? TurnPingDeleter { get; set; }
+
     // Guarda el orden de llegada (Dictionary alcanza para lookup, pero la UI quiere mostrarlos en
     // el orden en que se sumaron).
     public List<RaidParticipant> Participants { get; } = [];

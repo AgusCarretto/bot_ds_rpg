@@ -390,15 +390,18 @@ public class RaidModule(
                 case AttackOutcomeKind.Continues:
                     StartTurnTimer(session);
                     await output.ShowAsync(session, BuildCombatEmbed(session, outcome.LogLine!), BuildCombatButtons(raidId));
+                    await PingTurnAsync(session, justPlayed: discordId);
                     return;
                 case AttackOutcomeKind.Victory:
                     StopTurnTimer(session);
                     await output.PrepareFinalAsync(session);
+                    await ClearTurnPingAsync(session);
                     await ResolveVictoryAsync(session, outcome.LogLine!, userRepository, itemRepository, adventureRepository, raidSessions, gameEvents, zoneBoxService);
                     return;
                 case AttackOutcomeKind.Wipe:
                     StopTurnTimer(session);
                     await output.PrepareFinalAsync(session);
+                    await ClearTurnPingAsync(session);
                     await ResolveWipeAsync(session, outcome.LogLine!, userRepository, raidSessions, gameEvents);
                     return;
             }
@@ -449,6 +452,7 @@ public class RaidModule(
             {
                 StopTurnTimer(session);
                 await output.PrepareFinalAsync(session);
+                await ClearTurnPingAsync(session);
                 await SettleKnockedOutAsync(session, userRepository, gameEvents);
                 await session.ReplyTarget.UpdateAsync(BuildAbandonedEmbed(session), new ComponentBuilder().Build());
                 return;
@@ -461,6 +465,11 @@ public class RaidModule(
             }
 
             await output.ShowAsync(session, BuildCombatEmbed(session, $"🏃 **{retired.Participant.DisplayName}** se retiró del combate."), BuildCombatButtons(raidId));
+
+            if (retired.TurnPassed)
+            {
+                await PingTurnAsync(session);
+            }
         }
         catch (Exception ex)
         {
@@ -605,6 +614,87 @@ public class RaidModule(
         cts?.Cancel();
     }
 
+    // El aviso de turno (v0.19.0, a pedido del dueño): un mensaje corto con la MENCIÓN de a quién le toca, porque editar el embed no notifica a nadie. Cada aviso nuevo borra el anterior, así
+    // el canal tiene uno solo a la vez. justPlayed = quien acaba de jugar: si es el único que queda en pie, no se le avisa a sí mismo. Sin RaidSession.Turns (sesiones armadas a mano) no
+    // avisa. Nunca tira: un aviso que falla (canal sin permisos, token vencido) solo se registra, el combate sigue igual.
+    private static async Task PingTurnAsync(RaidSession session, ulong? justPlayed = null)
+    {
+        if (session.Turns is null)
+        {
+            return;
+        }
+
+        ulong who;
+        Func<Task>? previous;
+        ICombatReplyTarget target;
+
+        lock (session.Lock)
+        {
+            if (session.Phase != RaidPhase.Active || session.TurnIndex >= session.Participants.Count || !session.Participants[session.TurnIndex].IsActive)
+            {
+                return;
+            }
+
+            who = session.Participants[session.TurnIndex].DiscordId;
+            previous = session.TurnPingDeleter;
+            session.TurnPingDeleter = null;
+            target = session.ReplyTarget;
+        }
+
+        try
+        {
+            if (previous is not null)
+            {
+                await previous();
+            }
+        }
+        catch (Exception ex)
+        {
+            BotLog.Warn(ex);
+        }
+
+        if (who == justPlayed)
+        {
+            return;
+        }
+
+        try
+        {
+            var deleter = await target.SendPingAsync($"🎯 <@{who}> ¡es tu turno!");
+            lock (session.Lock)
+            {
+                session.TurnPingDeleter = deleter;
+            }
+        }
+        catch (Exception ex)
+        {
+            BotLog.Warn(ex);
+        }
+    }
+
+    // Al terminar el combate (victoria, caída, abandono) se borra el último aviso de turno, que ya no sirve.
+    private static async Task ClearTurnPingAsync(RaidSession session)
+    {
+        Func<Task>? previous;
+        lock (session.Lock)
+        {
+            previous = session.TurnPingDeleter;
+            session.TurnPingDeleter = null;
+        }
+
+        try
+        {
+            if (previous is not null)
+            {
+                await previous();
+            }
+        }
+        catch (Exception ex)
+        {
+            BotLog.Warn(ex);
+        }
+    }
+
     // Venció el turno de alguien. El primer vencimiento le hace perder el turno (pasa al siguiente y el jefe NO le pega); el segundo seguido lo retira del combate, como si huyera: sin
     // recompensa. Si el turno ya cambió (jugó justo a tiempo) no hace nada.
     private static async Task OnTurnTimeoutAsync(RaidSession session, int turnNumber)
@@ -647,6 +737,7 @@ public class RaidModule(
             if (retired.RaidEnded)
             {
                 StopTurnTimer(session);
+                await ClearTurnPingAsync(session);
                 await SettleKnockedOutAsync(session, turns.Users, turns.Events);
                 await session.ReplyTarget.UpdateAsync(BuildAbandonedEmbed(session), new ComponentBuilder().Build());
                 return;
@@ -661,6 +752,7 @@ public class RaidModule(
 
         StartTurnTimer(session);
         await session.ReplyTarget.UpdateAsync(BuildCombatEmbed(session, line), BuildCombatButtons(session.RaidId));
+        await PingTurnAsync(session, justPlayed: retire ? null : slow.DiscordId);
     }
 
     // ============================================================
@@ -1110,6 +1202,9 @@ public class RaidModule(
 
             // Todos los que pelean ya tienen el cooldown del jefe corriendo (la espera corta de una derrota; la victoria la alarga después).
             await SyncRemindersAsync(session, session.Participants.Select(p => p.DiscordId).ToList());
+
+            // El primer turno también se avisa (quien armó el grupo puede estar mirando otra cosa mientras contestan los demás).
+            await PingTurnAsync(session);
         }
         catch
         {

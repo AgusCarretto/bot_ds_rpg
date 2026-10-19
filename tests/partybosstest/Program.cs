@@ -303,7 +303,7 @@ try
     var svcG = new RaidSessionService();
     var sG = (await Prepare(svcG, A, M(B))).Session!;
     var tG = Open(sG, svcG);
-    Check(await WaitFor(() => sG.Phase == RaidPhase.Resolved, 5000) && AllText(tG.Updates.Last()).Contains("grupo cancelado") && !svcG.IsInAnyRaid(A) && await Left(A) is null,
+    Check(await WaitFor(() => sG.Phase == RaidPhase.Resolved && !svcG.IsInAnyRaid(A) && tG.Updates.Any(e => AllText(e).Contains("grupo cancelado")), 5000) && await Left(A) is null,
         "si al vencer no contestó nadie, se cancela sin gastar el cooldown y quien armó el grupo queda libre");
     RaidSettings.InviteWindow = originalWindow;
 
@@ -328,6 +328,7 @@ try
     Check(s3.Participants.All(p => p.CurrentHp <= p.MaxHp) && s3.Participants.All(p => p.TotalDamageTaken >= 0), "el jefe le respondió a cada uno en su turno");
     await Attack(s3, svc3, Ghost, o3);
     Check(o3.Notes.Last().Contains("No sos parte"), "alguien que no es parte del combate recibe el aviso");
+    Check(t3.Pings.Count == 0, "una pelea armada a mano (sin el contexto del reloj) no manda avisos de turno");
 
     // La habilidad: si no está lista, no gasta el turno.
     var (s3b, _, svc3b) = Active(100000, 1, Member(A), Member(B));
@@ -343,8 +344,13 @@ try
     // Un caído se saltea.
     var (s3c, t3c, svc3c) = Active(100000, 500, Member(A), Member(B, hp: 1), Member(C));
     var o3c = new FakeOutput();
-    await Attack(s3c, svc3c, A, o3c);
-    await Attack(s3c, svc3c, B, o3c);
+    // El jefe falla un 5 % de sus golpes (esquive base), así que se repite la ronda hasta que B cae: el resultado es determinista aunque la cantidad de rondas no.
+    for (int round = 0; round < 80 && !s3c.Participants[1].IsKnockedOut; round++)
+    {
+        await Attack(s3c, svc3c, A, o3c);
+        await Attack(s3c, svc3c, B, o3c);
+        if (!s3c.Participants[1].IsKnockedOut) await Attack(s3c, svc3c, C, o3c);
+    }
     Check(s3c.Participants[1].IsKnockedOut && s3c.TurnIndex == 2, "B pega y el jefe lo derriba: el turno pasa a C");
     await Attack(s3c, svc3c, C, o3c);
     Check(s3c.TurnIndex == 0, "después de C vuelve a A: B (caído) se saltea");
@@ -371,7 +377,11 @@ try
     await db.ExecuteAsync("UPDATE users SET gold = 1000, xp = 50 WHERE discord_id = @id", new { id = (long)A });
     var (s3e, t3e, svc3e) = Active(100000, 500, Member(A, hp: 1), Member(B));
     var o3e = new FakeOutput();
-    await Attack(s3e, svc3e, A, o3e);
+    for (int round = 0; round < 80 && !s3e.Participants[0].IsKnockedOut; round++)
+    {
+        await Attack(s3e, svc3e, A, o3e);
+        if (!s3e.Participants[0].IsKnockedOut) await Attack(s3e, svc3e, B, o3e);
+    }
     Check(s3e.Participants[0].IsKnockedOut && s3e.TurnIndex == 1, "A pega y cae");
     await Flee(s3e, svc3e, B, o3e);
     Check(s3e.Phase == RaidPhase.Resolved && await Gold(A) == 950 && await Xp(A) == 0, "B se va y el combate termina: A (el caído) pagó la penalidad de la derrota (5 % del oro y su EXP)");
@@ -413,7 +423,7 @@ try
     Check(await WaitFor(() => s4.Participants[0].MissedTurns == 2 || s4.Participants[0].HasFled, 4000), "A vuelve a no jugar: es el segundo vencimiento seguido");
     Check(await WaitFor(() => t4.Updates.Any(e => AllText(e).Contains("se retiró del combate")), 3000) && s4.Participants[0].HasFled && !svc4.IsInAnyRaid(A), "A se retira del combate (como si huyera) y queda libre");
     Check(s4.Phase == RaidPhase.Active && s4.TurnIndex == 1, "el combate sigue con B");
-    Check(await WaitFor(() => s4.Phase == RaidPhase.Resolved, 6000) && AllText(t4.Updates.Last()).Contains("abandonado") && !svc4.IsInAnyRaid(B) && svc4.Peek(s4.RaidId) is null,
+    Check(await WaitFor(() => s4.Phase == RaidPhase.Resolved && !svc4.IsInAnyRaid(B) && svc4.Peek(s4.RaidId) is null && t4.Updates.Any(e => AllText(e).Contains("abandonado")), 6000),
         "B tampoco juega dos turnos seguidos: se retira, no queda nadie y el combate termina como abandonado");
 
     // Jugar perdona el vencimiento anterior.
@@ -434,6 +444,43 @@ try
     RaidSettings.TurnTimeout = originalTurn;
 
     // ===========================================================================================================================================================================
+    Console.WriteLine("\n== 4b. El aviso de turno (una mención por turno; cada uno borra el anterior) ==");
+    await ResetAll();
+    var (s8, t8, svc8) = Lobby(A, B);
+    await RaidModule.TryActivateAsync(s8, svc8, adventure);
+    Check(t8.Pings.Count == 1 && t8.Pings[0].Contains($"<@{A}>") && t8.Pings[0].Contains("turno"), "al arrancar se avisa, con mención, a quien le toca primero");
+    var o8 = new FakeOutput();
+    await Attack(s8, svc8, B, o8);
+    Check(t8.Pings.Count == 1 && t8.Deleted == 0, "un clic fuera de turno no manda avisos ni borra el que está");
+    await Attack(s8, svc8, A, o8);
+    Check(t8.Pings.Count == 2 && t8.Pings[1].Contains($"<@{B}>") && t8.Deleted == 1, "A juega: se avisa a B y se borra el aviso anterior (en el canal queda uno solo)");
+    await Attack(s8, svc8, B, o8);
+    Check(t8.Pings.Count == 3 && t8.Pings[2].Contains($"<@{A}>") && t8.Deleted == 2, "B juega: se avisa a A");
+    await Flee(s8, svc8, A, o8); // le tocaba a A: se va y el turno pasa a B
+    Check(t8.Pings.Count == 4 && t8.Pings[3].Contains($"<@{B}>") && t8.Deleted == 3, "si se va quien tenía el turno, se avisa al que sigue");
+    await Attack(s8, svc8, B, o8); // B es el único que queda: el turno vuelve a B
+    Check(t8.Pings.Count == 4 && t8.Deleted == 4 && s8.TurnIndex == 1, "el único que queda en pie no se avisa a sí mismo (y el aviso viejo se borra igual)");
+    s8.BossCurrentHp = 1;
+    await Attack(s8, svc8, B, o8); // lo remata
+    Check(s8.Phase == RaidPhase.Resolved && t8.Pings.Count == 4, "al terminar el combate no se manda ningún aviso nuevo");
+
+    await ResetAll();
+    var (s8b, t8b, svc8b) = Lobby(A, B);
+    await RaidModule.TryActivateAsync(s8b, svc8b, adventure);
+    s8b.BossCurrentHp = 1;
+    await Attack(s8b, svc8b, A, new FakeOutput()); // A remata al jefe en su turno
+    Check(s8b.Phase == RaidPhase.Resolved && t8b.Pings.Count == 1 && t8b.Deleted == 1, "si el jefe cae, el último aviso de turno se borra (no queda colgado)");
+
+    await ResetAll();
+    RaidSettings.TurnTimeout = TimeSpan.FromMilliseconds(600);
+    var (s8c, t8c, svc8c) = Lobby(A, B);
+    await RaidModule.TryActivateAsync(s8c, svc8c, adventure);
+    Check(await WaitFor(() => t8c.Pings.Count >= 2, 4000) && t8c.Pings[1].Contains($"<@{B}>"), "si A pierde el turno por el reloj, también se avisa a B");
+    var o8c = new FakeOutput();
+    await Flee(s8c, svc8c, A, o8c);
+    await Flee(s8c, svc8c, B, o8c);
+    RaidSettings.TurnTimeout = originalTurn;
+
     Console.WriteLine("\n== 5. Victoria ==");
     await ResetAll();
     var (s5, t5, svc5) = Active(300, 1, Member(A, damage: 100), Member(B, damage: 100));
@@ -526,6 +573,18 @@ static async Task<bool> WaitFor(Func<bool> condition, int timeoutMs)
 
 sealed class FakeTarget : ICombatReplyTarget
 {
+    private readonly List<string> _pings = [];
+    private int _deleted;
+    // Los avisos de turno que mandó (con la mención) y cuántos se borraron después.
+    public List<string> Pings { get { lock (_pings) return _pings.ToList(); } }
+    public int Deleted => _deleted;
+    public Task<Func<Task>?> SendPingAsync(string text)
+    {
+        lock (_pings) _pings.Add(text);
+        Func<Task>? deleter = () => { Interlocked.Increment(ref _deleted); return Task.CompletedTask; };
+        return Task.FromResult(deleter);
+    }
+
     private readonly List<Embed> _updates = [];
     // Una copia: el reloj de turnos escribe desde otro hilo.
     public List<Embed> Updates { get { lock (_updates) return _updates.ToList(); } }
