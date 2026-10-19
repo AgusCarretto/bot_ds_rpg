@@ -22,4 +22,7 @@ public static class RaidSettings
     // Cuánto tiene cada jugador para jugar SU turno (el mismo tiempo que el combate solitario, CombatSessionService.TurnTimeout): el primer turno vencido se pierde, el segundo seguido
     // lo retira del combate. Settable solo para las pruebas.
     public static TimeSpan TurnTimeout { get; set; } = TimeSpan.FromSeconds(60);
+
+    // Comidas por jugador en una pelea del jefe en equipo (v0.19.0, a pedido del dueño): como en /travel y /boss (CombatHeal.IsLimited), una sola, y gasta el turno. Medido con tools/balance2 -- K … heal.
+    public const int MealsPerFight = 1;
 }

@@ -213,6 +213,7 @@ public static class HelpTopics
             $"El mismo jefe **en equipo**, de {RaidSettings.MinParticipants} a {RaidSettings.MaxParticipants} jugadores: nombrás a uno o más compañeros y ellos aceptan con un botón (tienen {(int)RaidModule.LobbyDuration.TotalSeconds} segundos). " +
             "Pegan **por turnos**: pega uno, el jefe le responde a ese jugador y le toca al siguiente (el bot te menciona cuando es tu turno); si alguien no juega en 60 segundos pierde el turno y, si pasa dos veces seguidas, se retira. " +
             "**Todos tienen que tener la misma zona máxima** (la que ves en tu perfil como \"máx. Zona N\"): si no, el grupo se rechaza. " +
+            "Cada uno puede **comer una vez** por pelea con el botón 🍖 **Comer** (o con **/use**): cura, pero gasta tu turno; los banquetes se comen antes. " +
             "La vida del jefe crece con cada jugador y cada uno que le pega cobra la recompensa entera. Comparte cooldown con el jefe en solitario."),
         ("🎒 Antes de ir", "Llevá el arma y el amuleto de tu zona (**/info tema:forge**) y la vida llena. Si perdés, pagás la penalidad: **/info tema:death**."));
 

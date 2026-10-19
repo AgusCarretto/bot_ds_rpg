@@ -9,6 +9,19 @@ public sealed class RaidSessionService : IRaidSessionService
 
     public bool IsInAnyRaid(ulong discordId) => _playerRaid.ContainsKey(discordId);
 
+    public bool IsInActiveFight(ulong discordId)
+    {
+        if (!_playerRaid.TryGetValue(discordId, out var raidId) || !_raids.TryGetValue(raidId, out var session))
+        {
+            return false;
+        }
+
+        lock (session.Lock)
+        {
+            return session.Phase is RaidPhase.Active or RaidPhase.Activating;
+        }
+    }
+
     public Guid? RaidIdOf(ulong discordId) => _playerRaid.TryGetValue(discordId, out var raidId) ? raidId : null;
 
     public bool TryRegisterParticipant(ulong discordId, Guid raidId) => _playerRaid.TryAdd(discordId, raidId);

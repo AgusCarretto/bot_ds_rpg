@@ -38,6 +38,7 @@ var adventure = sp.GetRequiredService<IAdventureRepository>();
 var monsters = sp.GetRequiredService<IMonsterRepository>();
 var zones = sp.GetRequiredService<IZoneRepository>();
 var events = sp.GetRequiredService<IGameEvents>();
+var inventory = sp.GetRequiredService<IInventoryRepository>();
 var zoneBoxes = sp.GetRequiredService<IZoneBoxService>();
 var bonus = sp.GetRequiredService<IPlayerBonusService>();
 await using var db = new NpgsqlConnection(conn);
@@ -481,6 +482,127 @@ try
     await Flee(s8c, svc8c, B, o8c);
     RaidSettings.TurnTimeout = originalTurn;
 
+    Console.WriteLine("\n== 4c. Comer en el jefe en equipo (una vez por jugador, gasta el turno; /use y la posada no sirven ahí) ==");
+    await ResetAll();
+    var mate = (await items.GetByNameAsync("Mate Amargo"))!;
+    var empanada = (await items.GetByNameAsync("Empanada de Carne"))!;
+    var banquete = (await items.GetByNameAsync("Asado Completo del Domingo en Familia"))!;
+    async Task Give(ulong id, Item it, int q) => await db.ExecuteAsync(
+        "INSERT INTO inventory (discord_id, item_id, quantity) VALUES (@id, @i, @q) ON CONFLICT (discord_id, item_id) DO UPDATE SET quantity = @q", new { id = (long)id, i = it.ItemId, q });
+    async Task<int> Qty(ulong id, Item it) => await inventory.GetQuantityAsync(id, it.ItemId);
+    async Task<string> Eat(IRaidSessionService svc, ulong id, string food) => await RaidModule.ExecuteEatAsync(svc, users, items, inventory, buffs, events, id, food);
+
+    await Give(A, mate, 3); await Give(B, mate, 2);
+    var (s9, t9, svc9) = Active(100000, 3, Member(A, hp: 100), Member(B, hp: 100));
+    s9.Participants[0].CurrentHp = 20; s9.Participants[1].CurrentHp = 20;
+    var a9 = s9.Participants[0];
+    Check((await Eat(svc9, B, "Mate Amargo")).Contains("Todavía no es tu turno") && await Qty(B, mate) == 2 && s9.Participants[1].MealsEaten == 0, "comer fuera de turno se rechaza y no gasta la comida");
+    Check((await Eat(svc9, D, "Mate Amargo")).Contains("No estás en ningún combate"), "quien no está en un combate en equipo recibe el aviso");
+    string ate = await Eat(svc9, A, "Mate Amargo");
+    Check(ate.Contains("Comiste") && a9.MealsEaten == 1 && await Qty(A, mate) == 2, "A come en su turno: se gasta UNA comida y queda anotado");
+    Check(a9.CurrentHp > 20 && a9.CurrentHp <= 20 + mate.StatValue, $"cura de verdad la vida de la pelea (20 → {a9.CurrentHp}, con el golpe del jefe ya descontado)");
+    Check(s9.TurnIndex == 1 && a9.TurnsTaken == 1 && !a9.Contributed, "comer gasta el turno (pasa a B) y no cuenta como pegarle al jefe");
+    Check(AllText(t9.Updates.Last()).Contains("comió") && AllText(t9.Updates.Last()).Contains("comida usada") && AllText(t9.Updates.Last()).Contains("comida lista"),
+        "el mensaje del combate lo cuenta y el roster marca quién ya comió y quién no");
+    await Attack(s9, svc9, B, new FakeOutput()); // pasa B, vuelve a A
+    Check((await Eat(svc9, A, "Mate Amargo")).Contains("Ya comiste") && await Qty(A, mate) == 2, "una sola vez por pelea (la segunda no se gasta)");
+
+    await Give(B, banquete, 1);
+    await Attack(s9, svc9, A, new FakeOutput()); // le toca a B
+    Check((await Eat(svc9, B, "Asado Completo del Domingo en Familia")).Contains("banquete") && await Qty(B, banquete) == 1 && s9.Participants[1].MealsEaten == 0, "un banquete no se come en la pelea (su efecto es el buff de ataque) y no se gasta");
+    Check((await Eat(svc9, B, "Empanada de Carne")).Contains("No tenés") && s9.EatingTurnNumber == 0, "sin la comida no pasa nada y el turno queda libre");
+    Check((await Eat(svc9, B, "Cosa Inexistente")).Contains("No encontré"), "una comida que no existe se avisa");
+    s9.EatingTurnNumber = s9.TurnNumber; // simula «está comiendo»
+    var o9 = new FakeOutput();
+    int turnsBefore9 = s9.Participants[1].TurnsTaken;
+    await Attack(s9, svc9, B, o9);
+    Check(o9.Notes.Last().Contains("comiendo") && s9.Participants[1].TurnsTaken == turnsBefore9, "mientras está comiendo no puede atacar en el mismo turno");
+    Check((await Eat(svc9, B, "Mate Amargo")).Contains("Ya estás comiendo"), "ni comer dos veces a la vez");
+    s9.EatingTurnNumber = 0;
+    Check((await Eat(svc9, B, "Mate Amargo")).Contains("Comiste") && await Qty(B, mate) == 1 && s9.TurnIndex == 0, "B come en su turno");
+
+    var (s9b, _, svc9b) = Active(1000, 1, Member(A), Member(B));
+    int mateBefore = await Qty(A, mate);
+    Check((await Eat(svc9b, A, "Mate Amargo")).Contains("al máximo") && await Qty(A, mate) == mateBefore && s9b.Participants[0].MealsEaten == 0, "con la vida llena no se come (igual que en el jefe solo)");
+
+    // El jefe lo derriba mientras come (el 5 % de esquive base obliga a repetir hasta que pase).
+    bool koSeen = false;
+    for (int attempt = 0; attempt < 60 && !koSeen; attempt++)
+    {
+        await Give(A, mate, 1);
+        var (sk, _, svck) = Active(100000, 500, Member(A, hp: 5), Member(B));
+        sk.Participants[0].CurrentHp = 1;
+        await Eat(svck, A, "Mate Amargo");
+        koSeen = sk.Participants[0].IsKnockedOut;
+        if (koSeen)
+        {
+            Check(sk.Phase == RaidPhase.Active && sk.TurnIndex == 1, "si el jefe derriba a quien come, el combate sigue con el otro");
+        }
+    }
+
+    Check(koSeen, "comer no es invulnerable: el jefe puede derribar a quien come");
+
+    // Y si era el último en pie: la caída de todo el grupo, con la penalidad.
+    bool wipeSeen = false;
+    for (int attempt = 0; attempt < 60 && !wipeSeen; attempt++)
+    {
+        await db.ExecuteAsync("UPDATE users SET gold = 1000, xp = 50 WHERE discord_id = @id", new { id = (long)A });
+        await Give(A, mate, 1);
+        var (sw, tw, svcw) = Active(100000, 500, Member(A, hp: 5), Member(B));
+        sw.Participants[0].CurrentHp = 1;
+        sw.Participants[1].HasFled = true;
+        await Eat(svcw, A, "Mate Amargo");
+        wipeSeen = sw.Phase == RaidPhase.Resolved;
+        if (wipeSeen)
+        {
+            Check(AllText(tw.Updates.Last()).Contains("cayó") && await Gold(A) == 950 && await Xp(A) == 0 && !svcw.IsInAnyRaid(A), "si el último en pie cae comiendo, es la caída del grupo: paga la penalidad y queda libre");
+        }
+    }
+
+    Check(wipeSeen, "(se llegó a ver la caída del grupo comiendo)");
+
+    // /use, /heal y la posada dentro del combate en equipo.
+    await ResetAll();
+    await Give(A, mate, 2);
+    var (s10, _, svc10) = Active(100000, 3, Member(A, hp: 100), Member(B, hp: 100));
+    s10.Participants[0].CurrentHp = 30;
+    var viaUse = await UseModule.ExecuteUseAsync(users, items, inventory, combat, buffs, A, "Mate Amargo", svc10, events);
+    Check(viaUse.PlainMessage is { } usedText && usedText.Contains("Comiste") && s10.Participants[0].MealsEaten == 1 && await Qty(A, mate) == 1, "/use en un jefe en equipo que está peleando hace comer EN el combate (ya no cura la base por las dudas)");
+    var heal10 = await TavernModule.ExecuteHealAsync(users, inventory, combat, buffs, A, null, svc10);
+    Check(heal10.Title.Contains("No podés comer tranquilo"), "/heal queda bloqueado en el combate en equipo");
+    var shop = sp.GetRequiredService<IShopRepository>();
+    string talk = await TabernaModule.ExecuteActionAsync("taberna_eat", users, items, inventory, shop, buffs, combat, events, A, "Mate Amargo", null, svc10);
+    Check(!talk.Contains("Comiste") && await Qty(A, mate) == 1 && s10.Participants[0].MealsEaten == 1, "y también comer desde la posada");
+    var (sl, _, svcl) = Lobby(A, B);
+    var lobbyUse = await UseModule.ExecuteUseAsync(users, items, inventory, combat, buffs, A, "Mate Amargo", svcl, events);
+    Check(lobbyUse.Embed?.Title.Contains("al máximo") == true && await Qty(A, mate) == 1, "mientras el grupo solo está en la sala de espera, /use sigue siendo el de siempre");
+
+    // El reloj de turnos y el aviso con la comida.
+    await ResetAll();
+    RaidSettings.TurnTimeout = TimeSpan.FromMilliseconds(600);
+    var (s11, t11, svc11) = Lobby(A, B);
+    s11.Participants[0].CurrentHp = 99000;
+    await RaidModule.TryActivateAsync(s11, svc11, adventure);
+    s11.EatingTurnNumber = s11.TurnNumber; // «está comiendo»
+    await Task.Delay(1500);
+    Check(s11.Participants[0].MissedTurns == 0 && s11.TurnIndex == 0, "el reloj de turnos no le saca el turno a quien está comiendo");
+    s11.EatingTurnNumber = 0;
+    Check((await Eat(svc11, A, "Empanada de Carne")).Contains("No tenés") && await WaitFor(() => s11.Participants[0].MissedTurns == 1, 4000), "si la comida no se gasta, el reloj se vuelve a armar y vence normal");
+    await Flee(s11, svc11, A, new FakeOutput());
+    await Flee(s11, svc11, B, new FakeOutput());
+    RaidSettings.TurnTimeout = originalTurn;
+
+    await ResetAll();
+    await Give(A, mate, 1);
+    var (s12, t12, svc12) = Lobby(A, B);
+    s12.Participants[0].CurrentHp = 99000;
+    await RaidModule.TryActivateAsync(s12, svc12, adventure);
+    Check(t12.Pings.Count == 1 && t12.Pings[0].Contains($"<@{A}>"), "(arranca avisando a A)");
+    await Eat(svc12, A, "Mate Amargo");
+    Check(t12.Pings.Count == 2 && t12.Pings[1].Contains($"<@{B}>") && t12.Deleted == 1, "comer cambia el turno: se avisa a B y se borra el aviso anterior");
+    await Flee(s12, svc12, A, new FakeOutput());
+    await Flee(s12, svc12, B, new FakeOutput());
+
     Console.WriteLine("\n== 5. Victoria ==");
     await ResetAll();
     var (s5, t5, svc5) = Active(300, 1, Member(A, damage: 100), Member(B, damage: 100));
@@ -519,7 +641,7 @@ try
     Check(interactions.SlashCommands.All(c => c.Description.Length is >= 1 and <= 100), "ninguna descripción de slash se pasa de 100 (si no, falla el registro de TODOS los comandos)");
     Discord.IComponentInteraction Click(string id) => FakeProxy.Make<Discord.IComponentInteraction>(new() { ["Data"] = FakeProxy.Make<Discord.IComponentInteractionData>(new() { ["CustomId"] = id }) });
     foreach (var (prefix, method) in new[] { ("raid_join", "HandleJoinAsync"), ("raid_decline", "HandleDeclineAsync"), ("raid_start", "HandleStartNowAsync"), ("raid_cancel", "HandleCancelAsync"),
-                 ("raid_attack", "HandleAttackAsync"), ("raid_ability", "HandleAbilityAsync"), ("raid_flee", "HandleFleeAsync") })
+                 ("raid_eat", "HandleEatAsync"), ("raid_eatpick", "HandleEatPickAsync"), ("raid_attack", "HandleAttackAsync"), ("raid_ability", "HandleAbilityAsync"), ("raid_flee", "HandleFleeAsync") })
     {
         var routed = interactions.SearchComponentCommand(Click($"{prefix}:{Guid.NewGuid()}"));
         Check(routed.IsSuccess && routed.Command.Module.Name == "RaidModule" && routed.Command.MethodName == method, $"el botón «{prefix}:…» llega a RaidModule.{method}");

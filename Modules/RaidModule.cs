@@ -23,7 +23,8 @@ public class RaidModule(
     IBuffRepository buffRepository,
     ICooldownRepository cooldownRepository,
     IPlayerBonusService bonusService,
-    IZoneBoxService zoneBoxService) : InteractionModuleBase<SocketInteractionContext>
+    IZoneBoxService zoneBoxService,
+    IInventoryRepository inventoryRepository) : InteractionModuleBase<SocketInteractionContext>
 {
     // Ver Services/RaidSettings.cs: el mínimo es configurable (2 por defecto).
     private static int MinParticipantsToStart => RaidSettings.MinParticipants;
@@ -352,6 +353,11 @@ public class RaidModule(
                         // Fuera de turno: no se toca NADA (ni el jefe ni el reloj), solo se avisa de quién es.
                         outcome = new AttackOutcome(AttackOutcomeKind.NotYourTurn, session.Participants[session.TurnIndex].DisplayName);
                     }
+                    else if (session.EatingTurnNumber == session.TurnNumber)
+                    {
+                        // Está comiendo (ExecuteEatAsync reservó el turno): no se juegan dos acciones en el mismo turno.
+                        outcome = new AttackOutcome(AttackOutcomeKind.Busy);
+                    }
                     else
                     {
                         outcome = ResolveParticipantTurn(session, participant, useAbility);
@@ -380,6 +386,9 @@ public class RaidModule(
                     return;
                 case AttackOutcomeKind.ParticipantInactive:
                     await output.NoteAsync("Ya no podés seguir peleando en este combate (te derribaron o te retiraste).");
+                    return;
+                case AttackOutcomeKind.Busy:
+                    await output.NoteAsync("🍖 Estás comiendo: esperá a que termine tu turno.");
                     return;
                 case AttackOutcomeKind.NotYourTurn:
                     await output.NoteAsync($"⏳ Todavía no es tu turno: le toca a **{outcome.LogLine}**.");
@@ -475,6 +484,295 @@ public class RaidModule(
         {
             BotLog.Error(ex);
             await output.NoteAsync("¡Upa! No te pude retirar del combate, intentá de nuevo en un momento.");
+        }
+    }
+
+    // ============================================================
+    // Comer en el jefe en equipo (v0.19.0, a pedido del dueño). El /use suelto ya no sirve ahí (curaba la vida de la base y no la de la pelea, que vive en memoria): ahora comer es una ACCIÓN
+    // del combate, como en /travel y /boss — gasta el turno (el jefe te pega igual), cura de verdad y es una vez por jugador (RaidSettings.MealsPerFight). Se hace con el botón 🍖 Comer o escribiendo
+    // /use (o "aa use") con la comida, que desde acá llega a ExecuteEatAsync. Los banquetes no: su efecto es el buff de ataque y se comen antes de la pelea.
+    // ============================================================
+
+    // El botón "Comer": abre en privado la lista de comidas de QUIEN toca (el mensaje del combate es compartido y no puede llevar la lista de nadie). Elegir una es ExecuteEatAsync.
+    [ComponentInteraction("raid_eat:*")]
+    public async Task HandleEatAsync(string raidIdRaw)
+    {
+        await DeferAsync(ephemeral: true);
+
+        try
+        {
+            if (!Guid.TryParse(raidIdRaw, out var raidId) || raidSessions.Peek(raidId) is not { } session)
+            {
+                await FollowupAsync("Ese combate ya no existe.", ephemeral: true);
+                return;
+            }
+
+            if (CheckEat(session, Context.User.Id, claim: false).Problem is { } problem)
+            {
+                await FollowupAsync(problem, ephemeral: true);
+                return;
+            }
+
+            var owned = await inventoryRepository.GetOwnedByTypeAsync(Context.User.Id, "Consumable");
+            var buffs = await buffRepository.GetItemBuffsAsync();
+            var options = CombatHeal.BuildOptions(owned.Select(o => new HealOption(
+                    o.Item.Name, o.Item.StatValue, o.Quantity, buffs.TryGetValue(o.Item.ItemId, out var buff) ? buff.AttackPercent : 0)))
+                .Where(o => o.BuffPercent == 0)
+                .ToList();
+
+            if (options.Count == 0)
+            {
+                await FollowupAsync("No tenés comida para curarte en la pelea (los banquetes se comen antes, con **/use** afuera del combate).", ephemeral: true);
+                return;
+            }
+
+            // Sin emoji en las opciones a propósito (si uno custom no le es accesible al bot, Discord rechaza el mensaje ENTERO).
+            var menu = new SelectMenuBuilder().WithCustomId($"raid_eatpick:{raidId}").WithPlaceholder("🍖 Elegí qué comer (gasta tu turno)").WithMinValues(1).WithMaxValues(1);
+            foreach (var option in options)
+            {
+                menu.AddOption(option.Name, option.Name, CombatHeal.Describe(option));
+            }
+
+            await FollowupAsync(
+                $"🍖 Comer te cura pero **gasta tu turno** (el jefe te pega igual) y es **{RaidSettings.MealsPerFight} vez por pelea**.",
+                components: new ComponentBuilder().WithSelectMenu(menu).Build(), ephemeral: true);
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            await FollowupAsync("¡Upa! No pude armar la lista de comida, intentá de nuevo en un momento.", ephemeral: true);
+        }
+    }
+
+    // La comida elegida en la lista privada de arriba: se juega el turno y el resultado reemplaza a la lista (el mensaje del combate lo actualiza ExecuteEatAsync).
+    [ComponentInteraction("raid_eatpick:*")]
+    public async Task HandleEatPickAsync(string raidIdRaw, string[] selected)
+    {
+        await DeferAsync();
+
+        try
+        {
+            string reply;
+            if (selected.Length == 0)
+            {
+                reply = "No elegiste ninguna comida.";
+            }
+            else if (!Guid.TryParse(raidIdRaw, out var raidId) || raidSessions.RaidIdOf(Context.User.Id) != raidId)
+            {
+                reply = "Ese combate ya no existe.";
+            }
+            else
+            {
+                reply = await ExecuteEatAsync(raidSessions, userRepository, itemRepository, inventoryRepository, buffRepository, gameEvents, Context.User.Id, selected[0]);
+            }
+
+            await Context.Interaction.ModifyOriginalResponseAsync(props =>
+            {
+                props.Content = reply;
+                props.Components = new ComponentBuilder().Build();
+            });
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            await FollowupAsync("¡Upa! No pude usar esa comida, intentá de nuevo en un momento.", ephemeral: true);
+        }
+    }
+
+    // Lo que impide (o no) comer ahora: el combate tiene que estar peleándose, ser parte y seguir en pie, tener el turno, no haber comido ya y no estar justo comiendo. Con claim reserva el turno
+    // (EatingTurnNumber) dentro del mismo lock: gastar la comida en la base es I/O y no puede ir adentro, y mientras tanto ni su ataque ni el reloj tocan ese turno.
+    private static (string? Problem, RaidParticipant? Participant, int Turn) CheckEat(RaidSession session, ulong discordId, bool claim)
+    {
+        lock (session.Lock)
+        {
+            if (session.Phase != RaidPhase.Active)
+            {
+                return ("Este combate todavía no arrancó (o ya terminó).", null, 0);
+            }
+
+            var participant = session.Participants.FirstOrDefault(p => p.DiscordId == discordId);
+            if (participant is null)
+            {
+                return ("No sos parte de este combate.", null, 0);
+            }
+
+            if (!participant.IsActive)
+            {
+                return ("Ya no podés seguir peleando en este combate (te derribaron o te retiraste).", null, 0);
+            }
+
+            if (!IsTurnOf(session, participant))
+            {
+                return ($"⏳ Todavía no es tu turno: le toca a **{session.Participants[session.TurnIndex].DisplayName}**. Comer gasta tu turno.", null, 0);
+            }
+
+            if (participant.MealsEaten >= RaidSettings.MealsPerFight)
+            {
+                return ("🍖 Ya comiste en esta pelea: solo se puede **una vez** por combate.", null, 0);
+            }
+
+            if (session.EatingTurnNumber == session.TurnNumber)
+            {
+                return ("🍖 Ya estás comiendo, esperá un toque.", null, 0);
+            }
+
+            if (participant.CurrentHp >= participant.MaxHp)
+            {
+                return ($"Ya estás al máximo de HP ({participant.CurrentHp}/{participant.MaxHp}), no hace falta comer ahora.", null, 0);
+            }
+
+            if (claim)
+            {
+                session.EatingTurnNumber = session.TurnNumber;
+            }
+
+            return (null, participant, session.TurnNumber);
+        }
+    }
+
+    // Si la comida no llega a gastarse, se devuelve el turno y se vuelve a armar el reloj (el que venció mientras tanto vio la reserva y no hizo nada).
+    private static void ReleaseEatClaim(RaidSession session, int turn)
+    {
+        lock (session.Lock)
+        {
+            if (session.EatingTurnNumber == turn)
+            {
+                session.EatingTurnNumber = 0;
+            }
+        }
+
+        StartTurnTimer(session);
+    }
+
+    // Comer en plena pelea en equipo, SIN dependencia de Context (lo usan el botón, /use y "aa use"). Devuelve lo que se le dice en privado a quien come; el mensaje del combate se actualiza solo.
+    // El orden es el de siempre: reservar el turno, gastar la comida (guardado: si no la tiene no pasa nada) y recién ahí curar y devolver el golpe del jefe, todo en un solo lock.
+    public static async Task<string> ExecuteEatAsync(
+        IRaidSessionService raidSessions, IUserRepository userRepository, IItemRepository itemRepository, IInventoryRepository inventoryRepository,
+        IBuffRepository buffRepository, IGameEvents gameEvents, ulong discordId, string foodName)
+    {
+        try
+        {
+            if (raidSessions.RaidIdOf(discordId) is not { } raidId || raidSessions.Peek(raidId) is not { } session)
+            {
+                return "No estás en ningún combate en equipo.";
+            }
+
+            var item = await itemRepository.GetByNameAsync(foodName);
+            if (item is null)
+            {
+                return $"No encontré ningún ítem llamado **{foodName}**.";
+            }
+
+            if (item.Type != "Consumable" || item.StatValue <= 0)
+            {
+                return $"**{ItemDisplay.Format(item.Emoji, item.Name)}** no sirve para curarte en la pelea.";
+            }
+
+            if (await buffRepository.GetItemBuffAsync(item.ItemId) is not null)
+            {
+                return $"**{ItemDisplay.Format(item.Emoji, item.Name)}** es un banquete: su efecto es el buff de ataque y se come ANTES de la pelea (con **/use** afuera del combate).";
+            }
+
+            var (problem, participant, turn) = CheckEat(session, discordId, claim: true);
+            if (problem is not null)
+            {
+                return problem;
+            }
+
+            bool consumed;
+            try
+            {
+                consumed = await inventoryRepository.TryConsumeAsync(discordId, item.ItemId, 1);
+            }
+            catch
+            {
+                ReleaseEatClaim(session, turn);
+                throw;
+            }
+
+            if (!consumed)
+            {
+                ReleaseEatClaim(session, turn);
+                return $"No tenés **{ItemDisplay.Format(item.Emoji, item.Name)}** en tu inventario.";
+            }
+
+            int healed;
+            bool dodged, knockedOut, wipe;
+            int hit;
+            string line;
+
+            lock (session.Lock)
+            {
+                session.EatingTurnNumber = 0;
+
+                // Se fue (o el combate terminó) JUSTO mientras comía: la comida ya se gastó, la misma ventana angosta que documenta /use en combate solitario (UseModule).
+                if (session.Phase != RaidPhase.Active || !participant!.IsActive)
+                {
+                    return "El combate cambió justo mientras comías, revisá el mensaje.";
+                }
+
+                int before = participant.CurrentHp;
+                participant.CurrentHp = Math.Min(participant.MaxHp, participant.CurrentHp + item.StatValue);
+                healed = participant.CurrentHp - before;
+
+                // Comer cede el turno: el jefe contraataca igual, con los efectos de habilidad que haya activos, y el turno cuenta para el enfriamiento (GameData/CombatTurnResolver.ResolveCounterTurn).
+                var counter = CombatTurnResolver.ResolveCounterTurn(
+                    new CombatantProfile(participant.Damage, participant.Defense, participant.PlayerClass, participant.Passives), participant.Ability, session.BossDamage);
+                participant.Ability = counter.Status;
+                dodged = counter.Hit.Dodged;
+                hit = counter.Hit.Damage;
+
+                if (dodged)
+                {
+                    participant.DodgeCount++;
+                }
+                else
+                {
+                    participant.CurrentHp = Math.Max(0, participant.CurrentHp - hit);
+                    participant.TotalDamageTaken += hit;
+                }
+
+                participant.MealsEaten++;
+                participant.TurnsTaken++;
+                participant.MissedTurns = 0;
+                knockedOut = participant.IsKnockedOut;
+
+                wipe = session.Participants.All(p => !p.IsActive);
+                if (wipe)
+                {
+                    session.Phase = RaidPhase.Resolved; // atómico con la decisión, igual que en ResolveParticipantTurn
+                }
+                else
+                {
+                    AdvanceTurn(session);
+                }
+
+                string who = $"**{participant.DisplayName}**";
+                string monsterLine = dodged
+                    ? $"💨 {who} esquivó el contraataque."
+                    : $"El jefe le devolvió **{hit}** a {who}." + (knockedOut ? $" 💀 {who} quedó derribado." : string.Empty);
+                line = $"🍖 {who} comió {ItemDisplay.Format(item.Emoji, item.Name)} y recuperó **{healed}** HP. {monsterLine}";
+            }
+
+            if (wipe)
+            {
+                StopTurnTimer(session);
+                await ClearTurnPingAsync(session);
+                await ResolveWipeAsync(session, line, userRepository, raidSessions, gameEvents);
+            }
+            else
+            {
+                StartTurnTimer(session);
+                await session.ReplyTarget.UpdateAsync(BuildCombatEmbed(session, line), BuildCombatButtons(session.RaidId));
+                await PingTurnAsync(session, justPlayed: discordId);
+            }
+
+            return $"🍖 Comiste {ItemDisplay.Format(item.Emoji, item.Name)} y recuperaste **{healed}** HP." + (knockedOut ? " Pero el jefe te derribó." : dodged ? " Esquivaste el golpe del jefe." : $" El jefe te pegó **{hit}**.");
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            return "¡Upa! No pude usar esa comida, intentá de nuevo en un momento.";
         }
     }
 
@@ -710,9 +1008,9 @@ public class RaidModule(
 
         lock (session.Lock)
         {
-            if (session.Phase != RaidPhase.Active || session.TurnNumber != turnNumber || session.TurnIndex >= session.Participants.Count)
+            if (session.Phase != RaidPhase.Active || session.TurnNumber != turnNumber || session.TurnIndex >= session.Participants.Count || session.EatingTurnNumber == turnNumber)
             {
-                return;
+                return; // otro turno, o está comiendo ahora mismo (cuando termine arma un reloj nuevo)
             }
 
             slow = session.Participants[session.TurnIndex];
@@ -1286,7 +1584,7 @@ public class RaidModule(
         }, cts.Token);
     }
 
-    private enum AttackOutcomeKind { NotActive, NotAParticipant, ParticipantInactive, NotYourTurn, AbilityUnavailable, Continues, Victory, Wipe }
+    private enum AttackOutcomeKind { NotActive, NotAParticipant, ParticipantInactive, NotYourTurn, Busy, AbilityUnavailable, Continues, Victory, Wipe }
 
     private sealed record AttackOutcome(AttackOutcomeKind Kind, string? LogLine = null);
 
@@ -1556,7 +1854,9 @@ public class RaidModule(
             // ▶️ marca a quien le toca; los demás, su estado.
             string status = p.DiscordId == turnOf ? "▶️" : p.HasFled ? "🏃" : p.IsKnockedOut ? "💀" : "✅";
             // Estado de la habilidad de cada uno (el botón "Habilidad" es compartido y genérico).
-            string abilityLine = p.IsActive ? "\n" + AdventureModule.BuildAbilityStatusLine(p.PlayerClass, p.Ability) : string.Empty;
+            string abilityLine = p.IsActive
+                ? "\n" + string.Join(" · ", new[] { AdventureModule.BuildAbilityStatusLine(p.PlayerClass, p.Ability), p.MealsEaten >= RaidSettings.MealsPerFight ? "🍖 comida usada" : "🍖 comida lista" }.Where(x => x.Length > 0))
+                : string.Empty;
             return $"{status} **{p.DisplayName}** — {HpLine(p.CurrentHp, p.MaxHp)}{abilityLine}";
         }));
 
@@ -1569,7 +1869,7 @@ public class RaidModule(
             .WithDescription(logLine + turnLine)
             .AddField($"{session.BossEmoji} HP de {session.BossName}", HpLine(bossHp, session.BossMaxHp), false)
             .AddField("👥 Participantes", roster, false)
-            .WithFooter($"Pegan por turnos · {(int)RaidSettings.TurnTimeout.TotalSeconds} s para jugar el tuyo")
+            .WithFooter($"Pegan por turnos · {(int)RaidSettings.TurnTimeout.TotalSeconds} s para jugar el tuyo · {RaidSettings.MealsPerFight} comida por jugador (gasta el turno)")
             .Build();
     }
 
@@ -1578,6 +1878,7 @@ public class RaidModule(
         return new ComponentBuilder()
             .WithButton("Atacar", $"raid_attack:{raidId}", ButtonStyle.Primary, new Emoji("⚔️"))
             .WithButton("Habilidad", $"raid_ability:{raidId}", ButtonStyle.Success, new Emoji("✨"))
+            .WithButton("Comer", $"raid_eat:{raidId}", ButtonStyle.Secondary, new Emoji("🍖"))
             .WithButton("Huir", $"raid_flee:{raidId}", ButtonStyle.Danger, new Emoji("🏃"))
             .Build();
     }

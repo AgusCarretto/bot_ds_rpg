@@ -40,6 +40,9 @@ public sealed class RaidParticipant
 
     // Turnos seguidos que dejó vencer sin jugar (v0.19.0, ver RaidModule.OnTurnTimeoutAsync): el primero pierde el turno, el segundo lo retira del combate. Jugar lo pone en 0.
     public int MissedTurns { get; set; }
+
+    // Comidas que se comió en esta pelea (RaidSettings.MealsPerFight por jugador, v0.19.0): comer gasta el turno y cura, como en /travel y /boss.
+    public int MealsEaten { get; set; }
     public int DodgeCount { get; set; }
     public int CritCount { get; set; }
     public int TotalDamageDealt { get; set; }
@@ -115,6 +118,10 @@ public sealed class RaidSession
     public int TurnIndex { get; set; }
     public int TurnNumber { get; set; }
     public CancellationTokenSource? TurnCts { get; set; }
+
+    // Número de turno (TurnNumber) en el que quien tiene el turno está COMIENDO (gastando la comida en la base, que es I/O y no puede ir adentro del lock): mientras valga lo mismo que TurnNumber, ni su
+    // ataque ni el reloj de turnos tocan ese turno. 0 = nadie está comiendo.
+    public int EatingTurnNumber { get; set; }
     public RaidTurnContext? Turns { get; set; }
 
     // Cómo borrar el último aviso de turno ("🎯 @fulano ¡es tu turno!") que el bot mandó: cada turno nuevo borra el anterior, así el canal no se llena (ver RaidModule.PingTurnAsync).
@@ -139,6 +146,9 @@ public interface IRaidSessionService
     // /hunt, /travel y /boss solitario (Services/AdventureCombatStarter.cs) antes de arrancar, así
     // nadie puede estar en dos combates a la vez.
     bool IsInAnyRaid(ulong discordId);
+
+    // true si el jugador está en un jefe en equipo que YA ESTÁ PELEANDO (no en la sala de espera de las invitaciones). Es la «pelea en curso» que bloquea /use, /heal y la taberna: ahí se come con el botón del combate.
+    bool IsInActiveFight(ulong discordId);
 
     // El id del raid en el que está el jugador (lobby o pelea activa), o null si no está en ninguno. Lo usan "aa attack", "aa ability" y "aa flee" (no hay botón que lleve el id).
     Guid? RaidIdOf(ulong discordId);

@@ -13,7 +13,9 @@ public class UseModule(
     IItemRepository itemRepository,
     IInventoryRepository inventoryRepository,
     ICombatSessionService combatSessions,
-    IBuffRepository buffRepository) : InteractionModuleBase<SocketInteractionContext>
+    IBuffRepository buffRepository,
+    IRaidSessionService raidSessions,
+    IGameEvents gameEvents) : InteractionModuleBase<SocketInteractionContext>
 {
     // Comando barra: /use
     [SlashCommand("use", "Usá un consumible de tu inventario para curar HP (funciona incluso en combate, sin gastar oro).")]
@@ -23,7 +25,7 @@ public class UseModule(
 
         try
         {
-            var result = await ExecuteUseAsync(userRepository, itemRepository, inventoryRepository, combatSessions, buffRepository, Context.User.Id, itemName);
+            var result = await ExecuteUseAsync(userRepository, itemRepository, inventoryRepository, combatSessions, buffRepository, Context.User.Id, itemName, raidSessions, gameEvents);
             await FollowupAsync(result.PlainMessage, embed: result.Embed, ephemeral: result.Embed is null);
         }
         catch (Exception ex)
@@ -46,8 +48,21 @@ public class UseModule(
         ICombatSessionService combatSessions,
         IBuffRepository buffRepository,
         ulong discordId,
-        string itemName)
+        string itemName,
+        IRaidSessionService? raidSessions = null,
+        IGameEvents? gameEvents = null)
     {
+        // Dentro de un jefe en equipo que ya está peleando, comer es una ACCIÓN DEL COMBATE (v0.19.0): gasta el turno, es una vez por jugador y lo maneja el propio combate. Antes /use ahí curaba la vida de la base
+        // y no la de la pelea (que vive en memoria): la comida se gastaba sin servir. Se pasa raidSessions solo desde los comandos reales; las pruebas viejas no lo pasan y siguen igual.
+        if (raidSessions is not null && raidSessions.IsInActiveFight(discordId))
+        {
+            return new UseResult(
+                gameEvents is null
+                    ? "Estás peleando en equipo: para comer usá el botón 🍖 **Comer** del combate cuando sea tu turno."
+                    : await RaidModule.ExecuteEatAsync(raidSessions, userRepository, itemRepository, inventoryRepository, buffRepository, gameEvents, discordId, itemName),
+                null);
+        }
+
         var item = await itemRepository.GetByNameAsync(itemName);
         if (item is null)
         {
