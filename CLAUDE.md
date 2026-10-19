@@ -190,7 +190,7 @@ once the roster is final (`RaidSession.BossBaseHp` keeps the unscaled roll), so 
 `BossMaxHp` is meaningless until the phase flips to `Active`. The multipliers depend on the zone's **rank by
 difficulty** (`RaidSession.ZoneRank`): zone 1 keeps ×2.2 HP / ×1.35 damage (calibrated on its softer boss), zone 2+
 uses ×1.5 / ×1.1 because those bosses are already tuned to the zone ladder — stacking the zone-1 multipliers on a
-ladder boss made the raid impossible (0-3% win). Whenever a zone boss is retuned, re-measure its raid.
+ladder boss made the raid impossible (0-3% win). Whenever a zone boss is retuned, re-measure its raid (`dotnet run --project tools/balance2 -- K`, per zone, levels min+3/8/15, 1–4 players). **Measured 2026-10-19 (nothing moved since v0.17.1)**: at arrival level (min+3, own gear, no food) a 2-player raid wins only 18–28 % in Zones 2–5 and a 4-player one 44–62 %, while the solo boss with food and ability wins ~79/79/70/45 % — at arrival level the raid is the HARDEST way to face the boss, and only from min+5/6 on it becomes the easiest (min+8: 73–94 % with 2 players). The measured option (not applied, the owner decides) is ×0.75 on the raid HP multipliers: 2 players 66–71 %, 3 players 83–92 % at arrival level; see `MEJORAS.md`.
 Nobody can be in a solo fight and a raid at once (`AdventureCombatStarter` and `RaidModule` check
 both `ICombatSessionService` and `IRaidSessionService`). Shared helpers extracted for reuse:
 `GameData/ZoneRanking.cs` (zone order by `min_level`, never raw `zone_id`) and

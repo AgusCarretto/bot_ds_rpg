@@ -40,7 +40,7 @@ usar). Si un arnés se corta a la mitad, puede quedar un usuario descartable: se
 
 ## Herramientas de calibración (`tools/`)
 
-`tools/balance2` es el simulador con el que se calibró el combate (partes A–J: la matriz de combate, el examen de cada jefe con el equipo propio o el de la zona anterior, raids, ritmo de recetas...). Usa el
+`tools/balance2` es el simulador con el que se calibró el combate (partes A–K; la K mide el RAID por zona, nivel y cantidad de jugadores, y acepta un factor de vida del jefe para probar otro: la matriz de combate, el examen de cada jefe con el equipo propio o el de la zona anterior, raids, ritmo de recetas...). Usa el
 resolutor **real** (`CombatTurnResolver`) y los monstruos de la base local. Ejemplos: `dotnet run --project tools/balance2 -- J` (cada jefe con el equipo de la zona anterior),
 `-- J 2 1.0,1.25 1.0,1.15 13,18,25` (el jefe de la zona 3 con vida ×1,0/1,25, daño ×1,0/1,15 y esos niveles). Cuando cambia una clase, una habilidad, un monstruo o un amuleto, hay que volver a medir.
 

@@ -25,6 +25,7 @@ switch (part)
     case "H": PartH.Run(args); break;
     case "I": PartI.Run(args); break;
     case "J": PartJ.Run(args); break;
+    case "K": PartK.Run(args); break;
     default: Console.WriteLine("A | B | C"); break;
 }
 
@@ -996,7 +997,7 @@ public static class PartI
         return (die / 4, lost / 4, turns / 4);
     }
 
-    static (bool Win, int Alive) Raid(int size, int zi, int level, MonRow boss)
+    internal static (bool Win, int Alive) Raid(int size, int zi, int level, MonRow boss)
     {
         var rng = Sim.Rng;
         int baseHp = rng.Next(boss.MinHp, boss.MaxHp + 1);
