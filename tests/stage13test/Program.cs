@@ -280,7 +280,7 @@ await realEvents.RecordAsync(U, GameEventKinds.DuelWin, detail: "Beto"); await r
 await realEvents.RecordAsync(U, GameEventKinds.ArenaJoin, detail: "2026-10-01");
 var embed = await HistoryModule.BuildHistoryEmbedAsync(users, eventRepo, U, "Tester");
 var fieldNames = embed.Fields.Select(f => f.Name).Where(n => n != ((char)0x200B).ToString()).ToList();
-Check(embed.Title == "📜 Historial de Tester" && fieldNames.SequenceEqual(["🏹 Cacería · 4 veces", "🛡️ Raid · 1 vez", "🥊 Duelos · 3 veces", "🏟️ Arena"]), $"el historial real: {string.Join(" | ", fieldNames)}");
+Check(embed.Title == "📜 Historial de Tester" && fieldNames.SequenceEqual(["🏹 Cacería · 4 veces", "🛡️ Jefe en equipo · 1 vez", "🥊 Duelos · 3 veces", "🏟️ Arena"]), $"el historial real: {string.Join(" | ", fieldNames)}");
 Check(embed.Fields.Where(f => f.Name == ((char)0x200B).ToString()).Count() == 3 && embed.Footer!.Value.Text.Contains("/duels") && embed.Length < 6000, "una fila en blanco entre juegos, y el pie manda a /duels");
 Console.WriteLine("   " + string.Join("\n   ", embed.Fields.Where(f => f.Name != ((char)0x200B).ToString()).Select(f => f.Name + " -> " + f.Value.Replace("\n", " / "))));
 

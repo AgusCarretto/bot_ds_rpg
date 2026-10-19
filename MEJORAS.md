@@ -1,6 +1,18 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-19 (v0.18.6: la vida del raid ×0,75)_
+_Última revisión: 2026-10-19 (v0.19.0: el jefe con compañeros reemplaza al /raid)_
+
+## El jefe con compañeros (v0.19.0, 2026-10-19): `/boss @amigo` reemplaza al `/raid`
+
+- **Qué es** (el dueño: «en vez de raid podemos dejar que boss sea solo o con un parámetro… que se respeten los turnos, pega uno y el boss le pega a él, luego con el otro lo mismo… tiene que haber un rechazo si la zona máxima del jugador es diferente que la del otro»): `/boss` sigue siendo la pelea de siempre, pero nombrando de 1 a 5 compañeros (`companero` … `companero5`; por texto `aa boss @a @b`) se arma un grupo que pega **por turnos**. El grupo se arma por **invitación** (solo los nombrados aceptan, con botones Aceptar / Rechazar; quien lo armó puede Empezar ya o Cancelar), arranca solo cuando contestaron todos o a los 120 s con los que aceptaron, y se cancela sin gastar el cooldown de nadie si no llegan a dos.
+- **El rechazo por zona máxima**: antes de crear nada se mira la zona máxima desbloqueada (`ZoneRanking.MaxUnlockedRank`, la «máx. Zona N» del perfil) de cada compañero contra la de quien arma el grupo; si no coincide, se rechaza todo el pedido diciendo quién y las dos zonas. También se vuelve a mirar al apretar Aceptar. Junto con eso se rechaza: sin cuenta (nunca se le crea una a un invitado), otro combate en curso, cooldown del jefe corriendo, sin vida, sin el nivel que pide el jefe, en El Fogón (el Asador se pelea solo), bots y uno mismo; todos los problemas se listan juntos.
+- **Turnos estrictos**: el orden es el de las menciones (primero quien arma el grupo). Un clic fuera de turno no cambia nada y dice a quién le toca; al jugar, el jefe le responde a ESE jugador y pasa el siguiente en pie (los caídos y los que se fueron se saltean). La habilidad en enfriamiento se rechaza sin gastar el turno; huir se puede siempre.
+- **Reloj de turnos (60 s)**: el primero vencido hace perder el turno (el jefe no pega), el segundo seguido retira al jugador como si huyera; jugar lo perdona. Cierra el viejo hueco «un raid activo no tiene tiempo máximo de inactividad». Si queda uno solo en pie y se va, el combate termina como abandonado.
+- **Arreglo de paso**: cuando el último en pie huye (o se retira por el reloj), los caídos ahora pagan la penalidad y guardan su vida (antes no pagaban nada en ese caso).
+- **Cambios de nombre**: el slash `/raid` desapareció (`aa raid` queda solo para avisar el cambio); `/cd` y el recordatorio dicen «Jefe» en vez de «Jefe / Raid»; la ayuda (`/info tema:boss`) explica el grupo. Internamente sigue llamándose `RaidModule`/`RaidSession` (ids de botones `raid_*`, evento `raid_win`).
+- **Número a tener en cuenta**: la dificultad es la de la v0.18.6 (vida ×0,75). La simulación (`tools/balance2 -- K`) ya alternaba jugadores uno por uno, así que lo medido vale tal cual; lo que sí cambia respecto de antes es que ya nadie puede «pegar de más» cuando quiere (el reparto de golpes es parejo). Si de a dos tiene que ser siempre más fácil que solo, son las dos constantes de `RaidDifficulty.cs` (×0,65 lo logra en las cuatro zonas).
+- **Probado**: `tests/partybosstest` (rechazos con su texto, botones, turnos, reloj con tiempos cortos, victoria, registro real de comandos). **Sin migración.**
+- **No construido (por si lo piden)**: aviso por mensaje privado a quien le toca el turno (hoy solo se lo marca en el mensaje; una edición no avisa a nadie), que la invitación de un grupo ya armado admita sumar a alguien a mitad de pelea, y una zona máxima flexible (por ejemplo ±1) si quieren juntar a un amigo que va un paso adelante.
 
 ## Informe de salud de la base viva (2026-10-19)
 

@@ -22,9 +22,22 @@ public sealed class InteractionRaidTurnOutput(IDiscordInteraction interaction) :
 {
     public Task NoteAsync(string text) => interaction.FollowupAsync(text, ephemeral: true);
 
-    public Task ShowAsync(RaidSession session, Embed embed, MessageComponent components) => session.ReplyTarget.UpdateAsync(embed, components);
+    // Se edita con la interacción de ESTE clic y la sesión pasa a usarla (igual que el combate solitario, InteractionCombatTurnOutput.NextReplyTarget): el token de una interacción dura 15
+    // minutos, y un combate en equipo por turnos puede durar más que eso desde el comando que lo armó. Con cada clic el token se renueva; el reloj de turnos (que edita sin que nadie
+    // toque nada) usa siempre la última.
+    public async Task ShowAsync(RaidSession session, Embed embed, MessageComponent components)
+    {
+        var target = new InteractionCombatReplyTarget(interaction);
+        await target.UpdateAsync(embed, components);
+        session.ReplyTarget = target;
+    }
 
-    public Task PrepareFinalAsync(RaidSession session) => Task.CompletedTask;
+    // El final (victoria, caída o abandono) también se edita con el token fresco de este clic.
+    public Task PrepareFinalAsync(RaidSession session)
+    {
+        session.ReplyTarget = new InteractionCombatReplyTarget(interaction);
+        return Task.CompletedTask;
+    }
 }
 
 public sealed class MessageRaidTurnOutput(IMessageChannel channel) : IRaidTurnOutput

@@ -109,7 +109,7 @@ Check(ReminderCatalog.DailyDue(DateTime.SpecifyKind(DateTime.UtcNow.AddHours(-1)
 string one = ReminderCatalog.Compose(U, ["hunt"]);
 Check(one == $"<@{U}> 🏹 ¡Cacería lista! Ya podés volver a cazar con `/hunt`." && !one.Contains('\n'), "un solo aviso: la mención y una línea («Cacería lista»)");
 string many = ReminderCatalog.Compose(U, ["hunt", "travel", "boss"]);
-Check(many.StartsWith($"<@{U}> ⏰ ¡Ya podés de nuevo!\n") && many.Split('\n').Length == 4 && many.Contains("**Cacería** — `/hunt`") && many.Contains("**Viaje** — `/travel`") && many.Contains("**Jefe / Raid** — `/boss`"), "varios juntos: un encabezado y UNA línea por cosa");
+Check(many.StartsWith($"<@{U}> ⏰ ¡Ya podés de nuevo!\n") && many.Split('\n').Length == 4 && many.Contains("**Cacería** — `/hunt`") && many.Contains("**Viaje** — `/travel`") && many.Contains("**Jefe** — `/boss`"), "varios juntos: un encabezado y UNA línea por cosa");
 Check(ReminderCatalog.Compose(U, ["hunt", "hunt"]) == one, "un tipo repetido no se duplica");
 Check(ReminderCatalog.Compose(U, []).Length == 0 && ReminderCatalog.Compose(U, ["nada"]).Length == 0, "sin tipos válidos no hay mensaje");
 Check(ReminderCatalog.AutoDeleteFor(["hunt"]) == TimeSpan.FromMinutes(2) && ReminderCatalog.AutoDeleteFor(["hunt", "chop", "mine"]) == TimeSpan.FromMinutes(2) && ReminderCatalog.AutoDeleteFor(["hunt", "travel"]) is null

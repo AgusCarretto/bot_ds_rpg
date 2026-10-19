@@ -24,7 +24,7 @@ public static class ReminderCatalog
         new("travel", "🗺️", "Viaje", "/travel", "¡Viaje listo! Ya podés salir de expedición con `/travel`.", null),
         new("chop", "🪓", "Talar", "/chop", "¡Ya podés talar de nuevo con `/chop`!", ShortLived),
         new("mine", "⛏️", "Minar", "/mine", "¡Ya podés minar de nuevo con `/mine`!", ShortLived),
-        new("boss", "👑", "Jefe / Raid", "/boss", "¡Jefe y raid listos! Ya podés enfrentar al jefe con `/boss` o armar un `/raid`.", null),
+        new("boss", "👑", "Jefe", "/boss", "¡Jefe listo! Ya podés enfrentarlo con `/boss`, solo o con amigos (`/boss companero:@amigo`).", null),
         new("buybox", "📦", "Comprar caja", "/taberna", "¡Ya podés comprar otra caja! Pasá por la `/taberna`.", null),
         new("chop_adv", "🪓", "Tala avanzada", "/chop", "¡La tala avanzada está lista! `/chop modo:Avanzada`.", null),
         new("mine_adv", "⛏️", "Minería avanzada", "/mine", "¡La minería avanzada está lista! `/mine modo:Avanzada`.", null),

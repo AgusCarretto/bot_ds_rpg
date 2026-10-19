@@ -38,7 +38,7 @@ public static class GameHistory
             new("🏹", "Cacería", Count(GameEventKinds.HuntWin), Count(GameEventKinds.FightLost, "hunt")),
             new("🗺️", "Viaje", Count(GameEventKinds.TravelWin), Count(GameEventKinds.FightLost, "travel")),
             new("👑", "Jefe", Count(GameEventKinds.BossWin), Count(GameEventKinds.FightLost, "boss")),
-            new("🛡️", "Raid", Count(GameEventKinds.RaidWin), Count(GameEventKinds.FightLost, "raid")),
+            new("🛡️", "Jefe en equipo", Count(GameEventKinds.RaidWin), Count(GameEventKinds.FightLost, "raid")),
             new("🥊", "Duelos", Count(GameEventKinds.DuelWin), Count(GameEventKinds.DuelLoss)),
             new("🎰", "Tragamonedas", Count(GameEventKinds.CasinoWin, "slots"), Count(GameEventKinds.CasinoLoss, "slots"),
                 Gold(GameEventKinds.CasinoWin, "slots"), Gold(GameEventKinds.CasinoLoss, "slots"), IsCasino: true),

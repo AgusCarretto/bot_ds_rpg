@@ -145,7 +145,7 @@ public class ZoneModule(IUserRepository userRepository, IZoneRepository zoneRepo
         return (null, new EmbedBuilder()
             .WithTitle($"🔥 ¡Entraste a {gate.Name}!")
             .WithColor(Color.DarkOrange)
-            .WithDescription($"{gate.Description}\n\nAcá no hay cacería, viajes ni raid. Enfrentá a **{FogonRules.BossName}** con **/boss**.\nPara salir, viajá a una zona con **/zona**.")
+            .WithDescription($"{gate.Description}\n\nAcá no hay cacería, viajes ni jefe en equipo. Enfrentá a **{FogonRules.BossName}** con **/boss**.\nPara salir, viajá a una zona con **/zona**.")
             .Build());
     }
 

@@ -105,7 +105,7 @@ public class VoteModule(
             .WithDescription(
                 "Votar en top.gg ayuda a que más gente nos encuentre. Como agradecimiento te da:\n\n" +
                 $"📦 **{VoteRules.RewardBoxes}× {VoteRules.RewardBoxName}** — se abre con **/open**\n" +
-                "👑 **El jefe se resetea** — si el cooldown de **/boss** o **/raid** estaba corriendo, queda listo al instante\n\n" +
+                "👑 **El jefe se resetea** — si el cooldown de **/boss** (solo o en equipo) estaba corriendo, queda listo al instante\n\n" +
                 status)
             .WithFooter($"Se puede votar cada {ReminderCatalog.WaitLabel(VoteRules.Interval)}.")
             .Build();
@@ -116,7 +116,7 @@ public class VoteModule(
     {
         string boxText = box is null ? VoteRules.RewardBoxName : ItemDisplay.Format(box.Emoji, box.Name);
         string bossText = bossReset
-            ? "👑 **¡Jefe reseteado!** Ya podés enfrentarlo con **/boss** o armar un **/raid**."
+            ? "👑 **¡Jefe reseteado!** Ya podés enfrentarlo con **/boss**, solo o con amigos."
             : "👑 Tu jefe ya estaba listo, así que no hizo falta resetearlo. (Tip: votá justo después de ganarle y se resetea.)";
         string nextText = nextVote is { } left ? $"⏳ Podés volver a votar en **{TimeFormat.Remaining(left)}**." : "⏳ Ya podés votar de nuevo.";
 
