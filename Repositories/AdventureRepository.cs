@@ -41,6 +41,21 @@ public sealed class AdventureRepository(IDbConnectionFactory connectionFactory) 
         return applied is not null;
     }
 
+    public async Task ReleaseCooldownAsync(ulong discordId, string commandName, TimeSpan cooldownDuration, CancellationToken cancellationToken = default)
+    {
+        // Un DELETE guardado: solo si el cooldown todavía corre. Quien lo reclamó es el único que puede soltarlo (mientras corre, nadie más puede reclamarlo), así que no pisa nada ajeno.
+        const string sql = """
+            DELETE FROM cooldowns
+            WHERE discord_id = @DiscordId AND command_name = @CommandName AND last_executed_at > now() - @CooldownInterval;
+            """;
+
+        using IDbConnection connection = connectionFactory.CreateConnection();
+        await connection.ExecuteAsync(new CommandDefinition(
+            sql,
+            new { DiscordId = (long)discordId, CommandName = commandName, CooldownInterval = cooldownDuration },
+            cancellationToken: cancellationToken));
+    }
+
     public Task<LevelUpOutcome> ApplyVictoryAsync(
         ulong discordId,
         int goldReward,

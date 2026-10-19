@@ -568,6 +568,10 @@ public class RaidModule(
             snapshot = session.Participants.ToList();
         }
 
+        // Los cooldowns que ESTA activación alcanzó a reclamar (v0.18.4): si el raid no llega a pelearse (se cancela por falta de gente o la activación explota a mitad de camino) hay que soltarlos,
+        // porque antes quedaban corriendo la espera corta de 30 minutos y quien armó el raid no podía hacer /boss ni /raid por un jefe que nunca peleó (lo reportó Adiofh en #sugerencias).
+        var claimedIds = new List<ulong>();
+
         try
         {
             var confirmed = new List<RaidParticipant>();
@@ -580,6 +584,7 @@ public class RaidModule(
                 if (claimed)
                 {
                     confirmed.Add(participant);
+                    claimedIds.Add(participant.DiscordId);
                 }
                 else
                 {
@@ -596,6 +601,9 @@ public class RaidModule(
                 }
 
                 raidSessions.Remove(session.RaidId);
+
+                // Se sueltan ANTES de editar el mensaje: si la edición fallara, igual nadie queda con el cooldown gastado.
+                await ReleaseClaimsAsync(claimedIds, adventureRepository);
                 await session.ReplyTarget.UpdateAsync(BuildCancelledEmbed(session, confirmed.Count), new ComponentBuilder().Build());
                 return;
             }
@@ -633,6 +641,7 @@ public class RaidModule(
             }
 
             raidSessions.Remove(session.RaidId);
+            await ReleaseClaimsAsync(claimedIds, adventureRepository);
 
             try
             {
@@ -645,6 +654,22 @@ public class RaidModule(
             }
 
             throw;
+        }
+    }
+
+    // Suelta los cooldowns del jefe que una activación reclamó y no se usaron. Nunca tira: si soltar uno falla, queda en el log y se sigue con el resto (peor caso: la espera corta de siempre).
+    private static async Task ReleaseClaimsAsync(IReadOnlyList<ulong> discordIds, IAdventureRepository adventureRepository)
+    {
+        foreach (ulong id in discordIds)
+        {
+            try
+            {
+                await adventureRepository.ReleaseCooldownAsync(id, CooldownCatalog.Raid.CommandName, CooldownCatalog.Raid.Duration);
+            }
+            catch (Exception ex)
+            {
+                BotLog.Warn(ex);
+            }
         }
     }
 
@@ -981,7 +1006,7 @@ public class RaidModule(
         return new EmbedBuilder()
             .WithTitle($"👑 Raid contra {session.BossName} {session.BossEmoji} cancelado")
             .WithColor(Color.DarkGrey)
-            .WithDescription($"No se juntaron los {MinParticipantsToStart} jugadores mínimos a tiempo ({confirmedCount} confirmado(s)).")
+            .WithDescription($"No se juntaron los {MinParticipantsToStart} jugadores mínimos a tiempo ({confirmedCount} confirmado(s)).\n\nNo se gastó el cooldown de Jefe de nadie.")
             .Build();
     }
 

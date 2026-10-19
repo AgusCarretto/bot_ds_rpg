@@ -178,7 +178,7 @@ public partial class TextCommandModule(
     {
         try
         {
-            var embed = await CooldownModule.BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id, arenaService, bonusService, voteClient.Enabled);
+            var embed = await CooldownModule.BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id, arenaService, bonusService, voteClient.Enabled, petRepository);
             await ReplyAsync(embed: embed);
         }
         catch (Exception ex)
