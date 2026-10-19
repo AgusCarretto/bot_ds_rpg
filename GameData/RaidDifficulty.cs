@@ -25,8 +25,14 @@ public static class RaidDifficulty
     // v0.17.1: la vida GUARDADA de los jefes subió ×1,25 (Database/rebalance_boss_hp.sql) y los multiplicadores de VIDA de abajo se dividieron por 1,25 (eran 2,2 y 1,5), así que el jefe del RAID queda
     // exactamente con la misma vida y la misma dificultad que ya estaba medida arriba (2,2 / 1,25 × 1,25 = 2,2; 1,2 × 1,25 = 1,5). Si se vuelve a tocar la vida de los jefes, tocar esto con el mismo factor
     // (o decidir a propósito un raid más duro: con ×1,25 de más, un grupo de tres de las zonas 2 a 5 pasaba de ganar ~49 % a ~16 %).
-    private static readonly Scale FirstZone = new(1.76, 1.35);
-    private static readonly Scale LadderZones = new(1.2, 1.1);
+    //
+    // v0.18.6: la vida del raid baja ×0,75 (1,76 → 1,32 y 1,2 → 0,9; el daño NO se toca). El dueño: «la idea del raid es que de a 2 sea más fácil que solo». Medido con el combate real (tools/balance2, parte K, equipo propio,
+    // sin comida porque el raid no tiene curación, 400 raids por celda): a nivel de llegada a la zona (mín+3) el raid de 2 jugadores ganaba solo 18-28 % en las zonas 2 a 5 (el de 4, 44-62 %) mientras el jefe SOLO con una
+    // comida y la habilidad se gana ~79 / 79 / 70 / 45 %: el raid era la forma más difícil de pelear al llegar. Con ×0,75: 2 jugadores 66-71 %, 3 jugadores 83-92 %, 4 jugadores 85-98 %, y a mín+8 todo ≥ 99 % con 2 o más.
+    // Ojo: con ×0,75 los 2 jugadores igualan al jefe solo en las zonas 4 y 5 pero quedan un poco debajo en las zonas 2 y 3 (66-70 % contra 79 %); ×0,65 los deja por encima en las cuatro (76 / 89 / 90 / 92 %) y ×0,6 ya es
+    // demasiado fácil. Si se quiere «siempre más fácil de a dos», es cambiar estas dos constantes.
+    private static readonly Scale FirstZone = new(1.32, 1.35);
+    private static readonly Scale LadderZones = new(0.9, 1.1);
 
     // zoneRank: posición 1-indexada de la zona por dificultad (ZoneRanking.RankOf); 0 (desconocida) cuenta como 1.
     public static Scale ForZoneRank(int zoneRank) => zoneRank <= 1 ? FirstZone : LadderZones;

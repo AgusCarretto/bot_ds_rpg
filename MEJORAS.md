@@ -1,14 +1,16 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-19 (raids medidos; v0.18.5 es lo último publicado)_
+_Última revisión: 2026-10-19 (v0.18.6: la vida del raid ×0,75)_
 
 ## Informe de salud de la base viva (2026-10-19)
 
 `Database/report_live_health.sql` (solo lectura, todo agregado: sin ids ni nombres, se puede pegar en un chat): jugadores y actividad, niveles, hasta qué zona llegaron, el ritmo de los últimos 8 días (peleas, subidas de nivel, derrotas), % de derrotas por tipo, el daily (reclamos por día, rachas actuales, el logro Racha), los votos, las cajas abiertas, el oro y el Polvo en circulación y las vueltas de Fuego Nuevo. Sirve para decidir con datos si hay que retocar la EXP a la mitad (v0.18.1) o el daily nuevo (v0.18.2) en vez de a ojo; correrlo cada tanto en Railway y comparar. Se probó contra la base local (las 12 consultas andan).
 
-## Los raids, medidos (2026-10-19): a nivel de llegada son MÁS duros que pelear solo — decisión pendiente del dueño
+## Los raids, medidos (2026-10-19): a nivel de llegada eran MÁS duros que pelear solo — APLICADO ×0,75 en la v0.18.6
 
-Pendiente desde la v0.15.1 («los raids no se re-midieron después de los amuletos nuevos»). Se midió con el combate real (`tools/balance2`, parte nueva **K**: `dotnet run --project tools/balance2 -- K`, o `-- K 3,8 400 0.75` para probar otra vida del jefe), equipo propio de la zona, **sin comida** (el raid no tiene curación), grupos de Guerrero, Hechicero, Arquero y Ninja, 400 raids por celda. Lo que corre hoy da lo mismo que en la v0.17.1, o sea nada se movió:
+- **Aplicado** (el dueño: «bajale a 75, la idea del raid es que de a 2 sea más fácil que solo»): los multiplicadores de VIDA de `GameData/RaidDifficulty.cs` pasaron de 1,76 y 1,2 a **1,32 y 0,9** (el daño no se tocó). Con el código nuevo, medido: a nivel de llegada **2 jugadores 66-72 %** (zona 1: 99 %), **3 jugadores 84-92 %**, **4 jugadores 87-98 %**, y a mín+8 todo ≥ 98 % con 2 o más. **Ojo con la intención**: con ×0,75 los 2 jugadores igualan o superan al jefe solo (con comida y habilidad) en las zonas 4 y 5 pero quedan un poco debajo en las 2 y 3 (66-70 % contra 79 %); con ×0,65 quedarían por encima en las cuatro (76 / 89 / 90 / 92 %). Si se quiere «siempre más fácil de a dos», son las mismas dos constantes (y `tools/balance2 -- K 3 400 0.65` para probar). Arneses `bosshptest` y `leaktest` actualizados a los números nuevos.
+
+Pendiente desde la v0.15.1 («los raids no se re-midieron después de los amuletos nuevos»). Se midió con el combate real (`tools/balance2`, parte nueva **K**: `dotnet run --project tools/balance2 -- K`, o `-- K 3,8 400 0.75` para probar otra vida del jefe), equipo propio de la zona, **sin comida** (el raid no tiene curación), grupos de Guerrero, Hechicero, Arquero y Ninja, 400 raids por celda. Lo que corría hasta la v0.18.5 daba lo mismo que en la v0.17.1, o sea nada se había movido (tabla de ANTES del ×0,75):
 
 | % de victoria | nivel mín+3 (llegada): 1 / 2 / 3 / 4 jugadores | nivel mín+8: 1 / 2 / 3 / 4 |
 |---|---|---|
@@ -19,7 +21,7 @@ Pendiente desde la v0.15.1 («los raids no se re-midieron después de los amulet
 | Zona 1 (Rey Jabalí) | 54 / 83 / 94 / 97 | 100 en todo |
 
 - **El hallazgo**: a nivel de llegada (mín+3), el jefe SOLO (con una comida y la habilidad) se gana ~79 / 79 / 70 / 45 % en las zonas 2 a 5, y el raid de **2 jugadores solo 18-28 %** y el de 4 apenas 44-62 %. Es decir, **en ese nivel el raid es la forma más difícil de pelear el jefe**, y recién a partir de mín+5 o 6 se vuelve la más fácil (a mín+8 con 2 jugadores gana 73-94 %). Los dos premian igual (cada participante cobra el jefe entero), y un raid perdido cuesta la penalidad por morir a CADA uno, así que nadie tiene motivos para elegirlo al llegar. En v0.17.1 el dueño pidió explícitamente NO endurecer los raids con el +25 % de vida (se compensó dividiendo los multiplicadores); no pidió ablandarlos.
-- **Opción medida** (si se quiere que 2 jugadores equivalgan más o menos a pelear solo y que sumar gente se note): multiplicar la vida del jefe del raid por **0,75** (los multiplicadores de `GameData/RaidDifficulty.cs` pasarían de 1,76 y 1,2 a ~1,32 y 0,9). Da a nivel de llegada **2 jugadores 66-71 %, 3 jugadores 83-92 %, 4 jugadores 85-98 %** (un jugador solo en un raid, que por defecto no se puede, ~20 %), y a mín+8 todo ≥ 99 % con 2 o más. Con **0,6** ya es demasiado fácil (2 jugadores 88-95 % en la llegada). No se aplicó: es una decisión de diseño del dueño.
+- **Opción medida** (si se quiere que 2 jugadores equivalgan más o menos a pelear solo y que sumar gente se note): multiplicar la vida del jefe del raid por **0,75** (los multiplicadores de `GameData/RaidDifficulty.cs` pasarían de 1,76 y 1,2 a ~1,32 y 0,9). Da a nivel de llegada **2 jugadores 66-71 %, 3 jugadores 83-92 %, 4 jugadores 85-98 %** (un jugador solo en un raid, que por defecto no se puede, ~20 %), y a mín+8 todo ≥ 99 % con 2 o más. Con **0,6** ya es demasiado fácil (2 jugadores 88-95 % en la llegada). Fue lo que se aplicó (ver arriba).
 - **Para hacerlo**: tocar solo los dos multiplicadores de vida de `RaidDifficulty.cs` (daño igual), volver a correr la parte K y los arneses `raidtest`/`bosshptest`, y anotarlo acá y en CLAUDE.md. Sin migración.
 
 ## El arte que faltaba: cofres, huevos, comida de mascotas y el Tabernero (v0.18.5, 2026-10-19)

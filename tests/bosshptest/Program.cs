@@ -30,7 +30,7 @@ Check(rows.All(r => r.MinHp < r.MaxHp), "mínimo menor que máximo en todos");
 var nonBossHp = await db.ExecuteScalarAsync<int>("SELECT count(*)::int FROM monsters WHERE NOT is_boss AND (min_hp > 400 AND zone_id = 1)");
 Check(nonBossHp == 0, "los monstruos comunes y de viaje NO se tocaron (solo los jefes)");
 
-Console.WriteLine("\n== 2. El raid queda igual de difícil ==");
+Console.WriteLine("\n== 2. El raid: la vida de la v0.17.1 × 0,75 (v0.18.6) ==");
 double[] oldMult = [2.2, 1.5, 1.5, 1.5, 1.5];
 bool same = true; string worst = "";
 for (int rank = 1; rank <= 5; rank++)
@@ -40,14 +40,14 @@ for (int rank = 1; rank <= 5; rank++)
     for (int players = 1; players <= 4; players++)
         foreach (var (o, n) in new[] { (oMin, nMin), (oMax, nMax) })
         {
-            double before = Math.Round(o * oldMult[rank - 1] * (1 + 0.5 * (players - 1)));
+            double before = Math.Round(o * oldMult[rank - 1] * 0.75 * (1 + 0.5 * (players - 1))); // la vida del raid que ya estaba medida (v0.17.1) por el 0,75 que pidió el dueño (v0.18.6)
             int after = RaidDifficulty.BossHp(n, players, rank);
             if (Math.Abs(before - after) > 2) { same = false; worst = $"rango {rank}, {players} jug.: {before} -> {after}"; }
         }
 }
-Check(same, $"la vida del jefe de raid (1 a 4 jugadores, las 5 zonas) es la de antes con ±2 de redondeo {worst}");
-Check(RaidDifficulty.ForZoneRank(1).HpMultiplier == 1.76 && RaidDifficulty.ForZoneRank(2).HpMultiplier == 1.2 && RaidDifficulty.ForZoneRank(5).HpMultiplier == 1.2 && RaidDifficulty.ForZoneRank(1).DamageMultiplier == 1.35 && RaidDifficulty.ForZoneRank(3).DamageMultiplier == 1.1,
-    "los multiplicadores de VIDA del raid se dividieron por 1,25 (2,2 → 1,76 y 1,5 → 1,2); los de DAÑO no cambiaron");
+Check(same, $"la vida del jefe de raid (1 a 4 jugadores, las 5 zonas) es el 75 % de la de la v0.17.1, con ±2 de redondeo {worst}");
+Check(RaidDifficulty.ForZoneRank(1).HpMultiplier == 1.32 && RaidDifficulty.ForZoneRank(2).HpMultiplier == 0.9 && RaidDifficulty.ForZoneRank(5).HpMultiplier == 0.9 && RaidDifficulty.ForZoneRank(1).DamageMultiplier == 1.35 && RaidDifficulty.ForZoneRank(3).DamageMultiplier == 1.1,
+    "los multiplicadores de VIDA del raid son 1,32 y 0,9 (1,76 y 1,2 de la v0.17.1 por 0,75, v0.18.6); los de DAÑO no cambiaron");
 
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;
