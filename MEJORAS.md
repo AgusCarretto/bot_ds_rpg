@@ -2,6 +2,10 @@
 
 _Última revisión: 2026-10-19 (raids medidos; v0.18.5 es lo último publicado)_
 
+## Informe de salud de la base viva (2026-10-19)
+
+`Database/report_live_health.sql` (solo lectura, todo agregado: sin ids ni nombres, se puede pegar en un chat): jugadores y actividad, niveles, hasta qué zona llegaron, el ritmo de los últimos 8 días (peleas, subidas de nivel, derrotas), % de derrotas por tipo, el daily (reclamos por día, rachas actuales, el logro Racha), los votos, las cajas abiertas, el oro y el Polvo en circulación y las vueltas de Fuego Nuevo. Sirve para decidir con datos si hay que retocar la EXP a la mitad (v0.18.1) o el daily nuevo (v0.18.2) en vez de a ojo; correrlo cada tanto en Railway y comparar. Se probó contra la base local (las 12 consultas andan).
+
 ## Los raids, medidos (2026-10-19): a nivel de llegada son MÁS duros que pelear solo — decisión pendiente del dueño
 
 Pendiente desde la v0.15.1 («los raids no se re-midieron después de los amuletos nuevos»). Se midió con el combate real (`tools/balance2`, parte nueva **K**: `dotnet run --project tools/balance2 -- K`, o `-- K 3,8 400 0.75` para probar otra vida del jefe), equipo propio de la zona, **sin comida** (el raid no tiene curación), grupos de Guerrero, Hechicero, Arquero y Ninja, 400 raids por celda. Lo que corre hoy da lo mismo que en la v0.17.1, o sea nada se movió:
