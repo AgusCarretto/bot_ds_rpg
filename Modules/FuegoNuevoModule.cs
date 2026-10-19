@@ -165,7 +165,7 @@ public class FuegoNuevoModule(
     public sealed record FnResult(string? PlainMessage, Embed? Embed, MessageComponent? Components = null);
 
     public const string NoAccount = "Todavía no tenés cuenta: empezá con **/start**.";
-    public const string BusyMessage = "No podés hacer esto en medio de un combate o un raid. Terminalo (atacando o huyendo) primero.";
+    public const string BusyMessage = "No podés hacer esto en medio de un combate o de un jefe en equipo. Terminalo (atacando o huyendo) primero.";
 
     // /fuegonuevo: el estado. Con el Asador vencido, el resumen de lo que se va y lo que se queda con el botón; sin él, qué falta y lo que ya tenés. Si hay una bendición por elegir, sus botones van abajo.
     public static async Task<FnResult> ExecuteStatusAsync(IFuegoNuevoRepository fuegoNuevoRepository, IBlessingRepository blessingRepository, ulong discordId)

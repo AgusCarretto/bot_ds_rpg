@@ -25,6 +25,7 @@ switch (part)
     case "H": PartH.Run(args); break;
     case "I": PartI.Run(args); break;
     case "J": PartJ.Run(args); break;
+    case "K": PartK.Run(args); break;
     default: Console.WriteLine("A | B | C"); break;
 }
 
@@ -996,7 +997,9 @@ public static class PartI
         return (die / 4, lost / 4, turns / 4);
     }
 
-    static (bool Win, int Alive) Raid(int size, int zi, int level, MonRow boss)
+    // heal = cada jugador puede comer UNA vez en la pelea (la misma regla del jefe solo: con 40 % de vida o menos, la comida más grande que no se desperdicie; cuesta el turno). El raid de hoy NO tiene curación;
+    // esta variante es para medir qué pasaría si el jefe en equipo también dejara comer una vez por jugador.
+    internal static (bool Win, int Alive) Raid(int size, int zi, int level, MonRow boss, bool heal = false)
     {
         var rng = Sim.Rng;
         int baseHp = rng.Next(boss.MinHp, boss.MaxHp + 1);
@@ -1011,11 +1014,28 @@ public static class PartI
             cps[i] = new CombatantProfile(prof.Damage, prof.Defense, cls[i], prof.Passives); max[i] = prof.CombatMaxHp; hp[i] = max[i];
         }
 
+        var healsLeft = Enumerable.Repeat(heal ? 1 : 0, size).ToArray();
         for (int round = 0; round < 3000; round++)
         {
             for (int i = 0; i < size; i++)
             {
                 if (!alive[i]) continue;
+                if (healsLeft[i] > 0 && hp[i] * 100 <= 40 * max[i])
+                {
+                    int missing = max[i] - hp[i], pick = 0;
+                    for (int f = 0; f < Sim.Foods.Length; f++) if (Sim.Foods[f].Heal <= missing * 1.25) pick = f;
+                    if (Sim.Foods[pick].Heal * 1.25 >= bossDmg)
+                    {
+                        hp[i] = Math.Min(max[i], hp[i] + Sim.Foods[pick].Heal);
+                        var counter = CombatTurnResolver.ResolveCounterTurn(cps[i], st[i], bossDmg);
+                        st[i] = counter.Status;
+                        hp[i] -= counter.Hit.Damage;
+                        healsLeft[i]--;
+                        if (hp[i] <= 0) alive[i] = false;
+                        continue;
+                    }
+                }
+
                 bool ability = CombatTurnResolver.CheckAbility(cls[i], st[i]) == AbilityAvailability.Ready;
                 var r = CombatTurnResolver.ResolveTurn(cps[i], st[i], ability ? PlayerAction.Ability : PlayerAction.Attack, hp[i], max[i], bossHp, bossDmg);
                 hp[i] = r.PlayerHpAfter; bossHp = r.MonsterHpAfter; st[i] = r.StatusAfter;

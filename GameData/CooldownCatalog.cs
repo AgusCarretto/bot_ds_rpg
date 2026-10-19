@@ -14,11 +14,11 @@ public static class CooldownCatalog
     public static readonly CooldownDefinition Travel = new("travel", "Viajar", "🗺️", TimeSpan.FromMinutes(30));
     public static readonly CooldownDefinition Chop = new("chop", "Talar", "🪓", TimeSpan.FromMinutes(5));
     public static readonly CooldownDefinition Mine = new("mine", "Minar", "⛏️", TimeSpan.FromMinutes(5));
-    // El jefe de zona y el raid son EL MISMO combate (el raid es el jefe entre varios): un solo cooldown, y /cd lo muestra en una sola línea.
+    // El jefe de zona solo o en equipo ("/boss @amigo", antes /raid) es EL MISMO combate: un solo cooldown, y /cd lo muestra en una sola línea.
     // Es un hito de progresión, no contenido para repetir: 5 horas (30 minutos hasta la v0.7.0, 5 horas en la v0.7.1, 1 hora en la v0.8.0 y otra vez 5 horas
     // por pedido del dueño: con 1 hora los cofres de jefe eran demasiados). Es el único lugar para cambiarlo.
     // 5 horas si lo ganás; si perdés, huís o abandonás, solo 30 minutos (RetryAfterFailure): reintentar el jefe de la puerta de la zona no puede costar horas.
-    public static readonly CooldownDefinition Boss = new("boss", "Jefe / Raid", "👑", TimeSpan.FromHours(5), RetryAfterFailure: TimeSpan.FromMinutes(30));
+    public static readonly CooldownDefinition Boss = new("boss", "Jefe", "👑", TimeSpan.FromHours(5), RetryAfterFailure: TimeSpan.FromMinutes(30));
 
     // El raid lee el cooldown con la misma definición (mismo CommandName: reclamar uno bloquea al otro). Se mantiene el nombre porque el raid lo chequea
     // al arrancar y al unirse (antes recién se enteraba al empezar y dejaba afuera a quien lo tenía ocupado).

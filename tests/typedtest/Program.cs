@@ -128,7 +128,7 @@ Console.WriteLine("\n== 3. Raid: el índice jugador -> raid ==");
     await RaidModule.ResolveAttackCoreAsync(raids, users, items, adventure, events, zoneBoxes, Guid.NewGuid(), U, false, orf);
     var orf2 = new FakeRaidOutput();
     await RaidModule.ResolveFleeCoreAsync(raids, users, Guid.NewGuid(), U, orf2);
-    Check(orf.Notes.SequenceEqual(["Ese raid ya no existe."]) && orf2.Notes.SequenceEqual(["Ese raid ya no existe."]), "un raid que ya no existe avisa (atacar y huir) sin romper nada");
+    Check(orf.Notes.SequenceEqual(["Ese combate ya no existe."]) && orf2.Notes.SequenceEqual(["Ese combate ya no existe."]), "un raid que ya no existe avisa (atacar y huir) sin romper nada");
 }
 
 Console.WriteLine("\n== 4. Kit inicial de /start (v0.14.6: 5 Mate Amargo, una sola vez por cuenta) ==");

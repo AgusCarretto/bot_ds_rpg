@@ -18,7 +18,7 @@ public sealed record TabernaScene(Embed Embed, MessageComponent? Components, str
 public class TabernaModule(
     IUserRepository userRepository, IItemRepository itemRepository, IInventoryRepository inventoryRepository, IShopRepository shopRepository,
     IBuffRepository buffRepository, ICombatSessionService combatSessions, IGameEvents gameEvents, IBoxContextService boxContextService,
-    IDropExchangeRepository dropExchangeRepository)
+    IDropExchangeRepository dropExchangeRepository, IRaidSessionService raidSessions)
     : InteractionModuleBase<SocketInteractionContext>
 {
     // El trueque va en DOS pasos (hay que elegir qué entregás y qué querés a cambio): la lista "Cambiar drops" (Swap) y, debajo de lo que elegiste, una lista solo tuya
@@ -252,7 +252,7 @@ public class TabernaModule(
 
             string talk = await ExecuteActionAsync(
                 action, userRepository, itemRepository, inventoryRepository, shopRepository, buffRepository, combatSessions, gameEvents,
-                Context.User.Id, selected.FirstOrDefault() ?? string.Empty, boxContextService);
+                Context.User.Id, selected.FirstOrDefault() ?? string.Empty, boxContextService, raidSessions);
 
             // La escena se refresca (tu oro y tus listas al día) y la respuesta va en un mensaje aparte.
             var scene = await BuildSceneAsync(userRepository, itemRepository, inventoryRepository, buffRepository, Context.User.Id, null, boxContextService, dropExchangeRepository);
@@ -335,7 +335,7 @@ public class TabernaModule(
     public static async Task<string> ExecuteActionAsync(
         string action, IUserRepository userRepository, IItemRepository itemRepository, IInventoryRepository inventoryRepository,
         IShopRepository shopRepository, IBuffRepository buffRepository, ICombatSessionService combatSessions, IGameEvents gameEvents,
-        ulong discordId, string itemName, IBoxContextService? boxContext = null)
+        ulong discordId, string itemName, IBoxContextService? boxContext = null, IRaidSessionService? raidSessions = null)
     {
         switch (action)
         {
@@ -353,7 +353,7 @@ public class TabernaModule(
 
             default: // Eat
             {
-                if (combatSessions.Peek(discordId) is not null)
+                if (combatSessions.Peek(discordId) is not null || raidSessions?.IsInActiveFight(discordId) == true)
                 {
                     return NpcDialogue.Innkeeper(InnkeeperLine.InCombat);
                 }

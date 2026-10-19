@@ -1,5 +1,6 @@
 using BotDsRpg.GameData;
 using BotDsRpg.Services;
+using Discord;
 using Discord.Commands;
 
 // Segunda parte de TextCommandModule (ver el comentario en TextCommandModule.cs): comandos de
@@ -19,52 +20,60 @@ public partial class TextCommandModule
     [Summary("Enfrentá al monstruo élite de tu zona: más difícil, recompensa x30 (cooldown de 30 minutos).")]
     public Task TravelAsync() => StartCombatAsync(CooldownCatalog.Travel, () => combatStarter.PrepareTravelAsync(Context.User.Id));
 
-    // "aa boss" — misma lógica que AdventureModule.HandleBossAsync.
+    // "aa boss" / "aa boss @amigo @otro" — misma lógica que AdventureModule.HandleBossAsync. Sin menciones es la pelea de siempre contra el jefe; con una o más (hasta 5) arma un grupo que
+    // pega por turnos (v0.19.0, reemplaza al viejo "aa raid"). Solo ARRANCA la invitación: los botones (Aceptar / Rechazar / Empezar ya / Atacar / Huir) siempre llegan como interacción
+    // de componente, sin importar si el mensaje nació de un slash command o de este comando de texto.
     [Command("boss")]
-    [Summary("Enfrentá al Jefe de tu zona actual (cooldown de 5 horas, compartido con el raid; si perdés o huís, 30 minutos).")]
-    public Task BossAsync() => StartCombatAsync(CooldownCatalog.Boss, () => combatStarter.PrepareBossAsync(Context.User.Id));
-
-    // "aa raid" — misma lógica que RaidModule.HandleRaidAsync. Solo ARRANCA el lobby: los botones
-    // (Unirse / Empezar ya / Atacar / Huir) siempre llegan como interacción de componente, sin
-    // importar si el mensaje nació de un slash command o de este comando de texto.
-    [Command("raid")]
-    [Summary("Jefe de zona cooperativo: varios jugadores atacan al mismo jefe (mín. 2, cooldown de 5 horas, compartido con /boss).")]
-    public async Task RaidAsync()
+    [Summary("Enfrentá al Jefe de tu zona, solo o con amigos: \"aa boss @amigo\" (hasta 5, misma zona máxima, pegan por turnos). Cooldown de 5 horas; si perdés o huís, 30 minutos.")]
+    public async Task BossAsync(params IUser[] companions)
     {
+        if (companions.Length == 0)
+        {
+            await StartCombatAsync(CooldownCatalog.Boss, () => combatStarter.PrepareBossAsync(Context.User.Id));
+            return;
+        }
+
         try
         {
-            var rejection = await RaidModule.ValidateStartAsync(
-                userRepository, itemRepository, monsterRepository, zoneRepository, combatSessions, raidSessions, Context.User.Id, cooldownRepository);
-
-            if (rejection is not null)
+            if (companions.Any(c => c.IsBot))
             {
-                await ReplyAsync(rejection.PlainMessage, embed: rejection.Embed);
+                await ReplyAsync("Los bots no pelean jefes 🤖. Mencioná a otros jugadores.");
                 return;
             }
 
-            var session = await RaidModule.BuildSessionAsync(
-                userRepository, itemRepository, monsterRepository, zoneRepository, buffRepository, Context.User.Id, GameModule.GetDisplayName(Context.User), bonusService);
+            var preparation = await partyBoss.PrepareAsync(
+                Context.User.Id, GameModule.GetDisplayName(Context.User),
+                companions.Select(c => new RaidModule.PartyMember(c.Id, GameModule.GetDisplayName(c))).ToList());
+
+            if (preparation.Session is not { } session)
+            {
+                await ReplyAsync(preparation.Rejection!.PlainMessage, embed: preparation.Rejection.Embed);
+                return;
+            }
 
             // Igual que StartCombatAsync más abajo: el reply target necesita el mensaje ya enviado
             // para poder editarlo después, así que primero se manda y recién ahí se registra.
-            var message = await ReplyAsync(embed: RaidModule.BuildLobbyEmbed(session), components: RaidModule.BuildLobbyButtons(session.RaidId));
+            var message = await ReplyAsync(RaidModule.BuildInviteMentions(session), embed: RaidModule.BuildLobbyEmbed(session), components: RaidModule.BuildLobbyButtons(session.RaidId));
             session.ReplyTarget = new MessageCombatReplyTarget(message);
-            session.ChannelId = Context.Channel.Id;
 
-            if (!raidSessions.TryAdd(session) || !raidSessions.TryRegisterParticipant(Context.User.Id, session.RaidId))
+            if (!partyBoss.TryOpen(session, Context.Channel.Id))
             {
+                await session.ReplyTarget.ClearComponentsAsync();
                 await ReplyAsync("Justo se te adelantó otra acción, probá de nuevo en un toque.");
-                return;
             }
-
-            RaidModule.ScheduleLobbyTimeout(session, raidSessions, adventureRepository);
         }
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude armar el raid ahora mismo, intentá de nuevo en un momento.");
+            await ReplyAsync("¡Upa! No pude armar el grupo ahora mismo, intentá de nuevo en un momento.");
         }
     }
+
+    // "aa raid" — el viejo raid abierto ya no existe (v0.19.0): el jefe en equipo es "aa boss @amigo". Queda el comando para que quien lo escribía por costumbre sepa qué pasó.
+    [Command("raid")]
+    [Summary("Ya no existe: para pelear el jefe con amigos usá \"aa boss @amigo\".")]
+    public Task RaidAsync() =>
+        ReplyAsync("El raid ahora es el jefe en equipo: escribí **aa boss @amigo** (o **/boss** nombrando a tus compañeros). Pegan por turnos y tienen que tener la misma zona máxima.");
 
     // "aa autohunt" / "aa ah" — misma lógica que AutoHuntModule.HandleAutoHuntAsync. Sin botones:
     // resuelve toda la pelea de una y comparte el cooldown de /hunt (no de "aa hunt" en particular,

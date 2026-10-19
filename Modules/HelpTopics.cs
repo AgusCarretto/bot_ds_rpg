@@ -24,7 +24,7 @@ public static class HelpTopics
         new("death", "☠️", "Perder un combate", "la penalidad por morir y cómo evitarla", ["muerte", "morir", "penalidad", "derrota", "perder"], Death),
         new("play", "🎰", "El casino", "coinflip y slots: cuánto paga cada uno", ["casino", "slots", "coinflip", "apostar", "juego"], Play),
         new("hunt", "🏹", "Combate", "cazar, viajar, huir, curarte y el modo automático", ["combate", "cazar", "caceria", "travel", "viaje", "autohunt", "pelea", "pelear", "combat"], Hunt),
-        new("boss", "👑", "Jefes y raids", "el jefe de cada zona y cómo hacerlo con amigos", ["jefe", "jefes", "raid", "raids"], Boss),
+        new("boss", "👑", "Jefes y equipo", "el jefe de cada zona y cómo hacerlo con amigos", ["jefe", "jefes", "raid", "raids", "grupo"], Boss),
         new("forge", "🔨", "Herrería y equipo", "forjar armas y amuletos, y cambiarlos", ["herrero", "herreria", "forja", "forjar", "recetas", "receta", "equipo", "arma", "armas", "amuleto"], Forge),
         new("zone", "🗺️", "Zonas", "cómo se avanza por el mundo", ["zona", "zonas", "mundo", "mapa"], Zone),
         new("boxes", "📦", "Cajas", "qué dan, cómo se consiguen y cada cuánto", ["caja", "cajas", "open", "abrir", "cofre", "cofres"], Boxes),
@@ -172,7 +172,7 @@ public static class HelpTopics
             $"La **EXP del nivel actual vuelve a 0** y el **{DeathPenalty.GoldPercent} % del oro de tu billetera** (con menos de {100 / DeathPenalty.GoldPercent} de oro no se pierde oro). " +
             "Una muerte promedio son unos 15 a 20 minutos de juego en EXP."),
         ("📍 Cuándo pasa",
-            "Si te vencen en **/hunt**, **/travel**, **/boss**, **/autohunt**, si te rematan mientras te curás con **/use**, o si cae todo el grupo de un **/raid** (a cada caído). " +
+            "Si te vencen en **/hunt**, **/travel**, **/boss**, **/autohunt**, si te rematan mientras te curás con **/use**, o si cae todo el grupo del jefe en equipo (a cada caído). " +
             "Huir, que se acabe el tiempo, los duelos (**/fight**) y la **Arena** no te quitan nada."),
         ("🛡️ Cómo protegerte",
             $"Guardá oro en el **banco** (**/info tema:bank**), curate con **/heal** antes de pelear, y recordá que **/autohunt** no te deja pelear con menos del {AutoHuntRules.MinHpPercent} % de vida " +
@@ -198,7 +198,7 @@ public static class HelpTopics
             $"Resuelve una cacería de una sola vez: solo ataque básico, sin habilidad y sin poder huir. Comparte cooldown con /hunt y pide al menos **{AutoHuntRules.MinHpPercent} %** de vida."),
         ("⌨️ Si un botón se traba",
             "Escribí **`aa attack`**, **`aa ability`** (la habilidad de tu clase) o **`aa flee`** (huir): juegan el mismo turno que el botón y el resultado sale en un mensaje nuevo con botones nuevos. " +
-            "Sirve en /hunt, /travel, /boss y /raid. Tenés **60 segundos** por turno: si no actuás en ese tiempo el combate se abandona."),
+            "Sirve en /hunt, /travel y /boss (también en equipo). Tenés **60 segundos** por turno: si no actuás en ese tiempo el combate se abandona (en equipo perdés el turno, y al segundo seguido te retirás)."),
         ("❤️ Tu vida",
             "La vida no se recupera sola: curate con **/heal**, **/use** o en la **/taberna**. Con 0 HP no podés pelear. En plena pelea (/hunt, /travel y /boss) solo podés comer **una vez por pelea**."),
         ("☠️ Si perdés", $"Perdés la EXP del nivel y el {DeathPenalty.GoldPercent} % del oro: **/info tema:death**."));
@@ -209,9 +209,12 @@ public static class HelpTopics
             $"El jefe de tu zona, solo. Pide el nivel de la zona siguiente. Cooldown de **{Dur(CooldownCatalog.Boss.Duration)}** si ganás y de **{Dur(CooldownCatalog.Boss.RetryAfterFailure ?? CooldownCatalog.Boss.Duration)}** si perdés, huís o se acaba el tiempo. " +
             $"Paga {CombatRewardCalculator.BossRewardMultiplier} cacerías (más el bono del jefe) y suelta el **cofre** de su zona: siempre la primera vez que lo vencés (en cada vuelta). Las veces siguientes puede caer una caja más chica (mirá **/drops**). " +
             "Esa primera vez también te llega el **huevo** de la mascota de la zona (**/info tema:pets**)."),
-        ("🛡️ /raid",
-            $"El mismo jefe pero **cooperativo**, de {RaidSettings.MinParticipants} a {RaidSettings.MaxParticipants} jugadores. Quien lo arranca abre una sala de {(int)RaidModule.LobbyDuration.TotalSeconds} segundos y los demás tocan **Unirse**. " +
-            "El jefe es mucho más duro y su vida crece con cada jugador; cada uno que pelea cobra la recompensa entera. Comparte cooldown con /boss."),
+        ("👥 /boss @amigo (aa boss @amigo)",
+            $"El mismo jefe **en equipo**, de {RaidSettings.MinParticipants} a {RaidSettings.MaxParticipants} jugadores: nombrás a uno o más compañeros y ellos aceptan con un botón (tienen {(int)RaidModule.LobbyDuration.TotalSeconds} segundos). " +
+            "Pegan **por turnos**: pega uno, el jefe le responde a ese jugador y le toca al siguiente (el bot te menciona cuando es tu turno); si alguien no juega en 60 segundos pierde el turno y, si pasa dos veces seguidas, se retira. " +
+            "**Todos tienen que tener la misma zona máxima** (la que ves en tu perfil como \"máx. Zona N\"): si no, el grupo se rechaza. " +
+            "Cada uno puede **comer una vez** por pelea con el botón 🍖 **Comer** (o con **/use**): cura, pero gasta tu turno; los banquetes se comen antes. " +
+            "La vida del jefe crece con cada jugador y cada uno que le pega cobra la recompensa entera. Comparte cooldown con el jefe en solitario."),
         ("🎒 Antes de ir", "Llevá el arma y el amuleto de tu zona (**/info tema:forge**) y la vida llena. Si perdés, pagás la penalidad: **/info tema:death**."));
 
     private static Embed Forge() => Topic(Self("forge"),
@@ -293,7 +296,7 @@ public static class HelpTopics
             "Se forja en la herrería (**/forge**) y es lo más caro del juego: pide los **drops de cacería de las 5 zonas**, bastante madera y mineral raros, un material **Mítico** de recolección en cada pieza (la **Corteza del Árbol de Vida** en el arma y el **Fragmento de Meteorito** en el amuleto: salen con 0,5 % al **/chop** y al **/mine**, así que andá juntándolos desde el principio y no los desmanteles) y mucho oro. **/forge-special** te muestra las dos recetas DESDE EL PRINCIPIO (con lo que ya tenés de cada cosa) para que no desmanteles ni vendas lo que vas a necesitar; lo que te falta primero lo ves en **/tips**. " +
             "Como el equipo va en su casillero, hay que **vender primero el de la zona anterior** (sus encantamientos se pierden: es el último equipo, el Fuego Nuevo lo borra de todos modos)."),
         ("⚔️ Adentro",
-            $"Solo **/boss**, contra **{FogonRules.BossName}**: no hay cacería, viajes ni raid. Usa el cooldown del jefe (**{Dur(CooldownCatalog.Boss.Duration)}** si ganás y **{Dur(CooldownCatalog.Boss.RetryAfterFailure ?? CooldownCatalog.Boss.Duration)}** si perdés, huís o se acaba el tiempo) y si perdés pagás la penalidad de siempre (**/info tema:death**). " +
+            $"Solo **/boss**, contra **{FogonRules.BossName}**: no hay cacería, viajes ni grupo. Usa el cooldown del jefe (**{Dur(CooldownCatalog.Boss.Duration)}** si ganás y **{Dur(CooldownCatalog.Boss.RetryAfterFailure ?? CooldownCatalog.Boss.Duration)}** si perdés, huís o se acaba el tiempo) y si perdés pagás la penalidad de siempre (**/info tema:death**). " +
             "Está calibrado como cada jefe: con el equipo de la zona anterior casi siempre perdés, con el del Fogón es un desafío parejo."),
         ("🕯️ ¿Te falta un Mítico?",
             $"La Corteza y el Meteorito salen al {Dec(RarityCatalog.GatheringChances.Last(c => c.Rarity == "Mítico").Percent)} % por **/chop** y **/mine**, y hace falta uno de cada uno por vuelta. Al vencer al jefe de la última zona se conoce al **Tabernero del Inframundo** (**/deepshop**, en texto `aa deepshop`): vende cada uno por **{Num(DeepShop.PricePerUnit)}** de Polvo (el Polvo sale de **/dismantle**; desmantelar un Mítico da solo {Num(Dismantling.DustPerUnit("Mítico"))}). Una vez que hacés un Fuego Nuevo ya lo conocés para siempre."),
@@ -328,7 +331,7 @@ public static class HelpTopics
         "Es voluntario y se habilita al vencer al **Asador Eterno** en **El Fogón Eterno** (**/info tema:fogon**).",
         ("🔥 Cómo se hace",
             "**/fuegonuevo** (en texto `aa fn`) muestra lo que se va, lo que se queda y lo que ganás, con el botón para hacerlo. Después elegís la **clase** de la vuelta nueva: tocarla confirma y no se deshace. " +
-            "No se puede en pleno combate o raid, y cada vuelta pide volver a vencer al Asador (el equipo del Fogón se forja de nuevo)."),
+            "No se puede en pleno combate o con un grupo armado, y cada vuelta pide volver a vencer al Asador (el equipo del Fogón se forja de nuevo)."),
         ("📈 Lo que ganás con cada uno",
             $"🏹 Chance de drop en **/hunt**: **{FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.HuntDropStep)}** sobre la base por cada Fuego Nuevo (lineal: el 10.º es {FuegoNuevoRules.PercentText(FuegoNuevoRules.HuntDropMultiplier(10))}, no se compone)\n" +
             $"🗺️ Chance de drop en **/travel**: arranca en **{FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.TravelStep(1))}** y cada vuelta suma un poco menos (el 10.º acumula {FuegoNuevoRules.PercentText(FuegoNuevoRules.TravelDropMultiplier(10))}, con piso de {FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.TravelStep(1000))} por vuelta)\n" +
@@ -348,7 +351,7 @@ public static class HelpTopics
         "Las **Crónicas del Fogón** son la historia del juego: la cuenta el Tabernero junto al fuego y se va abriendo mientras jugás. No da poder (ni stats, ni oro, ni drops): da sentido. " +
         "**/story** (en texto `aa historia`) abre el índice con una lista para leer lo que ya abriste.",
         ("📖 Acto I · Subir",
-            $"El prólogo y un capítulo por cada jefe de zona (los {Lore.LadderChapters} de la escalera) más el del Asador Eterno. Cada uno se abre la **primera vez** que lo vencés (**/boss** o **/raid**) y te llega un aviso aparte. " +
+            $"El prólogo y un capítulo por cada jefe de zona (los {Lore.LadderChapters} de la escalera) más el del Asador Eterno. Cada uno se abre la **primera vez** que lo vencés (**/boss**, solo o en equipo) y te llega un aviso aparte. " +
             "Lo que todavía no abriste sale 🔒 sellado, sin título, para que nadie se spoilee."),
         ("🔥 Acto II · Soltar",
             $"El Asador carga con un pesar enorme. Cada **Fuego Nuevo** (**/info tema:fuego**) le saca un 1 %: con {Lore.FinalFuegoNuevo} vueltas queda libre. En ciertas vueltas se abre una escena nueva " +
@@ -359,7 +362,7 @@ public static class HelpTopics
     private static Embed Pets() => Topic(Self("pets"),
         "Cada zona tiene su **mascota**. Las que tengas valen **todas a la vez**: no ocupan lugar, no se pierden y no hay que sacarlas a pasear.",
         ("🥚 Cómo se consiguen",
-            "La **primera vez** que vencés al jefe de una zona (**/boss** o **/raid**) te llega un **huevo** junto con el cofre. Lo abrís con **/open** y nace la mascota de esa zona: una por zona. Cuáles son y qué dan lo descubrís jugando."),
+            "La **primera vez** que vencés al jefe de una zona (**/boss**, solo o en equipo) te llega un **huevo** junto con el cofre. Lo abrís con **/open** y nace la mascota de esa zona: una por zona. Cuáles son y qué dan lo descubrís jugando."),
         ("🎁 Qué dan",
             "Cada especie da un bonus distinto, por ejemplo **más oro**, **más EXP**, **más defensa** en las peleas contra monstruos o **más chances de drop** en cacería y viaje. " +
             $"Es relativo: un +6 % sobre un {CombatRewardCalculator.HuntDropChancePercent} % de drop da {Dec(CombatRewardCalculator.HuntDropChancePercent * 1.06)} %. El cofre del jefe no cambia, y en duelos y Arena no cuentan. " +
@@ -380,7 +383,7 @@ public static class HelpTopics
                 "Después de usar un comando que deja una espera, el bot te escribe en **ese mismo canal** cuando termina:\n" + string.Join('\n', waits)),
             ("🧹 Sin ensuciar el canal",
                 $"Los de **cacería, talar y minar** (esperas cortas) se borran solos a los {shortMinutes} minutos, y no avisan si justo estás peleando o acabás de usar un comando. Los demás se quedan. " +
-                "Si terminan varias esperas juntas, llegan en un solo mensaje. En una **raid**, el aviso del jefe les llega a todos los que pelearon."),
+                "Si terminan varias esperas juntas, llegan en un solo mensaje. Si peleaste el jefe en equipo, el aviso les llega a todos los que pelearon."),
             ("⚙️ Elegir cuáles",
                 "**/reminders** (en texto `aa recordatorios` o `aa avisos`) abre una lista donde marcás cuáles querés recibir, con botones para recibir o silenciar todos. Al apagar uno se borra el aviso que estaba pendiente."),
             ("📌 Cosas a saber",
@@ -390,7 +393,7 @@ public static class HelpTopics
     private static Embed Vote() => Topic(Self("vote"),
         "Votar en **top.gg** ayuda a que más gente encuentre el juego, y te devolvemos el favor.",
         ("🎁 Qué da cada voto",
-            $"**{VoteRules.RewardBoxes}× {VoteRules.RewardBoxName}** (se abre con **/open**) y **el jefe se resetea**: si el cooldown de **/boss** o **/raid** ({Dur(CooldownCatalog.Boss.Duration)} tras ganar) estaba corriendo, queda listo al instante."),
+            $"**{VoteRules.RewardBoxes}× {VoteRules.RewardBoxName}** (se abre con **/open**) y **el jefe se resetea**: si el cooldown de **/boss** (solo o en equipo) ({Dur(CooldownCatalog.Boss.Duration)} tras ganar) estaba corriendo, queda listo al instante."),
         ("🗳️ Cómo se cobra",
             "**/vote** (en texto `aa vote`) te muestra el link para votar. Después de votar, escribí **/vote** otra vez: el bot le pregunta a top.gg y te paga. Cada voto se cobra **una sola vez**, y si no lo cobrás antes de que venza (unas 12 horas) se pierde."),
         ("⏳ Cada cuánto",

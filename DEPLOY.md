@@ -3,7 +3,7 @@
 El bot es **un solo proceso** que se conecta a Discord (no escucha ningún puerto) y una **base de Postgres**. Sirve
 cualquier host que corra contenedores Docker; no está atado a ningún proveedor. Importante:
 
-- **Una sola instancia**: las peleas y los raids viven en memoria. No escalar a 2 réplicas.
+- **Una sola instancia**: las peleas y los jefes en equipo viven en memoria. No escalar a 2 réplicas.
 - **Un solo bot, UNA instancia corriendo a la vez**: se puede usar el mismo bot (mismo token) para desarrollar y para jugar,
   pero nunca dos copias prendidas al mismo tiempo (tu PC y el servidor): las dos responderían cada comando y se pisarían.
   Si querés probar cambios en tu PC mientras el servidor sigue abierto para tus amigos, hace falta un bot aparte (o apagar el
@@ -12,7 +12,7 @@ cualquier host que corra contenedores Docker; no está atado a ningún proveedor
   (punto 6) y no corras cosas destructivas: los seeds son re-ejecutables, pero un experimento a medias lo sufren todos.
 - **Ramas**: `main` es lo que corre (y lo que se despliega); `develop` es donde se trabaja. Para liberar una versión: se
   mergea `develop` en `main` y se le pone el tag (`v0.5.1`). El hosting siempre apunta a `main` o a un tag.
-- Cada actualización **corta las peleas y raids en curso** (están en memoria). La base no se pierde nada: el HP se guarda al
+- Cada actualización **corta las peleas y los jefes en equipo en curso** (están en memoria). La base no se pierde nada: el HP se guarda al
   resolver cada pelea. Avisá antes de actualizar.
 
 ## 1. Discord (una vez)
@@ -161,7 +161,7 @@ que el código lee; si arrancás primero, `/open`, `/shop` y la taberna fallan).
 
 **v0.8.1 → v0.8.2 (caras de los enemigos y Maderas nuevas):** ANTES de arrancar el bot nuevo corré, en este orden, `Database/update_item_emojis.sql` (las 10 armas de Zona 4 y 5
 y las 4 Maderas nuevas) y `Database/update_monster_portraits.sql` (agrega la columna `monsters.portrait_emoji`, que el código lee: si arrancás primero, `/hunt`, `/travel`,
-`/boss` y `/raid` fallan). Los dos son re-ejecutables y el segundo se verifica solo. Esos emojis son de la **aplicación** del bot: si usás otro bot (otra aplicación), no los tiene y
+`/boss`, solo o en equipo, falla). Los dos son re-ejecutables y el segundo se verifica solo. Esos emojis son de la **aplicación** del bot: si usás otro bot (otra aplicación), no los tiene y
 hay que resubirlos y regenerar los scripts. Después reiniciá el bot.
 
 **v0.8.4 → v0.9.0 (banco, Polvo y encantamientos):** ANTES de arrancar el bot nuevo corré `Database/add_bank_dust_enchants.sql` (agrega a `users` las columnas `has_bank`, `bank_gold`, `dust`, `weapon_enchant` y

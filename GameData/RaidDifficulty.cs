@@ -25,6 +25,13 @@ public static class RaidDifficulty
     // v0.17.1: la vida GUARDADA de los jefes subió ×1,25 (Database/rebalance_boss_hp.sql) y los multiplicadores de VIDA de abajo se dividieron por 1,25 (eran 2,2 y 1,5), así que el jefe del RAID queda
     // exactamente con la misma vida y la misma dificultad que ya estaba medida arriba (2,2 / 1,25 × 1,25 = 2,2; 1,2 × 1,25 = 1,5). Si se vuelve a tocar la vida de los jefes, tocar esto con el mismo factor
     // (o decidir a propósito un raid más duro: con ×1,25 de más, un grupo de tres de las zonas 2 a 5 pasaba de ganar ~49 % a ~16 %).
+    //
+    // v0.18.6 bajó la vida del raid ×0,75 (1,76 → 1,32 y 1,2 → 0,9) y la v0.19.0 lo DEJÓ SIN EFECTO antes de salir a producción: el dueño (2026-10-19) no quiere que baje la dificultad del jefe en equipo; quiere que el
+    // porcentaje de victoria suba con cada jugador que se suma (+50 % de vida por jugador extra, ver HpPerExtraParticipant) y que eso promueva pelearlo en grupo. Medido (tools/balance2, parte K, equipo propio, SIN
+    // comida porque el jefe en equipo no deja comer, 400 por celda, zonas 2 a 5): a nivel de llegada (mín+3) 1 jugador ~0-1 %, 2 jugadores 21-29 %, 3 jugadores 40-55 %, 4 jugadores 45-59 %; a mín+8, 2 jugadores 74-94 %,
+    // 3 jugadores 90-100 %, 4 jugadores 96-100 %. Ojo: el jefe SOLO (con una comida y la habilidad) se gana ~79 / 79 / 70 / 45 % a nivel de llegada, o sea que un dúo a nivel de llegada es peor apuesta que ir solo.
+    // Si se quiere que el grupo sea claramente mejor, las palancas son dejar comer una vez por jugador en el jefe en equipo (ver MEJORAS.md) o bajar estas dos constantes (×0,75 = 1,32 / 0,9, con el que 2 jugadores
+    // ganan 56-75 %).
     private static readonly Scale FirstZone = new(1.76, 1.35);
     private static readonly Scale LadderZones = new(1.2, 1.1);
 

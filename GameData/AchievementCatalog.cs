@@ -49,7 +49,7 @@ public static class AchievementCatalog
 
         // v0.9.0 (premios solo de oro y XP, ver Plain).
         new("comandante",    "Comandante",    "⌨️", GameEventKinds.CommandUsed,   "Usá comandos del bot (de barra o con aa)",          Plain(100, 1000, 10000)),
-        new("exterminador",  "Exterminador",  "☠️", GameEventKinds.EnemyDefeated, "Vencé enemigos: cacerías, viajes, jefes y raids",   Plain(50, 500, 3000)),
+        new("exterminador",  "Exterminador",  "☠️", GameEventKinds.EnemyDefeated, "Vencé enemigos: cacerías, viajes y jefes (solo o en equipo)",   Plain(50, 500, 3000)),
         new("misionero",     "Misionero",     "📋", GameEventKinds.MissionClaimed,"Reclamá misiones diarias y semanales",              Plain(5, 40, 150)),
         new("desmantelador", "Desmantelador", "🧰", GameEventKinds.Dismantle,     "Desmantelá materiales para sacar Polvo",           Plain(20, 150, 1000)),
         new("encantador",    "Encantador",    "✨", GameEventKinds.Enchant,       "Intentá encantar tu arma o tu amuleto",            Plain(1, 10, 40)),

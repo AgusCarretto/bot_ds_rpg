@@ -10,7 +10,7 @@ using Discord.Interactions;
 // solo de esa, las unidades que hagan falta. Si no alcanza la comida, se la come toda y avisa cuánto falta. Todo se cobra en UNA transacción
 // (IInventoryRepository.EatAndHealAsync): o se gasta todo lo planeado y se cura, o no cambia nada. Sigue bloqueado en combate por la misma razón
 // de siempre: comer tranquilo no debería ser gratis en pleno combate, para eso está /use (cede el turno al monstruo, ver Modules/UseModule.cs).
-public class TavernModule(IUserRepository userRepository, IInventoryRepository inventoryRepository, ICombatSessionService combatSessions, IBuffRepository buffRepository)
+public class TavernModule(IUserRepository userRepository, IInventoryRepository inventoryRepository, ICombatSessionService combatSessions, IBuffRepository buffRepository, IRaidSessionService raidSessions)
     : InteractionModuleBase<SocketInteractionContext>
 {
     // Comando barra: /heal [comida]
@@ -23,7 +23,7 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
 
         try
         {
-            var embed = await ExecuteHealAsync(userRepository, inventoryRepository, combatSessions, buffRepository, Context.User.Id, food);
+            var embed = await ExecuteHealAsync(userRepository, inventoryRepository, combatSessions, buffRepository, Context.User.Id, food, raidSessions);
             if (NpcImages.AttachmentPathFor(embed) is { } file)
             {
                 await FollowupWithFileAsync(file, embed: embed);
@@ -46,15 +46,16 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
     // exactamente la misma lógica en "aa heal".
     public static async Task<Embed> ExecuteHealAsync(
         IUserRepository userRepository, IInventoryRepository inventoryRepository, ICombatSessionService combatSessions,
-        IBuffRepository buffRepository, ulong discordId, string? foodName = null) =>
-        NpcImages.Decorate(await ExecuteHealCoreAsync(userRepository, inventoryRepository, combatSessions, buffRepository, discordId, foodName), NpcImages.Innkeeper);
+        IBuffRepository buffRepository, ulong discordId, string? foodName = null, IRaidSessionService? raidSessions = null) =>
+        NpcImages.Decorate(await ExecuteHealCoreAsync(userRepository, inventoryRepository, combatSessions, buffRepository, discordId, foodName, raidSessions), NpcImages.Innkeeper);
 
     // Sin la foto del tabernero: lo que reutiliza la taberna (la opción "Curarme del todo") para sacarle el texto.
     public static async Task<Embed> ExecuteHealCoreAsync(
         IUserRepository userRepository, IInventoryRepository inventoryRepository, ICombatSessionService combatSessions,
-        IBuffRepository buffRepository, ulong discordId, string? foodName = null)
+        IBuffRepository buffRepository, ulong discordId, string? foodName = null, IRaidSessionService? raidSessions = null)
     {
-        if (combatSessions.Peek(discordId) is not null)
+        // También en pleno jefe en equipo (ya peleando): ahí se come con el botón del combate, no pasando por la posada.
+        if (combatSessions.Peek(discordId) is not null || raidSessions?.IsInActiveFight(discordId) == true)
         {
             return new EmbedBuilder()
                 .WithTitle("⚔️ No podés comer tranquilo en pleno combate")

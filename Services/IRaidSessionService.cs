@@ -1,4 +1,5 @@
 using BotDsRpg.GameData;
+using BotDsRpg.Repositories;
 
 namespace BotDsRpg.Services;
 
@@ -36,6 +37,12 @@ public sealed class RaidParticipant
     public bool HasFled { get; set; }
     public bool Contributed { get; set; } // pegó al menos un golpe — si el jefe cae, esto decide si cobra recompensa aunque ya lo hayan derribado antes
     public int TurnsTaken { get; set; }
+
+    // Turnos seguidos que dejó vencer sin jugar (v0.19.0, ver RaidModule.OnTurnTimeoutAsync): el primero pierde el turno, el segundo lo retira del combate. Jugar lo pone en 0.
+    public int MissedTurns { get; set; }
+
+    // Comidas que se comió en esta pelea (RaidSettings.MealsPerFight por jugador, v0.19.0): comer gasta el turno y cura, como en /travel y /boss.
+    public int MealsEaten { get; set; }
     public int DodgeCount { get; set; }
     public int CritCount { get; set; }
     public int TotalDamageDealt { get; set; }
@@ -49,11 +56,17 @@ public sealed class RaidParticipant
     public int ToDbHpDelta(int combatHpDelta) => (int)Math.Round(combatHpDelta / Passives.MaxHpMultiplier);
 }
 
-// Jefe de zona cooperativo: varios RaidParticipant comparten el HP del jefe (BossCurrentHp), pero
-// cada uno pelea "en paralelo" a su propio ritmo — un click de Atacar resuelve el turno de ESE
-// jugador nomás, nunca espera a los demás (ver Modules/RaidModule.cs). BossDamage se sortea UNA
-// sola vez al arrancar (igual que CombatState.MonsterDamage en combate solitario) y se reusa en
-// cada contraataque.
+// A quién se invitó a pelear el jefe en equipo (v0.19.0: "/boss @amigo", ver RaidModule.PreparePartyAsync): solo ellos pueden aceptar. El orden de la lista es el de las menciones y
+// después define el orden de los turnos.
+public sealed record RaidInvite(ulong DiscordId, string DisplayName);
+
+// Lo que el reloj de turnos necesita para actuar solo (nadie hizo clic, así que no hay ningún módulo vivo con sus repositorios). Lo deja la sesión al armarse (null = sin reloj:
+// las pruebas que arman sesiones a mano no lo tienen y no quedan temporizadores sueltos).
+public sealed record RaidTurnContext(IUserRepository Users, IGameEvents Events, IRaidSessionService Raids);
+
+// Jefe de zona en equipo ("/boss @amigo", antes "/raid"): varios RaidParticipant comparten el HP del jefe (BossCurrentHp) y pegan POR TURNOS — pega uno, el jefe le responde a ese
+// jugador, y le toca al siguiente (v0.19.0; antes cada uno pegaba cuando quería). Un clic fuera de turno se rechaza dentro del lock (ver Modules/RaidModule.cs). BossDamage se
+// sortea UNA sola vez al arrancar (igual que CombatState.MonsterDamage en combate solitario) y se reusa en cada contraataque.
 public sealed class RaidSession
 {
     public required Guid RaidId { get; init; }
@@ -92,6 +105,28 @@ public sealed class RaidSession
     public int BossCurrentHp { get; set; }
     public RaidPhase Phase { get; set; } = RaidPhase.Lobby;
 
+    // Los invitados (sin contar a quien arrancó) y quienes ya dijeron que no. Quien está en Invited y no figura en Participants ni en Declined sigue "pendiente". Vacío = sesión armada
+    // sin invitaciones (las pruebas): el orden de los turnos es el de Participants.
+    public List<RaidInvite> Invited { get; } = [];
+    public HashSet<ulong> Declined { get; } = [];
+
+    // La zona máxima (por dificultad, ver ZoneRanking.MaxUnlockedRank) de quien arrancó: todos los del grupo tienen que tener la MISMA, también al aceptar (0 = no se exige).
+    public int MaxZoneRank { get; set; }
+
+    // Turnos (v0.19.0). TurnIndex es la posición en Participants de a quién le toca; TurnNumber sube con CADA cambio de turno, y el temporizador de un turno viejo lo ve distinto y se
+    // descarta solo. Todo se toca bajo Lock.
+    public int TurnIndex { get; set; }
+    public int TurnNumber { get; set; }
+    public CancellationTokenSource? TurnCts { get; set; }
+
+    // Número de turno (TurnNumber) en el que quien tiene el turno está COMIENDO (gastando la comida en la base, que es I/O y no puede ir adentro del lock): mientras valga lo mismo que TurnNumber, ni su
+    // ataque ni el reloj de turnos tocan ese turno. 0 = nadie está comiendo.
+    public int EatingTurnNumber { get; set; }
+    public RaidTurnContext? Turns { get; set; }
+
+    // Cómo borrar el último aviso de turno ("🎯 @fulano ¡es tu turno!") que el bot mandó: cada turno nuevo borra el anterior, así el canal no se llena (ver RaidModule.PingTurnAsync).
+    public Func<Task>? TurnPingDeleter { get; set; }
+
     // Guarda el orden de llegada (Dictionary alcanza para lookup, pero la UI quiere mostrarlos en
     // el orden en que se sumaron).
     public List<RaidParticipant> Participants { get; } = [];
@@ -111,6 +146,9 @@ public interface IRaidSessionService
     // /hunt, /travel y /boss solitario (Services/AdventureCombatStarter.cs) antes de arrancar, así
     // nadie puede estar en dos combates a la vez.
     bool IsInAnyRaid(ulong discordId);
+
+    // true si el jugador está en un jefe en equipo que YA ESTÁ PELEANDO (no en la sala de espera de las invitaciones). Es la «pelea en curso» que bloquea /use, /heal y la taberna: ahí se come con el botón del combate.
+    bool IsInActiveFight(ulong discordId);
 
     // El id del raid en el que está el jugador (lobby o pelea activa), o null si no está en ninguno. Lo usan "aa attack", "aa ability" y "aa flee" (no hay botón que lleve el id).
     Guid? RaidIdOf(ulong discordId);

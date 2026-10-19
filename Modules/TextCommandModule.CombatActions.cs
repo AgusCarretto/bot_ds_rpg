@@ -3,14 +3,14 @@ using Discord.Commands;
 
 // Parte de TextCommandModule (ver el comentario en TextCommandModule.cs): jugar el turno del combate ESCRIBIENDO, para cuando un botón se traba.
 // Discord le da al bot 3 segundos para contestar un clic; si el bot demora (o Discord no se lo entrega a tiempo) el botón dice "no respondió" y el turno no se juega. Un comando de texto
-// no tiene ese límite. Vale para /hunt, /travel, /boss y /raid: juega EXACTAMENTE el mismo turno que el botón (AdventureModule.ResolveTurnCoreAsync / RaidModule.ResolveAttackCoreAsync) y el
+// no tiene ese límite. Vale para /hunt, /travel y /boss (también en equipo): juega EXACTAMENTE el mismo turno que el botón (AdventureModule.ResolveTurnCoreAsync / RaidModule.ResolveAttackCoreAsync) y el
 // resultado sale como un MENSAJE NUEVO con botones nuevos (el viejo queda sin botones). Si no hay combate en curso, avisa.
 public partial class TextCommandModule
 {
     // "aa attack" — lo mismo que el botón "Atacar".
     [Command("attack")]
     [Alias("atk", "atacar", "ataque")]
-    [Summary("Atacá en tu combate escribiendo (para cuando el botón se traba): \"aa attack\". Sirve en /hunt, /travel, /boss y /raid.")]
+    [Summary("Atacá en tu combate escribiendo (para cuando el botón se traba): \"aa attack\". Sirve en /hunt, /travel y /boss (también en equipo).")]
     public Task AttackAsync() => CombatActionAsync(fled: false, useAbility: false);
 
     // "aa ability" — lo mismo que el botón de la habilidad de tu clase.
@@ -46,7 +46,7 @@ public partial class TextCommandModule
                 var output = new MessageRaidTurnOutput(Context.Channel);
                 if (fled)
                 {
-                    await RaidModule.ResolveFleeCoreAsync(raidSessions, userRepository, raidId, discordId, output);
+                    await RaidModule.ResolveFleeCoreAsync(raidSessions, userRepository, raidId, discordId, output, gameEvents);
                 }
                 else
                 {
@@ -57,7 +57,7 @@ public partial class TextCommandModule
                 return;
             }
 
-            await ReplyAsync("No tenés ningún combate activo. Empezá uno con /hunt, /travel, /boss, /raid o \"aa hunt\".");
+            await ReplyAsync("No tenés ningún combate activo. Empezá uno con /hunt, /travel, /boss o \"aa hunt\".");
         }
         catch (Exception ex)
         {

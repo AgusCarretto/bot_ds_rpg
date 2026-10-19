@@ -45,8 +45,8 @@ class Program
             .AddEnvironmentVariables()
             .Build();
 
-        // Opcional: mínimo de jugadores para arrancar un /raid (2 por defecto, ver Services/RaidSettings.cs).
-        // Bajarlo a 1 con Raid__MinParticipants=1 permite probar el flujo completo de un raid sin
+        // Opcional: mínimo de jugadores para arrancar un jefe en equipo (/boss @amigo; 2 por defecto, ver Services/RaidSettings.cs).
+        // Bajarlo a 1 con Raid__MinParticipants=1 permite probar el flujo completo del grupo sin
         // una segunda cuenta.
         if (int.TryParse(configuration["Raid:MinParticipants"], out int raidMinParticipants))
         {
@@ -550,6 +550,7 @@ public static class ServiceProviderBuilder
             .AddSingleton<ICasinoService, CasinoService>()
             .AddSingleton<ICombatSessionService, CombatSessionService>()
             .AddSingleton<IRaidSessionService, RaidSessionService>()
+            .AddSingleton<IPartyBossService, PartyBossService>()
             .AddSingleton<IAdventureCombatStarter, AdventureCombatStarter>()
             .BuildServiceProvider();
     }

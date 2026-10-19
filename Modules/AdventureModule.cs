@@ -14,7 +14,8 @@ public class AdventureModule(
     IAdventureCombatStarter combatStarter,
     IGameEvents gameEvents,
     IBuffRepository buffRepository,
-    IZoneBoxService zoneBoxService) : InteractionModuleBase<SocketInteractionContext>
+    IZoneBoxService zoneBoxService,
+    IPartyBossService partyBoss) : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("hunt", "Salí a cazar monstruos cercanos (cooldown de 1 minuto).")]
     public Task HandleHuntAsync() =>
@@ -24,9 +25,60 @@ public class AdventureModule(
     public Task HandleTravelAsync() =>
         StartCombatAsync(CooldownCatalog.Travel, () => combatStarter.PrepareTravelAsync(Context.User.Id));
 
-    [SlashCommand("boss", "Enfrentá al Jefe de tu zona: ganarlo te deja avanzar (cooldown de 5 h, 30 min si perdés).")]
-    public Task HandleBossAsync() =>
-        StartCombatAsync(CooldownCatalog.Boss, () => combatStarter.PrepareBossAsync(Context.User.Id));
+    // El jefe de la zona, SOLO o EN EQUIPO (v0.19.0; reemplaza al viejo /raid): sin compañeros es la pelea de siempre; nombrando a uno o más (hasta 5) arma un grupo que pega por turnos
+    // y exige la misma zona máxima (ver Modules/RaidModule.cs). Slash no tiene parámetros variables, de ahí los cinco opcionales; "aa boss @a @b" los toma todos juntos.
+    [SlashCommand("boss", "Enfrentá al Jefe de tu zona, solo o con amigos (cooldown de 5 h, 30 min si perdés).")]
+    public Task HandleBossAsync(
+        [Summary("companero", "Un amigo para pelear juntos por turnos (misma zona máxima que vos).")] IUser? companion = null,
+        [Summary("companero2", "Otro amigo más (opcional).")] IUser? companion2 = null,
+        [Summary("companero3", "Otro amigo más (opcional).")] IUser? companion3 = null,
+        [Summary("companero4", "Otro amigo más (opcional).")] IUser? companion4 = null,
+        [Summary("companero5", "Otro amigo más (opcional).")] IUser? companion5 = null)
+    {
+        var named = new[] { companion, companion2, companion3, companion4, companion5 }.OfType<IUser>().ToList();
+        return named.Count == 0
+            ? StartCombatAsync(CooldownCatalog.Boss, () => combatStarter.PrepareBossAsync(Context.User.Id))
+            : StartPartyAsync(named);
+    }
+
+    // Arma el grupo: valida a todos, publica la invitación (con la mención de los invitados fuera del embed, que es lo único que avisa) y deja que RaidModule siga con los botones.
+    private async Task StartPartyAsync(IReadOnlyList<IUser> companions)
+    {
+        await DeferAsync();
+
+        try
+        {
+            if (companions.Any(c => c.IsBot))
+            {
+                await FollowupAsync("Los bots no pelean jefes 🤖. Invitá a otros jugadores.", ephemeral: true);
+                return;
+            }
+
+            var preparation = await partyBoss.PrepareAsync(
+                Context.User.Id, GameModule.GetDisplayName(Context.User),
+                companions.Select(c => new RaidModule.PartyMember(c.Id, GameModule.GetDisplayName(c))).ToList());
+
+            if (preparation.Session is not { } session)
+            {
+                await FollowupAsync(preparation.Rejection!.PlainMessage, embed: preparation.Rejection.Embed, ephemeral: true);
+                return;
+            }
+
+            session.ReplyTarget = new InteractionCombatReplyTarget(Context.Interaction);
+            if (!partyBoss.TryOpen(session, Context.Channel?.Id ?? 0))
+            {
+                await FollowupAsync("Justo se te adelantó otra acción, probá de nuevo en un toque.", ephemeral: true);
+                return;
+            }
+
+            await FollowupAsync(RaidModule.BuildInviteMentions(session), embed: RaidModule.BuildLobbyEmbed(session), components: RaidModule.BuildLobbyButtons(session.RaidId));
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            await FollowupAsync("¡Upa! No pude armar el grupo ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
+        }
+    }
 
     private async Task StartCombatAsync(CooldownDefinition definition, Func<Task<CombatStartOutcome>> prepare)
     {
@@ -512,7 +564,7 @@ public class AdventureModule(
     public static Embed BuildInGateEmbed() =>
         new EmbedBuilder()
             .WithTitle("🔥 Estás en El Fogón Eterno")
-            .WithDescription($"Acá no hay cacería, viajes ni raid: solo te espera **{FogonRules.BossName}**. Enfrentalo con **/boss**, o salí del Fogón viajando a una zona con **/zona**.")
+            .WithDescription($"Acá no hay cacería, viajes ni jefe en equipo: solo te espera **{FogonRules.BossName}**. Enfrentalo con **/boss**, o salí del Fogón viajando a una zona con **/zona**.")
             .WithColor(Color.DarkOrange)
             .Build();
 

@@ -164,7 +164,7 @@ void Check(string name, bool ok, string detail)
 }
 
 // T6: el HP del jefe se escala AL ARRANCAR según cuántos jugadores terminan peleando
-// (base x 1.76 x (1 + 0.5 por jugador extra); eran 2.2 hasta la v0.17.1, que subió la vida guardada de los jefes x1.25 y dividió esto por lo mismo), y el jefe arranca con la vida llena.
+// (base x 1.76 x (1 + 0.5 por jugador extra); era 2.2 hasta la v0.17.1, que subió la vida guardada de los jefes x1.25 y dividió esto por lo mismo; la v0.18.6 lo bajó x0.75 y la v0.19.0 lo deshizo), y el jefe arranca con la vida llena.
 foreach (int n in new[] { 1, 2, 3, 4 })
 {
     var svc = NewSvc(); Configure(1);

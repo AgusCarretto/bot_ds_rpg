@@ -36,11 +36,11 @@ usar). Si un arnés se corta a la mitad, puede quedar un usuario descartable: se
 | `abilitytest`, `leaktest`, `raidtest`, `choicetest`, `noticetest`, `embedtest`, `healtest` | el resolutor de turnos y las habilidades, fugas de estado, la concurrencia del raid, las listas desplegables, la entrega de avisos y los límites de los embeds |
 | `reworktest`, `cofrestest`, `forgespecialtest`, `portraittest` | los datos del catálogo (recetas, cajas por zona, el Fogón, retratos) contra la base |
 | `v83test`, `v90test`, `casinotest`, `pettest`, `fogontest`, `fntest`, `oficiostest`, `typedtest`, `storytest` | una versión o sistema cada uno: banco/polvo/encantamientos, casino, mascotas, Fogón, Fuego Nuevo, oficios, comandos escritos, historia |
-| `remindertest`, `deepshoptest`, `bosshptest`, `votetest`, `dailytest`, `v0184test` | recordatorios, el Tabernero del Inframundo, la vida de los jefes, `/vote`, el daily, y la raid cancelada y las mascotas en `/cd` |
+| `remindertest`, `deepshoptest`, `bosshptest`, `votetest`, `dailytest`, `v0184test`, `partybosstest` | recordatorios, el Tabernero del Inframundo, la vida de los jefes, `/vote`, el daily, la raid cancelada y las mascotas en `/cd`, y el jefe en equipo (invitaciones, turnos, reloj, rechazo por zona máxima) |
 
 ## Herramientas de calibración (`tools/`)
 
-`tools/balance2` es el simulador con el que se calibró el combate (partes A–J: la matriz de combate, el examen de cada jefe con el equipo propio o el de la zona anterior, raids, ritmo de recetas...). Usa el
+`tools/balance2` es el simulador con el que se calibró el combate (partes A–K; la K mide el RAID por zona, nivel y cantidad de jugadores, y acepta un factor de vida del jefe para probar otro: la matriz de combate, el examen de cada jefe con el equipo propio o el de la zona anterior, raids, ritmo de recetas...). Usa el
 resolutor **real** (`CombatTurnResolver`) y los monstruos de la base local. Ejemplos: `dotnet run --project tools/balance2 -- J` (cada jefe con el equipo de la zona anterior),
 `-- J 2 1.0,1.25 1.0,1.15 13,18,25` (el jefe de la zona 3 con vida ×1,0/1,25, daño ×1,0/1,15 y esos niveles). Cuando cambia una clase, una habilidad, un monstruo o un amuleto, hay que volver a medir.
 
