@@ -164,7 +164,7 @@ void Check(string name, bool ok, string detail)
 }
 
 // T6: el HP del jefe se escala AL ARRANCAR según cuántos jugadores terminan peleando
-// (base x 1.32 x (1 + 0.5 por jugador extra); era 1.76 hasta la v0.18.5 y 2.2 hasta la v0.17.1, que subió la vida guardada de los jefes x1.25 y dividió esto por lo mismo; la v0.18.6 lo bajó x0.75), y el jefe arranca con la vida llena.
+// (base x 1.76 x (1 + 0.5 por jugador extra); era 2.2 hasta la v0.17.1, que subió la vida guardada de los jefes x1.25 y dividió esto por lo mismo; la v0.18.6 lo bajó x0.75 y la v0.19.0 lo deshizo), y el jefe arranca con la vida llena.
 foreach (int n in new[] { 1, 2, 3, 4 })
 {
     var svc = NewSvc(); Configure(1);
@@ -182,7 +182,7 @@ foreach (int n in new[] { 1, 2, 3, 4 })
 
     await Activate(session, svc, AdvRepo());
     int baseHp = Get<int>(session, "BossBaseHp");
-    int expected = (int)Math.Round(baseHp * 1.32 * (1 + 0.5 * (n - 1)));
+    int expected = (int)Math.Round(baseHp * 1.76 * (1 + 0.5 * (n - 1)));
     int max = Get<int>(session, "BossMaxHp");
     int cur = Get<int>(session, "BossCurrentHp");
     Check($"T6 N={n}: HP del jefe escalado al arrancar", max == expected && cur == max && Get<object>(session, "Phase").Equals(Phase("Active")),
@@ -202,7 +202,7 @@ foreach (int n in new[] { 1, 2, 3, 4 })
 // T8: los multiplicadores del raid dependen de la POSICIÓN de la zona: la primera conserva x2.2 de HP / x1.35 de daño
 // (calibrados con el Rey Jabalí) y de la segunda en adelante usa x1.5 / x1.1 (los jefes ya están en el estándar de
 // la escalera; con x2.2 el raid de Zona 2 quedaba imposible: 0-3% de victoria).
-foreach (var (zone, hpMul, dmgMul) in new[] { (1, 1.32, 1.35), (2, 0.9, 1.1) })
+foreach (var (zone, hpMul, dmgMul) in new[] { (1, 1.76, 1.35), (2, 1.2, 1.1) })
 {
     fakeZone = zone;
     var svc = NewSvc(); Configure(1);
