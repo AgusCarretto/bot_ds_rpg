@@ -3,7 +3,8 @@ using System.Globalization;
 namespace BotDsRpg.GameData;
 
 // Un oficio (v0.13.0, docs/superpowers/specs/2026-10-06-oficios-design.md): se sube usando el comando de siempre. StatKind es el contador de player_stats del que sale su XP (el mismo vocabulario
-// que game_events.kind y los logros): XP = contador × XpPerAction. Así el progreso NO se guarda en ningún lado (no hay tabla ni migración, no se puede desincronizar) y lo que el jugador ya
+// que game_events.kind y los logros): XP = contador × XpPerAction. Desde la v0.20.0 el Leñador y el Minero tienen un contador PROPIO de XP (chop_xp / mine_xp, XpPerAction = 1: el contador ya es XP, y cada tirada suma la de la rareza
+// que salió, ProfessionRules.GatherXp); el Encantador sigue por intentos (25 de XP cada uno). Así el progreso NO se guarda en ningún lado (no hay tabla ni migración, no se puede desincronizar) y lo que el jugador ya
 // hizo antes de que existieran los oficios cuenta. Command es el comando que lo sube; AdvancedName, el nombre de su versión avanzada (se desbloquea al nivel máximo).
 public sealed record ProfessionDefinition(
     string Key, string Name, string Emoji, string StatKind, int XpPerAction, string Command, string AdvancedName, IReadOnlyList<string> Aliases);
@@ -17,9 +18,9 @@ public static class ProfessionCatalog
     // Sumar un oficio es una fila acá (y su efecto en ProfessionRules / PlayerBonuses): el resto del juego lo recorre.
     public static readonly IReadOnlyList<ProfessionDefinition> All =
     [
-        new(WoodcutterKey, "Leñador", "🪓", GameEventKinds.Chop, 10, "/chop", "Tala avanzada", ["lenador", "leñador", "woodcutter", "chop", "talar", "tala", "madera"]),
-        new(MinerKey, "Minero", "⛏️", GameEventKinds.Mine, 10, "/mine", "Minería avanzada", ["minero", "miner", "mine", "minar", "mineria", "mineral"]),
-        new(EnchanterKey, "Encantador", "✨", GameEventKinds.Enchant, 50, "/enchant", "Encantamiento avanzado", ["encantador", "enchanter", "enchant", "encantar", "encantamiento"]),
+        new(WoodcutterKey, "Leñador", "🪓", GameEventKinds.ChopXp, 1, "/chop", "Tala avanzada", ["lenador", "leñador", "woodcutter", "chop", "talar", "tala", "madera"]),
+        new(MinerKey, "Minero", "⛏️", GameEventKinds.MineXp, 1, "/mine", "Minería avanzada", ["minero", "miner", "mine", "minar", "mineria", "mineral"]),
+        new(EnchanterKey, "Encantador", "✨", GameEventKinds.Enchant, 25, "/enchant", "Encantamiento avanzado", ["encantador", "enchanter", "enchant", "encantar", "encantamiento"]),
     ];
 
     public static ProfessionDefinition? Find(string? textOrKey) =>
@@ -45,9 +46,10 @@ public static class ProfessionRules
 {
     public const int MaxLevel = 100;
 
-    // La curva: pasar del nivel L-1 al L pide XpUnit × (1 + CurveGrowth × L^1,5) de XP. Con 10 de XP por /chop o /mine: el nivel 1 es un solo uso, el 100 son 19, y llegar al 100 son
-    // ~810 usos (≈ 5 semanas jugando ~2 horas por día al ritmo del cooldown de 5 minutos); con 50 de XP por intento de encantamiento son ~160 intentos.
-    public const int XpUnit = 10;
+    // La curva: pasar del nivel L-1 al L pide XpUnit × (1 + CurveGrowth × L^1,5) de XP. XpUnit era 10 hasta la v0.19.x, cuando cada /chop o /mine daba 10 de XP fijos; desde la v0.20.0 la XP
+    // depende de la rareza del material (GatherXp, promedio ~5,4 por tirada), así que la unidad bajó a 5 para que el RITMO siga igual: llegar al 100 son ~750 tiradas (eran ~810) y, con 25 de XP
+    // por intento de encantamiento (eran 50), ~160 intentos. Los jugadores que ya tenían nivel conservan el suyo (Database/add_profession_xp.sql siembra su XP vieja × 5 en la escala nueva).
+    public const int XpUnit = 5;
     public const double CurveGrowth = 0.0176;
 
     // Lo que da cada nivel.
@@ -78,6 +80,26 @@ public static class ProfessionRules
     // XP que pide pasar del nivel anterior a ESTE nivel (1..MaxLevel).
     public static long XpForLevel(int level) =>
         (long)Math.Round(XpUnit * (1 + (CurveGrowth * Math.Pow(Math.Clamp(level, 1, MaxLevel), 1.5))), MidpointRounding.AwayFromZero);
+
+    // La XP de UNA tirada de /chop o /mine según la rareza del material que salió (v0.20.0, el dueño: «normal 2, raro 7, épico 15, legendario 30, mítico 100»). Es por TIRADA y no por unidad:
+    // si no, los bonus de cantidad (Fuego Nuevo, bendiciones, mascotas) harían subir más rápido el oficio. La rareza que cuenta es la que SALIÓ, ya con la mejora del propio oficio.
+    private static readonly (string Rarity, int Xp)[] GatherXpTable = [("Común", 2), ("Raro", 7), ("Épico", 15), ("Legendario", 30), ("Mítico", 100)];
+
+    public static int GatherXp(string? rarity) =>
+        GatherXpTable.FirstOrDefault(e => e.Rarity == rarity) is { Rarity: not null } entry ? entry.Xp : GatherXpTable[0].Xp;
+
+    // «Común 2 · Raro 7 · Épico 15 · Legendario 30 · Mítico 100» (para /professions y la ayuda).
+    public static string DescribeGatherXp() => string.Join(" · ", GatherXpTable.Select(e => $"{e.Rarity} {e.Xp}"));
+
+    // La XP promedio por tirada con las chances reales de /chop y /mine (RarityCatalog.GatheringChances), sin la mejora del oficio: con ella se calcula cuántas tiradas son llegar al máximo.
+    public static double AverageGatherXp() => RarityCatalog.GatheringChances.Sum(c => c.Percent / 100.0 * GatherXp(c.Rarity));
+
+    // De dónde sale la XP de cada oficio, en palabras.
+    public static string DescribeXpSource(ProfessionDefinition profession) => profession.Key switch
+    {
+        ProfessionCatalog.EnchanterKey => $"{profession.XpPerAction} XP por intento",
+        _ => $"según lo que te salga, por tirada: {DescribeGatherXp()} XP",
+    };
 
     // XP total para llegar al nivel máximo.
     public static long TotalXpToMax => CumulativeXp[MaxLevel];

@@ -312,9 +312,9 @@ public static class HelpTopics
         return Topic(Self("professions"),
             "Los **oficios** suben solos cuando usás su comando: cuanto más talás, minás o encantás, mejor te sale. Cada uno va del nivel 0 al " + ProfessionRules.MaxLevel + ".",
             ("📈 Cómo suben",
-                $"{woodcutter.Emoji} **{woodcutter.Name}** con **{woodcutter.Command}** ({woodcutter.XpPerAction} XP por uso), {miner.Emoji} **{miner.Name}** con **{miner.Command}** ({miner.XpPerAction}) y " +
-                $"{enchanter.Emoji} **{enchanter.Name}** con cada intento de **{enchanter.Command}** ({enchanter.XpPerAction}).\n" +
-                $"Llegar al {ProfessionRules.MaxLevel} son ~{GameHistory.Number(total)} de XP: unos {GameHistory.Number(total / woodcutter.XpPerAction)} usos de tala o minería, o {GameHistory.Number(total / enchanter.XpPerAction)} intentos de encantamiento. " +
+                $"{woodcutter.Emoji} **{woodcutter.Name}** con **{woodcutter.Command}** y {miner.Emoji} **{miner.Name}** con **{miner.Command}**: cada tirada da XP según la rareza del material que te sale ({ProfessionRules.DescribeGatherXp()}; una por tirada, no por unidad).\n" +
+                $"{enchanter.Emoji} **{enchanter.Name}** con cada intento de **{enchanter.Command}** ({enchanter.XpPerAction} XP).\n" +
+                $"Llegar al {ProfessionRules.MaxLevel} son ~{GameHistory.Number(total)} de XP: unas {GameHistory.Number((long)Math.Round(total / ProfessionRules.AverageGatherXp()))} tiradas de tala o minería (en promedio), o {GameHistory.Number(total / enchanter.XpPerAction)} intentos de encantamiento. " +
                 "Lo que hiciste antes de que existieran los oficios también cuenta."),
             ("🎁 Lo que da cada nivel",
                 $"{woodcutter.Emoji} {miner.Emoji} **{woodcutter.Name} y {miner.Name}**: {ProfessionRules.DescribePerLevel(woodcutter)}. Lo de la rareza sube un escalón (Común → Raro → Épico → Legendario); el Mítico nunca se mejora.\n" +

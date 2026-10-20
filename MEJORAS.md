@@ -2,6 +2,15 @@
 
 _Última revisión: 2026-10-20 (v0.19.2: los banquetes curan 150 y 200)_
 
+## La XP de los oficios depende de la rareza del material (v0.20.0, 2026-10-20)
+
+- **Pedido del dueño**: «que el profession escale pero a nivel de XP por tier del material: normal 2xp, raro 7, épico 15, legendario 30, mítico 100». Aprobó mis tres ajustes: **por tirada (no por unidad)**, **ritmo igual** y **nadie baja de nivel**.
+- **Cómo queda**: cada tirada de `/chop` o `/mine` suma la XP de la rareza que salió (Común 2 · Raro 7 · Épico 15 · Legendario 30 · Mítico 100) a un contador propio (`chop_xp` / `mine_xp`). Promedio real con las chances del juego: **5,43 XP por tirada** (antes 10 fijos), así que la unidad de la curva baja de 10 a 5 y el Encantador de 50 a 25 por intento: llegar al nivel 100 son ~750 tiradas (eran ~810) y ~160 intentos de encantar, o sea **el mismo ritmo promedio**, con la suerte pesando (un Mítico = 100 XP ≈ 18 Comunes).
+- **Nadie baja de nivel**: `Database/add_profession_xp.sql` siembra `chop_xp = chop × 5` y `mine_xp = mine × 5` (la XP vieja en la escala nueva; el redondeo de la curva puede mover a alguien un nivel como mucho). **CORRER ANTES de arrancar el binario v0.20.0** (re-ejecutable, pero si el binario ya anduvo, quien talló o minó en el medio ya tiene su fila y el script no la toca).
+- El pie de `/chop` y `/mine` muestra lo que dio la tirada («🪓 Leñador nivel 12 · 340/412 XP (+7)»); `/professions` y `/info tema:professions` imprimen la tabla desde las constantes. La tala avanzada (4 tiradas) suma la XP de cada una.
+- Probado: `oficiostest` reescrito para la escala nueva (la XP por rareza, el evento `chop_xp` con las rarezas, la avanzada, el Fuego Nuevo sin tocar los contadores); la migración corrió dos veces contra la base local (3 jugadores sembrados, sin cambios la segunda vez).
+- Sin hacer (no se pidió): XP del Encantador por tier de encantamiento.
+
 ## Perfil compacto y emojis provisorios (v0.19.5, 2026-10-20)
 
 - **Pedido del dueño** (no tenía el arte todavía): el perfil con `ATQ: número y el arma (solo el emoji, sin el nombre)`, abajo lo mismo con `DEF`, abajo el oro y luego el banco. Ahora el perfil son cuatro campos: **XP**, **Vida**, un bloque **«Equipo y bolsa»** (una línea cada uno: ATQ, DEF, Oro, Banco, y Polvo y Racha cuando hay) y **Habilidad**. El ícono propio va al final de cada línea y las marcas (⚡ sinergia, 🍖 banquete, 🔥 Fuego Nuevo o bendición, 🐾 mascotas, ✨+N % encantamiento) solo cuando corresponden. Los nombres de campo van en texto plano: un emoji propio no se garantiza en el nombre de un campo.

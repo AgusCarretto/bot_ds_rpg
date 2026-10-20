@@ -20,6 +20,10 @@ public static class GameEventKinds
     // Recolección y forja.
     public const string Chop = "chop";                      // un /chop exitoso
     public const string Mine = "mine";                      // un /mine exitoso
+    // v0.20.0: la XP de los oficios de recolección. Cada tirada de /chop o /mine suma acá la XP de la RAREZA que salió (ProfessionRules.GatherXp: Común 2, Raro 7, Épico 15, Legendario 30, Mítico 100);
+    // amount = XP, detail = las rarezas. El nivel del Leñador y del Minero sale de estos contadores (el de /chop y /mine sigue contando usos para misiones y logros).
+    public const string ChopXp = "chop_xp";
+    public const string MineXp = "mine_xp";
     public const string GatheredUnits = "gathered_units";   // unidades que dio la recolección; amount = cantidad
     public const string Craft = "craft";                    // forjó un ítem; detail = nombre del ítem
 

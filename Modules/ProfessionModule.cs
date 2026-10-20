@@ -83,6 +83,6 @@ public class ProfessionModule(IUserRepository userRepository, IPlayerBonusServic
             ? $"🔓 {ProfessionRules.DescribeAdvanced(profession)}"
             : $"🔒 Al {ProfessionRules.MaxLevel}: {ProfessionRules.DescribeAdvanced(profession)}";
 
-        return $"{bar}\n{now}\n{advanced}\n_Sube con {profession.Command} ({profession.XpPerAction} XP por uso)._";
+        return $"{bar}\n{now}\n{advanced}\n_Sube con {profession.Command}: {ProfessionRules.DescribeXpSource(profession)}._";
     }
 }

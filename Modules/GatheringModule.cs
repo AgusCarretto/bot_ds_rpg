@@ -139,9 +139,10 @@ public class GatheringModule(
 
         await GatheringEvents.RecordAsync(gameEvents, discordId, definition, drops, rolls);
 
-        // El oficio: el evento de arriba ya sumó a su contador (rolls × XP por uso); acá solo se calcula cómo queda para el pie de la pantalla.
-        var after = ProfessionRules.ProgressFor(before.TotalXp + ((long)rolls * profession.XpPerAction));
-        string footer = ProfessionFooter(profession, before, after) + (upgraded ? " · ⬆️ ¡rareza mejorada!" : string.Empty);
+        // El oficio: el evento de arriba ya sumó a su contador la XP de la rareza de cada tirada; acá solo se calcula cómo queda para el pie de la pantalla.
+        long gained = GatheringEvents.XpOf(drops);
+        var after = ProfessionRules.ProgressFor(before.TotalXp + gained);
+        string footer = ProfessionFooter(profession, before, after, gained) + (upgraded ? " · ⬆️ ¡rareza mejorada!" : string.Empty);
 
         var embed = advanced
             ? BuildAdvancedResultEmbed(active, drops, footer)
@@ -150,7 +151,7 @@ public class GatheringModule(
     }
 
     // El pie de la pantalla de un comando que sube un oficio: dónde está («🪓 Leñador nivel 12 · 340/412 XP»), si subió de nivel o si llegó al máximo. Público para que /enchant use el mismo.
-    public static string ProfessionFooter(ProfessionDefinition profession, ProfessionProgress before, ProfessionProgress after)
+    public static string ProfessionFooter(ProfessionDefinition profession, ProfessionProgress before, ProfessionProgress after, long? gained = null)
     {
         if (after.IsMax && !before.IsMax)
         {
@@ -162,7 +163,7 @@ public class GatheringModule(
             return $"{profession.Emoji} {profession.Name} nivel {ProfessionRules.MaxLevel} (máximo)";
         }
 
-        string progress = $"{after.IntoLevel}/{after.ToNext} XP";
+        string progress = $"{after.IntoLevel}/{after.ToNext} XP" + (gained is > 0 ? $" (+{gained})" : string.Empty);
         return after.Level > before.Level
             ? $"🎉 ¡{profession.Name} subió al nivel {after.Level}! · {progress}"
             : $"{profession.Emoji} {profession.Name} nivel {after.Level} · {progress}";
