@@ -11,7 +11,10 @@ public static class PartK
         int[] offs = args.Length > 1 ? args[1].Split(',').Select(int.Parse).ToArray() : [3, 8, 15];
         int n = args.Length > 2 ? int.Parse(args[2]) : 400;
         double hpFactor = args.Length > 3 ? double.Parse(args[3], System.Globalization.CultureInfo.InvariantCulture) : 1.0;
-        bool heal = args.Length > 4 && args[4] == "heal"; // cada jugador come una vez (el raid de hoy no deja comer)
+        // 5.º argumento: heal = comida común una vez por jugador; bNNN = un banquete que cura NNN y da +15 % ATQ; buff = banquete que solo da +15 % ATQ (no cura).
+        string mode = args.Length > 4 ? args[4] : string.Empty;
+        bool heal = mode == "heal" || mode == "buff" || mode == "pre" || mode.StartsWith('b') && mode.Length > 1 && char.IsDigit(mode[1]);
+        int banquet = mode == "pre" ? -2 : mode == "buff" ? -1 : mode.StartsWith('b') && mode.Length > 1 && char.IsDigit(mode[1]) ? int.Parse(mode[1..]) : 0;
         string P(double v) => $"{100 * v,4:F0}";
 
         Console.WriteLine($"=== RAID por zona: % de VICTORIA con 1 / 2 / 3 / 4 jugadores (equipo propio, sin comida, {n} raids por celda, vida guardada del jefe ×{hpFactor:0.00}) ===");
@@ -29,7 +32,7 @@ public static class PartK
                     int wins = 0;
                     for (int i = 0; i < n; i++)
                     {
-                        if (PartI.Raid(size, zi, level, boss, heal).Win) wins++;
+                        if (PartI.Raid(size, zi, level, boss, heal, banquet).Win) wins++;
                     }
 
                     row += $" {P(wins / (double)n)}% |";

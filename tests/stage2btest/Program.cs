@@ -75,11 +75,11 @@ Console.WriteLine("== 0. Registro de módulos y dependencias ==");
 }
 
 Console.WriteLine("\n== 1. Catálogo de comida ==");
-var foods = (await items.GetAllByTypeAsync("Consumable")).OrderBy(i => i.StatValue).ToList();
+var foods = (await items.GetAllByTypeAsync("Consumable")).OrderBy(i => i.StatValue).ThenBy(i => i.BuyPrice).ToList(); // el Cordero y el Asado Completo curan lo mismo (150) desde la v0.19.2: desempata el precio
 var expected = new (string name, int hp, int buy, int sell)[]
 {
     ("Mate Amargo", 15, 8, 6), ("Empanada de Carne", 40, 36, 27), ("Asado de Tira", 100, 160, 120), ("Cordero Patagónico", 150, 300, 225),
-    (Banquete1, 250, 2100, 1575), (Banquete2, 300, 2800, 2100),
+    (Banquete1, 150, 2100, 1575), (Banquete2, 200, 2800, 2100), // v0.19.2: curan 150 y 200 (eran 250 y 300); los precios no cambiaron
 };
 Check(foods.Count == 6 && foods.Zip(expected).All(p => p.First.Name == p.Second.name && p.First.StatValue == p.Second.hp && p.First.BuyPrice == p.Second.buy && p.First.SellPrice == p.Second.sell),
     $"quedan exactamente 6 comidas con los precios nuevos ({string.Join(", ", foods.Select(f => $"{f.Name}={f.BuyPrice}"))})");
@@ -151,7 +151,7 @@ await SetHp(10);
 r = await UseModule.ExecuteUseAsync(users, items, inventory, combat, buffs, U, Banquete1);
 s = await Stats();
 ab = await buffs.GetActiveAttackAsync(U);
-Check(await Have(Banquete1) == 0 && s.hp == Math.Min(s.maxHp, 10 + 250) && ab is { AttackPercent: 15 }, $"segundo banquete: cura ({s.hp}/{s.maxHp}), buff sigue en 15% (no apila), vence {ab?.Remaining.TotalMinutes:F1} min");
+Check(await Have(Banquete1) == 0 && s.hp == Math.Min(s.maxHp, 10 + 150) && ab is { AttackPercent: 15 }, $"segundo banquete: cura ({s.hp}/{s.maxHp}), buff sigue en 15% (no apila), vence {ab?.Remaining.TotalMinutes:F1} min");
 r = await UseModule.ExecuteUseAsync(users, items, inventory, combat, buffs, U, Banquete1);
 Check(r.PlainMessage is not null && r.PlainMessage.Contains("No tenés") && (await buffs.GetActiveAttackAsync(U))!.Remaining.TotalMinutes > 29, "sin banquetes en la mochila: no hay uso ni se renueva el buff gratis");
 await SetHp(10);
