@@ -999,7 +999,8 @@ public static class PartI
 
     // heal = cada jugador puede comer UNA vez en la pelea (la misma regla del jefe solo: con 40 % de vida o menos, la comida más grande que no se desperdicie; cuesta el turno). El raid de hoy NO tiene curación;
     // esta variante es para medir qué pasaría si el jefe en equipo también dejara comer una vez por jugador.
-    internal static (bool Win, int Alive) Raid(int size, int zi, int level, MonRow boss, bool heal = false)
+    // banquet: 0 = comidas comunes (la más grande que no se desperdicie); N > 0 = un banquete que cura N y da +15 % de ataque desde que se come (con 40 % de vida o menos); -1 = banquete «solo buff»: se come en el primer turno, no cura y da +15 % de ataque.
+    internal static (bool Win, int Alive) Raid(int size, int zi, int level, MonRow boss, bool heal = false, int banquet = 0)
     {
         var rng = Sim.Rng;
         int baseHp = rng.Next(boss.MinHp, boss.MaxHp + 1);
@@ -1014,19 +1015,28 @@ public static class PartI
             cps[i] = new CombatantProfile(prof.Damage, prof.Defense, cls[i], prof.Passives); max[i] = prof.CombatMaxHp; hp[i] = max[i];
         }
 
+        // banquet == -2: el banquete se comió ANTES de la pelea (+15 % de ataque desde el primer turno, sin gastar turno) y en la pelea se come una comida común.
+        if (banquet == -2)
+        {
+            for (int i = 0; i < size; i++) cps[i] = cps[i] with { Damage = AttackBuff.Apply(cps[i].Damage, 15) };
+            banquet = 0;
+        }
+
         var healsLeft = Enumerable.Repeat(heal ? 1 : 0, size).ToArray();
         for (int round = 0; round < 3000; round++)
         {
             for (int i = 0; i < size; i++)
             {
                 if (!alive[i]) continue;
-                if (healsLeft[i] > 0 && hp[i] * 100 <= 40 * max[i])
+                if (healsLeft[i] > 0 && (banquet == -1 || hp[i] * 100 <= 40 * max[i]))
                 {
                     int missing = max[i] - hp[i], pick = 0;
                     for (int f = 0; f < Sim.Foods.Length; f++) if (Sim.Foods[f].Heal <= missing * 1.25) pick = f;
-                    if (Sim.Foods[pick].Heal * 1.25 >= bossDmg)
+                    int healAmount = banquet > 0 ? banquet : banquet == -1 ? 0 : Sim.Foods[pick].Heal;
+                    if (banquet != 0 || Sim.Foods[pick].Heal * 1.25 >= bossDmg)
                     {
-                        hp[i] = Math.Min(max[i], hp[i] + Sim.Foods[pick].Heal);
+                        hp[i] = Math.Min(max[i], hp[i] + healAmount);
+                        if (banquet != 0) cps[i] = cps[i] with { Damage = AttackBuff.Apply(cps[i].Damage, 15) };
                         var counter = CombatTurnResolver.ResolveCounterTurn(cps[i], st[i], bossDmg);
                         st[i] = counter.Status;
                         hp[i] -= counter.Hit.Damage;
