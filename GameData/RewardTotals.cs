@@ -48,7 +48,8 @@ public sealed class RewardTotals
 
         foreach (var (name, quantity) in _boxes.OrderBy(b => b.Key, StringComparer.Ordinal))
         {
-            parts.Add(quantity > 1 ? $"📦 {quantity}× {name}" : $"📦 {name}");
+            string icon = ItemEmojiRegistry.IconOf(name, "📦");
+            parts.Add(quantity > 1 ? $"{icon} {quantity}× {name}" : $"{icon} {name}");
         }
 
         return parts.Count == 0 ? "—" : string.Join(" · ", parts);

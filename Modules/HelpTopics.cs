@@ -393,7 +393,7 @@ public static class HelpTopics
     private static Embed Vote() => Topic(Self("vote"),
         "Votar en **top.gg** ayuda a que más gente encuentre el juego, y te devolvemos el favor.",
         ("🎁 Qué da cada voto",
-            $"**{VoteRules.RewardBoxes}× {VoteRules.RewardBoxName}** (se abre con **/open**) y **el jefe se resetea**: si el cooldown de **/boss** (solo o en equipo) ({Dur(CooldownCatalog.Boss.Duration)} tras ganar) estaba corriendo, queda listo al instante."),
+            $"**{VoteRules.RewardBoxes}× {ItemEmojiRegistry.Label(VoteRules.RewardBoxName, string.Empty)}** (se abre con **/open**) y **el jefe se resetea**: si el cooldown de **/boss** (solo o en equipo) ({Dur(CooldownCatalog.Boss.Duration)} tras ganar) estaba corriendo, queda listo al instante."),
         ("🗳️ Cómo se cobra",
             "**/vote** (en texto `aa vote`) te muestra el link para votar. Después de votar, escribí **/vote** otra vez: el bot le pregunta a top.gg y te paga. Cada voto se cobra **una sola vez**, y si no lo cobrás antes de que venza (unas 12 horas) se pierde."),
         ("⏳ Cada cuánto",

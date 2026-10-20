@@ -6,4 +6,5 @@ public sealed class LeaderboardEntry
     public string Class { get; init; } = string.Empty;
     public int Level { get; init; }
     public int Xp { get; init; }
+    public int FuegoNuevo { get; init; } // cuántas vueltas (Fuegos Nuevos) hizo: es lo primero por lo que se ordena el ranking
 }

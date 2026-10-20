@@ -247,6 +247,9 @@ class Program
         _services.GetRequiredService<ReminderScheduler>().Start();
         RaidModule.Reminders = _services.GetRequiredService<IReminderService>();
 
+        // El emoji propio de cada ítem por nombre (premios, huevos, comida de mascotas...): se carga al arrancar y se refresca cada 10 minutos (GameData/ItemEmojiRegistry.cs).
+        _services.GetRequiredService<ItemEmojiRefresher>().Start();
+
         // Si hay un servidor de pruebas configurado, registramos los comandos ahí:
         // se propagan al instante, ideal para iterar rápido en desarrollo.
         // Sin esa config, se registran globalmente (pueden tardar hasta 1h en aparecer).
@@ -538,6 +541,7 @@ public static class ServiceProviderBuilder
             .AddSingleton<IReminderRepository, ReminderRepository>()
             .AddSingleton<IReminderService, ReminderService>()
             .AddSingleton<ReminderScheduler>()
+            .AddSingleton<ItemEmojiRefresher>()
             .AddSingleton<ArenaScheduler>()
             .AddSingleton<IFarmAdvisor, FarmAdviceService>()
             .AddSingleton<IMiniEventRepository, MiniEventRepository>()

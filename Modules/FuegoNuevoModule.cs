@@ -271,7 +271,7 @@ public class FuegoNuevoModule(
             .WithDescription(
                 $"**{BlessingCatalog.Label(definition, outcome.NewLevel)}**\n{BlessingCatalog.Describe(definition, outcome.NewLevel)}" +
                 (outcome.PetFoodGranted > 0 || outcome.BoxesGranted > 0
-                    ? $"\n\n🎒 La Alforja te dejó **{outcome.PetFoodGranted}× {PetRules.FoodItemName}** y **{outcome.BoxesGranted}× {BlessingCatalog.SatchelBoxName}** en la mochila."
+                    ? $"\n\n🎒 La Alforja te dejó **{outcome.PetFoodGranted}× {ItemEmojiRegistry.Label(PetRules.FoodItemName, string.Empty)}** y **{outcome.BoxesGranted}× {ItemEmojiRegistry.Label(BlessingCatalog.SatchelBoxName, string.Empty)}** en la mochila."
                     : string.Empty) +
                 "\n\nMirá todas las tuyas con **/blessings**.")
             .Build();
@@ -393,7 +393,7 @@ public class FuegoNuevoModule(
 
         if (outcome.SatchelPetFood > 0 || outcome.SatchelBoxes > 0)
         {
-            embed.AddField("🎒 Alforja del Fogonero", $"Te dejó **{outcome.SatchelPetFood}× {PetRules.FoodItemName}** y **{outcome.SatchelBoxes}× {BlessingCatalog.SatchelBoxName}** en la mochila.", false);
+            embed.AddField("🎒 Alforja del Fogonero", $"Te dejó **{outcome.SatchelPetFood}× {ItemEmojiRegistry.Label(PetRules.FoodItemName, string.Empty)}** y **{outcome.SatchelBoxes}× {ItemEmojiRegistry.Label(BlessingCatalog.SatchelBoxName, string.Empty)}** en la mochila.", false);
         }
 
         if (outcome.Offer is not null)

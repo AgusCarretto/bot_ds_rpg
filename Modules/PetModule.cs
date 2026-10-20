@@ -165,7 +165,7 @@ public class PetModule(
         // que ya tenés en la mochila sin abrir, que es algo que el jugador ya conoce.
         var eggsToOpen = data.Species
             .Where(s => data.Owned.All(o => o.Species.SpeciesId != s.SpeciesId) && data.EggNamesHeld.Contains(s.EggName))
-            .Select(s => $"**{s.EggName}**")
+            .Select(s => $"**{ItemEmojiRegistry.Label(s.EggName, string.Empty)}**")
             .ToList();
         if (eggsToOpen.Count > 0)
         {
@@ -268,7 +268,7 @@ public class PetModule(
 
         if (outOfFood)
         {
-            blocks.Add($"🦴 Te quedaste sin **{PetRules.FoodItemName}**: se compra en la **/taberna**.");
+            blocks.Add($"{ItemEmojiRegistry.IconOf(PetRules.FoodItemName, "🦴")} Te quedaste sin **{PetRules.FoodItemName}**: se compra en la **/taberna**.");
         }
 
         if (blocks.Count == 0)

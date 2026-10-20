@@ -31,7 +31,7 @@ public static class MiniEventRules
     }
 
     public static string Describe(MiniEventReward reward) =>
-        reward.ItemName is not null ? $"{reward.Quantity}× {reward.ItemName}" : $"💰 {reward.Gold} oro";
+        reward.ItemName is not null ? $"{reward.Quantity}× {ItemEmojiRegistry.Label(reward.ItemName, string.Empty)}" : $"💰 {reward.Gold} oro";
 
     public static string Emoji(MiniEventKind kind) => kind switch { MiniEventKind.Stones => "🪨", MiniEventKind.Wood => "🪵", _ => "💰" };
 

@@ -104,7 +104,7 @@ public class VoteModule(
             .WithColor(OnboardingModule.BrandColor)
             .WithDescription(
                 "Votar en top.gg ayuda a que más gente nos encuentre. Como agradecimiento te da:\n\n" +
-                $"📦 **{VoteRules.RewardBoxes}× {VoteRules.RewardBoxName}** — se abre con **/open**\n" +
+                $"{ItemEmojiRegistry.IconOf(VoteRules.RewardBoxName, "📦")} **{VoteRules.RewardBoxes}× {VoteRules.RewardBoxName}** — se abre con **/open**\n" +
                 "👑 **El jefe se resetea** — si el cooldown de **/boss** (solo o en equipo) estaba corriendo, queda listo al instante\n\n" +
                 status)
             .WithFooter($"Se puede votar cada {ReminderCatalog.WaitLabel(VoteRules.Interval)}.")

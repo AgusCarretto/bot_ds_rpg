@@ -87,7 +87,9 @@ public static class MissionRewards
 
         if (reward.BoxName is not null)
         {
-            parts.Add(reward.BoxQuantity > 1 ? $"📦 {reward.BoxQuantity}× {reward.BoxName}" : $"📦 {reward.BoxName}");
+            // El emoji PROPIO de la caja (ItemEmojiRegistry, v0.19.3); el 📦 común solo si todavía no se conoce.
+            string icon = ItemEmojiRegistry.IconOf(reward.BoxName, "📦");
+            parts.Add(reward.BoxQuantity > 1 ? $"{icon} {reward.BoxQuantity}× {reward.BoxName}" : $"{icon} {reward.BoxName}");
         }
 
         return parts.Count == 0 ? "—" : string.Join(" · ", parts);

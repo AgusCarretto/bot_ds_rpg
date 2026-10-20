@@ -2,6 +2,14 @@
 
 _Última revisión: 2026-10-20 (v0.19.2: los banquetes curan 150 y 200)_
 
+## Emoji propio en todas las pantallas y ranking por Fuego Nuevo (v0.19.3, 2026-10-20)
+
+- **Emojis** (el dueño: «hay comandos que muestran en vez del emoji que es de ellos muestran otra cosa, por ejemplo el cofre de escoria en `aa drops`»): `/drops` ya dibujaba el emoji que trae la base (el arnés lo confirma con la base local, que tiene los 7 cofres, los 6 huevos y la comida de mascotas con arte), así que **lo que se ve en producción depende de que `Database/apply_emojis.sql` se haya corrido en Railway**; si el Cofre de Escoria sale con otra cosa en `aa drops`, es eso (datos, sin redesplegar). Lo que sí era código: las pantallas que solo tienen el NOMBRE del ítem escribían un 📦, 🥚 o 🦴 común (premios de misiones/logros/Arena, la caja del daily y del voto, el huevo de la victoria del jefe, `/pet`, la Alforja del Fuego Nuevo, el premio del mini-evento). Ahora usan `GameData/ItemEmojiRegistry` (nombre → emoji), que `Services/ItemEmojiRefresher` carga al arrancar y cada 10 minutos. No pueden llevar emoji propio: las opciones de menús, el autocompletado y los pies de los embeds (Discord no los dibuja ahí).
+- **Ranking**: `/leaderboard` y `aa leaderboard` ordenan primero por Fuego Nuevo, después por nivel y después por XP, y cada línea muestra «🔥 FN N · Nivel N (clase)».
+- **Cofres de Oro y los logros** (el dueño pidió pensarlo): los 10 logros con premio de caja (Cazador, Viajero, Matajefes, Recolector, Herrero, Comerciante, Generoso, Abridor, Constante, Racha) pagan en el tramo II la caja `prize` y en el III la `prize_top` de la zona del jugador AL RECLAMAR; en las zonas 4 y 5 las dos son Cofre de Oro (en la 3, solo la del tramo III), o sea hasta ~19 Cofres de Oro (+ el Arca del tramo III de Matajefes) por jugador, UNA sola vez en la vida (los logros no se reinician con el Fuego Nuevo), más los recurrentes (la caja grande de las misiones semanales y el día 7 de la racha del daily). La palanca, si se quiere bajar, son las filas `prize`/`prize_top` de la zona 4 en `zone_boxes` (datos, con el bot andando, 5 minutos de caché). **No se tocó nada.**
+- **Arnés nuevo**: `tests/v0193test` (el registro, los textos de premios, el refresco contra la base, `/drops` y el orden del ranking). 43 arneses en total.
+- **Para la base viva**: nada de migración. Correr `Database/apply_emojis.sql` si todavía no se corrió (es lo que arregla `aa drops`).
+
 ## Los banquetes curan 150 y 200 HP (v0.19.2, 2026-10-20)
 
 - **Decisión del dueño** (viendo la tabla de abajo): «acomodemos el tema de la comida: 150 y 15 % de ataque, y 200 y 15 % de ataque». **Asado Completo del Domingo en Familia: 250 → 150 HP; Mate Dulce de la Abuela: 300 → 200 HP**; los dos siguen con +15 % de ataque por 30 minutos y los precios NO cambian (2100 / 2800). Lo asigné por precio (el más barato, 150; el más caro, 200): si los quería al revés es un `UPDATE`.
@@ -27,6 +35,17 @@ _Última revisión: 2026-10-20 (v0.19.2: los banquetes curan 150 y 200)_
 - **Probado**: `tests/partybosstest` (rechazos con su texto, botones, turnos, reloj con tiempos cortos, victoria, registro real de comandos). **Sin migración.**
 - **Aviso de turno (también v0.19.0, a pedido del dueño)**: cada vez que cambia el turno el bot manda un mensaje corto con la mención («🎯 @fulano ¡es tu turno!») y borra el anterior, así en el canal queda uno solo; al terminar el combate se borra el último; el único que queda en pie no se avisa a sí mismo. Es un mensaje aparte porque editar el embed no notifica a nadie (`ICombatReplyTarget.SendPingAsync`). Nunca rompe el combate si falla.
 - **No construido (por si lo piden)**: que la invitación de un grupo ya armado admita sumar a alguien a mitad de pelea, y una zona máxima flexible (por ejemplo ±1) si quieren juntar a un amigo que va un paso adelante.
+
+## Informe de salud de la base viva: RESULTADO (corrido el 2026-10-20 en Railway, el dueño pegó la salida)
+
+6 jugadores en total (3 activos en 24 h, los 6 en 7 días, 0 inactivos): es el grupo de prueba, así que sirve de pulso, no de estadística. Niveles 1-4 / 5-9 / 10-14 / 15-19 (×2, los dos con Fuego Nuevo 2) / 20-24; ninguno venció al Asador en esta vuelta; el que más llegó venció al jefe de la zona 4.
+
+- **EXP ×0,5 (v0.18.1)**: se queda. Las subidas de nivel por jugador activo por día se mantuvieron en ~6 (6,5 antes del 16/10, 5,5-7,5 después) mientras las cacerías por jugador activo subieron de ~37 a ~60-80 al día: la gente juega más y el ritmo de nivel no cambió, y el jugador de punta (nivel 20-24, zona 4) no se adelantó al equipo. Nada que retocar.
+- **Derrotas**: jefe 8,8 % (52 victorias, 5 derrotas; el diseño decía 2-13 %), cacería 0,2 %, viaje 0 %, raid 18 % (9 y 2: muestra chica y era el raid viejo). Sano.
+- **Daily**: todos los activos reclaman casi todos los días (2-5 al día), dos jugadores con racha de 8-13 y uno con 3-5. El oro en circulación es poco (77 k en billeteras + 188 k en bancos, mediana 8,4 k, máximo 34 k): el daily no está inflando nada. Se queda. **A mirar**: el logro «Racha» marca 0 en el tramo I y mejor racha 3 aunque dos jugadores tienen 8-13: es lo esperado (el contador empezó con la v0.18.3, el 19/10, después de que reclamaran ese día); cuando esos dos reclamen de nuevo tendrían que desbloquear el tramo I (7 días): si no pasa, es un bug.
+- **Voto**: 3 personas votan cada 12 h (3-6 votos cobrados al día) y 2 de cada 3 veces el voto reseteaba un jefe que estaba en cooldown, así que los jefes ganados por día (4-10) vienen en buena parte de ahí. **Es lo que se había previsto (duplica los cofres gratis)** y con 3 votantes no preocupa; con el bot público conviene revisarlo (palancas: cobrar el reseteo una vez por día o cambiar el cofre).
+- **Cajas**: 243 cajas abiertas en 7 días (Arcón de Hierro 78, Baúl de Roble 75, Cajón de Pino 55, Cofre de Oro 29, Cofre de Escoria 2, Brasero 2, Arca del Soberano 2): unas 7 por jugador activo por día, más de lo que se estimó. No se sabe de dónde salen los 29 Cofres de Oro (sospecha: los primeros cofres de cada vuelta del Fuego Nuevo y los premios de logros/semanales); si se quiere saber hace falta una consulta que las atribuya por origen. No se tocó nada.
+- **Un detalle del informe**: en PowerShell las tildes salen rotas en pantalla (`├║`); no es un problema de los datos. Antes de correrlo: `[Console]::OutputEncoding = [Text.Encoding]::UTF8`.
 
 ## Informe de salud de la base viva (2026-10-19)
 

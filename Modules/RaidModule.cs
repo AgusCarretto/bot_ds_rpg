@@ -1936,7 +1936,7 @@ public class RaidModule(
             string dropLine = drop is not null ? $"\n🎁 {ItemDisplay.Format(drop.Emoji, drop.Name)}{(drop.Type == "Caja" ? " — abrilo con /open" : string.Empty)}" : string.Empty;
             string levelLine = outcome.LevelsGained > 0 ? $"\n🎉 ¡Subió a nivel {outcome.Player.Level}!" : string.Empty;
             // La primera vez que ESE jugador vence al jefe de la zona, además del cofre recibe el huevo de su mascota (en la misma transacción que el premio).
-            string eggLine = outcome.EggGranted is { } egg ? $"\n🥚 {egg.EggName} — abrilo con /open" : string.Empty;
+            string eggLine = outcome.EggGranted is { } egg ? $"\n{ItemEmojiRegistry.Label(egg.EggName, "🥚")} — abrilo con /open" : string.Empty;
 
             embed.AddField(
                 participant.DisplayName,

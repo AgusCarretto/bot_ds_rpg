@@ -133,9 +133,9 @@ public sealed class UserRepository(IDbConnectionFactory connectionFactory) : IUs
     public async Task<IReadOnlyList<LeaderboardEntry>> GetTopPlayersAsync(int limit, CancellationToken cancellationToken = default)
     {
         const string sql = """
-            SELECT discord_id AS "DiscordId", class AS "Class", level AS "Level", xp AS "Xp"
+            SELECT discord_id AS "DiscordId", class AS "Class", level AS "Level", xp AS "Xp", fuego_nuevo AS "FuegoNuevo"
             FROM users
-            ORDER BY level DESC, xp DESC
+            ORDER BY fuego_nuevo DESC, level DESC, xp DESC, discord_id
             LIMIT @Limit;
             """;
 
