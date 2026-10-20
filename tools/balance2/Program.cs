@@ -27,6 +27,7 @@ switch (part)
     case "J": PartJ.Run(args); break;
     case "K": PartK.Run(args); break;
     case "L": PartL.Run(args); break;
+    case "M": PartM.Run(args); break;
     default: Console.WriteLine("A | B | C"); break;
 }
 
@@ -107,13 +108,15 @@ public static class Sim
 {
     public static Random Rng = new(20261008); public static Dictionary<string, double> ExtraHp = new();
     public static readonly (string Name, int Heal, int Price)[] Foods = [("Mate Amargo", 15, 8), ("Empanada de Carne", 40, 36), ("Asado de Tira", 100, 160), ("Cordero Patagónico", 150, 300)];
-    public static readonly Dictionary<(string, int, int, bool, int, string, int, string, int), PlayerCombatProfile> Profiles = new();
+    public static readonly Dictionary<(string, int, int, bool, int, string, int, string, int, int), PlayerCombatProfile> Profiles = new();
+    // Parte M (v0.22.1): el +% de ataque de un banquete activo (GameData/AttackBuff.cs) para todo el combate; 0 = sin banquete.
+    public static int AttackBuff = 0;
     // Parte L (v0.22.0): los encantamientos de la pieza que lleva el jugador simulado (efecto y tier de arma y de amuleto). Sin encantar = ("filo", 0, "guarda", 0).
     public static (string WeaponKind, int WeaponTier, string AmuletKind, int AmuletTier) Enchant = ("filo", 0, "guarda", 0);
 
     public static PlayerCombatProfile Profile(string cls, int level, int weaponStat, bool classWeapon, int amuletStat)
     {
-        var key = (cls, level, weaponStat, classWeapon, amuletStat, Enchant.WeaponKind, Enchant.WeaponTier, Enchant.AmuletKind, Enchant.AmuletTier);
+        var key = (cls, level, weaponStat, classWeapon, amuletStat, Enchant.WeaponKind, Enchant.WeaponTier, Enchant.AmuletKind, Enchant.AmuletTier, AttackBuff);
         if (Profiles.TryGetValue(key, out var cached)) return cached;
         int maxHp = 100 + (15 * (level - 1));
         var user = new User
@@ -123,7 +126,7 @@ public static class Sim
         };
         Item? w = weaponStat > 0 ? new Item { StatValue = weaponStat, WeaponFamily = classWeapon ? World.FamilyOf(cls) : null } : null;
         Item? a = amuletStat > 0 ? new Item { StatValue = amuletStat } : null;
-        var profile = PlayerCombatProfileCalculator.Resolve(user, w, a, 0, PlayerBonuses.None); // bonuses no nulos = peleas contra monstruos (incluye PveTuning)
+        var profile = PlayerCombatProfileCalculator.Resolve(user, w, a, AttackBuff, PlayerBonuses.None); // bonuses no nulos = peleas contra monstruos (incluye PveTuning)
         if (ExtraHp.TryGetValue(cls, out var extra)) profile = profile with { CombatMaxHp = (int)Math.Round(profile.CombatMaxHp * extra), CombatCurrentHp = (int)Math.Round(profile.CombatCurrentHp * extra) };
         Profiles[key] = profile;
         return profile;
