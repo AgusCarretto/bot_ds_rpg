@@ -2,6 +2,14 @@
 
 _Última revisión: 2026-10-20 (v0.19.2: los banquetes curan 150 y 200)_
 
+## Emoji propio en todas las pantallas y ranking por Fuego Nuevo (v0.19.3, 2026-10-20)
+
+- **Emojis** (el dueño: «hay comandos que muestran en vez del emoji que es de ellos muestran otra cosa, por ejemplo el cofre de escoria en `aa drops`»): `/drops` ya dibujaba el emoji que trae la base (el arnés lo confirma con la base local, que tiene los 7 cofres, los 6 huevos y la comida de mascotas con arte), así que **lo que se ve en producción depende de que `Database/apply_emojis.sql` se haya corrido en Railway**; si el Cofre de Escoria sale con otra cosa en `aa drops`, es eso (datos, sin redesplegar). Lo que sí era código: las pantallas que solo tienen el NOMBRE del ítem escribían un 📦, 🥚 o 🦴 común (premios de misiones/logros/Arena, la caja del daily y del voto, el huevo de la victoria del jefe, `/pet`, la Alforja del Fuego Nuevo, el premio del mini-evento). Ahora usan `GameData/ItemEmojiRegistry` (nombre → emoji), que `Services/ItemEmojiRefresher` carga al arrancar y cada 10 minutos. No pueden llevar emoji propio: las opciones de menús, el autocompletado y los pies de los embeds (Discord no los dibuja ahí).
+- **Ranking**: `/leaderboard` y `aa leaderboard` ordenan primero por Fuego Nuevo, después por nivel y después por XP, y cada línea muestra «🔥 FN N · Nivel N (clase)».
+- **Cofres de Oro y los logros** (el dueño pidió pensarlo): los 10 logros con premio de caja (Cazador, Viajero, Matajefes, Recolector, Herrero, Comerciante, Generoso, Abridor, Constante, Racha) pagan en el tramo II la caja `prize` y en el III la `prize_top` de la zona del jugador AL RECLAMAR; en las zonas 4 y 5 las dos son Cofre de Oro (en la 3, solo la del tramo III), o sea hasta ~19 Cofres de Oro (+ el Arca del tramo III de Matajefes) por jugador, UNA sola vez en la vida (los logros no se reinician con el Fuego Nuevo), más los recurrentes (la caja grande de las misiones semanales y el día 7 de la racha del daily). La palanca, si se quiere bajar, son las filas `prize`/`prize_top` de la zona 4 en `zone_boxes` (datos, con el bot andando, 5 minutos de caché). **No se tocó nada.**
+- **Arnés nuevo**: `tests/v0193test` (el registro, los textos de premios, el refresco contra la base, `/drops` y el orden del ranking). 43 arneses en total.
+- **Para la base viva**: nada de migración. Correr `Database/apply_emojis.sql` si todavía no se corrió (es lo que arregla `aa drops`).
+
 ## Los banquetes curan 150 y 200 HP (v0.19.2, 2026-10-20)
 
 - **Decisión del dueño** (viendo la tabla de abajo): «acomodemos el tema de la comida: 150 y 15 % de ataque, y 200 y 15 % de ataque». **Asado Completo del Domingo en Familia: 250 → 150 HP; Mate Dulce de la Abuela: 300 → 200 HP**; los dos siguen con +15 % de ataque por 30 minutos y los precios NO cambian (2100 / 2800). Lo asigné por precio (el más barato, 150; el más caro, 200): si los quería al revés es un `UPDATE`.

@@ -9,7 +9,7 @@ public class LeaderboardModule(IUserRepository userRepository) : InteractionModu
     private static readonly string[] RankEmojis = ["🥇", "🥈", "🥉"];
 
     // Comando barra: /leaderboard
-    [SlashCommand("leaderboard", "Mostrá a los jugadores con más nivel/experiencia del server.")]
+    [SlashCommand("leaderboard", "El ranking del server: primero por Fuego Nuevo y después por nivel.")]
     public async Task HandleLeaderboardAsync()
     {
         await DeferAsync();
@@ -47,11 +47,11 @@ public class LeaderboardModule(IUserRepository userRepository) : InteractionModu
             var lines = topPlayers.Select((player, index) =>
             {
                 string rank = index < RankEmojis.Length ? RankEmojis[index] : $"{index + 1}.";
-                return $"{rank} <@{player.DiscordId}> — Nivel **{player.Level}** ({player.Class})";
+                return $"{rank} <@{player.DiscordId}> — 🔥 FN **{player.FuegoNuevo}** · Nivel **{player.Level}** ({player.Class})";
             });
 
             embed.WithDescription(string.Join('\n', lines))
-                .WithFooter("El ranking ordena por nivel; el XP de cada nivel solo desempata.");
+                .WithFooter("Ordena primero por Fuego Nuevo (FN) y, con el mismo FN, por nivel; el XP del nivel solo desempata.");
         }
 
         return embed.Build();

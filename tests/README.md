@@ -36,7 +36,7 @@ usar). Si un arnés se corta a la mitad, puede quedar un usuario descartable: se
 | `abilitytest`, `leaktest`, `raidtest`, `choicetest`, `noticetest`, `embedtest`, `healtest` | el resolutor de turnos y las habilidades, fugas de estado, la concurrencia del raid, las listas desplegables, la entrega de avisos y los límites de los embeds |
 | `reworktest`, `cofrestest`, `forgespecialtest`, `portraittest` | los datos del catálogo (recetas, cajas por zona, el Fogón, retratos) contra la base |
 | `v83test`, `v90test`, `casinotest`, `pettest`, `fogontest`, `fntest`, `oficiostest`, `typedtest`, `storytest` | una versión o sistema cada uno: banco/polvo/encantamientos, casino, mascotas, Fogón, Fuego Nuevo, oficios, comandos escritos, historia |
-| `remindertest`, `deepshoptest`, `bosshptest`, `votetest`, `dailytest`, `v0184test`, `partybosstest` | recordatorios, el Tabernero del Inframundo, la vida de los jefes, `/vote`, el daily, la raid cancelada y las mascotas en `/cd`, y el jefe en equipo (invitaciones, turnos, reloj, rechazo por zona máxima) |
+| `remindertest`, `deepshoptest`, `bosshptest`, `votetest`, `dailytest`, `v0184test`, `partybosstest`, `v0193test` | recordatorios, el Tabernero del Inframundo, la vida de los jefes, `/vote`, el daily, la raid cancelada y las mascotas en `/cd`, el jefe en equipo (invitaciones, turnos, reloj, rechazo por zona máxima), y el emoji propio de cada ítem en las pantallas que lo muestran por nombre más el ranking por Fuego Nuevo |
 
 ## Herramientas de calibración (`tools/`)
 

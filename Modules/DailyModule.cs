@@ -70,7 +70,7 @@ public class DailyModule(
 
         if (reward.BoxName is not null)
         {
-            embed.AddField("📦 Caja", $"{(reward.BoxQuantity > 1 ? $"{reward.BoxQuantity}× " : string.Empty)}**{reward.BoxName}** — abrila con **/open**", false);
+            embed.AddField("📦 Caja", $"{(reward.BoxQuantity > 1 ? $"{reward.BoxQuantity}× " : string.Empty)}**{ItemEmojiRegistry.Label(reward.BoxName, string.Empty)}** — abrila con **/open**", false);
         }
 
         // Una línea de festejo si es un hito de la racha (o el aviso de que se perdió), y qué viene mañana si trae algo especial.
