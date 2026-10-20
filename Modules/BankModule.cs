@@ -5,14 +5,14 @@ using Discord;
 using Discord.Interactions;
 
 // /bank: el banco. Se COMPRA la cuenta una sola vez (GameData/BankRules.cs) y después se deposita y se retira oro; lo que está en el banco no lo toca la
-// penalidad por muerte (GameData/DeathPenalty.cs): ese es todo su valor. Sin interés ni tope por ahora. Las reglas viven en los métodos estáticos de abajo
+// penalidad por muerte (GameData/DeathPenalty.cs) y da un minibuff de oro en las peleas (GameData/BankRules.cs). Las reglas viven en los métodos estáticos de abajo
 // (sin Context) para que "aa bank" haga exactamente lo mismo; cada operación de dinero es un UPDATE guardado en IBankRepository.
 [Group("bank", "Tu cuenta del banco: guardá oro a salvo de la penalidad por morir.")]
-public class BankModule(IUserRepository userRepository, IBankRepository bankRepository, IGameEvents gameEvents)
+public class BankModule(IUserRepository userRepository, IBankRepository bankRepository, IGameEvents gameEvents, IZoneRepository zoneRepository)
     : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("view", "Mirá tu billetera y lo que tenés en el banco.")]
-    public Task HandleViewAsync() => RunAsync(() => BuildViewAsync(userRepository, Context.User.Id));
+    public Task HandleViewAsync() => RunAsync(() => BuildViewAsync(userRepository, Context.User.Id, zoneRepository));
 
     [SlashCommand("open", "Abrí tu cuenta del banco (se paga una sola vez).")]
     public Task HandleOpenAsync() => RunAsync(() => ExecuteOpenAsync(userRepository, bankRepository, gameEvents, Context.User.Id));
@@ -46,7 +46,8 @@ public class BankModule(IUserRepository userRepository, IBankRepository bankRepo
 
     private const string NoAccountText = "Todavía no tenés cuenta en el banco: abrila con **/bank open** (cuesta {0} de oro, una sola vez).";
 
-    public static async Task<BankResult> BuildViewAsync(IUserRepository userRepository, ulong discordId)
+    // zoneRepository: para decir cuánto oro extra rinde el saldo en la zona del jugador (el minibuff del banco); sin él (algunas pruebas) esa línea no sale.
+    public static async Task<BankResult> BuildViewAsync(IUserRepository userRepository, ulong discordId, IZoneRepository? zoneRepository = null)
     {
         var player = await userRepository.GetByDiscordIdAsync(discordId);
         if (player is null)
@@ -70,8 +71,23 @@ public class BankModule(IUserRepository userRepository, IBankRepository bankRepo
                 "Guardá con **/bank deposit** y sacá con **/bank withdraw** (podés escribir **all**).")
             .AddField("💰 Billetera", GameHistory.Number(player.Gold), true)
             .AddField("🏦 En el banco", GameHistory.Number(player.BankGold), true);
+
+        if (zoneRepository is not null)
+        {
+            double percent = BankRules.GoldBonusPercent(player.BankGold, await ResolveBankZoneRankAsync(zoneRepository, player.CurrentZoneId));
+            embed.AddField("📈 Lo que rinde", BuildBonusText(percent), false);
+        }
+
         return new BankResult(null, embed.Build());
     }
+
+    private static Task<int> ResolveBankZoneRankAsync(IZoneRepository zoneRepository, int zoneId) => MissionsModule.ResolveZoneRankAsync(zoneRepository, zoneId);
+
+    // «Con lo que guardás ganás +3,2 % de oro en las peleas (el tope es 5 %)...»: lo que da el banco hoy y cómo sube. Público y puro para probarlo.
+    public static string BuildBonusText(double percent) =>
+        percent <= 0
+            ? $"Lo que guardás da **oro extra en las peleas**: hasta **+{BankRules.MaxGoldBonusPercent:0} %**. Cuanto más tengas, más sube (cada vez más despacio) y se mide según tu zona."
+            : $"Lo que guardás te da **{BankRules.BonusText(percent)} de oro** en las peleas (el tope es **+{BankRules.MaxGoldBonusPercent:0} %**). Cuanto más tengas, más sube, cada vez más despacio, y se mide según tu zona.";
 
     public static async Task<BankResult> ExecuteOpenAsync(IUserRepository userRepository, IBankRepository bankRepository, IGameEvents gameEvents, ulong discordId)
     {

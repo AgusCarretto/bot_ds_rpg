@@ -164,7 +164,10 @@ public static class HelpTopics
             "**/bank open** abre la cuenta · **/bank deposit** guarda · **/bank withdraw** saca · **/bank view** muestra tu billetera y tu banco.\nEn deposit y withdraw podés escribir una cantidad o **all**. En texto: `aa bank deposit 500`."),
         ("🛡️ Para qué sirve",
             $"Si perdés un combate perdés el {DeathPenalty.GoldPercent} % del oro de la **billetera**; lo que está en el banco no se toca. Mirá **/info tema:death**."),
-        ("⚠️ Ojo", "Sin interés ni tope por ahora. Las compras, `/give` y las apuestas usan la billetera: sacá el oro del banco antes de gastarlo."));
+        ("⚠️ Ojo", "Sin interés ni tope de capacidad. Las compras, `/give` y las apuestas usan la billetera: sacá el oro del banco antes de gastarlo."),
+        ("📈 El minibuff de oro",
+            $"Lo que guardás da hasta **+{BankRules.MaxGoldBonusPercent:0} %** de oro en las peleas (cacería, viaje, jefe y /autohunt), con una curva: tener más siempre suma, pero cada vez menos. " +
+            "Se mide según **tu zona** (una cacería de oro es la unidad), así que sirve igual al principio que al final. Mirá cuánto rinde en **/bank view**."));
 
     private static Embed Death() => Topic(Self("death"),
         "Perder un combate tiene un costo. **No** bajás de nivel.",

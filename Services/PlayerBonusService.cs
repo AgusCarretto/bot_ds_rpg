@@ -12,7 +12,10 @@ public interface IPlayerBonusService
     Task<PlayerBonuses> GetAsync(ulong discordId, int fuegoNuevo, CancellationToken cancellationToken = default);
 }
 
-public sealed class PlayerBonusService(IPetRepository petRepository, IBlessingRepository blessingRepository, IGameEventRepository eventRepository) : IPlayerBonusService
+// userRepository y zoneRepository son opcionales: con ellos se calcula el minibuff del banco (v0.21.0); sin ellos (algunas pruebas) el banco no suma.
+public sealed class PlayerBonusService(
+    IPetRepository petRepository, IBlessingRepository blessingRepository, IGameEventRepository eventRepository,
+    IUserRepository? userRepository = null, IZoneRepository? zoneRepository = null) : IPlayerBonusService
 {
     public async Task<PlayerBonuses> GetAsync(ulong discordId, int fuegoNuevo, CancellationToken cancellationToken = default)
     {
@@ -38,10 +41,29 @@ public sealed class PlayerBonusService(IPetRepository petRepository, IBlessingRe
             BotLog.Warn(ex);
         }
 
+        // El minibuff del banco (v0.21.0): el oro guardado × la zona donde está parado el jugador (la misma unidad que las recompensas). Si no se puede leer queda en 0 y la pelea sigue.
+        double bankPercent = 0;
+        if (userRepository is not null && zoneRepository is not null)
+        {
+            try
+            {
+                var user = await userRepository.GetByDiscordIdAsync(discordId, cancellationToken);
+                if (user is { HasBank: true, BankGold: > 0 })
+                {
+                    var orderedZones = ZoneRanking.OrderByDifficulty(await zoneRepository.GetAllAsync());
+                    bankPercent = BankRules.GoldBonusPercent(user.BankGold, Math.Max(1, ZoneRanking.RankOf(orderedZones, user.CurrentZoneId)));
+                }
+            }
+            catch (Exception ex)
+            {
+                BotLog.Warn(ex);
+            }
+        }
+
         // Manada sube TODOS los bonus de las mascotas a la vez (+10 % por nivel): se aplica una sola vez, acá, y PlayerBonuses ya recibe las mascotas escaladas.
         int packLevel = levels.TryGetValue(BlessingCatalog.PetsKey, out int level) ? Math.Clamp(level, 0, BlessingCatalog.MaxLevel) : 0;
         var pets = (await petRepository.GetBonusesAsync(discordId, cancellationToken)).Scaled(1 + (BlessingCatalog.PetsPerLevel * packLevel));
 
-        return new PlayerBonuses(pets, Math.Max(0, fuegoNuevo), levels.Count == 0 ? null : levels, professionXp);
+        return new PlayerBonuses(pets, Math.Max(0, fuegoNuevo), levels.Count == 0 ? null : levels, professionXp, bankPercent);
     }
 }

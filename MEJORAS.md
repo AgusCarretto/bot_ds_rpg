@@ -2,6 +2,15 @@
 
 _Última revisión: 2026-10-20 (v0.19.2: los banquetes curan 150 y 200)_
 
+## El banco da hasta +5 % de oro en las peleas (v0.21.0, 2026-10-20)
+
+- **Pedido del dueño**: «un minibuff al banco para tener plata en el banco un mínimo al menos… como una curva exponencial hasta el 5 %: tener más siempre te da más (100K → 4,90, 300K → 4,95, 1M → 4,97)». Eligió la opción B (un buff por saldo) y aprobó que sea **oro de las peleas** y que se mida **por zona**.
+- **La curva**: `bonus = 5 % × (1 − e^(−saldo/τ))` con τ = 25.600 de oro en la zona 5 (así 100K da 4,90 %). El saldo se mide en cacerías de oro de la zona del jugador, así que el mismo esfuerzo vale lo mismo en cualquier zona: 3.700 de oro en la zona 1 ≈ 100.000 en la 5. Zona 5: 1K 0,19 % · 10K 1,62 % · 25K 3,12 % · 50K 4,29 % · 100K 4,90 % · 200K 5,00 %. Arriba de ~100K la curva es casi plana (sus 4,95 y 4,97 para 300K y 1M caen en el 5,00 de la curva exponencial: la diferencia es de centésimas).
+- **Dónde suma**: cacería, viaje, jefe, jefe en equipo y `/autohunt` (todo lo que pasa por `PlayerBonuses.GoldMultiplier`), multiplicando con mascotas y Bolsillo Hondo. No cuenta en duelos ni en la Arena. Se ve en `/bank view` («Lo que rinde») y en `/info tema:bank`.
+- **Ojo**: premia acumular oro. Si más adelante se quiere frenar, las perillas son `BankRules.MaxGoldBonusPercent` y `BankRules.GoldBonusHunts`.
+- Arnés nuevo: `tests/v0210test` (la curva y su escala por zona, `PlayerBonuses`, el servicio contra la base real con el servicio roto y sin dependencias, la recompensa de una pelea, las pantallas y la inyección de dependencias). 45 arneses en total.
+- **Para la base viva**: nada (sin migración).
+
 ## Perfil: clase, FN y nivel arriba; la zona, sin nombre, en el bloque Estado (v0.20.1, 2026-10-20)
 
 - **Pedido del dueño**: «clase, FN, LVL abajo; XP, vida y zona luego; no poner el nombre de la zona, "Zona 1 (máx. 3)" y el ícono». Quedó: el título es la clase; la descripción es «FN 3 · LV 41» (el FN solo si es mayor a 0; debajo, solo cuando corresponde, «Venció al Asador» y el título de la Brasa de Color); los campos son **XP**, **Vida**, **Estado** y **Habilidad**. El bloque **Estado** lleva una línea cada uno: `Zona 1 (máx. 3) <ícono de la zona>`, `ATQ`, `DEF`, `Oro`, `Banco`, y `Polvo` y `Racha` cuando hay. En El Fogón dice `Zona 0 🔥 (tu zona: N)`.
