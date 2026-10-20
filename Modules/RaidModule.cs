@@ -1667,7 +1667,7 @@ public class RaidModule(
             1 => "💥 ¡GOLPE CRÍTICO! ",
             _ => $"💥 ¡{turn.CritCount} GOLPES CRÍTICOS! ",
         };
-        string healText = turn.LifestealHeal > 0 ? $" 🔮 Sifón de Almas curó {turn.LifestealHeal} HP." : string.Empty;
+        string healText = (turn.LifestealHeal - turn.LeechHeal > 0 ? $" 🔮 Sifón de Almas curó {turn.LifestealHeal - turn.LeechHeal} HP." : string.Empty) + (turn.LeechHeal > 0 ? $" 🩸 Sangre curó {turn.LeechHeal} HP." : string.Empty);
 
         if (turn.MonsterDefeated)
         {

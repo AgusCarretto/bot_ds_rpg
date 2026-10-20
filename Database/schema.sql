@@ -156,6 +156,10 @@ CREATE TABLE IF NOT EXISTS users (
     -- Tier del encantamiento (0 = sin encantar, 1..5, ver GameData/Enchantments.cs) de la pieza que lleva puesta. Es de la PIEZA: al venderla vuelve a 0.
     weapon_enchant    INTEGER NOT NULL DEFAULT 0 CHECK (weapon_enchant BETWEEN 0 AND 5),
     amulet_enchant    INTEGER NOT NULL DEFAULT 0 CHECK (amulet_enchant BETWEEN 0 AND 5),
+    -- v0.22.0: QUÉ efecto tiene ese encantamiento (GameData/Enchantments.cs). El arma: filo (+% de ATQ, el de siempre) | critico | sangre; el amuleto: guarda (+% de DEF, el de siempre) | vida | esquive.
+    -- Los nuevos solo valen contra monstruos. Como el tier, es de la PIEZA: al venderla o con un Fuego Nuevo vuelve a filo / guarda.
+    weapon_enchant_kind TEXT NOT NULL DEFAULT 'filo' CHECK (weapon_enchant_kind IN ('filo', 'critico', 'sangre')),
+    amulet_enchant_kind TEXT NOT NULL DEFAULT 'guarda' CHECK (amulet_enchant_kind IN ('guarda', 'vida', 'esquive')),
     -- v0.11.0, El Fogón Eterno (zona 0): in_gate = está parado en la puerta (su current_zone_id sigue siendo la última zona normal: /hunt, /travel y /raid no andan y /boss pelea al Asador);
     -- gate_cleared = ya le ganó al Asador Eterno en esta vuelta (habilita el Fuego Nuevo).
     in_gate           BOOLEAN NOT NULL DEFAULT false,

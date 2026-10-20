@@ -15,7 +15,8 @@ public sealed record RenewPreview(
     string Class, int Level, int FuegoNuevo, bool GateCleared,
     int Gold, int BankGold, bool HasBank, int Dust,
     string? WeaponName, int WeaponEnchant, string? AmuletName, int AmuletEnchant,
-    IReadOnlyDictionary<string, long> LostByType, long KeptEggs, long KeptPetFood, int Pets, int Blessings);
+    IReadOnlyDictionary<string, long> LostByType, long KeptEggs, long KeptPetFood, int Pets, int Blessings,
+    string WeaponEnchantKind = "filo", string AmuletEnchantKind = "guarda");
 
 // Resultado del reinicio. NewNumber: el Fuego Nuevo que acaba de hacer (el contador nuevo). Offer: las 3 bendiciones para elegir (null si ya las tiene todas al máximo).
 // SatchelPetFood/SatchelBoxes: lo que le dio la Alforja del Fogonero al renacer (0 sin ella).

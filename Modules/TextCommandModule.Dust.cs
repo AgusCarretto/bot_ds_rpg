@@ -27,20 +27,34 @@ public partial class TextCommandModule
     // "aa enchant" (mirar) o "aa enchant arma" / "aa enchant amuleto" (alias "aa encantar") — misma lógica que /enchant.
     [Command("enchant")]
     [Alias("encantar")]
-    [Summary("Encantá tu arma o tu amuleto con oro y Polvo: \"aa enchant\" para mirar, \"aa enchant arma\" o \"aa enchant amuleto\" para probar (\"aa enchant arma avanzado\" con el oficio Encantador al 100).")]
-    public async Task EnchantAsync(string pieza = "", string modo = "")
+    [Summary("Encantá tu arma o tu amuleto con oro y Polvo: \"aa enchant\" para mirar, \"aa enchant arma\" o \"aa enchant amuleto\" para probar, con el efecto que quieras (\"aa enchant arma crítico\") y \"avanzado\" con el oficio Encantador al 100.")]
+    public async Task EnchantAsync(string pieza = "", string segundo = "", string tercero = "")
     {
         try
         {
-            if (GatheringModule.ParseAdvanced(modo) is not bool advanced)
+            // Después de la pieza pueden venir, en cualquier orden, el efecto («crítico») y el modo («avanzado»): aa enchant arma crítico avanzado.
+            bool advanced = false;
+            string? effect = null;
+            foreach (string word in new[] { segundo, tercero }.Where(w => !string.IsNullOrWhiteSpace(w)))
             {
-                await ReplyAsync($"No entendí **{modo}**: usá `aa enchant {pieza}` o `aa enchant {pieza} avanzado`.");
-                return;
+                if (GatheringModule.ParseAdvanced(word) == true)
+                {
+                    advanced = true;
+                }
+                else if (effect is null)
+                {
+                    effect = word;
+                }
+                else
+                {
+                    await ReplyAsync($"No entendí **{word}**: usá `aa enchant {pieza} <efecto>` o `aa enchant {pieza} <efecto> avanzado`.");
+                    return;
+                }
             }
 
             var result = await DustModule.ExecuteEnchantAsync(
-                userRepository, itemRepository, dustRepository, gameEvents, Context.User.Id, pieza, bonusService: bonusService, advanced: advanced);
-            await ReplyAsync(result.PlainMessage, embed: result.Embed);
+                userRepository, itemRepository, dustRepository, gameEvents, Context.User.Id, pieza, bonusService: bonusService, advanced: advanced, effect: effect);
+            await ReplyAsync(result.PlainMessage, embed: result.Embed, components: result.Components);
         }
         catch (Exception ex)
         {

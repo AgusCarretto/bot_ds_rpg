@@ -17,11 +17,13 @@ public enum EnchantStatus
     NoGear,          // no tiene puesta la pieza de ese lado (arma o amuleto)
     NotEnoughGold,
     NotEnoughDust,
+    NeedsConfirm,    // pidió OTRO efecto que el que tiene la pieza y esa pieza ya tiene un tier: cambiar lo reemplaza, así que hace falta confirmar (no se cobró nada)
 }
 
 // PreviousTier: el tier que tenía antes; RolledTier: el que salió en el sorteo; NewTier: con el que queda (el mayor de los dos: nunca baja).
 // User: el jugador después de pagar (solo si Status == Ok).
-public sealed record EnchantOutcome(EnchantStatus Status, int PreviousTier, int RolledTier, int NewTier, User? User);
+// PreviousKind / NewKind (v0.22.0): el efecto que tenía la pieza y el que quedó (GameData/Enchantments.cs).
+public sealed record EnchantOutcome(EnchantStatus Status, int PreviousTier, int RolledTier, int NewTier, User? User, string? PreviousKind = null, string? NewKind = null);
 
 // El Polvo (GameData/Dismantling.cs y GameData/Enchantments.cs): desmantelar materiales para juntarlo y gastarlo en encantar. Las dos operaciones son UNA transacción
 // con guardas (nada se descuenta si la precondición ya no vale), así que dos clicks simultáneos no gastan lo que no hay.
@@ -38,5 +40,6 @@ public interface IDustRepository
     Task<DustSpendOutcome> BuyWithDustAsync(ulong discordId, int itemId, int quantity, int dustCost, CancellationToken cancellationToken = default);
 
     // Un intento de encantamiento: cobra oro y Polvo SIEMPRE (salga lo que salga) y deja el mayor entre el tier que tenía y el que salió (rolledTier). slot: "weapon" o "amulet".
-    Task<EnchantOutcome> TryEnchantAsync(ulong discordId, string slot, int rolledTier, int goldCost, int dustCost, CancellationToken cancellationToken = default);
+    Task<EnchantOutcome> TryEnchantAsync(
+        ulong discordId, string slot, int rolledTier, int goldCost, int dustCost, string? kind = null, bool allowSwitch = false, CancellationToken cancellationToken = default);
 }

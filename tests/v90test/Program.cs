@@ -491,7 +491,7 @@ Check(CooldownModule.ArenaLine(false, TimeSpan.FromHours(30)).Contains("1d 6h 0m
 await Reset(gold: 321, dust: 45);
 await db.ExecuteAsync("UPDATE users SET weapon_id = @w, weapon_enchant = 3 WHERE discord_id = @id", new { id = (long)U, w = (int)wpn.Id });
 var enchantInfo = DustModule.BuildInfoEmbed(await Me(), await items.GetByIdAsync((int)wpn.Id), null);
-Check(enchantInfo.Fields.All(f => !f.Inline && f.Name != ZW) && enchantInfo.Description.Split("\n\n").Length == 3 && enchantInfo.Fields.Single(f => f.Name == "🎲 Tiers posibles").Value.Split('\n').Length == 2, "/enchant sin elegir: párrafos separados y los campos apilados (arma, amuleto, Polvo, tiers en dos renglones)");
+Check(enchantInfo.Fields.All(f => !f.Inline && f.Name != ZW) && enchantInfo.Description.Split("\n\n").Length == 4 && enchantInfo.Fields.Single(f => f.Name == "🎲 Tiers posibles").Value.Split('\n').Length == 2, "/enchant sin elegir: párrafos separados y los campos apilados (arma, amuleto, Polvo, tiers en dos renglones)");
 var dismantleEmbed = (await DustModule.ExecuteDismantleAsync(users, items, dustRepo, events, U, "Madera de Pino", 1));
 Check(dismantleEmbed.PlainMessage is not null || dismantleEmbed.Embed is not null, "/dismantle sigue contestando");
 await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)U });

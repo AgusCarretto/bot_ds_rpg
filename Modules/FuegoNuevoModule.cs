@@ -489,8 +489,8 @@ public class FuegoNuevoModule(
         {
             $"📈 Tu nivel {preview.Level} y toda tu EXP (volvés al nivel 1)",
             "🗺️ Tu zona y los jefes que ya venciste (volvés a la Zona 1)",
-            $"⚔️ Tu arma: {GearText(preview.WeaponName, "weapon", preview.WeaponEnchant)}",
-            $"🛡️ Tu amuleto: {GearText(preview.AmuletName, "amulet", preview.AmuletEnchant)}",
+            $"⚔️ Tu arma: {GearText(preview.WeaponName, preview.WeaponEnchantKind, preview.WeaponEnchant)}",
+            $"🛡️ Tu amuleto: {GearText(preview.AmuletName, preview.AmuletEnchantKind, preview.AmuletEnchant)}",
         };
 
         if (preview.Dust > 0)
@@ -527,8 +527,8 @@ public class FuegoNuevoModule(
         return string.Join('\n', lines);
     }
 
-    private static string GearText(string? name, string slot, int enchant) =>
-        name is null ? "_ninguno_" : $"{name}" + (Enchantments.IsValidTier(enchant) ? $" (✨ {Enchantments.Label(slot, enchant)})" : string.Empty);
+    private static string GearText(string? name, string kind, int enchant) =>
+        name is null ? "_ninguno_" : $"{name}" + (Enchantments.IsValidTier(enchant) ? $" (✨ {Enchantments.KindLabel(kind, enchant)})" : string.Empty);
 
     private static string TypeLabel(string type) => type switch
     {

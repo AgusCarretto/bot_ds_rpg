@@ -628,7 +628,7 @@ public class AdventureModule(
             .WithTitle($"⚔️ Combate contra {state.MonsterName} {state.MonsterEmoji}")
             .WithColor(Color.Gold)
             .WithMonsterPortrait(state.MonsterPortrait)
-            .WithDescription($"{turn.ActionFlavor}{CritPrefix(turn.CritCount)}{playerLine} {monsterLine}{LifestealSuffix(turn.LifestealHeal)}")
+            .WithDescription($"{turn.ActionFlavor}{CritPrefix(turn.CritCount)}{playerLine} {monsterLine}{LifestealSuffix(turn.LifestealHeal, turn.LeechHeal)}")
             .AddField("❤️ Tu HP", HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
             .AddField($"{state.MonsterEmoji} HP de {state.MonsterName}", HpLine(state.MonsterCurrentHp, state.MonsterMaxHp), true);
 
@@ -651,7 +651,7 @@ public class AdventureModule(
             .WithColor(Color.Green)
             .WithMonsterPortrait(state.MonsterPortrait) // SIEMPRE la cara del monstruo, haya drop o no (el drop va en su campo, abajo)
             // Todos los monstruos dicen algo al caer. El jefe lo dice en su campo propio (más abajo, junto con lo de la próxima zona).
-            .WithDescription($"{turn.ActionFlavor}{CritPrefix(turn.CritCount)}Le hiciste **{turn.DamageDealt}** de daño y lo derrotaste.{LifestealSuffix(turn.LifestealHeal)}" +
+            .WithDescription($"{turn.ActionFlavor}{CritPrefix(turn.CritCount)}Le hiciste **{turn.DamageDealt}** de daño y lo derrotaste.{LifestealSuffix(turn.LifestealHeal, turn.LeechHeal)}" +
                 (state.CommandName == "boss" ? string.Empty : $"\n\n{MonsterSays(state, NpcDialogue.BossLine.Defeated)}"))
             .AddField("💰 Oro ganado", reward.Gold.ToString(), true)
             .AddField("📊 EXP ganada", reward.Xp.ToString(), true)
@@ -710,7 +710,7 @@ public class AdventureModule(
             .WithMonsterPortrait(state.MonsterPortrait)
             .WithDescription(
                 $"{turn.ActionFlavor}{CritPrefix(turn.CritCount)}{playerLine} **{state.MonsterName}** te devolvió **{turn.MonsterHit!.Damage}** " +
-                $"y te dejó fuera de combate. Usá **/heal** para recuperarte.{LifestealSuffix(turn.LifestealHeal)}\n\n{MonsterSays(state, NpcDialogue.BossLine.Victory)}")
+                $"y te dejó fuera de combate. Usá **/heal** para recuperarte.{LifestealSuffix(turn.LifestealHeal, turn.LeechHeal)}\n\n{MonsterSays(state, NpcDialogue.BossLine.Victory)}")
             .AddField("❤️ Tu HP", HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
             .AddField($"{state.MonsterEmoji} HP de {state.MonsterName}", HpLine(turn.MonsterHpAfter, state.MonsterMaxHp), true)
             .AddField("📋 Resumen del combate", BuildCombatSummaryLine(state), false);
@@ -769,8 +769,12 @@ public class AdventureModule(
         _ => $"💥 ¡{critCount} GOLPES CRÍTICOS! ",
     };
 
-    // "🔮 Sifón de Almas te curó X HP." agregado al log si el Hechicero curó algo este turno.
-    private static string LifestealSuffix(int healed) => healed > 0 ? $"\n🔮 Sifón de Almas te curó **{healed}** HP." : string.Empty;
+    // "🔮 Sifón de Almas te curó X HP." si el Hechicero curó algo este turno y "🩸 Sangre te curó Y HP." si fue el encantamiento (healed = la cura total; leech = la parte de Sangre).
+    private static string LifestealSuffix(int healed, int leech = 0)
+    {
+        int siphon = Math.Max(0, healed - leech);
+        return (siphon > 0 ? $"\n🔮 Sifón de Almas te curó **{siphon}** HP." : string.Empty) + (leech > 0 ? $"\n🩸 Sangre te curó **{leech}** HP." : string.Empty);
+    }
 
     private static Embed BuildFleeEmbed(CombatState state)
     {

@@ -2,6 +2,17 @@
 
 _Última revisión: 2026-10-20 (v0.19.2: los banquetes curan 150 y 200)_
 
+## Encantamientos con efecto: Crítico, Sangre, Vida y Esquive (v0.22.0, 2026-10-20)
+
+- **Pedido del dueño**: «efectos nuevos de encantamiento» (los cuatro de mi propuesta: **arma**, Crítico y Sangre; **amuleto**, Vida y Esquive, además de los de siempre, Filo y Guarda). Me dejó decidir entre elegir y sortear: **el jugador elige el efecto y el tier se sortea**.
+- **Cómo funciona**: `/enchant arma efecto:Crítico` (o `aa enchant arma crítico`). Sin elegir queda el efecto de la pieza; el mismo efecto solo sube el tier (como siempre); **otro efecto sobre una pieza que ya tiene tier la REEMPLAZA** con el tier que salga (puede ser menor), así que primero pregunta con dos botones y no cobra hasta que confirmás. Sobre una pieza sin encantar cualquier efecto se elige directo. Vender la pieza, forjar otra encima o un Fuego Nuevo devuelven el efecto a Filo / Guarda.
+- **Solo contra monstruos**: Crítico, Sangre, Vida y Esquive no cuentan en duelos ni en la Arena (como las bendiciones de poder); Filo y Guarda siguen valiendo en todos lados. Una pieza con un efecto de combate no conserva el bonus de stat del Filo/Guarda.
+- **Magnitudes medidas** (`tools/balance2 -- L`, jefes de las zonas 2 a 5 con equipo propio, comida y habilidad, y cacerías comunes; promedio de las 4 clases): Crítico +3/6/10/15/20 puntos de crítico · Sangre cura 1/2/3/4/5 % del daño de cada golpe · Vida +4/8/13/18/24 % de vida · Esquive +3/6/9/12/15 puntos. **Jefe de la zona 5 a mín+3** (% de perder): sin encantar 54 · Filo V 32 · **Crítico V 34 · Sangre V 33 · Vida V 26 · Esquive V 34** · **Guarda V 8**. Los cuatro nuevos quedan a la par del Filo en los tiers 3 y 5.
+- **Hallazgo que hay que decidir**: **la Guarda V es 3 a 4 veces más fuerte que cualquier otro efecto** porque la defensa se resta fija de cada golpe (+26 % de un amuleto de 120 son ~31 puntos menos por golpe del jefe ≈ +50 % de vida efectiva). Es el estado de siempre y NO se tocó, pero deja a Vida y Esquive como la opción débil del amuleto. Opciones: dejarlo, o bajar la Guarda a la altura del Filo (p. ej. +2/4/6/9/13 %), que le quitaría poder a todos los amuletos ya encantados.
+- Cambios de código: `Enchantments` (tabla de efectos), `PlayerCombatProfileCalculator.Resolve` (efectos de combate), `ClassPassiveProfile.LeechRatio` y `CombatTurnResolver` (la cura de Sangre; el log separa «🔮 Sifón de Almas» de «🩸 Sangre»), `DustModule`/`DustRepository` (elegir, confirmar y reemplazar de forma atómica), el perfil (marca el efecto), la vista previa del Fuego Nuevo y la ayuda. Simulador: parte **L**.
+- Arnés nuevo: `tests/v0220test`. 46 arneses en total.
+- **Para la base viva**: **correr `Database/add_enchant_kinds.sql` ANTES del binario v0.22.0** (agrega las dos columnas con Filo/Guarda por defecto: nadie pierde nada; re-ejecutable).
+
 ## El banco da hasta +5 % de oro en las peleas (v0.21.0, 2026-10-20)
 
 - **Pedido del dueño**: «un minibuff al banco para tener plata en el banco un mínimo al menos… como una curva exponencial hasta el 5 %: tener más siempre te da más (100K → 4,90, 300K → 4,95, 1M → 4,97)». Eligió la opción B (un buff por saldo) y aprobó que sea **oro de las peleas** y que se mida **por zona**.

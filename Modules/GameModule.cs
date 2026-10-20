@@ -111,15 +111,16 @@ public class GameModule(
         // aparecen solo cuando existen: ⚡ sinergia de clase, 🍖 banquete (con los minutos que le quedan), 🔥 Fuego Nuevo / bendición, 🐾 mascotas, ✨ encantamiento (el porcentaje de la pieza).
         string PieceMark(Item? piece, string none) =>
             piece is null ? none : (string.IsNullOrWhiteSpace(piece.Emoji) ? piece.Name : piece.Emoji);
-        string EnchantMark(int tier) => Enchantments.IsValidTier(tier) ? $" ✨+{Enchantments.BonusPercent(tier)} %" : string.Empty;
+        // «✨+13 %» (Filo o Guarda) o «✨Crít +6» / «✨Sangre 3 %» / «✨Vida +13 %» / «✨Esq +6» (los efectos nuevos, v0.22.0).
+        string EnchantMark(string kind, int tier) => Enchantments.IsValidTier(tier) ? $" ✨{Enchantments.ShortText(kind, tier)}" : string.Empty;
 
         string attackLine = $"**ATQ** {attack} {PieceMark(weapon, "_sin arma_")}" + (hasSynergy ? " ⚡" : string.Empty)
             + (buff is null ? string.Empty : $" 🍖+{buff.AttackPercent} % ({Math.Max(1, (int)Math.Ceiling(buff.Remaining.TotalMinutes))} min)")
             + (bonuses.AttackMultiplier > 1.0 ? $" 🔥{FuegoNuevoRules.PercentText(bonuses.AttackMultiplier)}" : string.Empty)
-            + EnchantMark(weapon is null ? 0 : player.WeaponEnchant);
+            + EnchantMark(player.WeaponEnchantKind, weapon is null ? 0 : player.WeaponEnchant);
         string defenseLine = $"**DEF** {defense} {PieceMark(amulet, "_sin amuleto_")}" + (petBonuses.DefensePercent > 0 ? $" 🐾{PetRules.PercentText(petBonuses.DefensePercent)}" : string.Empty)
             + (bonuses.BlessingLevel(BlessingCatalog.DefenseKey) > 0 ? $" 🔥{FuegoNuevoRules.PercentText(1 + (BlessingCatalog.DefensePerLevel * bonuses.BlessingLevel(BlessingCatalog.DefenseKey)))}" : string.Empty)
-            + EnchantMark(amulet is null ? 0 : player.AmuletEnchant);
+            + EnchantMark(player.AmuletEnchantKind, amulet is null ? 0 : player.AmuletEnchant);
 
         // El oro, el banco (a salvo de la penalidad por morir), el Polvo (solo cuando hay) y la racha del /daily (solo cuando hay) debajo, cada uno en su línea y con su ícono propio al final.
         var numberLines = new List<string>

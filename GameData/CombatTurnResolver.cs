@@ -20,12 +20,13 @@ public sealed record TurnResult(
     bool Ambush, // el ataque salió desde las sombras del Ninja (crítico garantizado)
     int DamageDealt,
     int CritCount,
-    int LifestealHeal,
+    int LifestealHeal, // la cura TOTAL de este turno (Sifón de Almas + Sangre): es la que mueve la vida
     int MonsterHpAfter,
     int PlayerHpAfterStrike, // tras el Sifón de Almas, antes del contraataque
     MonsterHitOutcome? MonsterHit,
     int PlayerHpAfter,
-    AbilityState StatusAfter)
+    AbilityState StatusAfter,
+    int LeechHeal = 0) // la parte de LifestealHeal que vino del encantamiento Sangre (para el texto del log)
 {
     public bool MonsterDefeated => MonsterHpAfter <= 0;
     public bool AnyCritical => CritCount > 0;
@@ -47,7 +48,7 @@ public sealed record CounterResult(MonsterHitOutcome Hit, AbilityState Status);
 // Solo la mitad "yo pego" de un turno: lo que hizo el golpe (o los golpes de la habilidad), el Sifón de Almas y cómo quedó la habilidad.
 // Lo usa ResolveTurn (contra un monstruo, que después contraataca) y el PvP (GameData/DuelEngine.cs, donde el que recibe es otro jugador).
 public sealed record StrikeResult(
-    ClassAbility? AbilityUsed, bool Ambush, int Damage, int CritCount, int LifestealHeal, int HpAfterStrike, AbilityState StatusAfter);
+    ClassAbility? AbilityUsed, bool Ambush, int Damage, int CritCount, int LifestealHeal, int HpAfterStrike, AbilityState StatusAfter, int LeechHeal = 0);
 
 // UNA sola implementación del turno de un jugador contra un monstruo (golpe → Sifón de Almas →
 // contraataque), que comparten el combate solitario (Modules/AdventureModule.cs), el jefe
@@ -80,7 +81,7 @@ public static class CombatTurnResolver
         {
             return new TurnResult(
                 strike.AbilityUsed, strike.Ambush, strike.Damage, strike.CritCount, strike.LifestealHeal, 0,
-                strike.HpAfterStrike, null, strike.HpAfterStrike, strike.StatusAfter);
+                strike.HpAfterStrike, null, strike.HpAfterStrike, strike.StatusAfter, strike.LeechHeal);
         }
 
         var counter = ResolveCounter(player, strike.StatusAfter, monsterDamage);
@@ -88,7 +89,7 @@ public static class CombatTurnResolver
 
         return new TurnResult(
             strike.AbilityUsed, strike.Ambush, strike.Damage, strike.CritCount, strike.LifestealHeal, monsterHpAfter,
-            strike.HpAfterStrike, counter.Hit, playerHpAfter, counter.Status);
+            strike.HpAfterStrike, counter.Hit, playerHpAfter, counter.Status, strike.LeechHeal);
     }
 
     // La mitad "yo pego" del turno: el golpe (o los de la habilidad), el Sifón de Almas y el enfriamiento. No toca al rival: el que
@@ -161,7 +162,11 @@ public static class CombatTurnResolver
         }
 
         // Sifón de Almas (Hechicero): cura al pegar, golpe final incluido, antes del contraataque.
-        int lifestealHeal = CombatMath.RollLifesteal(damage, player.Passives.LifestealChance, player.Passives.LifestealRatio);
+        int siphon = CombatMath.RollLifesteal(damage, player.Passives.LifestealChance, player.Passives.LifestealRatio);
+
+        // Encantamiento Sangre (v0.22.0, solo contra monstruos: el perfil de duelos no lo trae): cura un % del daño de CADA golpe, al menos 1 si pegó.
+        int leech = player.Passives.LeechRatio > 0 && damage > 0 ? Math.Max(1, (int)Math.Round(damage * player.Passives.LeechRatio)) : 0;
+        int lifestealHeal = siphon + leech;
         int playerHpAfterStrike = Math.Min(playerMaxHp, playerHp + lifestealHeal);
 
         // Usar la habilidad arranca su enfriamiento y su efecto; cualquier otro turno lo hace bajar 1.
@@ -169,7 +174,7 @@ public static class CombatTurnResolver
             ? new AbilityState(used.CooldownTurns, EffectTurnsFor(used.Kind))
             : status with { CooldownRemaining = Math.Max(0, status.CooldownRemaining - 1) };
 
-        return new StrikeResult(used, ambush, damage, crits, lifestealHeal, playerHpAfterStrike, statusAfterStrike);
+        return new StrikeResult(used, ambush, damage, crits, lifestealHeal, playerHpAfterStrike, statusAfterStrike, leech);
     }
 
     // La mitad "recibo un golpe": esquive (con el bonus de la clase o el de Sombra), defensa, la mitigación de Aguante y la pasiva de daño

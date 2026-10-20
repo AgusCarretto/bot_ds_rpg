@@ -1,3 +1,5 @@
+using BotDsRpg.Models;
+
 namespace BotDsRpg.GameData;
 
 // Encantamientos (/enchant): una mejora con TIER para el arma (sube su ATQ) y otra para el amuleto (sube su DEF). Es poder extra, así que está acotado:
@@ -24,6 +26,141 @@ public static class Enchantments
         ("Incandescente", 19, 9),
         ("Soberano", 26, 3),
     ];
+
+    // Los EFECTOS (v0.22.0, el dueño: «efectos nuevos»): cada pieza tiene UN efecto y un tier. El jugador ELIGE el efecto y el tier se sortea (cambiar de efecto reemplaza el que tenía).
+    //   Arma:     Filo (+% de ATQ de la pieza, el de siempre) · Crítico (+puntos de chance de crítico) · Sangre (cura un % del daño de cada golpe).
+    //   Amuleto:  Guarda (+% de DEF de la pieza, el de siempre) · Vida (+% de vida máxima) · Esquive (+puntos de chance de esquivar).
+    // Filo y Guarda valen en todos lados (duelos incluidos, como siempre); los otros cuatro valen SOLO contra monstruos (como las bendiciones de poder): sin PlayerBonuses no cuentan.
+    // MAGNITUDES (medidas con tools/balance2 parte L, jefe de las zonas 2 a 5 y cacería común, 4 clases): cada efecto al tier V queda a la par del Filo V (jefe de la zona 5 a mín+3: pierde 54 % sin encantar,
+    // 32 % con Filo V, 34 % con Crítico V, 33 % con Sangre V, 26 % con Vida V y 34 % con Esquive V). La Guarda V (8 %) queda MUY por encima de todos: la defensa se resta fija de cada golpe y +26 % de una
+    // amuleto de 120 son ~31 puntos menos por golpe (ver CLAUDE.md, «Amulets and defense»); es el estado de siempre y no se tocó.
+    public const string Filo = "filo", Guarda = "guarda", Critico = "critico", Sangre = "sangre", Vida = "vida", Esquive = "esquive";
+
+    // ValuesByTier: el valor de cada tier (1..5), en la unidad de Unit. Summary: lo que hace, en una frase (para /enchant info y la ayuda).
+    public sealed record EnchantKind(string Key, string Slot, string Name, string Unit, IReadOnlyList<int> ValuesByTier, bool PveOnly, string Summary);
+
+    private static readonly EnchantKind[] KindTable =
+    [
+        new(Filo, "weapon", "Filo", "% de ATQ de la pieza", Tiers.Select(t => t.BonusPercent).ToArray(), false, "sube el ATQ del arma"),
+        new(Critico, "weapon", "Crítico", "puntos de chance de crítico", new[] { 3, 6, 10, 15, 20 }, true, "más chance de golpe crítico (el de base es 10 %)"),
+        new(Sangre, "weapon", "Sangre", "% del daño en vida", new[] { 1, 2, 3, 4, 5 }, true, "curás un % del daño de cada golpe"),
+        new(Guarda, "amulet", "Guarda", "% de DEF de la pieza", Tiers.Select(t => t.BonusPercent).ToArray(), false, "sube la DEF del amuleto"),
+        new(Vida, "amulet", "Vida", "% de vida máxima", new[] { 4, 8, 13, 18, 24 }, true, "más vida máxima en combate"),
+        new(Esquive, "amulet", "Esquive", "puntos de chance de esquivar", new[] { 3, 6, 9, 12, 15 }, true, "más chance de esquivar (la de base es 5 %)"),
+    ];
+
+    public static IReadOnlyList<EnchantKind> Kinds => KindTable;
+
+    public static IReadOnlyList<EnchantKind> KindsFor(string slot) => KindTable.Where(k => k.Slot == slot).ToList();
+
+    public static EnchantKind? FindKind(string? key) => KindTable.FirstOrDefault(k => string.Equals(k.Key, key, StringComparison.Ordinal));
+
+    // El efecto de siempre de cada pieza: el que tienen todas las piezas ya encantadas antes de la v0.22.0.
+    public static string DefaultKind(string slot) => slot == "weapon" ? Filo : Guarda;
+
+    // Lo que escribe el jugador («crítico», "Critico", «SANGRE»...) → la clave del efecto DE ESA PIEZA (o null si no existe o es de la otra pieza). Sin tildes ni mayúsculas.
+    public static string? ParseKind(string slot, string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return null;
+        }
+
+        return KindTable.FirstOrDefault(k => k.Slot == slot && (AutocompleteText.SameName(k.Key, text) || AutocompleteText.SameName(k.Name, text)))?.Key;
+    }
+
+    // Un efecto que cambia el STAT de la pieza (Filo, Guarda) y no el combate: el único que usa Apply.
+    public static bool IsStatKind(string? key) => key is Filo or Guarda;
+
+    // El tier que cuenta para Apply: solo si el efecto de la pieza es el de stat (con un efecto de combate el stat no cambia).
+    public static int StatTier(string? kindKey, int tier) => IsStatKind(kindKey) ? tier : 0;
+
+    // El valor del efecto en ese tier (en su unidad), o 0 si no hay tier o el efecto no existe.
+    public static int ValueOf(string? kindKey, int tier) =>
+        FindKind(kindKey) is { } kind && IsValidTier(tier) ? kind.ValuesByTier[tier - 1] : 0;
+
+    // «Crítico Ardiente», «Filo Soberano»...: el nombre del efecto con su tier.
+    public static string KindLabel(string? kindKey, int tier) =>
+        FindKind(kindKey) is { } kind && IsValidTier(tier) ? $"{kind.Name} {Tiers[tier - 1].Name}" : "Sin encantar";
+
+    // «+13 %», «+6 puntos de crítico»...: lo que da ese efecto en ese tier, completo.
+    public static string ValueText(string? kindKey, int tier)
+    {
+        var kind = FindKind(kindKey);
+        if (kind is null || !IsValidTier(tier))
+        {
+            return string.Empty;
+        }
+
+        int value = kind.ValuesByTier[tier - 1];
+        return kind.Key switch
+        {
+            Filo or Guarda => $"+{value} %",
+            Critico => $"+{value} puntos de crítico",
+            Sangre => $"{value} % del daño en vida",
+            Vida => $"+{value} % de vida",
+            Esquive => $"+{value} puntos de esquive",
+            _ => string.Empty,
+        };
+    }
+
+    // La versión corta para una línea del perfil: «+13 %», «Crít +6», «Sangre 6 %», «Vida +6 %», «Esq +3».
+    public static string ShortText(string? kindKey, int tier)
+    {
+        int value = ValueOf(kindKey, tier);
+        return kindKey switch
+        {
+            Filo or Guarda => $"+{value} %",
+            Critico => $"Crít +{value}",
+            Sangre => $"Sangre {value} %",
+            Vida => $"Vida +{value} %",
+            Esquive => $"Esq +{value}",
+            _ => string.Empty,
+        };
+    }
+
+    // «+4/8/13/19/26 % de ATQ de la pieza», «cura el 1/2/3/4/5 % del daño de cada golpe»...: los cinco valores de un efecto en palabras (para /enchant info).
+    public static string DescribeValues(EnchantKind kind)
+    {
+        string values = string.Join("/", kind.ValuesByTier);
+        return kind.Key switch
+        {
+            Filo => $"+{values} % de ATQ de la pieza",
+            Guarda => $"+{values} % de DEF de la pieza",
+            Critico => $"+{values} puntos de chance de crítico",
+            Sangre => $"cura el {values} % del daño de cada golpe",
+            Vida => $"+{values} % de vida máxima",
+            Esquive => $"+{values} puntos de chance de esquivar",
+            _ => values,
+        };
+    }
+
+    // Suma los efectos de COMBATE de la pieza encantada al perfil de pasivas de la clase (solo se llama con PlayerBonuses, o sea contra monstruos): el crítico y el esquive son
+    // puntos de chance, la vida un % más de vida máxima y la Sangre la cura por golpe. Filo y Guarda no pasan por acá (suman al stat de la pieza).
+    public static ClassPassiveProfile ApplyEffects(ClassPassiveProfile passives, User player)
+    {
+        passives = ApplyOne(passives, player.WeaponEnchantKind, player.WeaponEnchant);
+        return ApplyOne(passives, player.AmuletEnchantKind, player.AmuletEnchant);
+    }
+
+    private static ClassPassiveProfile ApplyOne(ClassPassiveProfile passives, string? kindKey, int tier)
+    {
+        if (!IsValidTier(tier) || IsStatKind(kindKey))
+        {
+            return passives;
+        }
+
+        double value = ValueOf(kindKey, tier);
+        return kindKey switch
+        {
+            Critico => passives with { CritChanceBonus = passives.CritChanceBonus + (value / 100.0) },
+            Esquive => passives with { DodgeChanceBonus = passives.DodgeChanceBonus + (value / 100.0) },
+            Vida => passives with { MaxHpMultiplier = passives.MaxHpMultiplier * (1 + (value / 100.0)) },
+            Sangre => passives with { LeechRatio = passives.LeechRatio + (value / 100.0) },
+            _ => passives,
+        };
+    }
+
 
     // Dust por intento según la zona de la pieza (1..5), y el oro es "ocho cacerías de oro" de esa zona (MissionRewards.GoldUnit): el mismo
     // reloj de oro que los premios y las cajas. En Zona 1 un intento son ~20 minutos de juntar Polvo (10 a ~0,5 por minuto); en Zona 5, ~2 horas.
