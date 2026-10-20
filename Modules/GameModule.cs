@@ -105,7 +105,7 @@ public class GameModule(
         var ability = ClassAbilities.For(player.Class);
         int requiredXp = LevelingCalculator.RequiredXpForLevel(player.Level);
 
-        // El bloque de números, una línea cada uno (el dueño, 2026-10-20: «ATQ: el número y el arma, pero no el nombre, solo el emoji; abajo lo mismo con DEF; abajo el oro y luego el banco»):
+        // El bloque «Estado», una línea cada uno: la zona, el ataque, la defensa, el oro, el banco... (el dueño, 2026-10-20: «ATQ: el número y el arma, pero no el nombre, solo el emoji; abajo lo mismo con DEF; abajo el oro y luego el banco»):
         //   ATQ 123 <arma> ⚡ ...      DEF 45 <amuleto> ...      Oro 1.234 <moneda>      Banco 99 <banco>
         // Después del número va el emoji PROPIO de la pieza (el nombre lo dice /inventory y la herrería; sin emoji cargado se escribe el nombre para no dejar la línea muda). Las marcas de lo que suma
         // aparecen solo cuando existen: ⚡ sinergia de clase, 🍖 banquete (con los minutos que le quedan), 🔥 Fuego Nuevo / bendición, 🐾 mascotas, ✨ encantamiento (el porcentaje de la pieza).
@@ -143,43 +143,47 @@ public class GameModule(
             numberLines.Add($"**Racha** día {player.DailyStreak} {UiEmojis.Streak}");
         }
 
-        // La zona va debajo del título, en una línea: "Zona 1: Praderas del Mate (máx. Zona 4)". Antes era un campo "Zona actual" que repetía la palabra.
-        string zoneLine = zone is null
-            ? "_Zona desconocida_"
-            : $"{zone.Emoji} **Zona {zone.ZoneId}: {zone.Name}**" + (maxZone is null ? string.Empty : $" (máx. Zona {maxZone.ZoneId})");
+        // La zona va en el bloque de abajo, SIN el nombre (el dueño, 2026-10-20: «no poner el nombre, Zona 1 (máx. 3) y el ícono»): «Zona 1 (máx. 3) 🌾», con el ícono de la zona al final como las demás líneas.
+        string zoneRow = zone is null
+            ? "**Zona** _desconocida_"
+            : $"**Zona** {zone.ZoneId}" + (maxZone is null ? string.Empty : $" (máx. {maxZone.ZoneId})") + (string.IsNullOrWhiteSpace(zone.Emoji) ? string.Empty : $" {zone.Emoji}");
 
         // Parado en El Fogón Eterno (zona 0, GameData/FogonRules.cs): la zona de siempre sigue siendo la última normal, pero el jugador está en la puerta.
         if (player.InGate)
         {
-            zoneLine = $"🔥 **Zona 0: El Fogón Eterno** _(tu zona: {zone?.Name ?? "?"})_";
+            zoneRow = $"**Zona** 0 🔥 (tu zona: {(zone is null ? "?" : zone.ZoneId.ToString())})";
         }
 
+        numberLines.Insert(0, zoneRow);
+
+        // Debajo de la primera línea de la descripción, solo cuando corresponde: que venció al Asador y el título cosmético de la bendición Brasa de Color (que también cambia el color del perfil con su nivel).
+        var descriptionLines = new List<string>();
         if (player.GateCleared)
         {
-            zoneLine += "\n🔥 _Venció al Asador Eterno._";
+            descriptionLines.Add("🔥 _Venció al Asador Eterno._");
         }
 
-        // Brasa de Color (bendición cosmética): un título propio debajo de la zona y un color nuevo para el perfil, que cambian con su nivel.
         int colorLevel = bonuses.BlessingLevel(BlessingCatalog.ColorKey);
         if (colorLevel > 0)
         {
-            zoneLine += $"\n🌈 _{BlessingCatalog.ColorTitle(colorLevel)}_";
+            descriptionLines.Add($"🌈 _{BlessingCatalog.ColorTitle(colorLevel)}_");
         }
 
-        // El nivel y el Fuego Nuevo van en la primera línea de la descripción y no en el título: el título no se garantiza para emojis propios, y así el «LV» y el ícono de FN se ven siempre
-        // (GameData/UiEmojis.cs; sin esos emojis subidos queda «Nivel 41 · 🔥 FN 3», como antes pero debajo del título).
-        string levelLine = UiEmojis.LevelTag(player.Level) + (player.FuegoNuevo > 0 ? $" · {UiEmojis.FuegoNuevoTag(player.FuegoNuevo)}" : string.Empty);
+        // Debajo de la clase (el título) van el Fuego Nuevo y el nivel, en ese orden (el dueño, 2026-10-20: «clase, FN, LVL»): el título no se garantiza para emojis propios, así que viven en la
+        // descripción. Sin Fuego Nuevo solo el nivel. Sin los emojis subidos queda «🔥 FN 3 · Nivel 41» (GameData/UiEmojis.cs).
+        string levelLine = (player.FuegoNuevo > 0 ? UiEmojis.FuegoNuevoTag(player.FuegoNuevo) + " · " : string.Empty) + UiEmojis.LevelTag(player.Level);
+        descriptionLines.Insert(0, levelLine);
 
         var embed = new EmbedBuilder()
             .WithAuthor(username, avatarUrl)
             .WithTitle($"{classDef?.Emoji ?? "🔥"} {player.Class}")
-            .WithDescription(levelLine + "\n" + zoneLine)
+            .WithDescription(string.Join("\n", descriptionLines))
             .WithColor(colorLevel > 0 ? new Color((uint)BlessingCatalog.ColorValue(colorLevel)) : Color.Orange) // Color cálido acorde al asado
             .WithThumbnailUrl(avatarUrl)
             // Los nombres de campo van en texto plano («XP», «Vida») y el ícono al final de la línea de números: un emoji propio no se garantiza en el nombre de un campo.
             .AddField("XP", $"{ProgressBar.Render(player.Xp, requiredXp, kind: UiEmojis.BarXp)}\n{player.Xp} / {requiredXp} {UiEmojis.Xp}", false)
             .AddField("Vida", $"{ProgressBar.Render(player.CurrentHp, player.MaxHp, kind: UiEmojis.BarHp)}\n{player.CurrentHp} / {player.MaxHp} HP ❤️", false)
-            .AddField("Equipo y bolsa", string.Join("\n", numberLines), false);
+            .AddField("Estado", string.Join("\n", numberLines), false);
 
         // Las mascotas, los porcentajes del Fuego Nuevo, las bendiciones y los oficios YA NO van en el perfil (el dueño, 2026-10-07: «dejalas aparte»): cada uno tiene su comando propio,
         // /pet (aa pet), /fuegonuevo (aa fn), /blessings (aa bendiciones) y /professions (aa oficios). El perfil queda con lo básico y el número que pelea: el ataque y la defensa siguen

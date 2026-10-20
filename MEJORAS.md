@@ -2,6 +2,12 @@
 
 _Última revisión: 2026-10-20 (v0.19.2: los banquetes curan 150 y 200)_
 
+## Perfil: clase, FN y nivel arriba; la zona, sin nombre, en el bloque Estado (v0.20.1, 2026-10-20)
+
+- **Pedido del dueño**: «clase, FN, LVL abajo; XP, vida y zona luego; no poner el nombre de la zona, "Zona 1 (máx. 3)" y el ícono». Quedó: el título es la clase; la descripción es «FN 3 · LV 41» (el FN solo si es mayor a 0; debajo, solo cuando corresponde, «Venció al Asador» y el título de la Brasa de Color); los campos son **XP**, **Vida**, **Estado** y **Habilidad**. El bloque **Estado** lleva una línea cada uno: `Zona 1 (máx. 3) <ícono de la zona>`, `ATQ`, `DEF`, `Oro`, `Banco`, y `Polvo` y `Racha` cuando hay. En El Fogón dice `Zona 0 🔥 (tu zona: N)`.
+- El bloque se llamaba «Equipo y bolsa» en la v0.19.5; los arneses que lo leen (`fntest`, `pettest`, `stage13test`, `stage2btest`, `v90test`, `v0194test`, `fogontest`) se actualizaron a propósito.
+- **Para la base viva**: nada.
+
 ## La XP de los oficios depende de la rareza del material (v0.20.0, 2026-10-20)
 
 - **Pedido del dueño**: «que el profession escale pero a nivel de XP por tier del material: normal 2xp, raro 7, épico 15, legendario 30, mítico 100». Aprobó mis tres ajustes: **por tirada (no por unidad)**, **ritmo igual** y **nadie baja de nivel**.

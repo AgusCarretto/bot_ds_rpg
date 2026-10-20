@@ -316,7 +316,7 @@ var profPlain = await GameModule.BuildProfileEmbedAsync(users, itemsRepo, zonesR
 var meNow = await Me();
 var profBonuses = await bonusSvc.GetAsync(U, 3);
 var profCombat = PlayerCombatProfileCalculator.Resolve(meNow, weaponItem, amuletItem, 0, profBonuses);
-string ProfBlock(Embed e) => e.Fields.Single(f => f.Name == "Equipo y bolsa").Value;
+string ProfBlock(Embed e) => e.Fields.Single(f => f.Name == "Estado").Value;
 string ProfLine(Embed e, string label) => ProfBlock(e).Split('\n').FirstOrDefault(l => l.StartsWith($"**{label}**")) ?? string.Empty;
 string atkField = ProfLine(prof, "ATQ"), defField = ProfLine(prof, "DEF");
 Check(prof.Description.Contains("FN **3**") && !prof.Title.Contains("FN") && !prof.Fields.Any(f => f.Name.Contains("Fuego Nuevo") || f.Name.Contains("Bendiciones") || f.Name.Contains("Mascotas") || f.Name.Contains("Oficios")), "el perfil muestra «FN 3» en la primera línea de la descripción (v0.19.4: ya no en el título) pero YA NO lista porcentajes, bendiciones, mascotas ni oficios (v0.14.3: están en aa fn, aa pet, aa bendiciones y aa oficios)");

@@ -99,24 +99,24 @@ async Task<Embed> Profile(ulong id) => await GameModule.BuildProfileEmbedAsync(u
 
 UiEmojis.Set([]);
 var plain = await Profile(U);
-Check(plain.Title == "⚔️ Guerrero" && plain.Description.StartsWith("Nivel **41** · 🔥 FN **3**\n") && plain.Fields[0].Name == "XP" && plain.Fields[0].Value.StartsWith("░░░░░░░░░░") && !plain.Fields[0].Value.Contains("<:") && plain.Fields[0].Value.Contains("120 / ") && plain.Fields[0].Value.EndsWith(" 📊"),
-    $"perfil sin emojis subidos: el título es solo la clase, la primera línea dice «Nivel 41 · 🔥 FN 3», el campo es «XP» con barra de texto y «120 / N 📊» sin repetir XP");
+Check(plain.Title == "⚔️ Guerrero" && plain.Description == "🔥 FN **3** · Nivel **41**" && plain.Fields[0].Name == "XP" && plain.Fields[0].Value.StartsWith("░░░░░░░░░░") && !plain.Fields[0].Value.Contains("<:") && plain.Fields[0].Value.Contains("120 / ") && plain.Fields[0].Value.EndsWith(" 📊"),
+    $"perfil sin emojis subidos: el título es solo la clase, la descripción dice «🔥 FN 3 · Nivel 41» (el FN va antes del nivel), el campo es «XP» con barra de texto y «120 / N 📊» sin repetir XP");
 var plainV = await Profile(V);
-Check(plainV.Description.StartsWith("Nivel **7**\n") && !plainV.Description.Contains("FN"), "sin Fuego Nuevo la línea es solo el nivel (no aparece «FN 0»)");
+Check(plainV.Description == "Nivel **7**" && !plainV.Description.Contains("FN"), "sin Fuego Nuevo la línea es solo el nivel (no aparece «FN 0»)");
 
 UiEmojis.Set(Full());
 bool StartsWithBar(string value, string kind) { var b = UiEmojis.Bar(kind)!; return value.StartsWith(b.LeftFull) || value.StartsWith(b.LeftEmpty); }
 await db.ExecuteAsync("UPDATE users SET has_bank = true, bank_gold = 99, dust = 5, daily_streak = 2, gold = 1234 WHERE discord_id = @id", new { id = (long)U });
 var rich = await Profile(U);
 string lv = UiEmojis.Lv!, fn = UiEmojis.FuegoNuevo;
-Check(rich.Description.StartsWith($"{lv} **41** · {fn} **3**\n") && !rich.Title.Contains("<:") && rich.Fields[0].Name == "XP" && rich.Fields[0].Value.EndsWith($" {UiEmojis.Xp}") && StartsWithBar(rich.Fields[0].Value, "xp") && StartsWithBar(rich.Fields[1].Value, "hp"),
-    "perfil con los emojis subidos: «<LV> 41 · <FN> 3» arriba, el campo XP con su ícono y las barras de XP y de vida con sus piezas (el título sin emojis propios)");
+Check(rich.Description == $"{fn} **3** · {lv} **41**" && !rich.Title.Contains("<:") && rich.Fields[0].Name == "XP" && rich.Fields[0].Value.EndsWith($" {UiEmojis.Xp}") && StartsWithBar(rich.Fields[0].Value, "xp") && StartsWithBar(rich.Fields[1].Value, "hp"),
+    "perfil con los emojis subidos: «<FN> 3 · <LV> 41» arriba, el campo XP con su ícono y las barras de XP y de vida con sus piezas (el título sin emojis propios)");
 Check(rich.Length <= 6000 && rich.Fields.All(f => f.Value.Length <= 1024) && rich.Fields.All(f => !f.Inline), $"el perfil con barras de emojis entra en los límites de Discord ({rich.Length} de 6000) y sigue apilado");
-string BlockLine(Embed e, string label) => e.Fields.Single(f => f.Name == "Equipo y bolsa").Value.Split('\n').First(l => l.StartsWith($"**{label}**"));
+string BlockLine(Embed e, string label) => e.Fields.Single(f => f.Name == "Estado").Value.Split('\n').First(l => l.StartsWith($"**{label}**"));
 Check(BlockLine(rich, "Oro") == $"**Oro** 1.234 {UiEmojis.Gold}" && BlockLine(rich, "Banco") == $"**Banco** 99 {UiEmojis.Bank}" && BlockLine(rich, "Polvo") == $"**Polvo** 5 {UiEmojis.Dust}" && BlockLine(rich, "Racha") == $"**Racha** día 2 {UiEmojis.Streak}" && UiEmojis.Gold.StartsWith("<:ui_oro:") && UiEmojis.Streak.StartsWith("<:ui_racha:"),
     "con los íconos subidos, cada línea del bloque (Oro, Banco, Polvo, Racha) termina con el suyo");
-Check(rich.Fields.Select(f => f.Name).SequenceEqual(["XP", "Vida", "Equipo y bolsa", "✨ Habilidad"]) && BlockLine(rich, "ATQ").StartsWith("**ATQ** ") && BlockLine(rich, "DEF").StartsWith("**DEF** "),
-    "el perfil son cuatro campos: XP, Vida, el bloque «Equipo y bolsa» (ATQ, DEF, Oro, Banco...) y Habilidad");
+Check(rich.Fields.Select(f => f.Name).SequenceEqual(["XP", "Vida", "Estado", "✨ Habilidad"]) && BlockLine(rich, "ATQ").StartsWith("**ATQ** ") && BlockLine(rich, "DEF").StartsWith("**DEF** "),
+    "el perfil son cuatro campos: XP, Vida, el bloque «Estado» (ATQ, DEF, Oro, Banco...) y Habilidad");
 
 // El ranking.
 await db.ExecuteAsync("UPDATE users SET fuego_nuevo = 996 WHERE discord_id = @id", new { id = (long)U });

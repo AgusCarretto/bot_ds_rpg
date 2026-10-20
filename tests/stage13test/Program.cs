@@ -235,10 +235,10 @@ await db.ExecuteAsync("UPDATE users SET weapon_id = @w, amulet_id = @a, daily_st
 var profile = await GameModule.BuildProfileEmbedAsync(users, items, zones, buffs, U, "Tester", "https://example.com/a.png");
 var names = profile.Fields.Select(f => f.Name).ToList();
 string Z(string s) => s.Replace(((char)0x200B).ToString(), "·");
-Check(Z(string.Join(",", names)).StartsWith("XP,Vida,Equipo y bolsa,✨ Habilidad"), $"el perfil (v0.19.5, compacto): XP, Vida, un bloque «Equipo y bolsa» (ATQ, DEF, Oro, Banco, Polvo, Racha) y Habilidad; la zona va debajo del título ({Z(string.Join(" / ", names))})");
-string ProfBlock(Embed e) => e.Fields.Single(f => f.Name == "Equipo y bolsa").Value;
+Check(Z(string.Join(",", names)).StartsWith("XP,Vida,Estado,✨ Habilidad"), $"el perfil (v0.19.5, compacto): XP, Vida, un bloque «Estado» (ATQ, DEF, Oro, Banco, Polvo, Racha) y Habilidad; la zona va debajo del título ({Z(string.Join(" / ", names))})");
+string ProfBlock(Embed e) => e.Fields.Single(f => f.Name == "Estado").Value;
 string ProfLine(Embed e, string label) => ProfBlock(e).Split('\n').FirstOrDefault(l => l.StartsWith($"**{label}**")) ?? string.Empty;
-var block = profile.Fields.Single(f => f.Name == "Equipo y bolsa"); string atk = ProfLine(profile, "ATQ"), def = ProfLine(profile, "DEF"), oro = ProfLine(profile, "Oro"), racha = ProfLine(profile, "Racha");
+var block = profile.Fields.Single(f => f.Name == "Estado"); string atk = ProfLine(profile, "ATQ"), def = ProfLine(profile, "DEF"), oro = ProfLine(profile, "Oro"), racha = ProfLine(profile, "Racha");
 Check(!block.Inline && !atk.Contains("🗡️") && atk.Contains("<:hoja_acero_pura:") && !atk.Contains("Hoja de Acero Puro") && !def.Contains("📿") && def.Contains("<:amuleto_hombreras:") && !def.Contains("Hombreras de Cuero Grueso") && oro.Contains("321") && racha.Contains("día 3"),
     "ATQ con el emoji propio del arma, DEF con el del amuleto (solo el emoji, sin el nombre ni el 🗡️ / 📿), y debajo el oro y la racha, una línea cada uno");
 Console.WriteLine("   " + string.Join(" | ", new[] { atk, def, oro, racha }));

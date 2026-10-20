@@ -254,7 +254,7 @@ Console.WriteLine("\n== 10. Perfil, tienda y desplegable de curar muestran el bu
 {
     await ClearBuff();
     var e0 = await GameModule.BuildProfileEmbedAsync(users, items, zones, buffs, U, "Test", "https://example.com/a.png");
-    string ProfLine(Embed e, string label) => e.Fields.Single(f => f.Name == "Equipo y bolsa").Value.Split('\n').First(l => l.StartsWith($"**{label}**"));
+    string ProfLine(Embed e, string label) => e.Fields.Single(f => f.Name == "Estado").Value.Split('\n').First(l => l.StartsWith($"**{label}**"));
     string atk0 = ProfLine(e0, "ATQ");
     await buffs.ActivateAttackAsync(U, 15, 30, Banquete1);
     var e1 = await GameModule.BuildProfileEmbedAsync(users, items, zones, buffs, U, "Test", "https://example.com/a.png");

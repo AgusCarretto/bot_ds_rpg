@@ -186,7 +186,8 @@ var info = HelpModule.BuildInfoEmbed();
 Check(AllText(info).Contains("/zona 0") && info.Length <= 6000 && info.Fields.All(f => f.Value.Length <= 1024), $"/info lista /zona 0 dentro de los límites ({info.Length})");
 await db.ExecuteAsync("UPDATE users SET in_gate = true, gate_cleared = true WHERE discord_id = @id", new { id = (long)U });
 var prof = await GameModule.BuildProfileEmbedAsync(users, itemsRepo, zonesRepo, buffRepo, U, "T", "https://example.com/a.png", pets);
-Check(prof.Description.Contains("Zona 0: El Fogón Eterno") && prof.Description.Contains("Venció al Asador"), "el perfil dice que está en el Fogón y que venció al Asador");
+string gateZone = prof.Fields.Single(f => f.Name == "Estado").Value.Split('\n').First(l => l.StartsWith("**Zona**"));
+Check(gateZone.StartsWith("**Zona** 0 ") && gateZone.Contains("tu zona:") && prof.Description.Contains("Venció al Asador"), $"el perfil dice que está en la Zona 0 (El Fogón) con su zona de siempre entre paréntesis ({gateZone}) y que venció al Asador");
 var lines = Enumerable.Range(0, 40).Select(_ => NpcDialogue.Monster("El Asador Eterno", "🔥", NpcDialogue.BossLine.Intro, true)).Distinct().ToList();
 Check(lines.Count >= 2 && lines.All(l => l.Contains("El Asador Eterno")) && !lines.Any(l => l.Contains("Nadie pasa por aquí")), "el Asador tiene sus propias frases (no las genéricas de un jefe nuevo)");
 
