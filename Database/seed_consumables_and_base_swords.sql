@@ -57,6 +57,6 @@ INSERT INTO items (name, type, rarity, stat_value, sell_price, buy_price) VALUES
 ('Asado de Tira',                         'Consumable', 'Épico',      100, 17, 22),
 ('Cordero Patagónico',                    'Consumable', 'Legendario', 150, 25, 33),
 ('Matambre Arrollado',                    'Consumable', 'Legendario', 180, 31, 40),
-('Asado Completo del Domingo en Familia', 'Consumable', 'Mítico',     250, 43, 56),
-('Mate Dulce de la Abuela',               'Consumable', 'Mítico',     300, 52, 67)
+('Asado Completo del Domingo en Familia', 'Consumable', 'Mítico',     150, 43, 56),
+('Mate Dulce de la Abuela',               'Consumable', 'Mítico',     200, 52, 67)
 ON CONFLICT DO NOTHING;

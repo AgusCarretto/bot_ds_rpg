@@ -184,7 +184,7 @@ Check((await RunHandler(new SellItemAutocompleteHandler(), U, "HIERRO")).Select(
 Check((await RunHandler(new SellItemAutocompleteHandler(), 999000000000005999UL, "")).Count == 0, "un jugador sin cuenta ni inventario: lista vacía, sin error (y no se le crea cuenta)");
 Check(await db.ExecuteScalarAsync<int>("SELECT count(*) FROM users WHERE discord_id = 999000000000005999") == 0, "la lista no le creó cuenta a nadie");
 var use = await RunHandler(new UseItemAutocompleteHandler(), U, "");
-Check(use.Count == 2 && use[0].Value.ToString() == "Asado Completo del Domingo en Familia" && use[0].Name.Contains("+15% ATQ") && use[0].Name.Contains("cura 250 HP") && use[1].Name.Contains("cura 15 HP") && !use[1].Name.Contains("ATQ"),
+Check(use.Count == 2 && use[0].Value.ToString() == "Asado Completo del Domingo en Familia" && use[0].Name.Contains("+15% ATQ") && use[0].Name.Contains("cura 150 HP") && use[1].Name.Contains("cura 15 HP") && !use[1].Name.Contains("ATQ"),
     $"/use ofrece solo la comida que tenés, la que más cura primero, y el banquete avisa su buff: «{use[0].Name}» / «{use[1].Name}»");
 Check((await RunHandler(new UseItemAutocompleteHandler(), U, "mate")).Count == 1, "/use filtra por lo que escribís");
 var buyList = await RunHandler(new BuyItemAutocompleteHandler(), U, "");

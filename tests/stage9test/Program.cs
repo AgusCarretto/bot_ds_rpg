@@ -26,7 +26,7 @@ string all = embed.Description + string.Join("\n", embed.Fields.Select(f => f.Na
 Check(embed.Fields.Length == 3 && embed.Fields.All(f => f.Inline) && embed.Fields[0].Name == "Comida" && embed.Fields[1].Name == "Cajas" && embed.Fields[2].Name == "Mascotas", "columnas lado a lado: Comida | Cajas | Mascotas (v0.10.0)");
 Check(!new[] { "[Común]", "[Raro]", "[Épico]", "[Legendario]", "[Mítico]", "Común", "Legendario", "❤️", "💰", "💸", "🎲" }.Any(all.Contains), "sin rareza escrita ni emojis de adorno (sin ❤️ 💰 💸 🎲 y sin '[Común]')");
 Check(all.Contains("<:cofre_comun:1555578513682075809> Cajón de Pino") && all.Contains("<:cofre_legendario:1555578509601280113> Cofre de Oro") && all.Contains("<:mate_comun:1555578601892749433> Mate Amargo"), "cada ítem muestra SU emoji (los cofres nuevos y la comida que ya tenía)");
-Check(all.Contains("Cura 250 HP · +15% ATQ 30 min · 2100 oro") && all.Contains("Cura 15 HP · 8 oro") && !all.Contains("Venta"), "detalle corto en una línea: 'Cura 15 HP · 8 oro' y el banquete con su buff; sin precio de venta");
+Check(all.Contains("Cura 150 HP · +15% ATQ 30 min · 2100 oro") && all.Contains("Cura 15 HP · 8 oro") && !all.Contains("Venta"), "detalle corto en una línea: 'Cura 15 HP · 8 oro' y el banquete con su buff; sin precio de venta");
 Check(embed.Description.Contains("una vez cada 2 horas") && embed.Description.Contains("/open") && embed.Description.Contains("El Tabernero") && embed.Length < 2000, $"el aviso de las cajas y el saludo del tendero siguen, y el embed mide {embed.Length} caracteres");
 Check(!all.Contains("Arca del Soberano") && shopItems.Count(i => i.Type == "Caja") == 4, "la caja Mítica (premio) no se ofrece");
 

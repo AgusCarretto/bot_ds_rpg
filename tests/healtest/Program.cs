@@ -61,7 +61,7 @@ Check(Qty("Hacha de Hierro MK3", "Hierro") == 6 && Qty("Mazo de Escoria", "Hierr
 Check(recipes.Count == 30 && recipes.All(r => r.Ingredients.Count is >= 2 and <= 4), $"30 recetas, ninguna con más de 4 tipos de ingrediente (hay {recipes.Count})");
 
 Console.WriteLine("\n== 3. Precios de las comidas ==");
-var foods = (await items.GetAllByTypeAsync("Consumable")).OrderBy(i => i.StatValue).ToList();
+var foods = (await items.GetAllByTypeAsync("Consumable")).OrderBy(i => i.StatValue).ThenBy(i => i.BuyPrice).ToList(); // el Cordero y el Asado Completo curan lo mismo (150) desde la v0.19.2: desempata el precio
 var expectedBuy = new Dictionary<string, int> { ["Mate Amargo"] = 8, ["Empanada de Carne"] = 36, ["Asado de Tira"] = 160, ["Cordero Patagónico"] = 300, ["Asado Completo del Domingo en Familia"] = 2100, ["Mate Dulce de la Abuela"] = 2800 };
 Check(foods.Count == 6 && foods.All(f => expectedBuy.TryGetValue(f.Name, out var p) && f.BuyPrice == p && f.SellPrice == (int)(p * 0.75)), $"las 6 comidas con los precios de la etapa 2b ({string.Join(", ", foods.Select(f => $"{f.StatValue}HP={f.BuyPrice}"))})");
 var perHp = foods.Select(f => (double)f.BuyPrice / f.StatValue).ToList();
