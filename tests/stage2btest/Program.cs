@@ -254,13 +254,14 @@ Console.WriteLine("\n== 10. Perfil, tienda y desplegable de curar muestran el bu
 {
     await ClearBuff();
     var e0 = await GameModule.BuildProfileEmbedAsync(users, items, zones, buffs, U, "Test", "https://example.com/a.png");
-    string atk0 = e0.Fields.First(f => f.Name.Contains("Ataque")).Value;
+    string ProfLine(Embed e, string label) => e.Fields.Single(f => f.Name == "Estado").Value.Split('\n').First(l => l.StartsWith($"**{label}**"));
+    string atk0 = ProfLine(e0, "ATQ");
     await buffs.ActivateAttackAsync(U, 15, 30, Banquete1);
     var e1 = await GameModule.BuildProfileEmbedAsync(users, items, zones, buffs, U, "Test", "https://example.com/a.png");
-    string atk1 = e1.Fields.First(f => f.Name.Contains("Ataque")).Value;
-    int n0 = int.Parse(new string(atk0.TrimStart('*', ' ').TakeWhile(char.IsDigit).ToArray()));
-    int n1 = int.Parse(new string(atk1.TrimStart('*', ' ').TakeWhile(char.IsDigit).ToArray()));
-    Check(!atk0.Contains("🍖") && atk1.Contains("🍖") && atk1.Contains("+15%") && n1 == AttackBuff.Apply(n0, 15), $"/profile: «{atk0.Trim()}» -> «{atk1.Trim()}»");
+    string atk1 = ProfLine(e1, "ATQ");
+    int n0 = int.Parse(atk0.Split(' ')[1]);
+    int n1 = int.Parse(atk1.Split(' ')[1]);
+    Check(!atk0.Contains("🍖") && atk1.Contains("🍖") && atk1.Contains("+15 %") && n1 == AttackBuff.Apply(n0, 15), $"/profile: «{atk0.Trim()}» -> «{atk1.Trim()}»");
     await ClearBuff();
 
     var shopItems = await ShopModule.LoadShopItemsAsync(items);

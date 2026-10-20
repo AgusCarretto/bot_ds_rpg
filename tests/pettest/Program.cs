@@ -328,10 +328,12 @@ await db.ExecuteAsync("UPDATE users SET level = 30 WHERE discord_id = @id", new 
 await db.ExecuteAsync("UPDATE player_pets SET feed_points = 25 WHERE discord_id = @id AND species_id = @s", new { id = (long)U, s = golem.SpeciesId });
 var prof = await GameModule.BuildProfileEmbedAsync(users, itemsRepo, zoneRepo, buffRepo, U, "T", "https://example.com/a.png", pets);
 var profBase = await GameModule.BuildProfileEmbedAsync(users, itemsRepo, zoneRepo, buffRepo, U, "T", "https://example.com/a.png");
-string defField = prof.Fields.Single(f => f.Name.Contains("Defensa")).Value;
-Check(!prof.Fields.Any(f => f.Name.Contains("Mascotas")) && defField.Contains("🐾 +6 %") && !profBase.Fields.Single(f => f.Name.Contains("Defensa")).Value.Contains("🐾") && prof.Length <= 6000, "el perfil ya NO lista las mascotas (v0.14.3: están en /pet) pero la defensa conserva el +6 % de la del Gólem; sin mascotas queda como siempre");
-int baseDef = int.Parse(profBase.Fields.Single(f => f.Name.Contains("Defensa")).Value.Split('\n')[0].Trim('*'));
-int petDef = int.Parse(defField.Split(' ')[0].Trim('*'));
+string ProfBlock(Embed e) => e.Fields.Single(f => f.Name == "Estado").Value;
+string ProfLine(Embed e, string label) => ProfBlock(e).Split('\n').FirstOrDefault(l => l.StartsWith($"**{label}**")) ?? string.Empty;
+string defField = ProfLine(prof, "DEF");
+Check(!prof.Fields.Any(f => f.Name.Contains("Mascotas")) && defField.Contains("🐾+6 %") && !ProfLine(profBase, "DEF").Contains("🐾") && prof.Length <= 6000, "el perfil ya NO lista las mascotas (v0.14.3: están en /pet) pero la defensa conserva el +6 % de la del Gólem; sin mascotas queda como siempre");
+int baseDef = int.Parse(ProfLine(profBase, "DEF").Split(' ')[1]);
+int petDef = int.Parse(defField.Split(' ')[1]);
 Check(petDef == PetRules.Boost(baseDef, 6) && petDef > baseDef, $"y el número del perfil ({petDef}) es el que pelea ({baseDef} + 6 %)");
 
 Console.WriteLine("\n== 6. Comandos registrados, ayuda y logros ==");

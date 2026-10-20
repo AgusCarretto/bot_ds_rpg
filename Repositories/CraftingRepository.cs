@@ -102,7 +102,7 @@ public sealed class CraftingRepository(IDbConnectionFactory connectionFactory) :
             {
                 // weapon_id / amulet_id son nombres fijos (nunca input de usuario): seguro interpolarlos.
                 // La pieza nueva arranca sin encantar (el encantamiento es de la pieza, GameData/Enchantments.cs).
-                string equipSql = $"UPDATE users SET {(isWeapon ? "weapon_id" : "amulet_id")} = @ItemId, {(isWeapon ? "weapon_enchant" : "amulet_enchant")} = 0 WHERE discord_id = @DiscordId;";
+                string equipSql = $"UPDATE users SET {(isWeapon ? "weapon_id" : "amulet_id")} = @ItemId, {(isWeapon ? "weapon_enchant" : "amulet_enchant")} = 0, {(isWeapon ? "weapon_enchant_kind" : "amulet_enchant_kind")} = {(isWeapon ? "'filo'" : "'guarda'")} WHERE discord_id = @DiscordId;";
                 await connection.ExecuteAsync(new CommandDefinition(
                     equipSql, new { DiscordId = (long)discordId, ItemId = resultItemId }, transaction: transaction, cancellationToken: cancellationToken));
             }

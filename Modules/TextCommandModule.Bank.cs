@@ -15,7 +15,7 @@ public partial class TextCommandModule
             string action = accion.Trim().ToLowerInvariant();
             var result = action switch
             {
-                "" or "view" or "ver" => await BankModule.BuildViewAsync(userRepository, Context.User.Id),
+                "" or "view" or "ver" => await BankModule.BuildViewAsync(userRepository, Context.User.Id, zoneRepository),
                 "open" or "abrir" => await BankModule.ExecuteOpenAsync(userRepository, bankRepository, gameEvents, Context.User.Id),
                 "deposit" or "depositar" or "dep" => await BankModule.ExecuteDepositAsync(userRepository, bankRepository, gameEvents, Context.User.Id, cantidad),
                 "withdraw" or "retirar" or "sacar" => await BankModule.ExecuteWithdrawAsync(userRepository, bankRepository, Context.User.Id, cantidad),

@@ -127,6 +127,8 @@ public sealed class ShopRepository(IDbConnectionFactory connectionFactory) : ISh
                 -- El encantamiento es de la PIEZA: al venderla se pierde (GameData/Enchantments.cs).
                 weapon_enchant = CASE WHEN weapon_id = @ItemId THEN 0 ELSE weapon_enchant END,
                 amulet_enchant = CASE WHEN amulet_id = @ItemId THEN 0 ELSE amulet_enchant END,
+                weapon_enchant_kind = CASE WHEN weapon_id = @ItemId THEN 'filo' ELSE weapon_enchant_kind END,
+                amulet_enchant_kind = CASE WHEN amulet_id = @ItemId THEN 'guarda' ELSE amulet_enchant_kind END,
                 gold = gold + @Refund
             WHERE discord_id = @DiscordId AND (weapon_id = @ItemId OR amulet_id = @ItemId)
             RETURNING {UserSql.SelectColumns};

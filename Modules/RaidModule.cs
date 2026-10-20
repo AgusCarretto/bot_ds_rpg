@@ -1667,7 +1667,7 @@ public class RaidModule(
             1 => "💥 ¡GOLPE CRÍTICO! ",
             _ => $"💥 ¡{turn.CritCount} GOLPES CRÍTICOS! ",
         };
-        string healText = turn.LifestealHeal > 0 ? $" 🔮 Sifón de Almas curó {turn.LifestealHeal} HP." : string.Empty;
+        string healText = (turn.LifestealHeal - turn.LeechHeal > 0 ? $" 🔮 Sifón de Almas curó {turn.LifestealHeal - turn.LeechHeal} HP." : string.Empty) + (turn.LeechHeal > 0 ? $" 🩸 Sangre curó {turn.LeechHeal} HP." : string.Empty);
 
         if (turn.MonsterDefeated)
         {
@@ -1901,7 +1901,7 @@ public class RaidModule(
             .WithColor(Color.Gold)
             .WithMonsterPortrait(session.BossPortrait)
             .WithDescription(logLine + turnLine)
-            .AddField($"{session.BossEmoji} HP de {session.BossName}", HpLine(bossHp, session.BossMaxHp), false)
+            .AddField($"{session.BossEmoji} HP de {session.BossName}", HpLine(bossHp, session.BossMaxHp, UiEmojis.BarHp), false)
             .AddField("👥 Participantes", roster, false)
             .WithFooter($"Pegan por turnos · {(int)RaidSettings.TurnTimeout.TotalSeconds} s para jugar el tuyo · {RaidSettings.MealsPerFight} comida por jugador (gasta el turno)")
             .Build();
@@ -1994,5 +1994,6 @@ public class RaidModule(
             .Build();
     }
 
-    private static string HpLine(int current, int max) => $"{ProgressBar.Render(current, max)}\n{current}/{max}";
+    // kind: solo para campos de ancho completo (la barra de emojis no entra en una columna de un tercio); el plantel de jugadores y el combate en columnas siguen con la barra de texto.
+    private static string HpLine(int current, int max, string? kind = null) => $"{ProgressBar.Render(current, max, kind: kind)}\n{current}/{max}";
 }

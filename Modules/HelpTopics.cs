@@ -164,7 +164,10 @@ public static class HelpTopics
             "**/bank open** abre la cuenta · **/bank deposit** guarda · **/bank withdraw** saca · **/bank view** muestra tu billetera y tu banco.\nEn deposit y withdraw podés escribir una cantidad o **all**. En texto: `aa bank deposit 500`."),
         ("🛡️ Para qué sirve",
             $"Si perdés un combate perdés el {DeathPenalty.GoldPercent} % del oro de la **billetera**; lo que está en el banco no se toca. Mirá **/info tema:death**."),
-        ("⚠️ Ojo", "Sin interés ni tope por ahora. Las compras, `/give` y las apuestas usan la billetera: sacá el oro del banco antes de gastarlo."));
+        ("⚠️ Ojo", "Sin interés ni tope de capacidad. Las compras, `/give` y las apuestas usan la billetera: sacá el oro del banco antes de gastarlo."),
+        ("📈 El minibuff de oro",
+            $"Lo que guardás da hasta **+{BankRules.MaxGoldBonusPercent:0} %** de oro en las peleas (cacería, viaje, jefe y /autohunt), con una curva: tener más siempre suma, pero cada vez menos. " +
+            "Se mide según **tu zona** (una cacería de oro es la unidad), así que sirve igual al principio que al final. Mirá cuánto rinde en **/bank view**."));
 
     private static Embed Death() => Topic(Self("death"),
         "Perder un combate tiene un costo. **No** bajás de nivel.",
@@ -312,9 +315,9 @@ public static class HelpTopics
         return Topic(Self("professions"),
             "Los **oficios** suben solos cuando usás su comando: cuanto más talás, minás o encantás, mejor te sale. Cada uno va del nivel 0 al " + ProfessionRules.MaxLevel + ".",
             ("📈 Cómo suben",
-                $"{woodcutter.Emoji} **{woodcutter.Name}** con **{woodcutter.Command}** ({woodcutter.XpPerAction} XP por uso), {miner.Emoji} **{miner.Name}** con **{miner.Command}** ({miner.XpPerAction}) y " +
-                $"{enchanter.Emoji} **{enchanter.Name}** con cada intento de **{enchanter.Command}** ({enchanter.XpPerAction}).\n" +
-                $"Llegar al {ProfessionRules.MaxLevel} son ~{GameHistory.Number(total)} de XP: unos {GameHistory.Number(total / woodcutter.XpPerAction)} usos de tala o minería, o {GameHistory.Number(total / enchanter.XpPerAction)} intentos de encantamiento. " +
+                $"{woodcutter.Emoji} **{woodcutter.Name}** con **{woodcutter.Command}** y {miner.Emoji} **{miner.Name}** con **{miner.Command}**: cada tirada da XP según la rareza del material que te sale ({ProfessionRules.DescribeGatherXp()}; una por tirada, no por unidad).\n" +
+                $"{enchanter.Emoji} **{enchanter.Name}** con cada intento de **{enchanter.Command}** ({enchanter.XpPerAction} XP).\n" +
+                $"Llegar al {ProfessionRules.MaxLevel} son ~{GameHistory.Number(total)} de XP: unas {GameHistory.Number((long)Math.Round(total / ProfessionRules.AverageGatherXp()))} tiradas de tala o minería (en promedio), o {GameHistory.Number(total / enchanter.XpPerAction)} intentos de encantamiento. " +
                 "Lo que hiciste antes de que existieran los oficios también cuenta."),
             ("🎁 Lo que da cada nivel",
                 $"{woodcutter.Emoji} {miner.Emoji} **{woodcutter.Name} y {miner.Name}**: {ProfessionRules.DescribePerLevel(woodcutter)}. Lo de la rareza sube un escalón (Común → Raro → Épico → Legendario); el Mítico nunca se mejora.\n" +

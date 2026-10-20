@@ -2,6 +2,57 @@
 
 _Última revisión: 2026-10-20 (v0.19.2: los banquetes curan 150 y 200)_
 
+## Encantamientos con efecto: Crítico, Sangre, Vida y Esquive (v0.22.0, 2026-10-20)
+
+- **Pedido del dueño**: «efectos nuevos de encantamiento» (los cuatro de mi propuesta: **arma**, Crítico y Sangre; **amuleto**, Vida y Esquive, además de los de siempre, Filo y Guarda). Me dejó decidir entre elegir y sortear: **el jugador elige el efecto y el tier se sortea**.
+- **Cómo funciona**: `/enchant arma efecto:Crítico` (o `aa enchant arma crítico`). Sin elegir queda el efecto de la pieza; el mismo efecto solo sube el tier (como siempre); **otro efecto sobre una pieza que ya tiene tier la REEMPLAZA** con el tier que salga (puede ser menor), así que primero pregunta con dos botones y no cobra hasta que confirmás. Sobre una pieza sin encantar cualquier efecto se elige directo. Vender la pieza, forjar otra encima o un Fuego Nuevo devuelven el efecto a Filo / Guarda.
+- **Solo contra monstruos**: Crítico, Sangre, Vida y Esquive no cuentan en duelos ni en la Arena (como las bendiciones de poder); Filo y Guarda siguen valiendo en todos lados. Una pieza con un efecto de combate no conserva el bonus de stat del Filo/Guarda.
+- **Magnitudes medidas** (`tools/balance2 -- L`, jefes de las zonas 2 a 5 con equipo propio, comida y habilidad, y cacerías comunes; promedio de las 4 clases): Crítico +3/6/10/15/20 puntos de crítico · Sangre cura 1/2/3/4/5 % del daño de cada golpe · Vida +4/8/13/18/24 % de vida · Esquive +3/6/9/12/15 puntos. **Jefe de la zona 5 a mín+3** (% de perder): sin encantar 54 · Filo V 32 · **Crítico V 34 · Sangre V 33 · Vida V 26 · Esquive V 34** · **Guarda V 8**. Los cuatro nuevos quedan a la par del Filo en los tiers 3 y 5.
+- **Hallazgo que hay que decidir**: **la Guarda V es 3 a 4 veces más fuerte que cualquier otro efecto** porque la defensa se resta fija de cada golpe (+26 % de un amuleto de 120 son ~31 puntos menos por golpe del jefe ≈ +50 % de vida efectiva). Es el estado de siempre y NO se tocó, pero deja a Vida y Esquive como la opción débil del amuleto. Opciones: dejarlo, o bajar la Guarda a la altura del Filo (p. ej. +2/4/6/9/13 %), que le quitaría poder a todos los amuletos ya encantados.
+- Cambios de código: `Enchantments` (tabla de efectos), `PlayerCombatProfileCalculator.Resolve` (efectos de combate), `ClassPassiveProfile.LeechRatio` y `CombatTurnResolver` (la cura de Sangre; el log separa «🔮 Sifón de Almas» de «🩸 Sangre»), `DustModule`/`DustRepository` (elegir, confirmar y reemplazar de forma atómica), el perfil (marca el efecto), la vista previa del Fuego Nuevo y la ayuda. Simulador: parte **L**.
+- Arnés nuevo: `tests/v0220test`. 46 arneses en total.
+- **Para la base viva**: **correr `Database/add_enchant_kinds.sql` ANTES del binario v0.22.0** (agrega las dos columnas con Filo/Guarda por defecto: nadie pierde nada; re-ejecutable).
+
+## El banco da hasta +5 % de oro en las peleas (v0.21.0, 2026-10-20)
+
+- **Pedido del dueño**: «un minibuff al banco para tener plata en el banco un mínimo al menos… como una curva exponencial hasta el 5 %: tener más siempre te da más (100K → 4,90, 300K → 4,95, 1M → 4,97)». Eligió la opción B (un buff por saldo) y aprobó que sea **oro de las peleas** y que se mida **por zona**.
+- **La curva**: `bonus = 5 % × (1 − e^(−saldo/τ))` con τ = 25.600 de oro en la zona 5 (así 100K da 4,90 %). El saldo se mide en cacerías de oro de la zona del jugador, así que el mismo esfuerzo vale lo mismo en cualquier zona: 3.700 de oro en la zona 1 ≈ 100.000 en la 5. Zona 5: 1K 0,19 % · 10K 1,62 % · 25K 3,12 % · 50K 4,29 % · 100K 4,90 % · 200K 5,00 %. Arriba de ~100K la curva es casi plana (sus 4,95 y 4,97 para 300K y 1M caen en el 5,00 de la curva exponencial: la diferencia es de centésimas).
+- **Dónde suma**: cacería, viaje, jefe, jefe en equipo y `/autohunt` (todo lo que pasa por `PlayerBonuses.GoldMultiplier`), multiplicando con mascotas y Bolsillo Hondo. No cuenta en duelos ni en la Arena. Se ve en `/bank view` («Lo que rinde») y en `/info tema:bank`.
+- **Ojo**: premia acumular oro. Si más adelante se quiere frenar, las perillas son `BankRules.MaxGoldBonusPercent` y `BankRules.GoldBonusHunts`.
+- Arnés nuevo: `tests/v0210test` (la curva y su escala por zona, `PlayerBonuses`, el servicio contra la base real con el servicio roto y sin dependencias, la recompensa de una pelea, las pantallas y la inyección de dependencias). 45 arneses en total.
+- **Para la base viva**: nada (sin migración).
+
+## Perfil: clase, FN y nivel arriba; la zona, sin nombre, en el bloque Estado (v0.20.1, 2026-10-20)
+
+- **Pedido del dueño**: «clase, FN, LVL abajo; XP, vida y zona luego; no poner el nombre de la zona, "Zona 1 (máx. 3)" y el ícono». Quedó: el título es la clase; la descripción es «FN 3 · LV 41» (el FN solo si es mayor a 0; debajo, solo cuando corresponde, «Venció al Asador» y el título de la Brasa de Color); los campos son **XP**, **Vida**, **Estado** y **Habilidad**. El bloque **Estado** lleva una línea cada uno: `Zona 1 (máx. 3) <ícono de la zona>`, `ATQ`, `DEF`, `Oro`, `Banco`, y `Polvo` y `Racha` cuando hay. En El Fogón dice `Zona 0 🔥 (tu zona: N)`.
+- El bloque se llamaba «Equipo y bolsa» en la v0.19.5; los arneses que lo leen (`fntest`, `pettest`, `stage13test`, `stage2btest`, `v90test`, `v0194test`, `fogontest`) se actualizaron a propósito.
+- **Para la base viva**: nada.
+
+## La XP de los oficios depende de la rareza del material (v0.20.0, 2026-10-20)
+
+- **Pedido del dueño**: «que el profession escale pero a nivel de XP por tier del material: normal 2xp, raro 7, épico 15, legendario 30, mítico 100». Aprobó mis tres ajustes: **por tirada (no por unidad)**, **ritmo igual** y **nadie baja de nivel**.
+- **Cómo queda**: cada tirada de `/chop` o `/mine` suma la XP de la rareza que salió (Común 2 · Raro 7 · Épico 15 · Legendario 30 · Mítico 100) a un contador propio (`chop_xp` / `mine_xp`). Promedio real con las chances del juego: **5,43 XP por tirada** (antes 10 fijos), así que la unidad de la curva baja de 10 a 5 y el Encantador de 50 a 25 por intento: llegar al nivel 100 son ~750 tiradas (eran ~810) y ~160 intentos de encantar, o sea **el mismo ritmo promedio**, con la suerte pesando (un Mítico = 100 XP ≈ 18 Comunes).
+- **Nadie baja de nivel**: `Database/add_profession_xp.sql` siembra `chop_xp = chop × 5` y `mine_xp = mine × 5` (la XP vieja en la escala nueva; el redondeo de la curva puede mover a alguien un nivel como mucho). **CORRER ANTES de arrancar el binario v0.20.0** (re-ejecutable, pero si el binario ya anduvo, quien talló o minó en el medio ya tiene su fila y el script no la toca).
+- El pie de `/chop` y `/mine` muestra lo que dio la tirada («🪓 Leñador nivel 12 · 340/412 XP (+7)»); `/professions` y `/info tema:professions` imprimen la tabla desde las constantes. La tala avanzada (4 tiradas) suma la XP de cada una.
+- Probado: `oficiostest` reescrito para la escala nueva (la XP por rareza, el evento `chop_xp` con las rarezas, la avanzada, el Fuego Nuevo sin tocar los contadores); la migración corrió dos veces contra la base local (3 jugadores sembrados, sin cambios la segunda vez).
+- Sin hacer (no se pidió): XP del Encantador por tier de encantamiento.
+
+## Perfil compacto y emojis provisorios (v0.19.5, 2026-10-20)
+
+- **Pedido del dueño** (no tenía el arte todavía): el perfil con `ATQ: número y el arma (solo el emoji, sin el nombre)`, abajo lo mismo con `DEF`, abajo el oro y luego el banco. Ahora el perfil son cuatro campos: **XP**, **Vida**, un bloque **«Equipo y bolsa»** (una línea cada uno: ATQ, DEF, Oro, Banco, y Polvo y Racha cuando hay) y **Habilidad**. El ícono propio va al final de cada línea y las marcas (⚡ sinergia, 🍖 banquete, 🔥 Fuego Nuevo o bendición, 🐾 mascotas, ✨+N % encantamiento) solo cuando corresponden. Los nombres de campo van en texto plano: un emoji propio no se garantiza en el nombre de un campo.
+- **Sumé cuatro íconos al juego de la v0.19.4** (`ui_oro`, `ui_banco`, `ui_polvo`, `ui_racha`: ahora son 25 nombres) y un **juego completo provisorio** en `docs/ui-emojis/` (se regenera con `node tools/ui-art/make-ui-emojis.js`): se arrastran al portal y todo se ve andando; con arte propio se reemplaza por nombre.
+- Arnés: `v0194test` cubre el bloque con íconos; `stage13test`, `v90test`, `fntest`, `pettest` y `stage2btest` se actualizaron a propósito a la forma nueva.
+- **Para la base viva**: nada.
+
+## Íconos propios de la interfaz: FN, LV, XP y barras de emojis (v0.19.4, 2026-10-20)
+
+- **Pedido del dueño**: el FN con un ícono propio (no la llama), el LV como un emoji azul, «XP» en vez de «Experiencia» y barras nuevas; además dijo que hay «mucho emoji de los de siempre, medios feos» y que quiere más de los propios.
+- **Cómo funciona**: el bot lee los emojis de su aplicación por NOMBRE (`ui_fn`, `ui_lv`, `ui_xp`, `bar_{hp|xp|pesar}_{l|m|r}_{f|e}`; 21 en total, ver `docs/ui-iconos.md`), sin copiar ids y sin SQL; si falta uno cada pantalla sigue como antes. Se pueden subir de a tandas y los GIF funcionan.
+- **Dónde se ven**: perfil (nivel y FN en la primera línea de la descripción, campo «XP»), ranking, subida de nivel, vida del jefe en equipo, barra del pesar del Asador. **Las barras de emojis solo van en campos de ancho completo**; el combate en dos columnas, las misiones, los logros, los oficios y el plantel del jefe en equipo siguen con la barra de texto. Llevarlas ahí pide apilar los campos (decisión pendiente).
+- **Auditoría de emojis de siempre** (recuento de las fuentes, 2026-10-20): 108 de 120 títulos de embed y 96 de 115 nombres de campo llevan un emoji unicode; los más repetidos son 💰 ×12, ❤️ ×8, 📋 ×8, 🔥 ×7, ✨ ×6, 🎁 ×5, 📊 ×4. Propuesta (esperando su OK): un set propio de unos 12 íconos de estadística (oro, vida, ataque, defensa, XP, LV, FN, polvo, banco, racha...) y sacar el emoji de los títulos y de los nombres de campo que no aportan.
+- **Arnés nuevo**: `tests/v0194test`. 44 arneses en total. Los arneses que esperaban «📊 Experiencia» o el FN en el título se actualizaron a propósito.
+- **Para la base viva**: nada. Subir los emojis al portal con los nombres de `docs/ui-iconos.md` (se ven en ~10 minutos).
+
 ## Emoji propio en todas las pantallas y ranking por Fuego Nuevo (v0.19.3, 2026-10-20)
 
 - **Emojis** (el dueño: «hay comandos que muestran en vez del emoji que es de ellos muestran otra cosa, por ejemplo el cofre de escoria en `aa drops`»): `/drops` ya dibujaba el emoji que trae la base (el arnés lo confirma con la base local, que tiene los 7 cofres, los 6 huevos y la comida de mascotas con arte), así que **lo que se ve en producción depende de que `Database/apply_emojis.sql` se haya corrido en Railway**; si el Cofre de Escoria sale con otra cosa en `aa drops`, es eso (datos, sin redesplegar). Lo que sí era código: las pantallas que solo tienen el NOMBRE del ítem escribían un 📦, 🥚 o 🦴 común (premios de misiones/logros/Arena, la caja del daily y del voto, el huevo de la victoria del jefe, `/pet`, la Alforja del Fuego Nuevo, el premio del mini-evento). Ahora usan `GameData/ItemEmojiRegistry` (nombre → emoji), que `Services/ItemEmojiRefresher` carga al arrancar y cada 10 minutos. No pueden llevar emoji propio: las opciones de menús, el autocompletado y los pies de los embeds (Discord no los dibuja ahí).

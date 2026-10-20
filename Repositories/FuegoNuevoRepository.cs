@@ -17,7 +17,8 @@ public sealed class FuegoNuevoRepository(IDbConnectionFactory connectionFactory)
                    u.gold AS "Gold", u.bank_gold AS "BankGold", u.has_bank AS "HasBank", u.dust AS "Dust",
                    w.name AS "WeaponName", u.weapon_enchant AS "WeaponEnchant", a.name AS "AmuletName", u.amulet_enchant AS "AmuletEnchant",
                    (SELECT count(*) FROM player_pets p WHERE p.discord_id = u.discord_id)::int AS "Pets",
-                   (SELECT count(*) FROM player_blessings b WHERE b.discord_id = u.discord_id)::int AS "Blessings"
+                   (SELECT count(*) FROM player_blessings b WHERE b.discord_id = u.discord_id)::int AS "Blessings",
+                   u.weapon_enchant_kind AS "WeaponEnchantKind", u.amulet_enchant_kind AS "AmuletEnchantKind"
             FROM users u
             LEFT JOIN items w ON w.item_id = u.weapon_id
             LEFT JOIN items a ON a.item_id = u.amulet_id
@@ -60,7 +61,8 @@ public sealed class FuegoNuevoRepository(IDbConnectionFactory connectionFactory)
 
         return new RenewPreview(
             user.Class, user.Level, user.FuegoNuevo, user.GateCleared, user.Gold, user.BankGold, user.HasBank, user.Dust,
-            user.WeaponName, user.WeaponEnchant, user.AmuletName, user.AmuletEnchant, lost, eggs, petFood, user.Pets, user.Blessings);
+            user.WeaponName, user.WeaponEnchant, user.AmuletName, user.AmuletEnchant, lost, eggs, petFood, user.Pets, user.Blessings,
+            user.WeaponEnchantKind, user.AmuletEnchantKind);
     }
 
     public async Task<RenewOutcome> RenewAsync(ulong discordId, int expectedCount, string newClass, CancellationToken cancellationToken = default)
@@ -115,7 +117,7 @@ public sealed class FuegoNuevoRepository(IDbConnectionFactory connectionFactory)
                 UPDATE users SET
                     class = @NewClass,
                     level = DEFAULT, xp = DEFAULT, max_hp = DEFAULT, current_hp = DEFAULT,
-                    weapon_id = NULL, amulet_id = NULL, weapon_enchant = 0, amulet_enchant = 0,
+                    weapon_id = NULL, amulet_id = NULL, weapon_enchant = 0, amulet_enchant = 0, weapon_enchant_kind = 'filo', amulet_enchant_kind = 'guarda',
                     dust = 0,
                     current_zone_id = (SELECT zone_id FROM zones WHERE kind = 'normal' ORDER BY min_level, zone_id LIMIT 1),
                     highest_zone_cleared = 0,
@@ -187,5 +189,5 @@ public sealed class FuegoNuevoRepository(IDbConnectionFactory connectionFactory)
 
     private sealed record PreviewRow(
         string Class, int Level, int FuegoNuevo, bool GateCleared, int Gold, int BankGold, bool HasBank, int Dust,
-        string? WeaponName, int WeaponEnchant, string? AmuletName, int AmuletEnchant, int Pets, int Blessings);
+        string? WeaponName, int WeaponEnchant, string? AmuletName, int AmuletEnchant, int Pets, int Blessings, string WeaponEnchantKind, string AmuletEnchantKind);
 }

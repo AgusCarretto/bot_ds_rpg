@@ -24,6 +24,8 @@ internal static class UserSql
         dust             AS "Dust",
         weapon_enchant   AS "WeaponEnchant",
         amulet_enchant   AS "AmuletEnchant",
+        weapon_enchant_kind AS "WeaponEnchantKind",
+        amulet_enchant_kind AS "AmuletEnchantKind",
         in_gate          AS "InGate",
         gate_cleared     AS "GateCleared",
         fuego_nuevo      AS "FuegoNuevo",

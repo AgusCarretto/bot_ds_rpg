@@ -321,7 +321,7 @@ public class FuegoNuevoModule(
         // La historia (GameData/Lore.cs): cuánto pesar le queda al Asador. Una línea; el relato completo está en /story.
         if (preview.FuegoNuevo > 0)
         {
-            embed.AddField("📖 El Asador", $"{StoryModule.PesarLine(preview.FuegoNuevo)}\n{ProgressBar.Render(Lore.Pesar(preview.FuegoNuevo), 100, 20)}\nLeé lo que el fuego recuerda con `/story`.", false);
+            embed.AddField("📖 El Asador", $"{StoryModule.PesarLine(preview.FuegoNuevo)}\n{ProgressBar.Render(Lore.Pesar(preview.FuegoNuevo), 100, 20, UiEmojis.BarPesar)}\nLeé lo que el fuego recuerda con `/story`.", false);
         }
 
         // Las bendiciones que ya juntó (desde la v0.14.3 el perfil no las lista: los bufs del Fuego Nuevo se miran acá; el detalle de cada una y las que existen están en /blessings).
@@ -489,8 +489,8 @@ public class FuegoNuevoModule(
         {
             $"📈 Tu nivel {preview.Level} y toda tu EXP (volvés al nivel 1)",
             "🗺️ Tu zona y los jefes que ya venciste (volvés a la Zona 1)",
-            $"⚔️ Tu arma: {GearText(preview.WeaponName, "weapon", preview.WeaponEnchant)}",
-            $"🛡️ Tu amuleto: {GearText(preview.AmuletName, "amulet", preview.AmuletEnchant)}",
+            $"⚔️ Tu arma: {GearText(preview.WeaponName, preview.WeaponEnchantKind, preview.WeaponEnchant)}",
+            $"🛡️ Tu amuleto: {GearText(preview.AmuletName, preview.AmuletEnchantKind, preview.AmuletEnchant)}",
         };
 
         if (preview.Dust > 0)
@@ -527,8 +527,8 @@ public class FuegoNuevoModule(
         return string.Join('\n', lines);
     }
 
-    private static string GearText(string? name, string slot, int enchant) =>
-        name is null ? "_ninguno_" : $"{name}" + (Enchantments.IsValidTier(enchant) ? $" (✨ {Enchantments.Label(slot, enchant)})" : string.Empty);
+    private static string GearText(string? name, string kind, int enchant) =>
+        name is null ? "_ninguno_" : $"{name}" + (Enchantments.IsValidTier(enchant) ? $" (✨ {Enchantments.KindLabel(kind, enchant)})" : string.Empty);
 
     private static string TypeLabel(string type) => type switch
     {

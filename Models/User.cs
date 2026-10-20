@@ -22,6 +22,8 @@ public sealed class User
     public int Dust { get; init; }          // Polvo: sale de desmantelar materiales y se gasta en encantar
     public int WeaponEnchant { get; init; } // tier del encantamiento del arma puesta (0 = ninguno, 1..5; GameData/Enchantments.cs)
     public int AmuletEnchant { get; init; } // ídem del amuleto
+    public string WeaponEnchantKind { get; init; } = "filo";   // QUÉ efecto tiene ese encantamiento (v0.22.0, GameData/Enchantments.cs): filo | critico | sangre
+    public string AmuletEnchantKind { get; init; } = "guarda"; // ídem del amuleto: guarda | vida | esquive
     public bool InGate { get; init; }       // está parado en El Fogón Eterno (zona 0, GameData/FogonRules.cs): su CurrentZoneId sigue siendo la última zona normal
     public bool GateCleared { get; init; }  // ya le ganó al Asador Eterno en esta vuelta (habilita el Fuego Nuevo)
     public int FuegoNuevo { get; init; }    // cuántos Fuegos Nuevos hizo (0 = ninguno; GameData/FuegoNuevoRules.cs)

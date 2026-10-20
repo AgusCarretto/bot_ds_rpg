@@ -1,3 +1,4 @@
+using BotDsRpg.GameData;
 using System.Data.Common;
 using BotDsRpg.Data;
 using BotDsRpg.Models;
@@ -92,7 +93,7 @@ public sealed class DustRepository(IDbConnectionFactory connectionFactory) : IDu
     }
 
     public async Task<EnchantOutcome> TryEnchantAsync(
-        ulong discordId, string slot, int rolledTier, int goldCost, int dustCost, CancellationToken cancellationToken = default)
+        ulong discordId, string slot, int rolledTier, int goldCost, int dustCost, string? kind = null, bool allowSwitch = false, CancellationToken cancellationToken = default)
     {
         bool weapon = slot == "weapon";
         if (!weapon && slot != "amulet")
@@ -115,10 +116,20 @@ public sealed class DustRepository(IDbConnectionFactory connectionFactory) : IDu
             if (player is null)
             {
                 await transaction.RollbackAsync(cancellationToken);
-                return new EnchantOutcome(EnchantStatus.NoPlayer, 0, rolledTier, 0, null);
+                return new EnchantOutcome(EnchantStatus.NoPlayer, 0, rolledTier, 0, null, null, null);
             }
 
             int previous = weapon ? player.WeaponEnchant : player.AmuletEnchant;
+            string previousKind = weapon ? player.WeaponEnchantKind : player.AmuletEnchantKind;
+
+            // El efecto (v0.22.0): sin elegir queda el que tiene la pieza; uno de la OTRA pieza es un error de programación (el módulo ya lo validó).
+            string chosenKind = kind ?? previousKind;
+            if (Enchantments.KindsFor(slot).All(k => k.Key != chosenKind))
+            {
+                throw new ArgumentException($"El efecto \"{chosenKind}\" no existe para {slot}.", nameof(kind));
+            }
+
+            bool switching = chosenKind != previousKind;
             bool hasGear = (weapon ? player.WeaponId : player.AmuletId) is not null;
             EnchantStatus? rejected =
                 !hasGear ? EnchantStatus.NoGear :
@@ -128,23 +139,31 @@ public sealed class DustRepository(IDbConnectionFactory connectionFactory) : IDu
             if (rejected is { } status)
             {
                 await transaction.RollbackAsync(cancellationToken);
-                return new EnchantOutcome(status, previous, rolledTier, previous, null);
+                return new EnchantOutcome(status, previous, rolledTier, previous, null, previousKind, previousKind);
             }
 
-            int newTier = Math.Max(previous, rolledTier);
+            // Cambiar de efecto REEMPLAZA el que tenía la pieza (con el tier que salga, aunque sea menor): si ya tenía un tier y nadie confirmó, no se cobra nada.
+            if (switching && previous > 0 && !allowSwitch)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new EnchantOutcome(EnchantStatus.NeedsConfirm, previous, rolledTier, previous, null, previousKind, chosenKind);
+            }
+
+            // Mismo efecto: el tier solo sube. Efecto nuevo: queda el que salió.
+            int newTier = switching ? rolledTier : Math.Max(previous, rolledTier);
 
             // El nombre de la columna es fijo (nunca input de usuario): seguro interpolarlo.
             var updated = await connection.QuerySingleAsync<User>(new CommandDefinition(
                 $"""
                 UPDATE users
-                SET gold = gold - @Gold, dust = dust - @Dust, {(weapon ? "weapon_enchant" : "amulet_enchant")} = @NewTier
+                SET gold = gold - @Gold, dust = dust - @Dust, {(weapon ? "weapon_enchant" : "amulet_enchant")} = @NewTier, {(weapon ? "weapon_enchant_kind" : "amulet_enchant_kind")} = @NewKind
                 WHERE discord_id = @DiscordId
                 RETURNING {UserSql.SelectColumns};
                 """,
-                new { DiscordId = (long)discordId, Gold = goldCost, Dust = dustCost, NewTier = newTier }, transaction: transaction, cancellationToken: cancellationToken));
+                new { DiscordId = (long)discordId, Gold = goldCost, Dust = dustCost, NewTier = newTier, NewKind = chosenKind }, transaction: transaction, cancellationToken: cancellationToken));
 
             await transaction.CommitAsync(cancellationToken);
-            return new EnchantOutcome(EnchantStatus.Ok, previous, rolledTier, newTier, updated);
+            return new EnchantOutcome(EnchantStatus.Ok, previous, rolledTier, newTier, updated, previousKind, chosenKind);
         }
         catch
         {
