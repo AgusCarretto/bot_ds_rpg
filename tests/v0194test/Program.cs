@@ -28,8 +28,8 @@ string OldRender(int current, int max, int segments = 10)
 
 Console.WriteLine("== 1. La tabla de íconos ==");
 UiEmojis.Set([]);
-Check(UiEmojis.AllNames.Count == 3 + 3 * 6 && UiEmojis.AllNames.Distinct().Count() == UiEmojis.AllNames.Count && UiEmojis.AllNames.All(n => n.Length is >= 2 and <= 32 && n.All(c => char.IsAsciiLetterOrDigit(c) || c == '_')),
-    $"hay {UiEmojis.AllNames.Count} nombres para subir (FN, LV, XP y 6 piezas por 3 barras), sin repetidos y con la forma que Discord acepta (2-32, letras, números y «_»)");
+Check(UiEmojis.AllNames.Count == 7 + 3 * 6 && UiEmojis.AllNames.Distinct().Count() == UiEmojis.AllNames.Count && UiEmojis.AllNames.All(n => n.Length is >= 2 and <= 32 && n.All(c => char.IsAsciiLetterOrDigit(c) || c == '_')),
+    $"hay {UiEmojis.AllNames.Count} nombres para subir (FN, LV, XP, oro, banco, polvo, racha y 6 piezas por 3 barras), sin repetidos y con la forma que Discord acepta (2-32, letras, números y «_»)");
 Check(UiEmojis.AllNames.Contains("ui_fn") && UiEmojis.AllNames.Contains("ui_lv") && UiEmojis.AllNames.Contains("ui_xp") && UiEmojis.AllNames.Contains("bar_hp_l_f") && UiEmojis.AllNames.Contains("bar_xp_m_e") && UiEmojis.AllNames.Contains("bar_pesar_r_f"),
     "los nombres son ui_fn, ui_lv, ui_xp y bar_{hp|xp|pesar}_{l|m|r}_{f|e}");
 Check(UiEmojis.FuegoNuevo == "🔥" && UiEmojis.Xp == "📊" && UiEmojis.Lv is null && UiEmojis.LevelTag(41) == "Nivel **41**" && UiEmojis.FuegoNuevoTag(3) == "🔥 FN **3**" && UiEmojis.Bar("hp") is null,
@@ -74,7 +74,7 @@ await new UiEmojiRefresher(() => throw new InvalidOperationException("Discord no
 await new UiEmojiRefresher(() => Task.FromException<IEnumerable<(string, string)>>(new HttpRequestException("caído"))).RefreshAsync();
 Check(UiEmojis.Lv is not null, "si Discord no responde (tire sincrónico o asincrónico) el refresco no tira y queda la tabla que ya había");
 await new UiEmojiRefresher(() => Task.FromResult<IEnumerable<(string, string)>>(Full())).RefreshAsync();
-Check(UiEmojis.AllNames.All(n => UiEmojis.Icon(n, "").Length > 0) && UiEmojis.Bar("pesar") is not null, "con los 21 emojis subidos se arman las tres barras");
+Check(UiEmojis.AllNames.All(n => UiEmojis.Icon(n, "").Length > 0) && UiEmojis.Bar("pesar") is not null, "con los 25 emojis subidos se arman las tres barras");
 
 Console.WriteLine("\n== 4. Las pantallas ==");
 string conn = TestEnv.Connection();
@@ -99,18 +99,24 @@ async Task<Embed> Profile(ulong id) => await GameModule.BuildProfileEmbedAsync(u
 
 UiEmojis.Set([]);
 var plain = await Profile(U);
-Check(plain.Title == "⚔️ Guerrero" && plain.Description.StartsWith("Nivel **41** · 🔥 FN **3**\n") && plain.Fields[0].Name == "📊 XP" && plain.Fields[0].Value.StartsWith("░░░░░░░░░░") && !plain.Fields[0].Value.Contains("<:") && plain.Fields[0].Value.Contains("120 / "),
-    $"perfil sin emojis subidos: el título es solo la clase, la primera línea dice «Nivel 41 · 🔥 FN 3», el campo es «📊 XP» con barra de texto y «120 / N» sin repetir XP");
+Check(plain.Title == "⚔️ Guerrero" && plain.Description.StartsWith("Nivel **41** · 🔥 FN **3**\n") && plain.Fields[0].Name == "XP" && plain.Fields[0].Value.StartsWith("░░░░░░░░░░") && !plain.Fields[0].Value.Contains("<:") && plain.Fields[0].Value.Contains("120 / ") && plain.Fields[0].Value.EndsWith(" 📊"),
+    $"perfil sin emojis subidos: el título es solo la clase, la primera línea dice «Nivel 41 · 🔥 FN 3», el campo es «XP» con barra de texto y «120 / N 📊» sin repetir XP");
 var plainV = await Profile(V);
 Check(plainV.Description.StartsWith("Nivel **7**\n") && !plainV.Description.Contains("FN"), "sin Fuego Nuevo la línea es solo el nivel (no aparece «FN 0»)");
 
 UiEmojis.Set(Full());
 bool StartsWithBar(string value, string kind) { var b = UiEmojis.Bar(kind)!; return value.StartsWith(b.LeftFull) || value.StartsWith(b.LeftEmpty); }
+await db.ExecuteAsync("UPDATE users SET has_bank = true, bank_gold = 99, dust = 5, daily_streak = 2, gold = 1234 WHERE discord_id = @id", new { id = (long)U });
 var rich = await Profile(U);
 string lv = UiEmojis.Lv!, fn = UiEmojis.FuegoNuevo;
-Check(rich.Description.StartsWith($"{lv} **41** · {fn} **3**\n") && !rich.Title.Contains("<:") && rich.Fields[0].Name == $"{UiEmojis.Xp} XP" && StartsWithBar(rich.Fields[0].Value, "xp") && StartsWithBar(rich.Fields[1].Value, "hp"),
+Check(rich.Description.StartsWith($"{lv} **41** · {fn} **3**\n") && !rich.Title.Contains("<:") && rich.Fields[0].Name == "XP" && rich.Fields[0].Value.EndsWith($" {UiEmojis.Xp}") && StartsWithBar(rich.Fields[0].Value, "xp") && StartsWithBar(rich.Fields[1].Value, "hp"),
     "perfil con los emojis subidos: «<LV> 41 · <FN> 3» arriba, el campo XP con su ícono y las barras de XP y de vida con sus piezas (el título sin emojis propios)");
 Check(rich.Length <= 6000 && rich.Fields.All(f => f.Value.Length <= 1024) && rich.Fields.All(f => !f.Inline), $"el perfil con barras de emojis entra en los límites de Discord ({rich.Length} de 6000) y sigue apilado");
+string BlockLine(Embed e, string label) => e.Fields.Single(f => f.Name == "Equipo y bolsa").Value.Split('\n').First(l => l.StartsWith($"**{label}**"));
+Check(BlockLine(rich, "Oro") == $"**Oro** 1.234 {UiEmojis.Gold}" && BlockLine(rich, "Banco") == $"**Banco** 99 {UiEmojis.Bank}" && BlockLine(rich, "Polvo") == $"**Polvo** 5 {UiEmojis.Dust}" && BlockLine(rich, "Racha") == $"**Racha** día 2 {UiEmojis.Streak}" && UiEmojis.Gold.StartsWith("<:ui_oro:") && UiEmojis.Streak.StartsWith("<:ui_racha:"),
+    "con los íconos subidos, cada línea del bloque (Oro, Banco, Polvo, Racha) termina con el suyo");
+Check(rich.Fields.Select(f => f.Name).SequenceEqual(["XP", "Vida", "Equipo y bolsa", "✨ Habilidad"]) && BlockLine(rich, "ATQ").StartsWith("**ATQ** ") && BlockLine(rich, "DEF").StartsWith("**DEF** "),
+    "el perfil son cuatro campos: XP, Vida, el bloque «Equipo y bolsa» (ATQ, DEF, Oro, Banco...) y Habilidad");
 
 // El ranking.
 await db.ExecuteAsync("UPDATE users SET fuego_nuevo = 996 WHERE discord_id = @id", new { id = (long)U });

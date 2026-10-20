@@ -105,18 +105,43 @@ public class GameModule(
         var ability = ClassAbilities.For(player.Class);
         int requiredXp = LevelingCalculator.RequiredXpForLevel(player.Level);
 
-        // TODO apilado, uno debajo del otro (el dueño pidió "el ataque, abajo la defensa, abajo la plata, abajo el banco": en columnas angostas se
-        // apretaba todo y los nombres se partían). El ataque lleva debajo el ARMA y su encantamiento, y la defensa el AMULETO: sin el "+N" de la pieza,
-        // que ya está sumado en el número grande. Una fila en blanco separa los bloques. El historial de PvP no va acá: está en /history y /duels.
-        string attackText = $"**{attack}**" + (hasSynergy ? " ⚡" : string.Empty)
-            + (buff is null ? string.Empty : $" 🍖 +{buff.AttackPercent}% ({Math.Max(1, (int)Math.Ceiling(buff.Remaining.TotalMinutes))} min)")
-            + (bonuses.AttackMultiplier > 1.0 ? $" 🔥 {FuegoNuevoRules.PercentText(bonuses.AttackMultiplier)}" : string.Empty)
-            + $"\n{(weapon is null ? "_Sin arma_" : ItemDisplay.Format(weapon.Emoji, weapon.Name))}"
-            + EnchantLine("weapon", weapon is null ? 0 : player.WeaponEnchant);
-        string defenseText = $"**{defense}**" + (petBonuses.DefensePercent > 0 ? $" 🐾 {PetRules.PercentText(petBonuses.DefensePercent)}" : string.Empty)
-            + (bonuses.BlessingLevel(BlessingCatalog.DefenseKey) > 0 ? $" 🔥 {FuegoNuevoRules.PercentText(1 + (BlessingCatalog.DefensePerLevel * bonuses.BlessingLevel(BlessingCatalog.DefenseKey)))}" : string.Empty)
-            + $"\n{(amulet is null ? "_Sin amuleto_" : ItemDisplay.Format(amulet.Emoji, amulet.Name))}"
-            + EnchantLine("amulet", amulet is null ? 0 : player.AmuletEnchant);
+        // El bloque de números, una línea cada uno (el dueño, 2026-10-20: «ATQ: el número y el arma, pero no el nombre, solo el emoji; abajo lo mismo con DEF; abajo el oro y luego el banco»):
+        //   ATQ 123 <arma> ⚡ ...      DEF 45 <amuleto> ...      Oro 1.234 <moneda>      Banco 99 <banco>
+        // Después del número va el emoji PROPIO de la pieza (el nombre lo dice /inventory y la herrería; sin emoji cargado se escribe el nombre para no dejar la línea muda). Las marcas de lo que suma
+        // aparecen solo cuando existen: ⚡ sinergia de clase, 🍖 banquete (con los minutos que le quedan), 🔥 Fuego Nuevo / bendición, 🐾 mascotas, ✨ encantamiento (el porcentaje de la pieza).
+        string PieceMark(Item? piece, string none) =>
+            piece is null ? none : (string.IsNullOrWhiteSpace(piece.Emoji) ? piece.Name : piece.Emoji);
+        string EnchantMark(int tier) => Enchantments.IsValidTier(tier) ? $" ✨+{Enchantments.BonusPercent(tier)} %" : string.Empty;
+
+        string attackLine = $"**ATQ** {attack} {PieceMark(weapon, "_sin arma_")}" + (hasSynergy ? " ⚡" : string.Empty)
+            + (buff is null ? string.Empty : $" 🍖+{buff.AttackPercent} % ({Math.Max(1, (int)Math.Ceiling(buff.Remaining.TotalMinutes))} min)")
+            + (bonuses.AttackMultiplier > 1.0 ? $" 🔥{FuegoNuevoRules.PercentText(bonuses.AttackMultiplier)}" : string.Empty)
+            + EnchantMark(weapon is null ? 0 : player.WeaponEnchant);
+        string defenseLine = $"**DEF** {defense} {PieceMark(amulet, "_sin amuleto_")}" + (petBonuses.DefensePercent > 0 ? $" 🐾{PetRules.PercentText(petBonuses.DefensePercent)}" : string.Empty)
+            + (bonuses.BlessingLevel(BlessingCatalog.DefenseKey) > 0 ? $" 🔥{FuegoNuevoRules.PercentText(1 + (BlessingCatalog.DefensePerLevel * bonuses.BlessingLevel(BlessingCatalog.DefenseKey)))}" : string.Empty)
+            + EnchantMark(amulet is null ? 0 : player.AmuletEnchant);
+
+        // El oro, el banco (a salvo de la penalidad por morir), el Polvo (solo cuando hay) y la racha del /daily (solo cuando hay) debajo, cada uno en su línea y con su ícono propio al final.
+        var numberLines = new List<string>
+        {
+            attackLine,
+            defenseLine,
+            $"**Oro** {GameHistory.Number(player.Gold)} {UiEmojis.Gold}",
+        };
+        if (player.HasBank)
+        {
+            numberLines.Add($"**Banco** {GameHistory.Number(player.BankGold)} {UiEmojis.Bank}");
+        }
+
+        if (player.Dust > 0)
+        {
+            numberLines.Add($"**Polvo** {GameHistory.Number(player.Dust)} {UiEmojis.Dust}");
+        }
+
+        if (player.DailyStreak > 0)
+        {
+            numberLines.Add($"**Racha** día {player.DailyStreak} {UiEmojis.Streak}");
+        }
 
         // La zona va debajo del título, en una línea: "Zona 1: Praderas del Mate (máx. Zona 4)". Antes era un campo "Zona actual" que repetía la palabra.
         string zoneLine = zone is null
@@ -151,28 +176,14 @@ public class GameModule(
             .WithDescription(levelLine + "\n" + zoneLine)
             .WithColor(colorLevel > 0 ? new Color((uint)BlessingCatalog.ColorValue(colorLevel)) : Color.Orange) // Color cálido acorde al asado
             .WithThumbnailUrl(avatarUrl)
-            .AddField($"{UiEmojis.Xp} XP", $"{ProgressBar.Render(player.Xp, requiredXp, kind: UiEmojis.BarXp)}\n{player.Xp} / {requiredXp}", false)
-            .AddField("❤️ Vida", $"{ProgressBar.Render(player.CurrentHp, player.MaxHp, kind: UiEmojis.BarHp)}\n{player.CurrentHp} / {player.MaxHp} HP", false)
-            .AddField("⚔️ Ataque", attackText, false)
-            .AddField("🛡️ Defensa", defenseText, false)
-            .AddField("💰 Oro", $"**{GameHistory.Number(player.Gold)}**", false);
-
-        // El oro del banco (a salvo de la penalidad por morir) debajo del oro; el Polvo (/dismantle) solo cuando hay, y la racha del /daily. Todo apilado:
-        // ni columnas (en una fila de tres los dos campos cortos quedaban muy separados) ni campos "en blanco" de separación (cada uno dejaba un hueco enorme).
-        if (player.HasBank)
-        {
-            embed.AddField("🏦 Banco", $"**{GameHistory.Number(player.BankGold)}**", false);
-        }
-
-        if (player.Dust > 0)
-        {
-            embed.AddField("✨ Polvo", $"**{GameHistory.Number(player.Dust)}**", false);
-        }
+            // Los nombres de campo van en texto plano («XP», «Vida») y el ícono al final de la línea de números: un emoji propio no se garantiza en el nombre de un campo.
+            .AddField("XP", $"{ProgressBar.Render(player.Xp, requiredXp, kind: UiEmojis.BarXp)}\n{player.Xp} / {requiredXp} {UiEmojis.Xp}", false)
+            .AddField("Vida", $"{ProgressBar.Render(player.CurrentHp, player.MaxHp, kind: UiEmojis.BarHp)}\n{player.CurrentHp} / {player.MaxHp} HP ❤️", false)
+            .AddField("Equipo y bolsa", string.Join("\n", numberLines), false);
 
         // Las mascotas, los porcentajes del Fuego Nuevo, las bendiciones y los oficios YA NO van en el perfil (el dueño, 2026-10-07: «dejalas aparte»): cada uno tiene su comando propio,
         // /pet (aa pet), /fuegonuevo (aa fn), /blessings (aa bendiciones) y /professions (aa oficios). El perfil queda con lo básico y el número que pelea: el ataque y la defensa siguen
         // mostrando sus extras (🔥 / 🐾) en la misma línea, y el título y el color de la bendición Brasa de Color son cosméticos de acá arriba.
-        embed.AddField("🎁 Racha", player.DailyStreak > 0 ? $"día {player.DailyStreak}" : "_ninguna_", false);
 
         return embed
             .AddField(
@@ -185,10 +196,6 @@ public class GameModule(
             .WithCurrentTimestamp()
             .Build();
     }
-
-    // "\n✨ Filo Ardiente (+13 %)" debajo de la pieza si está encantada; sin encantamiento no agrega nada (el perfil no se llena de "sin encantar").
-    private static string EnchantLine(string slot, int tier) =>
-        Enchantments.IsValidTier(tier) ? $"\n✨ {Enchantments.Label(slot, tier)} (+{Enchantments.BonusPercent(tier)} %)" : string.Empty;
 
     // Comando barra: /inventory [jugador]
     [SlashCommand("inventory", "Mostrá los materiales que tenés guardados (o los de otro jugador del server).")]

@@ -235,15 +235,17 @@ await db.ExecuteAsync("UPDATE users SET weapon_id = @w, amulet_id = @a, daily_st
 var profile = await GameModule.BuildProfileEmbedAsync(users, items, zones, buffs, U, "Tester", "https://example.com/a.png");
 var names = profile.Fields.Select(f => f.Name).ToList();
 string Z(string s) => s.Replace(((char)0x200B).ToString(), "·");
-Check(Z(string.Join(",", names)).StartsWith("📊 XP,❤️ Vida,⚔️ Ataque,🛡️ Defensa,💰 Oro,🎁 Racha,✨ Habilidad"), $"el perfil (v0.9.1, apilado y sin campos en blanco): XP, Vida, Ataque, Defensa, Oro, Racha, Habilidad; la zona va debajo del título ({Z(string.Join(" / ", names))})");
-var atk = profile.Fields.Single(f => f.Name.Contains("Ataque")); var def = profile.Fields.Single(f => f.Name.Contains("Defensa")); var oro = profile.Fields.Single(f => f.Name.Contains("Oro")); var racha = profile.Fields.Single(f => f.Name.Contains("Racha"));
-Check(!atk.Inline && !def.Inline && !oro.Inline && !atk.Value.Contains("🗡️") && atk.Value.Contains("<:hoja_acero_pura:") && atk.Value.Contains("Hoja de Acero Puro") && !def.Value.Contains("📿") && def.Value.Contains("<:amuleto_hombreras:") && def.Value.Contains("Hombreras de Cuero Grueso") && oro.Value.Contains("321") && racha.Value.Contains("día 3") && !atk.Value.Contains("Amuleto"),
-    "el arma va debajo del ataque, el amuleto debajo de la defensa, el oro y la racha en su propio renglón, y con su emoji propio SIN el 🗡️ / 📿 de adelante");
-Console.WriteLine("   " + string.Join(" | ", new[] { atk, def, oro, racha }.Select(f => f.Name + ": " + f.Value.Replace("\n", " / "))));
+Check(Z(string.Join(",", names)).StartsWith("XP,Vida,Equipo y bolsa,✨ Habilidad"), $"el perfil (v0.19.5, compacto): XP, Vida, un bloque «Equipo y bolsa» (ATQ, DEF, Oro, Banco, Polvo, Racha) y Habilidad; la zona va debajo del título ({Z(string.Join(" / ", names))})");
+string ProfBlock(Embed e) => e.Fields.Single(f => f.Name == "Equipo y bolsa").Value;
+string ProfLine(Embed e, string label) => ProfBlock(e).Split('\n').FirstOrDefault(l => l.StartsWith($"**{label}**")) ?? string.Empty;
+var block = profile.Fields.Single(f => f.Name == "Equipo y bolsa"); string atk = ProfLine(profile, "ATQ"), def = ProfLine(profile, "DEF"), oro = ProfLine(profile, "Oro"), racha = ProfLine(profile, "Racha");
+Check(!block.Inline && !atk.Contains("🗡️") && atk.Contains("<:hoja_acero_pura:") && !atk.Contains("Hoja de Acero Puro") && !def.Contains("📿") && def.Contains("<:amuleto_hombreras:") && !def.Contains("Hombreras de Cuero Grueso") && oro.Contains("321") && racha.Contains("día 3"),
+    "ATQ con el emoji propio del arma, DEF con el del amuleto (solo el emoji, sin el nombre ni el 🗡️ / 📿), y debajo el oro y la racha, una línea cada uno");
+Console.WriteLine("   " + string.Join(" | ", new[] { atk, def, oro, racha }));
 Check(!profile.Fields.Any(f => f.Name.Contains("PvP") || f.Name == "🗡️ Arma" || f.Name == "📿 Amuleto") && profile.Length < 6000, "ya no hay campos sueltos de Arma / Amuleto ni de PvP en el perfil");
 await Make(U, "Guerrero", 5, gold: 0);
 var profileBare = await GameModule.BuildProfileEmbedAsync(users, items, zones, buffs, U, "Tester", "https://example.com/a.png");
-Check(profileBare.Fields.Single(f => f.Name.Contains("Ataque")).Value.Contains("Sin arma") && profileBare.Fields.Single(f => f.Name.Contains("Defensa")).Value.Contains("Sin amuleto") && profileBare.Fields.Single(f => f.Name.Contains("Racha")).Value.Contains("ninguna"), "sin equipo ni racha lo dice en vez de quedar vacío");
+Check(ProfLine(profileBare, "ATQ").Contains("sin arma") && ProfLine(profileBare, "DEF").Contains("sin amuleto") && ProfLine(profileBare, "Racha") == string.Empty, "sin equipo lo dice en vez de quedar vacío, y sin racha no hay renglón de racha");
 await Give(U, "Espada de Madera", 1); await Give(U, "Hombreras de Cuero Grueso", 1); await Give(U, "Piedra", 2);
 var inv = await GameModule.BuildInventoryEmbedAsync(inventory, U, "Tester");
 string invText13 = string.Join("\n", inv.Fields.Select(f => f.Name + "\n" + f.Value));

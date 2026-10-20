@@ -2,6 +2,13 @@
 
 _Última revisión: 2026-10-20 (v0.19.2: los banquetes curan 150 y 200)_
 
+## Perfil compacto y emojis provisorios (v0.19.5, 2026-10-20)
+
+- **Pedido del dueño** (no tenía el arte todavía): el perfil con `ATQ: número y el arma (solo el emoji, sin el nombre)`, abajo lo mismo con `DEF`, abajo el oro y luego el banco. Ahora el perfil son cuatro campos: **XP**, **Vida**, un bloque **«Equipo y bolsa»** (una línea cada uno: ATQ, DEF, Oro, Banco, y Polvo y Racha cuando hay) y **Habilidad**. El ícono propio va al final de cada línea y las marcas (⚡ sinergia, 🍖 banquete, 🔥 Fuego Nuevo o bendición, 🐾 mascotas, ✨+N % encantamiento) solo cuando corresponden. Los nombres de campo van en texto plano: un emoji propio no se garantiza en el nombre de un campo.
+- **Sumé cuatro íconos al juego de la v0.19.4** (`ui_oro`, `ui_banco`, `ui_polvo`, `ui_racha`: ahora son 25 nombres) y un **juego completo provisorio** en `docs/ui-emojis/` (se regenera con `node tools/ui-art/make-ui-emojis.js`): se arrastran al portal y todo se ve andando; con arte propio se reemplaza por nombre.
+- Arnés: `v0194test` cubre el bloque con íconos; `stage13test`, `v90test`, `fntest`, `pettest` y `stage2btest` se actualizaron a propósito a la forma nueva.
+- **Para la base viva**: nada.
+
 ## Íconos propios de la interfaz: FN, LV, XP y barras de emojis (v0.19.4, 2026-10-20)
 
 - **Pedido del dueño**: el FN con un ícono propio (no la llama), el LV como un emoji azul, «XP» en vez de «Experiencia» y barras nuevas; además dijo que hay «mucho emoji de los de siempre, medios feos» y que quiere más de los propios.

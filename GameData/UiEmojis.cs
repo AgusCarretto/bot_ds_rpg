@@ -5,7 +5,7 @@ namespace BotDsRpg.GameData;
 // Las piezas de una barra de progreso hechas con emojis: un extremo izquierdo, un medio y un extremo derecho, cada uno lleno y vacío.
 public sealed record BarPieces(string LeftFull, string LeftEmpty, string MidFull, string MidEmpty, string RightFull, string RightEmpty);
 
-// Los emojis PROPIOS de la interfaz (v0.19.4): el ícono de Fuego Nuevo, el «LV» azul, el de XP y las piezas de las barras de vida, XP y pesar.
+// Los emojis PROPIOS de la interfaz (v0.19.4): el ícono de Fuego Nuevo, el «LV» azul, el de XP, los del oro, el banco, el polvo y la racha (v0.19.5) y las piezas de las barras de vida, XP y pesar.
 // El dueño los sube como emojis de la aplicación en el Developer Portal con los nombres EXACTOS de abajo (no hay que copiar ningún id: el bot lee los emojis de su aplicación por nombre,
 // Services/UiEmojiRefresher.cs, al arrancar y cada 10 minutos) y desde ese momento las pantallas los usan. Si uno no está subido todavía, cada pantalla cae a lo de siempre (🔥 FN, «Nivel»,
 // barra de texto): subir el arte de a tandas no rompe nada. Pueden ser animados (GIF): el código se guarda tal cual lo devuelve Discord, «<a:nombre:id>».
@@ -16,6 +16,10 @@ public static class UiEmojis
     public const string FuegoNuevoName = "ui_fn";
     public const string LevelName = "ui_lv";
     public const string XpName = "ui_xp";
+    public const string GoldName = "ui_oro";
+    public const string BankName = "ui_banco";
+    public const string DustName = "ui_polvo";
+    public const string StreakName = "ui_racha";
 
     // Tipos de barra: vida (rojo/verde), XP (azul/dorado) y el pesar del Asador (la historia).
     public const string BarHp = "hp";
@@ -36,7 +40,7 @@ public static class UiEmojis
 
     // Todos los nombres que el juego sabe usar, en el orden en que conviene subirlos (3 íconos + 6 piezas por tipo de barra).
     public static IReadOnlyList<string> AllNames { get; } =
-        [FuegoNuevoName, LevelName, XpName, .. BarKinds.SelectMany(k => Parts.SelectMany(p => States.Select(s => BarName(k, p, s))))];
+        [FuegoNuevoName, LevelName, XpName, GoldName, BankName, DustName, StreakName, .. BarKinds.SelectMany(k => Parts.SelectMany(p => States.Select(s => BarName(k, p, s))))];
 
     // Reemplaza TODA la tabla. Un código que no tiene la forma «<:nombre:id>» o «<a:nombre:id>» no entra (así un dato raro nunca rompe un mensaje entero).
     public static void Set(IEnumerable<(string Name, string Code)> emojis)
@@ -62,6 +66,12 @@ public static class UiEmojis
 
     // XP: su ícono propio, o el 📊 de siempre.
     public static string Xp => Icon(XpName, "📊");
+
+    // Las monedas y demás del perfil: su ícono propio, o el de siempre.
+    public static string Gold => Icon(GoldName, "💰");
+    public static string Bank => Icon(BankName, "🏦");
+    public static string Dust => Icon(DustName, "✨");
+    public static string Streak => Icon(StreakName, "🎁");
 
     // El «LV» azul, o null si todavía no está subido (los textos de siempre dicen «Nivel»).
     public static string? Lv => _byName.TryGetValue(LevelName, out var code) ? code : null;
