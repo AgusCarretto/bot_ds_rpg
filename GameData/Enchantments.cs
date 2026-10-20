@@ -3,7 +3,7 @@ using BotDsRpg.Models;
 namespace BotDsRpg.GameData;
 
 // Encantamientos (/enchant): una mejora con TIER para el arma (sube su ATQ) y otra para el amuleto (sube su DEF). Es poder extra, así que está acotado:
-//   · el bonus es un % del stat de la PIEZA (no del total del personaje) y llega al +26 % solo con el tier más raro (3 % de los intentos);
+//   · el bonus es un % del stat de la PIEZA (no del total del personaje) y llega al +26 % solo con el tier más raro (1 % de los intentos: muy difícil, pero posible);
 //   · cada intento cuesta oro + Polvo (el Polvo sale de desmantelar materiales, GameData/Dismantling.cs) según la zona de la pieza: es un sumidero;
 //   · el tier sale al azar y SOLO reemplaza al actual si es mejor (nunca se baja), pero el intento se paga igual;
 //   · vender la pieza equipada borra su encantamiento (es de la pieza, no del jugador).
@@ -20,11 +20,13 @@ public static class Enchantments
 
     private static readonly (string Name, int BonusPercent, int Weight)[] Tiers =
     [
-        ("Tibio", 4, 40),
-        ("Al Rojo", 8, 30),
-        ("Ardiente", 13, 18),
-        ("Incandescente", 19, 9),
-        ("Soberano", 26, 3),
+        // Los pesos suman 1000 (v0.22.1, el dueño: «que sea MUY difícil tener un tier V; que vaya de I a V y el V sea muy poco probable, pero posible»): 42 / 30 / 18 / 9 / 1 %. Antes 40 / 30 / 18 / 9 / 3 %:
+        // el Soberano pasa de ~33 intentos en promedio a ~100 (el tier nunca baja, así que se llega acumulando intentos). El oficio Encantador ayuda (ProfessionRules.TierUpgradeChance).
+        ("Tibio", 4, 420),
+        ("Al Rojo", 8, 300),
+        ("Ardiente", 13, 180),
+        ("Incandescente", 19, 90),
+        ("Soberano", 26, 10),
     ];
 
     // Los EFECTOS (v0.22.0, el dueño: «efectos nuevos»): cada pieza tiene UN efecto y un tier. El jugador ELIGE el efecto y el tier se sortea (cambiar de efecto reemplaza el que tenía).
@@ -171,12 +173,12 @@ public static class Enchantments
 
     public static int BonusPercent(int tier) => IsValidTier(tier) ? Tiers[tier - 1].BonusPercent : 0;
 
-    // La chance (en %) de que UN intento saque justo ese tier: el peso de la tabla sobre el total (40 / 30 / 18 / 9 / 3 %). Es lo que muestra "/enchant info".
+    // La chance (en %) de que UN intento saque justo ese tier: el peso de la tabla sobre el total (42 / 30 / 18 / 9 / 1 %). Es lo que muestra "/enchant info".
     public static double ChancePercent(int tier) =>
         IsValidTier(tier) ? 100.0 * Tiers[tier - 1].Weight / Tiers.Sum(t => t.Weight) : 0;
 
     // Cuántos intentos hacen falta, en promedio, para llegar a ese tier o a uno mejor: 1 / (chance de sacarlo o algo mejor en un intento). Como el tier
-    // nunca baja, el progreso se acumula: Tibio es 1, Al Rojo ~1,7, Ardiente ~3,3, Incandescente ~8,3 y Soberano ~33.
+    // nunca baja, el progreso se acumula: Tibio es 1, Al Rojo ~1,7, Ardiente ~3,6, Incandescente ~10 y Soberano ~100.
     public static double AttemptsToReach(int tier)
     {
         if (!IsValidTier(tier))
@@ -204,8 +206,22 @@ public static class Enchantments
     public static string Label(string slot, int tier) =>
         IsValidTier(tier) ? $"{(slot == "weapon" ? "Filo" : "Guarda")} {Tiers[tier - 1].Name}" : "Sin encantar";
 
-    // El tier de un intento (1..5) con los pesos 40 / 30 / 18 / 9 / 3.
-    public static int Roll(Random? rng = null)
+    // El tier de un intento (1..5) con los pesos 42 / 30 / 18 / 9 / 1 %.
+    public static int Roll(Random? rng = null) => RollWithBonus(rng, 0).Tier;
+
+    // Lo mismo con la ayuda del oficio Encantador (v0.22.1): con chance upgradeChance el tier que salió sube UNO (nunca pasa del último). Upgraded dice si fue por la ayuda del oficio.
+    public static (int Tier, bool Upgraded) RollWithBonus(Random? rng, double upgradeChance)
+    {
+        int tier = RollBase(rng);
+        if (upgradeChance > 0 && tier < Tiers.Length && (rng ?? Random.Shared).NextDouble() < upgradeChance)
+        {
+            return (tier + 1, true);
+        }
+
+        return (tier, false);
+    }
+
+    private static int RollBase(Random? rng)
     {
         int point = (rng ?? Random.Shared).Next(Tiers.Sum(t => t.Weight));
         int cumulative = 0;

@@ -182,7 +182,7 @@ var bad = await Enchant("arma", "vida");
 Check(bad.PlainMessage is not null && bad.PlainMessage.Contains("no es un efecto del arma") && bad.PlainMessage.Contains("Filo") && bad.PlainMessage.Contains("Crítico") && bad.PlainMessage.Contains("Sangre") && (await Me()).Gold == 1_000_000, "un efecto de la otra pieza se rechaza diciendo cuáles hay y sin cobrar");
 var bad2 = await Enchant("amuleto", "critico");
 Check(bad2.PlainMessage is not null && bad2.PlainMessage.Contains("no es un efecto del amuleto") && bad2.PlainMessage.Contains("Guarda") && bad2.PlainMessage.Contains("Vida") && bad2.PlainMessage.Contains("Esquive"), "y al revés: Crítico en el amuleto");
-var first = await Enchant("arma", "Crítico", rng: new FixedRandom(70));   // tier 3
+var first = await Enchant("arma", "Crítico", rng: new FixedRandom(800));   // tier 3
 var uFirst = await Me();
 Check(first.Embed is not null && first.Components is null && uFirst.WeaponEnchantKind == "critico" && uFirst.WeaponEnchant == 3 && AllText(first.Embed).Contains("Crítico Ardiente") && AllText(first.Embed).Contains("Mejoró") && AllText(first.Embed).Contains("🎯 Efecto") && AllText(first.Embed).Contains("Solo cuenta contra monstruos"),
     "elegir Crítico sobre una pieza sin encantar lo hace directo, dice el efecto y que solo cuenta contra monstruos");
@@ -197,7 +197,7 @@ var sameKind = await Enchant("arma", "critico", rng: new FixedRandom(0));
 Check(sameKind.Embed is not null && sameKind.Components is null && (await Me()).WeaponEnchant == 3 && (await Me()).Gold < goldMid && AllText(sameKind.Embed).Contains("Ya tenías"), "pedir el MISMO efecto no pregunta (solo sube) y el intento se paga igual");
 var noEffect = await Enchant("arma", rng: new FixedRandom(0));
 Check(noEffect.Components is null && (await Me()).WeaponEnchantKind == "critico", "sin elegir efecto queda el de la pieza (aa enchant arma sigue andando como antes)");
-var confirmed = await Enchant("arma", "sangre", confirmed: true, rng: new FixedRandom(40));   // tier 2
+var confirmed = await Enchant("arma", "sangre", confirmed: true, rng: new FixedRandom(500));   // tier 2
 var uConf = await Me();
 Check(confirmed.Embed is not null && uConf.WeaponEnchantKind == "sangre" && uConf.WeaponEnchant == 2 && AllText(confirmed.Embed).Contains("Cambiaste de efecto") && AllText(confirmed.Embed).Contains("Crítico Ardiente") && AllText(confirmed.Embed).Contains("Sangre Al Rojo"),
     "confirmado: reemplaza (Crítico Ardiente ➜ Sangre Al Rojo, con el tier que salió) y lo cuenta");
@@ -206,7 +206,7 @@ Check(advLocked.PlainMessage is not null && advLocked.PlainMessage.Contains("se 
 var ev = await db.ExecuteScalarAsync<string>("SELECT detail FROM game_events WHERE discord_id = @id AND kind = 'enchant' ORDER BY event_id DESC LIMIT 1", new { id = (long)U });
 Check(ev == "weapon:2:sangre", $"el evento de cada intento anota la pieza, el tier y el efecto («{ev}»)");
 await Reset();
-var amu = await Enchant("amuleto", "esquive", rng: new FixedRandom(97));   // tier 5
+var amu = await Enchant("amuleto", "esquive", rng: new FixedRandom(999));   // tier 5
 Check(amu.Embed is not null && (await Me()).AmuletEnchantKind == "esquive" && (await Me()).AmuletEnchant == 5 && AllText(amu.Embed).Contains("Esquive Soberano") && AllText(amu.Embed).Contains("+15 puntos de esquive"), "el amuleto con Esquive V: «+15 puntos de esquive»");
 
 Console.WriteLine("\n== 7. Pantallas ==");
@@ -257,7 +257,7 @@ await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (lo
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;
 
-// Un Random que siempre devuelve el mismo valor (acotado): para elegir el tier del sorteo sin azar. Con los pesos 40/30/18/9/3: 0 → tier 1, 40 → 2, 70 → 3, 88 → 4, 97 → 5.
+// Un Random que siempre devuelve el mismo valor (acotado): para elegir el tier del sorteo sin azar. Con los pesos 420/300/180/90/10 (suman 1000): 0 → tier 1, 500 → 2, 800 → 3, 950 → 4, 999 → 5.
 sealed class FixedRandom(int value) : Random
 {
     public override int Next(int maxValue) => Math.Min(value, maxValue - 1);

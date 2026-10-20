@@ -283,8 +283,12 @@ public class DustModule(
         }
 
         // Avanzado: dos tiradas y se queda la mejor (igual el tier final nunca baja el que ya tenía la pieza, eso lo decide TryEnchantAsync).
-        int[] rolls = Enumerable.Range(0, advanced ? ProfessionRules.AdvancedEnchantRolls : 1).Select(_ => Enchantments.Roll(rng)).ToArray();
+        // Cada tirada cuenta con la ayuda del oficio Encantador (v0.22.1): con esa chance el tier sorteado sube uno.
+        double tierUpgrade = ProfessionRules.TierUpgradeChance(progressBefore.Level);
+        var rolled2 = Enumerable.Range(0, advanced ? ProfessionRules.AdvancedEnchantRolls : 1).Select(_ => Enchantments.RollWithBonus(rng, tierUpgrade)).ToArray();
+        int[] rolls = rolled2.Select(x => x.Tier).ToArray();
         int rolled = rolls.Max();
+        bool upgradedByProfession = rolled2.Any(x => x.Upgraded && x.Tier == rolled);
         var outcome = await dustRepository.TryEnchantAsync(discordId, slotKey, rolled, cost.Gold, cost.Dust, kindKey, allowSwitch: confirmedSwitch);
         if (outcome.Status != EnchantStatus.Ok)
         {
@@ -302,7 +306,7 @@ public class DustModule(
         await gameEvents.RecordAsync(discordId, GameEventKinds.Enchant, amount: rolls.Length, detail: $"{slotKey}:{rolled}:{kindKey}");
 
         var progressAfter = ProfessionRules.ProgressFor(progressBefore.TotalXp + ((long)rolls.Length * enchanter.XpPerAction));
-        string footer = GatheringModule.ProfessionFooter(enchanter, progressBefore, progressAfter);
+        string footer = GatheringModule.ProfessionFooter(enchanter, progressBefore, progressAfter) + (upgradedByProfession ? " · ⬆️ ¡tu oficio mejoró el tier!" : string.Empty);
         return new DustResult(null, BuildResultEmbed(player, gear, slotKey, outcome, cost, footer, advanced ? rolls : null));
     }
 

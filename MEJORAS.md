@@ -2,6 +2,15 @@
 
 _Última revisión: 2026-10-20 (v0.19.2: los banquetes curan 150 y 200)_
 
+## El tier V del encantamiento, casi imposible; el Encantador ayuda (v0.22.1, 2026-10-20)
+
+- **Origen**: un jugador pasó al jefe de la zona 5 sin equipo de la zona 5, con comida buena y los dos encantados. Medí con el simulador (parte **M**, `tools/balance2 -- M 4`): contra el equipo de la zona 4, el jefe pierde 99 / 95 / 64 / 6 % a nivel 23 / 28 / 35 / 45 sin encantar; con Filo V + Guarda V + banquete, 46 / 15 / 0,7 / 0 %. O sea: pasa el jefe quien está unos 15 niveles arriba de la zona, no hay un hueco. **Subir vida y daño del jefe a todos NO sirve** (con +15 % el jugador normal con equipo propio sin encantar a nivel 23 pasa de perder el 53 % al 95 %). Propuse escalar al jefe con el nivel por encima de mín+8 (+2 % vida y +1 % daño por nivel, tope +50/+25 %); **el dueño dijo que no hacía falta** y pidió otra cosa: que el tier V sea muy difícil. El jefe NO se tocó.
+- **Tiers**: Tibio 42 % · Al Rojo 30 % · Ardiente 18 % · Incandescente 9 % · **Soberano 1 %** (antes 40/30/18/9/3). El Soberano pasa de ~33 intentos en promedio a ~100 (tiers acumulativos: nunca baja). Los que ya tienen un Soberano lo conservan.
+- **El oficio Encantador ayuda**: +0,1 % por nivel de chance de que el tier sorteado suba uno (+10 % al 100, tope en el V; también en cada tirada del modo avanzado). Con el Encantador al 100 el V sale ~1,9 % por tirada (1 % + 9 % × 10 %) y ~3,8 % con las dos del avanzado. Cada intento ya sumaba XP al oficio: ahora el oficio también mejora el tier, que es lo que pidió. El pie de `/enchant` avisa «⬆️ ¡tu oficio mejoró el tier!».
+- Tests: `v90test`, `v0220test` (los valores de `FixedRandom` ahora van sobre 1000) y `oficiostest` (la ayuda del oficio) se actualizaron.
+- Simulador: parte **M** (el jefe contra jugadores sin el equipo de la zona, con encantamientos y banquete; acepta factores de vida y daño del jefe).
+- **Para la base viva**: nada (sin migración).
+
 ## Encantamientos con efecto: Crítico, Sangre, Vida y Esquive (v0.22.0, 2026-10-20)
 
 - **Pedido del dueño**: «efectos nuevos de encantamiento» (los cuatro de mi propuesta: **arma**, Crítico y Sangre; **amuleto**, Vida y Esquive, además de los de siempre, Filo y Guarda). Me dejó decidir entre elegir y sortear: **el jugador elige el efecto y el tier se sortea**.

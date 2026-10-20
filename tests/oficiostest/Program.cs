@@ -209,6 +209,13 @@ var e3 = await DustModule.ExecuteEnchantAsync(users, itemsRepo, dustRepo, events
 var u3 = await Me();
 var advCost = ProfessionRules.EnchantCost(baseCost, 100, true);
 Check(e3.Embed is not null && goldBefore3 - u3.Gold == advCost.Gold && dustBefore3 - u3.Dust == advCost.Dust && await Stat("enchant") == enchBefore3 + 2 && AllText(e3.Embed).Contains("Tiraste 2 veces"), $"el avanzado cuesta {advCost.Gold} oro y {advCost.Dust} Polvo (1,5×), cuenta 2 usos y muestra las dos tiradas");
+Check(Foot(e3.Embed).Contains("tu oficio mejoró el tier") && AllText(e3.Embed).Contains("Incandescente") == false, "con el Encantador al 100 el pie avisa cuando el oficio subió el tier sorteado (azar forzado: salió Tibio, subió a Al Rojo)");
+Check(ProfessionRules.TierUpgradeChance(0) == 0 && Near(ProfessionRules.TierUpgradeChance(100), 0.1, 1e-12) && ProfessionRules.TierUpgradeChance(500) == ProfessionRules.TierUpgradeChance(100) && ProfessionRules.TierUpgradeChance(-3) == 0 && ProfessionRules.DescribePerLevel(ProfessionCatalog.Get(ProfessionCatalog.EnchanterKey)).Contains("mejorar el tier"),
+    "el Encantador suma +0,1 % de chance de mejorar el tier por nivel (+10 % al 100), acotado, y la pantalla lo dice");
+var upRng = new Random(5); int upgradedCount = 0, v5 = 0, over = 0; const int UpN = 300000;
+for (int i = 0; i < UpN; i++) { var (tier, up) = Enchantments.RollWithBonus(upRng, 0.1); if (up) upgradedCount++; if (tier == 5) v5++; if (tier > 5 || tier < 1) over++; }
+Check(over == 0 && Near(v5 / (double)UpN, 0.01 + (0.09 * 0.1), 0.0015) && Near(upgradedCount / (double)UpN, 0.1 * (1 - 0.01), 0.005), $"con +10 % de ayuda el tier V sale {100.0 * v5 / UpN:0.00} % (1 % de base + 9 % del IV × 10 %), nunca pasa del V y {100.0 * upgradedCount / UpN:0.0} % de los tiros suben uno");
+Check(Enchantments.RollWithBonus(new Random(1), 1.0).Upgraded && Enchantments.RollWithBonus(new Random(1), 0.0) is { Upgraded: false } && Enumerable.Range(0, 50).All(_ => Enchantments.RollWithBonus(null, 1.0).Tier is >= 2 and <= 5), "con chance 100 % el tier siempre sube uno (salvo el V) y sin chance nunca");
 double single = Enumerable.Range(0, 20000).Average(_ => Enchantments.Roll()); double best2 = Enumerable.Range(0, 20000).Average(_ => Math.Max(Enchantments.Roll(), Enchantments.Roll()));
 Check(best2 > single + 0.3, $"quedarse con la mejor de dos sube el tier promedio ({single:0.00} → {best2:0.00})");
 var info = await DustModule.ExecuteEnchantAsync(users, itemsRepo, dustRepo, events, U, null, bonusService: bonusSvc);

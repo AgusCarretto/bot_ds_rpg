@@ -56,6 +56,8 @@ public static class ProfessionRules
     public const double QuantityPerLevel = 0.002;
     public const double RarityUpgradePerLevel = 0.001;
     public const double DustDiscountPerLevel = 0.0025;
+    // v0.22.1: cada nivel del Encantador suma esta chance de que el tier SORTEADO suba uno (+10 % al 100): es como mejorar la rareza de un Leñador o un Minero, y lo que hace posible el tier V.
+    public const double TierUpgradePerLevel = 0.001;
 
     // La versión avanzada (nivel MaxLevel): recolección de 4 sorteos juntos con su propio cooldown, y encantamiento de 2 tiradas (se queda con la mejor) a 1,5 veces el costo.
     public const int AdvancedGatherRolls = 4;
@@ -134,6 +136,9 @@ public static class ProfessionRules
 
     public static double DustMultiplier(int level) => 1 - (DustDiscountPerLevel * Math.Clamp(level, 0, MaxLevel));
 
+    // La chance (0..0,1) de que un tiro de encantamiento suba un tier por el oficio Encantador.
+    public static double TierUpgradeChance(int level) => TierUpgradePerLevel * Math.Clamp(level, 0, MaxLevel);
+
     public static bool AdvancedUnlocked(int level) => level >= MaxLevel;
 
     // Con esa chance la rareza sube UN escalón (Común → Raro → Épico → Legendario). El Mítico nunca se mejora (su 0,5 % es la lotería de largo plazo del juego) y el Legendario no pasa a Mítico.
@@ -166,14 +171,14 @@ public static class ProfessionRules
     // Lo que da el oficio en ese nivel, en palabras (para /professions y la ayuda).
     public static string DescribeEffect(ProfessionDefinition profession, int level) => profession.Key switch
     {
-        ProfessionCatalog.EnchanterKey => $"−{Pct(DustDiscountPerLevel * level)} de Polvo por intento",
+        ProfessionCatalog.EnchanterKey => $"−{Pct(DustDiscountPerLevel * level)} de Polvo por intento y +{Pct(TierUpgradePerLevel * level)} de chance de mejorar el tier",
         _ => $"+{Pct(QuantityPerLevel * level)} de cantidad y +{Pct(RarityUpgradePerLevel * level)} de chance de mejorar la rareza",
     };
 
     // Lo que da CADA nivel, en palabras.
     public static string DescribePerLevel(ProfessionDefinition profession) => profession.Key switch
     {
-        ProfessionCatalog.EnchanterKey => $"−{Pct(DustDiscountPerLevel)} de Polvo por intento",
+        ProfessionCatalog.EnchanterKey => $"−{Pct(DustDiscountPerLevel)} de Polvo por intento y +{Pct(TierUpgradePerLevel)} de chance de mejorar el tier",
         _ => $"+{Pct(QuantityPerLevel)} de cantidad y +{Pct(RarityUpgradePerLevel)} de chance de mejorar la rareza",
     };
 
