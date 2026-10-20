@@ -39,7 +39,7 @@ public static class LevelUpCard
 
         string description =
             $"🌟 **¡<@{discordId}> ahora es nivel {newLevel}!** 🌟\n\n" +
-            $"⬆️ Nivel {oldLevel}  ➜  **Nivel {newLevel}**";
+            (UiEmojis.Lv is { } lv ? $"⬆️ {lv} {oldLevel}  ➜  {lv} **{newLevel}**" : $"⬆️ Nivel {oldLevel}  ➜  **Nivel {newLevel}**");
 
         // Lo que sube de verdad, sacado de las MISMAS fórmulas que usa el combate y /profile (CombatStats): ataque base y defensa base crecen con el nivel
         // (el arma y el amuleto suman aparte). Es la diferencia entre el nivel nuevo y el viejo, así que si la fórmula cambia el aviso no se desfasa.

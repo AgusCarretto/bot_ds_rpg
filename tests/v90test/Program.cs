@@ -450,7 +450,7 @@ await db.ExecuteAsync("UPDATE users SET weapon_id = @w, amulet_id = @a, weapon_e
 async Task<Embed> ProfileEmbed() => await GameModule.BuildProfileEmbedAsync(users, items, zonesRepo, buffsRepo, U, "Tester", "https://example.com/a.png");
 var pe = await ProfileEmbed();
 var shownNames = pe.Fields.Where(f => f.Name != ZW).Select(f => f.Name).ToList();
-Check(shownNames.SequenceEqual(["📊 Experiencia", "❤️ Vida", "⚔️ Ataque", "🛡️ Defensa", "💰 Oro", "🏦 Banco", "✨ Polvo", "🎁 Racha", "✨ Habilidad"]), $"el perfil va apilado: XP, Vida, Ataque, Defensa, Oro, Banco, Polvo, Racha, Habilidad ({string.Join(" / ", shownNames)})");
+Check(shownNames.SequenceEqual(["📊 XP", "❤️ Vida", "⚔️ Ataque", "🛡️ Defensa", "💰 Oro", "🏦 Banco", "✨ Polvo", "🎁 Racha", "✨ Habilidad"]), $"el perfil va apilado: XP, Vida, Ataque, Defensa, Oro, Banco, Polvo, Racha, Habilidad ({string.Join(" / ", shownNames)})");
 Check(pe.Fields.All(f => !f.Inline) && !pe.Fields.Any(f => f.Name == ZW), "todo el perfil apilado, un campo debajo del otro: sin columnas (Polvo y Racha quedaban muy separados) ni campos en blanco (dejaban un hueco enorme)");
 var atkField = pe.Fields.Single(f => f.Name == "⚔️ Ataque").Value;
 Check(!System.Text.RegularExpressions.Regex.IsMatch(atkField, @"\(\+\d+\)") && atkField.Contains("Filo Al Rojo (+8 %)") && !System.Text.RegularExpressions.Regex.IsMatch(pe.Fields.Single(f => f.Name == "🛡️ Defensa").Value, @"\(\+\d+\)"), $"sin el «(+N)» del arma ni del amuleto, y el encantamiento sigue debajo del arma ({atkField.Replace("\n", " | ")})");

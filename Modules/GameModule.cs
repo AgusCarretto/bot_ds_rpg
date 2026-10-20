@@ -141,14 +141,18 @@ public class GameModule(
             zoneLine += $"\n🌈 _{BlessingCatalog.ColorTitle(colorLevel)}_";
         }
 
+        // El nivel y el Fuego Nuevo van en la primera línea de la descripción y no en el título: el título no se garantiza para emojis propios, y así el «LV» y el ícono de FN se ven siempre
+        // (GameData/UiEmojis.cs; sin esos emojis subidos queda «Nivel 41 · 🔥 FN 3», como antes pero debajo del título).
+        string levelLine = UiEmojis.LevelTag(player.Level) + (player.FuegoNuevo > 0 ? $" · {UiEmojis.FuegoNuevoTag(player.FuegoNuevo)}" : string.Empty);
+
         var embed = new EmbedBuilder()
             .WithAuthor(username, avatarUrl)
-            .WithTitle($"{classDef?.Emoji ?? "🔥"} {player.Class} — Nivel {player.Level}" + (player.FuegoNuevo > 0 ? $" · 🔥 FN {player.FuegoNuevo}" : string.Empty))
-            .WithDescription(zoneLine)
+            .WithTitle($"{classDef?.Emoji ?? "🔥"} {player.Class}")
+            .WithDescription(levelLine + "\n" + zoneLine)
             .WithColor(colorLevel > 0 ? new Color((uint)BlessingCatalog.ColorValue(colorLevel)) : Color.Orange) // Color cálido acorde al asado
             .WithThumbnailUrl(avatarUrl)
-            .AddField("📊 Experiencia", $"{ProgressBar.Render(player.Xp, requiredXp)}\n{player.Xp} / {requiredXp} XP", false)
-            .AddField("❤️ Vida", $"{ProgressBar.Render(player.CurrentHp, player.MaxHp)}\n{player.CurrentHp} / {player.MaxHp} HP", false)
+            .AddField($"{UiEmojis.Xp} XP", $"{ProgressBar.Render(player.Xp, requiredXp, kind: UiEmojis.BarXp)}\n{player.Xp} / {requiredXp}", false)
+            .AddField("❤️ Vida", $"{ProgressBar.Render(player.CurrentHp, player.MaxHp, kind: UiEmojis.BarHp)}\n{player.CurrentHp} / {player.MaxHp} HP", false)
             .AddField("⚔️ Ataque", attackText, false)
             .AddField("🛡️ Defensa", defenseText, false)
             .AddField("💰 Oro", $"**{GameHistory.Number(player.Gold)}**", false);

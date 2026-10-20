@@ -249,6 +249,7 @@ class Program
 
         // El emoji propio de cada ítem por nombre (premios, huevos, comida de mascotas...): se carga al arrancar y se refresca cada 10 minutos (GameData/ItemEmojiRegistry.cs).
         _services.GetRequiredService<ItemEmojiRefresher>().Start();
+        _services.GetRequiredService<UiEmojiRefresher>().Start();
 
         // Si hay un servidor de pruebas configurado, registramos los comandos ahí:
         // se propagan al instante, ideal para iterar rápido en desarrollo.
@@ -542,6 +543,9 @@ public static class ServiceProviderBuilder
             .AddSingleton<IReminderService, ReminderService>()
             .AddSingleton<ReminderScheduler>()
             .AddSingleton<ItemEmojiRefresher>()
+            // Los íconos propios de la interfaz (FN, LV, XP y las piezas de las barras): se leen por nombre de los emojis de la aplicación (GameData/UiEmojis.cs).
+            .AddSingleton(sp => new UiEmojiRefresher(async () =>
+                (await sp.GetRequiredService<DiscordSocketClient>().GetApplicationEmotesAsync()).Select(e => (e.Name, $"<{(e.Animated ? "a" : string.Empty)}:{e.Name}:{e.Id}>"))))
             .AddSingleton<ArenaScheduler>()
             .AddSingleton<IFarmAdvisor, FarmAdviceService>()
             .AddSingleton<IMiniEventRepository, MiniEventRepository>()

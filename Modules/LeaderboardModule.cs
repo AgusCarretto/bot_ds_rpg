@@ -1,3 +1,4 @@
+using BotDsRpg.GameData;
 using BotDsRpg.Repositories;
 using Discord;
 using Discord.Interactions;
@@ -47,7 +48,7 @@ public class LeaderboardModule(IUserRepository userRepository) : InteractionModu
             var lines = topPlayers.Select((player, index) =>
             {
                 string rank = index < RankEmojis.Length ? RankEmojis[index] : $"{index + 1}.";
-                return $"{rank} <@{player.DiscordId}> — 🔥 FN **{player.FuegoNuevo}** · Nivel **{player.Level}** ({player.Class})";
+                return $"{rank} <@{player.DiscordId}> — {UiEmojis.FuegoNuevoTag(player.FuegoNuevo)} · {UiEmojis.LevelTag(player.Level)} ({player.Class})";
             });
 
             embed.WithDescription(string.Join('\n', lines))

@@ -141,7 +141,7 @@ public class StoryModule(IUserRepository userRepository, IZoneRepository zoneRep
             var lines = new List<string>
             {
                 $"{PesarLine(progress.FuegoNuevo)}",
-                $"{ProgressBar.Render(Lore.Pesar(progress.FuegoNuevo), 100, 20)}",
+                $"{ProgressBar.Render(Lore.Pesar(progress.FuegoNuevo), 100, 20, UiEmojis.BarPesar)}",
             };
             lines.AddRange(actTwoScenes.Where(s => Lore.IsUnlocked(s, progress)).Select(s => $"🔥 «{s.Title}»"));
 

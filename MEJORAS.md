@@ -2,6 +2,15 @@
 
 _Última revisión: 2026-10-20 (v0.19.2: los banquetes curan 150 y 200)_
 
+## Íconos propios de la interfaz: FN, LV, XP y barras de emojis (v0.19.4, 2026-10-20)
+
+- **Pedido del dueño**: el FN con un ícono propio (no la llama), el LV como un emoji azul, «XP» en vez de «Experiencia» y barras nuevas; además dijo que hay «mucho emoji de los de siempre, medios feos» y que quiere más de los propios.
+- **Cómo funciona**: el bot lee los emojis de su aplicación por NOMBRE (`ui_fn`, `ui_lv`, `ui_xp`, `bar_{hp|xp|pesar}_{l|m|r}_{f|e}`; 21 en total, ver `docs/ui-iconos.md`), sin copiar ids y sin SQL; si falta uno cada pantalla sigue como antes. Se pueden subir de a tandas y los GIF funcionan.
+- **Dónde se ven**: perfil (nivel y FN en la primera línea de la descripción, campo «XP»), ranking, subida de nivel, vida del jefe en equipo, barra del pesar del Asador. **Las barras de emojis solo van en campos de ancho completo**; el combate en dos columnas, las misiones, los logros, los oficios y el plantel del jefe en equipo siguen con la barra de texto. Llevarlas ahí pide apilar los campos (decisión pendiente).
+- **Auditoría de emojis de siempre** (recuento de las fuentes, 2026-10-20): 108 de 120 títulos de embed y 96 de 115 nombres de campo llevan un emoji unicode; los más repetidos son 💰 ×12, ❤️ ×8, 📋 ×8, 🔥 ×7, ✨ ×6, 🎁 ×5, 📊 ×4. Propuesta (esperando su OK): un set propio de unos 12 íconos de estadística (oro, vida, ataque, defensa, XP, LV, FN, polvo, banco, racha...) y sacar el emoji de los títulos y de los nombres de campo que no aportan.
+- **Arnés nuevo**: `tests/v0194test`. 44 arneses en total. Los arneses que esperaban «📊 Experiencia» o el FN en el título se actualizaron a propósito.
+- **Para la base viva**: nada. Subir los emojis al portal con los nombres de `docs/ui-iconos.md` (se ven en ~10 minutos).
+
 ## Emoji propio en todas las pantallas y ranking por Fuego Nuevo (v0.19.3, 2026-10-20)
 
 - **Emojis** (el dueño: «hay comandos que muestran en vez del emoji que es de ellos muestran otra cosa, por ejemplo el cofre de escoria en `aa drops`»): `/drops` ya dibujaba el emoji que trae la base (el arnés lo confirma con la base local, que tiene los 7 cofres, los 6 huevos y la comida de mascotas con arte), así que **lo que se ve en producción depende de que `Database/apply_emojis.sql` se haya corrido en Railway**; si el Cofre de Escoria sale con otra cosa en `aa drops`, es eso (datos, sin redesplegar). Lo que sí era código: las pantallas que solo tienen el NOMBRE del ítem escribían un 📦, 🥚 o 🦴 común (premios de misiones/logros/Arena, la caja del daily y del voto, el huevo de la victoria del jefe, `/pet`, la Alforja del Fuego Nuevo, el premio del mini-evento). Ahora usan `GameData/ItemEmojiRegistry` (nombre → emoji), que `Services/ItemEmojiRefresher` carga al arrancar y cada 10 minutos. No pueden llevar emoji propio: las opciones de menús, el autocompletado y los pies de los embeds (Discord no los dibuja ahí).

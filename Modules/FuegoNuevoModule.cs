@@ -321,7 +321,7 @@ public class FuegoNuevoModule(
         // La historia (GameData/Lore.cs): cuánto pesar le queda al Asador. Una línea; el relato completo está en /story.
         if (preview.FuegoNuevo > 0)
         {
-            embed.AddField("📖 El Asador", $"{StoryModule.PesarLine(preview.FuegoNuevo)}\n{ProgressBar.Render(Lore.Pesar(preview.FuegoNuevo), 100, 20)}\nLeé lo que el fuego recuerda con `/story`.", false);
+            embed.AddField("📖 El Asador", $"{StoryModule.PesarLine(preview.FuegoNuevo)}\n{ProgressBar.Render(Lore.Pesar(preview.FuegoNuevo), 100, 20, UiEmojis.BarPesar)}\nLeé lo que el fuego recuerda con `/story`.", false);
         }
 
         // Las bendiciones que ya juntó (desde la v0.14.3 el perfil no las lista: los bufs del Fuego Nuevo se miran acá; el detalle de cada una y las que existen están en /blessings).
