@@ -507,9 +507,7 @@ try
     await Attack(s9, svc9, B, new FakeOutput()); // pasa B, vuelve a A
     Check((await Eat(svc9, A, "Mate Amargo")).Contains("Ya comiste") && await Qty(A, mate) == 2, "una sola vez por pelea (la segunda no se gasta)");
 
-    await Give(B, banquete, 1);
     await Attack(s9, svc9, A, new FakeOutput()); // le toca a B
-    Check((await Eat(svc9, B, "Asado Completo del Domingo en Familia")).Contains("banquete") && await Qty(B, banquete) == 1 && s9.Participants[1].MealsEaten == 0, "un banquete no se come en la pelea (su efecto es el buff de ataque) y no se gasta");
     Check((await Eat(svc9, B, "Empanada de Carne")).Contains("No tenés") && s9.EatingTurnNumber == 0, "sin la comida no pasa nada y el turno queda libre");
     Check((await Eat(svc9, B, "Cosa Inexistente")).Contains("No encontré"), "una comida que no existe se avisa");
     s9.EatingTurnNumber = s9.TurnNumber; // simula «está comiendo»
@@ -520,6 +518,23 @@ try
     Check((await Eat(svc9, B, "Mate Amargo")).Contains("Ya estás comiendo"), "ni comer dos veces a la vez");
     s9.EatingTurnNumber = 0;
     Check((await Eat(svc9, B, "Mate Amargo")).Contains("Comiste") && await Qty(B, mate) == 1 && s9.TurnIndex == 0, "B come en su turno");
+
+    // Banquete (Mítico) en el combate en equipo: cura Y da su +% de ataque en el acto, vale con la vida llena, ocupa la comida de la pelea y el buff queda guardado.
+    await Give(A, banquete, 2);
+    var buffInfo = (await buffs.GetItemBuffAsync(banquete.ItemId))!;
+    var (sb, tb, svcb) = Active(100000, 3, Member(A, hp: 100, damage: 100), Member(B, hp: 100));
+    var ab = sb.Participants[0]; // vida LLENA
+    string ateB = await Eat(svcb, A, "Asado Completo del Domingo en Familia");
+    Check(ateB.Contains("Comiste") && ateB.Contains("ataque") && ab.MealsEaten == 1 && await Qty(A, banquete) == 1, "un banquete se come en la pelea aunque estés al máximo de HP (lo que vale es el buff) y gasta la comida");
+    Check(ab.Damage == AttackBuff.Apply(100, buffInfo.AttackPercent) && ab.AttackBuffPercent == buffInfo.AttackPercent, $"el ataque sube en el acto (100 → {ab.Damage}, +{buffInfo.AttackPercent} %)");
+    Check((await buffs.GetActiveAttackAsync(A)) is { } stored && stored.AttackPercent == buffInfo.AttackPercent, "y el buff queda guardado como siempre (dura minutos)");
+    Check(AllText(tb.Updates.Last()).Contains("de ataque"), "el mensaje del combate lo cuenta");
+    ab.MealsEaten = 0; // otro banquete: no apila
+    await Attack(sb, svcb, B, new FakeOutput());
+    await Eat(svcb, A, "Asado Completo del Domingo en Familia");
+    Check(ab.Damage == AttackBuff.Apply(100, buffInfo.AttackPercent), "comer un segundo banquete NO apila +% sobre +%");
+    var prepared = await Prepare(new RaidSessionService(), A, M(B));
+    Check(prepared.Session is { } ps && ps.Participants[0].AttackBuffPercent == buffInfo.AttackPercent, "quien entra al grupo con un banquete activo lo lleva anotado (y tampoco se apila si come otro)");
 
     var (s9b, _, svc9b) = Active(1000, 1, Member(A), Member(B));
     int mateBefore = await Qty(A, mate);

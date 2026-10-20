@@ -18,7 +18,11 @@ public sealed class RaidParticipant
 {
     public required ulong DiscordId { get; init; }
     public required string DisplayName { get; init; }
-    public required int Damage { get; init; }
+    // set: un banquete comido en plena pelea lo recalcula (ver RaidModule.ExecuteEatAsync).
+    public required int Damage { get; set; }
+
+    // El +% de ataque de banquete que YA tiene aplicado en Damage (el que traía activo al unirse, o el del banquete que comió en la pelea): sirve para que un segundo banquete no apile +15 % sobre +15 %.
+    public int AttackBuffPercent { get; set; }
     public required int Defense { get; init; }
     public required int Level { get; init; }
     public required string PlayerClass { get; init; } // qué habilidad activa le toca, ver GameData/ClassAbilities.cs

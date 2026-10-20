@@ -1,6 +1,11 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-19 (v0.19.0: el jefe con compañeros reemplaza al /raid)_
+_Última revisión: 2026-10-20 (v0.19.1: los banquetes se comen en el jefe en equipo)_
+
+## Los banquetes en el jefe en equipo (v0.19.1, 2026-10-20) y la referencia del jefe de la Zona 2 de a dos
+
+- **El problema** (lo reportó el dueño en producción, con capturas): en el jefe en equipo no dejaba comer el Asado Completo del Domingo en Familia ni el Mate Dulce de la Abuela (los «banquetes»). Era a propósito de mi parte en la v0.19.0 («su gracia es el buff de ataque, se comen antes de la pelea») y estaba mal: él los usa en plena pelea. **Arreglado**: ahora curan Y dan su +15 % de ataque en el acto (se recalcula el ataque sin apilar), ocupan la comida de la pelea, valen con la vida llena y el buff queda guardado unos minutos como en el jefe solo. El menú privado de 🍖 Comer los lista (con la vida llena, solo ellos).
+- **Referencia que le gusta al dueño (anotada a pedido: «el boss zona 2 de a 2 está complicado, anotá las stats que cuesta ese boss, me gusta»)**: **Lobisón Alfa** (Zona 2, Bosque de Cenizas). Guardado en la base: vida 624-794 (promedio ~709), daño 71-96 (promedio ~83; incluye el +17 del amuleto nuevo). En el jefe EN EQUIPO (zona 2 = posición 2: vida ×1,2 y daño ×1,1, más +50 % de vida por jugador extra, `RaidDifficulty`): **2 jugadores = vida 1123-1429 (promedio ~1276), daño ~78-106**; 3 jugadores ~1700 de vida; 4 jugadores ~2126. Medido con `tools/balance2 -- K` (equipo propio de la zona 2: arma de clase +20 con sinergia ×1,5 y el amuleto de 35): a nivel de llegada (nivel 8) 2 jugadores ganan ~21 % sin comida y ~71 % con una comida por jugador; a nivel 13 (mín+8) ~94 % sin comida y ~100 % con una. Su experiencia real: llevó a un amigo de la zona 2 a la 3 (nivel ~13-14, equipo de la zona 2) y ganó «a duras penas», y eso es lo que le gusta: de a dos con el equipo de la zona se siente difícil. **Usar de objetivo al calibrar el jefe de las otras zonas**: que un dúo con el equipo propio gane «justito», no con holgura. (Los números de las otras zonas, con la misma vida: ver las tablas de abajo.)
 
 ## El jefe con compañeros (v0.19.0, 2026-10-19): `/boss @amigo` reemplaza al `/raid`
 

@@ -490,7 +490,7 @@ public class RaidModule(
     // ============================================================
     // Comer en el jefe en equipo (v0.19.0, a pedido del dueño). El /use suelto ya no sirve ahí (curaba la vida de la base y no la de la pelea, que vive en memoria): ahora comer es una ACCIÓN
     // del combate, como en /travel y /boss — gasta el turno (el jefe te pega igual), cura de verdad y es una vez por jugador (RaidSettings.MealsPerFight). Se hace con el botón 🍖 Comer o escribiendo
-    // /use (o "aa use") con la comida, que desde acá llega a ExecuteEatAsync. Los banquetes no: su efecto es el buff de ataque y se comen antes de la pelea.
+    // /use (o "aa use") con la comida, que desde acá llega a ExecuteEatAsync. Los banquetes (Míticos) también valen: además de curar dan su +% de ataque en el acto (se come igual que en el jefe solo: vale con la vida llena, ocupa la comida de la pelea y el buff queda guardado).
     // ============================================================
 
     // El botón "Comer": abre en privado la lista de comidas de QUIEN toca (el mensaje del combate es compartido y no puede llevar la lista de nadie). Elegir una es ExecuteEatAsync.
@@ -517,12 +517,25 @@ public class RaidModule(
             var buffs = await buffRepository.GetItemBuffsAsync();
             var options = CombatHeal.BuildOptions(owned.Select(o => new HealOption(
                     o.Item.Name, o.Item.StatValue, o.Quantity, buffs.TryGetValue(o.Item.ItemId, out var buff) ? buff.AttackPercent : 0)))
-                .Where(o => o.BuffPercent == 0)
                 .ToList();
+
+            // Con la vida llena solo tiene sentido un banquete (su gracia es el +% de ataque), igual que en el jefe solo.
+            bool atFullHp;
+            lock (session.Lock)
+            {
+                var me = session.Participants.FirstOrDefault(p => p.DiscordId == Context.User.Id);
+                atFullHp = me is not null && me.CurrentHp >= me.MaxHp;
+            }
+
+            if (atFullHp)
+            {
+                options = options.Where(o => o.BuffPercent > 0).ToList();
+            }
 
             if (options.Count == 0)
             {
-                await FollowupAsync("No tenés comida para curarte en la pelea (los banquetes se comen antes, con **/use** afuera del combate).", ephemeral: true);
+                await FollowupAsync(
+                    atFullHp ? "Ya estás al máximo de HP: solo un banquete tendría sentido ahora (por el +% de ataque) y no tenés." : "No tenés comida para curarte en la pelea.", ephemeral: true);
                 return;
             }
 
@@ -616,11 +629,6 @@ public class RaidModule(
                 return ("🍖 Ya estás comiendo, esperá un toque.", null, 0);
             }
 
-            if (participant.CurrentHp >= participant.MaxHp)
-            {
-                return ($"Ya estás al máximo de HP ({participant.CurrentHp}/{participant.MaxHp}), no hace falta comer ahora.", null, 0);
-            }
-
             if (claim)
             {
                 session.EatingTurnNumber = session.TurnNumber;
@@ -668,15 +676,19 @@ public class RaidModule(
                 return $"**{ItemDisplay.Format(item.Emoji, item.Name)}** no sirve para curarte en la pelea.";
             }
 
-            if (await buffRepository.GetItemBuffAsync(item.ItemId) is not null)
-            {
-                return $"**{ItemDisplay.Format(item.Emoji, item.Name)}** es un banquete: su efecto es el buff de ataque y se come ANTES de la pelea (con **/use** afuera del combate).";
-            }
+            // Un banquete (comida Mítica) además de curar da un buff de ataque (item_buffs): se come igual que en el jefe solo, vale aunque estés al máximo de HP (lo que importa es el buff) y ocupa la comida de la pelea.
+            var buff = await buffRepository.GetItemBuffAsync(item.ItemId);
 
             var (problem, participant, turn) = CheckEat(session, discordId, claim: true);
             if (problem is not null)
             {
                 return problem;
+            }
+
+            if (buff is null && participant!.CurrentHp >= participant.MaxHp)
+            {
+                ReleaseEatClaim(session, turn);
+                return $"Ya estás al máximo de HP ({participant.CurrentHp}/{participant.MaxHp}), no hace falta comer ahora.";
             }
 
             bool consumed;
@@ -715,6 +727,13 @@ public class RaidModule(
                 participant.CurrentHp = Math.Min(participant.MaxHp, participant.CurrentHp + item.StatValue);
                 healed = participant.CurrentHp - before;
 
+                // El banquete vale YA: se recalcula el ataque desde el que tenía sin buff (así comer otro no apila +15 % sobre +15 %).
+                if (buff is not null)
+                {
+                    participant.Damage = AttackBuff.Rescale(participant.Damage, participant.AttackBuffPercent, buff.AttackPercent);
+                    participant.AttackBuffPercent = buff.AttackPercent;
+                }
+
                 // Comer cede el turno: el jefe contraataca igual, con los efectos de habilidad que haya activos, y el turno cuenta para el enfriamiento (GameData/CombatTurnResolver.ResolveCounterTurn).
                 var counter = CombatTurnResolver.ResolveCounterTurn(
                     new CombatantProfile(participant.Damage, participant.Defense, participant.PlayerClass, participant.Passives), participant.Ability, session.BossDamage);
@@ -751,7 +770,21 @@ public class RaidModule(
                 string monsterLine = dodged
                     ? $"💨 {who} esquivó el contraataque."
                     : $"El jefe le devolvió **{hit}** a {who}." + (knockedOut ? $" 💀 {who} quedó derribado." : string.Empty);
-                line = $"🍖 {who} comió {ItemDisplay.Format(item.Emoji, item.Name)} y recuperó **{healed}** HP. {monsterLine}";
+                string buffText = buff is null ? string.Empty : $" ⚔️ +{buff.AttackPercent} % de ataque.";
+                line = $"🍖 {who} comió {ItemDisplay.Format(item.Emoji, item.Name)} y recuperó **{healed}** HP.{buffText} {monsterLine}";
+            }
+
+            if (buff is not null)
+            {
+                // Igual que /use en el jefe solo: el buff queda activo unos minutos también fuera de la pelea. Si guardarlo falla, el de la pelea ya vale y solo se registra.
+                try
+                {
+                    await buffRepository.ActivateAttackAsync(discordId, buff.AttackPercent, buff.Minutes, item.Name);
+                }
+                catch (Exception ex)
+                {
+                    BotLog.Warn(ex);
+                }
             }
 
             if (wipe)
@@ -767,7 +800,7 @@ public class RaidModule(
                 await PingTurnAsync(session, justPlayed: discordId);
             }
 
-            return $"🍖 Comiste {ItemDisplay.Format(item.Emoji, item.Name)} y recuperaste **{healed}** HP." + (knockedOut ? " Pero el jefe te derribó." : dodged ? " Esquivaste el golpe del jefe." : $" El jefe te pegó **{hit}**.");
+            return $"🍖 Comiste {ItemDisplay.Format(item.Emoji, item.Name)} y recuperaste **{healed}** HP." + (buff is null ? string.Empty : $" ⚔️ +{buff.AttackPercent} % de ataque durante {buff.Minutes} minutos.") + (knockedOut ? " Pero el jefe te derribó." : dodged ? " Esquivaste el golpe del jefe." : $" El jefe te pegó **{hit}**.");
         }
         catch (Exception ex)
         {
@@ -1394,6 +1427,7 @@ public class RaidModule(
             DiscordId = (ulong)player.DiscordId,
             DisplayName = displayName,
             Damage = profile.Damage,
+            AttackBuffPercent = buff?.AttackPercent ?? 0,
             Defense = profile.Defense,
             Level = player.Level,
             PlayerClass = player.Class,
