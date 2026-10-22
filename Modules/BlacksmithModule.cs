@@ -201,7 +201,8 @@ public class BlacksmithModule(
                 .WithMaxValues(1);
             foreach (var choice in choices)
             {
-                menu.AddOption(choice.Name, choice.Value.ToString()!);
+                // El valor es el nombre del ítem que se forja: su emoji va en la opción (el ✅ / ❌ del estado se queda en el texto).
+                menu.AddItemOption(choice.Value.ToString()!, choice.Name, choice.Value.ToString()!);
             }
 
             components.WithSelectMenu(menu, row++);

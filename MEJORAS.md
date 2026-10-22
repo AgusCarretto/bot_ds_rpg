@@ -1,6 +1,16 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-20 (v0.19.2: los banquetes curan 150 y 200)_
+_Última revisión: 2026-10-22 (v0.22.2: el emoji propio del ítem en los desplegables)_
+
+## Emoji propio del ítem en los desplegables (v0.22.2, 2026-10-22)
+
+- **Pedido del dueño**: «agregar los emojis a los trades, al 3 por 1 y a los ítems de los combos desplegables, el forje y todo; donde se pueda suma mucho».
+- **Dónde SÍ**: cada opción de un desplegable tiene un campo de emoji aparte del texto y ahí Discord sí dibuja los emojis de la aplicación. Lo llevan los cinco menús de la taberna (comer, comprar comida, comprar caja, vender —la pieza puesta muestra su emoji y deja el 🗡️/📿— y el 3 por 1 con su segundo paso), el menú de recetas del herrero (el ✅/❌/🔁/🟢 sigue en el texto), el menú de curación de `/travel` y `/boss`, el de comida del jefe en equipo y la tienda del Inframundo.
+- **Dónde NO se puede**: las listas que aparecen al escribir `/trade`, `/exchange`, `/forge make`, `/shop buy`, `/use` u `/open` son autocompletado y Discord las dibuja como texto plano (límite de la plataforma). Lo que sí se ve con emoji es el mensaje de la oferta de intercambio y el resultado del 3 por 1, que son texto de embed. **No hecho, a decidir**: cambiar `/trade` y `/exchange` por una escena con desplegables como la taberna (un flujo nuevo) para tener emoji también al elegir.
+- **El riesgo y su guardia**: si Discord no conoce el emoji rechaza el mensaje ENTERO, y en el menú de curación de un combate eso impediría empezar la pelea. Una opción solo lleva emoji si el ítem lo tiene Y el id está en la lista de emojis que la aplicación tiene ahora (la misma que `UiEmojiRefresher` lee de Discord al arrancar y cada 10 minutos; `UiEmojis.IsKnownEmoji`). Sin la lista cargada, con un emoji de otra aplicación o con uno común, la opción sale exactamente como antes. **Límite conocido**: si se borra un emoji del portal, el bot lo sigue ofreciendo hasta 10 minutos (el próximo refresco): al cambiar el arte de un ítem, subir el nuevo, correr `apply_emojis.sql` y recién ahí borrar el viejo.
+- **Corrección de una regla mía**: `CLAUDE.md` decía que ningún desplegable podía llevar emojis personalizados; eso valía para el TEXTO de la opción, no para su campo de emoji.
+- Código: `Modules/ItemMenuExtensions.cs` (`ItemEmote`, `AddItemOption`), `ItemEmojiRegistry.MenuCodeOf`, `UiEmojis.IsKnownEmoji`; tocan `TabernaModule`, `BlacksmithModule`, `AdventureModule`, `RaidModule` y `DeepShopModule`. Arnés nuevo: `tests/v0222test` (47 arneses en total).
+- **Para la base viva**: nada (sin migración). Para que se vean hace falta que `apply_emojis.sql` haya corrido en la base de producción y que los emojis estén subidos en el portal de la aplicación.
 
 ## El tier V del encantamiento, casi imposible; el Encantador ayuda (v0.22.1, 2026-10-20)
 

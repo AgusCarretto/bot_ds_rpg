@@ -31,9 +31,13 @@ public static class UiEmojis
     private static readonly string[] Parts = ["l", "m", "r"];
     private static readonly string[] States = ["f", "e"];
 
-    private static readonly Regex EmojiCode = new(@"^<a?:[A-Za-z0-9_]{2,32}:\d{17,20}>$", RegexOptions.Compiled);
+    private static readonly Regex EmojiCode = new(@"^<a?:[A-Za-z0-9_]{2,32}:(\d{17,20})>$", RegexOptions.Compiled);
 
     private static volatile Dictionary<string, string> _byName = new(StringComparer.OrdinalIgnoreCase);
+
+    // Los ids de TODOS los emojis que la aplicación tiene hoy (v0.22.2). Un desplegable solo lleva un emoji propio si su id está acá: con uno que Discord no conoce (borrado del portal, de otra aplicación)
+    // rechaza el mensaje ENTERO, así que sin esta lista cargada (recién arrancado, o Discord no respondió) las opciones salen sin emoji, como siempre.
+    private static volatile HashSet<string> _knownIds = [];
 
     // «bar_hp_l_f»: el nombre con el que se sube cada pieza.
     public static string BarName(string kind, string part, string state) => $"bar_{kind}_{part}_{state}";
@@ -46,15 +50,26 @@ public static class UiEmojis
     public static void Set(IEnumerable<(string Name, string Code)> emojis)
     {
         var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var ids = new HashSet<string>(StringComparer.Ordinal);
         foreach (var (name, code) in emojis)
         {
-            if (!string.IsNullOrWhiteSpace(name) && !string.IsNullOrWhiteSpace(code) && EmojiCode.IsMatch(code.Trim()))
+            var match = string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(code) ? null : EmojiCode.Match(code.Trim());
+            if (match is { Success: true })
             {
                 map[name.Trim()] = code.Trim();
+                ids.Add(match.Groups[1].Value);
             }
         }
 
         _byName = map;
+        _knownIds = ids;
+    }
+
+    // ¿Es este código «<:nombre:id>» / «<a:nombre:id>» de un emoji que la aplicación tiene ahora mismo? Es lo que decide si un desplegable puede llevarlo (ver ItemEmojiRegistry.MenuCodeOf).
+    public static bool IsKnownEmoji(string? code)
+    {
+        var match = string.IsNullOrWhiteSpace(code) ? null : EmojiCode.Match(code.Trim());
+        return match is { Success: true } && _knownIds.Contains(match.Groups[1].Value);
     }
 
     // El código del emoji subido con ese nombre, o fallback.

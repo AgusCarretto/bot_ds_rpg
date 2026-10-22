@@ -539,11 +539,11 @@ public class RaidModule(
                 return;
             }
 
-            // Sin emoji en las opciones a propósito (si uno custom no le es accesible al bot, Discord rechaza el mensaje ENTERO).
+            // El emoji del ítem va en la opción solo si la aplicación lo tiene de verdad (ItemMenuExtensions: uno desconocido haría que Discord rechace el mensaje ENTERO).
             var menu = new SelectMenuBuilder().WithCustomId($"raid_eatpick:{raidId}").WithPlaceholder("🍖 Elegí qué comer (gasta tu turno)").WithMinValues(1).WithMaxValues(1);
             foreach (var option in options)
             {
-                menu.AddOption(option.Name, option.Name, CombatHeal.Describe(option));
+                menu.AddItemOption(option.Name, option.Name, option.Name, CombatHeal.Describe(option));
             }
 
             await FollowupAsync(

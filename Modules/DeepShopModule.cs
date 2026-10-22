@@ -142,7 +142,7 @@ public class DeepShopModule(
                 $"{ItemDisplay.Format(item.Emoji, item.Name)} — {GameHistory.Number(DeepShop.PricePerUnit)} de Polvo",
                 $"{entry.UseLine}\nTenés **{GameHistory.Number(have)}**.",
                 false);
-            menu.AddOption(item.Name, entry.Key, $"{GameHistory.Number(DeepShop.PricePerUnit)} de Polvo · tenés {GameHistory.Number(have)}");
+            menu.AddItemOption(item.Name, item.Name, entry.Key, $"{GameHistory.Number(DeepShop.PricePerUnit)} de Polvo · tenés {GameHistory.Number(have)}");
         }
 
         embed.WithFooter($"El Polvo sale de /dismantle. Para varias de una: /deepshop item:… cantidad:… (hasta {DeepShop.MaxPerPurchase}).");
