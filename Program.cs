@@ -559,6 +559,7 @@ public static class ServiceProviderBuilder
             .AddSingleton<IRecipeRepository, RecipeRepository>()
             .AddSingleton<ICasinoRepository, CasinoRepository>()
             .AddSingleton<ICasinoService, CasinoService>()
+            .AddSingleton<IBlackjackService, BlackjackService>()
             .AddSingleton<ICombatSessionService, CombatSessionService>()
             .AddSingleton<IRaidSessionService, RaidSessionService>()
             .AddSingleton<IPartyBossService, PartyBossService>()

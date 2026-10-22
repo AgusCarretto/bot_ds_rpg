@@ -1,6 +1,6 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-22 (v0.24.0: el jefe mundial)_
+_Última revisión: 2026-10-22 (v0.25.0: el blackjack)_
 
 ## Pendiente de un vistazo (puesto al día el 2026-10-22)
 
@@ -9,8 +9,7 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 **Esperando una decisión del dueño**
 - **La Guarda V es 3 a 4 veces más fuerte que los otros efectos de amuleto** (la defensa se resta fija de cada golpe): dejarla, o bajarla a la altura del Filo (p. ej. +2/4/6/9/13 %; le quita poder a los amuletos ya encantados). Ver v0.22.0.
 - **El jefe mundial ya está hecho (v0.24.0, ver abajo)**; lo que queda abierto es si se quiere una línea en `/cd` («anotado ✅ — se pelea en 3h»), un jefe por servidor cuando haya mucha gente, o premios que no sean solo oro.
-- **El blackjack en el casino** (el dueño, 2026-10-22: «anota el blackjack para armar en `play`»): sumar `blackjack` a `/play` y `aa bj <apuesta>`. Notas para cuando se arme: necesita estado entre mensajes (botones Pedir / Plantarse / Doblar, como un combate: sesión en memoria con vencimiento), la casa tiene que quedarse con una parte (el blackjack paga 3 a 2, la banca planta en 17; con las reglas simples el retorno ronda 0,98, así que
-  hay que medirlo y dejar `retorno < 1` como las slots), una mano por jugador a la vez, y la apuesta se cobra al empezar (guarda atómica) y se paga al terminar. Va con el mismo `AmountParser` (`10k`, `1m`, `all`) y registra `casino_win` / `casino_loss` con `detail = blackjack`.
+- **Blackjack: ya está (v0.25.0, ver abajo).** Lo que queda abierto: dividir (split) y el seguro, que no se hicieron a propósito para mantenerlo simple.
 - **Habilidades de clase** (pedido de los jugadores, ver «Sugerencias»): aprender, mejorar o evolucionar la habilidad, y «nerfear las iniciales». Necesita diseño antes de tocar nada: están calibradas con `PveTuning`, `PvpTuning` y los jefes, no debe contar en duelos
   ni en la Arena, y habría que preguntar CUÁL clase les parece pasada (en PvE la débil es el Arquero).
 - **Idioma:** pasar todo a inglés con un selector (`/language`). Espera a que la v0.22.0 esté verificada en producción. Hay que decidir el idioma por defecto de los jugadores nuevos, si se mantienen los nombres de sabor argentino y quién revisa el tono del inglés.
@@ -32,6 +31,18 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
   Términos y Privacidad públicos, y hay que confirmar si hay Premium Apps en Uruguay (Developer Portal, Monetization). Punto de enganche: `ReminderPolicy.IsEligible` y `CooldownCatalog`. El título especial entra como categoría «Especiales» del sistema de títulos.
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
+
+## Blackjack en el casino: `aa bj 10k` (v0.25.0, 2026-10-22)
+
+- **Pedido del dueño**: «armate el bj entonces, `aa bj 10k` por ejemplo» (antes: «anota el blackjack para armar en `play`»).
+- **Cómo se juega**: `/play game:blackjack apuesta:10k`, `aa bj 10k` (también `aa blackjack` y `aa 21`; la apuesta puede ser un número, `10k`, `1m` o `all`) o `aa play blackjack 10k`. Sale una mano con **Pedir / Plantarse / Doblar**: la banca muestra una carta y tapa la otra; se acerca a 21 sin pasarse. Por texto, `aa bj hit`, `aa bj stand`
+  y `aa bj double` hacen lo mismo que los botones (para cuando un botón no responde).
+- **Reglas**: mazo infinito; el **blackjack natural paga 3 a 2** (si los dos lo tienen, empate; si lo tiene solo la banca, perdés al instante); ganar paga 1 a 1; la banca pide hasta 17 y **se planta en todos los 17**; se puede **doblar** con las dos primeras cartas (una carta más y la apuesta se duplica); llegar a 21 pidiendo se planta solo. **Sin dividir ni seguro** (a propósito, para mantenerlo simple).
+- **La casa no regala** (medido con 1.000.000 de manos y la estrategia básica de estas reglas): el jugador recupera **0,989** por cada unidad apostada, o sea la casa se queda con ~1,1 %; jugando mal (plantarse siempre desde 12) recupera 0,92. Siempre por debajo de 1, como las slots.
+- **La plata**: la apuesta se cobra al repartir (sin oro no se juega) y el premio se paga al terminar; doblar cobra otra apuesta igual en el momento. Una mano por jugador; 6 «aa bj» a la vez reparten una sola mano y 10 clicks a la vez en un botón pagan una vez. **Una mano abandonada no pierde la apuesta**: a los 90 segundos sin jugar la banca te planta y se paga lo que salga.
+  Un reinicio del bot sí corta las manos en juego (viven en memoria, como los combates): la apuesta ya cobrada se pierde. Tope de apuesta: 250.000.000.
+- **Historial y logros**: cada mano deja `casino_win` / `casino_loss` con `detail = blackjack` (el empate no deja nada); `/history` tiene su renglón «Blackjack» y el logro Afortunado cuenta lo que se gana.
+- **Para la base viva**: nada (sin migración). Arnés nuevo: `tests/v0250test` (52 arneses en total).
 
 ## El jefe mundial: `aa miniboss` (v0.24.0, 2026-10-22)
 

@@ -189,6 +189,10 @@ public static class HelpTopics
             $"Salen tres símbolos al azar ({string.Join(' ', CasinoService.SlotsSymbolList)}): tres iguales ({Dec(CasinoService.SlotsThreeMatchChance * 100)} % de las veces) pagan **×{CasinoService.SlotsThreeMatchMultiplier}**, " +
             $"dos iguales ({Dec(CasinoService.SlotsPairChance * 100)} %) pagan **×{Dec(CasinoService.SlotsPairMultiplier)}** y tres distintos ({Dec(CasinoService.SlotsAllDifferentChance * 100)} %) pierden la apuesta.\n" +
             $"A la larga la casa se queda con el **{Dec((1 - CasinoService.SlotsReturnToPlayer) * 100)} %** de lo que se apuesta: es un juego de suerte, no una forma de juntar oro."),
+        ("🃏 Blackjack",
+            $"**/play game:blackjack** o `aa bj 10k` reparte una mano: te acercás a **21** sin pasarte y le ganás a la banca. Con los botones **Pedir** (otra carta), **Plantarte** o **Doblar** (solo con las dos primeras cartas: una carta más y la apuesta se duplica); por texto `aa bj hit` / `aa bj stand` / `aa bj double`. " +
+            $"La banca pide hasta 17 y se planta en todos los 17. Ganar paga 1 a 1, el **blackjack** (As + 10 de entrada) paga **3 a 2**, el empate devuelve la apuesta. No se divide ni hay seguro. La apuesta se cobra al repartir y, si dejás la mano sin tocar {BlackjackService.IdleSeconds} segundos, la banca te planta. " +
+            "Jugando bien la casa se queda con ~1 %; jugando mal, con más."),
         ("📈 Tus números", "**/history** muestra cuánto ganaste y perdiste en el casino, y la diferencia."));
 
     private static Embed Hunt() => Topic(Self("hunt"),

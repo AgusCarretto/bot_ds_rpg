@@ -202,14 +202,22 @@ public partial class TextCommandModule
         }
     }
 
-    // "aa play <coinflip|slots> <apuesta> [heads|tails]" / "aa pl ..." — misma lógica que /play.
+    // "aa play <coinflip|slots|blackjack> <apuesta> [heads|tails]" / "aa pl ..." — misma lógica que /play.
     [Command("play")]
     [Alias("pl")]
-    [Summary("Apostá tu oro en el casino: \"aa play coinflip <apuesta|all> <heads|tails>\" o \"aa play slots <apuesta|all>\".")]
+    [Summary("Apostá tu oro en el casino: \"aa play coinflip <apuesta|all> <heads|tails>\", \"aa play slots <apuesta|all>\" o \"aa play blackjack <apuesta|all>\".")]
     public async Task PlayAsync(string game, string apuesta, string? lado = null)
     {
         try
         {
+            // El blackjack es una mano con botones: ver Modules/BlackjackModule.cs ("aa bj" es el atajo).
+            if (game.Trim().ToLowerInvariant() is "blackjack" or "bj" or "21")
+            {
+                var hand = await BlackjackModule.ExecuteStartAsync(blackjackService, Context.User.Id, apuesta);
+                await ReplyAsync(hand.PlainMessage, embed: hand.Embed, components: hand.Components);
+                return;
+            }
+
             var result = await CasinoModule.ExecutePlayAsync(userRepository, casinoRepository, casinoService, Context.User.Id, game, apuesta, lado, gameEvents);
             await ReplyAsync(result.PlainMessage, embed: result.Embed);
         }
