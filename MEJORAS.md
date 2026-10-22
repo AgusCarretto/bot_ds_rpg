@@ -25,6 +25,8 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 
 **Hoja de ruta, no es para ahora**
 - Clase Monje (necesita una 5.ª familia de arma o una regla de «sin arma»; el dueño ya le contestó al foro que es para más adelante).
+- **Membresía de pocos pesos** (el dueño, 2026-10-22): lo único que da es **bajar un % de los cooldowns** y **algún título especial**; nada de poder, drops, oro ni XP (el PvP, la Arena y el ranking no pueden verse afectados). Para cobrar con Premium Apps de Discord la app tiene que estar verificada, en un equipo con 2FA y con
+  Términos y Privacidad públicos, y hay que confirmar si hay Premium Apps en Uruguay (Developer Portal, Monetization). Punto de enganche: `ReminderPolicy.IsEligible` y `CooldownCatalog`. El título especial entra como categoría «Especiales» del sistema de títulos.
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
 
