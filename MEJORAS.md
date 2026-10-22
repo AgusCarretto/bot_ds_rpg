@@ -1,13 +1,13 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-22 (v0.25.0: el blackjack)_
+_Última revisión: 2026-10-22 (v0.25.1: la Guarda baja un poco)_
 
 ## Pendiente de un vistazo (puesto al día el 2026-10-22)
 
 Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para no tener que recorrerlo entero, esto es lo que de verdad está abierto:
 
 **Esperando una decisión del dueño**
-- **La Guarda V es 3 a 4 veces más fuerte que los otros efectos de amuleto** (la defensa se resta fija de cada golpe): dejarla, o bajarla a la altura del Filo (p. ej. +2/4/6/9/13 %; le quita poder a los amuletos ya encantados). Ver v0.22.0.
+- **La Guarda ya se bajó (v0.25.1, ver abajo)**: el dueño dijo «bajala un poquito si te parece muy OP». Si se la quiere a la par del Filo, son +2/4/6/9/13 % (una línea en `KindTable`).
 - **El jefe mundial ya está hecho (v0.24.0, ver abajo)**; lo que queda abierto es si se quiere una línea en `/cd` («anotado ✅ — se pelea en 3h»), un jefe por servidor cuando haya mucha gente, o premios que no sean solo oro.
 - **Blackjack: ya está (v0.25.0, ver abajo).** Lo que queda abierto: dividir (split) y el seguro, que no se hicieron a propósito para mantenerlo simple.
 - **Habilidades de clase** (pedido de los jugadores, ver «Sugerencias»): aprender, mejorar o evolucionar la habilidad, y «nerfear las iniciales». Necesita diseño antes de tocar nada: están calibradas con `PveTuning`, `PvpTuning` y los jefes, no debe contar en duelos
@@ -31,6 +31,15 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
   Términos y Privacidad públicos, y hay que confirmar si hay Premium Apps en Uruguay (Developer Portal, Monetization). Punto de enganche: `ReminderPolicy.IsEligible` y `CooldownCatalog`. El título especial entra como categoría «Especiales» del sistema de títulos.
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
+
+## La Guarda baja un poco (v0.25.1, 2026-10-22)
+
+- **Pedido del dueño**: «bajala un poquito si te parece muy OP». Sí lo era: la Guarda V dejaba al jefe de la zona 5 (a nivel mín+3) en **8 % de derrota** contra ~32 % del Filo V y ~27 % de la Vida V, porque la defensa se resta fija de cada golpe.
+- **Cambio**: la Guarda pasa de +4/8/13/19/26 % a **+3/6/9/13/18 %** de la DEF de la pieza. Antes copiaba la tabla del Filo; ahora tiene la suya (`Enchantments.StatBonusPercent`) y el Filo no cambia. Medido con `tools/balance2 -- L 5`: la Guarda V queda en **~18 %** de derrota en la zona 5 y 6 a 7 % en las zonas 3 y 4 (antes 2 %). Sigue siendo el mejor encantamiento del amuleto (~1,7 veces lo que da el Filo en su pieza), pero ya no es 4 veces.
+- **Probado**: 2/4/6/9/13 (paridad con el Filo, 27 %), 3/5/8/12/16 (22 %), **3/6/9/13/18 (elegido, ~18 %)** y 4/7/11/15/20 (15 %). Para bajarla hasta la paridad, cambiar la fila de la Guarda en `KindTable`.
+- **Qué pasa con lo ya encantado**: los amuletos con Guarda conservan su tier y rinden con la tabla nueva (un Soberano pasa de +26 % a +18 % de la DEF). El tier V es rarísimo (1 % por intento), así que casi nadie lo tiene.
+- **Cambios de pantalla**: las listas de tiers de `/enchant` ya no ponen un solo «bonus +X %» (depende del efecto); el bonus de cada efecto sale de la lista de efectos de `/enchant info`.
+- **Para la base viva**: nada (sin migración).
 
 ## Blackjack en el casino: `aa bj 10k` (v0.25.0, 2026-10-22)
 

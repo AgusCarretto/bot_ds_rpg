@@ -23,8 +23,11 @@ Console.WriteLine("== 1. El catálogo de efectos ==");
 Check(Enchantments.Kinds.Count == 6 && Enchantments.KindsFor("weapon").Select(k => k.Key).SequenceEqual(["filo", "critico", "sangre"]) && Enchantments.KindsFor("amulet").Select(k => k.Key).SequenceEqual(["guarda", "vida", "esquive"]),
     "seis efectos: arma = Filo, Crítico, Sangre; amuleto = Guarda, Vida, Esquive");
 Check(Enchantments.Kinds.All(k => k.ValuesByTier.Count == Enchantments.MaxTier && k.ValuesByTier.Zip(k.ValuesByTier.Skip(1)).All(p => p.First < p.Second)), "cada efecto trae un valor por tier y SUBE con el tier");
-Check(Enchantments.FindKind("filo")!.ValuesByTier.SequenceEqual(Enumerable.Range(1, Enchantments.MaxTier).Select(Enchantments.BonusPercent)) && Enchantments.FindKind("guarda")!.ValuesByTier.SequenceEqual(Enchantments.FindKind("filo")!.ValuesByTier),
-    "Filo y Guarda siguen siendo los de siempre (+4/8/13/19/26 %), leídos de la MISMA tabla de tiers");
+Check(Enchantments.FindKind("filo")!.ValuesByTier.SequenceEqual(Enumerable.Range(1, Enchantments.MaxTier).Select(Enchantments.BonusPercent)) && Enchantments.FindKind("filo")!.ValuesByTier.SequenceEqual([4, 8, 13, 19, 26]) && Enchantments.FindKind("guarda")!.ValuesByTier.SequenceEqual([3, 6, 9, 13, 18])
+      && Enumerable.Range(1, Enchantments.MaxTier).All(t => Enchantments.StatBonusPercent("guarda", t) < Enchantments.StatBonusPercent("filo", t) && Enchantments.StatBonusPercent("critico", t) == 0 && Enchantments.StatBonusPercent(null, t) == 0) && Enchantments.StatBonusPercent("filo", 0) == 0,
+    "el Filo sigue en +4/8/13/19/26 % (la tabla de tiers) y la Guarda tiene la suya, +3/6/9/13/18 % (v0.25.1, bajada un poco por ser muy fuerte): más baja que el Filo en todos los tiers, y los efectos de combate no suman al stat");
+Check(Enchantments.Apply(100, "guarda", 5) == 118 && Enchantments.Apply(100, "filo", 5) == 126 && Enchantments.Apply(100, 5) == 126 && Enchantments.Apply(100, "vida", 5) == 100 && Enchantments.Apply(100, "guarda", 0) == 100 && Enchantments.Apply(5, "guarda", 1) == 6,
+    "Apply(stat, efecto, tier): Guarda V sobre 100 de DEF da 118 (antes 126), el Filo 126, los efectos de combate no tocan el stat y siempre suma al menos 1");
 Check(Enchantments.FindKind("critico")!.ValuesByTier.SequenceEqual([3, 6, 10, 15, 20]) && Enchantments.FindKind("sangre")!.ValuesByTier.SequenceEqual([1, 2, 3, 4, 5]) && Enchantments.FindKind("vida")!.ValuesByTier.SequenceEqual([4, 8, 13, 18, 24]) && Enchantments.FindKind("esquive")!.ValuesByTier.SequenceEqual([3, 6, 9, 12, 15]),
     "las magnitudes medidas con el simulador (parte L): Crítico 3-20 puntos, Sangre 1-5 % del daño, Vida 4-24 % y Esquive 3-15 puntos");
 Check(Enchantments.Kinds.Where(k => k.PveOnly).Select(k => k.Key).OrderBy(x => x).SequenceEqual(["critico", "esquive", "sangre", "vida"]) && Enchantments.IsStatKind("filo") && Enchantments.IsStatKind("guarda") && !Enchantments.IsStatKind("critico"),
@@ -219,7 +222,7 @@ Check(State.Split('\n').First(l => l.StartsWith("**ATQ**")).Contains("✨Crít +
 await db.ExecuteAsync("UPDATE users SET weapon_enchant = 3, weapon_enchant_kind = 'filo', amulet_enchant = 2, amulet_enchant_kind = 'guarda' WHERE discord_id = @id", new { id = (long)U });
 var prof2 = await GameModule.BuildProfileEmbedAsync(users, items, zonesRepo, buffRepo, U, "T", "https://example.com/a.png");
 string State2 = prof2.Fields.Single(f => f.Name == "Estado").Value;
-Check(State2.Split('\n').First(l => l.StartsWith("**ATQ**")).Contains("✨+13 %") && State2.Split('\n').First(l => l.StartsWith("**DEF**")).Contains("✨+8 %"), "con Filo y Guarda la marca es la de siempre («✨+13 %», «✨+8 %»)");
+Check(State2.Split('\n').First(l => l.StartsWith("**ATQ**")).Contains("✨+13 %") && State2.Split('\n').First(l => l.StartsWith("**DEF**")).Contains("✨+6 %"), "con Filo y Guarda la marca sale de la tabla de cada uno («✨+13 %» el Filo III, «✨+6 %» la Guarda II)");
 await db.ExecuteAsync("UPDATE users SET weapon_enchant = 3, weapon_enchant_kind = 'sangre', amulet_enchant = 0, amulet_enchant_kind = 'guarda' WHERE discord_id = @id", new { id = (long)U });
 var infoE = DustModule.BuildInfoEmbed(await Me(), await items.GetByIdAsync(weaponId), await items.GetByIdAsync(amuletId));
 Check(AllText(infoE).Contains("Sangre Ardiente") && AllText(infoE).Contains("3 % del daño en vida") && AllText(infoE).Contains("efecto:") && infoE.Length <= 6000 && infoE.Fields.All(f => f.Value.Length <= 1024), "/enchant sin pieza muestra el efecto que tenés y cómo elegirlo");

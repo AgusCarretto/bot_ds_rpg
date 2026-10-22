@@ -376,7 +376,7 @@ public class DustModule(
 
         // Lo que rinde la pieza (con la sinergia de clase si es un arma) antes y después.
         int baseStat = isWeapon ? ClassWeaponSynergy.ApplyBonus(gear.StatValue, playerBefore.Class, gear.WeaponFamily) : gear.StatValue;
-        int before = Enchantments.Apply(baseStat, Enchantments.StatTier(prevKind, previous)), after = Enchantments.Apply(baseStat, Enchantments.StatTier(newKind, now));
+        int before = Enchantments.Apply(baseStat, prevKind, Enchantments.StatTier(prevKind, previous)), after = Enchantments.Apply(baseStat, newKind, Enchantments.StatTier(newKind, now));
 
         var embed = new EmbedBuilder()
             .WithTitle($"✨ Encantamiento: {(isWeapon ? "arma" : "amuleto")}")
@@ -415,7 +415,8 @@ public class DustModule(
         }
 
         // Los tiers, en dos renglones cortos (en uno solo se apretaban y se partían a mitad de nombre).
-        string Tier(int t) => $"{Enchantments.TierName(t)} **+{Enchantments.BonusPercent(t)} %**";
+        // Solo el nombre: cuánto da cada tier depende del EFECTO (el Filo y la Guarda ya no suman lo mismo desde la v0.25.1), y eso lo dice «/enchant info».
+        string Tier(int t) => $"{Enchantments.TierName(t)} **({Enchantments.ChancePercent(t).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',')} %)**";
         string tiers = $"{string.Join("  ·  ", Enumerable.Range(1, 3).Select(Tier))}\n{string.Join("  ·  ", Enumerable.Range(4, Enchantments.MaxTier - 3).Select(Tier))}";
         var embed = new EmbedBuilder()
             .WithTitle("✨ Encantamientos")
@@ -458,7 +459,7 @@ public class DustModule(
         }
 
         string tiers = string.Join('\n', Enumerable.Range(1, Enchantments.MaxTier).Select(t =>
-            $"**{Enchantments.TierName(t)}** — bonus **+{Enchantments.BonusPercent(t)} %** — sale el **{Enchantments.ChancePercent(t).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',')} %**{Attempts(t)}"));
+            $"**{Enchantments.TierName(t)}** — sale el **{Enchantments.ChancePercent(t).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',')} %**{Attempts(t)}"));
 
         // Los efectos de cada pieza con sus cinco valores (del tier I al V), leídos de la tabla: no se puede desactualizar.
         string EffectBlock(string slotKey, string title) =>
