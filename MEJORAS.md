@@ -1,6 +1,6 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-22 (v0.23.0: los títulos)_
+_Última revisión: 2026-10-22 (v0.23.1: atajos de texto y montos con k y m)_
 
 ## Pendiente de un vistazo (puesto al día el 2026-10-22)
 
@@ -8,6 +8,9 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 
 **Esperando una decisión del dueño**
 - **La Guarda V es 3 a 4 veces más fuerte que los otros efectos de amuleto** (la defensa se resta fija de cada golpe): dejarla, o bajarla a la altura del Filo (p. ej. +2/4/6/9/13 %; le quita poder a los amuletos ya encantados). Ver v0.22.0.
+- **La Arena la gana siempre el de más nivel** (el dueño, 2026-10-22: «capaz hacerla random con textos mientras pasan duelos»). Medido con el mismo motor (`DuelEngine.Simulate`, misma clase y mismo equipo, 3000 duelos por celda): con +1 nivel el de arriba gana 65 a 90 %, con +3 niveles 79 a 99 % y con +5 niveles 89 a 100 %; el equipo parejo
+  lo suaviza un poco pero no lo cambia. Propuesta pendiente de su OK: más azar de verdad (una «forma del día» por luchador y sucesos con texto en medio de la pelea) y la pelea contada acción por acción mientras pasa, en vez de una sola línea al final. Ver la propuesta en la conversación del 2026-10-22.
+- **El jefe «sin ser raid ni boss porque no sos nivel 5»**: no quedó claro qué se pide (un atajo corto, poder pelearlo antes del nivel 5, o un modo de prueba para el dueño). Pendiente de que lo explique.
 - **Habilidades de clase** (pedido de los jugadores, ver «Sugerencias»): aprender, mejorar o evolucionar la habilidad, y «nerfear las iniciales». Necesita diseño antes de tocar nada: están calibradas con `PveTuning`, `PvpTuning` y los jefes, no debe contar en duelos
   ni en la Arena, y habría que preguntar CUÁL clase les parece pasada (en PvE la débil es el Arquero).
 - **Idioma:** pasar todo a inglés con un selector (`/language`). Espera a que la v0.22.0 esté verificada en producción. Hay que decidir el idioma por defecto de los jugadores nuevos, si se mantienen los nombres de sabor argentino y quién revisa el tono del inglés.
@@ -29,6 +32,15 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
   Términos y Privacidad públicos, y hay que confirmar si hay Premium Apps en Uruguay (Developer Portal, Monetization). Punto de enganche: `ReminderPolicy.IsEligible` y `CooldownCatalog`. El título especial entra como categoría «Especiales» del sistema de títulos.
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
+
+## Atajos de texto y montos con k y m (v0.23.1, 2026-10-22)
+
+- **Pedido del dueño**: «que se pueda hacer `aa sell all`, `aa sell arma`, `aa sell amuleto`, sin pasar por shop; lo mismo con deposit y withdraw sin poner bank antes; en el play `aa cf h` o `t` y un número; y que exista la forma de poner 10k por 10000, y m de millones».
+- **Montos**: `AmountParser` lee `10k` = 10.000, `1m` = 1.000.000 y `1,5m` = 1.500.000. Con k o m el punto y la coma son decimales (`1.5k` = 1.500); sin ellas siguen siendo separadores de miles (`1.500` = 1.500, como siempre). Vale en todos lados donde se escribe un monto: `/play`, `/give`, `/bank` y los atajos nuevos.
+- **Atajos** (solo por texto): `aa sell all` (todo lo vendible de la mochila), `aa sell arma` y `aa sell amuleto` (lo que llevás puesto, sin pedir confirmación porque lo escribiste vos), `aa sell <ítem>`, `aa sell <cantidad> <ítem>` y `aa sell all <ítem>`; `aa deposit` y `aa withdraw` (alias `dep`, `wd`, `retirar`, `sacar`);
+  `aa cf h 100` / `aa cf t 10k` / `aa cf 100 h` (h = heads, t = tails, también cara y cruz; el lado y la apuesta en cualquier orden); y de yapa `aa slots 100` (`sl`). Los comandos largos siguen andando.
+- **Qué no se hizo a propósito**: `aa sell arma` vende al instante la pieza puesta (la forja cuesta mucho más que lo que pagan); la taberna sigue pidiendo confirmación porque ahí se toca un menú sin querer. Si hace falta el mismo cuidado por texto, es un botón de confirmación más.
+- **Para la base viva**: nada (sin migración). Arnés nuevo: `tests/v0231test` (49 arneses en total).
 
 ## Títulos (v0.23.0, 2026-10-22)
 

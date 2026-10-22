@@ -161,7 +161,7 @@ public static class HelpTopics
     private static Embed Bank() => Topic(Self("bank"),
         $"Guardás oro **a salvo de la penalidad por morir**. La cuenta se compra una sola vez por **{Num(BankRules.AccountPrice)}** de oro.",
         ("🏦 Comandos",
-            "**/bank open** abre la cuenta · **/bank deposit** guarda · **/bank withdraw** saca · **/bank view** muestra tu billetera y tu banco.\nEn deposit y withdraw podés escribir una cantidad o **all**. En texto: `aa bank deposit 500`."),
+            "**/bank open** abre la cuenta · **/bank deposit** guarda · **/bank withdraw** saca · **/bank view** muestra tu billetera y tu banco.\nEn deposit y withdraw podés escribir una cantidad (**500**, **10k** de mil, **1m** de millón) o **all**. En texto, sin escribir bank: `aa deposit 500` y `aa withdraw 10k`."),
         ("🛡️ Para qué sirve",
             $"Si perdés un combate perdés el {DeathPenalty.GoldPercent} % del oro de la **billetera**; lo que está en el banco no se toca. Mirá **/info tema:death**."),
         ("⚠️ Ojo", "Sin interés ni tope de capacidad. Las compras, `/give` y las apuestas usan la billetera: sacá el oro del banco antes de gastarlo."),
@@ -182,7 +182,7 @@ public static class HelpTopics
             "porque no puede huir. En **/hunt** a mano ves tu vida y podés huir."));
 
     private static Embed Play() => Topic(Self("play"),
-        $"**/play** apuesta tu oro. Apuesta mínima: **{CasinoModule.MinBet}**. Podés escribir **all** para apostar todo lo que llevás en la billetera. En texto: `aa play slots 100`.",
+        $"**/play** apuesta tu oro. Apuesta mínima: **{CasinoModule.MinBet}**. Podés escribir **all** para apostar todo lo que llevás en la billetera, o **10k** / **1m** para mil / millón. En texto: `aa cf h 100` (h = heads, t = tails) y `aa slots 100`.",
         ("🪙 Coinflip",
             $"Elegís cara (**Heads**) o cruz (**Tails**) y sale al azar: 50 % de acertar. Si acertás cobrás **×{CasinoService.CoinflipMultiplier}** lo apostado."),
         ("🎰 Slots",
@@ -250,7 +250,7 @@ public static class HelpTopics
     private static Embed Shop() => Topic(Self("shop"),
         "Acá se compra y se vende todo lo que no se forja, y se cura la vida.",
         ("🍺 /taberna (aa taberna)", "El tabernero te atiende con menús: comés algo de tu mochila, comprás comida y cajas, y vendés. Cada elección es de **una** unidad. También vende la **Comida para Mascotas** (**/info tema:pets**)."),
-        ("🛒 /shop", "**view** muestra los precios, **buy** y **sell** compran y venden por nombre y cantidad, **sellall** vende todo lo vendible de la mochila (no lo que llevás puesto)."),
+        ("🛒 /shop", "**view** muestra los precios, **buy** y **sell** compran y venden por nombre y cantidad, **sellall** vende todo lo vendible de la mochila (no lo que llevás puesto). En texto, sin escribir shop: `aa sell all`, `aa sell arma`, `aa sell amuleto` (lo que llevás puesto) o `aa sell <ítem>`."),
         ("🍖 Consumibles",
             "La comida cura HP y los **banquetes** (los Míticos) además dan un bonus de ataque por un rato: se comen con **/use** (el valor figura en **/shop view** y en tu **/profile** mientras dura; uno nuevo reemplaza al anterior)."),
         ("💊 /heal", "Te cura **todo** lo que te falta comiendo lo justo de tu mochila, sin pasarte (no sirve en combate ni gasta banquetes). Con **/heal comida:<nombre>** usás una sola comida."));
