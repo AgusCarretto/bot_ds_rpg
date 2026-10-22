@@ -2,6 +2,32 @@
 
 _Última revisión: 2026-10-22 (v0.22.2: el emoji propio del ítem en los desplegables)_
 
+## Pendiente de un vistazo (puesto al día el 2026-10-22)
+
+Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para no tener que recorrerlo entero, esto es lo que de verdad está abierto:
+
+**Esperando una decisión del dueño**
+- **La Guarda V es 3 a 4 veces más fuerte que los otros efectos de amuleto** (la defensa se resta fija de cada golpe): dejarla, o bajarla a la altura del Filo (p. ej. +2/4/6/9/13 %; le quita poder a los amuletos ya encantados). Ver v0.22.0.
+- **Habilidades de clase** (pedido de los jugadores, ver «Sugerencias»): aprender, mejorar o evolucionar la habilidad, y «nerfear las iniciales». Necesita diseño antes de tocar nada: están calibradas con `PveTuning`, `PvpTuning` y los jefes, no debe contar en duelos
+  ni en la Arena, y habría que preguntar CUÁL clase les parece pasada (en PvE la débil es el Arquero).
+- **Idioma:** pasar todo a inglés con un selector (`/language`). Espera a que la v0.22.0 esté verificada en producción. Hay que decidir el idioma por defecto de los jugadores nuevos, si se mantienen los nombres de sabor argentino y quién revisa el tono del inglés.
+- **Comida para las zonas altas** (el dueño avisa cuándo), un cooldown en `/play` y zonas cada ~10 niveles (opinión dada, sin construir).
+
+**Ya hablado, falta hacerlo**
+- Escena con desplegables para `/trade` y `/exchange` (como la taberna), para que el emoji se vea también al elegir: las listas de autocompletado no pueden llevarlo.
+- Limpiar los emojis unicode de los títulos y de los nombres de campo, pantalla por pantalla (necesita un set propio de íconos de estadística), y apilar los dos HP del combate para poder usar barras de emojis ahí.
+
+**Para mirar en la base viva** (necesitan datos de Railway; los corre el dueño con `psql`)
+- `Database/report_live_health.sql`: el logro «Racha» tiene que desbloquear el tramo I (7 días) cuando reclamen los dos jugadores con racha de 8 a 13; si no pasa, es un bug.
+- `Database/report_gold_chest_origin.sql` (nuevo): de dónde salen los Cofres de Oro (29 abiertos en 7 días en el informe del 2026-10-20). Reconstruye por tienda, jefe, `/daily`, misiones, logros, Arena y cajas, y cuadra contra lo visto.
+- `/vote` con el bot público: hoy duplica los cofres gratis; con 3 votantes no preocupa. Palancas: cobrar el reseteo del jefe una vez por día, o cambiar el cofre.
+- Confirmar que `apply_emojis.sql` corrió en Railway: sin eso no se ven los emojis de los ítems (ni los de los desplegables).
+
+**Hoja de ruta, no es para ahora**
+- Clase Monje (necesita una 5.ª familia de arma o una regla de «sin arma»; el dueño ya le contestó al foro que es para más adelante).
+- Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
+- Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
+
 ## Emoji propio del ítem en los desplegables (v0.22.2, 2026-10-22)
 
 - **Pedido del dueño**: «agregar los emojis a los trades, al 3 por 1 y a los ítems de los combos desplegables, el forje y todo; donde se pueda suma mucho».
@@ -1354,46 +1380,30 @@ o separar `/shop` no rompiera nada existente.
 
 Todo esto ya compila y bootea limpio contra Discord.
 
-## Brecha vs. el diseño original (para decidir, no toqué nada acá)
+## Brecha vs. el diseño original (revisada el 2026-10-22: casi todo se resolvió)
 
-- ✅ **Resuelto (parcial, por decisión consciente):** en vez de restringir qué arma puede
-  equiparse cada clase, agregamos `items.weapon_family` (Espadas/Dagas/Arcos/Grimorios) y
-  `GameData/ClassWeaponSynergy.cs`: cualquier clase puede equipar cualquier arma, pero el daño
-  del arma se multiplica x1.5 solo si la familia coincide con la de la clase (Guerrero+Espada,
-  etc.). Falta cargar armas de las otras 3 familias — hoy solo hay `Espadas` en el catálogo, así
-  que la sinergia solo es alcanzable jugando Guerrero.
-- 🟡 **El herrero solo craftea ítems nuevos fijos, no mejora los que ya tenés.** El brief original
-  hablaba de "forjar armas de mayor nivel" — hoy `/forge make` es siempre "pagá X, recibís un
-  ítem predefinido", no hay upgrade de un arma existente.
-- 🟡 **El amuleto no hace nada mecánicamente.** Se equipa, se muestra en `/profile`, pero a
-  diferencia del arma (que ahora sí suma a `PlayerPower`), su `stat_value` no se usa en ningún
-  cálculo todavía.
+- ✅ **Resuelto:** en vez de restringir qué arma puede equiparse cada clase, `items.weapon_family` (Espadas/Dagas/Arcos/Grimorios) y `GameData/ClassWeaponSynergy.cs`: cualquier clase puede equipar cualquier arma, pero el daño del arma se
+  multiplica ×1,5 solo si la familia coincide con la de la clase. Las cuatro familias están cargadas en las cinco zonas (4 armas de clase + 1 general + 1 amuleto por zona).
+- 🟡 **El herrero solo craftea ítems fijos, no mejora los que ya tenés.** `/forge` es siempre «pagá X, recibís un ítem predefinido». Lo más parecido a mejorar una pieza hoy son los encantamientos (`/enchant`, v0.9.0 y v0.22.0). Sigue
+  abierto si el herrero debería poder subir de nivel una pieza.
+- ✅ **Resuelto:** el amuleto suma defensa (`PlayerCombatProfileCalculator.AmuletDefense`, ladder 10/35/60/85/120/165 desde la v0.15.1) y se encanta (Guarda, Vida, Esquive).
 
 ## Deuda técnica
 
-- ✅ **Resuelto:** `current_weapon_id` se eliminó del modelo, `UserSql` y `schema.sql`. Corré
-  `Database/cleanup_weapon_columns.sql` una vez contra tu base para sacarla ahí también y
-  agregarle Foreign Key a `weapon_id`/`amulet_id`.
-- 🟡 No hay tracking de qué migraciones SQL ya se corrieron (`schema.sql`, `seed.sql`,
-  `add_hp_columns.sql`, `fix_material_types.sql`, `add_buy_price.sql`, `add_daily_columns.sql`,
-  `cleanup_weapon_columns.sql`, `add_weapon_family.sql`...). Si el bot se instala en otra
-  máquina, hay que acordarse de correrlas todas en orden a mano. Una tabla `schema_migrations`
-  simple (o una herramienta tipo DbUp) resolvería esto sin mucho esfuerzo — cada vez que sumamos
-  una feature con cambio de esquema, esta lista crece.
-- ✅ (resuelto en la v0.18.3, ver arriba) ~~Cero tests.~~ Los ~40 arneses de verificación ya viven en `tests/` (y el simulador de calibración en `tools/balance2`); se corren con `tests/run-all.ps1`.
-  Sigue sin haber CI (necesitan una base local con la instalación completa) ni un framework de pruebas a propósito: son consolas que se leen de corrido.
-- 🟢 Logging es `Console.WriteLine` sin niveles ni persistencia. Alcanza para desarrollo; para un
-  bot corriendo 24/7 en un server, conviene algo que deje rastro cuando vos no estás mirando la
-  consola.
+- ✅ **Resuelto:** `current_weapon_id` se eliminó del modelo, `UserSql` y `schema.sql`.
+- 🟡 **Sigue abierto: no hay registro de qué migraciones SQL ya corrieron en cada base.** Cada versión con cambio de esquema trae su `Database/add_*.sql` y hay que acordarse de correrlo con `psql` ANTES del binario (la lista de
+  cuáles, en `CLAUDE.md`). Una tabla `schema_migrations` simple (o una herramienta tipo DbUp) lo resolvería, y de paso permitiría que el bot avise al arrancar «te falta correr tal script» en vez de caerse con un error de columna.
+- ✅ **Resuelto en la v0.18.3:** los arneses de verificación viven en `tests/` (47 hoy) y el simulador de calibración en `tools/balance2`; se corren con `tests/run-all.ps1` o `tests/run-all.sh`. Sigue sin haber CI (necesitan una base
+  local con la instalación completa) ni un framework de pruebas, a propósito: son consolas que se leen de corrido.
+- 🟢 **Logging:** `Services/BotLog.cs` ya distingue `Error` y `Warn` y pone archivo y método; la salida sigue siendo la consola, que en Railway se guarda en los logs del servicio. Alcanza; si algún día hace falta buscar por jugador o
+  por fecha, ahí habría que sumar algo persistente.
 
 ## Mejoras de UX / comandos
 
-- 🟡 `/shop buy`, `/shop sell`, `/forge make`, `/equip` piden el nombre del ítem como texto libre
-  → cualquier typo tira error. Discord.Net soporta autocomplete real (sugiere mientras escribís);
-  sería la mejora de UX con más impacto por esfuerzo invertido.
-- 🟢 No hay `/help` que liste los comandos disponibles agrupados por categoría.
-- 🟢 No hay regeneración pasiva de HP (solo `/heal` pago). Es una decisión de diseño válida, pero
-  vale confirmarla a propósito en vez de que sea un efecto colateral de no haberlo construido.
+- ✅ **Resuelto:** los comandos que piden un ítem tienen lista desplegable con autocompletado (`/shop buy|sell`, `/forge make`, `/use`, `/open`, `/zona`, `/trade`, `/exchange`, `/heal`); `/equip` ya no existe (el equipo se forja
+  directo al casillero). Las listas de autocompletado no pueden llevar emojis propios (límite de Discord); los desplegables de las escenas sí, desde la v0.22.2.
+- ✅ **Resuelto:** `/info` lista los comandos por grupo (corta a propósito) y `/info tema:<tema>` explica cómo funciona cada sistema (26 temas).
+- 🟢 **Decisión de diseño, sin tocar:** no hay regeneración pasiva de HP; se cura con comida, `/heal` o la taberna. Vale seguir confirmándolo a propósito, porque es lo que da valor a la comida.
 
 ## Ideas a futuro (sin comprometerme a nada, para cuando quieran expandir)
 
@@ -1414,7 +1424,6 @@ original, se deja como registro de los motivos de cada decisión.
 - **Mascotas**: es lo que más engancha pero también lo más grande (cómo se consiguen, cómo suben, qué dan). Que den cosas chicas (oro/XP o un poco de defensa) y NUNCA toquen las chances de drop (las recetas están calibradas con ellas). Al final de la lista: depende de logros, encantamientos y del diseño del reset.
 
 - **Casamiento (`marriage`)** — pedido por el dueño (2026-10-02), para más adelante: dos jugadores se casan (propuesta con aceptar/rechazar, como `/trade` y `/fight`) y pueden **compartir cosas** entre sí. Preguntas para cuando se encare: qué se comparte (¿oro común?, ¿cofre compartido?, ¿bonus al pelear juntos / en raid?, ¿cooldowns?), cómo se divorcia (y qué pasa con lo compartido), y cuidado con las cuentas alternativas: si se comparte algo con valor, el casamiento abre la misma puerta que `/give` (mismo tope o registro en `game_events`).
-- Sistema de armadura/defensa (hoy el daño recibido no depende de ningún stat defensivo).
+- ✅ ~~Sistema de armadura/defensa~~: hecho (el amuleto resta defensa de cada golpe, v0.15.1).
 - Comandos de administrador (dar oro/ítems, resetear cooldowns) para moderar el server de pruebas.
-- PvP o eventos temporizados de servidor (boss compartido, etc.) — mencionado como "idle" en el
-  brief original, esto sería la primera mecánica no-idle si se agrega.
+- ✅ PvP hecho (`/fight`, la Arena diaria). Siguen sin existir los eventos temporizados de servidor (un jefe compartido por todos, etc.).
