@@ -29,6 +29,7 @@ internal static class UserSql
         in_gate          AS "InGate",
         gate_cleared     AS "GateCleared",
         fuego_nuevo      AS "FuegoNuevo",
-        run_started_at   AS "RunStartedAt"
+        run_started_at   AS "RunStartedAt",
+        equipped_title   AS "EquippedTitle"
         """;
 }

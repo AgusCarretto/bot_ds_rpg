@@ -1,6 +1,6 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-22 (v0.22.2: el emoji propio del ítem en los desplegables)_
+_Última revisión: 2026-10-22 (v0.23.0: los títulos)_
 
 ## Pendiente de un vistazo (puesto al día el 2026-10-22)
 
@@ -29,6 +29,19 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
   Términos y Privacidad públicos, y hay que confirmar si hay Premium Apps en Uruguay (Developer Portal, Monetization). Punto de enganche: `ReminderPolicy.IsEligible` y `CooldownCatalog`. El título especial entra como categoría «Especiales» del sistema de títulos.
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
+
+## Títulos (v0.23.0, 2026-10-22)
+
+- **Pedido del dueño**: «creá muchísimos, como 50 mínimo, que estén en páginas en `aa titles` y que se puedan equipar»; lo corrigió dos veces: **no van en el inventario** (idea mía), se equipan al **perfil**, que ahora muestra **«Nombre - Título (Clase)»**, y «dale sencillo». «Título nuevo me gusta, que busque cuál es.»
+- **113 títulos en 9 páginas** (Combate 18, Oficios 12, Economía 12, Constancia 12, Mascotas y Fogón 15, Jefes y niveles 15, Maestros de oficio 9, PvP y comunidad 12, Curiosos 8), todos cosméticos. 69 salen de los 23 logros (3 por logro, con la meta del propio tramo: si se retoca un logro, su título lo sigue) y 44 son especiales: el primer triunfo sobre cada jefe
+  de la escalera, el nivel más alto alcanzado, los niveles de la Brasa de Color, maestro de un oficio (nivel 25 / 50 / 100), duelos, Arena, votos, trueques, derrotas, hallazgos (Corteza, Meteorito, encantamiento tier V), el Inframundo y «Recién Llegado» (el inicial). La lista completa está en `docs/titulos.md`.
+- **Qué se guarda**: solo cuál tenés puesto (`users.equipped_title`). Qué tenés se calcula de contadores y eventos que sobreviven al Fuego Nuevo (nunca de la zona más alta vencida ni del nivel de la cuenta, que se reinician). Los títulos de la Brasa de Color dejan de ser una línea fija del perfil: ahora se desbloquean con el nivel de la bendición y se ponen con `/titles`
+  (el color del perfil sigue igual); quien ya la tenía ve «Recién Llegado» hasta que se ponga uno.
+- **Pantallas**: `/titles` y `aa titles [página]` (✅ los que tenés, 🔒 los que faltan con cómo conseguirlos y cuánto llevás; desplegable de páginas, desplegable para equipar con los que tenés de esa página y botón «Quitar título»), y `aa title <nombre>` / `aa title quitar` por texto.
+- **«¡Título nuevo!»**: el aviso de un logro ya dice cuál título trae; los especiales que se pueden saber con el evento (un contador que llega a su meta, subir de nivel, la primera victoria sobre un jefe de la escalera) avisan solos. La Brasa de Color y los tres hallazgos únicos no avisan: aparecen en `/titles`.
+- **Membresía**: el título especial de miembro queda para cuando se construya (una regla nueva con la comprobación de la suscripción, en una página «Especiales»). No se hizo nada de eso.
+- **Para la base viva**: **correr `Database/add_titles.sql` con `psql` ANTES del binario v0.23.0** (agrega `users.equipped_title`; re-ejecutable). Arnés nuevo: `tests/v0230test` (48 arneses en total); se actualizaron `v0194test` y `fntest` (el encabezado del perfil y la Brasa de Color).
+- Para tunear: las metas de los 69 de logros se mueven en `AchievementCatalog`; los niveles de maestro (25/50/100) y los demás títulos especiales, en `TitleCatalog`.
 
 ## Emoji propio del ítem en los desplegables (v0.22.2, 2026-10-22)
 

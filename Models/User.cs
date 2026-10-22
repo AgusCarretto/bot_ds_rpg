@@ -28,4 +28,5 @@ public sealed class User
     public bool GateCleared { get; init; }  // ya le ganó al Asador Eterno en esta vuelta (habilita el Fuego Nuevo)
     public int FuegoNuevo { get; init; }    // cuántos Fuegos Nuevos hizo (0 = ninguno; GameData/FuegoNuevoRules.cs)
     public DateTime RunStartedAt { get; init; } // cuándo arrancó la vuelta actual (UTC)
+    public string? EquippedTitle { get; init; } // la clave del título que tiene puesto (v0.23.0, GameData/TitleCatalog.cs); null = ninguno y el perfil muestra «Recién Llegado»
 }

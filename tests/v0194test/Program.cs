@@ -99,8 +99,8 @@ async Task<Embed> Profile(ulong id) => await GameModule.BuildProfileEmbedAsync(u
 
 UiEmojis.Set([]);
 var plain = await Profile(U);
-Check(plain.Title == "⚔️ Guerrero" && plain.Description == "🔥 FN **3** · Nivel **41**" && plain.Fields[0].Name == "XP" && plain.Fields[0].Value.StartsWith("░░░░░░░░░░") && !plain.Fields[0].Value.Contains("<:") && plain.Fields[0].Value.Contains("120 / ") && plain.Fields[0].Value.EndsWith(" 📊"),
-    $"perfil sin emojis subidos: el título es solo la clase, la descripción dice «🔥 FN 3 · Nivel 41» (el FN va antes del nivel), el campo es «XP» con barra de texto y «120 / N 📊» sin repetir XP");
+Check(plain.Title == "⚔️ T - Recién Llegado (Guerrero)" && plain.Description == "🔥 FN **3** · Nivel **41**" && plain.Fields[0].Name == "XP" && plain.Fields[0].Value.StartsWith("░░░░░░░░░░") && !plain.Fields[0].Value.Contains("<:") && plain.Fields[0].Value.Contains("120 / ") && plain.Fields[0].Value.EndsWith(" 📊"),
+    $"perfil sin emojis subidos: el encabezado es «Nombre - Título (Clase)» (v0.23.0), la descripción dice «🔥 FN 3 · Nivel 41» (el FN va antes del nivel), el campo es «XP» con barra de texto y «120 / N 📊» sin repetir XP");
 var plainV = await Profile(V);
 Check(plainV.Description == "Nivel **7**" && !plainV.Description.Contains("FN"), "sin Fuego Nuevo la línea es solo el nivel (no aparece «FN 0»)");
 

@@ -106,6 +106,9 @@ public static class ProfessionRules
     // XP total para llegar al nivel máximo.
     public static long TotalXpToMax => CumulativeXp[MaxLevel];
 
+    // XP acumulada con la que se llega a ESTE nivel (0..MaxLevel). La usan los títulos de maestro de oficio (GameData/TitleCatalog.cs) para expresar la meta en el contador de XP.
+    public static long XpToReach(int level) => CumulativeXp[Math.Clamp(level, 0, MaxLevel)];
+
     public static ProfessionProgress ProgressFor(long totalXp)
     {
         long xp = Math.Max(0, totalXp);

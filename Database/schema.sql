@@ -167,6 +167,7 @@ CREATE TABLE IF NOT EXISTS users (
     -- v0.12.0, Fuego Nuevo (el reinicio): cuántos hizo (0 = ninguno; "FN 3" = tres) y cuándo arrancó la vuelta actual (para el historial). Ver GameData/FuegoNuevoRules.cs.
     fuego_nuevo       INTEGER NOT NULL DEFAULT 0 CHECK (fuego_nuevo >= 0),
     run_started_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    equipped_title    TEXT,                                -- v0.23.0: la clave del título puesto (GameData/TitleCatalog.cs); NULL = ninguno. Database/add_titles.sql
     CONSTRAINT chk_current_hp_within_max CHECK (current_hp <= max_hp)
 );
 

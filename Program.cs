@@ -531,6 +531,7 @@ public static class ServiceProviderBuilder
             .AddSingleton<IBuffRepository, BuffRepository>()
             .AddSingleton<IMissionRepository, MissionRepository>()
             .AddSingleton<IAchievementRepository, AchievementRepository>()
+            .AddSingleton<ITitleRepository, TitleRepository>()
             .AddSingleton<IProgressNotifier, ProgressNotifier>()
             .AddSingleton<ITradeOfferService, TradeOfferService>()
             .AddSingleton<IArenaRepository, ArenaRepository>()
