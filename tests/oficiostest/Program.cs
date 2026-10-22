@@ -204,6 +204,8 @@ var e2 = await DustModule.ExecuteEnchantAsync(users, itemsRepo, dustRepo, events
 var u2 = await Me();
 var disc = ProfessionRules.EnchantCost(baseCost, 100, false);
 Check(e2.Embed is not null && goldBefore - u2.Gold == disc.Gold && dustBefore - u2.Dust == disc.Dust && disc.Dust < baseCost.Dust, $"con el Encantador al 100 el intento cuesta {disc.Dust} de Polvo en vez de {baseCost.Dust} (oro igual: {disc.Gold})");
+// El intento de arriba (e2) usa el azar de verdad: si sacó un tier alto, el texto del siguiente lo nombra (por ejemplo «Incandescente») y esta prueba fallaba una de cada diez veces. Se deja la pieza en tier I para que lo forzado de abajo sea determinista.
+await db.ExecuteAsync("UPDATE users SET weapon_enchant = 1, weapon_enchant_kind = 'filo' WHERE discord_id = @id", new { id = (long)U });
 long dustBefore3 = (await Me()).Dust, goldBefore3 = (await Me()).Gold; long enchBefore3 = await Stat("enchant");
 var e3 = await DustModule.ExecuteEnchantAsync(users, itemsRepo, dustRepo, events, U, "arma", rng: min, bonusService: bonusSvc, advanced: true);
 var u3 = await Me();

@@ -228,12 +228,18 @@ public class ArenaModule(IArenaService arena) : InteractionModuleBase<SocketInte
             roster = roster[..899] + "…";
         }
 
+        // Con relato (v0.23.2) el torneo avisa que tiene azar; sin él (un torneo viejo o armado a mano) es el mensaje de siempre.
+        var stories = resolution.Stories is { Count: > 0 } list ? list.GroupBy(s => (s.P1Id, s.P2Id)).ToDictionary(g => g.Key, g => g.First()) : null;
+        string luckNote = stories is null
+            ? string.Empty
+            : $"🍀 En la Arena el nivel pesa pero no decide: cada pelea tiene su **forma del día** y en {(int)Math.Round(ArenaTuning.MiracleChance * 100)} de cada 100 hay un **milagro** que iguala a los dos.\n\n";
+
         messages.Add(new ArenaMessage(null, new EmbedBuilder()
             .WithTitle($"🏟️ ¡Arranca la Arena del {day}!")
             .WithColor(Color.Orange)
             .WithDescription(
                 $"Se anotaron **{resolution.Participants}** peleadores y se juega por eliminación directa: **{resolution.Rounds}** ronda(s).\n\n" +
-                $"🥊 {roster}\n\n¡Que empiecen los combates!")
+                $"{luckNote}🥊 {roster}\n\n¡Que empiecen los combates!")
             .Build()));
 
         foreach (var round in resolution.Matches.GroupBy(m => m.Round).OrderBy(g => g.Key))
@@ -241,16 +247,94 @@ public class ArenaModule(IArenaService arena) : InteractionModuleBase<SocketInte
             var fights = round.OrderBy(m => m.Slot).ToList();
             int real = fights.Count(m => m.P2Id is not null);
             bool isFinal = round.Key == resolution.Rounds;
+            string roundName = ArenaBracket.RoundName(round.Key, resolution.Rounds);
 
-            messages.Add(new ArenaMessage(null, new EmbedBuilder()
-                .WithTitle($"{ArenaBracket.RoundName(round.Key, resolution.Rounds)} · {real} combate(s)")
-                .WithColor(isFinal ? Color.Gold : Color.DarkOrange)
-                .WithDescription(string.Join("\n", fights.Select(ArenaNarrator.Describe)))
-                .Build()));
+            if (stories is not null && resolution.Rounds - round.Key <= 1)
+            {
+                // Semifinales y final: cada pelea se cuenta golpe por golpe, en su propio mensaje.
+                foreach (var fight in fights.Where(m => m.P2Id is not null))
+                {
+                    messages.Add(new ArenaMessage(null, DetailedFight(fight, roundName, isFinal, stories)));
+                }
+
+                continue;
+            }
+
+            // Las demás rondas, una pelea por renglón (con su milagro o su forma del día si hubo) y partidas en varios mensajes si no entran en uno.
+            var lines = fights.Select(m => BriefLine(m, stories)).ToList();
+            foreach (var (chunk, index) in Chunk(lines, 3800).Select((c, i) => (c, i)))
+            {
+                messages.Add(new ArenaMessage(null, new EmbedBuilder()
+                    .WithTitle($"{roundName} · {real} combate(s){(index > 0 ? " (sigue)" : string.Empty)}")
+                    .WithColor(isFinal ? Color.Gold : Color.DarkOrange)
+                    .WithDescription(chunk)
+                    .Build()));
+            }
         }
 
         messages.Add(new ArenaMessage(content, closing));
         return messages;
+    }
+
+    // Una pelea de las semifinales o la final: cómo llegaron (forma del día, milagro), los golpes que más se notaron y el resultado de siempre.
+    private static Embed DetailedFight(ArenaMatchRow fight, string roundName, bool isFinal, IReadOnlyDictionary<(ulong, ulong), ArenaFightStory> stories)
+    {
+        var lines = new List<string>();
+        if (stories.TryGetValue((fight.P1Id, fight.P2Id!.Value), out var story))
+        {
+            lines.AddRange(story.Opening);
+            if (story.Opening.Count > 0 && story.Highlights.Count > 0)
+            {
+                lines.Add(string.Empty);
+            }
+
+            lines.AddRange(story.Highlights);
+            lines.Add(string.Empty);
+        }
+
+        lines.Add(ArenaNarrator.Describe(fight));
+        string text = string.Join("\n", lines);
+
+        return new EmbedBuilder()
+            .WithTitle($"{roundName} · {Short(fight.P1Name, 18)} ⚔️ {Short(fight.P2Name ?? "?", 18)}")
+            .WithColor(isFinal ? Color.Gold : Color.DarkOrange)
+            .WithDescription(text.Length <= 4000 ? text : text[..3999] + "…")
+            .Build();
+    }
+
+    // El renglón de una pelea de las rondas de antes: la primera línea de su apertura (el milagro, o quién llegó muy bien o muy mal) y el resultado.
+    private static string BriefLine(ArenaMatchRow match, IReadOnlyDictionary<(ulong, ulong), ArenaFightStory>? stories)
+    {
+        string result = ArenaNarrator.Describe(match);
+        if (stories is not null && match.P2Id is { } p2 && stories.TryGetValue((match.P1Id, p2), out var story) && story.Opening.Count > 0)
+        {
+            return $"{story.Opening[0]}\n{result}";
+        }
+
+        return result;
+    }
+
+    // Reparte los renglones en grupos que no pasen de maxChars (un embed admite 4096 caracteres de descripción): nunca devuelve una lista vacía.
+    private static IReadOnlyList<string> Chunk(IReadOnlyList<string> lines, int maxChars)
+    {
+        var chunks = new List<string>();
+        var current = new List<string>();
+        int length = 0;
+        foreach (string line in lines)
+        {
+            if (current.Count > 0 && length + line.Length + 1 > maxChars)
+            {
+                chunks.Add(string.Join("\n", current));
+                current.Clear();
+                length = 0;
+            }
+
+            current.Add(line);
+            length += line.Length + 1;
+        }
+
+        chunks.Add(string.Join("\n", current));
+        return chunks;
     }
 
     private static string MatchLine(ArenaMatchRow match)

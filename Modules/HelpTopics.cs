@@ -269,6 +269,9 @@ public static class HelpTopics
         ("🏟️ /arena (el torneo diario)",
             $"Un torneo por día, hora de Uruguay. Te anotás con **/arena join** durante el día y a la medianoche se juega solo, en llave de eliminación ({ArenaRules.MinPlayers} a {ArenaRules.MaxPlayers} anotados; con menos de {ArenaRules.MinPlayers} se cancela). " +
             $"El campeón cobra {ArenaRules.ChampionReward.GoldUnits} cacerías de oro de su zona, {ArenaRules.ChampionReward.XpPercent} % de EXP y una caja. **/arena listplayers** muestra los anotados, **/arena results** la última llave, y **/cd** te recuerda si ya te anotaste."),
+        ("🍀 El azar de la Arena",
+            $"El nivel y el equipo pesan pero **no deciden**: cada pelea tiene su **forma del día** (entre −{(int)Math.Round(ArenaTuning.FormSwing * 100)} % y +{(int)Math.Round(ArenaTuning.FormSwing * 100)} % de daño y vida) y en {(int)Math.Round(ArenaTuning.MiracleChance * 100)} de cada 100 peleas hay un **milagro** que iguala a los dos. " +
+            "Un nivel 1 puede ganarle a un nivel 20 (pasa pocas veces, pero pasa). El torneo se cuenta en el canal pelea por pelea, y las semifinales y la final, golpe por golpe. Los duelos de **/fight** no tienen azar extra."),
         ("⚔️ /fight @jugador",
             $"Duelo amistoso por turnos (Atacar, habilidad o rendirte; {(int)DuelService.TurnTimeout.TotalSeconds} segundos por turno). No se juega nada: ni vida, ni oro, ni EXP. **/duels** muestra tu récord."),
         ("🛡️ Con qué se pelea", "Con tu nivel, tu arma, tu amuleto y tus encantamientos de ese momento. Las clases tienen un ajuste de vida propio para el PvP."));

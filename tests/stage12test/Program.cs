@@ -392,6 +392,8 @@ await arenaRepo.JoinAsync(day1, (ulong)(BaseId + 12), "Tres", 777, ArenaRules.Ma
 long goldBefore = await db.ExecuteScalarAsync<long>("SELECT COALESCE(SUM(gold),0) FROM users WHERE discord_id BETWEEN @a AND @b", new { a = BaseId + 10, b = BaseId + 13 });
 var res = await arena.ResolveDayAsync(day1);
 Check(res is { Cancelled: false } && res.Participants == 4 && res.Rounds == 2 && res.Matches.Count == 3 && res.WinnerId is not null && res.ChannelId == 555, "un torneo de 4: 2 rondas, 3 peleas, campeón y el canal del primero");
+Check(res!.Stories is { Count: 3 } && res.Matches.Where(m => m.P2Id is not null).All(m => res.Stories.Any(s => s.P1Id == m.P1Id && s.P2Id == m.P2Id)) && res.Stories.All(s => s.Highlights.Count >= 1),
+    "v0.23.2: cada pelea del torneo real deja su relato (con golpes contados) para el anuncio");
 var champId = (long)res!.WinnerId!.Value;
 long goldAfter = await db.ExecuteScalarAsync<long>("SELECT COALESCE(SUM(gold),0) FROM users WHERE discord_id BETWEEN @a AND @b", new { a = BaseId + 10, b = BaseId + 13 });
 var champ = (await pUsers.GetByDiscordIdAsync((ulong)champId))!;

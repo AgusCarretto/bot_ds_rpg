@@ -1,6 +1,6 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-22 (v0.23.1: atajos de texto y montos con k y m)_
+_Última revisión: 2026-10-22 (v0.23.2: la Arena con azar y contada pelea por pelea)_
 
 ## Pendiente de un vistazo (puesto al día el 2026-10-22)
 
@@ -8,9 +8,10 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 
 **Esperando una decisión del dueño**
 - **La Guarda V es 3 a 4 veces más fuerte que los otros efectos de amuleto** (la defensa se resta fija de cada golpe): dejarla, o bajarla a la altura del Filo (p. ej. +2/4/6/9/13 %; le quita poder a los amuletos ya encantados). Ver v0.22.0.
-- **La Arena la gana siempre el de más nivel** (el dueño, 2026-10-22: «capaz hacerla random con textos mientras pasan duelos»). Medido con el mismo motor (`DuelEngine.Simulate`, misma clase y mismo equipo, 3000 duelos por celda): con +1 nivel el de arriba gana 65 a 90 %, con +3 niveles 79 a 99 % y con +5 niveles 89 a 100 %; el equipo parejo
-  lo suaviza un poco pero no lo cambia. Propuesta pendiente de su OK: más azar de verdad (una «forma del día» por luchador y sucesos con texto en medio de la pelea) y la pelea contada acción por acción mientras pasa, en vez de una sola línea al final. Ver la propuesta en la conversación del 2026-10-22.
-- **El jefe «sin ser raid ni boss porque no sos nivel 5»**: no quedó claro qué se pide (un atajo corto, poder pelearlo antes del nivel 5, o un modo de prueba para el dueño). Pendiente de que lo explique.
+- **Un «jefe del día» para quien no llega al nivel 5** (el dueño, 2026-10-22: «si no sos nivel 5 no podés hacer `aa boss`; quiero poder usar ese cooldown sin que sea boss, capaz un miniboss que se activa como la Arena todos los días a las 12 y da solo monedas, según el nivel que tengas»). Propuesta hecha en la
+  conversación, sin construir: aparece a las 00:00 de Uruguay (el mismo para todos, sale de la fecha, sin tabla), `aa miniboss` / `/jefedia` una vez por día, desde el nivel 1, contra un jefe que se ajusta al nivel de quien lo pelea; paga solo oro (unas 8 cacerías de oro de su zona, para no inflar: el `/daily` paga 6 a 20). Falta que elija si usa el cooldown del jefe de 5 horas o uno propio que se reinicia a las 00:00, y si se pelea solo o entre todos.
+- **El blackjack en el casino** (el dueño, 2026-10-22: «anota el blackjack para armar en `play`»): sumar `blackjack` a `/play` y `aa bj <apuesta>`. Notas para cuando se arme: necesita estado entre mensajes (botones Pedir / Plantarse / Doblar, como un combate: sesión en memoria con vencimiento), la casa tiene que quedarse con una parte (el blackjack paga 3 a 2, la banca planta en 17; con las reglas simples el retorno ronda 0,98, así que
+  hay que medirlo y dejar `retorno < 1` como las slots), una mano por jugador a la vez, y la apuesta se cobra al empezar (guarda atómica) y se paga al terminar. Va con el mismo `AmountParser` (`10k`, `1m`, `all`) y registra `casino_win` / `casino_loss` con `detail = blackjack`.
 - **Habilidades de clase** (pedido de los jugadores, ver «Sugerencias»): aprender, mejorar o evolucionar la habilidad, y «nerfear las iniciales». Necesita diseño antes de tocar nada: están calibradas con `PveTuning`, `PvpTuning` y los jefes, no debe contar en duelos
   ni en la Arena, y habría que preguntar CUÁL clase les parece pasada (en PvE la débil es el Arquero).
 - **Idioma:** pasar todo a inglés con un selector (`/language`). Espera a que la v0.22.0 esté verificada en producción. Hay que decidir el idioma por defecto de los jugadores nuevos, si se mantienen los nombres de sabor argentino y quién revisa el tono del inglés.
@@ -32,6 +33,15 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
   Términos y Privacidad públicos, y hay que confirmar si hay Premium Apps en Uruguay (Developer Portal, Monetization). Punto de enganche: `ReminderPolicy.IsEligible` y `CooldownCatalog`. El título especial entra como categoría «Especiales» del sistema de títulos.
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
+
+## La Arena con azar y contada pelea por pelea (v0.23.2, 2026-10-22)
+
+- **Pedido del dueño**: «la Arena está buena pero la gana siempre el de más nivel… quiero que pueda ganarla alguien de nivel 1 contra el del 20, si no llega un punto en que se hace imposible… random con textos mientras pasan los duelos».
+- **Qué se midió** (mismo motor y misma clase): sin azar, con +1 nivel el de arriba gana 65 a 90 %, con +5 niveles 89 a 100 %, y un nivel 1 sin equipo contra un nivel 20 con equipo de zona 2 no ganaba NUNCA (la defensa se resta fija y le deja el daño mínimo). Un «poco más de azar» no alcanzaba: ni siquiera con ±40 % de suerte el nivel 1 ganaba.
+- **Tres capas, solo en la Arena** (`GameData/ArenaTuning.cs`; `/fight` sigue con el poder real): poder comprimido (daño, defensa y vida de la pareja se acercan a su media geométrica, exponente 0,5), forma del día (±30 % de daño y vida por pelea) y milagro (en 30 de cada 100 peleas los dos pelean con el poder igualado).
+- **Resultado medido** (el de más nivel gana): parejos 50 %, +1 nivel ~55 %, +5 ~64 %, +10 ~71 %, +19 ~78 %, y **nivel 1 sin equipo contra nivel 20 con equipo de zona 2 o 4: gana ~14 a 15 de cada 100**. Subir de nivel y de equipo sigue sirviendo. Las tres constantes son el único lugar donde se retoca; para más azar, subir `MiracleChance`.
+- **La pelea contada**: cada pelea guarda su apertura (el milagro, o quién llegó muy bien o muy mal, con el porcentaje) y hasta 8 golpes (el último, el primero, el más fuerte, habilidades, críticos, esquives), con los textos del duelo amistoso. El anuncio cuenta las primeras rondas una pelea por renglón y **las semifinales y la final golpe por golpe**, cada una en su mensaje; la apertura del torneo avisa que tiene azar. `/info tema:arena` lo explica con los números reales. Los relatos viven solo en memoria: la llave guardada y `/arena results` son los de siempre.
+- **Para la base viva**: nada (sin migración). Arnés nuevo: `tests/v0232test` (50 arneses en total); `stage12test` verifica que el torneo real deje su relato.
 
 ## Atajos de texto y montos con k y m (v0.23.1, 2026-10-22)
 

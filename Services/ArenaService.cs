@@ -14,7 +14,7 @@ public sealed record ArenaResults(ArenaDayInfo Info, IReadOnlyList<ArenaMatchRow
 // Lo que pasó al cerrar un día: o se jugó (hay campeón y llave) o se canceló por falta de gente. ChannelId = dónde anunciarlo.
 public sealed record ArenaResolution(
     DateOnly Day, bool Cancelled, ulong? ChannelId, ulong? WinnerId, string? WinnerName, int Participants, int Rounds,
-    string? RewardText, int LevelsGained, int NewLevel, IReadOnlyList<ArenaMatchRow> Matches);
+    string? RewardText, int LevelsGained, int NewLevel, IReadOnlyList<ArenaMatchRow> Matches, IReadOnlyList<ArenaFightStory>? Stories = null);
 
 public interface IArenaService
 {
@@ -137,10 +137,13 @@ public sealed class ArenaService(
         }
 
         var entrants = fighters.Values.Select(f => new ArenaEntrant(f.DiscordId, f.Name)).ToList();
+        // Cada pelea se juega con el azar de la Arena (GameData/ArenaTuning.cs: poder comprimido, forma del día y milagro) y deja su relato (ArenaFightStory) para el anuncio.
+        var stories = new List<ArenaFightStory>();
         var bracket = ArenaBracket.Run(entrants, Random.Shared, (p1, p2) =>
         {
-            var result = DuelEngine.Simulate(fighters[p1.DiscordId], fighters[p2.DiscordId]);
-            return new ArenaFightOutcome(result.Winner.Fighter.DiscordId, result.Actions, (int)Math.Round(result.Winner.HpFraction * 100));
+            var played = ArenaFightRunner.Play(fighters[p1.DiscordId], fighters[p2.DiscordId], Random.Shared);
+            stories.Add(played.Story);
+            return new ArenaFightOutcome(played.Result.Winner.Fighter.DiscordId, played.Result.Actions, (int)Math.Round(played.Result.Winner.HpFraction * 100));
         });
 
         var rows = bracket.Matches
@@ -172,7 +175,7 @@ public sealed class ArenaService(
         return new ArenaResolution(
             day, false, Channel(info), bracket.Champion.DiscordId, bracket.Champion.Name, fighters.Count, bracket.Rounds,
             outcome.Receipt is { } receipt ? MissionRewards.Describe(receipt.Reward) : null,
-            outcome.Receipt?.LevelsGained ?? 0, outcome.Receipt?.NewLevel ?? 0, rows);
+            outcome.Receipt?.LevelsGained ?? 0, outcome.Receipt?.NewLevel ?? 0, rows, stories);
     }
 
     private static ulong? Channel(ArenaDayInfo info) => info.ChannelId;
