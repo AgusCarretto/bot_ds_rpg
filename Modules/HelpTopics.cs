@@ -218,6 +218,9 @@ public static class HelpTopics
             "**Todos tienen que tener la misma zona máxima** (la que ves en tu perfil como \"máx. Zona N\"): si no, el grupo se rechaza. " +
             "Cada uno puede **comer una vez** por pelea con el botón 🍖 **Comer** (o con **/use**): cura, pero gasta tu turno. Los banquetes también valen (curan y te dan su +% de ataque en el acto). " +
             "La vida del jefe crece con cada jugador y cada uno que le pega cobra la recompensa entera. Comparte cooldown con el jefe en solitario."),
+        ("🌍 /miniboss (aa miniboss, el jefe mundial)",
+            $"Un jefe distinto cada día que **pelean todos los anotados juntos a las 00:00** (hora de Uruguay). **No pide nivel**: sirve para quien todavía no llega al del jefe. Anotarte **gasta el mismo cooldown del jefe** ({Dur(CooldownCatalog.Boss.Duration)}). " +
+            $"Cada anotado cobra de **{WorldBossRules.MinHunts} a {WorldBossRules.MaxHunts} cacerías de oro de su zona**: {WorldBossRules.MaxHunts} si el jefe cae, menos si no; con unos {WorldBossRules.FullCrowd:0} jugadores normales cae. **Mientras más gente, mejor**. Se cuenta en el canal donde se anotó el primero."),
         ("🎒 Antes de ir", "Llevá el arma y el amuleto de tu zona (**/info tema:forge**) y la vida llena. Si perdés, pagás la penalidad: **/info tema:death**."));
 
     private static Embed Forge() => Topic(Self("forge"),

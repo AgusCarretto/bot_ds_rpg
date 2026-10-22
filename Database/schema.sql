@@ -413,6 +413,34 @@ CREATE TABLE IF NOT EXISTS arena_matches (
 CREATE INDEX IF NOT EXISTS idx_arena_days_status ON arena_days (status, day);
 
 -- ---------------------------------------------------------
+-- worldboss_days / worldboss_entries: el jefe mundial (v0.24.0, GameData/WorldBoss.cs). Un jefe por día (hora de Uruguay): la gente se anota con /miniboss (gasta el cooldown del jefe) y a las 00:00 lo pelean
+-- entre todos; cada anotado cobra de 30 a 50 cacerías de oro de su zona, según la vida que le sacaron entre todos. Migración para una base que ya existe: Database/add_worldboss.sql.
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS worldboss_days (
+    day              DATE PRIMARY KEY,                -- el día de Uruguay del jefe (se pelea a la medianoche que lo cierra)
+    status           TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'resolved', 'cancelled')),
+    channel_id       BIGINT,                          -- canal donde se anotó el primero: ahí se anuncia el resultado
+    boss_key         TEXT,                            -- cuál jefe fue (WorldBossRules.Bosses)
+    participants     INTEGER NOT NULL DEFAULT 0,
+    total_damage_pct NUMERIC(8, 2),                   -- cuánta vida le sacaron entre todos (100 = cayó)
+    defeated         BOOLEAN,
+    hunts            INTEGER,                         -- el premio de cada anotado, en cacerías de oro de su zona
+    resolved_at      TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS worldboss_entries (
+    day          DATE        NOT NULL REFERENCES worldboss_days (day) ON DELETE CASCADE,
+    discord_id   BIGINT      NOT NULL REFERENCES users (discord_id) ON DELETE CASCADE,
+    display_name TEXT        NOT NULL,                -- el nombre al anotarse: el anuncio lo muestra aunque la persona se vaya
+    joined_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    damage_pct   NUMERIC(8, 2),                       -- lo que le sacó al jefe (se llena al pelear)
+    reward_gold  INTEGER,                             -- el oro que cobró (se llena al pelear)
+    PRIMARY KEY (day, discord_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_worldboss_days_status ON worldboss_days (status, day);
+
+-- ---------------------------------------------------------
 -- Recordatorios de cooldown (v0.16.0, GameData/Reminders.cs): cuando termina la espera de algo (cacería, viaje, talar, minar, jefe/raid, caja, mascotas, diario) el bot avisa en el canal donde
 -- se usó. reminders = lo que está por avisar (UNA fila por jugador y tipo: un comando nuevo pisa el aviso anterior; el reloj la borra al avisarla). reminder_settings = los tipos que el jugador
 -- APAGÓ (sin fila, o con la lista vacía, recibe todos; un tipo nuevo del futuro arranca prendido). Migración para una base que ya existe: Database/add_reminders.sql.

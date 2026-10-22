@@ -1,6 +1,6 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-22 (v0.23.2: la Arena con azar y contada pelea por pelea)_
+_Última revisión: 2026-10-22 (v0.24.0: el jefe mundial)_
 
 ## Pendiente de un vistazo (puesto al día el 2026-10-22)
 
@@ -8,8 +8,7 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 
 **Esperando una decisión del dueño**
 - **La Guarda V es 3 a 4 veces más fuerte que los otros efectos de amuleto** (la defensa se resta fija de cada golpe): dejarla, o bajarla a la altura del Filo (p. ej. +2/4/6/9/13 %; le quita poder a los amuletos ya encantados). Ver v0.22.0.
-- **Un «jefe del día» para quien no llega al nivel 5** (el dueño, 2026-10-22: «si no sos nivel 5 no podés hacer `aa boss`; quiero poder usar ese cooldown sin que sea boss, capaz un miniboss que se activa como la Arena todos los días a las 12 y da solo monedas, según el nivel que tengas»). Propuesta hecha en la
-  conversación, sin construir: aparece a las 00:00 de Uruguay (el mismo para todos, sale de la fecha, sin tabla), `aa miniboss` / `/jefedia` una vez por día, desde el nivel 1, contra un jefe que se ajusta al nivel de quien lo pelea; paga solo oro (unas 8 cacerías de oro de su zona, para no inflar: el `/daily` paga 6 a 20). Falta que elija si usa el cooldown del jefe de 5 horas o uno propio que se reinicia a las 00:00, y si se pelea solo o entre todos.
+- **El jefe mundial ya está hecho (v0.24.0, ver abajo)**; lo que queda abierto es si se quiere una línea en `/cd` («anotado ✅ — se pelea en 3h»), un jefe por servidor cuando haya mucha gente, o premios que no sean solo oro.
 - **El blackjack en el casino** (el dueño, 2026-10-22: «anota el blackjack para armar en `play`»): sumar `blackjack` a `/play` y `aa bj <apuesta>`. Notas para cuando se arme: necesita estado entre mensajes (botones Pedir / Plantarse / Doblar, como un combate: sesión en memoria con vencimiento), la casa tiene que quedarse con una parte (el blackjack paga 3 a 2, la banca planta en 17; con las reglas simples el retorno ronda 0,98, así que
   hay que medirlo y dejar `retorno < 1` como las slots), una mano por jugador a la vez, y la apuesta se cobra al empezar (guarda atómica) y se paga al terminar. Va con el mismo `AmountParser` (`10k`, `1m`, `all`) y registra `casino_win` / `casino_loss` con `detail = blackjack`.
 - **Habilidades de clase** (pedido de los jugadores, ver «Sugerencias»): aprender, mejorar o evolucionar la habilidad, y «nerfear las iniciales». Necesita diseño antes de tocar nada: están calibradas con `PveTuning`, `PvpTuning` y los jefes, no debe contar en duelos
@@ -33,6 +32,16 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
   Términos y Privacidad públicos, y hay que confirmar si hay Premium Apps en Uruguay (Developer Portal, Monetization). Punto de enganche: `ReminderPolicy.IsEligible` y `CooldownCatalog`. El título especial entra como categoría «Especiales» del sistema de títulos.
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
+
+## El jefe mundial: `aa miniboss` (v0.24.0, 2026-10-22)
+
+- **Pedido del dueño**: «`aa miniboss` y que todos peleen contra él, o worldboss; mientras más gente, mejor; que anotarse gaste el cooldown del jefe; que dé entre 30 y 50 cacerías de esa zona». El motivo: `aa boss` pide nivel 5 y quería algo para hacer con ese cooldown antes de llegar.
+- **Cómo funciona**: un jefe por día, el mismo para todos (7 jefes que rotan por la fecha, sin tabla). Durante el día te anotás con `/miniboss` o `aa miniboss` (también `worldboss`, `wb`, `jefemundial`): **no pide nivel y gasta el cooldown del jefe de 5 horas** (el mismo de `/boss`, con la misma guarda; con el cooldown corriendo
+  no te anotás y te dice cuánto falta). A las 00:00 de Uruguay, el mismo reloj de la Arena lo pelea entre todos los anotados y lo cuenta en el canal (3 mensajes: el jefe y los anotados, la batalla con los golpes de los que más le pegaron y la barra de vida, y el resultado con el premio y el MVP).
+- **El premio** (el mismo para todos los anotados, en cacerías de oro de SU zona): **50 si el jefe cae; si no, 30 más 20 por la parte de la vida que le sacaron entre todos**. Cada uno aporta según cuánto pega comparado con lo que se espera en su zona (así un nivel 1 en la Zona 1 y un veterano en la Zona 5 aportan del mismo orden), con una forma del día de ±30 %. Medido: 1 jugador normal ~32 cacerías, 5 ~40, con 10 el jefe cae la mitad de las veces y con 12 o más casi siempre (50): **mientras más gente, mejor para todos**.
+- **Economía**: 50 cacerías al día son ~15 a 20 % de una sesión perfecta de 2 horas en cada zona (el `/daily` paga 6 a 20). El oro puede viajar por `/give`: el mismo riesgo de cuentas alternativas que ya tiene el diario. Las perillas son `MinHunts`, `MaxHunts`, `FullCrowd` y `FormSwing` (`WorldBossRules`).
+- **No se hizo**: una línea en `/cd`, un jefe por servidor (cuando haya mucha gente conviene, como la Arena), premios que no sean oro.
+- **Para la base viva**: **correr `Database/add_worldboss.sql` con `psql` ANTES del binario v0.24.0** (2 tablas nuevas, re-ejecutable). Sin ellas el reloj registra un error cada 30 segundos y `/miniboss` no anda. Opcional: `WorldBoss__ChannelId` para fijar el canal del anuncio. Arnés nuevo: `tests/v0240test` (51 arneses en total).
 
 ## La Arena con azar y contada pelea por pelea (v0.23.2, 2026-10-22)
 

@@ -535,6 +535,8 @@ public static class ServiceProviderBuilder
             .AddSingleton<IProgressNotifier, ProgressNotifier>()
             .AddSingleton<ITradeOfferService, TradeOfferService>()
             .AddSingleton<IArenaRepository, ArenaRepository>()
+            .AddSingleton<IWorldBossRepository, WorldBossRepository>()
+            .AddSingleton<IWorldBossService, WorldBossService>()
             .AddSingleton<IDuelFighterFactory, DuelFighterFactory>()
             .AddSingleton<IDuelService, DuelService>()
             .AddSingleton<IArenaService, ArenaService>()
