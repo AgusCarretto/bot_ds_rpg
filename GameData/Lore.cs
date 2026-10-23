@@ -246,7 +246,7 @@ public static class Lore
     public const string FirstForgeLine = "🔨 **El Herrero:** «Tu primera pieza. El fuego tiene buena memoria: acordate de ésta.»";
 
     // La línea nueva de la bienvenida (/start): la historia queda a un comando de distancia.
-    public const string WelcomeHint = "Cuando quieras saber por qué estamos acá, el Tabernero te lo cuenta con `/story`.";
+    public static readonly string WelcomeHint = Loc.Mark("Cuando quieras saber por qué estamos acá, el Tabernero te lo cuenta con `/story`.");
 
     // Une párrafos con una línea en blanco (el mismo aire que el resto de las pantallas del bot).
     private static string Paragraphs(params string[] paragraphs) => string.Join("\n\n", paragraphs);

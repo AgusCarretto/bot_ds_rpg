@@ -435,8 +435,15 @@ public static class LocScan
     private static string Mask(string s)
     {
         var chars = s.ToCharArray();
-        int i = 0;
-        while (i < s.Length)
+        MaskRange(s, 0, s.Length, chars);
+        return new string(chars);
+    }
+
+    // Enmascara s[start..limit) tratándolo como CÓDIGO: los comentarios y el interior de los textos se blanquean, pero los huecos de un $"…" siguen siendo código (ahí adentro puede haber un Loc.T("…")).
+    private static void MaskRange(string s, int start, int limit, char[] chars)
+    {
+        int i = start;
+        while (i < limit)
         {
             char c = s[i];
             if (c == '/' && i + 1 < s.Length && s[i + 1] == '/')
@@ -455,9 +462,9 @@ public static class LocScan
             }
             else if (c == '"' || ((c == '$' || c == '@') && i + 1 < s.Length && (s[i + 1] == '"' || s[i + 1] == '$' || s[i + 1] == '@')))
             {
-                int end = SkipString(s, i);
-                Blank(chars, i, end);
-                i = Math.Max(end, i + 1);
+                int stringEnd = SkipString(s, i);
+                MaskString(s, i, stringEnd, chars);
+                i = Math.Max(stringEnd, i + 1);
             }
             else if (c == '\'')
             {
@@ -470,8 +477,54 @@ public static class LocScan
                 i++;
             }
         }
+    }
 
-        return new string(chars);
+    // Un texto: se blanquea entero, salvo los huecos de un $"…" (lo que va entre llaves), que se vuelven a enmascarar como código.
+    private static void MaskString(string s, int start, int end, char[] chars)
+    {
+        Blank(chars, start, end);
+        int j = start;
+        bool interpolated = false, verbatim = false;
+        while (j < end && (s[j] == '$' || s[j] == '@'))
+        {
+            interpolated |= s[j] == '$';
+            verbatim |= s[j] == '@';
+            j++;
+        }
+
+        if (!interpolated || j + 2 >= end || (s[j + 1] == '"' && s[j + 2] == '"'))
+        {
+            return; // un texto común o una cadena cruda: nada es código
+        }
+
+        int k = j + 1;
+        while (k < end - 1)
+        {
+            char c = s[k];
+            if (!verbatim && c == '\\')
+            {
+                k += 2;
+            }
+            else if (c == '{' && s[k + 1] == '{')
+            {
+                k += 2;
+            }
+            else if (c == '{')
+            {
+                int holeEnd = SkipHole(s, k + 1);
+                for (int m = k + 1; m < holeEnd - 1 && m < s.Length; m++)
+                {
+                    chars[m] = s[m];
+                }
+
+                MaskRange(s, k + 1, Math.Min(holeEnd - 1, s.Length), chars);
+                k = holeEnd;
+            }
+            else
+            {
+                k++;
+            }
+        }
     }
 
     private static void Blank(char[] chars, int start, int end)
@@ -549,6 +602,10 @@ public static class LocScan
         var stale = english.Keys.Where(key => !used.Contains(key)).ToList();
         return new LocReport(missing, stale, mismatch, nonLiteral);
     }
+
+    // Las plantillas que todavía no tienen traducción, sin repetir y en el orden en que aparecen en el código (para armar el esqueleto de Locales/en.json con --skeleton).
+    public static IReadOnlyList<string> MissingTemplates(IReadOnlyList<LocUse> uses, IReadOnlyDictionary<string, string> english) =>
+        uses.Where(u => u.Kind != "NonLiteral" && (!english.TryGetValue(u.Template, out string? en) || string.IsNullOrWhiteSpace(en))).Select(u => u.Template).Distinct(StringComparer.Ordinal).ToList();
 
     // Los {0}, {1}… de las dos plantillas son los mismos (en otro orden, con otro formato, está bien). Las llaves escapadas no cuentan.
     private static bool SamePlaceholders(string spanish, string english) => Indexes(spanish).SetEquals(Indexes(english));

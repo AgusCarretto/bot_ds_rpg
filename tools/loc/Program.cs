@@ -23,6 +23,20 @@ if (args.Length > 0 && args[0] == "--untranslated")
 
 var english = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(Path.Combine(root, "Locales", "en.json"))) ?? [];
 var uses = LocScan.Extract(root);
+
+// --skeleton <archivo>: escribe las plantillas que faltan (la lista, en orden) para poder traducirlas por posición sin volver a escribir el español.
+int skeletonAt = Array.IndexOf(args, "--skeleton");
+if (skeletonAt >= 0 && skeletonAt + 1 < args.Length)
+{
+    var missingTemplates = LocScan.MissingTemplates(uses, english);
+    File.WriteAllText(args[skeletonAt + 1], JsonSerializer.Serialize(missingTemplates, new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping }));
+    for (int i = 0; i < missingTemplates.Count; i++)
+    {
+        Console.WriteLine($"{i}: {missingTemplates[i].Replace("\n", "\\n")}");
+    }
+
+    return 0;
+}
 var report = LocScan.Compare(uses, english);
 
 void Print(string title, IReadOnlyList<string> items)

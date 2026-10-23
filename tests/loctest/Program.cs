@@ -228,6 +228,7 @@ class X {
     var s10 = Loc.F($"Plano sin datos");
     var s11 = Loc.T($"mal {hp}");
     var s12 = Loc.Tr(variable);
+    var s13 = $"** {Loc.T("dentro de un hueco")} y {(ok ? Loc.T("otro hueco") : string.Empty)}";
     var sql = """
         SELECT Loc.T("no es código")
         """;
@@ -236,9 +237,9 @@ class X {
 """";
 var scanned = LocScan.ExtractFromSource(fixture, "X.cs");
 var good = scanned.Where(u => u.Kind != "NonLiteral").ToList();
-string[] expectedTemplates = ["Estás en plena pelea", "Tenés {0} HP", "{0:N0} de {1}", "Va {0} y {{llaves}} {1,5}", "uno dos", "Texto de tabla", "con \"comillas\" y \\ barra\ny salto", "Plano sin datos"];
+string[] expectedTemplates = ["Estás en plena pelea", "Tenés {0} HP", "{0:N0} de {1}", "Va {0} y {{llaves}} {1,5}", "uno dos", "Texto de tabla", "con \"comillas\" y \\ barra\ny salto", "Plano sin datos", "dentro de un hueco", "otro hueco"];
 Check(good.Select(u => u.Template).SequenceEqual(expectedTemplates), $"extrae las plantillas como las numera el compilador, sin tocar comentarios, textos ni cadenas crudas ({string.Join(" | ", good.Select(u => u.Template.Replace("\n", "\\n")))})");
-Check(good.Select(u => u.Kind).SequenceEqual(["T", "F", "F", "F", "T", "Mark", "T", "F"]) && good[0].Line == 3 && good[1].Line == 4 && good[0].File == "X.cs", "cada uso dice si es T, F o Mark y en qué línea está");
+Check(good.Select(u => u.Kind).SequenceEqual(["T", "F", "F", "F", "T", "Mark", "T", "F", "T", "T"]) && good[0].Line == 3 && good[1].Line == 4 && good[0].File == "X.cs", "cada uso dice si es T, F o Mark y en qué línea está");
 Check(scanned.Count(u => u.Kind == "NonLiteral") == 2, "una llamada que no es un literal (la variable, o un $\"…\" dentro de T) se marca como NonLiteral");
 
 var englishFixture = new Dictionary<string, string>
@@ -250,7 +251,7 @@ var englishFixture = new Dictionary<string, string>
     ["viejo"] = "old",
 };
 var report = LocScan.Compare(scanned, englishFixture);
-Check(report.Missing.Count == 4 && report.Missing.Any(m => m.Contains("Texto de tabla")) && report.Missing.Any(m => m.Contains("Plano sin datos")) && report.Missing.Any(m => m.Contains("llaves")), $"informa lo que FALTA en inglés ({report.Missing.Count})");
+Check(report.Missing.Count == 6 && report.Missing.Any(m => m.Contains("Texto de tabla")) && report.Missing.Any(m => m.Contains("Plano sin datos")) && report.Missing.Any(m => m.Contains("llaves")), $"informa lo que FALTA en inglés ({report.Missing.Count})");
 Check(report.Stale.SequenceEqual(["viejo"]), "informa lo que SOBRA en el catálogo (el texto cambió y la traducción quedó huérfana)");
 Check(report.PlaceholderMismatch.Count == 1 && report.PlaceholderMismatch[0].Contains("Tenés {0} HP"), "informa un {1} que no coincide con la plantilla, pero deja pasar un reordenamiento");
 Check(report.NonLiteral.Count == 2 && !report.Ok, "informa las llamadas que no son literales y el informe no está OK");
@@ -334,6 +335,61 @@ Check(CooldownModule.ArenaLine(true, TimeSpan.FromMinutes(95)) == $"🏟️ **Ar
 string arenaEn, arenaNotEn;
 using (Loc.Use("en")) { arenaEn = CooldownModule.ArenaLine(true, TimeSpan.FromMinutes(95)); arenaNotEn = CooldownModule.ArenaLine(false, TimeSpan.FromMinutes(95)); }
 Check(arenaEn.Contains("signed up") && arenaEn.Contains("1h 35m") && arenaNotEn.Contains("/arena join") && LeakCheck.NoSpanish(arenaEn + arenaNotEn, allowedNames).Ok, $"y en inglés ({arenaEn} | {arenaNotEn})");
+
+Console.WriteLine("\n== 8. Perfil, aviso de nivel y /start ==");
+allowedNames.AddRange(TitleCatalog.All.Select(t => t.Name));
+allowedNames.AddRange(ClassCatalog.All.Select(c => c.WeaponType));
+const ulong P8 = 999000000000098009UL;
+const string Zw = "​";
+var itemRepo8 = new ItemRepository(factory); var zoneRepo8 = new ZoneRepository(factory); var buffRepo8 = new BuffRepository(factory);
+await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)P8 });
+await userRepo.GetOrCreateUserAsync(P8);
+await db.ExecuteAsync("UPDATE users SET class = 'Ninja', level = 13, xp = 1646, has_bank = true, bank_gold = 156635, dust = 5, daily_streak = 15, gold = 32013, weapon_id = NULL, amulet_id = NULL WHERE discord_id = @id", new { id = (long)P8 });
+async Task<Embed> ProfileIn(string lang) { using (Loc.Use(lang)) { return await GameModule.BuildProfileEmbedAsync(userRepo, itemRepo8, zoneRepo8, buffRepo8, P8, "T", "https://example.com/a.png"); } }
+var profEs = await ProfileIn("es"); var profEn = await ProfileIn("en");
+Check(profEs.Fields.Select(f => f.Name).SequenceEqual(["XP", "Vida", Zw]) && profEs.Description.Contains("**Zona:**") && ProfileProbe.Line(profEs, "Oro") != string.Empty && profEs.Footer!.Value.Text == "Asado y Acero RPG • Preparando las brasas...",
+    "el perfil en español es el de siempre (campos XP, Vida y el bloque, «Zona:», «Oro:», el pie)");
+string profEnText = LeakCheck.AllText(profEn);
+Check(profEn.Fields.Select(f => f.Name).SequenceEqual(["XP", "Health", Zw]) && profEn.Description.Contains("**Zone:**") && profEn.Description.Contains("(max. ") && profEn.Description.Contains("Level"), $"el perfil en inglés: campos XP / Health, «Zone:» y «Level» ({profEn.Description.Replace("\n", " | ")})");
+string statsEn = profEn.Fields[2].Value;
+Check(statsEn.Contains("**ATK:**") && statsEn.Contains("**DEF:**") && statsEn.Contains("(no weapon)") && statsEn.Contains("(no amulet)") && statsEn.Contains("**Gold:** 32,013") && statsEn.Contains("**Bank:** 156,635") && statsEn.Contains("**Dust:** 5") && statsEn.Contains("**Streak:** day 15"),
+    $"el bloque de números en inglés, con la coma de miles ({statsEn.Replace("\n", " | ")})");
+Check(LeakCheck.NoSpanish(profEnText, allowedNames).Ok && LeakCheck.FitsDiscord(profEn) && profEn.Footer!.Value.Text.Contains("Asado y Acero RPG") && !profEn.Footer!.Value.Text.Contains("brasas"), $"y sin español colado ({LeakCheck.NoSpanish(profEnText, allowedNames).Found})");
+string notRegisteredEn; using (Loc.Use("en")) { notRegisteredEn = GameModule.BuildNotRegisteredMessage("Pepe"); }
+Check(notRegisteredEn.Contains("hasn't started") && notRegisteredEn.Contains("`/start`") && LeakCheck.NoSpanish(notRegisteredEn, allowedNames).Ok && GameModule.BuildNotRegisteredMessage("Pepe").Contains("todavía no arrancó"), "«todavía no arrancó su aventura» en los dos idiomas");
+
+var zonesForCard = (await zoneRepo8.GetAllAsync()).ToList();
+var zone2 = zonesForCard.OrderBy(z => z.MinLevel).First(z => z.MinLevel > 1);
+var cardEs = LevelUpCard.Compose(L1, 7, 1, zonesForCard, new Random(1));
+Check(cardEs.Title == "🎉 ¡SUBISTE DE NIVEL! 🎉" && cardEs.Fields[0].Name == "❤️ Vida máxima" && cardEs.Fields[3].Value == "Curada al máximo", "la tarjeta de nivel en español es la de siempre");
+foreach (var (gained, newLevel) in new[] { (1, 7), (3, 12), (1, zone2.MinLevel) })
+{
+    LevelUpCardContent cardEn;
+    using (Loc.Use("en")) { cardEn = LevelUpCard.Compose(L1, newLevel, gained, zonesForCard, new Random(1)); }
+    string cardText = cardEn.Title + "\n" + cardEn.Description + "\n" + string.Join("\n", cardEn.Fields.Select(f => f.Name + " " + f.Value)) + "\n" + cardEn.Footer;
+    Check(LeakCheck.NoSpanish(cardText, allowedNames).Ok && cardEn.Title.Contains("LEVEL") && cardEn.Fields[0].Name.Contains("Max health") && cardEn.Fields[3].Value == "Fully healed",
+        $"la tarjeta de nivel en inglés (subió {gained}, nivel {newLevel}): {cardEn.Title} / {LeakCheck.NoSpanish(cardText, allowedNames).Found}");
+}
+
+for (int seed = 0; seed < 40; seed++)
+{
+    string cheerEn; using (Loc.Use("en")) { cheerEn = LevelUpCard.Compose(L1, 7, 1, zonesForCard, new Random(seed)).Footer; }
+    if (!LeakCheck.NoSpanish(cheerEn, allowedNames).Ok) { Check(false, $"una frase de festejo en inglés quedó en español: «{cheerEn}»"); break; }
+}
+
+var allClasses = ClassCatalog.All;
+Embed welcomeEs = OnboardingModule.BuildWelcomeEmbed();
+Embed welcomeEn; using (Loc.Use("en")) { welcomeEn = OnboardingModule.BuildWelcomeEmbed(); }
+Check(welcomeEs.Title == "🔥 ¡Bienvenido a Asado y Acero RPG! ⚔️" && welcomeEn.Title.Contains("Welcome") && LeakCheck.NoSpanish(LeakCheck.AllText(welcomeEn), allowedNames).Ok && LeakCheck.FitsDiscord(welcomeEn), $"el embed de bienvenida de /start en los dos idiomas ({LeakCheck.NoSpanish(LeakCheck.AllText(welcomeEn), allowedNames).Found})");
+Check(allClasses.All(c => { using (Loc.Use("en")) { return LeakCheck.NoSpanish(Loc.Tr(c.Description), allowedNames).Ok && Loc.Tr(c.Description) != c.Description; } }), "las cuatro descripciones de clase tienen su traducción");
+var confirm = typeof(OnboardingModule).GetMethod("BuildConfirmationEmbed", BindingFlags.NonPublic | BindingFlags.Static)!;
+var newPlayer = new User { Class = "Ninja", Level = 1, MaxHp = 100, CurrentHp = 100, Gold = 50 };
+Embed confirmEs = (Embed)confirm.Invoke(null, ["T", newPlayer, allClasses.First(c => c.Name == "Ninja"), true])!;
+Embed confirmEn; using (Loc.Use("en")) { confirmEn = (Embed)confirm.Invoke(null, ["T", newPlayer, allClasses.First(c => c.Name == "Ninja"), true])!; }
+Check(confirmEs.Title == "🔥 Bienvenido a las Tierras de Cenizas" && confirmEn.Title.Contains("Ashlands") && LeakCheck.NoSpanish(LeakCheck.AllText(confirmEn), allowedNames).Ok && LeakCheck.FitsDiscord(confirmEn), $"la confirmación de /start (con el kit inicial) en los dos idiomas ({LeakCheck.NoSpanish(LeakCheck.AllText(confirmEn), allowedNames).Found})");
+string alreadyEn; using (Loc.Use("en")) { alreadyEn = OnboardingModule.BuildAlreadyRegisteredMessage(newPlayer); }
+Check(alreadyEn.Contains("You're already registered") && LeakCheck.NoSpanish(alreadyEn, allowedNames).Ok, "«ya estás registrado» en inglés");
+await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)P8 });
 
 // El repositorio de verdad: nada falta, nada sobra, ningún {0} desparejo, ningún literal raro.
 var catalogOnDisk = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(Path.Combine(TestEnv.RepoRoot, "Locales", "en.json")))!;

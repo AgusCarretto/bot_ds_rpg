@@ -93,7 +93,7 @@ public static class UiEmojis
 
     // «<LV> **41**», o «Nivel **41**» sin el emoji.
     public static string LevelTag(int level) =>
-        Lv is { } lv ? $"{lv} **{level}**" : $"Nivel **{level}**";
+        Lv is { } lv ? $"{lv} **{level}**" : Loc.F($"Nivel **{level}**");
 
     // «<FN> **3**», o «🔥 FN **3**» sin el emoji (el ícono propio ya dice «FN» en su dibujo).
     public static string FuegoNuevoTag(int fuegoNuevo) =>
