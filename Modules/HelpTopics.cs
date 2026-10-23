@@ -12,7 +12,9 @@ using Discord.Interactions;
 // (precios, rangos de las cajas, los niveles de las zonas) NO se repite acá: la ayuda manda a /shop view, /zonas, etc.
 // Para sumar un tema: una fila en All (clave en inglés como los comandos, alias en español) y su método Build; la prueba revisa que entre en Discord, que no choque con otro
 // y que todos los comandos que nombra existan.
-public sealed record HelpTopic(string Key, string Emoji, string Name, string Summary, IReadOnlyList<string> Aliases, Func<Embed> Build);
+// InEnglish: el tema ya tiene su texto en inglés (v0.26.0 empezó por los cinco de primer contacto: hunt, gather, shop, daily y missions). Los demás salen en español aun para quien juega en inglés, enteros
+// (título y pie incluidos): un tema a medias, con el cuerpo en un idioma y el marco en otro, se lee peor que uno entero en español. Al traducir un tema: marcá Name y Summary con Loc.Mark y poné InEnglish: true.
+public sealed record HelpTopic(string Key, string Emoji, string Name, string Summary, IReadOnlyList<string> Aliases, Func<Embed> Build, bool InEnglish = false);
 
 public static class HelpTopics
 {
@@ -23,13 +25,13 @@ public static class HelpTopics
         new("bank", "🏦", "El banco", "guardar oro a salvo de la penalidad", ["banco", "guardar"], Bank),
         new("death", "☠️", "Perder un combate", "la penalidad por morir y cómo evitarla", ["muerte", "morir", "penalidad", "derrota", "perder"], Death),
         new("play", "🎰", "El casino", "coinflip y slots: cuánto paga cada uno", ["casino", "slots", "coinflip", "apostar", "juego"], Play),
-        new("hunt", "🏹", "Combate", "cazar, viajar, huir, curarte y el modo automático", ["combate", "cazar", "caceria", "travel", "viaje", "autohunt", "pelea", "pelear", "combat"], Hunt),
+        new("hunt", "🏹", Loc.Mark("Combate"), Loc.Mark("cazar, viajar, huir, curarte y el modo automático"), ["combate", "cazar", "caceria", "travel", "viaje", "autohunt", "pelea", "pelear", "combat"], Hunt, InEnglish: true),
         new("boss", "👑", "Jefes y equipo", "el jefe de cada zona y cómo hacerlo con amigos", ["jefe", "jefes", "raid", "raids", "grupo"], Boss),
         new("forge", "🔨", "Herrería y equipo", "forjar armas y amuletos, y cambiarlos", ["herrero", "herreria", "forja", "forjar", "recetas", "receta", "equipo", "arma", "armas", "amuleto"], Forge),
         new("zone", "🗺️", "Zonas", "cómo se avanza por el mundo", ["zona", "zonas", "mundo", "mapa"], Zone),
         new("boxes", "📦", "Cajas", "qué dan, cómo se consiguen y cada cuánto", ["caja", "cajas", "open", "abrir", "cofre", "cofres"], Boxes),
-        new("shop", "🍺", "Tienda, taberna y curarte", "comida, banquetes, /heal y vender", ["tienda", "taberna", "comida", "consumibles", "consumible", "heal", "curar", "curarse", "vender", "comprar"], Shop),
-        new("missions", "📋", "Misiones y logros", "qué se reclama, cuándo se reinicia y cuánto pagan", ["mision", "misiones", "logro", "logros", "achievements", "missions"], Missions),
+        new("shop", "🍺", Loc.Mark("Tienda, taberna y curarte"), Loc.Mark("comida, banquetes, /heal y vender"), ["tienda", "taberna", "comida", "consumibles", "consumible", "heal", "curar", "curarse", "vender", "comprar"], Shop, InEnglish: true),
+        new("missions", "📋", Loc.Mark("Misiones y logros"), Loc.Mark("qué se reclama, cuándo se reinicia y cuánto pagan"), ["mision", "misiones", "logro", "logros", "achievements", "missions"], Missions, InEnglish: true),
         new("arena", "🏟️", "Arena y duelos", "el torneo diario y los duelos con amigos", ["pvp", "duelo", "duelos", "fight", "torneo"], Arena),
         new("trade", "🤝", "Intercambio", "cambiar materiales con otro jugador", ["cambio", "cambiar", "trueque", "intercambio"], Trade),
         new("exchange", "🔁", "Cambiar drops con el tabernero", "3 drops de una zona por 1 de la misma", ["canje", "canjear", "swap", "tabernero", "cambalache"], Exchange),
@@ -40,8 +42,8 @@ public static class HelpTopics
         new("pets", "🐾", "Mascotas", "huevos, bonus pasivos y cómo alimentarlas", ["mascota", "mascotas", "pet", "huevo", "huevos", "egg", "eggs"], Pets),
         new("reminders", "⏰", "Recordatorios", "los avisos del bot cuando termina una espera", ["recordatorio", "recordatorios", "reminder", "reminders", "aviso", "avisos", "alarma", "alarmas"], Reminders),
         new("classes", "🎭", "Clases y habilidades", "qué hace cada clase", ["clase", "clases", "class", "habilidad", "habilidades"], Classes),
-        new("gather", "🪓", "Recolección", "talar y minar: unidades y rarezas", ["chop", "mine", "talar", "minar", "recolectar", "recoleccion", "madera", "mineral"], Gather),
-        new("daily", "🎁", "Diario y regalos", "la recompensa diaria, la racha y regalar oro", ["diario", "racha", "give", "dar", "regalo", "regalar"], Daily),
+        new("gather", "🪓", Loc.Mark("Recolección"), Loc.Mark("talar y minar: unidades y rarezas"), ["chop", "mine", "talar", "minar", "recolectar", "recoleccion", "madera", "mineral"], Gather, InEnglish: true),
+        new("daily", "🎁", Loc.Mark("Diario y regalos"), Loc.Mark("la recompensa diaria, la racha y regalar oro"), ["diario", "racha", "give", "dar", "regalo", "regalar"], Daily, InEnglish: true),
         new("stats", "📊", "Nivel y estadísticas", "EXP, vida, ataque y defensa", ["nivel", "exp", "xp", "ataque", "defensa", "vida", "hp", "perfil", "level"], Stats),
         // OJO: Discord muestra como máximo 25 sugerencias, así que con 26 temas la lista desplegable SIN escribir nada deja afuera el último (este). Se encuentra escribiendo («votar») y figura en /info;
         // el próximo tema que se sume no tiene lugar sin sacar otro o fundirlo con uno existente.
@@ -91,25 +93,39 @@ public static class HelpTopics
             return HelpModule.BuildInfoEmbed();
         }
 
-        return Find(text)?.Build() ?? BuildIndexEmbed(text.Trim());
+        return Find(text) is { } topic ? Render(topic) : BuildIndexEmbed(text.Trim());
+    }
+
+    // El tema en el idioma que le toca: uno traducido, en el de quien lo pide; uno todavía sin traducir, ENTERO en español (hasta los números: «1.000», no «1,000»), no a medias.
+    public static Embed Render(HelpTopic topic)
+    {
+        if (topic.InEnglish)
+        {
+            return topic.Build();
+        }
+
+        using (Loc.Use(Loc.Spanish))
+        {
+            return topic.Build();
+        }
     }
 
     // La lista de temas (con una línea de qué explica cada uno). unknown: lo que escribió quien pidió un tema que no existe.
     public static Embed BuildIndexEmbed(string? unknown = null)
     {
         string intro = unknown is null
-            ? "Elegí un tema con **/info tema:<tema>** (o `aa info <tema>`) y te explico cómo funciona."
-            : $"No encontré el tema **{unknown}**. Estos son los que hay: **/info tema:<tema>** (o `aa info <tema>`).";
+            ? Loc.T("Elegí un tema con **/info tema:<tema>** (o `aa info <tema>`) y te explico cómo funciona.")
+            : Loc.F($"No encontré el tema **{unknown}**. Estos son los que hay: **/info tema:<tema>** (o `aa info <tema>`).");
 
-        var lines = All.Select(t => $"{t.Emoji} **{t.Key}** — {t.Summary}").ToList();
+        var lines = All.Select(t => $"{t.Emoji} **{t.Key}** — {Loc.Tr(t.Summary)}").ToList();
         var embed = new EmbedBuilder()
-            .WithTitle("📚 Ayuda por tema")
+            .WithTitle(Loc.T("📚 Ayuda por tema"))
             .WithColor(OnboardingModule.BrandColor)
-            .WithDescription(intro + "\n\nLa lista completa de comandos sigue en **/info** (sin tema).");
+            .WithDescription(intro + Loc.T("\n\nLa lista completa de comandos sigue en **/info** (sin tema)."));
 
         int half = (lines.Count + 1) / 2;
-        embed.AddField("Temas", string.Join('\n', lines.Take(half)), false);
-        embed.AddField("Más temas", string.Join('\n', lines.Skip(half)), false);
+        embed.AddField(Loc.T("Temas"), string.Join('\n', lines.Take(half)), false);
+        embed.AddField(Loc.T("Más temas"), string.Join('\n', lines.Skip(half)), false);
         return embed.Build();
     }
 
@@ -121,7 +137,7 @@ public static class HelpTopics
     private static Embed Topic(HelpTopic topic, string description, params (string Name, string Value)[] fields)
     {
         var embed = new EmbedBuilder()
-            .WithTitle($"{topic.Emoji} {topic.Name}")
+            .WithTitle($"{topic.Emoji} {Loc.Tr(topic.Name)}")
             .WithColor(OnboardingModule.BrandColor)
             .WithDescription(description);
 
@@ -130,7 +146,11 @@ public static class HelpTopics
             embed.AddField(name, value, false);
         }
 
-        return embed.WithFooter("Más temas: /info (sin tema muestra los comandos; con tema, cómo funciona algo)").Build();
+        // El pie va en el idioma del cuerpo: un tema todavía sin traducir lo lleva en español.
+        string footer = topic.InEnglish
+            ? Loc.T("Más temas: /info (sin tema muestra los comandos; con tema, cómo funciona algo)")
+            : "Más temas: /info (sin tema muestra los comandos; con tema, cómo funciona algo)";
+        return embed.WithFooter(footer).Build();
     }
 
     private static HelpTopic Self(string key) => All.First(t => t.Key == key);
@@ -141,6 +161,9 @@ public static class HelpTopics
 
     // Decimal con coma: 1,5 / 3,5.
     private static string Dec(double value) => value.ToString("0.##", CultureInfo.InvariantCulture).Replace('.', ',');
+
+    // Lo mismo que Dec, pero en el idioma de quien lee (coma en español, punto en inglés): lo usan los temas traducidos. Dec queda como estaba para los que todavía no.
+    private static string LDec(double value) => Loc.Current == Loc.English ? value.ToString("0.##", CultureInfo.InvariantCulture) : Dec(value);
 
     private static string Num(long value) => GameHistory.Number(value);
 
@@ -196,21 +219,21 @@ public static class HelpTopics
         ("📈 Tus números", "**/history** muestra cuánto ganaste y perdiste en el casino, y la diferencia."));
 
     private static Embed Hunt() => Topic(Self("hunt"),
-        $"Peleás por turnos contra los monstruos de tu zona. Cada turno elegís **Atacar**, la **habilidad** de tu clase (se recarga {AbilityTuning.CooldownTurns} turnos) o **huir** (perdés la recompensa).",
-        ("🏹 /hunt",
-            $"Cooldown de {Dur(CooldownCatalog.Hunt.Duration)}. Da oro y EXP (más cuanto más nivel y zona) y {CombatRewardCalculator.HuntDropChancePercent} % de chance de soltar el material de ese monstruo. Mirá qué suelta cada uno con **/drops**."),
-        ("🗺️ /travel",
-            $"Un monstruo élite de tu zona, más duro. Cooldown de {Dur(CooldownCatalog.Travel.Duration)}. Paga {CombatRewardCalculator.TravelRewardMultiplier} cacerías juntas y suelta su material el {CombatRewardCalculator.TravelDropChancePercent} % de las veces."),
-        ("🤖 /autohunt (aa ah)",
-            $"Resuelve una cacería de una sola vez: solo ataque básico, sin habilidad y sin poder huir. Comparte cooldown con /hunt y pide al menos **{AutoHuntRules.MinHpPercent} %** de vida."),
-        ("⌨️ Si un botón se traba",
-            "Escribí **`aa attack`**, **`aa ability`** (la habilidad de tu clase) o **`aa flee`** (huir): juegan el mismo turno que el botón y el resultado sale en un mensaje nuevo con botones nuevos. " +
-            "Sirve en /hunt, /travel y /boss (también en equipo). Tenés **60 segundos** por turno: si no actuás en ese tiempo el combate se abandona (en equipo perdés el turno, y al segundo seguido te retirás)."),
-        ("❤️ Tu vida",
-            "La vida no se recupera sola: curate con **/heal**, **/use** o en la **/taberna**. Con 0 HP no podés pelear. En plena pelea (/hunt, /travel y /boss) solo podés comer **una vez por pelea**."),
-        ("🔒 Mientras peleás",
-            "Con una pelea en curso (también un jefe en equipo o un duelo) solo valen **/use**, atacar, la habilidad y huir, y lo que solo mira: **/profile**, **/inventory**, **/cd**, **/info** y **/tutorial**. Lo demás (recolectar, forjar, jugar, etc.) espera a que termine."),
-        ("☠️ Si perdés", $"Perdés la EXP del nivel y el {DeathPenalty.GoldPercent} % del oro: **/info tema:death**."));
+        Loc.F($"Peleás por turnos contra los monstruos de tu zona. Cada turno elegís **Atacar**, la **habilidad** de tu clase (se recarga {AbilityTuning.CooldownTurns} turnos) o **huir** (perdés la recompensa)."),
+        (Loc.T("🏹 /hunt"),
+            Loc.F($"Cooldown de {Dur(CooldownCatalog.Hunt.Duration)}. Da oro y EXP (más cuanto más nivel y zona) y {CombatRewardCalculator.HuntDropChancePercent} % de chance de soltar el material de ese monstruo. Mirá qué suelta cada uno con **/drops**.")),
+        (Loc.T("🗺️ /travel"),
+            Loc.F($"Un monstruo élite de tu zona, más duro. Cooldown de {Dur(CooldownCatalog.Travel.Duration)}. Paga {CombatRewardCalculator.TravelRewardMultiplier} cacerías juntas y suelta su material el {CombatRewardCalculator.TravelDropChancePercent} % de las veces.")),
+        (Loc.T("🤖 /autohunt (aa ah)"),
+            Loc.F($"Resuelve una cacería de una sola vez: solo ataque básico, sin habilidad y sin poder huir. Comparte cooldown con /hunt y pide al menos **{AutoHuntRules.MinHpPercent} %** de vida.")),
+        (Loc.T("⌨️ Si un botón se traba"),
+            Loc.T("Escribí **`aa attack`**, **`aa ability`** (la habilidad de tu clase) o **`aa flee`** (huir): juegan el mismo turno que el botón y el resultado sale en un mensaje nuevo con botones nuevos. " +
+            "Sirve en /hunt, /travel y /boss (también en equipo). Tenés **60 segundos** por turno: si no actuás en ese tiempo el combate se abandona (en equipo perdés el turno, y al segundo seguido te retirás).")),
+        (Loc.T("❤️ Tu vida"),
+            Loc.T("La vida no se recupera sola: curate con **/heal**, **/use** o en la **/taberna**. Con 0 HP no podés pelear. En plena pelea (/hunt, /travel y /boss) solo podés comer **una vez por pelea**.")),
+        (Loc.T("🔒 Mientras peleás"),
+            Loc.T("Con una pelea en curso (también un jefe en equipo o un duelo) solo valen **/use**, atacar, la habilidad y huir, y lo que solo mira: **/profile**, **/inventory**, **/cd**, **/info** y **/tutorial**. Lo demás (recolectar, forjar, jugar, etc.) espera a que termine.")),
+        (Loc.T("☠️ Si perdés"), Loc.F($"Perdés la EXP del nivel y el {DeathPenalty.GoldPercent} % del oro: **/info tema:death**.")));
 
     private static Embed Boss() => Topic(Self("boss"),
         "Cada zona tiene un jefe. Vencerlo la **primera vez** abre la zona siguiente.",
@@ -257,21 +280,21 @@ public static class HelpTopics
             "Madera y minerales, drops de las zonas que ya desbloqueaste, comida, cajas más chicas y, muy de vez en cuando, un poco de oro. La **Arca del Soberano** (Mítica) no se compra: la dan solo los logros más difíciles."));
 
     private static Embed Shop() => Topic(Self("shop"),
-        "Acá se compra y se vende todo lo que no se forja, y se cura la vida.",
-        ("🍺 /taberna (aa taberna)", "El tabernero te atiende con menús: comés algo de tu mochila, comprás comida y cajas, y vendés. Cada elección es de **una** unidad. También vende la **Comida para Mascotas** (**/info tema:pets**)."),
-        ("🛒 /shop", "**view** muestra los precios, **buy** y **sell** compran y venden por nombre y cantidad, **sellall** vende todo lo vendible de la mochila (no lo que llevás puesto). En texto, sin escribir shop: `aa sell all`, `aa sell arma`, `aa sell amuleto` (lo que llevás puesto) o `aa sell <ítem>`."),
-        ("🍖 Consumibles",
-            "La comida cura HP y los **banquetes** (los Míticos) además dan un bonus de ataque por un rato: se comen con **/use** (el valor figura en **/shop view** y en tu **/profile** mientras dura; uno nuevo reemplaza al anterior)."),
-        ("💊 /heal", "Te cura **todo** lo que te falta comiendo lo justo de tu mochila, sin pasarte (no sirve en combate ni gasta banquetes). Con **/heal comida:<nombre>** usás una sola comida."));
+        Loc.T("Acá se compra y se vende todo lo que no se forja, y se cura la vida."),
+        (Loc.T("🍺 /taberna (aa taberna)"), Loc.T("El tabernero te atiende con menús: comés algo de tu mochila, comprás comida y cajas, y vendés. Cada elección es de **una** unidad. También vende la **Comida para Mascotas** (**/info tema:pets**).")),
+        (Loc.T("🛒 /shop"), Loc.T("**view** muestra los precios, **buy** y **sell** compran y venden por nombre y cantidad, **sellall** vende todo lo vendible de la mochila (no lo que llevás puesto). En texto, sin escribir shop: `aa sell all`, `aa sell arma`, `aa sell amuleto` (lo que llevás puesto) o `aa sell <ítem>`.")),
+        (Loc.T("🍖 Consumibles"),
+            Loc.T("La comida cura HP y los **banquetes** (los Míticos) además dan un bonus de ataque por un rato: se comen con **/use** (el valor figura en **/shop view** y en tu **/profile** mientras dura; uno nuevo reemplaza al anterior).")),
+        (Loc.T("💊 /heal"), Loc.T("Te cura **todo** lo que te falta comiendo lo justo de tu mochila, sin pasarte (no sirve en combate ni gasta banquetes). Con **/heal comida:<nombre>** usás una sola comida.")));
 
     private static Embed Missions() => Topic(Self("missions"),
-        "Dos formas de ganar oro, EXP y cajas jugando normalmente. El progreso se cuenta solo; vos reclamás.",
-        ("📋 /missions",
-            $"{MissionCatalog.DailyCount} misiones por día y {MissionCatalog.WeeklyCount} por semana, iguales para todos. Se reinician a la medianoche de Uruguay (la semana, el lunes). Reclamás con el botón."),
-        ("🏆 /achievements",
-            $"{AchievementCatalog.All.Count} logros de 3 tramos, en {AchievementCatalog.Categories.Count} páginas por tema ({string.Join(", ", AchievementCatalog.Categories.Select(c => c.Name))}); elegís la página con el desplegable y reclamás con el botón. " +
-            "Cuentan desde que se activó el registro de eventos."),
-        ("💰 Los premios", "Crecen con tu zona: oro como cacerías de oro de tu zona, un % de EXP y a veces una caja. Los logros nuevos pagan solo oro y EXP."));
+        Loc.T("Dos formas de ganar oro, EXP y cajas jugando normalmente. El progreso se cuenta solo; vos reclamás."),
+        (Loc.T("📋 /missions"),
+            Loc.F($"{MissionCatalog.DailyCount} misiones por día y {MissionCatalog.WeeklyCount} por semana, iguales para todos. Se reinician a la medianoche de Uruguay (la semana, el lunes). Reclamás con el botón.")),
+        (Loc.T("🏆 /achievements"),
+            Loc.F($"{AchievementCatalog.All.Count} logros de 3 tramos, en {AchievementCatalog.Categories.Count} páginas por tema ({string.Join(", ", AchievementCatalog.Categories.Select(c => c.Name))}); elegís la página con el desplegable y reclamás con el botón. ") +
+            Loc.T("Cuentan desde que se activó el registro de eventos.")),
+        (Loc.T("💰 Los premios"), Loc.T("Crecen con tu zona: oro como cacerías de oro de tu zona, un % de EXP y a veces una caja. Los logros nuevos pagan solo oro y EXP.")));
 
     private static Embed Arena() => Topic(Self("arena"),
         "Dos formas de pelear contra otros jugadores.",
@@ -445,31 +468,32 @@ public static class HelpTopics
     }
 
     private static Embed Gather() => Topic(Self("gather"),
-        $"**/chop** junta madera y **/mine** minerales. Cooldown de {Dur(CooldownCatalog.Chop.Duration)} cada uno. Son la base de las recetas de la herrería.",
-        ("🎲 Qué te toca",
-            "Primero sale una rareza al azar y después un ítem de esa rareza: " +
-            string.Join(" · ", RarityCatalog.GatheringChances.Select(c => $"{c.Rarity} {Dec(c.Percent)} %"))),
-        ("📦 Cuántas unidades",
-            "Cuanto más rara, menos unidades: " +
+        Loc.F($"**/chop** junta madera y **/mine** minerales. Cooldown de {Dur(CooldownCatalog.Chop.Duration)} cada uno. Son la base de las recetas de la herrería."),
+        (Loc.T("🎲 Qué te toca"),
+            Loc.T("Primero sale una rareza al azar y después un ítem de esa rareza: ") +
+            string.Join(" · ", RarityCatalog.GatheringChances.Select(c => Loc.F($"{RarityCatalog.DisplayName(c.Rarity)} {LDec(c.Percent)} %")))),
+        (Loc.T("📦 Cuántas unidades"),
+            Loc.T("Cuanto más rara, menos unidades: ") +
             string.Join(" · ", new[] { "Común", "Raro", "Épico", "Legendario", "Mítico" }.Select(r =>
             {
                 var (min, max) = GatheringYield.RangeFor(r);
-                return min == max ? $"{r} {min}" : $"{r} {min} a {max}";
+                string rarityName = RarityCatalog.DisplayName(r);
+                return min == max ? $"{rarityName} {min}" : Loc.F($"{rarityName} {min} a {max}");
             }))),
-        ("🔁 Después", "Lo que juntás sirve para forjar (**/info tema:forge**), para cambiar con otros jugadores (**/info tema:trade**) o para desmantelar y sacar Polvo (**/info tema:dismantle**)."));
+        (Loc.T("🔁 Después"), Loc.T("Lo que juntás sirve para forjar (**/info tema:forge**), para cambiar con otros jugadores (**/info tema:trade**) o para desmantelar y sacar Polvo (**/info tema:dismantle**).")));
 
     private static Embed Daily() => Topic(Self("daily"),
-        "Una recompensa por día y la posibilidad de regalar oro.",
-        ("🎁 /daily",
-            $"Una vez cada {Dur(DailyRewardCalculator.MinInterval)}. Cada día seguido suma a la **racha**, y el premio **escala con tu zona y tu nivel**: el oro se mide en cacerías de tu zona y la EXP en % de lo que te falta para subir. " +
-            $"Del día 1 al 7 va de {DailyRewardCalculator.BaseGoldUnitsFor(1)} a {DailyRewardCalculator.BaseGoldUnitsFor(DailyRewardCalculator.WeekLength)} cacerías de oro y de {DailyRewardCalculator.XpPercentFor(1)} % a {DailyRewardCalculator.XpPercentFor(DailyRewardCalculator.WeekLength)} % de EXP, y desde el día {DailyRewardCalculator.WeekLength + 1} se queda en el del día {DailyRewardCalculator.WeekLength}. " +
-            $"Si pasan más de {Dur(DailyRewardCalculator.StreakGraceWindow)} sin reclamar, la racha vuelve al día 1. **/cd** te dice cuándo podés volver. Tu racha más larga cuenta para el logro **Racha** (**/achievements**)."),
-        ("🏆 Hitos de la racha",
-            $"**Día {DailyRewardCalculator.ThreeDayStreak}**: +{DailyRewardCalculator.ThreeDayBonusUnits} cacerías de oro extra.\n" +
-            $"**Día {DailyRewardCalculator.IronBoxFromDay}** y todos los días que siguen: la **caja diaria** de tu zona.\n" +
-            $"**Día {DailyRewardCalculator.WeekLength}** y cada {DailyRewardCalculator.WeekLength} días seguidos ({DailyRewardCalculator.WeekLength * 2}, {DailyRewardCalculator.WeekLength * 3}…): la **caja grande** de tu zona y +{DailyRewardCalculator.WeekBonusUnits} cacerías de oro. " +
-            "Las cajas se abren con **/open**; cuáles son depende de tu zona (las mismas que dan las misiones diarias y semanales)."),
-        ("🤝 /give @jugador cantidad", "Le regalás oro a otro jugador (una cantidad o **all**). Sale de tu billetera; no a vos mismo. En texto: `aa give @jugador 100`."));
+        Loc.T("Una recompensa por día y la posibilidad de regalar oro."),
+        (Loc.T("🎁 /daily"),
+            Loc.F($"Una vez cada {Dur(DailyRewardCalculator.MinInterval)}. Cada día seguido suma a la **racha**, y el premio **escala con tu zona y tu nivel**: el oro se mide en cacerías de tu zona y la EXP en % de lo que te falta para subir. ") +
+            Loc.F($"Del día 1 al 7 va de {DailyRewardCalculator.BaseGoldUnitsFor(1)} a {DailyRewardCalculator.BaseGoldUnitsFor(DailyRewardCalculator.WeekLength)} cacerías de oro y de {DailyRewardCalculator.XpPercentFor(1)} % a {DailyRewardCalculator.XpPercentFor(DailyRewardCalculator.WeekLength)} % de EXP, y desde el día {DailyRewardCalculator.WeekLength + 1} se queda en el del día {DailyRewardCalculator.WeekLength}. ") +
+            Loc.F($"Si pasan más de {Dur(DailyRewardCalculator.StreakGraceWindow)} sin reclamar, la racha vuelve al día 1. **/cd** te dice cuándo podés volver. Tu racha más larga cuenta para el logro **Racha** (**/achievements**).")),
+        (Loc.T("🏆 Hitos de la racha"),
+            Loc.F($"**Día {DailyRewardCalculator.ThreeDayStreak}**: +{DailyRewardCalculator.ThreeDayBonusUnits} cacerías de oro extra.\n") +
+            Loc.F($"**Día {DailyRewardCalculator.IronBoxFromDay}** y todos los días que siguen: la **caja diaria** de tu zona.\n") +
+            Loc.F($"**Día {DailyRewardCalculator.WeekLength}** y cada {DailyRewardCalculator.WeekLength} días seguidos ({DailyRewardCalculator.WeekLength * 2}, {DailyRewardCalculator.WeekLength * 3}…): la **caja grande** de tu zona y +{DailyRewardCalculator.WeekBonusUnits} cacerías de oro. ") +
+            Loc.T("Las cajas se abren con **/open**; cuáles son depende de tu zona (las mismas que dan las misiones diarias y semanales).")),
+        (Loc.T("🤝 /give @jugador cantidad"), Loc.T("Le regalás oro a otro jugador (una cantidad o **all**). Sale de tu billetera; no a vos mismo. En texto: `aa give @jugador 100`.")));
 
     private static Embed Stats() => Topic(Self("stats"),
         "Tu **/profile** muestra todo esto junto.",

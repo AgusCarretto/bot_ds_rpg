@@ -796,6 +796,63 @@ MissionsView doneEn; using (Loc.Use("en")) { doneEn = await MissionsView12(); }
 Check(LeakCheck.AllText(doneEn.Embed).Contains("claimed") && doneEn.Components is null && LeakCheck.NoSpanish(LeakCheck.AllText(doneEn.Embed), allowedNames).Ok, "y la pantalla después de cobrar dice «claimed» y ya no trae botón");
 await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)M12 });
 
+Console.WriteLine("\n== 13. Ayuda ==");
+allowedNames.AddRange(AchievementCatalog.Categories.Select(c => c.Name));   // las páginas de /achievements se llaman así en los dos idiomas
+var interactions13 = new InteractionService(client); await interactions13.AddModulesAsync(typeof(LanguageModule).Assembly, sp);
+var slashNames13 = interactions13.SlashCommands.Select(c => c.Name).Concat(interactions13.SlashCommands.Select(c => c.Module.SlashGroupName)).Where(n => n is not null).ToHashSet();
+string[] translatedTopics = ["hunt", "gather", "shop", "daily", "missions"];
+var helpScreens = new List<(string Name, Func<Embed> Make)>
+{
+    ("el tutorial", HelpModule.BuildTutorialEmbed),
+    ("la lista de /info", HelpModule.BuildInfoEmbed),
+};
+helpScreens.AddRange(translatedTopics.Select(key => ($"el tema «{key}»", (Func<Embed>)(() => HelpTopics.Resolve(key)))));
+
+foreach (var (helpName, makeHelp) in helpScreens)
+{
+    Embed helpEs = makeHelp(); Embed helpEn; using (Loc.Use("en")) { helpEn = makeHelp(); }
+    string helpEnText = LeakCheck.AllText(helpEn); var helpLeak = LeakCheck.NoSpanish(helpEnText, allowedNames);
+    var mentioned13 = System.Text.RegularExpressions.Regex.Matches(helpEnText, @"/([a-z][a-z-]*)").Select(m => m.Groups[1].Value).Distinct().Where(m => !slashNames13.Contains(m)).ToList();
+    Check(helpLeak.Ok && LeakCheck.FitsDiscord(helpEn) && helpEnText != LeakCheck.AllText(helpEs) && mentioned13.Count == 0, $"{helpName} en inglés: sin español colado y todo comando que nombra existe ({helpLeak.Found}{string.Join(", ", mentioned13)})");
+}
+
+Embed tutorialEs = HelpModule.BuildTutorialEmbed(); Embed tutorialEn; using (Loc.Use("en")) { tutorialEn = HelpModule.BuildTutorialEmbed(); }
+Check(tutorialEs.Title == "📖 Cómo jugar Asado y Acero RPG" && tutorialEs.Fields.Length == 5 && tutorialEn.Title == "📖 How to play Asado y Acero RPG" && tutorialEn.Fields.Select(f => f.Name).SequenceEqual(["🪓 Gathering", "⚒️ Smithy", "⚔️ Combat", "🥩 Survival", "📋 Missions and achievements"]) && tutorialEn.Footer!.Value.Text == "Use /info to see the full list of commands.",
+    $"el tutorial en los dos idiomas ({tutorialEn.Title})");
+Embed infoEs = HelpModule.BuildInfoEmbed(); Embed infoEn; using (Loc.Use("en")) { infoEn = HelpModule.BuildInfoEmbed(); }
+Check(infoEs.Fields.Select(f => f.Name).SequenceEqual(["⚔️ Pelear", "🪓 Recolectar y forjar", "🍖 Comida y plata", "📋 Progreso", "👥 Con otros jugadores", "🔥 Final del juego", "🛠️ Tu cuenta", "📚 Cómo funciona cada cosa"]) &&
+    infoEn.Fields.Select(f => f.Name).SequenceEqual(["⚔️ Fight", "🪓 Gather and forge", "🍖 Food and money", "📋 Progress", "👥 With other players", "🔥 Endgame", "🛠️ Your account", "📚 How everything works"]) && infoEn.Fields[0].Value.Contains("`/hunt`"),
+    "la lista de /info en los dos idiomas (los nombres de los comandos no se tocan)");
+Check(infoEn.Fields[7].Value.Contains(HelpTopics.KeysLine()) && infoEn.Footer!.Value.Text.StartsWith("Asado y Acero RPG v"), "y los temas se nombran por su clave en inglés");
+
+// Los 5 temas: títulos y algunos datos concretos, en los dos idiomas.
+Embed HuntTopic(string lang) { using (Loc.Use(lang)) { return HelpTopics.Resolve("hunt"); } }
+Embed GatherTopic(string lang) { using (Loc.Use(lang)) { return HelpTopics.Resolve("gather"); } }
+Embed DailyTopic(string lang) { using (Loc.Use(lang)) { return HelpTopics.Resolve("daily"); } }
+Embed MissionsTopic(string lang) { using (Loc.Use(lang)) { return HelpTopics.Resolve("missions"); } }
+Embed ShopTopic(string lang) { using (Loc.Use(lang)) { return HelpTopics.Resolve("shop"); } }
+Check(HuntTopic("es").Title == "🏹 Combate" && HuntTopic("en").Title == "🏹 Combat" && GatherTopic("en").Title == "🪓 Gathering" && ShopTopic("en").Title == "🍺 Shop, tavern and healing" && DailyTopic("en").Title == "🎁 Daily and gifts" && MissionsTopic("en").Title == "📋 Missions and achievements",
+    $"los títulos de los 5 temas ({HuntTopic("en").Title} | {GatherTopic("en").Title} | {ShopTopic("en").Title} | {DailyTopic("en").Title} | {MissionsTopic("en").Title})");
+string gatherTopicEs = LeakCheck.AllText(GatherTopic("es")), gatherTopicEn = LeakCheck.AllText(GatherTopic("en"));
+Check(gatherTopicEs.Contains("Común 68 %") && gatherTopicEs.Contains("Mítico 0,5 %") && gatherTopicEn.Contains("Common 68%") && gatherTopicEn.Contains("Mythic 0.5%") && gatherTopicEn.Contains("Common 1 to 5"), $"recolectar: las rarezas y los decimales de cada idioma ({gatherTopicEn.Replace("\n", " | ")})");
+string dailyTopicEs = LeakCheck.AllText(DailyTopic("es")), dailyTopicEn = LeakCheck.AllText(DailyTopic("en"));
+Check(dailyTopicEs.Contains("Día 6") && dailyTopicEn.Contains("Day 6") && dailyTopicEn.Contains("daily box") && dailyTopicEn.Contains("**Racha**"), "el /daily: los hitos de la racha, y el logro «Racha» se nombra como se llama");
+Check(MissionsTopic("en").Footer!.Value.Text.StartsWith("More topics: /info"), "el pie de un tema traducido está en inglés");
+
+// Los otros temas siguen EXACTAMENTE igual, aun pidiendo inglés (se traducen más adelante): nada a medias.
+var untouched = HelpTopics.All.Where(t => !translatedTopics.Contains(t.Key)).ToList();
+var changed = new List<string>();
+foreach (var topic in untouched)
+{
+    string spanishText = LeakCheck.AllText(HelpTopics.Render(topic)), inEnglishText; using (Loc.Use("en")) { inEnglishText = LeakCheck.AllText(HelpTopics.Render(topic)); }
+    if (spanishText != inEnglishText) { changed.Add(topic.Key); }
+}
+
+Check(untouched.Count == HelpTopics.All.Count - 5 && changed.Count == 0, $"los {untouched.Count} temas que no se traducen salen idénticos con Use(\"en\") (distintos: {string.Join(", ", changed)})");
+Embed notFoundEn; using (Loc.Use("en")) { notFoundEn = HelpTopics.Resolve("xyzzy"); }
+Check(LeakCheck.NoSpanish(notFoundEn.Title + " " + notFoundEn.Description + " " + string.Join(" ", notFoundEn.Fields.Select(f => f.Name)), allowedNames).Ok,"el marco de la lista de temas está en inglés (los resúmenes de los temas sin traducir siguen en español)");
+Check(notFoundEn.Title == "📚 Help by topic" && notFoundEn.Description!.Contains("I couldn't find the topic **xyzzy**") && notFoundEn.Fields.Length == 2, $"un tema que no existe (en inglés): {notFoundEn.Description!.Split('\n')[0]}");
+
 // El repositorio de verdad: nada falta, nada sobra, ningún {0} desparejo, ningún literal raro.
 var catalogOnDisk = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(Path.Combine(TestEnv.RepoRoot, "Locales", "en.json")))!;
 var repoReport = LocScan.Compare(LocScan.Extract(TestEnv.RepoRoot), catalogOnDisk);
