@@ -88,4 +88,8 @@ public interface ICombatSessionService
     // doble click o una carrera contra el timeout). nextState/nextReplyTarget en null = termina
     // el combate (victoria, derrota o huida); no-null = el combate sigue con ese nuevo estado.
     bool TryAdvance(ulong discordId, CombatSession expectedSession, CombatState? nextState, ICombatReplyTarget? nextReplyTarget);
+
+    // Por qué NO hay combate (v0.25.4): si hace poco terminó uno de este jugador, cómo terminó — «timeout» (pasó el minuto sin jugar el turno) o «resolved» (ganó, perdió o huyó) —; null si no hay registro
+    // (no peleó desde que arrancó el bot: o el bot se reinició, o respondió OTRA copia del bot). Solo para explicarle al jugador y para el registro; no cambia nada.
+    string? RecentEnd(ulong discordId) => null;
 }

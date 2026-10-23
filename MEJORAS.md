@@ -1,6 +1,6 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-23 (v0.25.2: el perfil, ordenado para el celu)_
+_Última revisión: 2026-10-23 (v0.25.4: en plena pelea solo valen los comandos de la pelea)_
 
 ## Pendiente de un vistazo (puesto al día el 2026-10-22)
 
@@ -31,6 +31,15 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
   Términos y Privacidad públicos, y hay que confirmar si hay Premium Apps en Uruguay (Developer Portal, Monetization). Punto de enganche: `ReminderPolicy.IsEligible` y `CooldownCatalog`. El título especial entra como categoría «Especiales» del sistema de títulos.
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
+
+## En plena pelea solo valen los comandos de la pelea (v0.25.4, 2026-10-23)
+
+- **Pedido del dueño**: «bloqueá todos los comandos si estás en medio de pelea, exceptuando los de la pelea como el `use`; no quiero que pueda recolectar madera en plena pelea».
+- **Qué es «en pelea»**: un combate solitario (`/hunt`, `/travel`, `/boss`), un jefe en equipo que ya está peleando (no la sala de invitaciones) o un duelo en curso.
+- **Qué vale mientras tanto** (lista de lo PERMITIDO, `GameData/FightLock.cs`): `/use`, `aa attack`, `aa ability`, `aa flee` y, porque solo miran, `/profile`, `/inventory`, `/cd`, `/info` y `/tutorial`. Todo lo demás (recolectar, forjar, la taberna, el casino, el banco, las zonas, `/daily`, empezar otra pelea...) contesta «Estás en plena pelea: no podés usar `/chop` hasta que termine» y no hace nada. Los botones del combate no son comandos y nunca se bloquean. **Decisión mía**: dejé pasar los cinco que solo miran (el dueño dijo «todos»); si los quiere bloqueados también es sacarlos de la lista.
+- **Dónde**: UN solo lugar, antes de despachar el comando (`Program.cs`, el de barra por su nombre y el de texto por el comando que se encontró, así `atk` y `u` valen como `attack` y `use`). Un comando nuevo queda bloqueado en pelea hasta que alguien lo permita. `v0254test` compara la lista contra los comandos reales.
+- **Lo que NO se bloquea** (no se pidió): los botones y desplegables de otras escenas (taberna, misiones...), por ejemplo comprar en la taberna con una pelea abierta.
+- **«No tenés ningún combate activo»**: el aviso ahora dice POR QUÉ cuando el bot lo sabe (pasó más de 1 minuto sin jugar el turno; o ese combate ya se resolvió y el mensaje es viejo) y, si no hay registro, lo atribuye al reinicio del bot (las peleas viven en memoria y cada actualización las corta) o a otra copia del bot respondiendo. También deja una línea `[COMBATE] … intentó pelear sin combate activo (causa)` en el registro de Railway. **Sospecha principal** (sin poder verlo desde acá): dos copias del bot con el mismo token a la vez (la de la compu del dueño y la de Railway) responden las dos a cada botón, y la que no tiene la pelea en memoria contesta ese error; o las actualizaciones de hoy cortando peleas. Para confirmarlo: mirar en el registro de Railway si aparecen `[COMBATE]` con «sin registro» justo después de un deploy, y que no haya otro `dotnet run` abierto.
 
 ## La misma vida en todas las pantallas (v0.25.3, 2026-10-23)
 

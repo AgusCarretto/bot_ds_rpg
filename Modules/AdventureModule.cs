@@ -160,7 +160,7 @@ public class AdventureModule(
             {
                 // Sin esta guarda, UseModule trataría el click como "curarse fuera de combate" y gastaría la comida
                 // con un mensaje viejo.
-                await FollowupAsync("No tenés ningún combate activo.", ephemeral: true);
+                await FollowupAsync(NoActiveFightMessage(combatSessions, Context.User.Id), ephemeral: true);
                 return;
             }
 
@@ -214,6 +214,22 @@ public class AdventureModule(
             Context.User.Id, fled, useAbility, new InteractionCombatTurnOutput(Context.Interaction));
     }
 
+    // Lo que se le dice a quien aprieta un botón (o escribe «aa attack») sin tener un combate (v0.25.4). Dice POR QUÉ cuando el bot lo sabe: el combate venció por inactividad (más de un minuto sin jugar el
+    // turno) o ya se resolvió (un mensaje viejo); y si no hay registro, las dos causas que quedan: el bot se reinició (cada actualización corta las peleas en curso, viven en memoria) o respondió otra copia del bot.
+    // También lo deja en el registro, para poder ver con qué frecuencia pasa y por cuál causa.
+    public static string NoActiveFightMessage(ICombatSessionService combatSessions, ulong discordId)
+    {
+        string? reason = combatSessions.RecentEnd(discordId);
+        Console.WriteLine($"[COMBATE] {discordId} intentó pelear sin combate activo ({reason ?? "sin registro: reinicio del bot u otra copia del bot"}).");
+
+        return reason switch
+        {
+            "timeout" => "No tenés ningún combate activo: pasó más de **1 minuto** sin jugar el turno y se cerró como abandonado. Empezá otro con /hunt, /travel o /boss.",
+            "resolved" => "No tenés ningún combate activo: ese ya terminó (ganaste, perdiste o huiste) y este mensaje es viejo. Empezá otro con /hunt, /travel o /boss.",
+            _ => "No tenés ningún combate activo. Si estabas peleando, se cortó porque el bot se reinició (cada actualización corta las peleas en curso). Empezá otro con /hunt, /travel, /boss o \"aa hunt\".",
+        };
+    }
+
     // El turno de un combate solitario (hunt, travel y boss), SIN dependencia de Context: lo usan el botón (Atacar / Habilidad / Huir, con la pantalla editada en el mismo mensaje) y los
     // comandos de texto "aa attack", "aa ability" y "aa flee" (mensaje nuevo con botones nuevos, ver Services/CombatTurnOutput.cs). Es UN solo lugar: no se vuelve a copiar la lógica.
     public static async Task ResolveTurnCoreAsync(
@@ -226,7 +242,7 @@ public class AdventureModule(
             var session = combatSessions.Peek(discordId);
             if (session is null)
             {
-                await output.NoteAsync("No tenés ningún combate activo. Empezá uno con /hunt, /travel, o \"aa hunt\".");
+                await output.NoteAsync(NoActiveFightMessage(combatSessions, discordId));
                 return;
             }
 

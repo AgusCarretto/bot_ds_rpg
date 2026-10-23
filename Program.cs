@@ -1,4 +1,5 @@
 using BotDsRpg.Data;
+using BotDsRpg.GameData;
 using BotDsRpg.Repositories;
 using BotDsRpg.Services;
 using Discord;
@@ -294,6 +295,16 @@ class Program
                 return;
             }
 
+            // En medio de una pelea solo valen los comandos de la pelea y los que solo miran (GameData/FightLock.cs): nada de recolectar, forjar ni jugar mientras se pelea. Los botones del combate no son
+            // comandos de barra y nunca pasan por acá. Se responde en privado y no se despacha nada.
+            if (interaction is SocketSlashCommand fightSlash
+                && !FightLock.IsAllowed(fightSlash.CommandName)
+                && FightGuard.IsInFight(_services.GetRequiredService<ICombatSessionService>(), _services.GetService<IRaidSessionService>(), _services.GetService<IDuelService>(), interaction.User.Id))
+            {
+                await interaction.RespondAsync(FightLock.Message($"/{fightSlash.CommandName}"), ephemeral: true);
+                return;
+            }
+
             var context = new SocketInteractionContext(_client, interaction);
             var result = await _commands.ExecuteCommandAsync(context, _services);
 
@@ -361,6 +372,21 @@ class Program
             }
 
             var context = new SocketCommandContext(_client, message);
+
+            // Lo mismo que en los comandos de barra (GameData/FightLock.cs): en plena pelea solo valen los comandos de la pelea y los que solo miran. El nombre sale del comando que se encontró (los alias
+            // «atk», «u», «p» apuntan al principal); un comando que no existe no se bloquea: sigue su camino de «no reconozco ese comando».
+            var found = _textCommands.Search(context, argPos);
+            if (found.IsSuccess && found.Commands.Count > 0)
+            {
+                string key = FightLock.TextKey(found.Commands[0].Command.Aliases.FirstOrDefault() ?? found.Commands[0].Command.Name);
+                if (!FightLock.IsAllowed(key)
+                    && FightGuard.IsInFight(_services.GetRequiredService<ICombatSessionService>(), _services.GetService<IRaidSessionService>(), _services.GetService<IDuelService>(), message.Author.Id))
+                {
+                    await message.Channel.SendMessageAsync(FightLock.Message($"{TextCommandPrefix}{key}"));
+                    return;
+                }
+            }
+
             var result = await _textCommands.ExecuteAsync(context, argPos, _services);
 
             if (!result.IsSuccess)
