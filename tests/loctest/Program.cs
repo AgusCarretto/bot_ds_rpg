@@ -209,6 +209,81 @@ foreach (var id in new[] { R1, R2 }) { await db.ExecuteAsync("DELETE FROM users 
 await CleanLanguages();
 await db.ExecuteAsync("DELETE FROM player_language WHERE discord_id IN (999000000000098006, 999000000000098007)");
 
+Console.WriteLine("\n== 6. El escáner de textos (tools/loc) ==");
+string fixture = """"
+class X {
+  void M(int hp, int a, int b, bool ok) {
+    var s1 = Loc.T("Estás en plena pelea");
+    var s2 = Loc.F($"Tenés {hp} HP");
+    var s3 = Loc.F($"{hp:N0} de {Math.Max(a, b)}");
+    var s4 = Loc.F($"Va {(ok ? "sí" : "no")} y {{llaves}} {hp,5}");
+    var s5 = Loc.T("uno " + "dos");
+    var s6 = Loc.T(variable);
+    var s7 = Loc.Mark("Texto de tabla");
+    // Loc.T("comentario") no cuenta
+    var s8 = "Loc.T(\"dentro de un texto\")";
+    var s9 = Loc.T("con \"comillas\" y \\ barra\ny salto");
+    var s10 = Loc.F($"Plano sin datos");
+    var s11 = Loc.T($"mal {hp}");
+    var s12 = Loc.Tr(variable);
+    var sql = """
+        SELECT Loc.T("no es código")
+        """;
+  }
+}
+"""";
+var scanned = LocScan.ExtractFromSource(fixture, "X.cs");
+var good = scanned.Where(u => u.Kind != "NonLiteral").ToList();
+string[] expectedTemplates = ["Estás en plena pelea", "Tenés {0} HP", "{0:N0} de {1}", "Va {0} y {{llaves}} {1,5}", "uno dos", "Texto de tabla", "con \"comillas\" y \\ barra\ny salto", "Plano sin datos"];
+Check(good.Select(u => u.Template).SequenceEqual(expectedTemplates), $"extrae las plantillas como las numera el compilador, sin tocar comentarios, textos ni cadenas crudas ({string.Join(" | ", good.Select(u => u.Template.Replace("\n", "\\n")))})");
+Check(good.Select(u => u.Kind).SequenceEqual(["T", "F", "F", "F", "T", "Mark", "T", "F"]) && good[0].Line == 3 && good[1].Line == 4 && good[0].File == "X.cs", "cada uso dice si es T, F o Mark y en qué línea está");
+Check(scanned.Count(u => u.Kind == "NonLiteral") == 2, "una llamada que no es un literal (la variable, o un $\"…\" dentro de T) se marca como NonLiteral");
+
+var englishFixture = new Dictionary<string, string>
+{
+    ["Estás en plena pelea"] = "You are in a fight",
+    ["Tenés {0} HP"] = "You have {1} HP",   // rota: pide {1} y la plantilla trae {0}
+    ["uno dos"] = "one two",
+    ["{0:N0} de {1}"] = "{1} of {0:N0}",    // reordenar está permitido
+    ["viejo"] = "old",
+};
+var report = LocScan.Compare(scanned, englishFixture);
+Check(report.Missing.Count == 4 && report.Missing.Any(m => m.Contains("Texto de tabla")) && report.Missing.Any(m => m.Contains("Plano sin datos")) && report.Missing.Any(m => m.Contains("llaves")), $"informa lo que FALTA en inglés ({report.Missing.Count})");
+Check(report.Stale.SequenceEqual(["viejo"]), "informa lo que SOBRA en el catálogo (el texto cambió y la traducción quedó huérfana)");
+Check(report.PlaceholderMismatch.Count == 1 && report.PlaceholderMismatch[0].Contains("Tenés {0} HP"), "informa un {1} que no coincide con la plantilla, pero deja pasar un reordenamiento");
+Check(report.NonLiteral.Count == 2 && !report.Ok, "informa las llamadas que no son literales y el informe no está OK");
+
+string tempDir = Path.Combine(Path.GetTempPath(), "loc-" + Guid.NewGuid().ToString("N"));
+Directory.CreateDirectory(tempDir);
+File.WriteAllText(Path.Combine(tempDir, "Pantalla.cs"), """
+class P {
+  void M() {
+    var a = "Tenés poco oro";
+    var b = "SELECT * FROM users WHERE x = 1";
+    var c = "btn_attack";
+    Console.WriteLine("Esto va a la consola");
+    BotLog.Error("algo salió mal en la base");
+    var d = Loc.T("Ya está traducido");
+    var e = "";
+    var f = "🔥";
+    var g = $"Ganaste {a} de oro";
+    [SlashCommand("hunt", "Cazá un monstruo de tu zona")]
+  }
+}
+""");
+var pending = LocScan.Untranslated(tempDir);
+Check(pending.Count == 2 && pending[0].Contains("Tenés poco oro") && pending[1].Contains("Ganaste {a} de oro") && pending[0].Contains("Pantalla.cs:3"), $"lista los textos para el jugador que faltan envolver y deja afuera consultas, ids, consola, registro, lo ya envuelto y atributos ({string.Join(" | ", pending)})");
+Directory.Delete(tempDir, true);
+
+// El repositorio de verdad: nada falta, nada sobra, ningún {0} desparejo, ningún literal raro.
+var catalogOnDisk = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(Path.Combine(TestEnv.RepoRoot, "Locales", "en.json")))!;
+var repoReport = LocScan.Compare(LocScan.Extract(TestEnv.RepoRoot), catalogOnDisk);
+Check(repoReport.Ok, $"el código y Locales/en.json van parejos: faltan {repoReport.Missing.Count}, sobran {repoReport.Stale.Count}, {{n}} distintos {repoReport.PlaceholderMismatch.Count}, no literales {repoReport.NonLiteral.Count}");
+foreach (string problem in repoReport.Missing.Concat(repoReport.Stale).Concat(repoReport.PlaceholderMismatch).Concat(repoReport.NonLiteral).Take(15)) { Console.WriteLine("     " + problem); }
+var typed = System.Text.RegularExpressions.Regex.Matches(string.Join("\n", catalogOnDisk.Values), "`aa ([a-zñáéíóú]+)").Select(m => m.Groups[1].Value).Distinct().ToList();
+var unknownCommands = typed.Where(word => !textCommands.Search(word).IsSuccess).ToList();
+Check(unknownCommands.Count == 0, $"todo «`aa <comando>`» que nombra un texto en inglés existe de verdad ({typed.Count} comandos; faltan: {string.Join(", ", unknownCommands)})");
+
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;
 

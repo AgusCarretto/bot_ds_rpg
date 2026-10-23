@@ -1,2 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <!-- El escáner de textos de tools/loc se prueba acá y se usa igual desde la consola: un solo código. -->
+    <Compile Include="..\..\tools\loc\LocScan.cs" Link="LocScan.cs" />
+  </ItemGroup>
 </Project>
