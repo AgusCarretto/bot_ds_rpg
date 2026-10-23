@@ -635,6 +635,11 @@ public class AdventureModule(
         return WithAbilityField(embed, state).Build();
     }
 
+    // La vida del jugador tal como se ve en la pelea: la de la base (que es lo que devuelve la victoria, ya con la subida de nivel) con el factor de combate de ESA pelea. Antes la victoria mostraba la vida
+    // real y la pelea la escalada, y el máximo «cambiaba» de una pantalla a la otra (v0.25.3, ver GameData/HpDisplay.cs).
+    public static string ShownHpLine(User player, double hpMultiplier) =>
+        HpLine(HpDisplay.Scale(player.CurrentHp, hpMultiplier), HpDisplay.Scale(player.MaxHp, hpMultiplier));
+
     // La victoria sin capítulo nuevo (la firma de siempre: los arneses de prueba la invocan por reflexión con estos 6 argumentos).
     private static Embed BuildVictoryEmbed(
         CombatState state, TurnResult turn, CombatReward reward, Item? droppedItem, LevelUpOutcome outcome, bool firstBossClear = true) =>
@@ -655,7 +660,7 @@ public class AdventureModule(
                 (state.CommandName == "boss" ? string.Empty : $"\n\n{MonsterSays(state, NpcDialogue.BossLine.Defeated)}"))
             .AddField("💰 Oro ganado", reward.Gold.ToString(), true)
             .AddField("📊 EXP ganada", reward.Xp.ToString(), true)
-            .AddField("❤️ Tu HP", HpLine(player.CurrentHp, player.MaxHp), true)
+            .AddField("❤️ Tu HP", ShownHpLine(player, state.Passives.MaxHpMultiplier), true)
             .AddField("📋 Resumen del combate", BuildCombatSummaryLine(state), false);
 
         if (droppedItem is not null)

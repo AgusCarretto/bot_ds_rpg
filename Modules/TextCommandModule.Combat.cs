@@ -85,7 +85,7 @@ public partial class TextCommandModule
     {
         try
         {
-            var result = await AutoHuntModule.ExecuteAsync(adventureRepository, userRepository, itemRepository, combatStarter, gameEvents, Context.User.Id);
+            var result = await AutoHuntModule.ExecuteAsync(adventureRepository, userRepository, itemRepository, combatStarter, gameEvents, Context.User.Id, bonusService);
             await ReplyAsync(result.PlainMessage, embed: result.Embed);
         }
         catch (Exception ex)

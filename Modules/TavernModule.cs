@@ -10,7 +10,7 @@ using Discord.Interactions;
 // solo de esa, las unidades que hagan falta. Si no alcanza la comida, se la come toda y avisa cuánto falta. Todo se cobra en UNA transacción
 // (IInventoryRepository.EatAndHealAsync): o se gasta todo lo planeado y se cura, o no cambia nada. Sigue bloqueado en combate por la misma razón
 // de siempre: comer tranquilo no debería ser gratis en pleno combate, para eso está /use (cede el turno al monstruo, ver Modules/UseModule.cs).
-public class TavernModule(IUserRepository userRepository, IInventoryRepository inventoryRepository, ICombatSessionService combatSessions, IBuffRepository buffRepository, IRaidSessionService raidSessions)
+public class TavernModule(IUserRepository userRepository, IInventoryRepository inventoryRepository, ICombatSessionService combatSessions, IBuffRepository buffRepository, IRaidSessionService raidSessions, IPlayerBonusService bonusService)
     : InteractionModuleBase<SocketInteractionContext>
 {
     // Comando barra: /heal [comida]
@@ -23,7 +23,7 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
 
         try
         {
-            var embed = await ExecuteHealAsync(userRepository, inventoryRepository, combatSessions, buffRepository, Context.User.Id, food, raidSessions);
+            var embed = await ExecuteHealAsync(userRepository, inventoryRepository, combatSessions, buffRepository, Context.User.Id, food, raidSessions, bonusService);
             if (NpcImages.AttachmentPathFor(embed) is { } file)
             {
                 await FollowupWithFileAsync(file, embed: embed);
@@ -46,13 +46,14 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
     // exactamente la misma lógica en "aa heal".
     public static async Task<Embed> ExecuteHealAsync(
         IUserRepository userRepository, IInventoryRepository inventoryRepository, ICombatSessionService combatSessions,
-        IBuffRepository buffRepository, ulong discordId, string? foodName = null, IRaidSessionService? raidSessions = null) =>
-        NpcImages.Decorate(await ExecuteHealCoreAsync(userRepository, inventoryRepository, combatSessions, buffRepository, discordId, foodName, raidSessions), NpcImages.Innkeeper);
+        IBuffRepository buffRepository, ulong discordId, string? foodName = null, IRaidSessionService? raidSessions = null, IPlayerBonusService? bonusService = null) =>
+        NpcImages.Decorate(await ExecuteHealCoreAsync(userRepository, inventoryRepository, combatSessions, buffRepository, discordId, foodName, raidSessions, bonusService), NpcImages.Innkeeper);
 
     // Sin la foto del tabernero: lo que reutiliza la taberna (la opción "Curarme del todo") para sacarle el texto.
+    // La vida que dice el texto es la que se ve en todas partes (con el factor de clase, GameData/HpDisplay.cs); lo que come y cuánto cura sigue contándose en vida real.
     public static async Task<Embed> ExecuteHealCoreAsync(
         IUserRepository userRepository, IInventoryRepository inventoryRepository, ICombatSessionService combatSessions,
-        IBuffRepository buffRepository, ulong discordId, string? foodName = null, IRaidSessionService? raidSessions = null)
+        IBuffRepository buffRepository, ulong discordId, string? foodName = null, IRaidSessionService? raidSessions = null, IPlayerBonusService? bonusService = null)
     {
         // También en pleno jefe en equipo (ya peleando): ahí se come con el botón del combate, no pasando por la posada.
         if (combatSessions.Peek(discordId) is not null || raidSessions?.IsInActiveFight(discordId) == true)
@@ -65,12 +66,13 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
         }
 
         var player = await userRepository.GetOrCreateUserAsync(discordId);
+        double hpMultiplier = await bonusService.HpMultiplierAsync(player);
 
         if (player.CurrentHp >= player.MaxHp)
         {
             return new EmbedBuilder()
                 .WithTitle("❤️ Ya estás al máximo")
-                .WithDescription($"{NpcDialogue.Innkeeper(InnkeeperLine.FullHp)}\n\nTenés {player.CurrentHp}/{player.MaxHp} HP, no necesitás curarte todavía.")
+                .WithDescription($"{NpcDialogue.Innkeeper(InnkeeperLine.FullHp)}\n\nTenés {HpDisplay.Scale(player.CurrentHp, hpMultiplier)}/{HpDisplay.Scale(player.MaxHp, hpMultiplier)} HP, no necesitás curarte todavía.")
                 .WithColor(Color.Green)
                 .Build();
         }
@@ -138,7 +140,9 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
         }
 
         string eaten = string.Join("\n", plan.Foods.Select(f => $"• {f.Quantity}× {ItemDisplay.Format(f.Food.Emoji, f.Food.Name)}"));
-        int recovered = healed.CurrentHp - player.CurrentHp;
+        // Todo lo que se dice de la vida va ya con el factor de clase: lo que recuperó es la diferencia de las dos cifras que se ven, así los números del mensaje cierran entre sí.
+        int shownNow = HpDisplay.Scale(healed.CurrentHp, hpMultiplier), shownMax = HpDisplay.Scale(healed.MaxHp, hpMultiplier);
+        int recovered = shownNow - HpDisplay.Scale(player.CurrentHp, hpMultiplier);
 
         if (!plan.Covers)
         {
@@ -146,7 +150,7 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
                 .WithTitle("🍖 Te comiste todo lo que tenías")
                 .WithDescription(
                     $"{NpcDialogue.Innkeeper(InnkeeperLine.Healed)}\n\nComiste:\n{eaten}\n\n" +
-                    $"❤️ Recuperaste **{recovered}** HP: ahora tenés **{healed.CurrentHp}/{healed.MaxHp}**, pero todavía te faltan **{healed.MaxHp - healed.CurrentHp}**. " +
+                    $"❤️ Recuperaste **{recovered}** HP: ahora tenés **{shownNow}/{shownMax}**, pero todavía te faltan **{shownMax - shownNow}**. " +
                     "Comprá más comida en **/taberna** y volvé a curarte.")
                 .WithColor(Color.Orange)
                 .Build();
@@ -156,7 +160,7 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
             .WithTitle("🍖 ¡Buen provecho!")
             .WithDescription(
                 $"{NpcDialogue.Innkeeper(InnkeeperLine.Healed)}\n\nComiste:\n{eaten}\n\n" +
-                $"❤️ Recuperaste **{recovered}** HP: ahora tenés **{healed.CurrentHp}/{healed.MaxHp}**.")
+                $"❤️ Recuperaste **{recovered}** HP: ahora tenés **{shownNow}/{shownMax}**.")
             .WithColor(Color.Green)
             .Build();
     }

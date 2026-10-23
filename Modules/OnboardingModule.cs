@@ -135,7 +135,7 @@ public class OnboardingModule(IUserRepository userRepository, IGameEvents gameEv
                 "tu equipamiento y sobrevivir.\n\n" +
                 "Escribí `/tutorial` o `aa tutorial` para aprender lo básico. " + Lore.WelcomeHint)
             .AddField("🎭 Tu clase", $"**{player.Class}** {classDef.Emoji} — especialista en {classDef.WeaponType}", true)
-            .AddField("📊 Estado inicial", $"Nivel {player.Level} · {player.CurrentHp}/{player.MaxHp} HP · {player.Gold} de oro", true);
+            .AddField("📊 Estado inicial", $"Nivel {player.Level} · {HpDisplay.Scale(player.CurrentHp, PlayerCombatProfileCalculator.HpMultiplier(player))}/{HpDisplay.Scale(player.MaxHp, PlayerCombatProfileCalculator.HpMultiplier(player))} HP · {player.Gold} de oro", true);
 
         if (kitGranted)
         {

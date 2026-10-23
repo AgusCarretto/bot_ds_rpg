@@ -135,7 +135,7 @@ await Make(U, hp: 10, maxHp: 100);
 await Give(U, "Mate Amargo", 10); await Give(U, "Empanada de Carne", 2);
 var heal1 = await TavernModule.ExecuteHealAsync(users, inventory, combat, buffs, U);
 int hp1 = await HpOf(U);
-Check(hp1 == 100 && heal1.Title == "🍖 ¡Buen provecho!" && heal1.Description.Contains("Comiste:") && heal1.Description.Contains("100/100"), $"cura toda la vida de una (HP 10 -> {hp1}): «{heal1.Title}»");
+Check(hp1 == 100 && heal1.Title == "🍖 ¡Buen provecho!" && heal1.Description.Contains("Comiste:") && heal1.Description.Contains($"{HpDisplay.Scale(100, ClassPassives.For("Guerrero").MaxHpMultiplier)}/{HpDisplay.Scale(100, ClassPassives.For("Guerrero").MaxHpMultiplier)}"), $"(v0.25.3: la vida se ve con el factor de la clase, un Guerrero de 100 se ve de 120) cura toda la vida de una (HP 10 -> {hp1}): «{heal1.Title}»");
 int mates = await Have(U, "Mate Amargo"), emps = await Have(U, "Empanada de Carne");
 int eaten = (10 - mates) * 15 + (2 - emps) * 40;
 Check(eaten >= 90 && eaten < 90 + 40 && eaten == 90 + 0 || eaten >= 90, $"comió lo necesario ({10 - mates} mates y {2 - emps} empanadas = {eaten} HP de comida para 90 que faltaban)");

@@ -173,7 +173,7 @@ public partial class TextCommandModule
     {
         try
         {
-            var embed = await TavernModule.ExecuteHealAsync(userRepository, inventoryRepository, combatSessions, buffRepository, Context.User.Id, food, raidSessions);
+            var embed = await TavernModule.ExecuteHealAsync(userRepository, inventoryRepository, combatSessions, buffRepository, Context.User.Id, food, raidSessions, bonusService);
             await NpcImages.SendAsync(Context.Channel, embed);
         }
         catch (Exception ex)
@@ -192,7 +192,7 @@ public partial class TextCommandModule
     {
         try
         {
-            var result = await UseModule.ExecuteUseAsync(userRepository, itemRepository, inventoryRepository, combatSessions, buffRepository, Context.User.Id, item, raidSessions, gameEvents);
+            var result = await UseModule.ExecuteUseAsync(userRepository, itemRepository, inventoryRepository, combatSessions, buffRepository, Context.User.Id, item, raidSessions, gameEvents, bonusService);
             await ReplyAsync(result.PlainMessage, embed: result.Embed);
         }
         catch (Exception ex)

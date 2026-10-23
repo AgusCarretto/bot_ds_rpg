@@ -13,7 +13,8 @@ public class AutoHuntModule(
     IUserRepository userRepository,
     IItemRepository itemRepository,
     IAdventureCombatStarter combatStarter,
-    IGameEvents gameEvents) : InteractionModuleBase<SocketInteractionContext>
+    IGameEvents gameEvents,
+    IPlayerBonusService bonusService) : InteractionModuleBase<SocketInteractionContext>
 {
     private const int MaxRounds = 100; // tope defensivo; el HP del monstruo baja en cada golpe, así que en la práctica nunca se llega acá
 
@@ -25,7 +26,7 @@ public class AutoHuntModule(
 
         try
         {
-            var result = await ExecuteAsync(adventureRepository, userRepository, itemRepository, combatStarter, gameEvents, Context.User.Id);
+            var result = await ExecuteAsync(adventureRepository, userRepository, itemRepository, combatStarter, gameEvents, Context.User.Id, bonusService);
 
             if (result.PlainMessage is not null)
             {
@@ -55,13 +56,16 @@ public class AutoHuntModule(
         IItemRepository itemRepository,
         IAdventureCombatStarter combatStarter,
         IGameEvents gameEvents,
-        ulong discordId)
+        ulong discordId,
+        IPlayerBonusService? bonusService = null)
     {
         // Antes de reclamar el cooldown: /autohunt pelea solo y no puede huir, así que con poca vida (< AutoHuntRules.MinHpPercent) se pide curarse primero. No gasta nada.
+        // El umbral se mide con la vida real (el porcentaje es el mismo con o sin el factor de clase); lo que dice el mensaje va con el factor, como todas las pantallas (GameData/HpDisplay.cs).
         var hurtPlayer = await userRepository.GetByDiscordIdAsync(discordId);
         if (hurtPlayer is not null && AutoHuntRules.IsTooHurt(hurtPlayer.CurrentHp, hurtPlayer.MaxHp))
         {
-            return new AutoHuntResult(null, BuildTooHurtEmbed(hurtPlayer.CurrentHp, hurtPlayer.MaxHp));
+            double hurtMultiplier = await bonusService.HpMultiplierAsync(hurtPlayer);
+            return new AutoHuntResult(null, BuildTooHurtEmbed(HpDisplay.Scale(hurtPlayer.CurrentHp, hurtMultiplier), HpDisplay.Scale(hurtPlayer.MaxHp, hurtMultiplier)));
         }
 
         // Misma preparación que /hunt: mismo cooldown (CooldownCatalog.Hunt → "hunt" en la tabla
@@ -183,7 +187,7 @@ public class AutoHuntModule(
             .WithColor(Color.Green)
             .WithMonsterPortrait(state.MonsterPortrait) // siempre la cara del monstruo, haya drop o no
             .WithDescription(
-                $"Venciste al **{state.MonsterName}** {state.MonsterEmoji}. Te quedan **{player.CurrentHp}/{player.MaxHp}** HP.\n" +
+                $"Venciste al **{state.MonsterName}** {state.MonsterEmoji}. Te quedan **{HpDisplay.Scale(player.CurrentHp, state.Passives.MaxHpMultiplier)}/{HpDisplay.Scale(player.MaxHp, state.Passives.MaxHpMultiplier)}** HP.\n" +
                 $"Ganaste: **{reward.Gold}** Oro, **{reward.Xp}** XP.\n\n" +
                 AdventureModule.MonsterSays(state, NpcDialogue.BossLine.Defeated))
             .AddField("📋 Resumen del combate", AdventureModule.BuildCombatSummaryLine(state), false);

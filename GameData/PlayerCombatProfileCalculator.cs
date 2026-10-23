@@ -20,6 +20,18 @@ public static class PlayerCombatProfileCalculator
         int damage = PlayerBonuses.Scale(AttackBuff.Apply(CombatStats.TotalAttack(player.Level, WeaponDamage(player, weapon)), attackBuffPercent), bonuses?.AttackMultiplier ?? 1.0);
         int defense = PlayerBonuses.Scale(CombatStats.TotalDefense(player.Level, AmuletDefense(player, amulet)), bonuses?.DefenseMultiplier ?? 1.0);
 
+        var passives = CombatPassives(player, bonuses);
+
+        int combatMaxHp = HpDisplay.Scale(player.MaxHp, passives.MaxHpMultiplier);
+        int combatCurrentHp = HpDisplay.Scale(player.CurrentHp, passives.MaxHpMultiplier);
+
+        return new PlayerCombatProfile(damage, defense, combatMaxHp, combatCurrentHp, passives, attackBuffPercent, bonuses);
+    }
+
+    // Las pasivas de la clase tal como PELEAN: la base, los encantamientos de efecto, la vida de las bendiciones y el ajuste por clase contra monstruos. Es UNA sola cuenta para el combate (Resolve) y para la vida que se
+    // muestra (HpMultiplier), así el número que se ve en el perfil, en /heal y en la pelea no puede separarse.
+    private static ClassPassiveProfile CombatPassives(User player, PlayerBonuses? bonuses)
+    {
         var passives = ClassPassives.For(player.Class);
 
         // Los encantamientos de efecto (v0.22.0: Crítico, Sangre, Vida, Esquive) valen SOLO contra monstruos, como las bendiciones de poder: sin bonuses (duelos y Arena) no cuentan.
@@ -39,11 +51,12 @@ public static class PlayerCombatProfileCalculator
             passives = passives with { MaxHpMultiplier = passives.MaxHpMultiplier * pveFactor };
         }
 
-        int combatMaxHp = (int)Math.Round(player.MaxHp * passives.MaxHpMultiplier);
-        int combatCurrentHp = (int)Math.Round(player.CurrentHp * passives.MaxHpMultiplier);
-
-        return new PlayerCombatProfile(damage, defense, combatMaxHp, combatCurrentHp, passives, attackBuffPercent, bonuses);
+        return passives;
     }
+
+    // El factor de la vida de un jugador contra monstruos (Guerrero ×1,2, Ninja ×0,95, Arquero ×1,15, más el encantamiento Vida y la bendición Corazón de Brasa): con lo que SE MUESTRA su vida en todas las pantallas
+    // (v0.25.3, el dueño: «siempre mostrá la vida que debería tener, si es ×0,95 mostrá el resultado»). Sin bonuses (no hay servicio a mano) cuenta lo que sale de la fila del jugador: la clase y el encantamiento, sin la bendición.
+    public static double HpMultiplier(User player, PlayerBonuses? bonuses = null) => CombatPassives(player, bonuses ?? PlayerBonuses.None).MaxHpMultiplier;
 
     // Lo que SUMA el arma puesta al ataque: su stat con la sinergia de la clase y, encima, el encantamiento Filo si es ese el que tiene (GameData/Enchantments.cs; con los de efecto, el stat no cambia). El perfil, el combate y
     // /enchant usan estas dos cuentas para mostrar y pelear con lo mismo.

@@ -32,6 +32,15 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
 
+## La misma vida en todas las pantallas (v0.25.3, 2026-10-23)
+
+- **Lo que se vio** (capturas de un amigo del dueño, un Ninja): en UNA pelea la vida máxima pasaba de 323 a 340 y la actual de 244 a 257. No era un error de cuentas: la pelea muestra la vida de combate (la de la base por el factor de la clase: Ninja ×0,95, Arquero ×1,15, Guerrero ×1,2, más el encantamiento Vida y la bendición Corazón de Brasa), y la pantalla de victoria, el perfil, `/heal` y `/use` mostraban la real (340 × 0,95 = 323; 257 × 0,95 = 244).
+- **Pedido del dueño**: «necesito que siempre sea la misma vida… sea la clase que sea, mostrá la vida que debería tener: si es ×0,95, mostrá el resultado». (Yo había propuesto mostrar siempre la real; prefirió la otra.)
+- **Cambio**: todas las pantallas muestran la vida CON el factor de clase: el perfil, la victoria, `/autohunt` (victoria y «muy herido»), `/heal` (y «recuperaste N», que es la diferencia de las dos cifras que se ven), `/use` fuera de combate, «Curarme del todo» de la taberna y la tarjeta de bienvenida (un Ninja nuevo arranca con 95/95). Es una sola cuenta: `PlayerCombatProfileCalculator.CombatPassives` arma el factor para pelear y para mostrar. La base guarda la vida real y todas las cuentas siguen igual: solo cambia el número que se imprime.
+- **Sigue distinto a propósito**: el aviso de subida de nivel dice «+15 de vida» (real) y los alimentos dicen «cura N HP» (real); difieren de lo que se ve por el factor de la clase. Si molesta, la salida es escalar esos dos textos también.
+- **Pruebas**: `v0253test` (la cuenta pura por clase, el caso 340 → 323 / 257 → 244, el perfil, `/heal`, `/use`, `/autohunt`, la taberna, la tarjeta de bienvenida y el servicio de bonus, incluido que no tire si se cae).
+- **Para la base viva**: nada (sin migración).
+
 ## El perfil, ordenado para el celu (v0.25.2, 2026-10-23)
 
 - **Pedido del dueño** (viendo el perfil en el celu, ya con la v0.25.1 en Railway): la XP y la vida se cortaban y bajaban de renglón; sacar la habilidad («eso con `aa hab` ya se ve»), la marca de mascotas («ya queda incluido»), el título «Estado»; la zona arriba de la XP; una línea en blanco entre DEF y oro y entre banco y racha; «ATQ:» con dos puntos y «(sin arma)» / «(sin amuleto)» entre paréntesis; el ícono primero y después el nombre.
