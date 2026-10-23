@@ -18,7 +18,7 @@ public sealed record TabernaScene(Embed Embed, MessageComponent? Components, str
 public class TabernaModule(
     IUserRepository userRepository, IItemRepository itemRepository, IInventoryRepository inventoryRepository, IShopRepository shopRepository,
     IBuffRepository buffRepository, ICombatSessionService combatSessions, IGameEvents gameEvents, IBoxContextService boxContextService,
-    IDropExchangeRepository dropExchangeRepository, IRaidSessionService raidSessions)
+    IDropExchangeRepository dropExchangeRepository, IRaidSessionService raidSessions, IPlayerBonusService bonusService)
     : InteractionModuleBase<SocketInteractionContext>
 {
     // El trueque va en DOS pasos (hay que elegir qué entregás y qué querés a cambio): la lista "Cambiar drops" (Swap) y, debajo de lo que elegiste, una lista solo tuya
@@ -42,7 +42,7 @@ public class TabernaModule(
         try
         {
             var scene = await BuildSceneAsync(
-                userRepository, itemRepository, inventoryRepository, buffRepository, Context.User.Id, null, boxContextService, dropExchangeRepository);
+                userRepository, itemRepository, inventoryRepository, buffRepository, Context.User.Id, null, boxContextService, dropExchangeRepository, bonusService);
 
             if (scene.AttachmentPath is { } file)
             {
@@ -252,10 +252,10 @@ public class TabernaModule(
 
             string talk = await ExecuteActionAsync(
                 action, userRepository, itemRepository, inventoryRepository, shopRepository, buffRepository, combatSessions, gameEvents,
-                Context.User.Id, selected.FirstOrDefault() ?? string.Empty, boxContextService, raidSessions);
+                Context.User.Id, selected.FirstOrDefault() ?? string.Empty, boxContextService, raidSessions, bonusService);
 
             // La escena se refresca (tu oro y tus listas al día) y la respuesta va en un mensaje aparte.
-            var scene = await BuildSceneAsync(userRepository, itemRepository, inventoryRepository, buffRepository, Context.User.Id, null, boxContextService, dropExchangeRepository);
+            var scene = await BuildSceneAsync(userRepository, itemRepository, inventoryRepository, buffRepository, Context.User.Id, null, boxContextService, dropExchangeRepository, bonusService);
 
             await ModifyOriginalResponseAsync(p =>
             {
@@ -335,7 +335,7 @@ public class TabernaModule(
     public static async Task<string> ExecuteActionAsync(
         string action, IUserRepository userRepository, IItemRepository itemRepository, IInventoryRepository inventoryRepository,
         IShopRepository shopRepository, IBuffRepository buffRepository, ICombatSessionService combatSessions, IGameEvents gameEvents,
-        ulong discordId, string itemName, IBoxContextService? boxContext = null, IRaidSessionService? raidSessions = null)
+        ulong discordId, string itemName, IBoxContextService? boxContext = null, IRaidSessionService? raidSessions = null, IPlayerBonusService? bonusService = null)
     {
         switch (action)
         {
@@ -361,11 +361,11 @@ public class TabernaModule(
                 // "Curarme del todo": la misma curación completa de /heal (come lo necesario de la mochila, sin banquetes).
                 if (itemName == FullHeal)
                 {
-                    var healed = await TavernModule.ExecuteHealCoreAsync(userRepository, inventoryRepository, combatSessions, buffRepository, discordId);
+                    var healed = await TavernModule.ExecuteHealCoreAsync(userRepository, inventoryRepository, combatSessions, buffRepository, discordId, bonusService: bonusService);
                     return healed.Description;
                 }
 
-                var used = await UseModule.ExecuteUseAsync(userRepository, itemRepository, inventoryRepository, combatSessions, buffRepository, discordId, itemName);
+                var used = await UseModule.ExecuteUseAsync(userRepository, itemRepository, inventoryRepository, combatSessions, buffRepository, discordId, itemName, bonusService: bonusService);
                 if (used.Embed is null)
                 {
                     return used.PlainMessage ?? string.Empty;
@@ -381,7 +381,7 @@ public class TabernaModule(
     // que "aa taberna" muestre exactamente lo mismo.
     public static async Task<TabernaScene> BuildSceneAsync(
         IUserRepository userRepository, IItemRepository itemRepository, IInventoryRepository inventoryRepository,
-        IBuffRepository buffRepository, ulong discordId, string? talk, IBoxContextService? boxContext = null, IDropExchangeRepository? dropExchange = null)
+        IBuffRepository buffRepository, ulong discordId, string? talk, IBoxContextService? boxContext = null, IDropExchangeRepository? dropExchange = null, IPlayerBonusService? bonusService = null)
     {
         var player = await userRepository.GetByDiscordIdAsync(discordId);
         if (player is null)
@@ -409,7 +409,9 @@ public class TabernaModule(
         {
             // Si estás herido y tenés comida común, arriba de todo va "Curarme del todo" (el resto de la lista sigue siendo de a UNA unidad).
             var eatOptions = new List<(string Label, string Description, string Value)>();
-            int missingHp = player.MaxHp - player.CurrentHp;
+            // «Te faltan N HP» en la vida que se ve (con el factor de clase, GameData/HpDisplay.cs), la misma que dice /heal.
+            double hpMultiplier = await bonusService.HpMultiplierAsync(player);
+            int missingHp = HpDisplay.Scale(player.MaxHp, hpMultiplier) - HpDisplay.Scale(player.CurrentHp, hpMultiplier);
             if (missingHp > 0 && foodItems.Any(o => !buffs.ContainsKey(o.Item.ItemId)))
             {
                 eatOptions.Add(("🍖 Curarme del todo", $"Come lo necesario de tu mochila · te faltan {missingHp} HP", FullHeal));

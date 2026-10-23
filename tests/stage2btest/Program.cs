@@ -42,7 +42,8 @@ async Task Cleanup() => await db.ExecuteAsync(
     "DELETE FROM player_buffs WHERE discord_id = @id; DELETE FROM cooldowns WHERE discord_id = @id; DELETE FROM users WHERE discord_id = @id; DELETE FROM game_events WHERE discord_id = @id;", new { id = (long)U });
 async Task<int> Have(string name) => await db.ExecuteScalarAsync<int>("SELECT COALESCE(SUM(quantity), 0) FROM inventory inv JOIN items i USING (item_id) WHERE inv.discord_id = @id AND i.name = @n", new { id = (long)U, n = name });
 async Task Give(string name, int qty) => await db.ExecuteAsync("INSERT INTO inventory (discord_id, item_id, quantity) SELECT @id, item_id, @q FROM items WHERE name = @n ON CONFLICT (discord_id, item_id) DO UPDATE SET quantity = @q", new { id = (long)U, n = name, q = qty });
-async Task SetHp(int hp) => await db.ExecuteAsync("UPDATE users SET current_hp = @hp WHERE discord_id = @id", new { id = (long)U, hp });
+// Hechicero a propósito (v0.25.3): su factor de vida es 1,0, así la comida cura lo que dice (la vida se ve con el factor de clase y un Guerrero la vería ×1,2: GameData/HpDisplay.cs).
+async Task SetHp(int hp) => await db.ExecuteAsync("UPDATE users SET current_hp = @hp, class = 'Hechicero' WHERE discord_id = @id", new { id = (long)U, hp });
 async Task SetGold(int g) => await db.ExecuteAsync("UPDATE users SET gold = @g WHERE discord_id = @id", new { id = (long)U, g });
 async Task<(int hp, int maxHp, int gold)> Stats() => await db.QuerySingleAsync<(int, int, int)>("SELECT current_hp, max_hp, gold FROM users WHERE discord_id = @id", new { id = (long)U });
 async Task ClearBuff() => await db.ExecuteAsync("DELETE FROM player_buffs WHERE discord_id = @id", new { id = (long)U });

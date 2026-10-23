@@ -52,7 +52,8 @@ async Task Cleanup()
     await db.ExecuteAsync("DELETE FROM users WHERE discord_id BETWEEN @a AND @b", new { a = BaseId, b = BaseId + 999 });
 }
 
-async Task Make(ulong id, int gold = 0, int level = 10, int hp = 100, int maxHp = 100, string cls = "Guerrero")
+// Hechicero por defecto a propósito (v0.25.3): su factor de vida es 1,0, así la comida cura lo que dice y los números de la vida son los de la base (un Guerrero la ve ×1,2: GameData/HpDisplay.cs).
+async Task Make(ulong id, int gold = 0, int level = 10, int hp = 100, int maxHp = 100, string cls = "Hechicero")
 {
     await users.GetOrCreateUserAsync(id);
     await db.ExecuteAsync("UPDATE users SET class = @c, level = @l, gold = @g, max_hp = @m, current_hp = @h, current_zone_id = 1, weapon_id = NULL, amulet_id = NULL WHERE discord_id = @id", new { id = (long)id, c = cls, l = level, g = gold, m = maxHp, h = hp });

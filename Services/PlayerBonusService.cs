@@ -1,4 +1,5 @@
 using BotDsRpg.GameData;
+using BotDsRpg.Models;
 using BotDsRpg.Repositories;
 
 namespace BotDsRpg.Services;
@@ -10,6 +11,29 @@ public interface IPlayerBonusService
     // NUNCA tira: es un extra y no puede romper una pelea ni una recolección. Si una fuente falla, se loguea y esa parte queda en cero (el jugador pelea con lo que se pudo leer).
     // fuegoNuevo viene del User que el llamador ya tiene (users.fuego_nuevo), así no se vuelve a leer la fila.
     Task<PlayerBonuses> GetAsync(ulong discordId, int fuegoNuevo, CancellationToken cancellationToken = default);
+}
+
+public static class PlayerBonusExtensions
+{
+    // El factor con el que SE MUESTRA la vida de un jugador (GameData/HpDisplay.cs): el de la pelea, con sus bendiciones. Sin servicio (una prueba, o un llamador que no lo tiene a mano) cuenta la clase y el encantamiento
+    // sin la bendición. NUNCA tira: mostrar la vida no puede romper un /heal.
+    public static async Task<double> HpMultiplierAsync(this IPlayerBonusService? service, User player)
+    {
+        PlayerBonuses? bonuses = null;
+        if (service is not null)
+        {
+            try
+            {
+                bonuses = await service.GetAsync((ulong)player.DiscordId, player.FuegoNuevo);
+            }
+            catch (Exception ex)
+            {
+                BotLog.Warn(ex);
+            }
+        }
+
+        return PlayerCombatProfileCalculator.HpMultiplier(player, bonuses);
+    }
 }
 
 // userRepository y zoneRepository son opcionales: con ellos se calcula el minibuff del banco (v0.21.0); sin ellos (algunas pruebas) el banco no suma.

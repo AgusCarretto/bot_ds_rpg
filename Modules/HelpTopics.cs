@@ -208,6 +208,8 @@ public static class HelpTopics
             "Sirve en /hunt, /travel y /boss (también en equipo). Tenés **60 segundos** por turno: si no actuás en ese tiempo el combate se abandona (en equipo perdés el turno, y al segundo seguido te retirás)."),
         ("❤️ Tu vida",
             "La vida no se recupera sola: curate con **/heal**, **/use** o en la **/taberna**. Con 0 HP no podés pelear. En plena pelea (/hunt, /travel y /boss) solo podés comer **una vez por pelea**."),
+        ("🔒 Mientras peleás",
+            "Con una pelea en curso (también un jefe en equipo o un duelo) solo valen **/use**, atacar, la habilidad y huir, y lo que solo mira: **/profile**, **/inventory**, **/cd**, **/info** y **/tutorial**. Lo demás (recolectar, forjar, jugar, etc.) espera a que termine."),
         ("☠️ Si perdés", $"Perdés la EXP del nivel y el {DeathPenalty.GoldPercent} % del oro: **/info tema:death**."));
 
     private static Embed Boss() => Topic(Self("boss"),

@@ -11,6 +11,13 @@ public sealed class CombatSessionService(IUserRepository userRepository) : IComb
 
     private readonly ConcurrentDictionary<ulong, CombatSession> _sessions = new();
 
+    // Cómo terminó el último combate de cada jugador (una entrada chica por jugador, solo en memoria): para decirle POR QUÉ ya no tiene combate cuando aprieta un botón viejo (ICombatSessionService.RecentEnd).
+    private static readonly TimeSpan RecentEndLifetime = TimeSpan.FromMinutes(15);
+    private readonly ConcurrentDictionary<ulong, (DateTime AtUtc, string Reason)> _ended = new();
+
+    public string? RecentEnd(ulong discordId) =>
+        _ended.TryGetValue(discordId, out var end) && DateTime.UtcNow - end.AtUtc <= RecentEndLifetime ? end.Reason : null;
+
     public bool TryStart(ulong discordId, CombatState state, ICombatReplyTarget replyTarget)
     {
         var cts = new CancellationTokenSource();
@@ -43,6 +50,11 @@ public sealed class CombatSessionService(IUserRepository userRepository) : IComb
         expectedSession.TimeoutCts.Cancel();
         expectedSession.TimeoutCts.Dispose();
 
+        if (nextState is null || nextReplyTarget is null)
+        {
+            _ended[discordId] = (DateTime.UtcNow, "resolved");
+        }
+
         if (nextState is not null && nextReplyTarget is not null)
         {
             var cts = new CancellationTokenSource();
@@ -74,6 +86,8 @@ public sealed class CombatSessionService(IUserRepository userRepository) : IComb
             {
                 return; // Ya se había resuelto por otra vía (ataque/huida) justo antes.
             }
+
+            _ended[discordId] = (DateTime.UtcNow, "timeout");
 
             try
             {

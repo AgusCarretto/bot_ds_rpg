@@ -15,7 +15,8 @@ public class UseModule(
     ICombatSessionService combatSessions,
     IBuffRepository buffRepository,
     IRaidSessionService raidSessions,
-    IGameEvents gameEvents) : InteractionModuleBase<SocketInteractionContext>
+    IGameEvents gameEvents,
+    IPlayerBonusService bonusService) : InteractionModuleBase<SocketInteractionContext>
 {
     // Comando barra: /use
     [SlashCommand("use", "Usá un consumible de tu inventario para curar HP (funciona incluso en combate, sin gastar oro).")]
@@ -25,7 +26,7 @@ public class UseModule(
 
         try
         {
-            var result = await ExecuteUseAsync(userRepository, itemRepository, inventoryRepository, combatSessions, buffRepository, Context.User.Id, itemName, raidSessions, gameEvents);
+            var result = await ExecuteUseAsync(userRepository, itemRepository, inventoryRepository, combatSessions, buffRepository, Context.User.Id, itemName, raidSessions, gameEvents, bonusService);
             await FollowupAsync(result.PlainMessage, embed: result.Embed, ephemeral: result.Embed is null);
         }
         catch (Exception ex)
@@ -50,7 +51,8 @@ public class UseModule(
         ulong discordId,
         string itemName,
         IRaidSessionService? raidSessions = null,
-        IGameEvents? gameEvents = null)
+        IGameEvents? gameEvents = null,
+        IPlayerBonusService? bonusService = null)
     {
         // Dentro de un jefe en equipo que ya está peleando, comer es una ACCIÓN DEL COMBATE (v0.19.0): gasta el turno, es una vez por jugador y lo maneja el propio combate. Antes /use ahí curaba la vida de la base
         // y no la de la pelea (que vive en memoria): la comida se gastaba sin servir. Se pasa raidSessions solo desde los comandos reales; las pruebas viejas no lo pasan y siguen igual.
@@ -95,11 +97,13 @@ public class UseModule(
         if (session is null)
         {
             var player = await userRepository.GetOrCreateUserAsync(discordId);
+            // La vida que dice el mensaje es la de siempre en todas las pantallas: con el factor de clase (GameData/HpDisplay.cs).
+            double hpMultiplier = await bonusService.HpMultiplierAsync(player);
             if (player.CurrentHp >= player.MaxHp && buff is null)
             {
                 return new UseResult(null, new EmbedBuilder()
                     .WithTitle("❤️ Ya estás al máximo")
-                    .WithDescription($"Tenés {player.CurrentHp}/{player.MaxHp} HP, no necesitás usar **{ItemDisplay.Format(item.Emoji, item.Name)}** todavía.")
+                    .WithDescription($"Tenés {HpDisplay.Scale(player.CurrentHp, hpMultiplier)}/{HpDisplay.Scale(player.MaxHp, hpMultiplier)} HP, no necesitás usar **{ItemDisplay.Format(item.Emoji, item.Name)}** todavía.")
                     .WithColor(Color.Green)
                     .Build());
             }
@@ -109,7 +113,8 @@ public class UseModule(
                 return new UseResult($"No tenés **{ItemDisplay.Format(item.Emoji, item.Name)}** en tu inventario.", null);
             }
 
-            var healed = await userRepository.RestoreHpAsync(discordId, item.StatValue);
+            // La comida cura item.StatValue de la vida que ves (como dentro de una pelea): a la base se le suma la vida real equivalente (GameData/HpDisplay.cs).
+            var healed = await userRepository.RestoreHpAsync(discordId, HpDisplay.ToReal(item.StatValue, hpMultiplier));
             if (buff is not null)
             {
                 await buffRepository.ActivateAttackAsync(discordId, buff.AttackPercent, buff.Minutes, item.Name);
@@ -117,7 +122,7 @@ public class UseModule(
 
             return new UseResult(null, new EmbedBuilder()
                 .WithTitle("🍖 ¡Usaste un consumible!")
-                .WithDescription($"Usaste **{ItemDisplay.Format(item.Emoji, item.Name)}** y recuperaste HP. Ahora tenés **{healed.CurrentHp}/{healed.MaxHp}** HP." + BuffLine(buff))
+                .WithDescription($"Usaste **{ItemDisplay.Format(item.Emoji, item.Name)}** y recuperaste HP. Ahora tenés **{HpDisplay.Scale(healed.CurrentHp, hpMultiplier)}/{HpDisplay.Scale(healed.MaxHp, hpMultiplier)}** HP." + BuffLine(buff))
                 .WithItemThumbnail(item.Emoji)
                 .WithColor(Color.Green)
                 .Build());

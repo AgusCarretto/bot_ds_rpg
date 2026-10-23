@@ -262,6 +262,9 @@ return fails == 0 ? 0 : 1;
 sealed class FixedRandom(int value) : Random
 {
     public override int Next(int maxValue) => Math.Min(value, maxValue - 1);
+
+    // El oficio Encantador da una chance chica de subir el tier UNO (v0.22.1) y la tira con NextDouble: sin esto era azar de verdad y el tier «que salió» fallaba una de cada tantas corridas. 0,999 = nunca sube.
+    public override double NextDouble() => 0.999;
 }
 
 // Un proxy que implementa cualquier interfaz de Discord devolviendo los valores que se le den por nombre de propiedad.
