@@ -19,3 +19,6 @@ secrets.json
 ## Variables de entorno de otros destinos (por ejemplo .env.railway con el token real); la plantilla .env.example sí se sube
 .env.*
 !.env.example
+
+# Espacio de trabajo de los planes (ledger y briefs), solo local
+.superpowers/

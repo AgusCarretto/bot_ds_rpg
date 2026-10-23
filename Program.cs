@@ -24,6 +24,9 @@ class Program
     {
         BotLog.Info($"Asado y Acero RPG v{BotVersion.Current} arrancando...");
 
+        // El catálogo de traducciones al inglés (GameData/Loc.cs): no tira nunca, sin él todo sale en español.
+        Loc.LoadEmbedded();
+
         // Red de seguridad: lo que no pasa por ningún try/catch (una tarea en segundo plano, un evento del gateway)
         // se registra en vez de morir en silencio — en Railway los logs son lo único que hay para mirar.
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>

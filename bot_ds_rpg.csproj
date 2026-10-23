@@ -17,6 +17,11 @@
     <None Remove="tests\**;tools\**" />
   </ItemGroup>
 
+  <!-- El catálogo de traducciones al inglés (Locales/en.json) viaja DENTRO del ensamblado: no depende de rutas en Docker. Ver GameData/Loc.cs. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Locales/en.json" LogicalName="Locales.en.json" />
+  </ItemGroup>
+
   <!-- Las imágenes de los personajes (Assets/npc) viajan con el bot, tanto en dotnet run como en el publish de Docker. -->
   <ItemGroup>
     <Content Include="Assets\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
