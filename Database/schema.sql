@@ -466,3 +466,10 @@ CREATE TABLE IF NOT EXISTS player_language (
     language   VARCHAR(5) NOT NULL CHECK (language IN ('es', 'en')),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- La configuración de cada jugador (v0.26.1, Database/add_player_settings.sql): por ahora, mostrar u ocultar la tablita del resumen del combate. Sin clave foránea (como player_language).
+CREATE TABLE IF NOT EXISTS player_settings (
+    discord_id         BIGINT PRIMARY KEY,
+    show_fight_summary BOOLEAN NOT NULL DEFAULT TRUE,
+    updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
+);

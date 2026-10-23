@@ -1,6 +1,6 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-23 (v0.26.0: el bot en español e inglés, `/language`)_
+_Última revisión: 2026-10-23 (v0.26.1: el resumen del combate en tablita y `/config` para apagarlo)_
 
 ## Pendiente de un vistazo (puesto al día el 2026-10-22)
 
@@ -31,6 +31,16 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
   Términos y Privacidad públicos, y hay que confirmar si hay Premium Apps en Uruguay (Developer Portal, Monetization). Punto de enganche: `ReminderPolicy.IsEligible` y `CooldownCatalog`. El título especial entra como categoría «Especiales» del sistema de títulos.
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
+
+## El resumen del combate en tablita y `/config` (v0.26.1, 2026-10-23)
+
+- **Pedido del dueño** (mirando el resultado de `/autohunt` en inglés): que el oro y la XP lleven su emoji; que el resumen quede «más chill», en tablita y con un espacio chico; y que cada jugador pueda sacarlo («una opción en config o `aa set`, en la UI»).
+- **Íconos**: el resultado del `/autohunt` ahora dice «Ganaste: <ícono de oro> **148** Oro, <ícono de XP> **78** XP» (los íconos propios de la interfaz si están cargados; si no, 💰 y 📊).
+- **La tablita**: ya no es una línea larga. Son campos en línea de a tres por fila: ⏱️ Turnos · 🗡️ Daño hecho · 🩸 Daño recibido, y solo si hubo, 💥 Críticos · 💨 Esquives · 🔮 Curados. Sin título «Resumen del combate». Sale en `/hunt`, `/travel`, `/boss` (solo), `/autohunt`, la derrota con `/use` y la huida; el jefe en equipo tiene su propia pantalla y no se tocó. En la victoria queda debajo de oro / EXP / vida en la misma grilla de tres columnas. **Para mirar en el celu**: si «Daño recibido» se parte en dos renglones, acortar el nombre (la única palanca está en `AddCombatSummary`).
+- **`/config`** (`aa config`, también `aa conf`, `aa set`, `aa settings`, `aa ajustes`): pantalla privada con la opción «📋 Resumen del combate» y un botón que la prende o la apaga; también `aa config resumen off|on|toggle` (o `summary`, `fight summary`). Se guarda en `player_settings` y vale desde la **próxima** pelea (se lee al arrancar). Hecho para sumar más opciones: cada una es un campo en `PlayerSettings`, una columna con su valor por defecto y un botón.
+- **Migración**: `Database/add_player_settings.sql` (la tabla `player_settings`). **No hace falta correrla antes del binario**: sin la tabla el resumen se sigue mostrando y `/config` avisa «no pude guardar» al tocar el botón; correrla con `psql` cuando quieras que se pueda cambiar.
+- **Todo en los dos idiomas** (las 21 entradas nuevas están en `Locales/en.json`); arnés nuevo `v0261test` (29 comprobaciones) y la tablita probada en `loctest`.
+- **Queda abierto**: si en el celu las tres columnas se ven bien; que `/config` sume más opciones cuando haga falta (idioma en la misma pantalla, por ejemplo); y que la derrota (que tiene dos barras de vida en línea) reparta la tabla en la misma grilla — si molesta, se puede apilar la vida en esa pantalla.
 
 ## El bot en español e inglés: `/language` (v0.26.0, 2026-10-23)
 

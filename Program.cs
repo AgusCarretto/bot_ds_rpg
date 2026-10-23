@@ -566,6 +566,8 @@ public static class ServiceProviderBuilder
             .AddSingleton<IPlayerBonusService, PlayerBonusService>()
             .AddSingleton<ILanguageRepository, LanguageRepository>()
             .AddSingleton<IPlayerLanguageService, PlayerLanguageService>()
+            .AddSingleton<ISettingsRepository, SettingsRepository>()
+            .AddSingleton<IPlayerSettingsService, PlayerSettingsService>()
             .AddSingleton<IBuffRepository, BuffRepository>()
             .AddSingleton<IMissionRepository, MissionRepository>()
             .AddSingleton<IAchievementRepository, AchievementRepository>()

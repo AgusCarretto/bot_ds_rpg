@@ -676,8 +676,13 @@ public class AdventureModule(
                 (state.CommandName == "boss" ? string.Empty : $"\n\n{MonsterSays(state, NpcDialogue.BossLine.Defeated)}"))
             .AddField(Loc.T("💰 Oro ganado"), reward.Gold.ToString(), true)
             .AddField(Loc.T("📊 EXP ganada"), reward.Xp.ToString(), true)
-            .AddField(Loc.T("❤️ Tu HP"), ShownHpLine(player, state.Passives.MaxHpMultiplier), true)
-            .AddField(Loc.T("📋 Resumen del combate"), BuildCombatSummaryLine(state), false);
+            .AddField(Loc.T("❤️ Tu HP"), ShownHpLine(player, state.Passives.MaxHpMultiplier), true);
+
+        // La tablita del resumen (se apaga en /config): tres campos en línea justo después de oro, EXP y vida, así sigue la misma grilla de tres columnas.
+        if (state.ShowFightSummary)
+        {
+            AddCombatSummary(embed, state);
+        }
 
         if (droppedItem is not null)
         {
@@ -734,8 +739,12 @@ public class AdventureModule(
             .WithMonsterPortrait(state.MonsterPortrait)
             .WithDescription($"{turn.ActionFlavor}{CritPrefix(turn.CritCount)}{hitLine}{LifestealSuffix(turn.LifestealHeal, turn.LeechHeal)}\n\n{MonsterSays(state, NpcDialogue.BossLine.Victory)}")
             .AddField(Loc.T("❤️ Tu HP"), HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
-            .AddField(Loc.F($"{state.MonsterEmoji} HP de {state.MonsterName}"), HpLine(turn.MonsterHpAfter, state.MonsterMaxHp), true)
-            .AddField(Loc.T("📋 Resumen del combate"), BuildCombatSummaryLine(state), false);
+            .AddField(Loc.F($"{state.MonsterEmoji} HP de {state.MonsterName}"), HpLine(turn.MonsterHpAfter, state.MonsterMaxHp), true);
+
+        if (state.ShowFightSummary)
+        {
+            AddCombatSummary(embed, state);
+        }
 
         return WithDeathPenalty(embed, penalty).Build();
     }
@@ -800,24 +809,47 @@ public class AdventureModule(
 
     private static Embed BuildFleeEmbed(CombatState state)
     {
-        return new EmbedBuilder()
+        // La vida ocupa su propia fila (no en línea): así la tablita del resumen arranca en una fila nueva y las tres columnas quedan parejas.
+        var embed = new EmbedBuilder()
             .WithTitle(Loc.F($"🏃 Huiste del combate contra {state.MonsterName} {state.MonsterEmoji}"))
             .WithColor(Color.DarkGrey)
             .WithMonsterPortrait(state.MonsterPortrait)
             .WithDescription(Loc.T("Escapaste cobardemente... sin oro, sin experiencia, pero de una sola pieza."))
-            .AddField(Loc.T("❤️ Tu HP"), HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
-            .AddField(Loc.T("📋 Resumen del combate"), BuildCombatSummaryLine(state), false)
-            .Build();
+            .AddField(Loc.T("❤️ Tu HP"), HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), !state.ShowFightSummary);
+
+        if (state.ShowFightSummary)
+        {
+            AddCombatSummary(embed, state);
+        }
+
+        return embed.Build();
     }
 
-    // Público para que AutoHuntModule y UseModule usen exactamente el mismo formato de resumen al
-    // cerrar un combate (victoria, derrota o huida) — los contadores viajan en el propio CombatState.
-    public static string BuildCombatSummaryLine(CombatState state)
+    // El resumen del combate como una TABLITA (v0.26.1, el dueño: «un montón de cosas… ponelo en tablita»): un campo en línea por dato (el nombre dice qué es y el valor es el número), de a tres por
+    // fila, en vez de una sola línea con todo pegado. Siempre van turnos, daño hecho y daño recibido; críticos, esquives y curados solo si hubo (nunca un campo en cero). Público para que AutoHuntModule
+    // y UseModule usen exactamente la misma tabla al cerrar un combate (victoria, derrota o huida); los contadores viajan en el propio CombatState. El que la llama decide si va (state.ShowFightSummary).
+    public static EmbedBuilder AddCombatSummary(EmbedBuilder embed, CombatState state)
     {
-        string critText = state.CritCount > 0 ? Loc.F($" · 💥 {state.CritCount} crítico(s)") : string.Empty;
-        string dodgeText = state.DodgeCount > 0 ? Loc.F($" · 💨 Esquivaste {state.DodgeCount} golpe(s)") : string.Empty;
-        string healText = state.TotalHealed > 0 ? Loc.F($" · 🔮 {state.TotalHealed} curados") : string.Empty;
-        return Loc.F($"⏱️ {state.TurnsElapsed} turno(s) · 🗡️ {state.TotalDamageDealt} de daño hecho · 🩸 {state.TotalDamageTaken} de daño recibido{critText}{dodgeText}{healText}");
+        embed.AddField(Loc.T("⏱️ Turnos"), state.TurnsElapsed.ToString(), true)
+            .AddField(Loc.T("🗡️ Daño hecho"), GameHistory.Number(state.TotalDamageDealt), true)
+            .AddField(Loc.T("🩸 Daño recibido"), GameHistory.Number(state.TotalDamageTaken), true);
+
+        if (state.CritCount > 0)
+        {
+            embed.AddField(Loc.T("💥 Críticos"), GameHistory.Number(state.CritCount), true);
+        }
+
+        if (state.DodgeCount > 0)
+        {
+            embed.AddField(Loc.T("💨 Esquives"), GameHistory.Number(state.DodgeCount), true);
+        }
+
+        if (state.TotalHealed > 0)
+        {
+            embed.AddField(Loc.T("🔮 Curados"), GameHistory.Number(state.TotalHealed), true);
+        }
+
+        return embed;
     }
 
     // La escena de la primera victoria sobre un jefe (GameData/Lore.cs, FirstClearLine), en cursiva y con su aire; vacía si esta victoria no abrió ningún capítulo. El aviso

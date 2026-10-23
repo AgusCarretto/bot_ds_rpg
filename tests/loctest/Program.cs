@@ -457,10 +457,46 @@ Check(defeatEs.Fields.Any(f => f.Name == "☠️ Penalidad" && f.Value.Contains(
 Embed critEn; using (Loc.Use("en")) { critEn = CallE(typeof(AdventureModule), "BuildOngoingEmbed", Fight("hunt", "Hechicero"), critDodgeTurn); }
 Check(critEn.Description!.Contains("2 CRITICAL HITS") && critEn.Description.Contains("dodged") && critEn.Description.Contains("Sifón de Almas healed you for **3** HP") && critEn.Description.Contains("Sangre healed you for **2** HP"),
     $"los críticos, el esquive, el Sifón y la Sangre del turno ({critEn.Description!.Replace("\n", " | ")})");
-Check(AdventureModule.BuildCombatSummaryLine(Fight("hunt") with { TurnsElapsed = 3, TotalDamageDealt = 40, TotalDamageTaken = 21, CritCount = 1, DodgeCount = 2, TotalHealed = 6 }) ==
-    "⏱️ 3 turno(s) · 🗡️ 40 de daño hecho · 🩸 21 de daño recibido · 💥 1 crítico(s) · 💨 Esquivaste 2 golpe(s) · 🔮 6 curados", "el resumen del combate en español es el de siempre");
-string summaryEn; using (Loc.Use("en")) { summaryEn = AdventureModule.BuildCombatSummaryLine(Fight("hunt") with { TurnsElapsed = 3, TotalDamageDealt = 40, TotalDamageTaken = 21, CritCount = 1, DodgeCount = 2, TotalHealed = 6 }); }
-Check(summaryEn == "⏱️ 3 turn(s) · 🗡️ 40 damage dealt · 🩸 21 damage taken · 💥 1 crit(s) · 💨 You dodged 2 hit(s) · 🔮 6 healed", $"y el mismo resumen en inglés ({summaryEn})");
+// El resumen del combate es una TABLITA (pedido del dueño, 2026-10-23: «un montón de cosas… ponelo en tablita»): un campo en línea por dato, de a tres por fila, en vez de una línea larga con todo pegado.
+var summaryState = Fight("hunt") with { TurnsElapsed = 4, TotalDamageDealt = 1329, TotalDamageTaken = 18, CritCount = 2, DodgeCount = 1, TotalHealed = 6 };
+EmbedField[] TableOf(string lang, CombatState state) { using (Loc.Use(lang)) { return AdventureModule.AddCombatSummary(new EmbedBuilder(), state).Build().Fields.ToArray(); } }
+var tableEs = TableOf("es", summaryState); var tableEn = TableOf("en", summaryState);
+Check(tableEs.Select(f => f.Name).SequenceEqual(["⏱️ Turnos", "🗡️ Daño hecho", "🩸 Daño recibido", "💥 Críticos", "💨 Esquives", "🔮 Curados"]) && tableEs.Select(f => f.Value).SequenceEqual(["4", "1.329", "18", "2", "1", "6"]) && tableEs.All(f => f.Inline),
+    "la tablita del resumen en español: un dato por campo en línea (turnos, daño hecho, daño recibido y, si hubo, críticos, esquives y curados)");
+Check(tableEn.Select(f => f.Name).SequenceEqual(["⏱️ Turns", "🗡️ Damage dealt", "🩸 Damage taken", "💥 Crits", "💨 Dodges", "🔮 Healed"]) && tableEn.Select(f => f.Value).SequenceEqual(["4", "1,329", "18", "2", "1", "6"]) && tableEn.All(f => f.Inline),
+    $"y en inglés, con la coma de miles ({string.Join(" | ", tableEn.Select(f => f.Name + " " + f.Value))})");
+Check(TableOf("es", summaryState with { CritCount = 0, DodgeCount = 0, TotalHealed = 0 }).Length == 3 && TableOf("es", summaryState with { CritCount = 0, DodgeCount = 0, TotalHealed = 0 }).Select(f => f.Name).SequenceEqual(["⏱️ Turnos", "🗡️ Daño hecho", "🩸 Daño recibido"]),
+    "sin críticos, esquives ni curación la tablita son solo las tres columnas de siempre (nunca hay un campo en cero)");
+foreach (string screenWithSummary in new[] { "victoria con drop", "victoria del jefe, primera vez, con cofre", "victoria del jefe, repetida", "derrota con penalidad", "huida", "/autohunt: victoria", "/autohunt: derrota", "/use y la derrota" })
+{
+    var embedWithTable = fightScreens.First(s => s.Name == screenWithSummary).Make();
+    Check(embedWithTable.Fields.All(f => !f.Name.Contains("Resumen")) && embedWithTable.Fields.Any(f => f.Name == "⏱️ Turnos" && f.Inline) && embedWithTable.Fields.Any(f => f.Name == "🩸 Daño recibido" && f.Inline), $"{screenWithSummary}: usa la tablita y ya no trae el campo «Resumen del combate»");
+}
+
+// Las que empiezan la tablita en una fila nueva (nada en línea antes que la corte a medias): la victoria (tres en línea: oro, EXP y vida), la huida, el /autohunt y la derrota del /use.
+foreach (string freshRow in new[] { "victoria con drop", "huida", "/autohunt: victoria", "/autohunt: derrota", "/use y la derrota" })
+{
+    var fields = fightScreens.First(s => s.Name == freshRow).Make().Fields;
+    int firstTurn = Array.FindIndex(fields.ToArray(), f => f.Name == "⏱️ Turnos"), inlineBefore = 0;
+    for (int i = firstTurn - 1; i >= 0 && fields[i].Inline; i--) { inlineBefore++; }
+    Check(inlineBefore % 3 == 0, $"{freshRow}: la tablita arranca en una fila nueva ({inlineBefore} campos en línea antes)");
+}
+
+// El jugador puede apagar el resumen (/config): la pelea lo lleva en su estado (ShowFightSummary) y ninguna pantalla de fin de combate lo muestra.
+var hiddenState = Fight("hunt") with { ShowFightSummary = false };
+var hiddenScreens = new (string Name, Embed Embed)[]
+{
+    ("victoria", CallE(typeof(AdventureModule), "BuildVictoryEmbed", hiddenState, killTurn, rewardFight, dropFight, outcomeFight, true)),
+    ("derrota", CallE(typeof(AdventureModule), "BuildDefeatEmbed", hiddenState, lossTurn, penaltyFight)),
+    ("huida", CallE(typeof(AdventureModule), "BuildFleeEmbed", hiddenState)),
+    ("/autohunt: victoria", CallE(typeof(AutoHuntModule), "BuildVictoryEmbed", hiddenState, outcomeFight, rewardFight, null)),
+    ("/autohunt: derrota", CallE(typeof(AutoHuntModule), "BuildDefeatEmbed", hiddenState, penaltyFight)),
+    ("/use y la derrota", CallE(typeof(UseModule), "BuildCombatDefeatEmbed", hiddenState, foodFight, 5, penaltyFight)),
+};
+foreach (var (hiddenName, hiddenEmbed) in hiddenScreens)
+{
+    Check(!hiddenEmbed.Fields.Any(f => f.Name is "⏱️ Turnos" or "🗡️ Daño hecho" or "🩸 Daño recibido" or "💥 Críticos" or "💨 Esquives" or "🔮 Curados"), $"con el resumen apagado, {hiddenName} no trae la tablita");
+}
 
 IEnumerable<string> ButtonLabels(MessageComponent c) => c.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<ButtonComponent>().Select(b => b.Label);
 string? MenuPlaceholder(MessageComponent c) => c.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<SelectMenuComponent>().FirstOrDefault()?.Placeholder;

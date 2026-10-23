@@ -93,7 +93,7 @@ public class AutoHuntModule(
 
         // Resolución instantánea: misma matemática de golpe que un turno de /hunt (CombatMath),
         // encadenada sin esperar clicks de botón. Se acumulan los mismos contadores que /hunt por
-        // turnos para poder mostrar el mismo resumen final (AdventureModule.BuildCombatSummaryLine).
+        // turnos para poder mostrar el mismo resumen final (AdventureModule.AddCombatSummary).
         int playerHp = state.PlayerCurrentHp;
         int monsterHp = state.MonsterCurrentHp;
         int roundsElapsed = 0;
@@ -189,8 +189,12 @@ public class AutoHuntModule(
             .WithDescription(
                 Loc.F($"Venciste al **{state.MonsterName}** {state.MonsterEmoji}. Te quedan **{HpDisplay.Scale(player.CurrentHp, state.Passives.MaxHpMultiplier)}/{HpDisplay.Scale(player.MaxHp, state.Passives.MaxHpMultiplier)}** HP.\n") +
                 Loc.F($"Ganaste: {UiEmojis.Gold} **{reward.Gold}** Oro, {UiEmojis.Xp} **{reward.Xp}** XP.\n\n") +
-                AdventureModule.MonsterSays(state, NpcDialogue.BossLine.Defeated))
-            .AddField(Loc.T("📋 Resumen del combate"), AdventureModule.BuildCombatSummaryLine(state), false);
+                AdventureModule.MonsterSays(state, NpcDialogue.BossLine.Defeated));
+
+        if (state.ShowFightSummary)
+        {
+            AdventureModule.AddCombatSummary(embed, state);
+        }
 
         if (droppedItem is not null)
         {
@@ -209,8 +213,12 @@ public class AutoHuntModule(
             .WithTitle(Loc.T("☠️ Derrota Rápida"))
             .WithColor(Color.DarkRed)
             .WithMonsterPortrait(state.MonsterPortrait)
-            .WithDescription(Loc.F($"El **{state.MonsterName}** {state.MonsterEmoji} fue demasiado fuerte. Quedaste a **{state.PlayerCurrentHp}** HP. Usá **/heal** para recuperarte.\n\n") + AdventureModule.MonsterSays(state, NpcDialogue.BossLine.Victory))
-            .AddField(Loc.T("📋 Resumen del combate"), AdventureModule.BuildCombatSummaryLine(state), false);
+            .WithDescription(Loc.F($"El **{state.MonsterName}** {state.MonsterEmoji} fue demasiado fuerte. Quedaste a **{state.PlayerCurrentHp}** HP. Usá **/heal** para recuperarte.\n\n") + AdventureModule.MonsterSays(state, NpcDialogue.BossLine.Victory));
+
+        if (state.ShowFightSummary)
+        {
+            AdventureModule.AddCombatSummary(embed, state);
+        }
 
         return AdventureModule.WithDeathPenalty(embed, penalty).Build();
     }

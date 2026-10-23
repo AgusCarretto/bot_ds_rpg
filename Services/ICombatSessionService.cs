@@ -35,7 +35,7 @@ public sealed record CombatState(
     string PlayerClass, // qué habilidad activa le toca (ver GameData/ClassAbilities.cs)
     ClassPassiveProfile Passives, // pasivas de la clase del jugador, resueltas una sola vez al iniciar el combate (ver GameData/ClassPassives.cs)
     // Acumulados de toda la pelea (no de este turno), para el resumen final al terminar el
-    // combate (victoria, derrota o huida) — ver Modules/AdventureModule.BuildCombatSummaryLine.
+    // combate (victoria, derrota o huida) — ver Modules/AdventureModule.AddCombatSummary.
     // Con valor por defecto para no tener que tocar la construcción inicial en AdventureCombatStarter.
     int TurnsElapsed = 0,
     int DodgeCount = 0,
@@ -56,7 +56,9 @@ public sealed record CombatState(
     string? MonsterPortrait = null,
     // Todo lo permanente del jugador (mascotas, Fuego Nuevo, bendiciones) al ARRANCAR la pelea (como el banquete): ataque, defensa y vida ya están dentro de PlayerDamage/PlayerDefense/PlayerMaxHp; oro, EXP y drop se aplican al ganar
     // (CombatRewardCalculator). Null = sin mascotas.
-    PlayerBonuses? Bonuses = null)
+    PlayerBonuses? Bonuses = null,
+    // La tablita del resumen al terminar la pelea (turnos, daño hecho y recibido...): el jugador la puede apagar en /config (GameData/PlayerSettings.cs). Se lee UNA vez al arrancar, como las bonificaciones.
+    bool ShowFightSummary = true)
 {
     // Convierte un delta de HP en unidades de COMBATE (ya escaladas por Passives.MaxHpMultiplier)
     // a unidades reales de base de datos, para pasarlo a IUserRepository.ApplyCombatHpDeltaAsync /
