@@ -503,6 +503,9 @@ Check(introEs.StartsWith("🐗 **Jabalí Rabioso:** «") && introEn.StartsWith("
 
 Console.WriteLine("\n== 10. Recolectar e inventario ==");
 const ulong G10 = 999000000000098010UL;
+// game_events no tiene clave a users (no se borra con el jugador): sin esto quedan filas de corridas anteriores y las misiones del día salen ya cumplidas.
+await db.ExecuteAsync("DELETE FROM game_events WHERE discord_id IN (999000000000098010, 999000000000098011, 999000000000098012)");
+await db.ExecuteAsync("DELETE FROM player_stats WHERE discord_id IN (999000000000098010, 999000000000098011, 999000000000098012)");
 var gatherRepo10 = sp.GetRequiredService<IGatheringRepository>(); var itemSvc10 = sp.GetRequiredService<IItemRepository>();
 var bonusSvc10 = sp.GetRequiredService<IPlayerBonusService>(); var eventsSvc10 = sp.GetRequiredService<IGameEvents>(); var invRepo10 = sp.GetRequiredService<IInventoryRepository>();
 var woodcutter = ProfessionCatalog.Get(ProfessionCatalog.WoodcutterKey);
@@ -706,6 +709,92 @@ Check(npcTables.Count >= 30 && npcMissing == 0, $"TODA frase del Herrero, el Ten
 Check(npcLeaked == 0, $"y ninguna deja español colado ({npcFirstLeak})");
 string smithEn; using (Loc.Use("en")) { smithEn = NpcDialogue.Blacksmith(BlacksmithLine.NotEnough, new Random(1)); }
 Check(smithEn.StartsWith("🔨 **El Herrero:** «") && NpcDialogue.Blacksmith(BlacksmithLine.NotEnough, new Random(1)) != smithEn, $"el Herrero habla en inglés con su nombre en español ({smithEn})");
+
+Console.WriteLine("\n== 12. Daily y misiones ==");
+var boxPino = new ResolvedReward(84, 120, "Cajón de Pino", 1);
+RewardReceipt Receipt(ResolvedReward r) => new(r, 5000, 0, 5);
+Embed Daily(int day, DailyClaimStatus status, ResolvedReward reward) => DailyModule.BuildResultEmbed(new DailyClaimCalculation(status, day, null), new LevelUpOutcome(userFight, 0), Receipt(reward));
+(string Name, Func<Embed> Make)[] dailyScreens =
+[
+    ("día 1", () => Daily(1, DailyClaimStatus.FirstClaim, new ResolvedReward(84, 36, null, 0))),
+    ("día 2, mañana es el día 3", () => Daily(2, DailyClaimStatus.StreakContinued, new ResolvedReward(112, 36, null, 0))),
+    ("día 3, monedas extra", () => Daily(3, DailyClaimStatus.StreakContinued, new ResolvedReward(350, 54, null, 0))),
+    ("día 5, mañana hay caja", () => Daily(5, DailyClaimStatus.StreakContinued, new ResolvedReward(196, 72, null, 0))),
+    ("día 6, caja diaria", () => Daily(6, DailyClaimStatus.StreakContinued, boxPino)),
+    ("día 7, una semana seguida", () => Daily(7, DailyClaimStatus.StreakContinued, new ResolvedReward(700, 108, "Baúl de Roble", 1))),
+    ("día 14, dos semanas", () => Daily(14, DailyClaimStatus.StreakContinued, new ResolvedReward(700, 108, "Baúl de Roble", 1))),
+    ("racha perdida", () => Daily(1, DailyClaimStatus.StreakReset, new ResolvedReward(84, 36, null, 0))),
+    ("todavía no podés reclamar", () => DailyModule.BuildTooSoonEmbed(new DailyClaimCalculation(DailyClaimStatus.TooSoon, 3, TimeSpan.FromHours(5)))),
+];
+
+foreach (var (dailyName, makeDaily) in dailyScreens)
+{
+    Embed dailyEs = makeDaily(); Embed dailyEn; using (Loc.Use("en")) { dailyEn = makeDaily(); }
+    string dailyEnText = LeakCheck.AllText(dailyEn); var dailyLeak = LeakCheck.NoSpanish(dailyEnText, allowedNames);
+    Check(dailyLeak.Ok && LeakCheck.FitsDiscord(dailyEn) && dailyEnText != LeakCheck.AllText(dailyEs), $"/daily en inglés, {dailyName}: sin español colado ({dailyLeak.Found})");
+}
+
+Embed week1Es = Daily(7, DailyClaimStatus.StreakContinued, boxPino); Embed week1En; using (Loc.Use("en")) { week1En = Daily(7, DailyClaimStatus.StreakContinued, boxPino); }
+Check(week1Es.Title == "🎁 ¡Recompensa diaria reclamada!" && week1Es.Fields[0].Name == "🔥 Racha" && week1Es.Fields[0].Value == "Día 7" && week1Es.Description!.Contains("¡Una semana seguida!") && week1Es.Fields[3].Name == "📦 Caja",
+    "el /daily del día 7 en español es el de siempre");
+Check(week1En.Title == "🎁 Daily reward claimed!" && week1En.Fields[0].Name == "🔥 Streak" && week1En.Fields[0].Value == "Day 7" && week1En.Description!.Contains("A whole week in a row!") && week1En.Fields[3].Name == "📦 Box" && week1En.Fields[3].Value.Contains("open it with **/open**"),
+    $"y en inglés ({week1En.Title} | {week1En.Fields[0].Value} | {week1En.Description!.Replace("\n", " | ")})");
+Embed streak3En; using (Loc.Use("en")) { streak3En = Daily(3, DailyClaimStatus.StreakContinued, new ResolvedReward(350, 54, null, 0)); }
+Check(streak3En.Description!.Contains("3 days in a row!") && streak3En.Description.Contains("Tomorrow is day 4") == false, $"el día 3 en inglés ({streak3En.Description!.Replace("\n", " | ")})");
+string hint2Es = DailyRewardCalculator.NextDayHint(2)!, hint5En, hint6En; using (Loc.Use("en")) { hint5En = DailyRewardCalculator.NextDayHint(5)!; hint6En = DailyRewardCalculator.NextDayHint(6)!; }
+Check(hint2Es == "Mañana es el día 3: ¡monedas extra!" && hint5En == "Tomorrow is day 6: from then on there's a box every day!" && hint6En == "Tomorrow is day 7: a big box and bonus coins!", $"qué trae mañana ({hint5En} | {hint6En})");
+Embed tooSoonEn; using (Loc.Use("en")) { tooSoonEn = DailyModule.BuildTooSoonEmbed(new DailyClaimCalculation(DailyClaimStatus.TooSoon, 3, TimeSpan.FromHours(5))); }
+Check(tooSoonEn.Title == "⏳ You can't claim yet" && tooSoonEn.Description!.Contains("until your next /daily"), $"«todavía no podés reclamar» ({tooSoonEn.Description})");
+
+// El premio escrito: oro, XP y caja.
+Check(MissionRewards.Describe(boxPino).Contains("💰 84 oro · ⭐ 120 XP · ") && MissionRewards.Describe(boxPino).EndsWith("Cajón de Pino"), "el premio escrito en español es el de siempre");
+string describeEn; using (Loc.Use("en")) { describeEn = MissionRewards.Describe(new ResolvedReward(84, 120, "Cajón de Pino", 2)); }
+Check(describeEn.StartsWith("💰 84 gold · ⭐ 120 XP · ") && describeEn.Contains("2× Cajón de Pino") && LeakCheck.NoSpanish(describeEn, allowedNames).Ok, $"y en inglés ({describeEn})");
+var totals12 = new RewardTotals(); totals12.Add(Receipt(boxPino)); totals12.Add(Receipt(boxPino));
+string totalsEs = totals12.Describe(), totalsEn; using (Loc.Use("en")) { totalsEn = totals12.Describe(); }
+Check(totalsEs.StartsWith("💰 +168 oro · ⭐ +240 XP") && totalsEn.StartsWith("💰 +168 gold · ⭐ +240 XP") && totalsEn.Contains("2× Cajón de Pino"), $"la suma de premios en los dos idiomas ({totalsEn})");
+
+// Las misiones: el catálogo entero tiene su traducción, y la pantalla de verdad.
+var allMissions = MissionCatalog.DailyPool.Concat(MissionCatalog.WeeklyPool).ToList();
+var missingMissions = new List<string>(); var leakedMissions = new List<string>();
+using (Loc.Use("en"))
+{
+    foreach (var mission in allMissions)
+    {
+        string translated = Loc.Tr(mission.Title);
+        if (translated == mission.Title) { missingMissions.Add(mission.Key); }
+        else if (!LeakCheck.NoSpanish(translated, allowedNames).Ok) { leakedMissions.Add(translated); }
+    }
+}
+
+Check(allMissions.Count == 18 && missingMissions.Count == 0 && leakedMissions.Count == 0, $"las {allMissions.Count} misiones del catálogo tienen su título en inglés (sin traducir: {string.Join(", ", missingMissions)}; con español: {string.Join(" | ", leakedMissions)})");
+
+const ulong M12 = 999000000000098012UL;
+var missionRepo12 = sp.GetRequiredService<IMissionRepository>(); var zoneBoxSvc12 = sp.GetRequiredService<IZoneBoxService>();
+await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)M12 });
+await userRepo.GetOrCreateUserAsync(M12);
+Task<MissionsView> MissionsView12() => MissionsModule.BuildViewAsync(userRepo, zoneRepo8, missionRepo12, zoneBoxSvc12, M12, DateTime.UtcNow);
+Task<MissionClaimResult> Claim12() => MissionsModule.ExecuteClaimAsync(userRepo, zoneRepo8, missionRepo12, eventsSvc10, M12, DateTime.UtcNow);
+var freshEs = await MissionsView12(); MissionsView freshEn; using (Loc.Use("en")) { freshEn = await MissionsView12(); }
+string freshEnText = LeakCheck.AllText(freshEn.Embed);
+Check(freshEs.Embed.Title == "📋 Tus misiones" && freshEs.Embed.Fields[0].Name.StartsWith("☀️ Diarias — se reinician en ") && freshEs.Embed.Fields[1].Name.StartsWith("📅 Semanales — se reinician en "), "las misiones en español son las de siempre");
+Check(freshEn.Embed.Title == "📋 Your missions" && freshEn.Embed.Fields[0].Name.StartsWith("☀️ Daily — reset in ") && freshEn.Embed.Fields[1].Name.StartsWith("📅 Weekly — reset in ") && freshEnText.Contains("Complete all 3 daily missions") && LeakCheck.NoSpanish(freshEnText, allowedNames).Ok && LeakCheck.FitsDiscord(freshEn.Embed),
+    $"y en inglés, sin nada hecho ({LeakCheck.NoSpanish(freshEnText, allowedNames).Found})");
+MissionClaimResult nothingEn; using (Loc.Use("en")) { nothingEn = await Claim12(); }
+Check(nothingEn.PlainMessage == "You have no missions ready to claim right now. Check your progress with **/missions**.", $"reclamar sin nada listo ({nothingEn.PlainMessage})");
+
+// Todo listo: se registran muchísimos eventos de cada tipo y se cobra TODO (misiones y el premio por completarlas).
+foreach (string kind in allMissions.Select(m => m.Kind).Distinct()) { await eventsSvc10.RecordAsync(M12, kind, null, 1000); }
+MissionsView readyEn; using (Loc.Use("en")) { readyEn = await MissionsView12(); }
+Check(LeakCheck.AllText(readyEn.Embed).Contains("ready to claim!") && readyEn.Components is not null && readyEn.Components.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<ButtonComponent>().Any(b => b.Label.StartsWith("Claim (")),
+    $"con todo hecho, «lista para reclamar» y el botón «Claim (N)» ({readyEn.ClaimableCount})");
+MissionClaimResult claimEn; using (Loc.Use("en")) { claimEn = await Claim12(); }
+string claimEnText = LeakCheck.AllText(claimEn.Embed!);
+Check(claimEn.Embed is not null && claimEn.Embed.Title == "🎁 Rewards claimed!" && claimEnText.Contains("Completed all the daily missions") && claimEnText.Contains("**Total:** 💰 +") && claimEnText.Contains("gold") && LeakCheck.NoSpanish(claimEnText, allowedNames).Ok && claimEn.Embed.Fields[0].Name == "💰 Your gold now",
+    $"el recibo del cobro en inglés ({LeakCheck.NoSpanish(claimEnText, allowedNames).Found})");
+MissionsView doneEn; using (Loc.Use("en")) { doneEn = await MissionsView12(); }
+Check(LeakCheck.AllText(doneEn.Embed).Contains("claimed") && doneEn.Components is null && LeakCheck.NoSpanish(LeakCheck.AllText(doneEn.Embed), allowedNames).Ok, "y la pantalla después de cobrar dice «claimed» y ya no trae botón");
+await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)M12 });
 
 // El repositorio de verdad: nada falta, nada sobra, ningún {0} desparejo, ningún literal raro.
 var catalogOnDisk = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(Path.Combine(TestEnv.RepoRoot, "Locales", "en.json")))!;

@@ -40,7 +40,7 @@ public class DailyModule(
         {
             BotLog.Error(ex);
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
-            await FollowupAsync("¡Upa! No pude procesar tu recompensa diaria, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude procesar tu recompensa diaria, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -48,8 +48,8 @@ public class DailyModule(
     public static Embed BuildTooSoonEmbed(DailyClaimCalculation calculation)
     {
         return new EmbedBuilder()
-            .WithTitle("⏳ Todavía no podés reclamar")
-            .WithDescription($"Te falta **{TimeFormat.Remaining(calculation.RemainingCooldown!.Value)}** para tu próximo /daily.")
+            .WithTitle(Loc.T("⏳ Todavía no podés reclamar"))
+            .WithDescription(Loc.F($"Te falta **{TimeFormat.Remaining(calculation.RemainingCooldown!.Value)}** para tu próximo /daily."))
             .WithColor(Color.DarkGrey)
             .Build();
     }
@@ -62,31 +62,31 @@ public class DailyModule(
         int day = calculation.NewStreak;
 
         var embed = new EmbedBuilder()
-            .WithTitle("🎁 ¡Recompensa diaria reclamada!")
+            .WithTitle(Loc.T("🎁 ¡Recompensa diaria reclamada!"))
             .WithColor(calculation.Status == DailyClaimStatus.StreakReset ? Color.Orange : Color.Gold)
-            .AddField("🔥 Racha", $"Día {day}", true)
-            .AddField("💰 Oro ganado", GameHistory.Number(reward.Gold), true)
-            .AddField("📊 EXP ganada", GameHistory.Number(reward.Xp), true);
+            .AddField(Loc.T("🔥 Racha"), Loc.F($"Día {day}"), true)
+            .AddField(Loc.T("💰 Oro ganado"), GameHistory.Number(reward.Gold), true)
+            .AddField(Loc.T("📊 EXP ganada"), GameHistory.Number(reward.Xp), true);
 
         if (reward.BoxName is not null)
         {
-            embed.AddField("📦 Caja", $"{(reward.BoxQuantity > 1 ? $"{reward.BoxQuantity}× " : string.Empty)}**{ItemEmojiRegistry.Label(reward.BoxName, string.Empty)}** — abrila con **/open**", false);
+            embed.AddField(Loc.T("📦 Caja"), Loc.F($"{(reward.BoxQuantity > 1 ? $"{reward.BoxQuantity}× " : string.Empty)}**{ItemEmojiRegistry.Label(reward.BoxName, string.Empty)}** — abrila con **/open**"), false);
         }
 
         // Una línea de festejo si es un hito de la racha (o el aviso de que se perdió), y qué viene mañana si trae algo especial.
         var lines = new List<string>();
         if (calculation.Status == DailyClaimStatus.StreakReset)
         {
-            lines.Add("⚠️ ¡Perdiste tu racha! Volvemos al Día 1.");
+            lines.Add(Loc.T("⚠️ ¡Perdiste tu racha! Volvemos al Día 1."));
         }
         else if (DailyRewardCalculator.IsWeekMilestone(day))
         {
             int weeks = day / DailyRewardCalculator.WeekLength;
-            lines.Add(weeks == 1 ? "🏆 **¡Una semana seguida!** Caja grande y monedas extra." : $"🏆 **¡{weeks} semanas seguidas!** Caja grande y monedas extra.");
+            lines.Add(weeks == 1 ? Loc.T("🏆 **¡Una semana seguida!** Caja grande y monedas extra.") : Loc.F($"🏆 **¡{weeks} semanas seguidas!** Caja grande y monedas extra."));
         }
         else if (DailyRewardCalculator.IsThreeDayBonus(day))
         {
-            lines.Add($"🎉 **¡{day} días seguidos!** Monedas extra de regalo.");
+            lines.Add(Loc.F($"🎉 **¡{day} días seguidos!** Monedas extra de regalo."));
         }
 
         if (DailyRewardCalculator.NextDayHint(day) is { } hint)
