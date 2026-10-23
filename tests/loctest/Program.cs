@@ -457,6 +457,25 @@ Check(defeatEs.Fields.Any(f => f.Name == "☠️ Penalidad" && f.Value.Contains(
 Embed critEn; using (Loc.Use("en")) { critEn = CallE(typeof(AdventureModule), "BuildOngoingEmbed", Fight("hunt", "Hechicero"), critDodgeTurn); }
 Check(critEn.Description!.Contains("2 CRITICAL HITS") && critEn.Description.Contains("dodged") && critEn.Description.Contains("Sifón de Almas healed you for **3** HP") && critEn.Description.Contains("Sangre healed you for **2** HP"),
     $"los críticos, el esquive, el Sifón y la Sangre del turno ({critEn.Description!.Replace("\n", " | ")})");
+// La victoria a mano se lee como la del /autohunt (pedido del dueño, 2026-10-23: «que se muestre como el autohunt pero con barra de vida»): lo ganado va en UNA línea con los íconos, dentro de la descripción
+// (ya no son dos campos «Oro ganado» / «EXP ganada»), y la vida sigue siendo su campo, con la barra, a todo el ancho.
+foreach (string winScreen in new[] { "victoria con drop", "victoria del jefe, primera vez, con cofre", "victoria del jefe, repetida" })
+{
+    Embed winEs = fightScreens.First(s => s.Name == winScreen).Make();
+    Embed winEn; using (Loc.Use("en")) { winEn = fightScreens.First(s => s.Name == winScreen).Make(); }
+    Check(winEs.Description!.Contains("Ganaste: 💰 **10** Oro, 📊 **10** XP.") && winEn.Description!.Contains("You earned: 💰 **10** Gold, 📊 **10** XP."), $"{winScreen}: lo ganado va en la descripción, con sus íconos, en los dos idiomas");
+    Check(winEs.Description.IndexOf("Le hiciste", StringComparison.Ordinal) < winEs.Description.IndexOf("Ganaste", StringComparison.Ordinal) && winEn.Description.IndexOf("You dealt", StringComparison.Ordinal) < winEn.Description.IndexOf("You earned", StringComparison.Ordinal),
+        $"{winScreen}: primero el golpe final y después lo ganado");
+    Check(!winEs.Fields.Any(f => f.Name is "💰 Oro ganado" or "📊 EXP ganada") && !winEn.Fields.Any(f => f.Name is "💰 Gold earned" or "📊 XP earned"), $"{winScreen}: ya no trae los campos «Oro ganado» y «EXP ganada»");
+    var hpEs = winEs.Fields.Single(f => f.Name == "❤️ Tu HP");
+    Check(!hpEs.Inline && hpEs.Value == AdventureModule.ShownHpLine(userFight, Fight("hunt").Passives.MaxHpMultiplier) && hpEs.Value.Contains('\n') && winEn.Fields.Single(f => f.Name == "❤️ Your HP") is { Inline: false },
+        $"{winScreen}: la vida es un campo a todo el ancho con la barra y los números");
+    Check(Array.FindIndex(winEs.Fields.ToArray(), f => f.Name == "❤️ Tu HP") < Array.FindIndex(winEs.Fields.ToArray(), f => f.Name == "⏱️ Turnos"), $"{winScreen}: la tablita viene después de la vida");
+}
+// El jefe no lleva la frase del monstruo en la descripción (va en su campo): la línea de lo ganado cierra la descripción sin dejar renglones de más.
+Embed bossWin = fightScreens.First(s => s.Name == "victoria del jefe, repetida").Make();
+Check(bossWin.Description!.EndsWith("XP.") && !bossWin.Description.Contains("\n\n"), $"el jefe: la descripción termina en lo ganado ({bossWin.Description.Replace("\n", " | ")})");
+
 // El resumen del combate es una TABLITA (pedido del dueño, 2026-10-23: «un montón de cosas… ponelo en tablita»): un campo en línea por dato, de a tres por fila, en vez de una línea larga con todo pegado.
 var summaryState = Fight("hunt") with { TurnsElapsed = 4, TotalDamageDealt = 1329, TotalDamageTaken = 18, CritCount = 2, DodgeCount = 1, TotalHealed = 6 };
 EmbedField[] TableOf(string lang, CombatState state) { using (Loc.Use(lang)) { return AdventureModule.AddCombatSummary(new EmbedBuilder(), state).Build().Fields.ToArray(); } }

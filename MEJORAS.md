@@ -32,6 +32,13 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
 
+## La victoria a mano como la del autohunt, pero con barra de vida (v0.26.2, 2026-10-23)
+
+- **Pedido del dueño** (con dos capturas, la victoria de `/hunt` con tres campos «Oro ganado / EXP ganada / Tu HP» y la del `/autohunt` con su línea «Ganaste: …»): «estaría bueno que se muestre como el autohunt pero con barra de vida».
+- **Cómo queda** (`/hunt`, `/travel`, `/boss`): en la descripción, el golpe final y debajo «Ganaste: <ícono de oro> **N** Oro, <ícono de XP> **N** XP.» (la misma línea del autohunt, ahora de `AdventureModule.EarnedLine`), después la frase del monstruo; ya no existen los campos «Oro ganado» y «EXP ganada». La vida sigue siendo su campo «❤️ Tu HP» con la barra, pero **a todo el ancho** (antes era una de las tres columnas), y la tablita del resumen arranca en una fila nueva debajo. El drop, el huevo y lo del jefe quedan como estaban.
+- **El `/autohunt` no se tocó**: sigue con «Te quedan a/b HP» en texto y sin barra (se le puede sumar la barra si el dueño la quiere).
+- **Sin migración**; una entrada del catálogo en inglés cambió de plantilla (la línea ya no termina en `\n\n`, lo agrega quien la usa). El arnés `stage11test` leía los campos «Oro»/«EXP» de la victoria: ahora mira la descripción. `loctest` suma los chequeos de la victoria (línea con íconos en los dos idiomas, vida a todo el ancho, tablita debajo).
+
 ## El resumen del combate en tablita y `/config` (v0.26.1, 2026-10-23)
 
 - **Pedido del dueño** (mirando el resultado de `/autohunt` en inglés): que el oro y la XP lleven su emoji; que el resumen quede «más chill», en tablita y con un espacio chico; y que cada jugador pueda sacarlo («una opción en config o `aa set`, en la UI»).

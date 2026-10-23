@@ -164,7 +164,7 @@ var victory = typeof(AdventureModule).GetMethod("BuildVictoryEmbed", BindingFlag
 var turn = CombatTurnResolver.ResolveTurn(new CombatantProfile(100, 0, "Guerrero", ClassPassives.For("Guerrero")), default, PlayerAction.Attack, 100, 100, 1, 5);
 var cs = new CombatState("boss", "Lobisón Alfa", "👑🐺", 100, 100, 10, [], 0, 0, null, 100, 100, 100, 10, 0, 1, "Guerrero", ClassPassives.For("Guerrero"));
 var win = (Embed)victory.Invoke(null, [cs, turn, new CombatReward(100, 100, false), null, new LevelUpOutcome(player, 1), true])!;
-Check(!win.Fields.Any(f => f.Name.Contains("Subiste") || f.Name.Contains("💡")) && win.Fields.Any(f => f.Name.Contains("Oro")) && win.Fields.Any(f => f.Name.Contains("EXP")), $"la victoria (aun subiendo de nivel) queda corta: {string.Join(" | ", win.Fields.Select(f => f.Name))}");
+Check(!win.Fields.Any(f => f.Name.Contains("Subiste") || f.Name.Contains("💡")) && win.Description!.Contains("Oro") && win.Description.Contains("XP"), $"la victoria (aun subiendo de nivel) queda corta, con lo ganado en la descripción (desde la v0.26.2, como el autohunt): {string.Join(" | ", win.Fields.Select(f => f.Name))}");
 var gather = GatheringModule.BuildResultEmbed(CooldownCatalog.Chop, (await items.GetByNameAsync("Madera de Pino"))!, 4);
 Check(gather.Fields.Length == 1 && gather.Fields[0].Name == "Rareza", "/chop y /mine: solo lo que conseguiste y la rareza");
 var daily = DailyModule.BuildResultEmbed(new DailyClaimCalculation(DailyClaimStatus.StreakContinued, 3, null), new LevelUpOutcome(player, 1), new RewardReceipt(new ResolvedReward(100, 100, null, 0), 1000, 1, 5));
