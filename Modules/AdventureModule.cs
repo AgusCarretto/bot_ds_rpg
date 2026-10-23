@@ -224,9 +224,9 @@ public class AdventureModule(
 
         return reason switch
         {
-            "timeout" => "No tenés ningún combate activo: pasó más de **1 minuto** sin jugar el turno y se cerró como abandonado. Empezá otro con /hunt, /travel o /boss.",
-            "resolved" => "No tenés ningún combate activo: ese ya terminó (ganaste, perdiste o huiste) y este mensaje es viejo. Empezá otro con /hunt, /travel o /boss.",
-            _ => "No tenés ningún combate activo. Si estabas peleando, se cortó porque el bot se reinició (cada actualización corta las peleas en curso). Empezá otro con /hunt, /travel, /boss o \"aa hunt\".",
+            "timeout" => Loc.T("No tenés ningún combate activo: pasó más de **1 minuto** sin jugar el turno y se cerró como abandonado. Empezá otro con /hunt, /travel o /boss."),
+            "resolved" => Loc.T("No tenés ningún combate activo: ese ya terminó (ganaste, perdiste o huiste) y este mensaje es viejo. Empezá otro con /hunt, /travel o /boss."),
+            _ => Loc.T("No tenés ningún combate activo. Si estabas peleando, se cortó porque el bot se reinició (cada actualización corta las peleas en curso). Empezá otro con /hunt, /travel, /boss o \"aa hunt\"."),
         };
     }
 
@@ -543,8 +543,8 @@ public class AdventureModule(
     public static Embed BuildCooldownEmbed(CooldownDefinition definition, TimeSpan remaining)
     {
         return new EmbedBuilder()
-            .WithTitle($"⏳ {definition.Emoji} {definition.DisplayName}: todavía no podés")
-            .WithDescription($"Te falta **{TimeFormat.Remaining(remaining)}** para volver a intentarlo.")
+            .WithTitle(Loc.F($"⏳ {definition.Emoji} {Loc.Tr(definition.DisplayName)}: todavía no podés"))
+            .WithDescription(Loc.F($"Te falta **{TimeFormat.Remaining(remaining)}** para volver a intentarlo."))
             .WithColor(Color.DarkGrey)
             .Build();
     }

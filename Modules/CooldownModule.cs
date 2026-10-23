@@ -23,7 +23,7 @@ public class CooldownModule(
         {
             BotLog.Error(ex);
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
-            await FollowupAsync("No pude consultar tus cooldowns ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("No pude consultar tus cooldowns ahora mismo, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -46,10 +46,10 @@ public class CooldownModule(
         {
             var remaining = await cooldownRepository.GetRemainingAsync(discordId, definition.CommandName, definition.Duration);
             string status = remaining is null
-                ? "**¡Listo!** ✅"
-                : $"{TimeFormat.Remaining(remaining.Value)} restantes";
+                ? Loc.T("**¡Listo!** ✅")
+                : Loc.F($"{TimeFormat.Remaining(remaining.Value)} restantes");
 
-            lines.Add($"{definition.Emoji} **{definition.DisplayName}**: {status}");
+            lines.Add($"{definition.Emoji} **{Loc.Tr(definition.DisplayName)}**: {status}");
         }
 
         foreach (var definition in CooldownCatalog.All)
@@ -88,9 +88,9 @@ public class CooldownModule(
         // ventana de 24h/48h), así que lo evaluamos aparte con la misma lógica pura de /daily.
         var dailyCalculation = DailyRewardCalculator.Evaluate(player.LastDailyClaim, player.DailyStreak, DateTime.UtcNow);
         string dailyStatus = dailyCalculation.Status == DailyClaimStatus.TooSoon
-            ? $"{TimeFormat.Remaining(dailyCalculation.RemainingCooldown!.Value)} restantes"
-            : "**¡Listo!** ✅";
-        lines.Add($"🎁 **Diario**: {dailyStatus}");
+            ? Loc.F($"{TimeFormat.Remaining(dailyCalculation.RemainingCooldown!.Value)} restantes")
+            : Loc.T("**¡Listo!** ✅");
+        lines.Add($"🎁 **{Loc.T("Diario")}**: {dailyStatus}");
 
         if (await TryBuildArenaLineAsync(arenaService, discordId) is { } arenaLine)
         {
@@ -98,7 +98,7 @@ public class CooldownModule(
         }
 
         return new EmbedBuilder()
-            .WithTitle("⏱️ Tus cooldowns")
+            .WithTitle(Loc.T("⏱️ Tus cooldowns"))
             .WithColor(Color.Teal)
             .WithDescription(string.Join('\n', lines))
             .Build();
@@ -135,11 +135,12 @@ public class CooldownModule(
         int ready = growing.Count(p => PetRules.CanEat(p, nowUtc, feedCooldown));
         if (ready > 0)
         {
-            return $"🐾 **Mascotas**: **¡Listo!** ✅ — {(ready == 1 ? "1 puede comer" : $"{ready} pueden comer")} (**/pet feed**)";
+            string who = ready == 1 ? Loc.T("1 puede comer") : Loc.F($"{ready} pueden comer");
+            return $"🐾 **{Loc.T("Mascotas")}**: " + Loc.T("**¡Listo!** ✅") + $" — {who} (**/pet feed**)";
         }
 
         var next = growing.Min(p => PetRules.RemainingCooldown(p, nowUtc, feedCooldown));
-        return $"🐾 **Mascotas**: {TimeFormat.Remaining(next)} restantes{(growing.Count > 1 ? " (la primera)" : string.Empty)}";
+        return $"🐾 **{Loc.T("Mascotas")}**: " + Loc.F($"{TimeFormat.Remaining(next)} restantes") + (growing.Count > 1 ? Loc.T(" (la primera)") : string.Empty);
     }
 
     private static async Task<string?> TryBuildArenaLineAsync(IArenaService? arenaService, ulong discordId)
@@ -165,6 +166,6 @@ public class CooldownModule(
     // Pública y pura para probarla sin base.
     public static string ArenaLine(bool joined, TimeSpan untilPlay) =>
         joined
-            ? $"🏟️ **Arena**: anotado ✅ — se juega en {TimeFormat.Remaining(untilPlay)}"
-            : $"🏟️ **Arena**: **¡todavía no te anotaste!** ⚠️ Se juega en {TimeFormat.Remaining(untilPlay)}: **/arena join**";
+            ? Loc.F($"🏟️ **Arena**: anotado ✅ — se juega en {TimeFormat.Remaining(untilPlay)}")
+            : Loc.F($"🏟️ **Arena**: **¡todavía no te anotaste!** ⚠️ Se juega en {TimeFormat.Remaining(untilPlay)}: **/arena join**");
 }

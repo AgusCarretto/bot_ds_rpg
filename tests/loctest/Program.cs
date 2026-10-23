@@ -1,7 +1,9 @@
 using System.Reflection;
 using BotDsRpg.Data;
 using BotDsRpg.GameData;
+using BotDsRpg.Models;
 using BotDsRpg.Repositories;
+using Discord;
 using BotDsRpg.Services;
 using Dapper;
 using Discord.Commands;
@@ -275,6 +277,64 @@ var pending = LocScan.Untranslated(tempDir);
 Check(pending.Count == 2 && pending[0].Contains("Tenés poco oro") && pending[1].Contains("Ganaste {a} de oro") && pending[0].Contains("Pantalla.cs:3"), $"lista los textos para el jugador que faltan envolver y deja afuera consultas, ids, consola, registro, lo ya envuelto y atributos ({string.Join(" | ", pending)})");
 Directory.Delete(tempDir, true);
 
+Console.WriteLine("\n== 7. El revisor de fugas y los mensajes comunes ==");
+var allowedNames = new List<string> { "El Tabernero", "El Herrero", "El Tendero", "Asado y Acero RPG", "Asado y Acero" };
+allowedNames.AddRange(await db.QueryAsync<string>("SELECT name FROM items"));
+allowedNames.AddRange(await db.QueryAsync<string>("SELECT name FROM monsters"));
+allowedNames.AddRange(await db.QueryAsync<string>("SELECT name FROM zones"));
+allowedNames.AddRange(ClassCatalog.All.Select(c => c.Name));
+Check(LeakCheck.NoSpanish("Mate Amargo", allowedNames).Ok && LeakCheck.NoSpanish("You bought a Baúl de Roble", allowedNames).Ok && !LeakCheck.NoSpanish("Tenés 3 HP", allowedNames).Ok && !LeakCheck.NoSpanish("Estás acá", allowedNames).Ok && LeakCheck.NoSpanish("Use `/taberna` or `aa daily`", allowedNames).Ok,
+    "el revisor deja pasar los nombres permitidos y los comandos entre comillas, y atrapa «Tenés» y los acentos del español");
+
+const string fightEs = "⚔️ **Estás en plena pelea**: no podés usar `/chop` hasta que termine. Mientras tanto atacá, comé algo con `/use` o huí.";
+Check(FightLock.Message("/chop") == fightEs, "el bloqueo de pelea en español es el de siempre");
+var stubNone = new EndStub(null); var stubDone = new EndStub("resolved"); var stubTime = new EndStub("timeout");
+string[] noFightEs = [AdventureModule.NoActiveFightMessage(stubNone, L1), AdventureModule.NoActiveFightMessage(stubDone, L1), AdventureModule.NoActiveFightMessage(stubTime, L1)];
+Check(noFightEs.All(m => m.StartsWith("No tenés ningún combate activo")), "los tres avisos de «no tenés combate» en español siguen empezando igual");
+
+string[] englishTexts;
+using (Loc.Use("en"))
+{
+    englishTexts =
+    [
+        FightLock.Message("/chop"),
+        AdventureModule.NoActiveFightMessage(stubNone, L1), AdventureModule.NoActiveFightMessage(stubDone, L1), AdventureModule.NoActiveFightMessage(stubTime, L1),
+        CommonMessages.NotRegistered(L1), CommonMessages.UnexpectedError(), CommonMessages.UnknownCommand(), CommonMessages.CommandFailed(),
+    ];
+}
+
+for (int k = 0; k < englishTexts.Length; k++)
+{
+    var (ok, found) = LeakCheck.NoSpanish(englishTexts[k], allowedNames);
+    Check(ok && englishTexts[k] != fightEs && englishTexts[k].Length > 10, $"en inglés, mensaje común {k + 1}: sin español colado ({found ?? englishTexts[k][..Math.Min(70, englishTexts[k].Length)]})");
+}
+
+Check(englishTexts[0].Contains("`/chop`") && englishTexts[0].Contains("/use") && englishTexts[4].Contains("/start") && englishTexts[4].Contains(L1.ToString()), "y conservan lo que no se traduce: los comandos y la mención");
+Check(AdventureModule.NoActiveFightMessage(stubNone, L1) == noFightEs[0] && CommonMessages.NotRegistered(L1).StartsWith($"<@{L1}> ¡Bienvenido"), "fuera de un Loc.Use los mismos mensajes salen en español");
+
+Embed cooldownEs = AdventureModule.BuildCooldownEmbed(CooldownCatalog.Hunt, TimeSpan.FromSeconds(90));
+Check(cooldownEs.Title == "⏳ 🏹 Cazar: todavía no podés" && cooldownEs.Description == "Te falta **1m 30s** para volver a intentarlo.", "el embed de «todavía no podés» en español es el de siempre");
+Embed cooldownEn;
+using (Loc.Use("en")) { cooldownEn = AdventureModule.BuildCooldownEmbed(CooldownCatalog.Hunt, TimeSpan.FromSeconds(90)); }
+Check(cooldownEn.Title.Contains("Hunt") && cooldownEn.Description.Contains("1m 30s") && LeakCheck.NoSpanish(LeakCheck.AllText(cooldownEn), allowedNames).Ok && LeakCheck.FitsDiscord(cooldownEn), $"el mismo embed en inglés ({cooldownEn.Title} / {cooldownEn.Description})");
+
+const ulong CD = 999000000000098008UL;
+await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)CD });
+await userRepo.GetOrCreateUserAsync(CD);
+Embed statusEs = await CooldownModule.BuildStatusEmbedAsync(cooldowns, userRepo, CD);
+Embed statusEn;
+using (Loc.Use("en")) { statusEn = await CooldownModule.BuildStatusEmbedAsync(cooldowns, userRepo, CD); }
+Check(statusEs.Title == "⏱️ Tus cooldowns" && statusEs.Description.Contains("**Cazar**: **¡Listo!** ✅") && statusEs.Description.Contains("🎁 **Diario**: **¡Listo!** ✅"), "/cd en español es el de siempre");
+Check(statusEn.Title == "⏱️ Your cooldowns" && statusEn.Description.Contains("**Hunt**: **Ready!** ✅") && statusEn.Description.Contains("🎁 **Daily**: **Ready!** ✅") && LeakCheck.NoSpanish(LeakCheck.AllText(statusEn), allowedNames).Ok && LeakCheck.FitsDiscord(statusEn),
+    $"/cd en inglés ({LeakCheck.NoSpanish(LeakCheck.AllText(statusEn), allowedNames).Found})");
+await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)CD });
+
+var petsList = new List<OwnedPet>();
+Check(CooldownModule.ArenaLine(true, TimeSpan.FromMinutes(95)) == $"🏟️ **Arena**: anotado ✅ — se juega en {TimeFormat.Remaining(TimeSpan.FromMinutes(95))}", "la línea de la Arena en español es la de siempre");
+string arenaEn, arenaNotEn;
+using (Loc.Use("en")) { arenaEn = CooldownModule.ArenaLine(true, TimeSpan.FromMinutes(95)); arenaNotEn = CooldownModule.ArenaLine(false, TimeSpan.FromMinutes(95)); }
+Check(arenaEn.Contains("signed up") && arenaEn.Contains("1h 35m") && arenaNotEn.Contains("/arena join") && LeakCheck.NoSpanish(arenaEn + arenaNotEn, allowedNames).Ok, $"y en inglés ({arenaEn} | {arenaNotEn})");
+
 // El repositorio de verdad: nada falta, nada sobra, ningún {0} desparejo, ningún literal raro.
 var catalogOnDisk = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(Path.Combine(TestEnv.RepoRoot, "Locales", "en.json")))!;
 var repoReport = LocScan.Compare(LocScan.Extract(TestEnv.RepoRoot), catalogOnDisk);
@@ -286,6 +346,15 @@ Check(unknownCommands.Count == 0, $"todo «`aa <comando>`» que nombra un texto 
 
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;
+
+// Un servicio de combate que solo sabe «cómo terminó el último»: para probar los tres textos de «no tenés combate».
+sealed class EndStub(string? reason) : ICombatSessionService
+{
+    public bool TryStart(ulong discordId, CombatState state, ICombatReplyTarget replyTarget) => false;
+    public CombatSession? Peek(ulong discordId) => null;
+    public bool TryAdvance(ulong discordId, CombatSession expectedSession, CombatState? nextState, ICombatReplyTarget? nextReplyTarget) => false;
+    public string? RecentEnd(ulong discordId) => reason;
+}
 
 // Un repositorio que cuenta las lecturas, para probar el caché.
 sealed class CountingRepo(ILanguageRepository inner) : ILanguageRepository

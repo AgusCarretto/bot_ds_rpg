@@ -24,5 +24,5 @@ public static class FightLock
 
     // shown: el comando tal como lo escribió («/chop», «aa chop»).
     public static string Message(string shown) =>
-        $"⚔️ **Estás en plena pelea**: no podés usar `{shown}` hasta que termine. Mientras tanto atacá, comé algo con `/use` o huí.";
+        Loc.F($"⚔️ **Estás en plena pelea**: no podés usar `{shown}` hasta que termine. Mientras tanto atacá, comé algo con `/use` o huí.");
 }
