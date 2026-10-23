@@ -27,6 +27,12 @@ public static class ItemEmojiRegistry
     public static string IconOf(string name, string fallback) =>
         _byName.TryGetValue(name, out var emoji) ? emoji : fallback;
 
+    // El código del emoji propio del ítem PARA LA OPCIÓN DE UN DESPLEGABLE (v0.22.2), o null. Una opción lleva su emoji en un campo aparte del texto y, si Discord no conoce ese emoji, rechaza el mensaje ENTERO
+    // (en el menú de curación de un /travel o un /boss no se podría ni empezar la pelea). Por eso solo sale si el ítem lo tiene Y su id está en la lista de emojis de la aplicación (UiEmojis.IsKnownEmoji,
+    // cargada desde Discord): sin lista, sin emoji o con uno de otra aplicación devuelve null y la opción queda como siempre. Un emoji común (unicode) del ítem tampoco entra: no hay forma de validarlo.
+    public static string? MenuCodeOf(string name) =>
+        _byName.TryGetValue(name, out var code) && UiEmojis.IsKnownEmoji(code) ? code.Trim() : null;
+
     // "<:emoji:id> Nombre", o "📦 Nombre" con el emoji común si no se conoce el propio. Sin emoji y sin fallback, el nombre solo.
     public static string Label(string name, string fallback)
     {

@@ -49,6 +49,8 @@ public static class GameEventKinds
     // PvP.
     public const string DuelWin = "duel_win";               // ganó un duelo amistoso; detail = el nombre del rival
     public const string DuelLoss = "duel_loss";             // perdió un duelo amistoso; detail = el nombre del rival
+    public const string WorldBossJoin = "worldboss_join"; // se anotó en el jefe mundial del día (v0.24.0); detail = el día (yyyy-MM-dd)
+    public const string WorldBossPaid = "worldboss_paid"; // cobró el premio del jefe mundial; amount = el oro, detail = el día
     public const string ArenaJoin = "arena_join";           // se anotó en el torneo del día; detail = el día (yyyy-MM-dd)
     public const string ArenaWin = "arena_win";             // ganó el torneo del día; detail = el día
 

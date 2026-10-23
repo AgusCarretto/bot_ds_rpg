@@ -86,7 +86,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             .AddField("⚔️ Pelear", "`/hunt` (`aa ah` es el automático) · `/travel` · `/boss` (solo o con amigos) · `/zona` · `/drops`", false)
             .AddField("🪓 Recolectar y forjar", "`/chop` · `/mine` · `/forge` · `/enchant` · `/dismantle` · `/tips` (qué te falta farmear)", false)
             .AddField("🍖 Comida y plata", "`/taberna` (comer, comprar y vender) · `/heal` · `/use` · `/open` · `/daily` · `/bank` · `/play`", false)
-            .AddField("📋 Progreso", "`/missions` · `/achievements` · `/pet` · `/professions` · `/story` · `/leaderboard`", false)
+            .AddField("📋 Progreso", "`/missions` · `/achievements` · `/titles` · `/pet` · `/professions` · `/story` · `/leaderboard`", false)
             .AddField("👥 Con otros jugadores", "`/fight` · `/arena` · `/boss @amigo` · `/give` · `/trade` · `/exchange`", false)
             .AddField("🔥 Final del juego", "`/forge-special` · `/zona 0` · `/fuegonuevo` · `/deepshop`", false)
             .AddField("🛠️ Tu cuenta", "`/start` · `/class` · `/profile` · `/inventory` · `/cd` · `/reminders` · `/vote` · `/tutorial`", false)

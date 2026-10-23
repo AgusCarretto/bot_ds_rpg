@@ -11,7 +11,7 @@ using Microsoft.Extensions.Configuration;
 // El anuncio va al canal donde se anotó el primero de ese torneo, salvo que Arena__ChannelId (el .env) diga otro. Un anuncio que no se pueda
 // mandar (el canal ya no existe, el bot perdió el permiso) se registra y se descarta: el torneo ya se jugó y se ve con /arena results.
 // Vive en Modules/ (y no en Services/) porque arma el mensaje con el mismo código que /arena results (ArenaModule.BuildAnnouncement).
-public sealed class ArenaScheduler(IArenaService arena, DiscordSocketClient client, IConfiguration configuration)
+public sealed class ArenaScheduler(IArenaService arena, DiscordSocketClient client, IConfiguration configuration, IWorldBossService? worldBoss = null)
 {
     private static readonly TimeSpan Interval = TimeSpan.FromSeconds(30);
 
@@ -44,14 +44,31 @@ public sealed class ArenaScheduler(IArenaService arena, DiscordSocketClient clie
         while (await timer.WaitForNextTickAsync());
     }
 
-    // Un ciclo. Público para poder probarlo; nunca tira (un error se registra y el reloj sigue).
+    // Un ciclo. Público para poder probarlo; nunca tira (un error se registra y el reloj sigue). Primero la Arena y después el jefe mundial (v0.24.0): cada uno en lo suyo, así que uno que falla no frena al otro.
     public async Task TickAsync()
     {
         try
         {
             foreach (var resolution in await arena.ResolveDueAsync(DateTime.UtcNow))
             {
-                await AnnounceAsync(resolution);
+                await SendAsync(configuration["Arena:ChannelId"], resolution.ChannelId, ArenaModule.BuildBroadcast(resolution), $"la Arena del {resolution.Day}");
+            }
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+        }
+
+        if (worldBoss is null)
+        {
+            return;
+        }
+
+        try
+        {
+            foreach (var resolution in await worldBoss.ResolveDueAsync(DateTime.UtcNow))
+            {
+                await SendAsync(configuration["WorldBoss:ChannelId"], resolution.ChannelId, WorldBossModule.BuildBroadcast(resolution), $"el jefe mundial del {resolution.Day}");
             }
         }
         catch (Exception ex)
@@ -60,13 +77,13 @@ public sealed class ArenaScheduler(IArenaService arena, DiscordSocketClient clie
         }
     }
 
-    private async Task AnnounceAsync(ArenaResolution resolution)
+    // Manda los mensajes de una transmisión al canal (el configurado, o el de donde se anotó el primero) con una pausa entre uno y otro. Si un mensaje falla a la mitad se corta ahí: el resultado
+    // completo igual queda guardado (/arena results en la Arena).
+    private async Task SendAsync(string? configuredChannel, ulong? fallbackChannel, IReadOnlyList<ArenaModule.ArenaMessage> messages, string what)
     {
         try
         {
-            ulong? channelId = ulong.TryParse(configuration["Arena:ChannelId"], out ulong configured) && configured != 0
-                ? configured
-                : resolution.ChannelId;
+            ulong? channelId = ulong.TryParse(configuredChannel, out ulong configured) && configured != 0 ? configured : fallbackChannel;
             if (channelId is not { } id || id == 0)
             {
                 return;
@@ -77,13 +94,10 @@ public sealed class ArenaScheduler(IArenaService arena, DiscordSocketClient clie
                 : client.GetChannel(id) as IMessageChannel ?? await client.Rest.GetChannelAsync(id) as IMessageChannel;
             if (channel is null)
             {
-                BotLog.Warn(new InvalidOperationException($"No encontré el canal {id} para anunciar la Arena del {resolution.Day}."));
+                BotLog.Warn(new InvalidOperationException($"No encontré el canal {id} para anunciar {what}."));
                 return;
             }
 
-            // El torneo se cuenta ronda por ronda (ArenaModule.BuildBroadcast). Si un mensaje falla a la mitad se corta ahí: el resultado
-            // completo igual queda en /arena results.
-            var messages = ArenaModule.BuildBroadcast(resolution);
             for (int i = 0; i < messages.Count; i++)
             {
                 await channel.SendMessageAsync(messages[i].Content, embed: messages[i].Embed);

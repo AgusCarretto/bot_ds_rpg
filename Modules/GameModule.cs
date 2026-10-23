@@ -157,7 +157,8 @@ public class GameModule(
 
         numberLines.Insert(0, zoneRow);
 
-        // Debajo de la primera línea de la descripción, solo cuando corresponde: que venció al Asador y el título cosmético de la bendición Brasa de Color (que también cambia el color del perfil con su nivel).
+        // Debajo de la primera línea de la descripción, solo cuando corresponde: que venció al Asador. El texto de la bendición Brasa de Color ya no va acá: desde la v0.23.0 sus 5 nombres son títulos que se
+        // desbloquean con el nivel de la bendición y se ponen con /titles (el color del perfil sigue cambiando con su nivel).
         var descriptionLines = new List<string>();
         if (player.GateCleared)
         {
@@ -165,19 +166,16 @@ public class GameModule(
         }
 
         int colorLevel = bonuses.BlessingLevel(BlessingCatalog.ColorKey);
-        if (colorLevel > 0)
-        {
-            descriptionLines.Add($"🌈 _{BlessingCatalog.ColorTitle(colorLevel)}_");
-        }
 
         // Debajo de la clase (el título) van el Fuego Nuevo y el nivel, en ese orden (el dueño, 2026-10-20: «clase, FN, LVL»): el título no se garantiza para emojis propios, así que viven en la
         // descripción. Sin Fuego Nuevo solo el nivel. Sin los emojis subidos queda «🔥 FN 3 · Nivel 41» (GameData/UiEmojis.cs).
         string levelLine = (player.FuegoNuevo > 0 ? UiEmojis.FuegoNuevoTag(player.FuegoNuevo) + " · " : string.Empty) + UiEmojis.LevelTag(player.Level);
         descriptionLines.Insert(0, levelLine);
 
+        // El encabezado es «Nombre - Título (Clase)» (el dueño, 2026-10-22): el título es el que tiene puesto con /titles, o «Recién Llegado» si no puso ninguno. Va en el título del embed (texto plano), así que
+        // no hay línea de autor: el nombre ya está acá y la foto sigue de miniatura.
         var embed = new EmbedBuilder()
-            .WithAuthor(username, avatarUrl)
-            .WithTitle($"{classDef?.Emoji ?? "🔥"} {player.Class}")
+            .WithTitle($"{classDef?.Emoji ?? "🔥"} {username} - {TitleCatalog.DisplayName(player.EquippedTitle)} ({player.Class})")
             .WithDescription(string.Join("\n", descriptionLines))
             .WithColor(colorLevel > 0 ? new Color((uint)BlessingCatalog.ColorValue(colorLevel)) : Color.Orange) // Color cálido acorde al asado
             .WithThumbnailUrl(avatarUrl)

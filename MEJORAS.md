@@ -1,6 +1,117 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-20 (v0.19.2: los banquetes curan 150 y 200)_
+_Última revisión: 2026-10-22 (v0.25.1: la Guarda baja un poco)_
+
+## Pendiente de un vistazo (puesto al día el 2026-10-22)
+
+Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para no tener que recorrerlo entero, esto es lo que de verdad está abierto:
+
+**Esperando una decisión del dueño**
+- **La Guarda ya se bajó (v0.25.1, ver abajo)**: el dueño dijo «bajala un poquito si te parece muy OP». Si se la quiere a la par del Filo, son +2/4/6/9/13 % (una línea en `KindTable`).
+- **El jefe mundial ya está hecho (v0.24.0, ver abajo)**; lo que queda abierto es si se quiere una línea en `/cd` («anotado ✅ — se pelea en 3h»), un jefe por servidor cuando haya mucha gente, o premios que no sean solo oro.
+- **Blackjack: ya está (v0.25.0, ver abajo).** Lo que queda abierto: dividir (split) y el seguro, que no se hicieron a propósito para mantenerlo simple.
+- **Habilidades de clase** (pedido de los jugadores, ver «Sugerencias»): aprender, mejorar o evolucionar la habilidad, y «nerfear las iniciales». Necesita diseño antes de tocar nada: están calibradas con `PveTuning`, `PvpTuning` y los jefes, no debe contar en duelos
+  ni en la Arena, y habría que preguntar CUÁL clase les parece pasada (en PvE la débil es el Arquero).
+- **Idioma:** pasar todo a inglés con un selector (`/language`). Espera a que la v0.22.0 esté verificada en producción. Hay que decidir el idioma por defecto de los jugadores nuevos, si se mantienen los nombres de sabor argentino y quién revisa el tono del inglés.
+- **Comida para las zonas altas** (el dueño avisa cuándo), un cooldown en `/play` y zonas cada ~10 niveles (opinión dada, sin construir).
+
+**Ya hablado, falta hacerlo**
+- Escena con desplegables para `/trade` y `/exchange` (como la taberna), para que el emoji se vea también al elegir: las listas de autocompletado no pueden llevarlo.
+- Limpiar los emojis unicode de los títulos y de los nombres de campo, pantalla por pantalla (necesita un set propio de íconos de estadística), y apilar los dos HP del combate para poder usar barras de emojis ahí.
+
+**Para mirar en la base viva** (necesitan datos de Railway; los corre el dueño con `psql`)
+- `Database/report_live_health.sql`: el logro «Racha» tiene que desbloquear el tramo I (7 días) cuando reclamen los dos jugadores con racha de 8 a 13; si no pasa, es un bug.
+- `Database/report_gold_chest_origin.sql` (nuevo): de dónde salen los Cofres de Oro (29 abiertos en 7 días en el informe del 2026-10-20). Reconstruye por tienda, jefe, `/daily`, misiones, logros, Arena y cajas, y cuadra contra lo visto.
+- `/vote` con el bot público: hoy duplica los cofres gratis; con 3 votantes no preocupa. Palancas: cobrar el reseteo del jefe una vez por día, o cambiar el cofre.
+- Confirmar que `apply_emojis.sql` corrió en Railway: sin eso no se ven los emojis de los ítems (ni los de los desplegables).
+
+**Hoja de ruta, no es para ahora**
+- Clase Monje (necesita una 5.ª familia de arma o una regla de «sin arma»; el dueño ya le contestó al foro que es para más adelante).
+- **Membresía de pocos pesos** (el dueño, 2026-10-22): lo único que da es **bajar un % de los cooldowns** y **algún título especial**; nada de poder, drops, oro ni XP (el PvP, la Arena y el ranking no pueden verse afectados). Para cobrar con Premium Apps de Discord la app tiene que estar verificada, en un equipo con 2FA y con
+  Términos y Privacidad públicos, y hay que confirmar si hay Premium Apps en Uruguay (Developer Portal, Monetization). Punto de enganche: `ReminderPolicy.IsEligible` y `CooldownCatalog`. El título especial entra como categoría «Especiales» del sistema de títulos.
+- Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
+- Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
+
+## La Guarda baja un poco (v0.25.1, 2026-10-22)
+
+- **Pedido del dueño**: «bajala un poquito si te parece muy OP». Sí lo era: la Guarda V dejaba al jefe de la zona 5 (a nivel mín+3) en **8 % de derrota** contra ~32 % del Filo V y ~27 % de la Vida V, porque la defensa se resta fija de cada golpe.
+- **Cambio**: la Guarda pasa de +4/8/13/19/26 % a **+3/6/9/13/18 %** de la DEF de la pieza. Antes copiaba la tabla del Filo; ahora tiene la suya (`Enchantments.StatBonusPercent`) y el Filo no cambia. Medido con `tools/balance2 -- L 5`: la Guarda V queda en **~18 %** de derrota en la zona 5 y 6 a 7 % en las zonas 3 y 4 (antes 2 %). Sigue siendo el mejor encantamiento del amuleto (~1,7 veces lo que da el Filo en su pieza), pero ya no es 4 veces.
+- **Probado**: 2/4/6/9/13 (paridad con el Filo, 27 %), 3/5/8/12/16 (22 %), **3/6/9/13/18 (elegido, ~18 %)** y 4/7/11/15/20 (15 %). Para bajarla hasta la paridad, cambiar la fila de la Guarda en `KindTable`.
+- **Qué pasa con lo ya encantado**: los amuletos con Guarda conservan su tier y rinden con la tabla nueva (un Soberano pasa de +26 % a +18 % de la DEF). El tier V es rarísimo (1 % por intento), así que casi nadie lo tiene.
+- **Cambios de pantalla**: las listas de tiers de `/enchant` ya no ponen un solo «bonus +X %» (depende del efecto); el bonus de cada efecto sale de la lista de efectos de `/enchant info`.
+- **Para la base viva**: nada (sin migración).
+
+## Blackjack en el casino: `aa bj 10k` (v0.25.0, 2026-10-22)
+
+- **Pedido del dueño**: «armate el bj entonces, `aa bj 10k` por ejemplo» (antes: «anota el blackjack para armar en `play`»).
+- **Cómo se juega**: `/play game:blackjack apuesta:10k`, `aa bj 10k` (también `aa blackjack` y `aa 21`; la apuesta puede ser un número, `10k`, `1m` o `all`) o `aa play blackjack 10k`. Sale una mano con **Pedir / Plantarse / Doblar**: la banca muestra una carta y tapa la otra; se acerca a 21 sin pasarse. Por texto, `aa bj hit`, `aa bj stand`
+  y `aa bj double` hacen lo mismo que los botones (para cuando un botón no responde).
+- **Reglas**: mazo infinito; el **blackjack natural paga 3 a 2** (si los dos lo tienen, empate; si lo tiene solo la banca, perdés al instante); ganar paga 1 a 1; la banca pide hasta 17 y **se planta en todos los 17**; se puede **doblar** con las dos primeras cartas (una carta más y la apuesta se duplica); llegar a 21 pidiendo se planta solo. **Sin dividir ni seguro** (a propósito, para mantenerlo simple).
+- **La casa no regala** (medido con 1.000.000 de manos y la estrategia básica de estas reglas): el jugador recupera **0,989** por cada unidad apostada, o sea la casa se queda con ~1,1 %; jugando mal (plantarse siempre desde 12) recupera 0,92. Siempre por debajo de 1, como las slots.
+- **La plata**: la apuesta se cobra al repartir (sin oro no se juega) y el premio se paga al terminar; doblar cobra otra apuesta igual en el momento. Una mano por jugador; 6 «aa bj» a la vez reparten una sola mano y 10 clicks a la vez en un botón pagan una vez. **Una mano abandonada no pierde la apuesta**: a los 90 segundos sin jugar la banca te planta y se paga lo que salga.
+  Un reinicio del bot sí corta las manos en juego (viven en memoria, como los combates): la apuesta ya cobrada se pierde. Tope de apuesta: 250.000.000.
+- **Historial y logros**: cada mano deja `casino_win` / `casino_loss` con `detail = blackjack` (el empate no deja nada); `/history` tiene su renglón «Blackjack» y el logro Afortunado cuenta lo que se gana.
+- **Para la base viva**: nada (sin migración). Arnés nuevo: `tests/v0250test` (52 arneses en total).
+
+## El jefe mundial: `aa miniboss` (v0.24.0, 2026-10-22)
+
+- **Pedido del dueño**: «`aa miniboss` y que todos peleen contra él, o worldboss; mientras más gente, mejor; que anotarse gaste el cooldown del jefe; que dé entre 30 y 50 cacerías de esa zona». El motivo: `aa boss` pide nivel 5 y quería algo para hacer con ese cooldown antes de llegar.
+- **Cómo funciona**: un jefe por día, el mismo para todos (7 jefes que rotan por la fecha, sin tabla). Durante el día te anotás con `/miniboss` o `aa miniboss` (también `worldboss`, `wb`, `jefemundial`): **no pide nivel y gasta el cooldown del jefe de 5 horas** (el mismo de `/boss`, con la misma guarda; con el cooldown corriendo
+  no te anotás y te dice cuánto falta). A las 00:00 de Uruguay, el mismo reloj de la Arena lo pelea entre todos los anotados y lo cuenta en el canal (3 mensajes: el jefe y los anotados, la batalla con los golpes de los que más le pegaron y la barra de vida, y el resultado con el premio y el MVP).
+- **El premio** (el mismo para todos los anotados, en cacerías de oro de SU zona): **50 si el jefe cae; si no, 30 más 20 por la parte de la vida que le sacaron entre todos**. Cada uno aporta según cuánto pega comparado con lo que se espera en su zona (así un nivel 1 en la Zona 1 y un veterano en la Zona 5 aportan del mismo orden), con una forma del día de ±30 %. Medido: 1 jugador normal ~32 cacerías, 5 ~40, con 10 el jefe cae la mitad de las veces y con 12 o más casi siempre (50): **mientras más gente, mejor para todos**.
+- **Economía**: 50 cacerías al día son ~15 a 20 % de una sesión perfecta de 2 horas en cada zona (el `/daily` paga 6 a 20). El oro puede viajar por `/give`: el mismo riesgo de cuentas alternativas que ya tiene el diario. Las perillas son `MinHunts`, `MaxHunts`, `FullCrowd` y `FormSwing` (`WorldBossRules`).
+- **No se hizo**: una línea en `/cd`, un jefe por servidor (cuando haya mucha gente conviene, como la Arena), premios que no sean oro.
+- **Para la base viva**: **correr `Database/add_worldboss.sql` con `psql` ANTES del binario v0.24.0** (2 tablas nuevas, re-ejecutable). Sin ellas el reloj registra un error cada 30 segundos y `/miniboss` no anda. Opcional: `WorldBoss__ChannelId` para fijar el canal del anuncio. Arnés nuevo: `tests/v0240test` (51 arneses en total).
+
+## La Arena con azar y contada pelea por pelea (v0.23.2, 2026-10-22)
+
+- **Pedido del dueño**: «la Arena está buena pero la gana siempre el de más nivel… quiero que pueda ganarla alguien de nivel 1 contra el del 20, si no llega un punto en que se hace imposible… random con textos mientras pasan los duelos».
+- **Qué se midió** (mismo motor y misma clase): sin azar, con +1 nivel el de arriba gana 65 a 90 %, con +5 niveles 89 a 100 %, y un nivel 1 sin equipo contra un nivel 20 con equipo de zona 2 no ganaba NUNCA (la defensa se resta fija y le deja el daño mínimo). Un «poco más de azar» no alcanzaba: ni siquiera con ±40 % de suerte el nivel 1 ganaba.
+- **Tres capas, solo en la Arena** (`GameData/ArenaTuning.cs`; `/fight` sigue con el poder real): poder comprimido (daño, defensa y vida de la pareja se acercan a su media geométrica, exponente 0,5), forma del día (±30 % de daño y vida por pelea) y milagro (en 30 de cada 100 peleas los dos pelean con el poder igualado).
+- **Resultado medido** (el de más nivel gana): parejos 50 %, +1 nivel ~55 %, +5 ~64 %, +10 ~71 %, +19 ~78 %, y **nivel 1 sin equipo contra nivel 20 con equipo de zona 2 o 4: gana ~14 a 15 de cada 100**. Subir de nivel y de equipo sigue sirviendo. Las tres constantes son el único lugar donde se retoca; para más azar, subir `MiracleChance`.
+- **La pelea contada**: cada pelea guarda su apertura (el milagro, o quién llegó muy bien o muy mal, con el porcentaje) y hasta 8 golpes (el último, el primero, el más fuerte, habilidades, críticos, esquives), con los textos del duelo amistoso. El anuncio cuenta las primeras rondas una pelea por renglón y **las semifinales y la final golpe por golpe**, cada una en su mensaje; la apertura del torneo avisa que tiene azar. `/info tema:arena` lo explica con los números reales. Los relatos viven solo en memoria: la llave guardada y `/arena results` son los de siempre.
+- **Para la base viva**: nada (sin migración). Arnés nuevo: `tests/v0232test` (50 arneses en total); `stage12test` verifica que el torneo real deje su relato.
+
+## Atajos de texto y montos con k y m (v0.23.1, 2026-10-22)
+
+- **Pedido del dueño**: «que se pueda hacer `aa sell all`, `aa sell arma`, `aa sell amuleto`, sin pasar por shop; lo mismo con deposit y withdraw sin poner bank antes; en el play `aa cf h` o `t` y un número; y que exista la forma de poner 10k por 10000, y m de millones».
+- **Montos**: `AmountParser` lee `10k` = 10.000, `1m` = 1.000.000 y `1,5m` = 1.500.000. Con k o m el punto y la coma son decimales (`1.5k` = 1.500); sin ellas siguen siendo separadores de miles (`1.500` = 1.500, como siempre). Vale en todos lados donde se escribe un monto: `/play`, `/give`, `/bank` y los atajos nuevos.
+- **Atajos** (solo por texto): `aa sell all` (todo lo vendible de la mochila), `aa sell arma` y `aa sell amuleto` (lo que llevás puesto, sin pedir confirmación porque lo escribiste vos), `aa sell <ítem>`, `aa sell <cantidad> <ítem>` y `aa sell all <ítem>`; `aa deposit` y `aa withdraw` (alias `dep`, `wd`, `retirar`, `sacar`);
+  `aa cf h 100` / `aa cf t 10k` / `aa cf 100 h` (h = heads, t = tails, también cara y cruz; el lado y la apuesta en cualquier orden); y de yapa `aa slots 100` (`sl`). Los comandos largos siguen andando.
+- **Qué no se hizo a propósito**: `aa sell arma` vende al instante la pieza puesta (la forja cuesta mucho más que lo que pagan); la taberna sigue pidiendo confirmación porque ahí se toca un menú sin querer. Si hace falta el mismo cuidado por texto, es un botón de confirmación más.
+- **Para la base viva**: nada (sin migración). Arnés nuevo: `tests/v0231test` (49 arneses en total).
+
+## Títulos (v0.23.0, 2026-10-22)
+
+- **Pedido del dueño**: «creá muchísimos, como 50 mínimo, que estén en páginas en `aa titles` y que se puedan equipar»; lo corrigió dos veces: **no van en el inventario** (idea mía), se equipan al **perfil**, que ahora muestra **«Nombre - Título (Clase)»**, y «dale sencillo». «Título nuevo me gusta, que busque cuál es.»
+- **113 títulos en 9 páginas** (Combate 18, Oficios 12, Economía 12, Constancia 12, Mascotas y Fogón 15, Jefes y niveles 15, Maestros de oficio 9, PvP y comunidad 12, Curiosos 8), todos cosméticos. 69 salen de los 23 logros (3 por logro, con la meta del propio tramo: si se retoca un logro, su título lo sigue) y 44 son especiales: el primer triunfo sobre cada jefe
+  de la escalera, el nivel más alto alcanzado, los niveles de la Brasa de Color, maestro de un oficio (nivel 25 / 50 / 100), duelos, Arena, votos, trueques, derrotas, hallazgos (Corteza, Meteorito, encantamiento tier V), el Inframundo y «Recién Llegado» (el inicial). La lista completa está en `docs/titulos.md`.
+- **Qué se guarda**: solo cuál tenés puesto (`users.equipped_title`). Qué tenés se calcula de contadores y eventos que sobreviven al Fuego Nuevo (nunca de la zona más alta vencida ni del nivel de la cuenta, que se reinician). Los títulos de la Brasa de Color dejan de ser una línea fija del perfil: ahora se desbloquean con el nivel de la bendición y se ponen con `/titles`
+  (el color del perfil sigue igual); quien ya la tenía ve «Recién Llegado» hasta que se ponga uno.
+- **Pantallas**: `/titles` y `aa titles [página]` (✅ los que tenés, 🔒 los que faltan con cómo conseguirlos y cuánto llevás; desplegable de páginas, desplegable para equipar con los que tenés de esa página y botón «Quitar título»), y `aa title <nombre>` / `aa title quitar` por texto.
+- **«¡Título nuevo!»**: el aviso de un logro ya dice cuál título trae; los especiales que se pueden saber con el evento (un contador que llega a su meta, subir de nivel, la primera victoria sobre un jefe de la escalera) avisan solos. La Brasa de Color y los tres hallazgos únicos no avisan: aparecen en `/titles`.
+- **Membresía**: el título especial de miembro queda para cuando se construya (una regla nueva con la comprobación de la suscripción, en una página «Especiales»). No se hizo nada de eso.
+- **Para la base viva**: **correr `Database/add_titles.sql` con `psql` ANTES del binario v0.23.0** (agrega `users.equipped_title`; re-ejecutable). Arnés nuevo: `tests/v0230test` (48 arneses en total); se actualizaron `v0194test` y `fntest` (el encabezado del perfil y la Brasa de Color).
+- Para tunear: las metas de los 69 de logros se mueven en `AchievementCatalog`; los niveles de maestro (25/50/100) y los demás títulos especiales, en `TitleCatalog`.
+
+## Emoji propio del ítem en los desplegables (v0.22.2, 2026-10-22)
+
+- **Pedido del dueño**: «agregar los emojis a los trades, al 3 por 1 y a los ítems de los combos desplegables, el forje y todo; donde se pueda suma mucho».
+- **Dónde SÍ**: cada opción de un desplegable tiene un campo de emoji aparte del texto y ahí Discord sí dibuja los emojis de la aplicación. Lo llevan los cinco menús de la taberna (comer, comprar comida, comprar caja, vender —la pieza puesta muestra su emoji y deja el 🗡️/📿— y el 3 por 1 con su segundo paso), el menú de recetas del herrero (el ✅/❌/🔁/🟢 sigue en el texto), el menú de curación de `/travel` y `/boss`, el de comida del jefe en equipo y la tienda del Inframundo.
+- **Dónde NO se puede**: las listas que aparecen al escribir `/trade`, `/exchange`, `/forge make`, `/shop buy`, `/use` u `/open` son autocompletado y Discord las dibuja como texto plano (límite de la plataforma). Lo que sí se ve con emoji es el mensaje de la oferta de intercambio y el resultado del 3 por 1, que son texto de embed. **No hecho, a decidir**: cambiar `/trade` y `/exchange` por una escena con desplegables como la taberna (un flujo nuevo) para tener emoji también al elegir.
+- **El riesgo y su guardia**: si Discord no conoce el emoji rechaza el mensaje ENTERO, y en el menú de curación de un combate eso impediría empezar la pelea. Una opción solo lleva emoji si el ítem lo tiene Y el id está en la lista de emojis que la aplicación tiene ahora (la misma que `UiEmojiRefresher` lee de Discord al arrancar y cada 10 minutos; `UiEmojis.IsKnownEmoji`). Sin la lista cargada, con un emoji de otra aplicación o con uno común, la opción sale exactamente como antes. **Límite conocido**: si se borra un emoji del portal, el bot lo sigue ofreciendo hasta 10 minutos (el próximo refresco): al cambiar el arte de un ítem, subir el nuevo, correr `apply_emojis.sql` y recién ahí borrar el viejo.
+- **Corrección de una regla mía**: `CLAUDE.md` decía que ningún desplegable podía llevar emojis personalizados; eso valía para el TEXTO de la opción, no para su campo de emoji.
+- Código: `Modules/ItemMenuExtensions.cs` (`ItemEmote`, `AddItemOption`), `ItemEmojiRegistry.MenuCodeOf`, `UiEmojis.IsKnownEmoji`; tocan `TabernaModule`, `BlacksmithModule`, `AdventureModule`, `RaidModule` y `DeepShopModule`. Arnés nuevo: `tests/v0222test` (47 arneses en total).
+- **Para la base viva**: nada (sin migración). Para que se vean hace falta que `apply_emojis.sql` haya corrido en la base de producción y que los emojis estén subidos en el portal de la aplicación.
+
+## El tier V del encantamiento, casi imposible; el Encantador ayuda (v0.22.1, 2026-10-20)
+
+- **Origen**: un jugador pasó al jefe de la zona 5 sin equipo de la zona 5, con comida buena y los dos encantados. Medí con el simulador (parte **M**, `tools/balance2 -- M 4`): contra el equipo de la zona 4, el jefe pierde 99 / 95 / 64 / 6 % a nivel 23 / 28 / 35 / 45 sin encantar; con Filo V + Guarda V + banquete, 46 / 15 / 0,7 / 0 %. O sea: pasa el jefe quien está unos 15 niveles arriba de la zona, no hay un hueco. **Subir vida y daño del jefe a todos NO sirve** (con +15 % el jugador normal con equipo propio sin encantar a nivel 23 pasa de perder el 53 % al 95 %). Propuse escalar al jefe con el nivel por encima de mín+8 (+2 % vida y +1 % daño por nivel, tope +50/+25 %); **el dueño dijo que no hacía falta** y pidió otra cosa: que el tier V sea muy difícil. El jefe NO se tocó.
+- **Tiers**: Tibio 42 % · Al Rojo 30 % · Ardiente 18 % · Incandescente 9 % · **Soberano 1 %** (antes 40/30/18/9/3). El Soberano pasa de ~33 intentos en promedio a ~100 (tiers acumulativos: nunca baja). Los que ya tienen un Soberano lo conservan.
+- **El oficio Encantador ayuda**: +0,1 % por nivel de chance de que el tier sorteado suba uno (+10 % al 100, tope en el V; también en cada tirada del modo avanzado). Con el Encantador al 100 el V sale ~1,9 % por tirada (1 % + 9 % × 10 %) y ~3,8 % con las dos del avanzado. Cada intento ya sumaba XP al oficio: ahora el oficio también mejora el tier, que es lo que pidió. El pie de `/enchant` avisa «⬆️ ¡tu oficio mejoró el tier!».
+- Tests: `v90test`, `v0220test` (los valores de `FixedRandom` ahora van sobre 1000) y `oficiostest` (la ayuda del oficio) se actualizaron.
+- Simulador: parte **M** (el jefe contra jugadores sin el equipo de la zona, con encantamientos y banquete; acepta factores de vida y daño del jefe).
+- **Para la base viva**: nada (sin migración).
 
 ## Encantamientos con efecto: Crítico, Sangre, Vida y Esquive (v0.22.0, 2026-10-20)
 
@@ -1335,46 +1446,30 @@ o separar `/shop` no rompiera nada existente.
 
 Todo esto ya compila y bootea limpio contra Discord.
 
-## Brecha vs. el diseño original (para decidir, no toqué nada acá)
+## Brecha vs. el diseño original (revisada el 2026-10-22: casi todo se resolvió)
 
-- ✅ **Resuelto (parcial, por decisión consciente):** en vez de restringir qué arma puede
-  equiparse cada clase, agregamos `items.weapon_family` (Espadas/Dagas/Arcos/Grimorios) y
-  `GameData/ClassWeaponSynergy.cs`: cualquier clase puede equipar cualquier arma, pero el daño
-  del arma se multiplica x1.5 solo si la familia coincide con la de la clase (Guerrero+Espada,
-  etc.). Falta cargar armas de las otras 3 familias — hoy solo hay `Espadas` en el catálogo, así
-  que la sinergia solo es alcanzable jugando Guerrero.
-- 🟡 **El herrero solo craftea ítems nuevos fijos, no mejora los que ya tenés.** El brief original
-  hablaba de "forjar armas de mayor nivel" — hoy `/forge make` es siempre "pagá X, recibís un
-  ítem predefinido", no hay upgrade de un arma existente.
-- 🟡 **El amuleto no hace nada mecánicamente.** Se equipa, se muestra en `/profile`, pero a
-  diferencia del arma (que ahora sí suma a `PlayerPower`), su `stat_value` no se usa en ningún
-  cálculo todavía.
+- ✅ **Resuelto:** en vez de restringir qué arma puede equiparse cada clase, `items.weapon_family` (Espadas/Dagas/Arcos/Grimorios) y `GameData/ClassWeaponSynergy.cs`: cualquier clase puede equipar cualquier arma, pero el daño del arma se
+  multiplica ×1,5 solo si la familia coincide con la de la clase. Las cuatro familias están cargadas en las cinco zonas (4 armas de clase + 1 general + 1 amuleto por zona).
+- 🟡 **El herrero solo craftea ítems fijos, no mejora los que ya tenés.** `/forge` es siempre «pagá X, recibís un ítem predefinido». Lo más parecido a mejorar una pieza hoy son los encantamientos (`/enchant`, v0.9.0 y v0.22.0). Sigue
+  abierto si el herrero debería poder subir de nivel una pieza.
+- ✅ **Resuelto:** el amuleto suma defensa (`PlayerCombatProfileCalculator.AmuletDefense`, ladder 10/35/60/85/120/165 desde la v0.15.1) y se encanta (Guarda, Vida, Esquive).
 
 ## Deuda técnica
 
-- ✅ **Resuelto:** `current_weapon_id` se eliminó del modelo, `UserSql` y `schema.sql`. Corré
-  `Database/cleanup_weapon_columns.sql` una vez contra tu base para sacarla ahí también y
-  agregarle Foreign Key a `weapon_id`/`amulet_id`.
-- 🟡 No hay tracking de qué migraciones SQL ya se corrieron (`schema.sql`, `seed.sql`,
-  `add_hp_columns.sql`, `fix_material_types.sql`, `add_buy_price.sql`, `add_daily_columns.sql`,
-  `cleanup_weapon_columns.sql`, `add_weapon_family.sql`...). Si el bot se instala en otra
-  máquina, hay que acordarse de correrlas todas en orden a mano. Una tabla `schema_migrations`
-  simple (o una herramienta tipo DbUp) resolvería esto sin mucho esfuerzo — cada vez que sumamos
-  una feature con cambio de esquema, esta lista crece.
-- ✅ (resuelto en la v0.18.3, ver arriba) ~~Cero tests.~~ Los ~40 arneses de verificación ya viven en `tests/` (y el simulador de calibración en `tools/balance2`); se corren con `tests/run-all.ps1`.
-  Sigue sin haber CI (necesitan una base local con la instalación completa) ni un framework de pruebas a propósito: son consolas que se leen de corrido.
-- 🟢 Logging es `Console.WriteLine` sin niveles ni persistencia. Alcanza para desarrollo; para un
-  bot corriendo 24/7 en un server, conviene algo que deje rastro cuando vos no estás mirando la
-  consola.
+- ✅ **Resuelto:** `current_weapon_id` se eliminó del modelo, `UserSql` y `schema.sql`.
+- 🟡 **Sigue abierto: no hay registro de qué migraciones SQL ya corrieron en cada base.** Cada versión con cambio de esquema trae su `Database/add_*.sql` y hay que acordarse de correrlo con `psql` ANTES del binario (la lista de
+  cuáles, en `CLAUDE.md`). Una tabla `schema_migrations` simple (o una herramienta tipo DbUp) lo resolvería, y de paso permitiría que el bot avise al arrancar «te falta correr tal script» en vez de caerse con un error de columna.
+- ✅ **Resuelto en la v0.18.3:** los arneses de verificación viven en `tests/` (47 hoy) y el simulador de calibración en `tools/balance2`; se corren con `tests/run-all.ps1` o `tests/run-all.sh`. Sigue sin haber CI (necesitan una base
+  local con la instalación completa) ni un framework de pruebas, a propósito: son consolas que se leen de corrido.
+- 🟢 **Logging:** `Services/BotLog.cs` ya distingue `Error` y `Warn` y pone archivo y método; la salida sigue siendo la consola, que en Railway se guarda en los logs del servicio. Alcanza; si algún día hace falta buscar por jugador o
+  por fecha, ahí habría que sumar algo persistente.
 
 ## Mejoras de UX / comandos
 
-- 🟡 `/shop buy`, `/shop sell`, `/forge make`, `/equip` piden el nombre del ítem como texto libre
-  → cualquier typo tira error. Discord.Net soporta autocomplete real (sugiere mientras escribís);
-  sería la mejora de UX con más impacto por esfuerzo invertido.
-- 🟢 No hay `/help` que liste los comandos disponibles agrupados por categoría.
-- 🟢 No hay regeneración pasiva de HP (solo `/heal` pago). Es una decisión de diseño válida, pero
-  vale confirmarla a propósito en vez de que sea un efecto colateral de no haberlo construido.
+- ✅ **Resuelto:** los comandos que piden un ítem tienen lista desplegable con autocompletado (`/shop buy|sell`, `/forge make`, `/use`, `/open`, `/zona`, `/trade`, `/exchange`, `/heal`); `/equip` ya no existe (el equipo se forja
+  directo al casillero). Las listas de autocompletado no pueden llevar emojis propios (límite de Discord); los desplegables de las escenas sí, desde la v0.22.2.
+- ✅ **Resuelto:** `/info` lista los comandos por grupo (corta a propósito) y `/info tema:<tema>` explica cómo funciona cada sistema (26 temas).
+- 🟢 **Decisión de diseño, sin tocar:** no hay regeneración pasiva de HP; se cura con comida, `/heal` o la taberna. Vale seguir confirmándolo a propósito, porque es lo que da valor a la comida.
 
 ## Ideas a futuro (sin comprometerme a nada, para cuando quieran expandir)
 
@@ -1395,7 +1490,6 @@ original, se deja como registro de los motivos de cada decisión.
 - **Mascotas**: es lo que más engancha pero también lo más grande (cómo se consiguen, cómo suben, qué dan). Que den cosas chicas (oro/XP o un poco de defensa) y NUNCA toquen las chances de drop (las recetas están calibradas con ellas). Al final de la lista: depende de logros, encantamientos y del diseño del reset.
 
 - **Casamiento (`marriage`)** — pedido por el dueño (2026-10-02), para más adelante: dos jugadores se casan (propuesta con aceptar/rechazar, como `/trade` y `/fight`) y pueden **compartir cosas** entre sí. Preguntas para cuando se encare: qué se comparte (¿oro común?, ¿cofre compartido?, ¿bonus al pelear juntos / en raid?, ¿cooldowns?), cómo se divorcia (y qué pasa con lo compartido), y cuidado con las cuentas alternativas: si se comparte algo con valor, el casamiento abre la misma puerta que `/give` (mismo tope o registro en `game_events`).
-- Sistema de armadura/defensa (hoy el daño recibido no depende de ningún stat defensivo).
+- ✅ ~~Sistema de armadura/defensa~~: hecho (el amuleto resta defensa de cada golpe, v0.15.1).
 - Comandos de administrador (dar oro/ítems, resetear cooldowns) para moderar el server de pruebas.
-- PvP o eventos temporizados de servidor (boss compartido, etc.) — mencionado como "idle" en el
-  brief original, esto sería la primera mecánica no-idle si se agrega.
+- ✅ PvP hecho (`/fight`, la Arena diaria). Siguen sin existir los eventos temporizados de servidor (un jefe compartido por todos, etc.).

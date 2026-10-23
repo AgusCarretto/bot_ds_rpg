@@ -4,19 +4,21 @@ using BotDsRpg.Services;
 using Discord;
 using Discord.Interactions;
 
-public class CasinoModule(IUserRepository userRepository, ICasinoRepository casinoRepository, ICasinoService casinoService, IGameEvents gameEvents)
+public class CasinoModule(
+    IUserRepository userRepository, ICasinoRepository casinoRepository, ICasinoService casinoService, IGameEvents gameEvents, IBlackjackService blackjack)
     : InteractionModuleBase<SocketInteractionContext>
 {
     public const int MinBet = 10;
 
     // Comando barra: /play
-    [SlashCommand("play", "Apostá tu oro en el casino (Coinflip o Slots).")]
+    [SlashCommand("play", "Apostá tu oro en el casino (Coinflip, Slots o Blackjack).")]
     public async Task HandlePlayAsync(
         [Summary("game", "Elegí el juego.")]
         [Choice("Coinflip", "coinflip")]
         [Choice("Slots", "slots")]
+        [Choice("Blackjack", "blackjack")]
         string game,
-        [Summary("apuesta", "Cuánto oro querés apostar (mínimo 10), o all para apostar todo.")]
+        [Summary("apuesta", "Cuánto oro querés apostar (mínimo 10; también 10k, 1m), o all para apostar todo.")]
         string bet,
         [Summary("lado", "Solo para Coinflip: elegí Heads o Tails.")]
         [Choice("Heads", "heads")]
@@ -27,6 +29,14 @@ public class CasinoModule(IUserRepository userRepository, ICasinoRepository casi
 
         try
         {
+            // El blackjack es una mano con botones (Pedir / Plantarse / Doblar): no es una jugada de una sola tirada (v0.25.0, ver Modules/BlackjackModule.cs).
+            if (game.Trim().ToLowerInvariant() == "blackjack")
+            {
+                var hand = await BlackjackModule.ExecuteStartAsync(blackjack, Context.User.Id, bet);
+                await FollowupAsync(hand.PlainMessage, embed: hand.Embed, components: hand.Components, ephemeral: hand.Embed is null);
+                return;
+            }
+
             var result = await ExecutePlayAsync(userRepository, casinoRepository, casinoService, Context.User.Id, game, bet, lado, gameEvents);
             await FollowupAsync(result.PlainMessage, embed: result.Embed, ephemeral: result.Embed is null);
         }

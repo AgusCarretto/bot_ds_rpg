@@ -161,7 +161,7 @@ public static class HelpTopics
     private static Embed Bank() => Topic(Self("bank"),
         $"Guardás oro **a salvo de la penalidad por morir**. La cuenta se compra una sola vez por **{Num(BankRules.AccountPrice)}** de oro.",
         ("🏦 Comandos",
-            "**/bank open** abre la cuenta · **/bank deposit** guarda · **/bank withdraw** saca · **/bank view** muestra tu billetera y tu banco.\nEn deposit y withdraw podés escribir una cantidad o **all**. En texto: `aa bank deposit 500`."),
+            "**/bank open** abre la cuenta · **/bank deposit** guarda · **/bank withdraw** saca · **/bank view** muestra tu billetera y tu banco.\nEn deposit y withdraw podés escribir una cantidad (**500**, **10k** de mil, **1m** de millón) o **all**. En texto, sin escribir bank: `aa deposit 500` y `aa withdraw 10k`."),
         ("🛡️ Para qué sirve",
             $"Si perdés un combate perdés el {DeathPenalty.GoldPercent} % del oro de la **billetera**; lo que está en el banco no se toca. Mirá **/info tema:death**."),
         ("⚠️ Ojo", "Sin interés ni tope de capacidad. Las compras, `/give` y las apuestas usan la billetera: sacá el oro del banco antes de gastarlo."),
@@ -182,13 +182,17 @@ public static class HelpTopics
             "porque no puede huir. En **/hunt** a mano ves tu vida y podés huir."));
 
     private static Embed Play() => Topic(Self("play"),
-        $"**/play** apuesta tu oro. Apuesta mínima: **{CasinoModule.MinBet}**. Podés escribir **all** para apostar todo lo que llevás en la billetera. En texto: `aa play slots 100`.",
+        $"**/play** apuesta tu oro. Apuesta mínima: **{CasinoModule.MinBet}**. Podés escribir **all** para apostar todo lo que llevás en la billetera, o **10k** / **1m** para mil / millón. En texto: `aa cf h 100` (h = heads, t = tails) y `aa slots 100`.",
         ("🪙 Coinflip",
             $"Elegís cara (**Heads**) o cruz (**Tails**) y sale al azar: 50 % de acertar. Si acertás cobrás **×{CasinoService.CoinflipMultiplier}** lo apostado."),
         ("🎰 Slots",
             $"Salen tres símbolos al azar ({string.Join(' ', CasinoService.SlotsSymbolList)}): tres iguales ({Dec(CasinoService.SlotsThreeMatchChance * 100)} % de las veces) pagan **×{CasinoService.SlotsThreeMatchMultiplier}**, " +
             $"dos iguales ({Dec(CasinoService.SlotsPairChance * 100)} %) pagan **×{Dec(CasinoService.SlotsPairMultiplier)}** y tres distintos ({Dec(CasinoService.SlotsAllDifferentChance * 100)} %) pierden la apuesta.\n" +
             $"A la larga la casa se queda con el **{Dec((1 - CasinoService.SlotsReturnToPlayer) * 100)} %** de lo que se apuesta: es un juego de suerte, no una forma de juntar oro."),
+        ("🃏 Blackjack",
+            $"**/play game:blackjack** o `aa bj 10k` reparte una mano: te acercás a **21** sin pasarte y le ganás a la banca. Con los botones **Pedir** (otra carta), **Plantarte** o **Doblar** (solo con las dos primeras cartas: una carta más y la apuesta se duplica); por texto `aa bj hit` / `aa bj stand` / `aa bj double`. " +
+            $"La banca pide hasta 17 y se planta en todos los 17. Ganar paga 1 a 1, el **blackjack** (As + 10 de entrada) paga **3 a 2**, el empate devuelve la apuesta. No se divide ni hay seguro. La apuesta se cobra al repartir y, si dejás la mano sin tocar {BlackjackService.IdleSeconds} segundos, la banca te planta. " +
+            "Jugando bien la casa se queda con ~1 %; jugando mal, con más."),
         ("📈 Tus números", "**/history** muestra cuánto ganaste y perdiste en el casino, y la diferencia."));
 
     private static Embed Hunt() => Topic(Self("hunt"),
@@ -218,6 +222,9 @@ public static class HelpTopics
             "**Todos tienen que tener la misma zona máxima** (la que ves en tu perfil como \"máx. Zona N\"): si no, el grupo se rechaza. " +
             "Cada uno puede **comer una vez** por pelea con el botón 🍖 **Comer** (o con **/use**): cura, pero gasta tu turno. Los banquetes también valen (curan y te dan su +% de ataque en el acto). " +
             "La vida del jefe crece con cada jugador y cada uno que le pega cobra la recompensa entera. Comparte cooldown con el jefe en solitario."),
+        ("🌍 /miniboss (aa miniboss, el jefe mundial)",
+            $"Un jefe distinto cada día que **pelean todos los anotados juntos a las 00:00** (hora de Uruguay). **No pide nivel**: sirve para quien todavía no llega al del jefe. Anotarte **gasta el mismo cooldown del jefe** ({Dur(CooldownCatalog.Boss.Duration)}). " +
+            $"Cada anotado cobra de **{WorldBossRules.MinHunts} a {WorldBossRules.MaxHunts} cacerías de oro de su zona**: {WorldBossRules.MaxHunts} si el jefe cae, menos si no; con unos {WorldBossRules.FullCrowd:0} jugadores normales cae. **Mientras más gente, mejor**. Se cuenta en el canal donde se anotó el primero."),
         ("🎒 Antes de ir", "Llevá el arma y el amuleto de tu zona (**/info tema:forge**) y la vida llena. Si perdés, pagás la penalidad: **/info tema:death**."));
 
     private static Embed Forge() => Topic(Self("forge"),
@@ -250,7 +257,7 @@ public static class HelpTopics
     private static Embed Shop() => Topic(Self("shop"),
         "Acá se compra y se vende todo lo que no se forja, y se cura la vida.",
         ("🍺 /taberna (aa taberna)", "El tabernero te atiende con menús: comés algo de tu mochila, comprás comida y cajas, y vendés. Cada elección es de **una** unidad. También vende la **Comida para Mascotas** (**/info tema:pets**)."),
-        ("🛒 /shop", "**view** muestra los precios, **buy** y **sell** compran y venden por nombre y cantidad, **sellall** vende todo lo vendible de la mochila (no lo que llevás puesto)."),
+        ("🛒 /shop", "**view** muestra los precios, **buy** y **sell** compran y venden por nombre y cantidad, **sellall** vende todo lo vendible de la mochila (no lo que llevás puesto). En texto, sin escribir shop: `aa sell all`, `aa sell arma`, `aa sell amuleto` (lo que llevás puesto) o `aa sell <ítem>`."),
         ("🍖 Consumibles",
             "La comida cura HP y los **banquetes** (los Míticos) además dan un bonus de ataque por un rato: se comen con **/use** (el valor figura en **/shop view** y en tu **/profile** mientras dura; uno nuevo reemplaza al anterior)."),
         ("💊 /heal", "Te cura **todo** lo que te falta comiendo lo justo de tu mochila, sin pasarte (no sirve en combate ni gasta banquetes). Con **/heal comida:<nombre>** usás una sola comida."));
@@ -269,6 +276,9 @@ public static class HelpTopics
         ("🏟️ /arena (el torneo diario)",
             $"Un torneo por día, hora de Uruguay. Te anotás con **/arena join** durante el día y a la medianoche se juega solo, en llave de eliminación ({ArenaRules.MinPlayers} a {ArenaRules.MaxPlayers} anotados; con menos de {ArenaRules.MinPlayers} se cancela). " +
             $"El campeón cobra {ArenaRules.ChampionReward.GoldUnits} cacerías de oro de su zona, {ArenaRules.ChampionReward.XpPercent} % de EXP y una caja. **/arena listplayers** muestra los anotados, **/arena results** la última llave, y **/cd** te recuerda si ya te anotaste."),
+        ("🍀 El azar de la Arena",
+            $"El nivel y el equipo pesan pero **no deciden**: cada pelea tiene su **forma del día** (entre −{(int)Math.Round(ArenaTuning.FormSwing * 100)} % y +{(int)Math.Round(ArenaTuning.FormSwing * 100)} % de daño y vida) y en {(int)Math.Round(ArenaTuning.MiracleChance * 100)} de cada 100 peleas hay un **milagro** que iguala a los dos. " +
+            "Un nivel 1 puede ganarle a un nivel 20 (pasa pocas veces, pero pasa). El torneo se cuenta en el canal pelea por pelea, y las semifinales y la final, golpe por golpe. Los duelos de **/fight** no tienen azar extra."),
         ("⚔️ /fight @jugador",
             $"Duelo amistoso por turnos (Atacar, habilidad o rendirte; {(int)DuelService.TurnTimeout.TotalSeconds} segundos por turno). No se juega nada: ni vida, ni oro, ni EXP. **/duels** muestra tu récord."),
         ("🛡️ Con qué se pelea", "Con tu nivel, tu arma, tu amuleto y tus encantamientos de ese momento. Las clases tienen un ajuste de vida propio para el PvP."));

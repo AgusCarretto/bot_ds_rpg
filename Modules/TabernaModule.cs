@@ -445,7 +445,7 @@ public class TabernaModule(
         {
             components.WithSelectMenu(Menu(
                 Sell, discordId, "Vender algo (de a una unidad)",
-                equippedGear.Select(i => ($"{(i.Type == "Weapon" ? "🗡️" : "📿")} {i.Name} (equipad{(i.Type == "Weapon" ? "a" : "o")})", $"⚠️ Lo que llevás puesto · {i.SellPrice} oro", i.Name))
+                equippedGear.Select(i => ($"{GearMark(i)}{i.Name} (equipad{(i.Type == "Weapon" ? "a" : "o")})", $"⚠️ Lo que llevás puesto · {i.SellPrice} oro", i.Name))
                     .Concat(sellable.Select(e => ($"{e.ItemName} ×{e.Quantity}", $"{e.SellPrice} oro c/u", e.ItemName)))), row++);
         }
 
@@ -468,8 +468,12 @@ public class TabernaModule(
     private static string BuffText(Item item, IReadOnlyDictionary<int, ItemBuff>? buffs) =>
         buffs is not null && buffs.TryGetValue(item.ItemId, out var buff) ? $" · +{buff.AttackPercent}% ATQ {buff.Minutes} min" : string.Empty;
 
-    // Sin emojis personalizados en las opciones (si el bot no puede usar uno, Discord rechaza el mensaje ENTERO): texto simple, y los límites
-    // de Discord (100 caracteres por etiqueta, descripción y valor).
+    // La marca de una pieza equipada en la lista de vender: 🗡️ / 📿 solo si la pieza NO tiene su propio emoji (si lo tiene, la opción lo lleva en su campo de emoji y la marca sobraría).
+    private static string GearMark(Item item) =>
+        ItemMenuExtensions.ItemEmote(item.Name) is not null ? string.Empty : item.Type == "Weapon" ? "🗡️ " : "📿 ";
+
+    // El emoji de cada opción es el del ÍTEM que nombra su valor (ItemMenuExtensions: solo si la aplicación lo tiene, porque uno desconocido haría que Discord rechace el mensaje ENTERO; las
+    // opciones que no son un ítem, como «Curarme del todo», salen sin emoji) y los límites de Discord (100 caracteres por etiqueta, descripción y valor).
     private static SelectMenuBuilder Menu(
         string prefix, ulong ownerId, string placeholder, IEnumerable<(string Label, string Description, string Value)> options)
     {
@@ -481,7 +485,7 @@ public class TabernaModule(
 
         foreach (var (label, description, value) in options)
         {
-            menu.AddOption(Cut(label), Cut(value), Cut(description));
+            menu.AddItemOption(value, Cut(label), Cut(value), Cut(description));
         }
 
         return menu;

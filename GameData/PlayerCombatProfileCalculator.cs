@@ -48,8 +48,8 @@ public static class PlayerCombatProfileCalculator
     // Lo que SUMA el arma puesta al ataque: su stat con la sinergia de la clase y, encima, el encantamiento Filo si es ese el que tiene (GameData/Enchantments.cs; con los de efecto, el stat no cambia). El perfil, el combate y
     // /enchant usan estas dos cuentas para mostrar y pelear con lo mismo.
     public static int WeaponDamage(User player, Item? weapon) =>
-        Enchantments.Apply(ClassWeaponSynergy.ApplyBonus(weapon?.StatValue ?? 0, player.Class, weapon?.WeaponFamily), Enchantments.StatTier(player.WeaponEnchantKind, player.WeaponEnchant));
+        Enchantments.Apply(ClassWeaponSynergy.ApplyBonus(weapon?.StatValue ?? 0, player.Class, weapon?.WeaponFamily), player.WeaponEnchantKind, Enchantments.StatTier(player.WeaponEnchantKind, player.WeaponEnchant));
 
     // Lo que SUMA el amuleto puesto a la defensa, con su encantamiento.
-    public static int AmuletDefense(User player, Item? amulet) => Enchantments.Apply(amulet?.StatValue ?? 0, Enchantments.StatTier(player.AmuletEnchantKind, player.AmuletEnchant));
+    public static int AmuletDefense(User player, Item? amulet) => Enchantments.Apply(amulet?.StatValue ?? 0, player.AmuletEnchantKind, Enchantments.StatTier(player.AmuletEnchantKind, player.AmuletEnchant));
 }

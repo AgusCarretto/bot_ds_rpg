@@ -44,6 +44,8 @@ public static class GameHistory
                 Gold(GameEventKinds.CasinoWin, "slots"), Gold(GameEventKinds.CasinoLoss, "slots"), IsCasino: true),
             new("🪙", "Cara o cruz", Count(GameEventKinds.CasinoWin, "coinflip"), Count(GameEventKinds.CasinoLoss, "coinflip"),
                 Gold(GameEventKinds.CasinoWin, "coinflip"), Gold(GameEventKinds.CasinoLoss, "coinflip"), IsCasino: true),
+            new("🃏", "Blackjack", Count(GameEventKinds.CasinoWin, "blackjack"), Count(GameEventKinds.CasinoLoss, "blackjack"),
+                Gold(GameEventKinds.CasinoWin, "blackjack"), Gold(GameEventKinds.CasinoLoss, "blackjack"), IsCasino: true),
         };
 
         return new GameHistoryReport(

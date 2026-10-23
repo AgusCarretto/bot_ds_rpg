@@ -40,12 +40,19 @@ public sealed class ProgressNotifier(IMissionRepository missionRepository, IZone
 
         notices.AddRange(StoryNotices(kind, amount, newTotal, utcNow, detail));
 
-        // Logros: salen del contador de toda la vida, que ya viene calculado (sin consultar la base).
+        // Logros: salen del contador de toda la vida, que ya viene calculado (sin consultar la base). Cada tramo trae además un título (GameData/TitleCatalog.cs): el aviso dice cuál es.
         foreach (var (achievement, tier) in AchievementCatalog.Crossed(kind, newTotal - amount, newTotal))
         {
+            string titleLine = TitleCatalog.ForAchievementTier(achievement.Key, tier) is { } earned ? $"\n{TitleNoticeText(earned)}" : string.Empty;
             notices.Add(new GameNotice(
-                $"🏆 **¡Logro desbloqueado!** {achievement.Emoji} **{AchievementCatalog.TierName(achievement, tier)}** — reclamá tu premio con `/achievements`.",
+                $"🏆 **¡Logro desbloqueado!** {achievement.Emoji} **{AchievementCatalog.TierName(achievement, tier)}** — reclamá tu premio con `/achievements`.{titleLine}",
                 Public: true));
+        }
+
+        // Títulos especiales (no los de los logros): un contador que cruzó su meta, un nivel, o la primera victoria sobre un jefe de la escalera.
+        foreach (var title in TitleCatalog.SpecialCrossed(kind, amount, newTotal, detail))
+        {
+            notices.Add(new GameNotice(TitleNoticeText(title), Public: true, ExpiresUtc: utcNow + StoryNoticeLifetime));
         }
 
         // Misiones: solo las de HOY y de ESTA SEMANA que cuentan este tipo de evento. Si ninguna lo cuenta no se consulta nada.
@@ -69,6 +76,9 @@ public sealed class ProgressNotifier(IMissionRepository missionRepository, IZone
 
         return notices;
     }
+
+    // El aviso de un título nuevo: dice CUÁL es y cómo ponérselo.
+    private static string TitleNoticeText(TitleDefinition title) => $"🏷️ **¡Título nuevo!** **{title.Name}** — ponetelo en tu perfil con `/titles`.";
 
     // Cuánto viven los avisos de la historia que quedan sin entregar (un raid: solo quien dio el golpe final tiene una interacción para contestar). Un capítulo nuevo sigue siendo
     // cierto horas después, a diferencia de un festejo de nivel; igual se descarta para que no le llegue pegado a algo que no tiene nada que ver.

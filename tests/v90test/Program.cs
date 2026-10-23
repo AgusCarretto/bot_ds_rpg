@@ -42,7 +42,7 @@ Check(Enchantments.Label("weapon", 3) == "Filo Ardiente" && Enchantments.Label("
 var rng = new Random(77);
 var counts = new int[6];
 for (int i = 0; i < 200000; i++) counts[Enchantments.Roll(rng)]++;
-Check(counts[0] == 0 && Math.Abs(counts[1] / 2000.0 - 40) < 1.2 && Math.Abs(counts[2] / 2000.0 - 30) < 1.2 && Math.Abs(counts[3] / 2000.0 - 18) < 1 && Math.Abs(counts[4] / 2000.0 - 9) < 0.8 && Math.Abs(counts[5] / 2000.0 - 3) < 0.5, $"el sorteo da 40 / 30 / 18 / 9 / 3 % ({string.Join(" / ", counts.Skip(1).Select(c => (c / 2000.0).ToString("0.0")))})");
+Check(counts[0] == 0 && Math.Abs(counts[1] / 2000.0 - 42) < 1.2 && Math.Abs(counts[2] / 2000.0 - 30) < 1.2 && Math.Abs(counts[3] / 2000.0 - 18) < 1 && Math.Abs(counts[4] / 2000.0 - 9) < 0.8 && Math.Abs(counts[5] / 2000.0 - 1) < 0.3, $"el sorteo da 42 / 30 / 18 / 9 / 1 % ({string.Join(" / ", counts.Skip(1).Select(c => (c / 2000.0).ToString("0.0")))})");
 var cost1 = Enchantments.Cost(1); var cost5 = Enchantments.Cost(5);
 Check(cost1.Gold == MissionRewards.GoldUnit(1) * 8 && cost5.Gold == MissionRewards.GoldUnit(5) * 8 && cost1.Dust == 10 && cost5.Dust == 60 && Enumerable.Range(1, 4).All(r => Enchantments.Cost(r).Gold < Enchantments.Cost(r + 1).Gold && Enchantments.Cost(r).Dust < Enchantments.Cost(r + 1).Dust), $"cada intento cuesta más cuanto más alta la zona de la pieza (Zona 1: {cost1.Gold} oro + {cost1.Dust} Polvo; Zona 5: {cost5.Gold} + {cost5.Dust})");
 Check(Enchantments.GearRank("Común") == 1 && Enchantments.GearRank("Raro") == 2 && Enchantments.GearRank("Mítico") == 5 && Enchantments.GearRank("???") == 1, "la zona de la pieza sale de su rareza (Común = Zona 1 ... Mítico = Zona 5)");
@@ -204,11 +204,11 @@ Check(low.Embed is not null && (await Me()) is { WeaponEnchant: 1 } && (await Me
 Check(AllText(low.Embed!).Contains("Filo Tibio") && AllText(low.Embed).Contains("Mejoró"), "el mensaje cuenta qué salió y que mejoró");
 var worse = await DustModule.ExecuteEnchantAsync(users, items, dustRepo, events, U, "weapon", new FixedRandom(0));   // tier 1 otra vez
 Check(AllText(worse.Embed!).Contains("justo el que ya tenías") && (await Me()).WeaponEnchant == 1 && (await Me()).Dust == 1000 - 2 * swordCost.Dust, "si sale igual: lo dice, queda igual y el intento se paga");
-var best = await DustModule.ExecuteEnchantAsync(users, items, dustRepo, events, U, "weapon", new FixedRandom(99));    // tier 5
+var best = await DustModule.ExecuteEnchantAsync(users, items, dustRepo, events, U, "weapon", new FixedRandom(999));    // tier 5 (v0.22.1: los pesos suman 1000)
 Check(AllText(best.Embed!).Contains("Filo Soberano") && (await Me()).WeaponEnchant == 5 && best.Embed.Fields.Any(f => f.Name.Contains("ATQ") && f.Value.Contains("➜")), "tier 5: Soberano, y muestra el ATQ del arma de antes ➜ ahora");
 var keep = await DustModule.ExecuteEnchantAsync(users, items, dustRepo, events, U, "arma", new FixedRandom(0));
 Check(AllText(keep.Embed!).Contains("que es mejor") && (await Me()).WeaponEnchant == 5, "si sale peor: «ya tenías uno mejor», te quedás con el tuyo");
-var am = await DustModule.ExecuteEnchantAsync(users, items, dustRepo, events, U, "amuleto", new FixedRandom(70));    // tier 3
+var am = await DustModule.ExecuteEnchantAsync(users, items, dustRepo, events, U, "amuleto", new FixedRandom(800));    // tier 3
 Check(AllText(am.Embed!).Contains("Guarda Ardiente") && (await Me()) is { AmuletEnchant: 3, WeaponEnchant: 5 } && am.Embed.Fields.Any(f => f.Name.Contains("DEF")), "el amuleto: «Guarda Ardiente», aparte del arma");
 Check((await DustModule.ExecuteEnchantAsync(users, items, dustRepo, events, U, "casco")).PlainMessage!.Contains("arma"), "una pieza que no existe: pregunta cuál");
 await db.ExecuteAsync("UPDATE users SET gold = 5, dust = 1000 WHERE discord_id = @id", new { id = (long)U });
@@ -225,7 +225,7 @@ var prof0 = PlayerCombatProfileCalculator.Resolve(player0, hoja, talisman);
 var prof5 = PlayerCombatProfileCalculator.Resolve(player5, hoja, talisman);
 int weaponWithSynergy = ClassWeaponSynergy.ApplyBonus(hoja.StatValue, "Guerrero", hoja.WeaponFamily);
 Check(prof5.Damage - prof0.Damage == Enchantments.Apply(weaponWithSynergy, 5) - weaponWithSynergy && prof5.Damage > prof0.Damage, $"el combate pega con el encantamiento: ATQ {prof0.Damage} ➜ {prof5.Damage} (Soberano sobre el arma con sinergia de clase)");
-Check(prof5.Defense - prof0.Defense == Enchantments.Apply(talisman.StatValue, 5) - talisman.StatValue && prof5.Defense > prof0.Defense, $"y se defiende con el del amuleto: DEF {prof0.Defense} ➜ {prof5.Defense}");
+Check(prof5.Defense - prof0.Defense == Enchantments.Apply(talisman.StatValue, "guarda", 5) - talisman.StatValue && prof5.Defense > prof0.Defense, $"y se defiende con el del amuleto (la Guarda, con su tabla propia desde la v0.25.1): DEF {prof0.Defense} ➜ {prof5.Defense}");
 Check(PlayerCombatProfileCalculator.Resolve(player5, null, null).Damage == PlayerCombatProfileCalculator.Resolve(player0, null, null).Damage, "sin arma puesta, un encantamiento «fantasma» no suma nada");
 await CleanEvents();
 await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)U });
@@ -288,8 +288,8 @@ string plain = await Profile();
 Check(plain.Contains($"**ATQ** {CombatStats.TotalAttack(1, (int)wpn.Stat)} ") && plain.Contains($"**DEF** {CombatStats.TotalDefense(1, (int)amu.Stat)} ") && !plain.Contains("Filo") && !plain.Contains("Guarda"), "arma y amuleto sin encantar: los números de siempre y ninguna línea de encantamiento");
 await db.ExecuteAsync("UPDATE users SET weapon_enchant = 3, amulet_enchant = 2 WHERE discord_id = @id", new { id = (long)U });
 string ench = await Profile();
-int expAtk = CombatStats.TotalAttack(1, Enchantments.Apply((int)wpn.Stat, 3)); int expDef = CombatStats.TotalDefense(1, Enchantments.Apply((int)amu.Stat, 2));
-Check(ench.Contains($"**ATQ** {expAtk} ") && ench.Contains($"**DEF** {expDef} ") && expAtk > CombatStats.TotalAttack(1, (int)wpn.Stat) && ench.Contains("✨+13 %") && ench.Contains("✨+8 %"), $"con encantamiento el perfil suma el bonus al ataque ({expAtk}) y a la defensa ({expDef}) y dice cuál tiene");
+int expAtk = CombatStats.TotalAttack(1, Enchantments.Apply((int)wpn.Stat, 3)); int expDef = CombatStats.TotalDefense(1, Enchantments.Apply((int)amu.Stat, "guarda", 2));
+Check(ench.Contains($"**ATQ** {expAtk} ") && ench.Contains($"**DEF** {expDef} ") && expAtk > CombatStats.TotalAttack(1, (int)wpn.Stat) && ench.Contains("✨+13 %") && ench.Contains("✨+6 %"), $"con encantamiento (Filo III +13 %, Guarda II +6 %) el perfil suma el bonus al ataque ({expAtk}) y a la defensa ({expDef}) y dice cuál tiene");
 var userNow = await Me();
 var itWpn = await items.GetByIdAsync((int)wpn.Id); var itAmu = await items.GetByIdAsync((int)amu.Id);
 var resolved = PlayerCombatProfileCalculator.Resolve(userNow, itWpn, itAmu);
@@ -498,12 +498,12 @@ await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (lo
 
 
 Console.WriteLine("\n== 9. /enchant info: opciones, chances y bonus ==");
-Check(Math.Abs(Enumerable.Range(1, 5).Sum(Enchantments.ChancePercent) - 100) < 1e-9 && Enchantments.ChancePercent(1) == 40 && Enchantments.ChancePercent(5) == 3 && Enchantments.ChancePercent(0) == 0, "las chances por tier suman 100 % (40 / 30 / 18 / 9 / 3)");
-Check(Enchantments.AttemptsToReach(1) == 1 && Math.Abs(Enchantments.AttemptsToReach(2) - 1 / 0.6) < 1e-9 && Math.Abs(Enchantments.AttemptsToReach(5) - 100.0 / 3) < 1e-9, "los intentos promedio hasta cada tier: 1 / ~1,7 / ~3,3 / ~8,3 / ~33");
+Check(Math.Abs(Enumerable.Range(1, 5).Sum(Enchantments.ChancePercent) - 100) < 1e-9 && Enchantments.ChancePercent(1) == 42 && Enchantments.ChancePercent(5) == 1 && Enchantments.ChancePercent(0) == 0, "las chances por tier suman 100 % (42 / 30 / 18 / 9 / 1)");
+Check(Enchantments.AttemptsToReach(1) == 1 && Math.Abs(Enchantments.AttemptsToReach(2) - 1 / 0.58) < 1e-9 && Math.Abs(Enchantments.AttemptsToReach(3) - 1 / 0.28) < 1e-9 && Math.Abs(Enchantments.AttemptsToReach(4) - 10) < 1e-9 && Math.Abs(Enchantments.AttemptsToReach(5) - 100) < 1e-9, "los intentos promedio hasta cada tier: 1 / ~1,7 / ~3,6 / ~10 / ~100");
 var optEmbed = DustModule.BuildOptionsEmbed();
 string optText = AllText(optEmbed);
 Check(optEmbed.Fields.All(f => !f.Inline) && optEmbed.Fields.All(f => f.Value.Length <= 1024) && optEmbed.Length <= 6000, $"la pantalla de opciones va apilada y entra en los límites de Discord ({optEmbed.Length} de 6000)");
-Check(optText.Contains("Tibio") && optText.Contains("+4 %") && optText.Contains("40 %") && optText.Contains("Soberano") && optText.Contains("+26 %") && optText.Contains("3 %") && optText.Contains("~33 intentos") && optText.Contains("~1,7 intentos"), "dice cada tier con su bonus y su chance (Tibio +4 % / 40 % ... Soberano +26 % / 3 %) y cuántos intentos llevan");
+Check(optText.Contains("Tibio") && optText.Contains("42 %") && optText.Contains("Soberano") && optText.Contains("1 %") && optText.Contains("~100 intentos") && optText.Contains("~1,7 intentos") && optText.Contains("+4/8/13/19/26 % de ATQ") && optText.Contains("+3/6/9/13/18 % de DEF"), "dice cada tier con su chance (Tibio 42 % ... Soberano 1 %) y cuántos intentos llevan, y el bonus de cada efecto en su lista (Filo +4/8/13/19/26, Guarda +3/6/9/13/18)");
 Check(optText.Contains("112 oro + 10 Polvo") && optText.Contains("3.000 oro + 60 Polvo") && optText.Contains("Zona 5") && optText.Contains("Mítico 500") && optText.Contains("Común 1") && optText.Contains("/dismantle"), "dice lo que cuesta cada intento por zona de la pieza y de dónde sale el Polvo");
 Check(optText.Contains("nunca baja") && optText.Contains("pierde su encantamiento"), "explica que el tier nunca baja y que vender la pieza borra el encantamiento");
 await Reset(gold: 10);

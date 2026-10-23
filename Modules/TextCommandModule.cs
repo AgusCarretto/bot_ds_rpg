@@ -56,7 +56,10 @@ public partial class TextCommandModule(
     IVoteRepository voteRepository,
     ITopGgVoteClient voteClient,
     IGameEvents gameEvents,
-    IPartyBossService partyBoss) : ModuleBase<SocketCommandContext>
+    IPartyBossService partyBoss,
+    ITitleRepository titleRepository,
+    IWorldBossService worldBossService,
+    IBlackjackService blackjackService) : ModuleBase<SocketCommandContext>
 {
     // ---- Onboarding / clase ----
 

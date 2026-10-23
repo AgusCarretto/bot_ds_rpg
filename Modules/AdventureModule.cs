@@ -492,9 +492,9 @@ public class AdventureModule(
         menu.WithPlaceholder("🍖 Curarte con comida (1 vez por pelea)");
         foreach (var option in options)
         {
-            // Sin emoji en las opciones a propósito: si uno custom no le es accesible al bot, Discord rechaza el mensaje
-            // ENTERO y se caería el inicio de cada /travel y /boss. El nombre y los HP alcanzan.
-            menu.AddOption(option.Name, option.Name, CombatHeal.Describe(option));
+            // El emoji del ítem va en la opción SOLO si la aplicación lo tiene de verdad (ItemMenuExtensions): con uno que Discord no conoce rechaza el mensaje ENTERO
+            // y se caería el inicio de cada /travel y /boss, por eso sin la lista de emojis cargada la opción sale como siempre.
+            menu.AddItemOption(option.Name, option.Name, option.Name, CombatHeal.Describe(option));
         }
 
         return menu;
