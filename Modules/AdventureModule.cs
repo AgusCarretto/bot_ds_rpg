@@ -651,10 +651,19 @@ public class AdventureModule(
         return WithAbilityField(embed, state).Build();
     }
 
+    // «Ganaste: 💰 N Oro, 📊 N XP.» con los íconos de la interfaz (GameData/UiEmojis.cs, con su respaldo en emoji común): la comparten la victoria a mano y la del /autohunt para que se lean igual.
+    public static string EarnedLine(CombatReward reward) =>
+        Loc.F($"Ganaste: {UiEmojis.Gold} **{reward.Gold}** Oro, {UiEmojis.Xp} **{reward.Xp}** XP.");
+
     // La vida del jugador tal como se ve en la pelea: la de la base (que es lo que devuelve la victoria, ya con la subida de nivel) con el factor de combate de ESA pelea. Antes la victoria mostraba la vida
     // real y la pelea la escalada, y el máximo «cambiaba» de una pantalla a la otra (v0.25.3, ver GameData/HpDisplay.cs).
-    public static string ShownHpLine(User player, double hpMultiplier) =>
-        HpLine(HpDisplay.Scale(player.CurrentHp, hpMultiplier), HpDisplay.Scale(player.MaxHp, hpMultiplier));
+    // Va en un campo de ANCHO COMPLETO (la victoria), así que lleva la barra de ÍCONOS como el perfil (8 piezas); sin las piezas cargadas sale la de texto de siempre.
+    public static string ShownHpLine(User player, double hpMultiplier)
+    {
+        int current = HpDisplay.Scale(player.CurrentHp, hpMultiplier), max = HpDisplay.Scale(player.MaxHp, hpMultiplier);
+        int segments = UiEmojis.Bar(UiEmojis.BarHp) is null ? 10 : GameModule.ProfileBarSegments;
+        return $"{ProgressBar.Render(current, max, segments, UiEmojis.BarHp)}\n{current}/{max}";
+    }
 
     // La victoria sin capítulo nuevo (la firma de siempre: los arneses de prueba la invocan por reflexión con estos 6 argumentos).
     private static Embed BuildVictoryEmbed(
@@ -672,13 +681,13 @@ public class AdventureModule(
             .WithColor(Color.Green)
             .WithMonsterPortrait(state.MonsterPortrait) // SIEMPRE la cara del monstruo, haya drop o no (el drop va en su campo, abajo)
             // Todos los monstruos dicen algo al caer. El jefe lo dice en su campo propio (más abajo, junto con lo de la próxima zona).
+            // Lo ganado va en la descripción, en una línea con sus íconos, igual que en el /autohunt (v0.26.2); la vida sigue siendo su campo, con la barra.
             .WithDescription($"{turn.ActionFlavor}{CritPrefix(turn.CritCount)}" + Loc.F($"Le hiciste **{turn.DamageDealt}** de daño y lo derrotaste.") + LifestealSuffix(turn.LifestealHeal, turn.LeechHeal) +
+                $"\n{EarnedLine(reward)}" +
                 (state.CommandName == "boss" ? string.Empty : $"\n\n{MonsterSays(state, NpcDialogue.BossLine.Defeated)}"))
-            .AddField(Loc.T("💰 Oro ganado"), reward.Gold.ToString(), true)
-            .AddField(Loc.T("📊 EXP ganada"), reward.Xp.ToString(), true)
-            .AddField(Loc.T("❤️ Tu HP"), ShownHpLine(player, state.Passives.MaxHpMultiplier), true);
+            .AddField(Loc.T("❤️ Tu HP"), ShownHpLine(player, state.Passives.MaxHpMultiplier), false);
 
-        // La tablita del resumen (se apaga en /config): tres campos en línea justo después de oro, EXP y vida, así sigue la misma grilla de tres columnas.
+        // La tablita del resumen (se apaga en /config): arranca en una fila nueva, justo debajo de la vida (que ocupa todo el ancho).
         if (state.ShowFightSummary)
         {
             AddCombatSummary(embed, state);

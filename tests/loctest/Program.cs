@@ -457,6 +457,25 @@ Check(defeatEs.Fields.Any(f => f.Name == "☠️ Penalidad" && f.Value.Contains(
 Embed critEn; using (Loc.Use("en")) { critEn = CallE(typeof(AdventureModule), "BuildOngoingEmbed", Fight("hunt", "Hechicero"), critDodgeTurn); }
 Check(critEn.Description!.Contains("2 CRITICAL HITS") && critEn.Description.Contains("dodged") && critEn.Description.Contains("Sifón de Almas healed you for **3** HP") && critEn.Description.Contains("Sangre healed you for **2** HP"),
     $"los críticos, el esquive, el Sifón y la Sangre del turno ({critEn.Description!.Replace("\n", " | ")})");
+// La victoria a mano se lee como la del /autohunt (pedido del dueño, 2026-10-23: «que se muestre como el autohunt pero con barra de vida»): lo ganado va en UNA línea con los íconos, dentro de la descripción
+// (ya no son dos campos «Oro ganado» / «EXP ganada»), y la vida sigue siendo su campo, con la barra, a todo el ancho.
+foreach (string winScreen in new[] { "victoria con drop", "victoria del jefe, primera vez, con cofre", "victoria del jefe, repetida" })
+{
+    Embed winEs = fightScreens.First(s => s.Name == winScreen).Make();
+    Embed winEn; using (Loc.Use("en")) { winEn = fightScreens.First(s => s.Name == winScreen).Make(); }
+    Check(winEs.Description!.Contains("Ganaste: 💰 **10** Oro, 📊 **10** XP.") && winEn.Description!.Contains("You earned: 💰 **10** Gold, 📊 **10** XP."), $"{winScreen}: lo ganado va en la descripción, con sus íconos, en los dos idiomas");
+    Check(winEs.Description.IndexOf("Le hiciste", StringComparison.Ordinal) < winEs.Description.IndexOf("Ganaste", StringComparison.Ordinal) && winEn.Description.IndexOf("You dealt", StringComparison.Ordinal) < winEn.Description.IndexOf("You earned", StringComparison.Ordinal),
+        $"{winScreen}: primero el golpe final y después lo ganado");
+    Check(!winEs.Fields.Any(f => f.Name is "💰 Oro ganado" or "📊 EXP ganada") && !winEn.Fields.Any(f => f.Name is "💰 Gold earned" or "📊 XP earned"), $"{winScreen}: ya no trae los campos «Oro ganado» y «EXP ganada»");
+    var hpEs = winEs.Fields.Single(f => f.Name == "❤️ Tu HP");
+    Check(!hpEs.Inline && hpEs.Value == AdventureModule.ShownHpLine(userFight, Fight("hunt").Passives.MaxHpMultiplier) && hpEs.Value.Contains('\n') && winEn.Fields.Single(f => f.Name == "❤️ Your HP") is { Inline: false },
+        $"{winScreen}: la vida es un campo a todo el ancho con la barra y los números");
+    Check(Array.FindIndex(winEs.Fields.ToArray(), f => f.Name == "❤️ Tu HP") < Array.FindIndex(winEs.Fields.ToArray(), f => f.Name == "⏱️ Turnos"), $"{winScreen}: la tablita viene después de la vida");
+}
+// El jefe no lleva la frase del monstruo en la descripción (va en su campo): la línea de lo ganado cierra la descripción sin dejar renglones de más.
+Embed bossWin = fightScreens.First(s => s.Name == "victoria del jefe, repetida").Make();
+Check(bossWin.Description!.EndsWith("XP.") && !bossWin.Description.Contains("\n\n"), $"el jefe: la descripción termina en lo ganado ({bossWin.Description.Replace("\n", " | ")})");
+
 // El resumen del combate es una TABLITA (pedido del dueño, 2026-10-23: «un montón de cosas… ponelo en tablita»): un campo en línea por dato, de a tres por fila, en vez de una línea larga con todo pegado.
 var summaryState = Fight("hunt") with { TurnsElapsed = 4, TotalDamageDealt = 1329, TotalDamageTaken = 18, CritCount = 2, DodgeCount = 1, TotalHealed = 6 };
 EmbedField[] TableOf(string lang, CombatState state) { using (Loc.Use(lang)) { return AdventureModule.AddCombatSummary(new EmbedBuilder(), state).Build().Fields.ToArray(); } }
@@ -946,6 +965,16 @@ else
 var flakyRepo = new CountingThrowingRepo(); var flakyService = new PlayerLanguageService(flakyRepo);
 for (ulong i = 0; i < 30; i++) { await flakyService.ResolveAsync(990000000000 + i, "en-US"); }
 Check(flakyRepo.Calls == 1 && await flakyService.ResolveAsync(990000000099, "en-US") == "es", $"con la base fallando, 30 comandos hacen una sola consulta y todos salen en español ({flakyRepo.Calls})");
+
+// (2b) La vida de la victoria a mano es de ancho completo, así que su barra es la de ÍCONOS (como la del perfil: 8 piezas); sin las piezas cargadas, la de texto de siempre (pedido del dueño, 2026-10-23: «como el autohunt, con los íconos, incluida la barra de vida»).
+Embed HpVictory() => CallE(typeof(AdventureModule), "BuildVictoryEmbed", Fight("hunt"), killTurn, rewardFight, null, outcomeFight, true);
+string HpOf(Embed e) => e.Fields.Single(f => f.Name == "❤️ Tu HP").Value;
+string hpPlain = HpOf(HpVictory());
+UiEmojis.Set(new[] { "l_f", "m_f", "r_f", "l_e", "m_e", "r_e" }.Select(p => ($"bar_hp_{p}", $"<:bar_hp_{p}:1234567890123456{p.Length}{(int)p[0]}>")));
+string hpIcons = HpOf(HpVictory());
+UiEmojis.Set([]);
+Check(hpPlain.StartsWith("████████░░\n") && hpPlain.EndsWith("96/120") && !hpPlain.Contains("<:"), $"sin las piezas de la barra cargadas, la vida de la victoria es la barra de texto de siempre ({hpPlain.Replace("\n", " | ")})");
+Check(hpIcons.Split('\n')[0].Split("<:bar_hp_").Length - 1 == 8 && hpIcons.Split('\n')[0].StartsWith("<:bar_hp_l_f:") && hpIcons.Split('\n')[0].EndsWith(">") && !hpIcons.Contains('█') && hpIcons.EndsWith("\n96/120"), $"con las piezas cargadas, la vida de la victoria usa la barra de íconos de 8 piezas y debajo los números ({hpIcons.Replace("\n", " | ")})");
 
 // (3) El oro y la XP del resultado del /autohunt llevan su ícono (el propio de la interfaz si está cargado; si no, el de siempre), en los dos idiomas (pedido del dueño, 2026-10-23).
 Embed AutoVictory() => CallE(typeof(AutoHuntModule), "BuildVictoryEmbed", Fight("hunt"), outcomeFight, rewardFight, null);
