@@ -52,7 +52,8 @@ async Task Cleanup()
     await db.ExecuteAsync("DELETE FROM users WHERE discord_id BETWEEN @a AND @b", new { a = BaseId, b = BaseId + 999 });
 }
 
-async Task Make(ulong id, int gold = 0, int level = 10, int hp = 100, int maxHp = 100, string cls = "Guerrero")
+// Hechicero por defecto a propósito (v0.25.3): su factor de vida es 1,0, así la comida cura lo que dice y los números de la vida son los de la base (un Guerrero la ve ×1,2: GameData/HpDisplay.cs).
+async Task Make(ulong id, int gold = 0, int level = 10, int hp = 100, int maxHp = 100, string cls = "Hechicero")
 {
     await users.GetOrCreateUserAsync(id);
     await db.ExecuteAsync("UPDATE users SET class = @c, level = @l, gold = @g, max_hp = @m, current_hp = @h, current_zone_id = 1, weapon_id = NULL, amulet_id = NULL WHERE discord_id = @id", new { id = (long)id, c = cls, l = level, g = gold, m = maxHp, h = hp });
@@ -135,7 +136,7 @@ await Make(U, hp: 10, maxHp: 100);
 await Give(U, "Mate Amargo", 10); await Give(U, "Empanada de Carne", 2);
 var heal1 = await TavernModule.ExecuteHealAsync(users, inventory, combat, buffs, U);
 int hp1 = await HpOf(U);
-Check(hp1 == 100 && heal1.Title == "🍖 ¡Buen provecho!" && heal1.Description.Contains("Comiste:") && heal1.Description.Contains($"{HpDisplay.Scale(100, ClassPassives.For("Guerrero").MaxHpMultiplier)}/{HpDisplay.Scale(100, ClassPassives.For("Guerrero").MaxHpMultiplier)}"), $"(v0.25.3: la vida se ve con el factor de la clase, un Guerrero de 100 se ve de 120) cura toda la vida de una (HP 10 -> {hp1}): «{heal1.Title}»");
+Check(hp1 == 100 && heal1.Title == "🍖 ¡Buen provecho!" && heal1.Description.Contains("Comiste:") && heal1.Description.Contains("100/100"), $"cura toda la vida de una (HP 10 -> {hp1}): «{heal1.Title}»");
 int mates = await Have(U, "Mate Amargo"), emps = await Have(U, "Empanada de Carne");
 int eaten = (10 - mates) * 15 + (2 - emps) * 40;
 Check(eaten >= 90 && eaten < 90 + 40 && eaten == 90 + 0 || eaten >= 90, $"comió lo necesario ({10 - mates} mates y {2 - emps} empanadas = {eaten} HP de comida para 90 que faltaban)");

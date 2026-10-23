@@ -22,7 +22,9 @@ public interface IProgressNotifier
 // nivel nuevo como detalle y los niveles subidos como cantidad), así que un solo lugar alcanza para que TODOS los comandos (combate, /daily,
 // reclamar misiones y logros, raid) la festejen igual, sin que cada uno arme su propio mensaje. zoneRepository es opcional: sin él, la
 // tarjeta simplemente no avisa de zonas nuevas.
-public sealed class ProgressNotifier(IMissionRepository missionRepository, IZoneRepository? zoneRepository = null) : IProgressNotifier
+// userRepository y bonusService (v0.25.3) son opcionales: con ellos la tarjeta de nivel dice la vida que sube en las unidades con que se ve la del jugador (HpDisplay); sin ellos, la vida real.
+public sealed class ProgressNotifier(
+    IMissionRepository missionRepository, IZoneRepository? zoneRepository = null, IUserRepository? userRepository = null, IPlayerBonusService? bonusService = null) : IProgressNotifier
 {
     // Cuánto vive el aviso de nivel en la cola. En un raid solo recibe el aviso en el acto quien dio el golpe final (el resto lo ve en el
     // mensaje del raid): si no vence, otro jugador lo recibiría horas después, pegado a un comando que no tiene nada que ver.
@@ -125,7 +127,24 @@ public sealed class ProgressNotifier(IMissionRepository missionRepository, IZone
             }
         }
 
-        var card = LevelUpCard.Compose(discordId, newLevel, levelsGained, zones);
+        // El factor de la vida del jugador (clase, encantamiento Vida, bendición): un extra de la tarjeta, nunca la rompe.
+        double hpMultiplier = 1.0;
+        if (userRepository is not null)
+        {
+            try
+            {
+                if (await userRepository.GetByDiscordIdAsync(discordId) is { } player)
+                {
+                    hpMultiplier = await bonusService.HpMultiplierAsync(player);
+                }
+            }
+            catch (Exception ex)
+            {
+                BotLog.Warn(ex);
+            }
+        }
+
+        var card = LevelUpCard.Compose(discordId, newLevel, levelsGained, zones, hpMultiplier: hpMultiplier);
 
         var embed = new EmbedBuilder()
             .WithTitle(card.Title)

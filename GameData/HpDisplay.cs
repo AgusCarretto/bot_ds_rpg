@@ -8,4 +8,10 @@ public static class HpDisplay
 {
     // La misma cuenta que usa el combate (PlayerCombatProfileCalculator.Resolve) para armar la vida de la pelea.
     public static int Scale(int realHp, double multiplier) => Math.Max(0, (int)Math.Round(realHp * multiplier));
+
+    // Lo contrario: cuánta vida REAL (la de la base) es una cantidad de vida de las que se ven. Una comida que dice «cura 15 HP» cura 15 de la vida que ves, igual que dentro de una pelea (donde la vida YA está en esas
+    // unidades): fuera de pelea, para que sean 15 en pantalla, a un Ninja (×0,95) se le suman 16 reales y a un Guerrero (×1,2) 12 (v0.25.3, el dueño: «que haga la cuenta antes si es esa clase… que quede todo óptimo»).
+    // Un valor positivo nunca se redondea a cero: una comida siempre cura algo.
+    public static int ToReal(int shownHp, double multiplier) =>
+        shownHp <= 0 ? 0 : Math.Max(1, (int)Math.Round(shownHp / Math.Max(0.01, multiplier), MidpointRounding.AwayFromZero));
 }

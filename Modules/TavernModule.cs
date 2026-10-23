@@ -68,7 +68,10 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
         var player = await userRepository.GetOrCreateUserAsync(discordId);
         double hpMultiplier = await bonusService.HpMultiplierAsync(player);
 
-        if (player.CurrentHp >= player.MaxHp)
+        // La vida se cuenta en las unidades que se ven (GameData/HpDisplay.cs): una comida que cura 15 cura 15 de esa vida, como dentro de una pelea. A la base se le pasa la vida real equivalente.
+        int shownMissing = HpDisplay.Scale(player.MaxHp, hpMultiplier) - HpDisplay.Scale(player.CurrentHp, hpMultiplier);
+
+        if (player.CurrentHp >= player.MaxHp || shownMissing <= 0)
         {
             return new EmbedBuilder()
                 .WithTitle("❤️ Ya estás al máximo")
@@ -114,9 +117,8 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
                 .Build();
         }
 
-        int missing = player.MaxHp - player.CurrentHp;
         var plan = HealPlanner.Plan(
-            missing, owned.Select(o => new FoodStock(o.Item.ItemId, o.Item.Name, o.Item.Emoji, o.Item.StatValue, o.Quantity)).ToList());
+            shownMissing, owned.Select(o => new FoodStock(o.Item.ItemId, o.Item.Name, o.Item.Emoji, o.Item.StatValue, o.Quantity)).ToList());
 
         if (plan.Foods.Count == 0)
         {
@@ -127,7 +129,9 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
                 .Build();
         }
 
-        var healed = await inventoryRepository.EatAndHealAsync(discordId, plan.Foods.Select(f => (f.Food.ItemId, f.Quantity)).ToList(), plan.TotalHeal);
+        // Si el plan llena la vida, se llena del todo (el redondeo de pasar de una unidad a otra no puede dejar uno de menos); si no, la curación que se ve pasada a vida real.
+        int realHeal = plan.Covers ? player.MaxHp - player.CurrentHp : HpDisplay.ToReal(plan.TotalHeal, hpMultiplier);
+        var healed = await inventoryRepository.EatAndHealAsync(discordId, plan.Foods.Select(f => (f.Food.ItemId, f.Quantity)).ToList(), realHeal);
         if (healed is null)
         {
             // Perdió la carrera contra otra acción que gastó la misma comida casi al mismo tiempo (ej. /use o /shop sell disparados en simultáneo):

@@ -28,7 +28,9 @@ public static class LevelUpCard
         "Así se hace: paso firme y mano en el acero.",
     ];
 
-    public static LevelUpCardContent Compose(ulong discordId, int newLevel, int levelsGained, IReadOnlyList<Zone> zones, Random? random = null)
+    // hpMultiplier: el factor con el que SE VE la vida del jugador (GameData/HpDisplay.cs): la vida máxima que sube por nivel se dice en esas unidades, así el «+N» coincide con lo que se mueve la barra (un Ninja
+    // ve +14 y no +15). Sin dato (1,0) queda la vida real, como antes.
+    public static LevelUpCardContent Compose(ulong discordId, int newLevel, int levelsGained, IReadOnlyList<Zone> zones, Random? random = null, double hpMultiplier = 1.0)
     {
         random ??= Random.Shared;
 
@@ -48,7 +50,7 @@ public static class LevelUpCard
 
         var fields = new List<LevelUpField>
         {
-            new("❤️ Vida máxima", $"**+{LevelingCalculator.HpGainedPerLevel * gained}**", true),
+            new("❤️ Vida máxima", $"**+{HpDisplay.Scale(LevelingCalculator.HpGainedPerLevel * gained, hpMultiplier)}**", true),
             new("⚔️ Ataque", $"**+{attackGained}**", true),
             new("🛡️ Defensa", $"**+{defenseGained}**", true),
             new("💚 Tu vida", "Curada al máximo", false),

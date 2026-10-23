@@ -113,7 +113,8 @@ public class UseModule(
                 return new UseResult($"No tenés **{ItemDisplay.Format(item.Emoji, item.Name)}** en tu inventario.", null);
             }
 
-            var healed = await userRepository.RestoreHpAsync(discordId, item.StatValue);
+            // La comida cura item.StatValue de la vida que ves (como dentro de una pelea): a la base se le suma la vida real equivalente (GameData/HpDisplay.cs).
+            var healed = await userRepository.RestoreHpAsync(discordId, HpDisplay.ToReal(item.StatValue, hpMultiplier));
             if (buff is not null)
             {
                 await buffRepository.ActivateAttackAsync(discordId, buff.AttackPercent, buff.Minutes, item.Name);

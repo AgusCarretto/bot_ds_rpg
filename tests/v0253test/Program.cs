@@ -84,7 +84,8 @@ Check(healNoSvc.Description.Contains("323/323"), "sin el servicio de bonus (las 
 await Reset(340, 300);
 await Give("Mate Amargo", 5);
 var used = await UseModule.ExecuteUseAsync(users, items, inventory, combat, buffs, U, "Mate Amargo", bonusService: svc);
-Check(used.Embed is not null && used.Embed.Description.Contains("299/323") && !used.Embed.Description.Contains("340"), $"/use fuera de combate: 300 + 15 = 315 reales, se ven 299/323 ({used.Embed?.Description})");
+Check(used.Embed is not null && used.Embed.Description.Contains("300/323") && !used.Embed.Description.Contains("340"), $"/use fuera de combate: el Mate Amargo cura 15 de la vida que ves (285 → 300 de 323) y a la base le suman 16 reales ({used.Embed?.Description})");
+Check((await Real()).Cur == 316, $"y a la base le entran 16 de vida real, no 15: 15 / 0,95 ({(await Real()).Cur})");
 await Reset(340, 340);
 var usedFull = await UseModule.ExecuteUseAsync(users, items, inventory, combat, buffs, U, "Mate Amargo", bonusService: svc);
 Check(usedFull.Embed is not null && usedFull.Embed.Description.Contains("323/323"), "/use al máximo dice 323/323");
@@ -102,6 +103,36 @@ var created = typeof(OnboardingModule).GetMethod("BuildConfirmationEmbed", AnyS)
 var newNinja = Make("Ninja", 100, 100);
 var onboarding = (Embed)created.Invoke(null, [ "T", newNinja, ClassCatalog.All.First(c => c.Name == "Ninja"), false ])!;
 Check(onboarding.Fields.First(f => f.Name.Contains("Estado inicial")).Value.Contains("95/95 HP"), "el alta de un Ninja nuevo dice 95/95 HP (con el factor), no 100/100");
+
+Console.WriteLine("\n== 3b. Curar y subir de nivel, en las mismas unidades ==");
+Check(HpDisplay.ToReal(15, 0.95) == 16 && HpDisplay.ToReal(15, 1.0) == 15 && HpDisplay.ToReal(15, 1.2) == 13 && HpDisplay.ToReal(1, 1.2) == 1 && HpDisplay.ToReal(0, 0.95) == 0, "pasar vida que se ve a vida real: 15 son 16 para un Ninja, 15 sin factor y 13 para un Guerrero; nunca cero si cura algo");
+bool roundTrip = true;
+foreach (double mult in new[] { 0.95, 1.0, 1.15, 1.2, 1.045 })
+{
+    foreach (int real in new[] { 100, 233, 340, 1000 })
+    {
+        int shownBefore = HpDisplay.Scale(real, mult), shownAfter = HpDisplay.Scale(real + HpDisplay.ToReal(15, mult), mult);
+        roundTrip &= Math.Abs((shownAfter - shownBefore) - 15) <= 1;
+    }
+}
+
+Check(roundTrip, "una comida de 15 mueve la barra que se ve en 15 (con un punto de redondeo como mucho), para todos los factores de clase");
+await Reset(340, 200);
+await Give("Mate Amargo", 3);
+var partial = await TavernModule.ExecuteHealCoreAsync(users, inventory, combat, buffs, U, bonusService: svc);
+Check(partial.Title.Contains("todo lo que tenías") && partial.Description.Contains("Recuperaste **45**") && partial.Description.Contains("235/323") && partial.Description.Contains("faltan **88**"), $"con comida que no alcanza: 3 mates = 45 de lo que ves (190 → 235) y faltan 88 ({partial.Description.Split('\n').Last()})");
+var zonesList = (await zonesRepo.GetAllAsync()).ToList();
+var cardNinja = LevelUpCard.Compose(U, 7, 1, zonesList, new Random(1), 0.95);
+var cardWarrior = LevelUpCard.Compose(U, 7, 1, zonesList, new Random(1), 1.2);
+var cardPlain = LevelUpCard.Compose(U, 7, 1, zonesList, new Random(1));
+string Gain(LevelUpCardContent c) => c.Fields.First(f => f.Name.Contains("Vida máxima")).Value;
+Check(Gain(cardNinja) == "**+14**" && Gain(cardWarrior) == "**+18**" && Gain(cardPlain) == "**+15**", $"la tarjeta de nivel dice la vida que sube en las unidades que se ven: Ninja +14, Guerrero +18, sin factor +15 ({Gain(cardNinja)} {Gain(cardWarrior)} {Gain(cardPlain)})");
+var notifier = new ProgressNotifier(new MissionRepository(factory), zonesRepo, users, svc);
+var notices = await notifier.OnEventAsync(U, GameEventKinds.LevelUp, 1, 1, DateTime.UtcNow, "21");
+var levelNotice = notices.First(n => n.Embed is not null);
+Check(levelNotice.Embed!.Fields.First(f => f.Name.Contains("Vida máxima")).Value == "**+14**", "y el aviso real (con el servicio y el usuario) lo hace para un Ninja: +14");
+var noticesPlain = await new ProgressNotifier(new MissionRepository(factory), zonesRepo).OnEventAsync(U, GameEventKinds.LevelUp, 1, 1, DateTime.UtcNow, "21");
+Check(noticesPlain.First(n => n.Embed is not null).Embed!.Fields.First(f => f.Name.Contains("Vida máxima")).Value == "**+15**", "sin usuarios ni servicio (como en las pruebas viejas) queda en la vida real, +15");
 
 Console.WriteLine("\n== 4. El servicio de bonus ==");
 var withBlessing = new StubBonuses(hpBlessing);
