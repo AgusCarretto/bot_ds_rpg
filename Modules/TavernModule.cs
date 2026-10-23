@@ -38,7 +38,7 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot — pero
             // logueamos la excepción real (antes se tragaba en silencio, imposible de diagnosticar).
             Console.WriteLine($"[EXCEPCIÓN /heal] {ex}");
-            await FollowupAsync("¡Upa! No pude procesar la curación, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude procesar la curación, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -59,8 +59,8 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
         if (combatSessions.Peek(discordId) is not null || raidSessions?.IsInActiveFight(discordId) == true)
         {
             return new EmbedBuilder()
-                .WithTitle("⚔️ No podés comer tranquilo en pleno combate")
-                .WithDescription(NpcDialogue.Innkeeper(InnkeeperLine.InCombat) + "\n\nMientras estás peleando no podés parar a comer así nomás. Usá **/use <ítem>** para curarte con un consumible de tu inventario (te va a costar el turno).")
+                .WithTitle(Loc.T("⚔️ No podés comer tranquilo en pleno combate"))
+                .WithDescription(NpcDialogue.Innkeeper(InnkeeperLine.InCombat) + Loc.T("\n\nMientras estás peleando no podés parar a comer así nomás. Usá **/use <ítem>** para curarte con un consumible de tu inventario (te va a costar el turno)."))
                 .WithColor(Color.DarkGrey)
                 .Build();
         }
@@ -74,8 +74,8 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
         if (player.CurrentHp >= player.MaxHp || shownMissing <= 0)
         {
             return new EmbedBuilder()
-                .WithTitle("❤️ Ya estás al máximo")
-                .WithDescription($"{NpcDialogue.Innkeeper(InnkeeperLine.FullHp)}\n\nTenés {HpDisplay.Scale(player.CurrentHp, hpMultiplier)}/{HpDisplay.Scale(player.MaxHp, hpMultiplier)} HP, no necesitás curarte todavía.")
+                .WithTitle(UseModule.AlreadyFullTitle())
+                .WithDescription(NpcDialogue.Innkeeper(InnkeeperLine.FullHp) + Loc.F($"\n\nTenés {HpDisplay.Scale(player.CurrentHp, hpMultiplier)}/{HpDisplay.Scale(player.MaxHp, hpMultiplier)} HP, no necesitás curarte todavía."))
                 .WithColor(Color.Green)
                 .Build();
         }
@@ -97,10 +97,10 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
                     .Any(o => buffItems.ContainsKey(o.Item.ItemId) && AutocompleteText.SameName(o.Item.Name, foodName));
 
                 return new EmbedBuilder()
-                    .WithTitle(isBanquet ? "🍷 Eso es un banquete" : "🍽️ No tenés eso")
+                    .WithTitle(isBanquet ? Loc.T("🍷 Eso es un banquete") : Loc.T("🍽️ No tenés eso"))
                     .WithDescription(isBanquet
-                        ? "Los banquetes no se usan para curarse del todo: dan un buff de ataque, así que se comen a propósito con **/use**."
-                        : $"No tenés **{foodName}** en la mochila (o no se puede usar para curarse). Mirá la lista que te sale al escribir **/heal** o dejalo vacío para que elija el tabernero.")
+                        ? Loc.T("Los banquetes no se usan para curarse del todo: dan un buff de ataque, así que se comen a propósito con **/use**.")
+                        : Loc.F($"No tenés **{foodName}** en la mochila (o no se puede usar para curarse). Mirá la lista que te sale al escribir **/heal** o dejalo vacío para que elija el tabernero."))
                     .WithColor(Color.Red)
                     .Build();
             }
@@ -111,8 +111,8 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
         if (owned.Count == 0)
         {
             return new EmbedBuilder()
-                .WithTitle("🍽️ No tenés nada para comer")
-                .WithDescription(NpcDialogue.Innkeeper(InnkeeperLine.NothingToEat) + "\n\nPara curarte primero tenés que comprar comida. Pasá por **/taberna** (o **/shop view**) para ver qué hay.")
+                .WithTitle(Loc.T("🍽️ No tenés nada para comer"))
+                .WithDescription(NpcDialogue.Innkeeper(InnkeeperLine.NothingToEat) + Loc.T("\n\nPara curarte primero tenés que comprar comida. Pasá por **/taberna** (o **/shop view**) para ver qué hay."))
                 .WithColor(Color.Red)
                 .Build();
         }
@@ -123,8 +123,8 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
         if (plan.Foods.Count == 0)
         {
             return new EmbedBuilder()
-                .WithTitle("🍽️ Esa comida no cura")
-                .WithDescription("No hay nada en tu mochila que sirva para curarte ahora.")
+                .WithTitle(Loc.T("🍽️ Esa comida no cura"))
+                .WithDescription(Loc.T("No hay nada en tu mochila que sirva para curarte ahora."))
                 .WithColor(Color.Red)
                 .Build();
         }
@@ -137,8 +137,8 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
             // Perdió la carrera contra otra acción que gastó la misma comida casi al mismo tiempo (ej. /use o /shop sell disparados en simultáneo):
             // no se gastó nada. Rarísimo, pero posible.
             return new EmbedBuilder()
-                .WithTitle("😅 Justo se gastó")
-                .WithDescription("Justo se te fue algo de la comida por otra acción, probá de nuevo en un toque.")
+                .WithTitle(Loc.T("😅 Justo se gastó"))
+                .WithDescription(Loc.T("Justo se te fue algo de la comida por otra acción, probá de nuevo en un toque."))
                 .WithColor(Color.DarkGrey)
                 .Build();
         }
@@ -151,20 +151,20 @@ public class TavernModule(IUserRepository userRepository, IInventoryRepository i
         if (!plan.Covers)
         {
             return new EmbedBuilder()
-                .WithTitle("🍖 Te comiste todo lo que tenías")
+                .WithTitle(Loc.T("🍖 Te comiste todo lo que tenías"))
                 .WithDescription(
-                    $"{NpcDialogue.Innkeeper(InnkeeperLine.Healed)}\n\nComiste:\n{eaten}\n\n" +
-                    $"❤️ Recuperaste **{recovered}** HP: ahora tenés **{shownNow}/{shownMax}**, pero todavía te faltan **{shownMax - shownNow}**. " +
-                    "Comprá más comida en **/taberna** y volvé a curarte.")
+                    NpcDialogue.Innkeeper(InnkeeperLine.Healed) + Loc.F($"\n\nComiste:\n{eaten}\n\n") +
+                    Loc.F($"❤️ Recuperaste **{recovered}** HP: ahora tenés **{shownNow}/{shownMax}**, pero todavía te faltan **{shownMax - shownNow}**. ") +
+                    Loc.T("Comprá más comida en **/taberna** y volvé a curarte."))
                 .WithColor(Color.Orange)
                 .Build();
         }
 
         return new EmbedBuilder()
-            .WithTitle("🍖 ¡Buen provecho!")
+            .WithTitle(Loc.T("🍖 ¡Buen provecho!"))
             .WithDescription(
-                $"{NpcDialogue.Innkeeper(InnkeeperLine.Healed)}\n\nComiste:\n{eaten}\n\n" +
-                $"❤️ Recuperaste **{recovered}** HP: ahora tenés **{shownNow}/{shownMax}**.")
+                NpcDialogue.Innkeeper(InnkeeperLine.Healed) + Loc.F($"\n\nComiste:\n{eaten}\n\n") +
+                Loc.F($"❤️ Recuperaste **{recovered}** HP: ahora tenés **{shownNow}/{shownMax}**."))
             .WithColor(Color.Green)
             .Build();
     }

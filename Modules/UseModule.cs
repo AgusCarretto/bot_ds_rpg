@@ -102,7 +102,7 @@ public class UseModule(
             if (player.CurrentHp >= player.MaxHp && buff is null)
             {
                 return new UseResult(null, new EmbedBuilder()
-                    .WithTitle(Loc.T("❤️ Ya estás al máximo"))
+                    .WithTitle(AlreadyFullTitle())
                     .WithDescription(Loc.F($"Tenés {HpDisplay.Scale(player.CurrentHp, hpMultiplier)}/{HpDisplay.Scale(player.MaxHp, hpMultiplier)} HP, no necesitás usar **{ItemDisplay.Format(item.Emoji, item.Name)}** todavía."))
                     .WithColor(Color.Green)
                     .Build());
@@ -234,6 +234,9 @@ public class UseModule(
             .WithColor(Color.Gold)
             .Build());
     }
+
+    // El título de «ya estás al máximo». La taberna reconoce con él que comer no hizo falta (TabernaModule.ExecuteActionAsync): lo compara con ESTA función y no con un texto, porque cambia con el idioma.
+    public static string AlreadyFullTitle() => Loc.T("❤️ Ya estás al máximo");
 
     // "⚔️ +15% de ataque durante 30 minutos." (con salto de línea adelante), o nada si el ítem no da buff.
     private static string BuffLine(ItemBuff? buff) =>

@@ -472,7 +472,7 @@ string abilityLineEs = AdventureModule.BuildAbilityStatusLine("Hechicero", new A
 string abilityLineEn, abilityEffectEn; using (Loc.Use("en")) { abilityLineEn = AdventureModule.BuildAbilityStatusLine("Hechicero", new AbilityState(2, 0)); abilityEffectEn = AdventureModule.BuildAbilityStatusLine("Guerrero", new AbilityState(0, 1)); }
 Check(abilityLineEs == "🔥 Bola de Fuego: ⏳ en 2 turno(s)" && abilityLineEn == "🔥 Bola de Fuego: ⏳ in 2 turn(s)" && abilityEffectEn == "🛡️ Aguante: ready · Aguante active (1 turn(s))", $"la línea de la habilidad ({abilityLineEn} | {abilityEffectEn})");
 
-var typedTables = NpcDialogue.AllTables().Where(t => !t.Key.StartsWith("herrero") && !t.Key.StartsWith("tendero") && !t.Key.StartsWith("tabernero")).ToList();
+var typedTables = NpcDialogue.AllTables().Where(t => !t.Key.StartsWith("herrero") && !t.Key.StartsWith("tendero") && !t.Key.StartsWith("tabernero") && !t.Key.StartsWith("inframundo")).ToList();
 int notTranslated = 0, leaked = 0; string? firstMissing = null, firstLeak = null;
 using (Loc.Use("en"))
 {
@@ -574,6 +574,138 @@ await db.ExecuteAsync("DELETE FROM inventory WHERE discord_id = @id", new { id =
 Embed invEmptyEn; using (Loc.Use("en")) { invEmptyEn = await GameModule.BuildInventoryEmbedAsync(invRepo10, G10, "Pepe"); }
 Check(invEmptyEn.Description == "You don't have any materials yet. Try /hunt, /chop or /mine!", $"el inventario vacío en inglés ({invEmptyEn.Description})");
 await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)G10 });
+
+Console.WriteLine("\n== 11. Taberna, /heal y tienda ==");
+const ulong T11 = 999000000000098011UL;
+var shopRepo11 = sp.GetRequiredService<IShopRepository>(); var combat11 = sp.GetRequiredService<ICombatSessionService>(); var buffRepo11 = sp.GetRequiredService<IBuffRepository>();
+var boxCtx11 = sp.GetRequiredService<IBoxContextService>(); var dropEx11 = sp.GetRequiredService<IDropExchangeRepository>();
+IEnumerable<SelectMenuComponent> MenusOf(MessageComponent? c) => c is null ? [] : c.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<SelectMenuComponent>();
+string MenuTexts(MessageComponent? c) => string.Join("\n", MenusOf(c).Select(m => m.Placeholder + "\n" + string.Join("\n", m.Options.Select(o => o.Label + " " + o.Description))));
+string MenuKeys(MessageComponent? c) => string.Join("|", MenusOf(c).Select(m => m.CustomId + ":" + string.Join(",", m.Options.Select(o => o.Value))));
+string? Text(ShopModule.ShopActionResult r) => r.PlainMessage ?? r.Embed!.Title + "\n" + r.Embed.Description;
+
+await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)T11 });
+await userRepo.GetOrCreateUserAsync(T11);
+await db.ExecuteAsync("UPDATE users SET class = 'Hechicero', gold = 0, level = 13, max_hp = 100, current_hp = 40, weapon_id = NULL, amulet_id = NULL WHERE discord_id = @id", new { id = (long)T11 });
+
+// Comprar y vender, en los dos idiomas, contra la base.
+async Task<string?> BuyText(string item, int qty = 1) => Text(await ShopModule.ExecuteBuyAsync(userRepo, itemSvc10, shopRepo11, combat11, eventsSvc10, T11, item, qty, boxCtx11));
+string? noGoldEs = await BuyText("Mate Amargo"); string? noGoldEn; using (Loc.Use("en")) { noGoldEn = await BuyText("Mate Amargo"); }
+Check(noGoldEs!.Contains("No te alcanza el oro") && noGoldEn!.Contains("You don't have enough gold") && LeakCheck.NoSpanish(noGoldEn, allowedNames).Ok, $"comprar sin oro, en los dos idiomas ({noGoldEn})");
+await db.ExecuteAsync("UPDATE users SET gold = 50000 WHERE discord_id = @id", new { id = (long)T11 });
+string? boughtEn; using (Loc.Use("en")) { boughtEn = await BuyText("Mate Amargo", 2); }
+Check(boughtEn!.StartsWith("🛒 Purchase complete!") && boughtEn.Contains("You bought") && LeakCheck.NoSpanish(boughtEn, allowedNames).Ok, $"comprar con oro en inglés ({boughtEn.Replace("\n", " | ")})");
+string? box1En, box2En, lockedEn2, notForSaleEn, bigQtyEn;
+using (Loc.Use("en")) { box1En = await BuyText("Cajón de Pino"); box2En = await BuyText("Cajón de Pino"); lockedEn2 = await BuyText("Cofre de Oro"); notForSaleEn = await BuyText("Hierro"); bigQtyEn = await BuyText("Cajón de Pino", 3); }
+Check(box1En!.Contains("Purchase complete") && box2En!.Contains("You already bought a box") && lockedEn2!.Contains("Zone 4") && lockedEn2.Contains("unlocked") && notForSaleEn!.Contains("isn't available in the shop") && bigQtyEn!.Contains("Boxes are bought"),
+    $"cajas: la compra, la espera, la zona cerrada, lo que no se vende y la cantidad ({box2En!.Replace("\n", " | ")})");
+Check(new[] { box1En, box2En, lockedEn2, notForSaleEn, bigQtyEn }.All(t => LeakCheck.NoSpanish(t!, allowedNames).Ok), $"y sin español colado ({LeakCheck.NoSpanish(string.Join("\n", box2En, lockedEn2, notForSaleEn, bigQtyEn), allowedNames).Found})");
+Check((await BuyText("Mate Amargo", 0))!.Contains("al menos 1"), "en español «la cantidad tiene que ser al menos 1» sigue igual");
+string? qty0En, sellMissingEn, unsellableEn, sellEn, notOwnedEn, sellAllEn, sellAllNoneEn;
+using (Loc.Use("en"))
+{
+    qty0En = await BuyText("Mate Amargo", 0);
+    sellMissingEn = Text(await ShopModule.ExecuteSellAsync(itemSvc10, shopRepo11, eventsSvc10, T11, "Xyzzy", 1));
+    unsellableEn = Text(await ShopModule.ExecuteSellAsync(itemSvc10, shopRepo11, eventsSvc10, T11, "Cajón de Pino", 1));
+    sellEn = Text(await ShopModule.ExecuteSellAsync(itemSvc10, shopRepo11, eventsSvc10, T11, "Mate Amargo", 1));
+    notOwnedEn = Text(await ShopModule.ExecuteSellAsync(itemSvc10, shopRepo11, eventsSvc10, T11, "Mate Amargo", 99));
+    sellAllEn = Text(await ShopModule.ExecuteSellAllAsync(shopRepo11, eventsSvc10, T11));
+    sellAllNoneEn = Text(await ShopModule.ExecuteSellAllAsync(shopRepo11, eventsSvc10, T11));
+}
+
+Check(qty0En!.Contains("at least 1") && sellMissingEn!.Contains("couldn't find any item") && unsellableEn!.Contains("can't be sold") && sellEn!.StartsWith("💰 Sale complete!") && notOwnedEn!.Contains("You don't have 99x") && sellAllEn!.StartsWith("💰 Inventory liquidated!") && sellAllNoneEn!.Contains("nothing in your inventory"),
+    $"vender: cantidad, ítem que no existe, premio, venta, no tenés, todo y nada para vender ({sellAllNoneEn})");
+Check(new[] { qty0En, sellMissingEn, unsellableEn, sellEn, notOwnedEn, sellAllEn, sellAllNoneEn }.All(t => LeakCheck.NoSpanish(t!, allowedNames).Ok), $"y sin español colado ({LeakCheck.NoSpanish(string.Join("\n", sellMissingEn, unsellableEn, sellEn, sellAllNoneEn), allowedNames).Found})");
+
+// /heal: lleno, herido con comida, sin comida y comida que no existe.
+await db.ExecuteAsync("UPDATE users SET gold = 5000, current_hp = 100, weapon_id = NULL, amulet_id = NULL WHERE discord_id = @id", new { id = (long)T11 });
+Task<Embed> Heal(string? food = null) => TavernModule.ExecuteHealCoreAsync(userRepo, invRepo10, combat11, buffRepo11, T11, food, bonusService: bonusSvc10);
+var fullEs = await Heal(); Embed fullEn; using (Loc.Use("en")) { fullEn = await Heal(); }
+Check(fullEs.Title == "❤️ Ya estás al máximo" && fullEn.Title == "❤️ You're already at full health" && LeakCheck.NoSpanish(LeakCheck.AllText(fullEn), allowedNames).Ok, $"/heal con la vida llena en los dos idiomas ({fullEn.Title})");
+await db.ExecuteAsync("UPDATE users SET current_hp = 40 WHERE discord_id = @id", new { id = (long)T11 });
+Embed noFoodEn, bannerEn, noSuchEn; using (Loc.Use("en")) { noFoodEn = await Heal(); noSuchEn = await Heal("Xyzzy Food"); }
+Check(noFoodEn.Title == "🍽️ You have nothing to eat" && noSuchEn.Title == "🍽️ You don't have that" && new[] { noFoodEn, noSuchEn }.All(e => LeakCheck.NoSpanish(LeakCheck.AllText(e), allowedNames).Ok), $"/heal sin comida y con una comida que no tenés ({noFoodEn.Title} | {noSuchEn.Title})");
+await db.ExecuteAsync("INSERT INTO inventory (discord_id, item_id, quantity) SELECT @id, item_id, 3 FROM items WHERE name = 'Mate Amargo' ON CONFLICT (discord_id, item_id) DO UPDATE SET quantity = 3", new { id = (long)T11 });
+var healedEs = await Heal(); await db.ExecuteAsync("UPDATE users SET current_hp = 40 WHERE discord_id = @id", new { id = (long)T11 });
+await db.ExecuteAsync("INSERT INTO inventory (discord_id, item_id, quantity) SELECT @id, item_id, 3 FROM items WHERE name = 'Mate Amargo' ON CONFLICT (discord_id, item_id) DO UPDATE SET quantity = 3", new { id = (long)T11 });
+Embed healedEn; using (Loc.Use("en")) { healedEn = await Heal(); }
+Check(healedEs.Title is "🍖 ¡Buen provecho!" or "🍖 Te comiste todo lo que tenías" && healedEn.Title is "🍖 Enjoy your meal!" or "🍖 You ate everything you had" && healedEn.Description!.Contains("You ate:") && healedEn.Description.Contains("You recovered") && LeakCheck.NoSpanish(LeakCheck.AllText(healedEn), allowedNames).Ok,
+    $"/heal que come, en los dos idiomas ({healedEn.Title} | {healedEn.Description!.Replace("\n", " | ")})");
+string banquet = await db.QueryFirstAsync<string>("SELECT i.name FROM item_buffs b JOIN items i ON i.item_id = b.item_id ORDER BY i.item_id LIMIT 1");
+await db.ExecuteAsync("INSERT INTO inventory (discord_id, item_id, quantity) SELECT @id, item_id, 1 FROM items WHERE name = @n ON CONFLICT (discord_id, item_id) DO UPDATE SET quantity = 1", new { id = (long)T11, n = banquet });
+await db.ExecuteAsync("UPDATE users SET current_hp = 40 WHERE discord_id = @id", new { id = (long)T11 });
+using (Loc.Use("en")) { bannerEn = await Heal(banquet); }
+Check(bannerEn.Title == "🍷 That's a banquet" && bannerEn.Description!.Contains("/use") && LeakCheck.NoSpanish(LeakCheck.AllText(bannerEn), allowedNames).Ok, $"/heal con un banquete en inglés ({bannerEn.Title})");
+
+// Lo que contesta el tabernero al comer: la detección de «ya estás al máximo» no puede depender del idioma.
+await db.ExecuteAsync("UPDATE users SET current_hp = max_hp WHERE discord_id = @id", new { id = (long)T11 });
+var fullLinesEn = NpcDialogue.AllTables().Where(t => t.Key == "tabernero:FullHp").SelectMany(t => t.Lines).Select(l => { using (Loc.Use("en")) { return Loc.Tr(l); } }).ToList();
+string eatFullEn; using (Loc.Use("en")) { eatFullEn = await TabernaModule.ExecuteActionAsync("taberna_eat", userRepo, itemSvc10, invRepo10, shopRepo11, buffRepo11, combat11, eventsSvc10, T11, "Mate Amargo", bonusService: bonusSvc10); }
+Check(fullLinesEn.Count >= 2 && fullLinesEn.Any(l => eatFullEn.Contains(l)), $"comer con la vida llena en inglés usa la frase del tabernero de «ya estás sano» ({eatFullEn.Replace("\n", " | ")})");
+
+// La escena de la taberna: textos en inglés, ids y valores IGUALES.
+var weaponId = await db.QueryFirstAsync<int>("SELECT item_id FROM items WHERE type = 'Weapon' AND sell_price > 0 ORDER BY item_id LIMIT 1");
+var swapDrop = (await dropEx11.GetExchangeableDropsAsync()).First();
+await db.ExecuteAsync("UPDATE users SET current_hp = 40, weapon_id = @w WHERE discord_id = @id", new { id = (long)T11, w = weaponId });
+await db.ExecuteAsync("INSERT INTO inventory (discord_id, item_id, quantity) SELECT @id, item_id, 3 FROM items WHERE name = 'Mate Amargo' ON CONFLICT (discord_id, item_id) DO UPDATE SET quantity = 3", new { id = (long)T11 });
+await db.ExecuteAsync("INSERT INTO inventory (discord_id, item_id, quantity) SELECT @id, item_id, 4 FROM items WHERE name = @n ON CONFLICT (discord_id, item_id) DO UPDATE SET quantity = 4", new { id = (long)T11, n = swapDrop.Name });
+Task<TabernaScene> Scene() => TabernaModule.BuildSceneAsync(userRepo, itemSvc10, invRepo10, buffRepo11, T11, null, boxCtx11, dropEx11, bonusSvc10);
+var sceneEs = await Scene(); TabernaScene sceneEn; using (Loc.Use("en")) { sceneEn = await Scene(); }
+string sceneEnText = LeakCheck.AllText(sceneEn.Embed) + "\n" + MenuTexts(sceneEn.Components);
+var sceneLeak = LeakCheck.NoSpanish(sceneEnText, allowedNames);
+Check(MenusOf(sceneEs.Components).Count() == 5 && MenuKeys(sceneEs.Components) == MenuKeys(sceneEn.Components), $"la escena en inglés tiene las mismas 5 listas, con los MISMOS ids y valores ({MenusOf(sceneEn.Components).Count()})");
+Check(sceneLeak.Ok && LeakCheck.FitsDiscord(sceneEn.Embed) && MenusOf(sceneEn.Components).All(m => m.Placeholder.Length <= 150 && m.Options.All(o => o.Label.Length <= 100 && (o.Description ?? "").Length <= 100)), $"y sin español colado ni pasarse de los límites de Discord ({sceneLeak.Found})");
+Check(sceneEs.Embed.Title == "🍺 La Taberna" && MenuTexts(sceneEs.Components).Contains("Comer algo de tu mochila") && MenuTexts(sceneEs.Components).Contains("Cura 15 HP") && sceneEn.Embed.Title == "🍺 The Tavern" && MenuTexts(sceneEn.Components).Contains("Eat something from your bag") && MenuTexts(sceneEn.Components).Contains("Heals 15 HP"),
+    "los textos de las listas y el título de la escena, en los dos idiomas");
+string sceneEnPlain = MenuTexts(sceneEn.Components);
+Check(sceneEnPlain.Contains("Heal me fully"), $"y la opción «Curarme del todo» ({sceneEnPlain.Split('\n').FirstOrDefault(l => l.Contains("fully"))})");
+Check(sceneEnPlain.Contains("(equipped)") && sceneEnPlain.Contains("wearing") && sceneEnPlain.Contains("Swap drops"), "las listas de vender (lo puesto) y de cambiar drops en inglés");
+
+var gearConfirmEs = await TabernaModule.BuildGearSellConfirmationAsync(userRepo, itemSvc10, T11, (await itemSvc10.GetByIdAsync(weaponId))!.Name);
+(Embed Embed, MessageComponent Components)? gearConfirmEn; using (Loc.Use("en")) { gearConfirmEn = await TabernaModule.BuildGearSellConfirmationAsync(userRepo, itemSvc10, T11, (await itemSvc10.GetByIdAsync(weaponId))!.Name); }
+var gearConfirmButtons = gearConfirmEn!.Value.Components.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<ButtonComponent>().ToList();
+Check(gearConfirmEs!.Value.Embed.Title == "⚠️ ¿Vender tu arma?" && gearConfirmEn.Value.Embed.Title == "⚠️ Sell your weapon?" && gearConfirmButtons.Select(b => b.Label).SequenceEqual(["Yes, sell it", "No, keep it"]) && LeakCheck.NoSpanish(LeakCheck.AllText(gearConfirmEn.Value.Embed), allowedNames).Ok,
+    $"la confirmación de vender lo equipado ({gearConfirmEn.Value.Embed.Title} | {string.Join(" / ", gearConfirmButtons.Select(b => b.Label))})");
+string? soldGearEn; using (Loc.Use("en")) { soldGearEn = Text(await ShopModule.ExecuteSellAsync(itemSvc10, shopRepo11, eventsSvc10, T11, (await itemSvc10.GetByIdAsync(weaponId))!.Name, 1)); }
+Check(soldGearEn!.Contains("You sold your equipped weapon") && soldGearEn.Contains("forge another one") && LeakCheck.NoSpanish(soldGearEn, allowedNames).Ok, $"vender el arma puesta ({soldGearEn.Replace("\n", " | ")})");
+
+// La carta (/shop view) y las preguntas del trueque.
+var shopItems11 = await ShopModule.LoadShopItemsAsync(itemSvc10); var buffs11 = await buffRepo11.GetItemBuffsAsync();
+Embed viewEs = ShopModule.BuildViewEmbed(shopItems11, buffs11, null, 1234, 1); Embed viewEn; using (Loc.Use("en")) { viewEn = ShopModule.BuildViewEmbed(shopItems11, buffs11, null, 1234, 1); }
+string viewEnText = LeakCheck.AllText(viewEn);
+Check(viewEs.Fields.Select(f => f.Name).SequenceEqual(["Comida", "Cajas", "Mascotas"]) && viewEn.Fields.Select(f => f.Name).SequenceEqual(["Food", "Boxes", "Pets"]) && viewEnText.Contains("Your gold: **1234**") && viewEnText.Contains("gold") && LeakCheck.NoSpanish(viewEnText, allowedNames).Ok && LeakCheck.FitsDiscord(viewEn),
+    $"/shop view en inglés: columnas, tu oro y sin español ({LeakCheck.NoSpanish(viewEnText, allowedNames).Found})");
+Check(viewEnText.Contains("🔒 Zone 2") && viewEnText.Contains("between 1 and"), "las cajas cerradas y el rango de ítems de cada caja en inglés");
+await db.ExecuteAsync("DELETE FROM inventory WHERE discord_id = @id", new { id = (long)T11 });
+await db.ExecuteAsync("INSERT INTO inventory (discord_id, item_id, quantity) SELECT @id, item_id, 4 FROM items WHERE name = @n ON CONFLICT (discord_id, item_id) DO UPDATE SET quantity = 4", new { id = (long)T11, n = swapDrop.Name });
+var questionEs = await TabernaModule.BuildSwapQuestionAsync(itemSvc10, invRepo10, dropEx11, T11, swapDrop.Name); (Embed Embed, MessageComponent Components)? questionEn;
+using (Loc.Use("en")) { questionEn = await TabernaModule.BuildSwapQuestionAsync(itemSvc10, invRepo10, dropEx11, T11, swapDrop.Name); }
+string questionEnText = LeakCheck.AllText(questionEn!.Value.Embed) + "\n" + MenuTexts(questionEn.Value.Components);
+Check(questionEs!.Value.Embed.Title == "🔁 Cambiar drops" && questionEn.Value.Embed.Title == "🔁 Swap drops" && MenuKeys(questionEs.Value.Components) == MenuKeys(questionEn.Value.Components) && LeakCheck.NoSpanish(questionEnText, allowedNames).Ok, $"la pregunta del trueque ({questionEn.Value.Embed.Title}; {LeakCheck.NoSpanish(questionEnText, allowedNames).Found})");
+Embed answerEn; using (Loc.Use("en")) { answerEn = TabernaModule.BuildAnswerEmbed(string.Empty); }
+Check(answerEn.Description == "🍺", "la respuesta vacía del tabernero es solo la jarra");
+await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)T11 });
+
+// Las frases de los tres personajes (el Herrero, el Tabernero, el del Inframundo): TODAS tienen su par en inglés.
+var npcTables = NpcDialogue.AllTables().Where(t => t.Key.StartsWith("herrero") || t.Key.StartsWith("tendero") || t.Key.StartsWith("tabernero") || t.Key.StartsWith("inframundo")).ToList();
+int npcMissing = 0, npcLeaked = 0; string? npcFirstMissing = null, npcFirstLeak = null;
+using (Loc.Use("en"))
+{
+    foreach (var (tableKey, lines) in npcTables)
+    {
+        foreach (string line in lines)
+        {
+            string translated = Loc.Tr(line);
+            if (translated == line) { npcMissing++; npcFirstMissing ??= $"{tableKey}: {line}"; continue; }
+            if (!LeakCheck.NoSpanish(translated, allowedNames).Ok) { npcLeaked++; npcFirstLeak ??= $"{tableKey}: {translated}"; }
+        }
+    }
+}
+
+Check(npcTables.Count >= 30 && npcMissing == 0, $"TODA frase del Herrero, el Tendero, el Tabernero y el del Inframundo tiene su traducción: {npcTables.Count} tablas, {npcTables.Sum(t => t.Lines.Count)} frases, sin traducir {npcMissing} ({npcFirstMissing})");
+Check(npcLeaked == 0, $"y ninguna deja español colado ({npcFirstLeak})");
+string smithEn; using (Loc.Use("en")) { smithEn = NpcDialogue.Blacksmith(BlacksmithLine.NotEnough, new Random(1)); }
+Check(smithEn.StartsWith("🔨 **El Herrero:** «") && NpcDialogue.Blacksmith(BlacksmithLine.NotEnough, new Random(1)) != smithEn, $"el Herrero habla en inglés con su nombre en español ({smithEn})");
 
 // El repositorio de verdad: nada falta, nada sobra, ningún {0} desparejo, ningún literal raro.
 var catalogOnDisk = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(Path.Combine(TestEnv.RepoRoot, "Locales", "en.json")))!;

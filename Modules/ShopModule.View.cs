@@ -27,7 +27,7 @@ public partial class ShopModule
         {
             BotLog.Error(ex);
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
-            await FollowupAsync("No pude cargar la tienda ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("No pude cargar la tienda ahora mismo, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -53,43 +53,43 @@ public partial class ShopModule
         IReadOnlyList<Item> items, IReadOnlyDictionary<int, ItemBuff>? buffs = null, string? talk = null, int? gold = null, int? unlockedZoneRank = null)
     {
         var embed = new EmbedBuilder()
-            .WithTitle("🍺 La Taberna")
+            .WithTitle(Loc.T("🍺 La Taberna"))
             .WithColor(Color.Gold);
 
         if (items.Count == 0)
         {
-            embed.WithDescription("No hay nada en la tienda todavía.");
+            embed.WithDescription(Loc.T("No hay nada en la tienda todavía."));
             return embed.Build();
         }
 
-        string goldLine = gold is int g ? $"\n\nTu oro: **{g}**" : string.Empty;
+        string goldLine = gold is int g ? Loc.F($"\n\nTu oro: **{g}**") : string.Empty;
         embed.WithDescription(
             $"{talk ?? NpcDialogue.Shopkeeper(ShopkeeperLine.Greeting)}{goldLine}\n\n" +
-            "Las cajas se compran **de a una y una vez cada 2 horas**; abrilas con `/open`.");
+            Loc.T("Las cajas se compran **de a una y una vez cada 2 horas**; abrilas con `/open`."));
 
-        AddColumn(embed, "Comida", items.Where(i => i.Type is not ("Caja" or ShopCatalog.PetFoodType)), i => $"Cura {i.StatValue} HP{BuffText(i, buffs)} · {i.BuyPrice} oro");
-        AddColumn(embed, "Cajas", items.Where(i => i.Type == "Caja"), i => BoxLine(i, unlockedZoneRank));
+        AddColumn(embed, Loc.T("Comida"), items.Where(i => i.Type is not ("Caja" or ShopCatalog.PetFoodType)), i => Loc.F($"Cura {i.StatValue} HP{BuffText(i, buffs)} · {i.BuyPrice} oro"));
+        AddColumn(embed, Loc.T("Cajas"), items.Where(i => i.Type == "Caja"), i => BoxLine(i, unlockedZoneRank));
         // La comida de las mascotas va en su propia columna (es la tercera del renglón, que quedaba vacía): no cura, se le da a una mascota con /pet feed.
-        AddColumn(embed, "Mascotas", items.Where(i => i.Type == ShopCatalog.PetFoodType), PetFoodLine);
+        AddColumn(embed, Loc.T("Mascotas"), items.Where(i => i.Type == ShopCatalog.PetFoodType), PetFoodLine);
 
         return embed.Build();
     }
 
     // "Para tus mascotas · 100 oro": la comida de las mascotas no cura, así que no lleva el "Cura N HP" de la comida común.
-    public static string PetFoodLine(Item food) => $"Para tus mascotas · {GameHistory.Number(food.BuyPrice)} oro";
+    public static string PetFoodLine(Item food) => Loc.F($"Para tus mascotas · {GameHistory.Number(food.BuyPrice)} oro");
 
     // "entre 1 y 10 ítems · 1.000 oro", y si es de una zona que todavía no desbloqueaste, "🔒 Zona 2" adelante.
     public static string BoxLine(Item box, int? unlockedZoneRank)
     {
         string range = BoxCatalog.RangeText(box.BoxMinItems, box.BoxMaxItems);
-        string detail = (range.Length > 0 ? range + " · " : string.Empty) + $"{GameHistory.Number(box.BuyPrice)} oro";
+        string detail = (range.Length > 0 ? range + " · " : string.Empty) + Loc.F($"{GameHistory.Number(box.BuyPrice)} oro");
         int required = BoxCatalog.RequiredZoneRank(box.Rarity);
-        return unlockedZoneRank is int unlocked && required > unlocked ? $"🔒 Zona {required} · {detail}" : detail;
+        return unlockedZoneRank is int unlocked && required > unlocked ? Loc.F($"🔒 Zona {required} · {detail}") : detail;
     }
 
     // " · +15% ATQ 30 min" para los banquetes, nada para el resto de la comida.
     private static string BuffText(Item item, IReadOnlyDictionary<int, ItemBuff>? buffs) =>
-        buffs is not null && buffs.TryGetValue(item.ItemId, out var buff) ? $" · +{buff.AttackPercent}% ATQ {buff.Minutes} min" : string.Empty;
+        buffs is not null && buffs.TryGetValue(item.ItemId, out var buff) ? Loc.F($" · +{buff.AttackPercent}% ATQ {buff.Minutes} min") : string.Empty;
 
     // De lo más barato a lo más caro (que es también de lo más común a lo más raro).
     private static void AddColumn(EmbedBuilder embed, string title, IEnumerable<Item> items, Func<Item, string> detail)

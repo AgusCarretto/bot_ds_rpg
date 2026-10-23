@@ -36,5 +36,5 @@ public static class CombatHeal
 
     // "+100 HP · tenés 3": la descripción de cada opción (Discord la limita a 100 caracteres).
     public static string Describe(HealOption option) =>
-        option.BuffPercent > 0 ? $"+{option.HealHp} HP y +{option.BuffPercent}% ATQ · tenés {option.Quantity}" : $"+{option.HealHp} HP · tenés {option.Quantity}";
+        option.BuffPercent > 0 ? Loc.F($"+{option.HealHp} HP y +{option.BuffPercent}% ATQ · tenés {option.Quantity}") : Loc.F($"+{option.HealHp} HP · tenés {option.Quantity}");
 }

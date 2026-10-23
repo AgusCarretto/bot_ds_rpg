@@ -33,7 +33,7 @@ public static class BoxCatalog
 {
     // "entre 1 y 10 ítems"; vacío si la caja no trae el rango cargado.
     public static string RangeText(int? min, int? max) =>
-        min is int lo && max is int hi ? (lo == hi ? $"{lo} ítems" : $"entre {lo} y {hi} ítems") : string.Empty;
+        min is int lo && max is int hi ? (lo == hi ? Loc.F($"{lo} ítems") : Loc.F($"entre {lo} y {hi} ítems")) : string.Empty;
 
     // De qué zona es una caja: su rareza (Común = Zona 1 ... Legendario = Zona 4, Mítico = 5). Solo se COMPRA si ya desbloqueaste esa zona.
     public static int RequiredZoneRank(string rarity) => Math.Max(1, RarityCatalog.RankOf(rarity) + 1);
