@@ -1,9 +1,14 @@
+using System.Reflection;
 using BotDsRpg.Data;
 using BotDsRpg.GameData;
 using BotDsRpg.Repositories;
 using BotDsRpg.Services;
 using Dapper;
+using Discord.Commands;
+using Discord.Interactions;
+using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 
 // Idioma (español / inglés): el motor Loc, el formato regional, el idioma de cada jugador, /language, cómo se fija al despachar, el escáner de textos y, pantalla por pantalla, que el inglés
@@ -112,6 +117,44 @@ Check(counting.Gets == 1, $"la 2.ª y la 3.ª resolución salen del caché (lect
 
 var broken = new PlayerLanguageService(new ThrowingRepo());
 Check(await broken.ResolveAsync(L5, "en-US") == "es", "si la base falla (o la tabla no existe) devuelve español y NO tira");
+await CleanLanguages();
+
+Console.WriteLine("\n== 4. /language y aa language ==");
+var langService = new PlayerLanguageService(languageRepo);
+await langService.SetAsync(L1, "en");
+string shownEn = await LanguageModule.ExecuteLanguageAsync(langService, L1, null, null);
+Check(shownEn.Contains("Your language is **English**") && shownEn.Contains("/language"), $"sin argumento y con inglés guardado dice cuál tenés, en inglés ({shownEn})");
+await langService.SetAsync(L2, "es");
+string shownEs = await LanguageModule.ExecuteLanguageAsync(langService, L2, "", null);
+Check(shownEs.Contains("Tu idioma es **Español**") && shownEs.Contains("/language"), $"sin argumento y con español guardado, en español ({shownEs})");
+string setEn = await LanguageModule.ExecuteLanguageAsync(langService, L2, "english", null);
+Check(await languageRepo.GetAsync(L2) == "en" && setEn.Contains("Done") && setEn.Contains("**English**"), $"«english» guarda en y contesta YA en inglés ({setEn})");
+string setEs = await LanguageModule.ExecuteLanguageAsync(langService, L2, "ESPAÑOL", null);
+Check(await languageRepo.GetAsync(L2) == "es" && setEs.Contains("Listo") && setEs.Contains("**Español**"), $"«ESPAÑOL» vuelve a es y contesta en español ({setEs})");
+await LanguageModule.ExecuteLanguageAsync(langService, L2, "Inglés", null);
+Check(await languageRepo.GetAsync(L2) == "en", "«Inglés» con tilde también vale");
+await LanguageModule.ExecuteLanguageAsync(langService, L2, "es", null);
+string unknown = await LanguageModule.ExecuteLanguageAsync(langService, L2, "klingon", null);
+Check(await languageRepo.GetAsync(L2) == "es" && unknown.Contains("**es**") && unknown.Contains("**en**") && unknown.Contains("No conozco"), $"un idioma desconocido no guarda nada y lista las opciones ({unknown})");
+string insideEn;
+using (Loc.Use("en")) { insideEn = await LanguageModule.ExecuteLanguageAsync(langService, L2, null, null); }
+Check(insideEn.Contains("Tu idioma es **Español**"), "el idioma que se muestra es el GUARDADO del jugador, no el que haya en el momento");
+string failed = await LanguageModule.ExecuteLanguageAsync(new PlayerLanguageService(new ThrowingRepo()), L5, "en", null);
+Check(failed.Contains("No pude guardar"), $"si no se puede guardar lo dice (no tira) ({failed})");
+
+var slash = typeof(LanguageModule).GetMethod("HandleLanguageAsync")!;
+var slashAttr = slash.GetCustomAttribute<SlashCommandAttribute>()!;
+Check(slashAttr.Name == "language" && slashAttr.Description.Length <= 100 && slash.GetParameters()[0].GetCustomAttributes<ChoiceAttribute>().Count() == 2, $"el slash se llama language, su descripción mide {slashAttr.Description.Length} (≤ 100) y tiene dos opciones");
+const BindingFlags AnyS = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+var client = new DiscordSocketClient();
+var interactions = new InteractionService(client);
+var sp = (IServiceProvider)typeof(LanguageModule).Assembly.GetType("ServiceProviderBuilder")!.GetMethod("BuildServiceProvider", AnyS)!.Invoke(null, [client, interactions, cfg])!;
+await interactions.AddModuleAsync(typeof(LanguageModule), sp);
+Check(interactions.SlashCommands.Count(c => c.Name == "language") == 1 && interactions.SlashCommands.Single(c => c.Name == "language").Parameters.Single().Choices.Count == 2, "con el InteractionService real /language queda registrado con sus dos opciones");
+Check(ActivatorUtilities.CreateInstance(sp, typeof(LanguageModule)) is LanguageModule && sp.GetService<IPlayerLanguageService>() is not null, "la inyección de dependencias arma LanguageModule y conoce el servicio de idioma");
+var textCommands = new CommandService();
+await textCommands.AddModuleAsync<TextCommandModule>(sp);
+Check(textCommands.Search("idioma").Commands.FirstOrDefault().Command?.Name == "language" && textCommands.Search("language en").IsSuccess, "con el CommandService real «aa idioma» y «aa language» llegan al mismo comando");
 await CleanLanguages();
 
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");

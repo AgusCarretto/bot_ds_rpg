@@ -1,1 +1,7 @@
-{}
+{
+  "🌐 Tu idioma es **{0}**. Para cambiarlo usá `/language` (o `aa language es` / `aa language en`).": "🌐 Your language is **{0}**. To change it use `/language` (or `aa language es` / `aa language en`).",
+  "No conozco ese idioma. Elegí **es** (español) o **en** (English).": "I don't know that language. Pick **es** (Spanish) or **en** (English).",
+  "¡Upa! No pude guardar tu idioma, probá de nuevo en un momento.": "Oops! I couldn't save your language, try again in a moment.",
+  "✅ Listo: el bot te va a hablar en **{0}**.": "✅ Done: the bot will now speak to you in **{0}**.",
+  "¡Upa! No pude cambiar tu idioma, intentá de nuevo en un momento.": "Oops! I couldn't change your language, try again in a moment."
+}
