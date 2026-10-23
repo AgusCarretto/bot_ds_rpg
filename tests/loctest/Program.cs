@@ -391,6 +391,116 @@ string alreadyEn; using (Loc.Use("en")) { alreadyEn = OnboardingModule.BuildAlre
 Check(alreadyEn.Contains("You're already registered") && LeakCheck.NoSpanish(alreadyEn, allowedNames).Ok, "«ya estás registrado» en inglés");
 await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)P8 });
 
+Console.WriteLine("\n== 9. Combate solitario ==");
+allowedNames.AddRange(["Aguante", "Bola de Fuego", "Sombra", "Lluvia de Flechas", "Sifón de Almas", "Sangre", "Fogón"]);   // habilidades, pasivas y lugares: nombres que se quedan en español
+const BindingFlags AnyStatic = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+Embed CallE(Type t, string method, params object?[] args) => (Embed)t.GetMethod(method, AnyStatic)!.Invoke(null, args)!;
+CombatState Fight(string cmd, string cls = "Guerrero") => new(cmd, "Jabalí Rabioso", "🐗", 100, 60, 10, [], 0, 0, null, 100, 80, 100, 10, 2, 5, cls, ClassPassives.For(cls));
+var userFight = new User { MaxHp = 100, CurrentHp = 80, Level = 5, Class = "Guerrero" };
+var outcomeFight = new LevelUpOutcome(userFight, 0);
+var rewardFight = new CombatReward(10, 10, false);
+var dropFight = new Item { ItemId = 1, Name = "Colmillo de Jabalí", Type = "Material", Rarity = "Raro", Emoji = "<:colmillo_jabali:1555578251605442581>" };
+var chestFight = new Item { ItemId = 3, Name = "Cajón de Pino", Type = "Caja", Rarity = "Común" };
+var foodFight = new Item { ItemId = 2, Name = "Mate Amargo", Type = "Consumable", Rarity = "Común" };
+var plainTurn = new TurnResult(null, false, 12, 0, 0, 60, 100, new MonsterHitOutcome(false, 7), 93, default);
+var dodgeTurn = new TurnResult(null, false, 0, 0, 0, 60, 100, new MonsterHitOutcome(true, 0), 100, default);
+var critDodgeTurn = new TurnResult(ClassAbilities.For("Hechicero"), false, 30, 2, 5, 40, 100, new MonsterHitOutcome(true, 0), 100, default, 2);
+var killTurn = new TurnResult(null, false, 12, 1, 4, 0, 100, null, 100, default, 1);
+var lossTurn = new TurnResult(null, false, 12, 0, 0, 40, 100, new MonsterHitOutcome(false, 90), 0, default);
+var penaltyFight = new DeathPenaltyOutcome(120, 300, 2280);
+
+(string Name, Func<Embed> Make)[] fightScreens =
+[
+    ("encuentro de /hunt", () => AdventureModule.BuildEncounterEmbed(Fight("hunt"))),
+    ("encuentro de /travel", () => AdventureModule.BuildEncounterEmbed(Fight("travel"))),
+    ("encuentro del jefe", () => AdventureModule.BuildEncounterEmbed(Fight("boss", "Hechicero"))),
+    ("turno con golpe y contraataque", () => CallE(typeof(AdventureModule), "BuildOngoingEmbed", Fight("hunt"), plainTurn)),
+    ("turno con esquive", () => CallE(typeof(AdventureModule), "BuildOngoingEmbed", Fight("hunt"), dodgeTurn)),
+    ("turno con críticos, Sifón y Sangre", () => CallE(typeof(AdventureModule), "BuildOngoingEmbed", Fight("hunt", "Hechicero"), critDodgeTurn)),
+    ("victoria con drop", () => CallE(typeof(AdventureModule), "BuildVictoryEmbed", Fight("hunt"), killTurn, rewardFight, dropFight, outcomeFight, true)),
+    ("victoria del jefe, primera vez, con cofre", () => CallE(typeof(AdventureModule), "BuildVictoryEmbed", Fight("boss"), killTurn, rewardFight, chestFight, outcomeFight, true)),
+    ("victoria del jefe, repetida", () => CallE(typeof(AdventureModule), "BuildVictoryEmbed", Fight("boss"), killTurn, rewardFight, null, outcomeFight, false)),
+    ("derrota con penalidad", () => CallE(typeof(AdventureModule), "BuildDefeatEmbed", Fight("hunt"), lossTurn, penaltyFight)),
+    ("huida", () => CallE(typeof(AdventureModule), "BuildFleeEmbed", Fight("hunt"))),
+    ("sin HP para pelear", AdventureModule.BuildNoHpEmbed),
+    ("zona sin monstruos", AdventureModule.BuildNoMonstersInZoneEmbed),
+    ("zona sin jefe", AdventureModule.BuildNoBossInZoneEmbed),
+    ("estás en el Fogón", AdventureModule.BuildInGateEmbed),
+    ("falta el equipo del Fogón", AdventureModule.BuildGateGearMissingEmbed),
+    ("nivel para el jefe", () => AdventureModule.BuildNotLeveledForBossEmbed(10)),
+    ("/autohunt: victoria", () => CallE(typeof(AutoHuntModule), "BuildVictoryEmbed", Fight("hunt"), outcomeFight, rewardFight, dropFight)),
+    ("/autohunt: derrota", () => CallE(typeof(AutoHuntModule), "BuildDefeatEmbed", Fight("hunt"), penaltyFight)),
+    ("/autohunt: muy herido", () => AutoHuntModule.BuildTooHurtEmbed(30, 100)),
+    ("/use en pelea", () => CallE(typeof(UseModule), "BuildCombatOngoingEmbed", Fight("travel"), foodFight, 5, false)),
+    ("/use en pelea, esquivando", () => CallE(typeof(UseModule), "BuildCombatOngoingEmbed", Fight("travel"), foodFight, 5, true)),
+    ("/use y la derrota", () => CallE(typeof(UseModule), "BuildCombatDefeatEmbed", Fight("travel"), foodFight, 5, penaltyFight)),
+    ("combate abandonado", () => CombatSessionService.BuildAbandonedEmbed(Fight("hunt"))),
+];
+
+foreach (var (screenName, make) in fightScreens)
+{
+    Embed screenEs = make();
+    Embed screenEn; using (Loc.Use("en")) { screenEn = make(); }
+    string screenEnText = LeakCheck.AllText(screenEn);
+    var screenLeak = LeakCheck.NoSpanish(screenEnText, allowedNames);
+    Check(screenLeak.Ok && LeakCheck.FitsDiscord(screenEn) && screenEnText != LeakCheck.AllText(screenEs), $"en inglés, {screenName}: sin español colado ({screenLeak.Found})");
+}
+
+Embed huntEs = AdventureModule.BuildEncounterEmbed(Fight("hunt"));
+Embed huntEn; using (Loc.Use("en")) { huntEn = AdventureModule.BuildEncounterEmbed(Fight("hunt")); }
+Check(huntEs.Title == "🏹 ¡Encuentro en la caza!" && huntEs.Fields[0].Name == "❤️ Tu HP" && huntEs.Footer!.Value.Text.Contains("UNA vez"), "el encuentro de /hunt en español es el de siempre");
+Check(huntEn.Title == "🏹 Hunt encounter!" && huntEn.Fields[0].Name == "❤️ Your HP" && huntEn.Fields[1].Name == "🐗 Jabalí Rabioso's HP" && huntEn.Description!.Contains("appears"), $"y en inglés ({huntEn.Title} | {huntEn.Fields[1].Name})");
+Embed defeatEs = CallE(typeof(AdventureModule), "BuildDefeatEmbed", Fight("hunt"), lossTurn, penaltyFight);
+Embed defeatEn; using (Loc.Use("en")) { defeatEn = CallE(typeof(AdventureModule), "BuildDefeatEmbed", Fight("hunt"), lossTurn, penaltyFight); }
+Check(defeatEs.Fields.Any(f => f.Name == "☠️ Penalidad" && f.Value.Contains("Perdiste **120** de oro")) && defeatEn.Fields.Any(f => f.Name == "☠️ Penalty" && f.Value.Contains("You lost **120** gold")),
+    $"la derrota y su penalidad en los dos idiomas ({defeatEn.Fields.FirstOrDefault(f => f.Name.Contains("Penal")).Value})");
+Embed critEn; using (Loc.Use("en")) { critEn = CallE(typeof(AdventureModule), "BuildOngoingEmbed", Fight("hunt", "Hechicero"), critDodgeTurn); }
+Check(critEn.Description!.Contains("2 CRITICAL HITS") && critEn.Description.Contains("dodged") && critEn.Description.Contains("Sifón de Almas healed you for **3** HP") && critEn.Description.Contains("Sangre healed you for **2** HP"),
+    $"los críticos, el esquive, el Sifón y la Sangre del turno ({critEn.Description!.Replace("\n", " | ")})");
+Check(AdventureModule.BuildCombatSummaryLine(Fight("hunt") with { TurnsElapsed = 3, TotalDamageDealt = 40, TotalDamageTaken = 21, CritCount = 1, DodgeCount = 2, TotalHealed = 6 }) ==
+    "⏱️ 3 turno(s) · 🗡️ 40 de daño hecho · 🩸 21 de daño recibido · 💥 1 crítico(s) · 💨 Esquivaste 2 golpe(s) · 🔮 6 curados", "el resumen del combate en español es el de siempre");
+string summaryEn; using (Loc.Use("en")) { summaryEn = AdventureModule.BuildCombatSummaryLine(Fight("hunt") with { TurnsElapsed = 3, TotalDamageDealt = 40, TotalDamageTaken = 21, CritCount = 1, DodgeCount = 2, TotalHealed = 6 }); }
+Check(summaryEn == "⏱️ 3 turn(s) · 🗡️ 40 damage dealt · 🩸 21 damage taken · 💥 1 crit(s) · 💨 You dodged 2 hit(s) · 🔮 6 healed", $"y el mismo resumen en inglés ({summaryEn})");
+
+IEnumerable<string> ButtonLabels(MessageComponent c) => c.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<ButtonComponent>().Select(b => b.Label);
+string? MenuPlaceholder(MessageComponent c) => c.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<SelectMenuComponent>().FirstOrDefault()?.Placeholder;
+Check(ButtonLabels(AdventureModule.BuildCombatButtons(Fight("travel", "Ninja"))).SequenceEqual(["Atacar", "Sombra", "Huir"]) && MenuPlaceholder(AdventureModule.BuildCombatButtons(Fight("travel", "Ninja"))) == "🍖 No tenés comida para curarte", "los botones y el desplegable del combate en español son los de siempre");
+MessageComponent buttonsEn, buttonsUsedEn;
+using (Loc.Use("en")) { buttonsEn = AdventureModule.BuildCombatButtons(Fight("travel", "Ninja")); buttonsUsedEn = AdventureModule.BuildCombatButtons(Fight("boss", "Ninja") with { HealUsed = true }); }
+Check(ButtonLabels(buttonsEn).SequenceEqual(["Attack", "Sombra", "Flee"]) && MenuPlaceholder(buttonsEn) == "🍖 You have no food to heal with" && MenuPlaceholder(buttonsUsedEn) == "🍖 You already healed in this fight", $"los botones en inglés (el nombre de la habilidad se queda): {string.Join(", ", ButtonLabels(buttonsEn))} | {MenuPlaceholder(buttonsEn)}");
+string abilityLineEs = AdventureModule.BuildAbilityStatusLine("Hechicero", new AbilityState(2, 0));
+string abilityLineEn, abilityEffectEn; using (Loc.Use("en")) { abilityLineEn = AdventureModule.BuildAbilityStatusLine("Hechicero", new AbilityState(2, 0)); abilityEffectEn = AdventureModule.BuildAbilityStatusLine("Guerrero", new AbilityState(0, 1)); }
+Check(abilityLineEs == "🔥 Bola de Fuego: ⏳ en 2 turno(s)" && abilityLineEn == "🔥 Bola de Fuego: ⏳ in 2 turn(s)" && abilityEffectEn == "🛡️ Aguante: ready · Aguante active (1 turn(s))", $"la línea de la habilidad ({abilityLineEn} | {abilityEffectEn})");
+
+var typedTables = NpcDialogue.AllTables().Where(t => !t.Key.StartsWith("herrero") && !t.Key.StartsWith("tendero") && !t.Key.StartsWith("tabernero")).ToList();
+int notTranslated = 0, leaked = 0; string? firstMissing = null, firstLeak = null;
+using (Loc.Use("en"))
+{
+    foreach (var (tableKey, lines) in typedTables)
+    {
+        foreach (string line in lines)
+        {
+            string translated = Loc.Tr(line);
+            if (translated == line) { notTranslated++; firstMissing ??= $"{tableKey}: {line}"; continue; }
+            if (!LeakCheck.NoSpanish(translated, allowedNames).Ok) { leaked++; firstLeak ??= $"{tableKey}: {translated}"; }
+        }
+    }
+}
+
+Check(typedTables.Count >= 60 && notTranslated == 0, $"TODA frase de monstruo y de jefe (incluidos los escalones del Asador y las genéricas) tiene su traducción: {typedTables.Count} tablas, {typedTables.Sum(t => t.Lines.Count)} frases, sin traducir {notTranslated} ({firstMissing})");
+Check(leaked == 0, $"y ninguna traducción deja español colado ({firstLeak})");
+string introEs = NpcDialogue.Monster("Jabalí Rabioso", "🐗", NpcDialogue.BossLine.Intro, rng: new Random(1));
+string introEn, bossEn, genericEn;
+using (Loc.Use("en"))
+{
+    introEn = NpcDialogue.Monster("Jabalí Rabioso", "🐗", NpcDialogue.BossLine.Intro, rng: new Random(1));
+    bossEn = NpcDialogue.Monster("Rey Jabalí", "👑", NpcDialogue.BossLine.Victory, isBoss: true, rng: new Random(2));
+    genericEn = NpcDialogue.Monster("Bicho Nuevo", "👾", NpcDialogue.BossLine.Defeated, rng: new Random(3));
+}
+
+Check(introEs.StartsWith("🐗 **Jabalí Rabioso:** «") && introEn.StartsWith("🐗 **Jabalí Rabioso:** «") && introEn != introEs && bossEn.StartsWith("👑 **Rey Jabalí:** «") && LeakCheck.NoSpanish(bossEn + genericEn, allowedNames).Ok,
+    $"la frase se elige igual en los dos idiomas, con el nombre del monstruo sin traducir ({introEn} | {bossEn} | {genericEn})");
+
 // El repositorio de verdad: nada falta, nada sobra, ningún {0} desparejo, ningún literal raro.
 var catalogOnDisk = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(Path.Combine(TestEnv.RepoRoot, "Locales", "en.json")))!;
 var repoReport = LocScan.Compare(LocScan.Extract(TestEnv.RepoRoot), catalogOnDisk);
