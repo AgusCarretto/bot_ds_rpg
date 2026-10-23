@@ -79,8 +79,12 @@ public static class GameHistory
             ? null
             : ("🏟️ Arena", $"🏁 Te anotaste en **{Number(Math.Max(report.ArenaJoined, report.ArenaTitles))}** torneo(s) · 🏆 **{Number(report.ArenaTitles)}** campeonato(s)");
 
-    // 1234567 -> "1.234.567" (el punto como separador de miles, como se escribe en Uruguay), sin depender de la cultura del servidor.
-    public static string Number(long value) => value.ToString("N0", CultureInfo.InvariantCulture).Replace(',', '.');
+    // 1234567 -> "1.234.567" en español (el punto como separador de miles, como se escribe en Uruguay) y "1,234,567" en inglés (Loc.Current), sin depender de la cultura del servidor.
+    public static string Number(long value)
+    {
+        string text = value.ToString("N0", CultureInfo.InvariantCulture);
+        return Loc.Current == Loc.English ? text : text.Replace(',', '.');
+    }
 
     private static string Plural(long n, string one, string many) => $"{Number(n)} {(n == 1 ? one : many)}";
 }

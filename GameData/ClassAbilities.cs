@@ -47,7 +47,7 @@ public static class ClassAbilities
         AbilityKind.Aguante, "Aguante", "🛡️", AbilityTuning.CooldownTurns,
         $"Atacás al {Pct(AbilityTuning.AguanteStrikeMultiplier)} y durante {AbilityTuning.AguanteEffectTurns} turnos " +
         $"recibís {Pct(1 - AbilityTuning.AguanteDamageTakenMultiplier)} menos de daño.",
-        "Aguante activo");
+        Loc.Mark("Aguante activo"));
 
     private static readonly ClassAbility BolaDeFuego = new(
         AbilityKind.BolaDeFuego, "Bola de Fuego", "🔥", AbilityTuning.CooldownTurns,
@@ -59,7 +59,7 @@ public static class ClassAbilities
         $"Te desvanecés este turno (no atacás): {AbilityTuning.SombraEffectTurns} turnos con " +
         $"{Pct(AbilityTuning.SombraTotalDodgeChance)} de esquive, y tu próximo ataque es crítico garantizado " +
         $"(+{Pct(AbilityTuning.SombraAmbushMultiplier - 1)}).",
-        "Invisible");
+        Loc.Mark("Invisible"));
 
     private static readonly ClassAbility LluviaDeFlechas = new(
         AbilityKind.LluviaDeFlechas, "Lluvia de Flechas", "🏹", AbilityTuning.CooldownTurns,

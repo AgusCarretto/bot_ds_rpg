@@ -77,7 +77,7 @@ public static class MissionRewards
 
         if (reward.Gold > 0)
         {
-            parts.Add($"💰 {reward.Gold} oro");
+            parts.Add(Loc.F($"💰 {reward.Gold} oro"));
         }
 
         if (reward.Xp > 0)

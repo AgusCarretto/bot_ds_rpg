@@ -34,11 +34,11 @@ public sealed record TurnResult(
     // Prefijo de una línea del log del combate, o vacío para un ataque común.
     public string ActionFlavor => (AbilityUsed?.Kind, Ambush) switch
     {
-        (AbilityKind.Aguante, _) => "🛡️ ¡Aguante! ",
-        (AbilityKind.BolaDeFuego, _) => "🔥 ¡Bola de Fuego! ",
-        (AbilityKind.Sombra, _) => "🌑 ¡Sombra! Te desvanecés entre las sombras. ",
-        (AbilityKind.LluviaDeFlechas, _) => "🏹 ¡Lluvia de Flechas! ",
-        (null, true) => "🥷 ¡Emboscada desde las sombras! ",
+        (AbilityKind.Aguante, _) => Loc.T("🛡️ ¡Aguante! "),
+        (AbilityKind.BolaDeFuego, _) => Loc.T("🔥 ¡Bola de Fuego! "),
+        (AbilityKind.Sombra, _) => Loc.T("🌑 ¡Sombra! Te desvanecés entre las sombras. "),
+        (AbilityKind.LluviaDeFlechas, _) => Loc.T("🏹 ¡Lluvia de Flechas! "),
+        (null, true) => Loc.T("🥷 ¡Emboscada desde las sombras! "),
         _ => string.Empty,
     };
 }

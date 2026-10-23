@@ -44,7 +44,7 @@ public class GatheringModule(
         {
             BotLog.Error(ex);
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
-            await FollowupAsync("¡Upa! Algo falló procesando la recolección, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! Algo falló procesando la recolección, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -82,7 +82,7 @@ public class GatheringModule(
         if (advanced && !ProfessionRules.AdvancedUnlocked(before.Level))
         {
             return new GatherResult(
-                $"La **{profession.AdvancedName.ToLowerInvariant()}** se desbloquea con el oficio **{profession.Name}** al nivel **{ProfessionRules.MaxLevel}** y el tuyo está en el **{before.Level}**. Mirá tu avance con **/professions**.",
+                Loc.F($"La **{profession.DisplayAdvancedName.ToLowerInvariant()}** se desbloquea con el oficio **{profession.DisplayName}** al nivel **{ProfessionRules.MaxLevel}** y el tuyo está en el **{before.Level}**. Mirá tu avance con **/professions**."),
                 null, true);
         }
 
@@ -116,7 +116,7 @@ public class GatheringModule(
                 if (drops.Count == 0)
                 {
                     // El catálogo todavía no tiene ítems cargados para esa combinación tipo+rareza.
-                    return new GatherResult($"Todavía no hay materiales de tipo **{itemType}** y rareza **{rarity}** cargados en el catálogo.", null, true);
+                    return new GatherResult(Loc.F($"Todavía no hay materiales de tipo **{itemType}** y rareza **{RarityCatalog.DisplayName(rarity)}** cargados en el catálogo."), null, true);
                 }
 
                 continue;
@@ -134,7 +134,7 @@ public class GatheringModule(
         if (!applied)
         {
             // Perdió la carrera contra otra ejecución concurrente del mismo comando (ej. doble click).
-            return new GatherResult("Justo se te adelantó otra ejecución de este comando, probá de nuevo en un toque.", null, true);
+            return new GatherResult(Loc.T("Justo se te adelantó otra ejecución de este comando, probá de nuevo en un toque."), null, true);
         }
 
         await GatheringEvents.RecordAsync(gameEvents, discordId, definition, drops, rolls);
@@ -142,7 +142,7 @@ public class GatheringModule(
         // El oficio: el evento de arriba ya sumó a su contador la XP de la rareza de cada tirada; acá solo se calcula cómo queda para el pie de la pantalla.
         long gained = GatheringEvents.XpOf(drops);
         var after = ProfessionRules.ProgressFor(before.TotalXp + gained);
-        string footer = ProfessionFooter(profession, before, after, gained) + (upgraded ? " · ⬆️ ¡rareza mejorada!" : string.Empty);
+        string footer = ProfessionFooter(profession, before, after, gained) + (upgraded ? Loc.T(" · ⬆️ ¡rareza mejorada!") : string.Empty);
 
         var embed = advanced
             ? BuildAdvancedResultEmbed(active, drops, footer)
@@ -155,26 +155,26 @@ public class GatheringModule(
     {
         if (after.IsMax && !before.IsMax)
         {
-            return $"🏆 ¡{profession.Name} al nivel {ProfessionRules.MaxLevel}! Desbloqueaste la {profession.AdvancedName.ToLowerInvariant()}";
+            return Loc.F($"🏆 ¡{profession.DisplayName} al nivel {ProfessionRules.MaxLevel}! Desbloqueaste la {profession.DisplayAdvancedName.ToLowerInvariant()}");
         }
 
         if (after.IsMax)
         {
-            return $"{profession.Emoji} {profession.Name} nivel {ProfessionRules.MaxLevel} (máximo)";
+            return Loc.F($"{profession.Emoji} {profession.DisplayName} nivel {ProfessionRules.MaxLevel} (máximo)");
         }
 
-        string progress = $"{after.IntoLevel}/{after.ToNext} XP" + (gained is > 0 ? $" (+{gained})" : string.Empty);
+        string progress = $"{after.IntoLevel}/{after.ToNext} XP" + (gained is > 0 ? $" (+{gained})" : string.Empty);   // igual en los dos idiomas
         return after.Level > before.Level
-            ? $"🎉 ¡{profession.Name} subió al nivel {after.Level}! · {progress}"
-            : $"{profession.Emoji} {profession.Name} nivel {after.Level} · {progress}";
+            ? Loc.F($"🎉 ¡{profession.DisplayName} subió al nivel {after.Level}! · {progress}")
+            : Loc.F($"{profession.Emoji} {profession.DisplayName} nivel {after.Level} · {progress}");
     }
 
     // Públicos para que Modules/TextCommandModule.cs arme los mismos embeds en "aa chop"/"aa mine".
     public static Embed BuildCooldownEmbed(CooldownDefinition definition, TimeSpan remaining)
     {
         return new EmbedBuilder()
-            .WithTitle($"⏳ {definition.Emoji} {definition.DisplayName}: todavía no podés")
-            .WithDescription($"Te falta **{TimeFormat.Remaining(remaining)}** para volver a intentarlo.")
+            .WithTitle(Loc.F($"⏳ {definition.Emoji} {Loc.Tr(definition.DisplayName)}: todavía no podés"))
+            .WithDescription(Loc.F($"Te falta **{TimeFormat.Remaining(remaining)}** para volver a intentarlo."))
             .WithColor(Color.DarkGrey)
             .Build();
     }
@@ -182,10 +182,10 @@ public class GatheringModule(
     public static Embed BuildResultEmbed(CooldownDefinition definition, Item item, int quantity, string? footer = null)
     {
         var embed = new EmbedBuilder()
-            .WithTitle($"{definition.Emoji} ¡{definition.DisplayName} exitoso!")
+            .WithTitle(Loc.F($"{definition.Emoji} ¡{Loc.Tr(definition.DisplayName)} exitoso!"))
             .WithColor(RarityColor(item.Rarity))
-            .WithDescription($"Conseguiste **{quantity}× {ItemDisplay.Format(item.Emoji, item.Name)}**")
-            .AddField("Rareza", item.Rarity, true)
+            .WithDescription(Loc.F($"Conseguiste **{quantity}× {ItemDisplay.Format(item.Emoji, item.Name)}**"))
+            .AddField(Loc.T("Rareza"), RarityCatalog.DisplayName(item.Rarity), true)
             .WithItemThumbnail(item.Emoji);
 
         if (!string.IsNullOrWhiteSpace(footer))
@@ -208,9 +208,9 @@ public class GatheringModule(
 
         var best = grouped[0].Item;
         var embed = new EmbedBuilder()
-            .WithTitle($"{definition.Emoji} ¡{definition.DisplayName} exitosa!")
+            .WithTitle(Loc.F($"{definition.Emoji} ¡{Loc.Tr(definition.DisplayName)} exitosa!"))
             .WithColor(RarityColor(best.Rarity))
-            .WithDescription(string.Join('\n', grouped.Select(g => $"**{g.Quantity}× {ItemDisplay.Format(g.Item.Emoji, g.Item.Name)}** · {g.Item.Rarity}")))
+            .WithDescription(string.Join('\n', grouped.Select(g => $"**{g.Quantity}× {ItemDisplay.Format(g.Item.Emoji, g.Item.Name)}** · {RarityCatalog.DisplayName(g.Item.Rarity)}")))
             .WithItemThumbnail(best.Emoji);
 
         if (!string.IsNullOrWhiteSpace(footer))

@@ -43,7 +43,7 @@ public class GameModule(
         {
             BotLog.Error(ex);
             // Si la base falla o está saturada, avisamos sin tirar abajo el bot.
-            await FollowupAsync("¡Upa! No pude acceder a ese perfil ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude acceder a ese perfil ahora mismo, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -53,7 +53,7 @@ public class GameModule(
 
     // Mensaje cuando se consulta el perfil/inventario de alguien que nunca corrió /start.
     public static string BuildNotRegisteredMessage(string displayName) =>
-        $"🚫 **{displayName}** todavía no arrancó su aventura en Asado y Acero. ¡Decile que pruebe `/start`!";
+        Loc.F($"🚫 **{displayName}** todavía no arrancó su aventura en Asado y Acero. ¡Decile que pruebe `/start`!");
 
     // Tramos de la barra de XP y de Vida del perfil. Con 10 se veía bien en la compu, pero en el celu (donde la miniatura le saca ancho al campo) la barra se partía en dos renglones
     // (el dueño, 2026-10-23: «en celu la vida y la xp se cortan y se van para abajo»): con 8 entra en las dos. Si todavía se parte en algún celu, bajar este número.
@@ -123,43 +123,43 @@ public class GameModule(
         // «✨+13 %» (Filo o Guarda) o «✨Crít +6» / «✨Sangre 3 %» / «✨Vida +13 %» / «✨Esq +6» (los efectos nuevos, v0.22.0).
         string EnchantMark(string kind, int tier) => Enchantments.IsValidTier(tier) ? $" ✨{Enchantments.ShortText(kind, tier)}" : string.Empty;
 
-        string attackLine = $"{PieceIcon(weapon, "⚔️")} **ATQ:** {attack}{PieceTail(weapon, "sin arma")}" + (hasSynergy ? " ⚡" : string.Empty)
-            + (buff is null ? string.Empty : $" 🍖+{buff.AttackPercent} % ({Math.Max(1, (int)Math.Ceiling(buff.Remaining.TotalMinutes))} min)")
+        string attackLine = $"{PieceIcon(weapon, "⚔️")} **{Loc.T("ATQ")}:** {attack}{PieceTail(weapon, Loc.T("sin arma"))}" + (hasSynergy ? " ⚡" : string.Empty)
+            + (buff is null ? string.Empty : Loc.F($" 🍖+{buff.AttackPercent} % ({Math.Max(1, (int)Math.Ceiling(buff.Remaining.TotalMinutes))} min)"))
             + (bonuses.AttackMultiplier > 1.0 ? $" 🔥{FuegoNuevoRules.PercentText(bonuses.AttackMultiplier)}" : string.Empty)
             + EnchantMark(player.WeaponEnchantKind, weapon is null ? 0 : player.WeaponEnchant);
-        string defenseLine = $"{PieceIcon(amulet, "🛡️")} **DEF:** {defense}{PieceTail(amulet, "sin amuleto")}"
+        string defenseLine = $"{PieceIcon(amulet, "🛡️")} **{Loc.T("DEF")}:** {defense}{PieceTail(amulet, Loc.T("sin amuleto"))}"
             + (bonuses.BlessingLevel(BlessingCatalog.DefenseKey) > 0 ? $" 🔥{FuegoNuevoRules.PercentText(1 + (BlessingCatalog.DefensePerLevel * bonuses.BlessingLevel(BlessingCatalog.DefenseKey)))}" : string.Empty)
             + EnchantMark(player.AmuletEnchantKind, amulet is null ? 0 : player.AmuletEnchant);
 
         // Tres grupos separados por una línea en blanco (el dueño: «entre DEF y oro tirá un br para separar un poquito, lo mismo entre banco y racha»): lo que pelea (ATQ y DEF), la plata (el oro, el banco a
         // salvo de la penalidad por morir y el Polvo, estos dos solo cuando hay) y la racha del /daily (solo cuando hay). Un grupo vacío no deja línea en blanco de más.
-        var wealthLines = new List<string> { $"{UiEmojis.Gold} **Oro:** {GameHistory.Number(player.Gold)}" };
+        var wealthLines = new List<string> { Loc.F($"{UiEmojis.Gold} **Oro:** {GameHistory.Number(player.Gold)}") };
         if (player.HasBank)
         {
-            wealthLines.Add($"{UiEmojis.Bank} **Banco:** {GameHistory.Number(player.BankGold)}");
+            wealthLines.Add(Loc.F($"{UiEmojis.Bank} **Banco:** {GameHistory.Number(player.BankGold)}"));
         }
 
         if (player.Dust > 0)
         {
-            wealthLines.Add($"{UiEmojis.Dust} **Polvo:** {GameHistory.Number(player.Dust)}");
+            wealthLines.Add(Loc.F($"{UiEmojis.Dust} **Polvo:** {GameHistory.Number(player.Dust)}"));
         }
 
         var statGroups = new List<string> { attackLine + "\n" + defenseLine, string.Join("\n", wealthLines) };
         if (player.DailyStreak > 0)
         {
-            statGroups.Add($"{UiEmojis.Streak} **Racha:** día {player.DailyStreak}");
+            statGroups.Add(Loc.F($"{UiEmojis.Streak} **Racha:** día {player.DailyStreak}"));
         }
 
         // La zona va ARRIBA de la XP, en la descripción (el dueño: «la zona dejala arriba de la xp»), SIN el nombre (2026-10-20: «no poner el nombre, Zona 1 (máx. 3)»), con el ícono de la zona primero.
         string zoneIcon = zone is null || string.IsNullOrWhiteSpace(zone.Emoji) ? string.Empty : zone.Emoji + " ";
         string zoneRow = zone is null
-            ? "**Zona:** _desconocida_"
-            : $"{zoneIcon}**Zona:** {zone.ZoneId}" + (maxZone is null ? string.Empty : $" (máx. {maxZone.ZoneId})");
+            ? Loc.T("**Zona:** _desconocida_")
+            : Loc.F($"{zoneIcon}**Zona:** {zone.ZoneId}") + (maxZone is null ? string.Empty : Loc.F($" (máx. {maxZone.ZoneId})"));
 
         // Parado en El Fogón Eterno (zona 0, GameData/FogonRules.cs): la zona de siempre sigue siendo la última normal, pero el jugador está en la puerta.
         if (player.InGate)
         {
-            zoneRow = $"🔥 **Zona:** 0 (tu zona: {(zone is null ? "?" : zone.ZoneId.ToString())})";
+            zoneRow = Loc.F($"🔥 **Zona:** 0 (tu zona: {(zone is null ? "?" : zone.ZoneId.ToString())})");
         }
 
         int colorLevel = bonuses.BlessingLevel(BlessingCatalog.ColorKey);
@@ -171,7 +171,7 @@ public class GameModule(
         var descriptionLines = new List<string> { levelLine, zoneRow };
         if (player.GateCleared)
         {
-            descriptionLines.Add("🔥 _Venció al Asador Eterno._");
+            descriptionLines.Add(Loc.T("🔥 _Venció al Asador Eterno._"));
         }
 
         // El encabezado es «Nombre - Título (Clase)» (el dueño, 2026-10-22): el título es el que tiene puesto con /titles, o «Recién Llegado» si no puso ninguno. Va en el título del embed (texto plano), así que
@@ -184,7 +184,7 @@ public class GameModule(
             // Los nombres de campo van en texto plano («XP», «Vida») y el ícono al final de la línea de números: un emoji propio no se garantiza en el nombre de un campo.
             .AddField("XP", $"{ProgressBar.Render(player.Xp, requiredXp, ProfileBarSegments, UiEmojis.BarXp)}\n{player.Xp} / {requiredXp} {UiEmojis.Xp}", false)
             // La vida con el factor de clase (la misma de la pelea, v0.25.3): un Ninja de 340 de vida base se ve de 323 acá y peleando, no 340 en una pantalla y 323 en la otra.
-            .AddField("Vida", $"{ProgressBar.Render(combat.CombatCurrentHp, combat.CombatMaxHp, ProfileBarSegments, UiEmojis.BarHp)}\n{combat.CombatCurrentHp} / {combat.CombatMaxHp} HP ❤️", false)
+            .AddField(Loc.T("Vida"), $"{ProgressBar.Render(combat.CombatCurrentHp, combat.CombatMaxHp, ProfileBarSegments, UiEmojis.BarHp)}\n{combat.CombatCurrentHp} / {combat.CombatMaxHp} HP ❤️", false)
             .AddField(ProfileStatsFieldName, string.Join("\n\n", statGroups), false);
 
         // Las mascotas, los porcentajes del Fuego Nuevo, las bendiciones y los oficios YA NO van en el perfil (el dueño, 2026-10-07: «dejalas aparte»): cada uno tiene su comando propio,
@@ -192,7 +192,7 @@ public class GameModule(
         // lo básico y el número que pelea: el ataque y la defensa siguen mostrando sus extras (🔥 / ✨) en la misma línea, y el título y el color de la bendición Brasa de Color son cosméticos de acá arriba.
 
         return embed
-            .WithFooter("Asado y Acero RPG • Preparando las brasas...")
+            .WithFooter(Loc.T("Asado y Acero RPG • Preparando las brasas..."))
             .WithCurrentTimestamp()
             .Build();
     }
@@ -220,7 +220,7 @@ public class GameModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("No pude consultar ese inventario ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("No pude consultar ese inventario ahora mismo, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -247,7 +247,7 @@ public class GameModule(
         var entries = await inventoryRepository.GetByDiscordIdAsync(discordId);
 
         var embed = new EmbedBuilder()
-            .WithTitle($"🎒 Inventario de {username}")
+            .WithTitle(Loc.F($"🎒 Inventario de {username}"))
             .WithColor(Color.Orange)
             .WithCurrentTimestamp();
 
@@ -257,29 +257,30 @@ public class GameModule(
         var food = Lines(entries.Where(e => e.Type is "Consumable" or "PetFood"));
         var drops = Lines(entries.Where(e => e.Type == "Material"));
         var boxes = Lines(entries.Where(e => e.Type is "Caja" or "Huevo"));
-        string boxTitle = entries.Any(e => e.Type == "Huevo" && e.Quantity > 0) ? "Cajas y huevos" : "Cajas";
+        bool hasEggs = entries.Any(e => e.Type == "Huevo" && e.Quantity > 0);
+        string boxTitle = hasEggs ? Loc.T("Cajas y huevos") : Loc.T("Cajas");
 
         if (wood.Count + minerals.Count + food.Count + drops.Count + boxes.Count == 0)
         {
-            embed.WithDescription("Todavía no tenés ningún material. ¡Probá /hunt, /chop o /mine!");
+            embed.WithDescription(Loc.T("Todavía no tenés ningún material. ¡Probá /hunt, /chop o /mine!"));
             return embed.Build();
         }
 
         // Columna izquierda: Madera y, debajo, los drops. Columna derecha: Mineral y, debajo, los consumibles. Las Cajas van con la comida (en el mismo campo) si entran juntas.
         var left = new List<(string Name, string Value)>();
         var right = new List<(string Name, string Value)>();
-        AddFields(left, "🪵 Madera", wood);
-        AddFields(right, "⛏️ Mineral", minerals);
-        AddFields(left, "🩸 Drops de monstruo", drops);
+        AddFields(left, Loc.T("🪵 Madera"), wood);
+        AddFields(right, Loc.T("⛏️ Mineral"), minerals);
+        AddFields(left, Loc.T("🩸 Drops de monstruo"), drops);
 
         string stacked = food.Count > 0 && boxes.Count > 0 ? string.Join('\n', food) + $"\n\n📦 **{boxTitle}**\n" + string.Join('\n', boxes) : string.Empty;
         if (stacked.Length > 0 && stacked.Length <= FieldLimit)
         {
-            right.Add(("🍖 Consumibles", stacked));
+            right.Add((Loc.T("🍖 Consumibles"), stacked));
         }
         else
         {
-            AddFields(right, "🍖 Consumibles", food);
+            AddFields(right, Loc.T("🍖 Consumibles"), food);
             AddFields(right, $"📦 {boxTitle}", boxes);
         }
 
@@ -304,7 +305,7 @@ public class GameModule(
 
         if (boxes.Count > 0)
         {
-            embed.WithFooter(boxTitle == "Cajas" ? "📦 Abrí tus cajas con /open" : "📦 Abrí tus cajas y huevos con /open");
+            embed.WithFooter(hasEggs ? Loc.T("📦 Abrí tus cajas y huevos con /open") : Loc.T("📦 Abrí tus cajas con /open"));
         }
 
         return embed.Build();

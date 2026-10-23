@@ -33,7 +33,7 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot — pero
             // logueamos la excepción real (antes se tragaba en silencio, imposible de diagnosticar).
             Console.WriteLine($"[EXCEPCIÓN /shop buy] {ex}");
-            await FollowupAsync("¡Upa! No pude procesar la compra, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude procesar la compra, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -55,7 +55,7 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot — pero
             // logueamos la excepción real (antes se tragaba en silencio, imposible de diagnosticar).
             Console.WriteLine($"[EXCEPCIÓN /shop sell] {ex}");
-            await FollowupAsync("¡Upa! No pude procesar la venta, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude procesar la venta, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -75,7 +75,7 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot — pero
             // logueamos la excepción real (antes se tragaba en silencio, imposible de diagnosticar).
             Console.WriteLine($"[EXCEPCIÓN /shop sellall] {ex}");
-            await FollowupAsync("¡Upa! No pude procesar la venta, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude procesar la venta, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -92,18 +92,18 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
         // (Modules/TavernModule.cs): comprar no debería ser una salida gratuita en medio de una pelea.
         if (combatSessions.Peek(discordId) is not null)
         {
-            return new ShopActionResult("No podés ir de compras en medio de un combate. Terminalo (atacando o huyendo) antes de pasar por la tienda.", null);
+            return new ShopActionResult(Loc.T("No podés ir de compras en medio de un combate. Terminalo (atacando o huyendo) antes de pasar por la tienda."), null);
         }
 
         if (quantity < 1)
         {
-            return new ShopActionResult("La cantidad tiene que ser al menos 1.", null);
+            return new ShopActionResult(Loc.T("La cantidad tiene que ser al menos 1."), null);
         }
 
         var item = await itemRepository.GetByNameAsync(itemName);
         if (item is null || !ShopCatalog.IsForSale(item))
         {
-            return new ShopActionResult($"{NpcDialogue.Shopkeeper(ShopkeeperLine.NotForSale)}\n**{itemName}** no está disponible en la tienda (se vende comida y cajas: mirá **/shop view**).", null);
+            return new ShopActionResult(Loc.F($"{NpcDialogue.Shopkeeper(ShopkeeperLine.NotForSale)}\n**{itemName}** no está disponible en la tienda (se vende comida y cajas: mirá **/shop view**)."), null);
         }
 
         // Si es la primera vez que este usuario ejecuta un comando, se crea acá con los valores por defecto.
@@ -118,8 +118,8 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
             if (required > unlocked)
             {
                 return new ShopActionResult(
-                    $"{NpcDialogue.Shopkeeper(ShopkeeperLine.NotForSale)}\n🔒 **{ItemDisplay.Format(item.Emoji, item.Name)}** es una caja de la **Zona {required}** y todavía no la desbloqueaste " +
-                    $"(llegaste hasta la Zona {unlocked}): avanzá de zona para poder comprarla.", null);
+                    Loc.F($"{NpcDialogue.Shopkeeper(ShopkeeperLine.NotForSale)}\n🔒 **{ItemDisplay.Format(item.Emoji, item.Name)}** es una caja de la **Zona {required}** y todavía no la desbloqueaste ") +
+                    Loc.F($"(llegaste hasta la Zona {unlocked}): avanzá de zona para poder comprarla."), null);
             }
         }
 
@@ -128,7 +128,7 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
         if (item.Type == "Caja" && quantity > ShopCatalog.BoxesPerPurchase)
         {
             return new ShopActionResult(
-                $"Las cajas se compran **de a {ShopCatalog.BoxesPerPurchase}** y una compra cada 2 horas: pedí **{ItemDisplay.Format(item.Emoji, item.Name)}** con cantidad {ShopCatalog.BoxesPerPurchase}.", null);
+                Loc.F($"Las cajas se compran **de a {ShopCatalog.BoxesPerPurchase}** y una compra cada 2 horas: pedí **{ItemDisplay.Format(item.Emoji, item.Name)}** con cantidad {ShopCatalog.BoxesPerPurchase}."), null);
         }
 
         int totalCost = item.BuyPrice * quantity;
@@ -142,8 +142,8 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
             if (outcome.CooldownRemaining is { } wait)
             {
                 return new ShopActionResult(null, new EmbedBuilder()
-                    .WithTitle($"{cooldownDefinition.Emoji} Ya compraste una caja hace poco")
-                    .WithDescription($"{NpcDialogue.Shopkeeper(ShopkeeperLine.BoxWait)}\n\nLas cajas se compran de a una y **una vez cada 2 horas**. Te falta **{TimeFormat.Remaining(wait)}** para comprar otra.")
+                    .WithTitle(Loc.F($"{cooldownDefinition.Emoji} Ya compraste una caja hace poco"))
+                    .WithDescription(Loc.F($"{NpcDialogue.Shopkeeper(ShopkeeperLine.BoxWait)}\n\nLas cajas se compran de a una y **una vez cada 2 horas**. Te falta **{TimeFormat.Remaining(wait)}** para comprar otra."))
                     .WithColor(Color.DarkGrey)
                     .Build());
             }
@@ -157,14 +157,14 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
 
         if (buyer is null)
         {
-            return new ShopActionResult($"{NpcDialogue.Shopkeeper(ShopkeeperLine.NoGold)}\nNo te alcanza el oro: **{ItemDisplay.Format(item.Emoji, item.Name)}** x{quantity} cuesta **{totalCost}**.", null);
+            return new ShopActionResult(Loc.F($"{NpcDialogue.Shopkeeper(ShopkeeperLine.NoGold)}\nNo te alcanza el oro: **{ItemDisplay.Format(item.Emoji, item.Name)}** x{quantity} cuesta **{totalCost}**."), null);
         }
 
         await gameEvents.RecordAsync(discordId, GameEventKinds.ShopGoldSpent, amount: totalCost, detail: item.Name);
 
         return new ShopActionResult(null, new EmbedBuilder()
-            .WithTitle("🛒 ¡Compra realizada!")
-            .WithDescription($"{NpcDialogue.Shopkeeper(ShopkeeperLine.BuySuccess)}\n\nCompraste **{ItemDisplay.Format(item.Emoji, item.Name)}** x{quantity} por **{totalCost}** de oro.\nOro restante: **{buyer.Gold}**.")
+            .WithTitle(Loc.T("🛒 ¡Compra realizada!"))
+            .WithDescription(Loc.F($"{NpcDialogue.Shopkeeper(ShopkeeperLine.BuySuccess)}\n\nCompraste **{ItemDisplay.Format(item.Emoji, item.Name)}** x{quantity} por **{totalCost}** de oro.\nOro restante: **{buyer.Gold}**."))
             .WithColor(Color.Green)
             .Build());
     }
@@ -174,18 +174,18 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
     {
         if (quantity < 1)
         {
-            return new ShopActionResult("La cantidad tiene que ser al menos 1.", null);
+            return new ShopActionResult(Loc.T("La cantidad tiene que ser al menos 1."), null);
         }
 
         var item = await itemRepository.GetByNameAsync(itemName);
         if (item is null)
         {
-            return new ShopActionResult($"No encontré ningún ítem llamado **{itemName}**.", null);
+            return new ShopActionResult(Loc.F($"No encontré ningún ítem llamado **{itemName}**."), null);
         }
 
         if (item.SellPrice <= 0)
         {
-            return new ShopActionResult($"{NpcDialogue.Shopkeeper(ShopkeeperLine.Unsellable)}\n**{ItemDisplay.Format(item.Emoji, item.Name)}** no se puede vender: es un premio.", null);
+            return new ShopActionResult(Loc.F($"{NpcDialogue.Shopkeeper(ShopkeeperLine.Unsellable)}\n**{ItemDisplay.Format(item.Emoji, item.Name)}** no se puede vender: es un premio."), null);
         }
 
         // Un arma o un amuleto no vive en el inventario: se forja directo a equipamiento, así que lo que se vende es lo EQUIPADO (y es siempre de a
@@ -197,12 +197,17 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
             {
                 await gameEvents.RecordAsync(discordId, GameEventKinds.ShopGoldEarned, amount: item.SellPrice, detail: item.Name);
 
-                string slotName = item.Type == "Weapon" ? "arma" : "amuleto";
+                // Una frase entera por pieza (no se arma con "equipad{a/o}"): el género del español no existe en inglés.
+                bool weapon = item.Type == "Weapon";
+                string soldLine = weapon
+                    ? Loc.F($"\n\nVendiste tu arma equipada **{ItemDisplay.Format(item.Emoji, item.Name)}** por **{item.SellPrice}** de oro.\n")
+                    : Loc.F($"\n\nVendiste tu amuleto equipado **{ItemDisplay.Format(item.Emoji, item.Name)}** por **{item.SellPrice}** de oro.\n");
+                string goldLine = weapon
+                    ? Loc.F($"Oro total: **{soldGear.Gold}**.\n\n_Te quedaste sin arma: forjá otra en **/forge**._")
+                    : Loc.F($"Oro total: **{soldGear.Gold}**.\n\n_Te quedaste sin amuleto: forjá otro en **/forge**._");
                 return new ShopActionResult(null, new EmbedBuilder()
-                    .WithTitle("💰 ¡Venta realizada!")
-                    .WithDescription(
-                        $"{NpcDialogue.Shopkeeper(ShopkeeperLine.SellSuccess)}\n\nVendiste tu {slotName} equipad{(item.Type == "Weapon" ? "a" : "o")} **{ItemDisplay.Format(item.Emoji, item.Name)}** por **{item.SellPrice}** de oro.\n" +
-                        $"Oro total: **{soldGear.Gold}**.\n\n_Te quedaste sin {slotName}: forjá otr{(item.Type == "Weapon" ? "a" : "o")} en **/forge**._")
+                    .WithTitle(Loc.T("💰 ¡Venta realizada!"))
+                    .WithDescription(NpcDialogue.Shopkeeper(ShopkeeperLine.SellSuccess) + soldLine + goldLine)
                     .WithColor(Color.Green)
                     .Build());
             }
@@ -213,14 +218,14 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
 
         if (seller is null)
         {
-            return new ShopActionResult($"{NpcDialogue.Shopkeeper(ShopkeeperLine.NotOwned)}\nNo tenés {quantity}x **{ItemDisplay.Format(item.Emoji, item.Name)}** para vender.", null);
+            return new ShopActionResult(Loc.F($"{NpcDialogue.Shopkeeper(ShopkeeperLine.NotOwned)}\nNo tenés {quantity}x **{ItemDisplay.Format(item.Emoji, item.Name)}** para vender."), null);
         }
 
         await gameEvents.RecordAsync(discordId, GameEventKinds.ShopGoldEarned, amount: totalRefund, detail: item.Name);
 
         return new ShopActionResult(null, new EmbedBuilder()
-            .WithTitle("💰 ¡Venta realizada!")
-            .WithDescription($"{NpcDialogue.Shopkeeper(ShopkeeperLine.SellSuccess)}\n\nVendiste **{ItemDisplay.Format(item.Emoji, item.Name)}** x{quantity} por **{totalRefund}** de oro.\nOro total: **{seller.Gold}**.")
+            .WithTitle(Loc.T("💰 ¡Venta realizada!"))
+            .WithDescription(Loc.F($"{NpcDialogue.Shopkeeper(ShopkeeperLine.SellSuccess)}\n\nVendiste **{ItemDisplay.Format(item.Emoji, item.Name)}** x{quantity} por **{totalRefund}** de oro.\nOro total: **{seller.Gold}**."))
             .WithColor(Color.Green)
             .Build());
     }
@@ -231,14 +236,14 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
 
         if (outcome is null)
         {
-            return new ShopActionResult(NpcDialogue.Shopkeeper(ShopkeeperLine.NothingToSell) + "\nNo tenés nada en tu inventario para vender (las cajas y los premios no se venden).", null);
+            return new ShopActionResult(NpcDialogue.Shopkeeper(ShopkeeperLine.NothingToSell) + Loc.T("\nNo tenés nada en tu inventario para vender (las cajas y los premios no se venden)."), null);
         }
 
         await gameEvents.RecordAsync(discordId, GameEventKinds.ShopGoldEarned, amount: outcome.GoldEarned, detail: "sellall");
 
         return new ShopActionResult(null, new EmbedBuilder()
-            .WithTitle("💰 ¡Inventario liquidado!")
-            .WithDescription($"{NpcDialogue.Shopkeeper(ShopkeeperLine.SellAll)}\n\nVendiste {outcome.ItemsSoldCount} ítems por **{outcome.GoldEarned}** de oro.\nOro total: **{outcome.Player.Gold}**.")
+            .WithTitle(Loc.T("💰 ¡Inventario liquidado!"))
+            .WithDescription(Loc.F($"{NpcDialogue.Shopkeeper(ShopkeeperLine.SellAll)}\n\nVendiste {outcome.ItemsSoldCount} ítems por **{outcome.GoldEarned}** de oro.\nOro total: **{outcome.Player.Gold}**."))
             .WithColor(Color.Green)
             .Build());
     }

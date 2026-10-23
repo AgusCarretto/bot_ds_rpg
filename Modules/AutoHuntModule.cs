@@ -41,7 +41,7 @@ public class AutoHuntModule(
         {
             BotLog.Error(ex);
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
-            await FollowupAsync("¡Upa! Algo falló en la auto-cacería, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! Algo falló en la auto-cacería, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -76,7 +76,7 @@ public class AutoHuntModule(
         switch (outcome.Status)
         {
             case CombatStartStatus.AlreadyInCombat:
-                return new AutoHuntResult("Ya estás en medio de un combate por turnos. Terminalo (atacando o huyendo) antes de auto-cazar.", null);
+                return new AutoHuntResult(Loc.T("Ya estás en medio de un combate por turnos. Terminalo (atacando o huyendo) antes de auto-cazar."), null);
             case CombatStartStatus.OnCooldown:
                 return new AutoHuntResult(null, AdventureModule.BuildCooldownEmbed(CooldownCatalog.Hunt, outcome.CooldownRemaining!.Value));
             case CombatStartStatus.NoHp:
@@ -86,7 +86,7 @@ public class AutoHuntModule(
             case CombatStartStatus.InGate:
                 return new AutoHuntResult(null, AdventureModule.BuildInGateEmbed());
             case CombatStartStatus.RaceLost:
-                return new AutoHuntResult("Justo se te adelantó otra ejecución de este comando, probá de nuevo en un toque.", null);
+                return new AutoHuntResult(Loc.T("Justo se te adelantó otra ejecución de este comando, probá de nuevo en un toque."), null);
         }
 
         var state = outcome.State!;
@@ -170,12 +170,12 @@ public class AutoHuntModule(
     // Público y puro: se prueba sin Discord.
     public static Embed BuildTooHurtEmbed(int currentHp, int maxHp) =>
         new EmbedBuilder()
-            .WithTitle("🩹 Muy herido para auto-cazar")
+            .WithTitle(Loc.T("🩹 Muy herido para auto-cazar"))
             .WithColor(Color.Orange)
             .WithDescription(
-                $"Tenés **{currentHp}/{maxHp}** HP ({currentHp * 100 / Math.Max(1, maxHp)} %).\n\n" +
-                $"El auto-cacería pelea solo y no puede huir: por debajo del **{AutoHuntRules.MinHpPercent} %** de vida el riesgo de perder sube rápido, y perder te cuesta la EXP del nivel y el 5 % del oro.\n\n" +
-                "Curate con **/heal**, o peleá a mano con **/hunt**, donde podés huir. No se gastó el cooldown.")
+                Loc.F($"Tenés **{currentHp}/{maxHp}** HP ({currentHp * 100 / Math.Max(1, maxHp)} %).\n\n") +
+                Loc.F($"El auto-cacería pelea solo y no puede huir: por debajo del **{AutoHuntRules.MinHpPercent} %** de vida el riesgo de perder sube rápido, y perder te cuesta la EXP del nivel y el 5 % del oro.\n\n") +
+                Loc.T("Curate con **/heal**, o peleá a mano con **/hunt**, donde podés huir. No se gastó el cooldown."))
             .Build();
 
     private static Embed BuildVictoryEmbed(CombatState state, LevelUpOutcome outcome, CombatReward reward, Item? droppedItem)
@@ -183,18 +183,18 @@ public class AutoHuntModule(
         var player = outcome.Player;
 
         var embed = new EmbedBuilder()
-            .WithTitle("⚔️ Auto-Cacería Exitosa")
+            .WithTitle(Loc.T("⚔️ Auto-Cacería Exitosa"))
             .WithColor(Color.Green)
             .WithMonsterPortrait(state.MonsterPortrait) // siempre la cara del monstruo, haya drop o no
             .WithDescription(
-                $"Venciste al **{state.MonsterName}** {state.MonsterEmoji}. Te quedan **{HpDisplay.Scale(player.CurrentHp, state.Passives.MaxHpMultiplier)}/{HpDisplay.Scale(player.MaxHp, state.Passives.MaxHpMultiplier)}** HP.\n" +
-                $"Ganaste: **{reward.Gold}** Oro, **{reward.Xp}** XP.\n\n" +
+                Loc.F($"Venciste al **{state.MonsterName}** {state.MonsterEmoji}. Te quedan **{HpDisplay.Scale(player.CurrentHp, state.Passives.MaxHpMultiplier)}/{HpDisplay.Scale(player.MaxHp, state.Passives.MaxHpMultiplier)}** HP.\n") +
+                Loc.F($"Ganaste: **{reward.Gold}** Oro, **{reward.Xp}** XP.\n\n") +
                 AdventureModule.MonsterSays(state, NpcDialogue.BossLine.Defeated))
-            .AddField("📋 Resumen del combate", AdventureModule.BuildCombatSummaryLine(state), false);
+            .AddField(Loc.T("📋 Resumen del combate"), AdventureModule.BuildCombatSummaryLine(state), false);
 
         if (droppedItem is not null)
         {
-            embed.AddField("🎁 Material obtenido", ItemDisplay.Format(droppedItem.Emoji, droppedItem.Name), false);
+            embed.AddField(Loc.T("🎁 Material obtenido"), ItemDisplay.Format(droppedItem.Emoji, droppedItem.Name), false);
         }
 
         return embed.Build();
@@ -206,11 +206,11 @@ public class AutoHuntModule(
     private static Embed BuildDefeatEmbed(CombatState state, DeathPenaltyOutcome? penalty = null)
     {
         var embed = new EmbedBuilder()
-            .WithTitle("☠️ Derrota Rápida")
+            .WithTitle(Loc.T("☠️ Derrota Rápida"))
             .WithColor(Color.DarkRed)
             .WithMonsterPortrait(state.MonsterPortrait)
-            .WithDescription($"El **{state.MonsterName}** {state.MonsterEmoji} fue demasiado fuerte. Quedaste a **{state.PlayerCurrentHp}** HP. Usá **/heal** para recuperarte.\n\n{AdventureModule.MonsterSays(state, NpcDialogue.BossLine.Victory)}")
-            .AddField("📋 Resumen del combate", AdventureModule.BuildCombatSummaryLine(state), false);
+            .WithDescription(Loc.F($"El **{state.MonsterName}** {state.MonsterEmoji} fue demasiado fuerte. Quedaste a **{state.PlayerCurrentHp}** HP. Usá **/heal** para recuperarte.\n\n") + AdventureModule.MonsterSays(state, NpcDialogue.BossLine.Victory))
+            .AddField(Loc.T("📋 Resumen del combate"), AdventureModule.BuildCombatSummaryLine(state), false);
 
         return AdventureModule.WithDeathPenalty(embed, penalty).Build();
     }

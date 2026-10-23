@@ -96,8 +96,14 @@ Console.WriteLine("== 1. El turno por texto (solitario) ==");
     await db.ExecuteAsync("UPDATE users SET xp = 500 WHERE discord_id = @id", new { id = (long)U });
     var combat = new CombatSessionService(users);
     combat.TryStart(U, State(monsterHp: 5000, monsterDmg: 99999, playerHp: 100, startHp: 100), new FakeTarget());
+    // Todo jugador esquiva el 5 % de los golpes: si el golpe de 99.999 se esquiva, el combate sigue y el test fallaba una de cada tantas corridas. Se juegan turnos hasta que cae (el monstruo no se puede matar).
     var od = new FakeOutput();
-    await Turn(combat, false, false, od);
+    for (int attempt = 0; attempt < 40 && combat.Peek(U) is not null; attempt++)
+    {
+        od = new FakeOutput();
+        await Turn(combat, false, false, od);
+    }
+
     long xp = await db.ExecuteScalarAsync<long>("SELECT xp FROM users WHERE discord_id = @id", new { id = (long)U });
     Check(combat.Peek(U) is null && od.Shown.Count == 1 && od.Shown[0].Components.Components.Count == 0 && xp == 0, $"derrota: pantalla final y la penalidad por morir se aplica igual que con el botón (EXP {xp})");
 }

@@ -50,7 +50,7 @@ public class AdventureModule(
         {
             if (companions.Any(c => c.IsBot))
             {
-                await FollowupAsync("Los bots no pelean jefes 🤖. Invitá a otros jugadores.", ephemeral: true);
+                await FollowupAsync(Loc.T("Los bots no pelean jefes 🤖. Invitá a otros jugadores."), ephemeral: true);
                 return;
             }
 
@@ -67,7 +67,7 @@ public class AdventureModule(
             session.ReplyTarget = new InteractionCombatReplyTarget(Context.Interaction);
             if (!partyBoss.TryOpen(session, Context.Channel?.Id ?? 0))
             {
-                await FollowupAsync("Justo se te adelantó otra acción, probá de nuevo en un toque.", ephemeral: true);
+                await FollowupAsync(Loc.T("Justo se te adelantó otra acción, probá de nuevo en un toque."), ephemeral: true);
                 return;
             }
 
@@ -76,7 +76,7 @@ public class AdventureModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude armar el grupo ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude armar el grupo ahora mismo, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -121,7 +121,7 @@ public class AdventureModule(
                     await FollowupAsync(embed: BuildGateGearMissingEmbed(), ephemeral: true);
                     return;
                 case CombatStartStatus.RaceLost:
-                    await FollowupAsync("Justo se te adelantó otra ejecución de este comando, probá de nuevo en un toque.", ephemeral: true);
+                    await FollowupAsync(Loc.T("Justo se te adelantó otra ejecución de este comando, probá de nuevo en un toque."), ephemeral: true);
                     return;
             }
 
@@ -141,7 +141,7 @@ public class AdventureModule(
         {
             BotLog.Error(ex);
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
-            await FollowupAsync("¡Upa! Algo falló iniciando tu aventura, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! Algo falló iniciando tu aventura, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -166,13 +166,13 @@ public class AdventureModule(
 
             if (!CombatHeal.HasMenu(session.State.CommandName))
             {
-                await FollowupAsync("Curarte con el desplegable solo se puede en /travel y /boss.", ephemeral: true);
+                await FollowupAsync(Loc.T("Curarte con el desplegable solo se puede en /travel y /boss."), ephemeral: true);
                 return;
             }
 
             if (selected.Length == 0 || selected[0] == "none")
             {
-                await FollowupAsync("No elegiste ninguna comida.", ephemeral: true);
+                await FollowupAsync(Loc.T("No elegiste ninguna comida."), ephemeral: true);
                 return;
             }
 
@@ -187,7 +187,7 @@ public class AdventureModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude usar esa comida, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude usar esa comida, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -224,9 +224,9 @@ public class AdventureModule(
 
         return reason switch
         {
-            "timeout" => "No tenés ningún combate activo: pasó más de **1 minuto** sin jugar el turno y se cerró como abandonado. Empezá otro con /hunt, /travel o /boss.",
-            "resolved" => "No tenés ningún combate activo: ese ya terminó (ganaste, perdiste o huiste) y este mensaje es viejo. Empezá otro con /hunt, /travel o /boss.",
-            _ => "No tenés ningún combate activo. Si estabas peleando, se cortó porque el bot se reinició (cada actualización corta las peleas en curso). Empezá otro con /hunt, /travel, /boss o \"aa hunt\".",
+            "timeout" => Loc.T("No tenés ningún combate activo: pasó más de **1 minuto** sin jugar el turno y se cerró como abandonado. Empezá otro con /hunt, /travel o /boss."),
+            "resolved" => Loc.T("No tenés ningún combate activo: ese ya terminó (ganaste, perdiste o huiste) y este mensaje es viejo. Empezá otro con /hunt, /travel o /boss."),
+            _ => Loc.T("No tenés ningún combate activo. Si estabas peleando, se cortó porque el bot se reinició (cada actualización corta las peleas en curso). Empezá otro con /hunt, /travel, /boss o \"aa hunt\"."),
         };
     }
 
@@ -252,7 +252,7 @@ public class AdventureModule(
             {
                 if (!combatSessions.TryAdvance(discordId, session, null, null))
                 {
-                    await output.NoteAsync("Justo se resolvió tu combate por otra vía, revisá el mensaje.");
+                    await output.NoteAsync(Loc.T("Justo se resolvió tu combate por otra vía, revisá el mensaje."));
                     return;
                 }
 
@@ -271,7 +271,7 @@ public class AdventureModule(
             // sin habilidad): se rechaza sin gastar el turno.
             if (useAbility && CombatTurnResolver.CheckAbility(state.PlayerClass, state.Ability) != AbilityAvailability.Ready)
             {
-                await output.NoteAsync("Tu habilidad todavía está en enfriamiento.");
+                await output.NoteAsync(Loc.T("Tu habilidad todavía está en enfriamiento."));
                 return;
             }
 
@@ -318,7 +318,7 @@ public class AdventureModule(
 
                 if (!combatSessions.TryAdvance(discordId, session, null, null))
                 {
-                    await output.NoteAsync("Justo se resolvió tu combate por otra vía, revisá el mensaje.");
+                    await output.NoteAsync(Loc.T("Justo se resolvió tu combate por otra vía, revisá el mensaje."));
                     return;
                 }
 
@@ -368,7 +368,7 @@ public class AdventureModule(
             {
                 if (!combatSessions.TryAdvance(discordId, session, null, null))
                 {
-                    await output.NoteAsync("Justo se resolvió tu combate por otra vía, revisá el mensaje.");
+                    await output.NoteAsync(Loc.T("Justo se resolvió tu combate por otra vía, revisá el mensaje."));
                     return;
                 }
 
@@ -410,7 +410,7 @@ public class AdventureModule(
             var nextTarget = output.NextReplyTarget(session.ReplyTarget);
             if (!combatSessions.TryAdvance(discordId, session, nextState, nextTarget))
             {
-                await output.NoteAsync("Justo se resolvió tu combate por otra vía, revisá el mensaje.");
+                await output.NoteAsync(Loc.T("Justo se resolvió tu combate por otra vía, revisá el mensaje."));
                 return;
             }
 
@@ -422,7 +422,7 @@ public class AdventureModule(
         {
             BotLog.Error(ex);
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
-            await output.NoteAsync("¡Upa! Algo falló procesando el combate, intentá de nuevo en un momento.");
+            await output.NoteAsync(Loc.T("¡Upa! Algo falló procesando el combate, intentá de nuevo en un momento."));
         }
     }
 
@@ -443,7 +443,7 @@ public class AdventureModule(
     // Todo lo que sigue es de solo presentación (sin dependencias de Context): público para que
     // Modules/TextCommandModule.cs pueda armar exactamente los mismos mensajes para "aa hunt".
     public static string BuildAlreadyInCombatMessage() =>
-        "Ya estás en medio de un combate. Terminalo (atacando o huyendo) antes de iniciar otro.";
+        Loc.T("Ya estás en medio de un combate. Terminalo (atacando o huyendo) antes de iniciar otro.");
 
     // Atacar / [habilidad de clase] / Huir. El botón de habilidad lleva el nombre de la habilidad de
     // la clase del jugador y, mientras está en enfriamiento, los turnos que faltan y queda
@@ -453,7 +453,7 @@ public class AdventureModule(
     public static MessageComponent BuildCombatButtons(CombatState state, IReadOnlyList<HealOption>? healOptions = null)
     {
         var builder = new ComponentBuilder()
-            .WithButton("Atacar", "btn_attack", ButtonStyle.Primary, new Emoji("⚔️"));
+            .WithButton(Loc.T("Atacar"), "btn_attack", ButtonStyle.Primary, new Emoji("⚔️"));
 
         var ability = ClassAbilities.For(state.PlayerClass);
         if (ability is not null)
@@ -463,7 +463,7 @@ public class AdventureModule(
             builder.WithButton(label, "btn_ability", ButtonStyle.Success, new Emoji(ability.Emoji), disabled: cooldown > 0);
         }
 
-        builder.WithButton("Huir", "btn_flee", ButtonStyle.Danger, new Emoji("🏃"));
+        builder.WithButton(Loc.T("Huir"), "btn_flee", ButtonStyle.Danger, new Emoji("🏃"));
 
         if (CombatHeal.HasMenu(state.CommandName))
         {
@@ -497,15 +497,15 @@ public class AdventureModule(
 
         if (state.HealUsed)
         {
-            return menu.WithPlaceholder("🍖 Ya te curaste en esta pelea").WithDisabled(true).AddOption("Curación usada", "none");
+            return menu.WithPlaceholder(Loc.T("🍖 Ya te curaste en esta pelea")).WithDisabled(true).AddOption(Loc.T("Curación usada"), "none");
         }
 
         if (options is null || options.Count == 0)
         {
-            return menu.WithPlaceholder("🍖 No tenés comida para curarte").WithDisabled(true).AddOption("Sin comida", "none");
+            return menu.WithPlaceholder(Loc.T("🍖 No tenés comida para curarte")).WithDisabled(true).AddOption(Loc.T("Sin comida"), "none");
         }
 
-        menu.WithPlaceholder("🍖 Curarte con comida (1 vez por pelea)");
+        menu.WithPlaceholder(Loc.T("🍖 Curarte con comida (1 vez por pelea)"));
         foreach (var option in options)
         {
             // El emoji del ítem va en la opción SOLO si la aplicación lo tiene de verdad (ItemMenuExtensions): con uno que Discord no conoce rechaza el mensaje ENTERO
@@ -526,9 +526,9 @@ public class AdventureModule(
             return string.Empty;
         }
 
-        string readiness = status.CooldownRemaining > 0 ? $"⏳ en {status.CooldownRemaining} turno(s)" : "lista";
+        string readiness = status.CooldownRemaining > 0 ? Loc.F($"⏳ en {status.CooldownRemaining} turno(s)") : Loc.T("lista");
         string effect = status.EffectTurnsRemaining > 0 && ability.EffectLabel is not null
-            ? $" · {ability.EffectLabel} ({status.EffectTurnsRemaining} turno(s))"
+            ? Loc.F($" · {Loc.Tr(ability.EffectLabel)} ({status.EffectTurnsRemaining} turno(s))")
             : string.Empty;
 
         return $"{ability.Emoji} {ability.Name}: {readiness}{effect}";
@@ -537,14 +537,14 @@ public class AdventureModule(
     private static EmbedBuilder WithAbilityField(EmbedBuilder embed, CombatState state)
     {
         string line = BuildAbilityStatusLine(state.PlayerClass, state.Ability);
-        return line.Length > 0 ? embed.AddField("✨ Habilidad", line, false) : embed;
+        return line.Length > 0 ? embed.AddField(Loc.T("✨ Habilidad"), line, false) : embed;
     }
 
     public static Embed BuildCooldownEmbed(CooldownDefinition definition, TimeSpan remaining)
     {
         return new EmbedBuilder()
-            .WithTitle($"⏳ {definition.Emoji} {definition.DisplayName}: todavía no podés")
-            .WithDescription($"Te falta **{TimeFormat.Remaining(remaining)}** para volver a intentarlo.")
+            .WithTitle(Loc.F($"⏳ {definition.Emoji} {Loc.Tr(definition.DisplayName)}: todavía no podés"))
+            .WithDescription(Loc.F($"Te falta **{TimeFormat.Remaining(remaining)}** para volver a intentarlo."))
             .WithColor(Color.DarkGrey)
             .Build();
     }
@@ -552,8 +552,8 @@ public class AdventureModule(
     public static Embed BuildNoHpEmbed()
     {
         return new EmbedBuilder()
-            .WithTitle("💀 Estás sin fuerzas")
-            .WithDescription("Te quedaste sin HP. Usá **/heal** para recuperarte antes de volver a intentarlo.")
+            .WithTitle(Loc.T("💀 Estás sin fuerzas"))
+            .WithDescription(Loc.T("Te quedaste sin HP. Usá **/heal** para recuperarte antes de volver a intentarlo."))
             .WithColor(Color.DarkRed)
             .Build();
     }
@@ -561,8 +561,8 @@ public class AdventureModule(
     public static Embed BuildNoMonstersInZoneEmbed()
     {
         return new EmbedBuilder()
-            .WithTitle("🗺️ Zona sin monstruos")
-            .WithDescription("Todavía no hay monstruos cargados en tu zona actual. Probá **/zona** para viajar a otra, o avisale al staff.")
+            .WithTitle(Loc.T("🗺️ Zona sin monstruos"))
+            .WithDescription(Loc.T("Todavía no hay monstruos cargados en tu zona actual. Probá **/zona** para viajar a otra, o avisale al staff."))
             .WithColor(Color.DarkGrey)
             .Build();
     }
@@ -570,8 +570,8 @@ public class AdventureModule(
     public static Embed BuildNoBossInZoneEmbed()
     {
         return new EmbedBuilder()
-            .WithTitle("👑 Esta zona no tiene Jefe")
-            .WithDescription("Tu zona actual todavía no tiene un Jefe de Zona cargado — probá `/hunt` mientras tanto.")
+            .WithTitle(Loc.T("👑 Esta zona no tiene Jefe"))
+            .WithDescription(Loc.T("Tu zona actual todavía no tiene un Jefe de Zona cargado — probá `/hunt` mientras tanto."))
             .WithColor(Color.DarkGrey)
             .Build();
     }
@@ -579,26 +579,26 @@ public class AdventureModule(
     // /hunt, /travel, /autohunt y /raid estando parado en El Fogón Eterno (zona 0, GameData/FogonRules.cs): ahí solo hay un enemigo.
     public static Embed BuildInGateEmbed() =>
         new EmbedBuilder()
-            .WithTitle("🔥 Estás en El Fogón Eterno")
-            .WithDescription($"Acá no hay cacería, viajes ni jefe en equipo: solo te espera **{FogonRules.BossName}**. Enfrentalo con **/boss**, o salí del Fogón viajando a una zona con **/zona**.")
+            .WithTitle(Loc.T("🔥 Estás en El Fogón Eterno"))
+            .WithDescription(Loc.F($"Acá no hay cacería, viajes ni jefe en equipo: solo te espera **{FogonRules.BossName}**. Enfrentalo con **/boss**, o salí del Fogón viajando a una zona con **/zona**."))
             .WithColor(Color.DarkOrange)
             .Build();
 
     // /boss en el Fogón sin el equipo puesto (lo vendió después de entrar).
     public static Embed BuildGateGearMissingEmbed() =>
         new EmbedBuilder()
-            .WithTitle("🔥 Te falta el equipo del Fogón")
+            .WithTitle(Loc.T("🔥 Te falta el equipo del Fogón"))
             .WithDescription(
-                $"Para enfrentar a **{FogonRules.BossName}** tenés que llevar puestos el **{FogonRules.WeaponName}** y la **{FogonRules.AmuletName}**. " +
-                "Forjalos en la herrería (**/forge**). No se gastó el cooldown.")
+                Loc.F($"Para enfrentar a **{FogonRules.BossName}** tenés que llevar puestos el **{FogonRules.WeaponName}** y la **{FogonRules.AmuletName}**. ") +
+                Loc.T("Forjalos en la herrería (**/forge**). No se gastó el cooldown."))
             .WithColor(Color.DarkOrange)
             .Build();
 
     public static Embed BuildNotLeveledForBossEmbed(int requiredLevel)
     {
         return new EmbedBuilder()
-            .WithTitle("👑 Todavía no estás listo para este Jefe")
-            .WithDescription($"Necesitás ser **nivel {requiredLevel}** (el nivel de la próxima zona) para desafiarlo. Seguí subiendo con `/hunt`.")
+            .WithTitle(Loc.T("👑 Todavía no estás listo para este Jefe"))
+            .WithDescription(Loc.F($"Necesitás ser **nivel {requiredLevel}** (el nivel de la próxima zona) para desafiarlo. Seguí subiendo con `/hunt`."))
             .WithColor(Color.DarkGrey)
             .Build();
     }
@@ -607,26 +607,26 @@ public class AdventureModule(
     {
         string title = state.CommandName switch
         {
-            "hunt" => "🏹 ¡Encuentro en la caza!",
-            "boss" => "👑 ¡Encuentro con el Jefe de Zona!",
-            _ => "🗺️ ¡Encuentro en el viaje!",
+            "hunt" => Loc.T("🏹 ¡Encuentro en la caza!"),
+            "boss" => Loc.T("👑 ¡Encuentro con el Jefe de Zona!"),
+            _ => Loc.T("🗺️ ¡Encuentro en el viaje!"),
         };
 
         var embed = new EmbedBuilder()
             .WithTitle(title)
             .WithColor(Color.Orange)
             .WithMonsterPortrait(state.MonsterPortrait) // la cara del monstruo, miniatura de TODOS los mensajes de esta pelea (si no, desaparecería a mitad)
-            .WithDescription($"¡Un **{state.MonsterName}** {state.MonsterEmoji} salvaje aparece!\n\n{MonsterSays(state, NpcDialogue.BossLine.Intro)}")
-            .AddField("❤️ Tu HP", HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
-            .AddField($"{state.MonsterEmoji} HP de {state.MonsterName}", HpLine(state.MonsterCurrentHp, state.MonsterMaxHp), true);
+            .WithDescription(Loc.F($"¡Un **{state.MonsterName}** {state.MonsterEmoji} salvaje aparece!\n\n{MonsterSays(state, NpcDialogue.BossLine.Intro)}"))
+            .AddField(Loc.T("❤️ Tu HP"), HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
+            .AddField(Loc.F($"{state.MonsterEmoji} HP de {state.MonsterName}"), HpLine(state.MonsterCurrentHp, state.MonsterMaxHp), true);
 
         if (CombatHeal.HasMenu(state.CommandName))
         {
-            embed.WithFooter("🍖 Podés curarte UNA vez en esta pelea con el desplegable de abajo.");
+            embed.WithFooter(Loc.T("🍖 Podés curarte UNA vez en esta pelea con el desplegable de abajo."));
         }
         else if (CombatHeal.IsLimited(state.CommandName))
         {
-            embed.WithFooter("🍖 Podés curarte UNA vez en esta pelea con /use.");
+            embed.WithFooter(Loc.T("🍖 Podés curarte UNA vez en esta pelea con /use."));
         }
 
         return WithAbilityField(embed, state).Build();
@@ -636,17 +636,17 @@ public class AdventureModule(
     {
         var monsterHit = turn.MonsterHit!; // el combate sigue => el monstruo contraatacó
         string monsterLine = monsterHit.Dodged
-            ? $"💨 ¡Esquivaste el ataque del **{state.MonsterName}**!"
-            : $"El **{state.MonsterName}** te hizo **{monsterHit.Damage}** de daño.";
-        string playerLine = turn.DamageDealt > 0 ? $"Le hiciste **{turn.DamageDealt}** de daño." : "No atacaste este turno.";
+            ? Loc.F($"💨 ¡Esquivaste el ataque del **{state.MonsterName}**!")
+            : Loc.F($"El **{state.MonsterName}** te hizo **{monsterHit.Damage}** de daño.");
+        string playerLine = turn.DamageDealt > 0 ? Loc.F($"Le hiciste **{turn.DamageDealt}** de daño.") : Loc.T("No atacaste este turno.");
 
         var embed = new EmbedBuilder()
-            .WithTitle($"⚔️ Combate contra {state.MonsterName} {state.MonsterEmoji}")
+            .WithTitle(Loc.F($"⚔️ Combate contra {state.MonsterName} {state.MonsterEmoji}"))
             .WithColor(Color.Gold)
             .WithMonsterPortrait(state.MonsterPortrait)
             .WithDescription($"{turn.ActionFlavor}{CritPrefix(turn.CritCount)}{playerLine} {monsterLine}{LifestealSuffix(turn.LifestealHeal, turn.LeechHeal)}")
-            .AddField("❤️ Tu HP", HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
-            .AddField($"{state.MonsterEmoji} HP de {state.MonsterName}", HpLine(state.MonsterCurrentHp, state.MonsterMaxHp), true);
+            .AddField(Loc.T("❤️ Tu HP"), HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
+            .AddField(Loc.F($"{state.MonsterEmoji} HP de {state.MonsterName}"), HpLine(state.MonsterCurrentHp, state.MonsterMaxHp), true);
 
         return WithAbilityField(embed, state).Build();
     }
@@ -668,23 +668,23 @@ public class AdventureModule(
         var player = outcome.Player;
 
         var embed = new EmbedBuilder()
-            .WithTitle($"🏆 ¡Victoria contra {state.MonsterName} {state.MonsterEmoji}!")
+            .WithTitle(Loc.F($"🏆 ¡Victoria contra {state.MonsterName} {state.MonsterEmoji}!"))
             .WithColor(Color.Green)
             .WithMonsterPortrait(state.MonsterPortrait) // SIEMPRE la cara del monstruo, haya drop o no (el drop va en su campo, abajo)
             // Todos los monstruos dicen algo al caer. El jefe lo dice en su campo propio (más abajo, junto con lo de la próxima zona).
-            .WithDescription($"{turn.ActionFlavor}{CritPrefix(turn.CritCount)}Le hiciste **{turn.DamageDealt}** de daño y lo derrotaste.{LifestealSuffix(turn.LifestealHeal, turn.LeechHeal)}" +
+            .WithDescription($"{turn.ActionFlavor}{CritPrefix(turn.CritCount)}" + Loc.F($"Le hiciste **{turn.DamageDealt}** de daño y lo derrotaste.") + LifestealSuffix(turn.LifestealHeal, turn.LeechHeal) +
                 (state.CommandName == "boss" ? string.Empty : $"\n\n{MonsterSays(state, NpcDialogue.BossLine.Defeated)}"))
-            .AddField("💰 Oro ganado", reward.Gold.ToString(), true)
-            .AddField("📊 EXP ganada", reward.Xp.ToString(), true)
-            .AddField("❤️ Tu HP", ShownHpLine(player, state.Passives.MaxHpMultiplier), true)
-            .AddField("📋 Resumen del combate", BuildCombatSummaryLine(state), false);
+            .AddField(Loc.T("💰 Oro ganado"), reward.Gold.ToString(), true)
+            .AddField(Loc.T("📊 EXP ganada"), reward.Xp.ToString(), true)
+            .AddField(Loc.T("❤️ Tu HP"), ShownHpLine(player, state.Passives.MaxHpMultiplier), true)
+            .AddField(Loc.T("📋 Resumen del combate"), BuildCombatSummaryLine(state), false);
 
         if (droppedItem is not null)
         {
             // El jefe suelta un cofre (ver GameData/CombatRewardCalculator.BossChestFirstClearPercent); lo demás, un material.
             bool isChest = droppedItem.Type == "Caja";
             string droppedText = ItemDisplay.Format(droppedItem.Emoji, droppedItem.Name);
-            embed.AddField(isChest ? "🎁 ¡Cofre del jefe!" : "🎁 Material obtenido", isChest ? $"{droppedText} — abrilo con `/open`" : droppedText, false);
+            embed.AddField(isChest ? Loc.T("🎁 ¡Cofre del jefe!") : Loc.T("🎁 Material obtenido"), isChest ? Loc.F($"{droppedText} — abrilo con `/open`") : droppedText, false);
         }
 
         // La subida de nivel NO va acá: sale como mensaje propio, apenas termina el combate (GameData/LevelUpCard.cs).
@@ -692,7 +692,7 @@ public class AdventureModule(
         // La primera vez que se vence al jefe de la zona llega, junto con el cofre, el HUEVO de la mascota de esa zona (en la misma transacción que el premio).
         if (outcome.EggGranted is { } egg)
         {
-            embed.AddField("🥚 ¡Un huevo para vos!", $"{ItemEmojiRegistry.Label(egg.EggName, "🥚")} — abrilo con `/open` y nace tu mascota.", false);
+            embed.AddField(Loc.T("🥚 ¡Un huevo para vos!"), Loc.F($"{ItemEmojiRegistry.Label(egg.EggName, "🥚")} — abrilo con `/open` y nace tu mascota."), false);
         }
 
         if (state.CommandName == "boss")
@@ -702,16 +702,16 @@ public class AdventureModule(
             if (outcome.Gate == GateEvent.Cleared)
             {
                 // El Asador Eterno (zona 0): ganarle devuelve a la última zona y habilita el Fuego Nuevo (GameData/FogonRules.cs).
-                embed.AddField("🔥 ¡El Asador Eterno cayó!", $"{MonsterSays(state, NpcDialogue.BossLine.Defeated)}{StoryScene(openedChapter)}\n\n{FogonRules.ClearedText}", false);
+                embed.AddField(Loc.T("🔥 ¡El Asador Eterno cayó!"), $"{MonsterSays(state, NpcDialogue.BossLine.Defeated)}{StoryScene(openedChapter)}\n\n{FogonRules.ClearedText}", false);
             }
             else
             {
                 string zoneLine = outcome.Gate == GateEvent.Opened
                     ? FogonRules.OpenedText
                     : firstBossClear
-                        ? "¡Se abrió el camino! Ya podés avanzar a la próxima zona con `/zona`."
-                        : "¡Volviste a ganarle! El camino a la próxima zona ya lo tenías abierto.";
-                embed.AddField("👑 ¡Jefe de Zona derrotado!", $"{MonsterSays(state, NpcDialogue.BossLine.Defeated)}{StoryScene(openedChapter)}\n\n{zoneLine}", false);
+                        ? Loc.T("¡Se abrió el camino! Ya podés avanzar a la próxima zona con `/zona`.")
+                        : Loc.T("¡Volviste a ganarle! El camino a la próxima zona ya lo tenías abierto.");
+                embed.AddField(Loc.T("👑 ¡Jefe de Zona derrotado!"), $"{MonsterSays(state, NpcDialogue.BossLine.Defeated)}{StoryScene(openedChapter)}\n\n{zoneLine}", false);
             }
         }
 
@@ -723,18 +723,19 @@ public class AdventureModule(
     // escaladas por un Guerrero) evitamos mezclar una cifra real de la base con un Máximo escalado.
     private static Embed BuildDefeatEmbed(CombatState state, TurnResult turn, DeathPenaltyOutcome? penalty = null)
     {
-        string playerLine = turn.DamageDealt > 0 ? $"Le hiciste **{turn.DamageDealt}** de daño, pero el" : "Pero el";
+        // Una sola frase por caso (no se arma pegando pedazos): el inglés ordena distinto que el español.
+        string hitLine = turn.DamageDealt > 0
+            ? Loc.F($"Le hiciste **{turn.DamageDealt}** de daño, pero el **{state.MonsterName}** te devolvió **{turn.MonsterHit!.Damage}** y te dejó fuera de combate. Usá **/heal** para recuperarte.")
+            : Loc.F($"Pero el **{state.MonsterName}** te devolvió **{turn.MonsterHit!.Damage}** y te dejó fuera de combate. Usá **/heal** para recuperarte.");
 
         var embed = new EmbedBuilder()
-            .WithTitle($"💀 Derrota contra {state.MonsterName} {state.MonsterEmoji}")
+            .WithTitle(Loc.F($"💀 Derrota contra {state.MonsterName} {state.MonsterEmoji}"))
             .WithColor(Color.DarkRed)
             .WithMonsterPortrait(state.MonsterPortrait)
-            .WithDescription(
-                $"{turn.ActionFlavor}{CritPrefix(turn.CritCount)}{playerLine} **{state.MonsterName}** te devolvió **{turn.MonsterHit!.Damage}** " +
-                $"y te dejó fuera de combate. Usá **/heal** para recuperarte.{LifestealSuffix(turn.LifestealHeal, turn.LeechHeal)}\n\n{MonsterSays(state, NpcDialogue.BossLine.Victory)}")
-            .AddField("❤️ Tu HP", HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
-            .AddField($"{state.MonsterEmoji} HP de {state.MonsterName}", HpLine(turn.MonsterHpAfter, state.MonsterMaxHp), true)
-            .AddField("📋 Resumen del combate", BuildCombatSummaryLine(state), false);
+            .WithDescription($"{turn.ActionFlavor}{CritPrefix(turn.CritCount)}{hitLine}{LifestealSuffix(turn.LifestealHeal, turn.LeechHeal)}\n\n{MonsterSays(state, NpcDialogue.BossLine.Victory)}")
+            .AddField(Loc.T("❤️ Tu HP"), HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
+            .AddField(Loc.F($"{state.MonsterEmoji} HP de {state.MonsterName}"), HpLine(turn.MonsterHpAfter, state.MonsterMaxHp), true)
+            .AddField(Loc.T("📋 Resumen del combate"), BuildCombatSummaryLine(state), false);
 
         return WithDeathPenalty(embed, penalty).Build();
     }
@@ -765,20 +766,20 @@ public class AdventureModule(
 
         if (penalty.GoldLost <= 0)
         {
-            return "Tu EXP de este nivel volvió a **0**.";
+            return Loc.T("Tu EXP de este nivel volvió a **0**.");
         }
 
-        string gold = $"Perdiste **{GameHistory.Number(penalty.GoldLost)}** de oro (el {DeathPenalty.GoldPercent} % de tu billetera)";
+        string gold = Loc.F($"Perdiste **{GameHistory.Number(penalty.GoldLost)}** de oro (el {DeathPenalty.GoldPercent} % de tu billetera)");
         return penalty.XpLost > 0
-            ? $"{gold} y tu EXP de este nivel volvió a **0**. Lo del banco no se toca."
-            : $"{gold}. Lo del banco no se toca.";
+            ? Loc.F($"{gold} y tu EXP de este nivel volvió a **0**. Lo del banco no se toca.")
+            : Loc.F($"{gold}. Lo del banco no se toca.");
     }
 
     // Agrega el campo "☠️ Penalidad" si hubo algo que perder; sin penalidad deja el embed como está.
     public static EmbedBuilder WithDeathPenalty(EmbedBuilder embed, DeathPenaltyOutcome? penalty)
     {
         string? line = DeathPenaltyLine(penalty);
-        return line is null ? embed : embed.AddField("☠️ Penalidad", line, false);
+        return line is null ? embed : embed.AddField(Loc.T("☠️ Penalidad"), line, false);
     }
 
     // "💥 ¡GOLPE CRÍTICO! " antepuesto a la línea de daño del jugador (o "¡N GOLPES CRÍTICOS!" si la
@@ -786,26 +787,26 @@ public class AdventureModule(
     private static string CritPrefix(int critCount) => critCount switch
     {
         <= 0 => string.Empty,
-        1 => "💥 ¡GOLPE CRÍTICO! ",
-        _ => $"💥 ¡{critCount} GOLPES CRÍTICOS! ",
+        1 => Loc.T("💥 ¡GOLPE CRÍTICO! "),
+        _ => Loc.F($"💥 ¡{critCount} GOLPES CRÍTICOS! "),
     };
 
     // "🔮 Sifón de Almas te curó X HP." si el Hechicero curó algo este turno y "🩸 Sangre te curó Y HP." si fue el encantamiento (healed = la cura total; leech = la parte de Sangre).
     private static string LifestealSuffix(int healed, int leech = 0)
     {
         int siphon = Math.Max(0, healed - leech);
-        return (siphon > 0 ? $"\n🔮 Sifón de Almas te curó **{siphon}** HP." : string.Empty) + (leech > 0 ? $"\n🩸 Sangre te curó **{leech}** HP." : string.Empty);
+        return (siphon > 0 ? Loc.F($"\n🔮 Sifón de Almas te curó **{siphon}** HP.") : string.Empty) + (leech > 0 ? Loc.F($"\n🩸 Sangre te curó **{leech}** HP.") : string.Empty);
     }
 
     private static Embed BuildFleeEmbed(CombatState state)
     {
         return new EmbedBuilder()
-            .WithTitle($"🏃 Huiste del combate contra {state.MonsterName} {state.MonsterEmoji}")
+            .WithTitle(Loc.F($"🏃 Huiste del combate contra {state.MonsterName} {state.MonsterEmoji}"))
             .WithColor(Color.DarkGrey)
             .WithMonsterPortrait(state.MonsterPortrait)
-            .WithDescription("Escapaste cobardemente... sin oro, sin experiencia, pero de una sola pieza.")
-            .AddField("❤️ Tu HP", HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
-            .AddField("📋 Resumen del combate", BuildCombatSummaryLine(state), false)
+            .WithDescription(Loc.T("Escapaste cobardemente... sin oro, sin experiencia, pero de una sola pieza."))
+            .AddField(Loc.T("❤️ Tu HP"), HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
+            .AddField(Loc.T("📋 Resumen del combate"), BuildCombatSummaryLine(state), false)
             .Build();
     }
 
@@ -813,10 +814,10 @@ public class AdventureModule(
     // cerrar un combate (victoria, derrota o huida) — los contadores viajan en el propio CombatState.
     public static string BuildCombatSummaryLine(CombatState state)
     {
-        string critText = state.CritCount > 0 ? $" · 💥 {state.CritCount} crítico(s)" : string.Empty;
-        string dodgeText = state.DodgeCount > 0 ? $" · 💨 Esquivaste {state.DodgeCount} golpe(s)" : string.Empty;
-        string healText = state.TotalHealed > 0 ? $" · 🔮 {state.TotalHealed} curados" : string.Empty;
-        return $"⏱️ {state.TurnsElapsed} turno(s) · 🗡️ {state.TotalDamageDealt} de daño hecho · 🩸 {state.TotalDamageTaken} de daño recibido{critText}{dodgeText}{healText}";
+        string critText = state.CritCount > 0 ? Loc.F($" · 💥 {state.CritCount} crítico(s)") : string.Empty;
+        string dodgeText = state.DodgeCount > 0 ? Loc.F($" · 💨 Esquivaste {state.DodgeCount} golpe(s)") : string.Empty;
+        string healText = state.TotalHealed > 0 ? Loc.F($" · 🔮 {state.TotalHealed} curados") : string.Empty;
+        return Loc.F($"⏱️ {state.TurnsElapsed} turno(s) · 🗡️ {state.TotalDamageDealt} de daño hecho · 🩸 {state.TotalDamageTaken} de daño recibido{critText}{dodgeText}{healText}");
     }
 
     // La escena de la primera victoria sobre un jefe (GameData/Lore.cs, FirstClearLine), en cursiva y con su aire; vacía si esta victoria no abrió ningún capítulo. El aviso

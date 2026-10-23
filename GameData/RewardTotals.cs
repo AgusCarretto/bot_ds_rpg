@@ -38,7 +38,7 @@ public sealed class RewardTotals
 
         if (Gold > 0)
         {
-            parts.Add($"💰 +{Gold} oro");
+            parts.Add(Loc.F($"💰 +{Gold} oro"));
         }
 
         if (Xp > 0)

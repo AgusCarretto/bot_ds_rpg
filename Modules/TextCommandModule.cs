@@ -49,6 +49,7 @@ public partial class TextCommandModule(
     IArenaService arenaService,
     IPetRepository petRepository,
     IPlayerBonusService bonusService,
+    IPlayerLanguageService languageService,
     IZoneBoxService zoneBoxService,
     IBlessingRepository blessingRepository,
     IFuegoNuevoRepository fuegoNuevoRepository,

@@ -31,7 +31,7 @@ public class OnboardingModule(IUserRepository userRepository, IGameEvents gameEv
         {
             BotLog.Error(ex);
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
-            await FollowupAsync("¡Upa! No pude iniciar tu registro ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude iniciar tu registro ahora mismo, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -48,7 +48,7 @@ public class OnboardingModule(IUserRepository userRepository, IGameEvents gameEv
         var classDef = ClassCatalog.All.FirstOrDefault(c => c.Name == chosenClass);
         if (classDef is null)
         {
-            await FollowupAsync("Esa clase no existe, probá de nuevo con /start.", ephemeral: true);
+            await FollowupAsync(Loc.T("Esa clase no existe, probá de nuevo con /start."), ephemeral: true);
             return;
         }
 
@@ -80,30 +80,30 @@ public class OnboardingModule(IUserRepository userRepository, IGameEvents gameEv
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude completar tu registro, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude completar tu registro, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
     // Todo lo que sigue es estático (sin dependencia de Context) para que
     // Modules/TextCommandModule.cs arme exactamente los mismos mensajes en "aa start".
     public static string BuildAlreadyRegisteredMessage(BotDsRpg.Models.User existing) =>
-        $"Ya estás registrado como **{existing.Class}** (Nivel {existing.Level}). La clase solo se cambia empezando de cero y con cada Fuego Nuevo (`/fuegonuevo`); mirá tu estado con `/profile`.";
+        Loc.F($"Ya estás registrado como **{existing.Class}** (Nivel {existing.Level}). La clase solo se cambia empezando de cero y con cada Fuego Nuevo (`/fuegonuevo`); mirá tu estado con `/profile`.");
 
     public static Embed BuildWelcomeEmbed()
     {
         var embed = new EmbedBuilder()
-            .WithTitle("🔥 ¡Bienvenido a Asado y Acero RPG! ⚔️")
+            .WithTitle(Loc.T("🔥 ¡Bienvenido a Asado y Acero RPG! ⚔️"))
             .WithColor(BrandColor)
             .WithDescription(
-                "Preparate para adentrarte en un mundo donde el acero forja leyendas y un buen asado te " +
+                Loc.T("Preparate para adentrarte en un mundo donde el acero forja leyendas y un buen asado te " +
                 "salva la vida. Acá vas a talar bosques, picar piedra, cazar bestias salvajes, forjar " +
                 "equipamiento pesado y sobrevivir a base de mate y milanesas.\n\n" +
-                "Pero antes de empuñar tu primera espada o prender el fuego para la parrilla, necesitamos saber quién sos.")
-            .WithFooter("Hacé clic en uno de los botones abajo para elegir tu camino y reclamar tus 50 monedas de oro iniciales.");
+                "Pero antes de empuñar tu primera espada o prender el fuego para la parrilla, necesitamos saber quién sos."))
+            .WithFooter(Loc.T("Hacé clic en uno de los botones abajo para elegir tu camino y reclamar tus 50 monedas de oro iniciales."));
 
         foreach (var classDef in ClassCatalog.All)
         {
-            embed.AddField($"{classDef.Emoji} {classDef.Name}", classDef.Description);
+            embed.AddField($"{classDef.Emoji} {classDef.Name}", Loc.Tr(classDef.Description));
         }
 
         return embed.Build();
@@ -124,26 +124,26 @@ public class OnboardingModule(IUserRepository userRepository, IGameEvents gameEv
     private static Embed BuildConfirmationEmbed(string username, BotDsRpg.Models.User player, ClassDefinition classDef, bool kitGranted = false)
     {
         var embed = new EmbedBuilder()
-            .WithTitle("🔥 Bienvenido a las Tierras de Cenizas")
+            .WithTitle(Loc.T("🔥 Bienvenido a las Tierras de Cenizas"))
             .WithColor(BrandColor)
             .WithDescription(
-                "El mundo \"Tierras de Cenizas\" no es para los débiles. Hace décadas, la Gran Fragua colapsó, " +
+                Loc.T("El mundo \"Tierras de Cenizas\" no es para los débiles. Hace décadas, la Gran Fragua colapsó, " +
                 "desatando criaturas salvajes que tomaron los bosques y las minas, dándole el nombre actual al " +
                 "planeta. Hoy, los pocos sobrevivientes se refugian en campamentos fortificados, donde el calor " +
                 "del fuego, el olor a carne asada y un buen mate mantienen viva la esperanza.\n\n" +
                 "Has llegado al Campamento Base con las manos vacías. Tu misión es recolectar recursos, forjar " +
                 "tu equipamiento y sobrevivir.\n\n" +
-                "Escribí `/tutorial` o `aa tutorial` para aprender lo básico. " + Lore.WelcomeHint)
-            .AddField("🎭 Tu clase", $"**{player.Class}** {classDef.Emoji} — especialista en {classDef.WeaponType}", true)
-            .AddField("📊 Estado inicial", $"Nivel {player.Level} · {HpDisplay.Scale(player.CurrentHp, PlayerCombatProfileCalculator.HpMultiplier(player))}/{HpDisplay.Scale(player.MaxHp, PlayerCombatProfileCalculator.HpMultiplier(player))} HP · {player.Gold} de oro", true);
+                "Escribí `/tutorial` o `aa tutorial` para aprender lo básico. ") + Loc.Tr(Lore.WelcomeHint))
+            .AddField(Loc.T("🎭 Tu clase"), Loc.F($"**{player.Class}** {classDef.Emoji} — especialista en {classDef.WeaponType}"), true)
+            .AddField(Loc.T("📊 Estado inicial"), Loc.F($"Nivel {player.Level} · {HpDisplay.Scale(player.CurrentHp, PlayerCombatProfileCalculator.HpMultiplier(player))}/{HpDisplay.Scale(player.MaxHp, PlayerCombatProfileCalculator.HpMultiplier(player))} HP · {player.Gold} de oro"), true);
 
         if (kitGranted)
         {
-            embed.AddField("🎁 Kit inicial", $"**{StarterKit.FoodQuantity}× {StarterKit.FoodItemName}** en tu mochila: usá `/heal` cuando te falte vida.", false);
+            embed.AddField(Loc.T("🎁 Kit inicial"), Loc.F($"**{StarterKit.FoodQuantity}× {StarterKit.FoodItemName}** en tu mochila: usá `/heal` cuando te falte vida."), false);
         }
 
         return embed
-            .WithFooter($"{username}, que el fuego te acompañe.")
+            .WithFooter(Loc.F($"{username}, que el fuego te acompañe."))
             .Build();
     }
 }

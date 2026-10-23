@@ -45,7 +45,7 @@ public class MissionsModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude mostrar tus misiones, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude mostrar tus misiones, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -59,7 +59,7 @@ public class MissionsModule(
         {
             if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
             {
-                await FollowupAsync("Esas misiones son de otra persona: usá **/missions** para ver las tuyas.", ephemeral: true);
+                await FollowupAsync(Loc.T("Esas misiones son de otra persona: usá **/missions** para ver las tuyas."), ephemeral: true);
                 return;
             }
 
@@ -77,7 +77,7 @@ public class MissionsModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude cobrar las misiones, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude cobrar las misiones, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -145,7 +145,7 @@ public class MissionsModule(
 
                 claimed.Add(mission.Key);
                 totals.Add(outcome.Receipt!);
-                lines.Add($"✅ {mission.Title}");
+                lines.Add($"✅ {Loc.Tr(mission.Title)}");
                 await gameEvents.RecordAsync(discordId, GameEventKinds.MissionClaimed, player.CurrentZoneId, detail: mission.Key);
             }
 
@@ -155,7 +155,7 @@ public class MissionsModule(
                 if (bonus.Status == ClaimStatus.Claimed)
                 {
                     totals.Add(bonus.Receipt!);
-                    lines.Add($"🎁 Completaste todas las {(period == MissionPeriod.Daily ? "diarias" : "semanales")}");
+                    lines.Add(period == MissionPeriod.Daily ? Loc.T("🎁 Completaste todas las diarias") : Loc.T("🎁 Completaste todas las semanales"));
                     await gameEvents.RecordAsync(
                         discordId, GameEventKinds.MissionClaimed, player.CurrentZoneId, detail: $"{MissionCatalog.BonusKey}:{MissionCatalog.PeriodKey(period)}");
                 }
@@ -164,7 +164,7 @@ public class MissionsModule(
 
         if (totals.IsEmpty)
         {
-            return new MissionClaimResult("No tenés misiones listas para reclamar ahora. Mirá tu progreso con **/missions**.", null);
+            return new MissionClaimResult(Loc.T("No tenés misiones listas para reclamar ahora. Mirá tu progreso con **/missions**."), null);
         }
 
         if (totals.LevelsGained > 0)
@@ -179,19 +179,19 @@ public class MissionsModule(
     public static Embed BuildEmbed(IReadOnlyList<MissionPeriodState> states, DateTime utcNow)
     {
         var embed = new EmbedBuilder()
-            .WithTitle("📋 Tus misiones")
+            .WithTitle(Loc.T("📋 Tus misiones"))
             .WithColor(Color.Gold)
-            .WithDescription("Las diarias se reinician a medianoche y las semanales el lunes, **hora de Uruguay**. Se cuentan solas mientras jugás; los premios dependen de tu zona.");
+            .WithDescription(Loc.T("Las diarias se reinician a medianoche y las semanales el lunes, **hora de Uruguay**. Se cuentan solas mientras jugás; los premios dependen de tu zona."));
 
         foreach (var state in states)
         {
             string left = UruguayCalendar.FormatRemaining(state.EndUtc - utcNow);
-            string title = state.Period == MissionPeriod.Daily ? $"☀️ Diarias — se reinician en {left}" : $"📅 Semanales — se reinician en {left}";
+            string title = state.Period == MissionPeriod.Daily ? Loc.F($"☀️ Diarias — se reinician en {left}") : Loc.F($"📅 Semanales — se reinician en {left}");
             embed.AddField(title, string.Join("\n\n", FieldLines(state)));
         }
 
         int claimable = states.Sum(s => s.ClaimableCount);
-        embed.WithFooter(claimable > 0 ? $"🎁 Tenés {claimable} para reclamar: tocá el botón." : "Cada misión se cuenta sola mientras jugás.");
+        embed.WithFooter(claimable > 0 ? Loc.F($"🎁 Tenés {claimable} para reclamar: tocá el botón.") : Loc.T("Cada misión se cuenta sola mientras jugás."));
 
         return embed.Build();
     }
@@ -200,7 +200,7 @@ public class MissionsModule(
     public static MessageComponent? BuildComponents(ulong ownerId, int claimable) =>
         claimable <= 0
             ? null
-            : new ComponentBuilder().WithButton($"Reclamar ({claimable})", $"missions_claim:{ownerId}", ButtonStyle.Success, new Emoji("🎁")).Build();
+            : new ComponentBuilder().WithButton(Loc.F($"Reclamar ({claimable})"), $"missions_claim:{ownerId}", ButtonStyle.Success, new Emoji("🎁")).Build();
 
     private static List<string> FieldLines(MissionPeriodState state)
     {
@@ -210,28 +210,30 @@ public class MissionsModule(
         {
             if (row.Claimed)
             {
-                lines.Add($"✅ ~~{row.Mission.Title}~~ — cobrada");
+                lines.Add(Loc.F($"✅ ~~{Loc.Tr(row.Mission.Title)}~~ — cobrada"));
             }
             else if (row.Completed)
             {
-                lines.Add($"🎁 **{row.Mission.Title}** — ¡lista para reclamar!\n   {MissionRewards.Describe(row.Reward)}");
+                lines.Add(Loc.F($"🎁 **{Loc.Tr(row.Mission.Title)}** — ¡lista para reclamar!\n   {MissionRewards.Describe(row.Reward)}"));
             }
             else
             {
                 int shown = (int)Math.Min(row.Progress, row.Mission.Target);
-                lines.Add($"▫️ **{row.Mission.Title}**\n   {ProgressBar.Render(shown, (int)row.Mission.Target)} {shown}/{row.Mission.Target} · {MissionRewards.Describe(row.Reward)}");
+                lines.Add($"▫️ **{Loc.Tr(row.Mission.Title)}**\n   {ProgressBar.Render(shown, (int)row.Mission.Target)} {shown}/{row.Mission.Target} · {MissionRewards.Describe(row.Reward)}");
             }
         }
 
-        string kind = state.Period == MissionPeriod.Daily ? "diarias" : "semanales";
-        string bonusText = $"Completá las {state.Rows.Count} {kind}: {MissionRewards.Describe(state.BonusReward)}";
+        // Una frase entera por período (no se arma pegando «diarias» / «semanales»): el inglés ordena distinto.
+        string bonusText = state.Period == MissionPeriod.Daily
+            ? Loc.F($"Completá las {state.Rows.Count} diarias: {MissionRewards.Describe(state.BonusReward)}")
+            : Loc.F($"Completá las {state.Rows.Count} semanales: {MissionRewards.Describe(state.BonusReward)}");
         if (state.BonusClaimed)
         {
-            lines.Add($"✅ ~~{bonusText}~~ — cobrado");
+            lines.Add(Loc.F($"✅ ~~{bonusText}~~ — cobrado"));
         }
         else if (state.AllCompleted)
         {
-            lines.Add($"🎁 **{bonusText}** — ¡listo para reclamar!");
+            lines.Add(Loc.F($"🎁 **{bonusText}** — ¡listo para reclamar!"));
         }
         else
         {
@@ -244,10 +246,10 @@ public class MissionsModule(
     private static Embed BuildReceiptEmbed(IReadOnlyList<string> lines, RewardTotals totals)
     {
         var embed = new EmbedBuilder()
-            .WithTitle("🎁 ¡Premios reclamados!")
+            .WithTitle(Loc.T("🎁 ¡Premios reclamados!"))
             .WithColor(Color.Green)
             .WithDescription($"{string.Join('\n', lines)}\n\n**Total:** {totals.Describe()}")
-            .AddField("💰 Tu oro ahora", totals.GoldAfter.ToString(), true);
+            .AddField(Loc.T("💰 Tu oro ahora"), totals.GoldAfter.ToString(), true);
 
         // La subida de nivel sale como mensaje propio (GameData/LevelUpCard.cs), no como una línea más acá.
         return embed.Build();

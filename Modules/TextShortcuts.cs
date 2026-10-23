@@ -33,7 +33,7 @@ public static class TextShortcuts
             return new SellRequest(SellKind.Help);
         }
 
-        if (AmountParser.IsAllWord(lower) || lower is "inventario" or "mochila")
+        if (AmountParser.IsAllWord(lower) || lower is "inventario" or "mochila" or "inventory" or "bag")
         {
             return new SellRequest(SellKind.All);
         }

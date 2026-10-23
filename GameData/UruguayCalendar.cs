@@ -37,7 +37,7 @@ public static class UruguayCalendar
     {
         if (remaining <= TimeSpan.Zero)
         {
-            return "un instante";
+            return Loc.T("un instante");
         }
 
         if (remaining.TotalDays >= 1)

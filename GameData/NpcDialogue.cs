@@ -16,63 +16,64 @@ public static class NpcDialogue
     // "🔨 **El Herrero:** «No tenés lo suficiente, crack...»" — el formato único de todo lo que dice alguien.
     public static string Say(string name, string emoji, string text) => $"{emoji} **{name}:** «{text}»";
 
-    private static string Pick(IReadOnlyList<string> lines, Random? rng) => lines[(rng ?? Random.Shared).Next(lines.Count)];
+    // La frase se elige en español (las tablas están marcadas con Loc.Mark) y se traduce al mostrarla; una sin traducción sale como está.
+    private static string Pick(IReadOnlyList<string> lines, Random? rng) => Loc.Tr(lines[(rng ?? Random.Shared).Next(lines.Count)]);
 
     // ---------------- El Herrero ----------------
     private static readonly Dictionary<BlacksmithLine, string[]> BlacksmithLines = new()
     {
         [BlacksmithLine.Greeting] =
         [
-            "¿Qué necesita, señor? Elija de la lista y yo me encargo.",
-            "Pase, pase. El yunque está caliente. ¿Qué le forjo?",
-            "Buenas, forastero. Dígame qué necesita y le doy forma.",
+            Loc.Mark("¿Qué necesita, señor? Elija de la lista y yo me encargo."),
+            Loc.Mark("Pase, pase. El yunque está caliente. ¿Qué le forjo?"),
+            Loc.Mark("Buenas, forastero. Dígame qué necesita y le doy forma."),
         ],
         [BlacksmithLine.Success] =
         [
-            "¡En camino, loco! Queda pronta.",
-            "Perfecto, forjado. Mirá qué belleza te quedó.",
-            "¡Listo el pollo! Ahí tenés, cuidala que me costó sudor.",
+            Loc.Mark("¡En camino, loco! Queda pronta."),
+            Loc.Mark("Perfecto, forjado. Mirá qué belleza te quedó."),
+            Loc.Mark("¡Listo el pollo! Ahí tenés, cuidala que me costó sudor."),
         ],
         [BlacksmithLine.NotEnough] =
         [
-            "No tenés lo suficiente, crack. Andá a farmear y después hablamo.",
-            "Con eso no me alcanza ni para encender la fragua. Volvé cuando juntes lo que falta.",
-            "Faltan cosas, che. Salí a juntar y vení que te espero.",
+            Loc.Mark("No tenés lo suficiente, crack. Andá a farmear y después hablamo."),
+            Loc.Mark("Con eso no me alcanza ni para encender la fragua. Volvé cuando juntes lo que falta."),
+            Loc.Mark("Faltan cosas, che. Salí a juntar y vení que te espero."),
         ],
         [BlacksmithLine.UnknownRecipe] =
         [
-            "Esa receta no la conozco, amigo. Fijate en la lista.",
-            "¿Eso? Nunca lo forjé. Pedime algo de la lista.",
+            Loc.Mark("Esa receta no la conozco, amigo. Fijate en la lista."),
+            Loc.Mark("¿Eso? Nunca lo forjé. Pedime algo de la lista."),
         ],
         [BlacksmithLine.WrongClass] =
         [
-            "Eso es para otro oficio, compa. A vos no te va a servir.",
-            "Esa pieza se hace a medida para otra clase. Elegí otra.",
+            Loc.Mark("Eso es para otro oficio, compa. A vos no te va a servir."),
+            Loc.Mark("Esa pieza se hace a medida para otra clase. Elegí otra."),
         ],
         [BlacksmithLine.SlotTaken] =
         [
-            "Ya andás con una pieza puesta, compa. Vendésela al tabernero y hablamos.",
-            "No te puedo poner otra encima. Primero desprendete de la que traés y vuelvo a la fragua.",
-            "Una a la vez, che. Vendé la que tenés puesta y te forjo la nueva.",
+            Loc.Mark("Ya andás con una pieza puesta, compa. Vendésela al tabernero y hablamos."),
+            Loc.Mark("No te puedo poner otra encima. Primero desprendete de la que traés y vuelvo a la fragua."),
+            Loc.Mark("Una a la vez, che. Vendé la que tenés puesta y te forjo la nueva."),
         ],
         [BlacksmithLine.AlreadyEquipped] =
         [
-            "Esa ya la llevás puesta, ¿qué más querés? Elegí otra cosa.",
-            "Pero si ya la tenés encima, crack. Pedime otra pieza.",
+            Loc.Mark("Esa ya la llevás puesta, ¿qué más querés? Elegí otra cosa."),
+            Loc.Mark("Pero si ya la tenés encima, crack. Pedime otra pieza."),
         ],
         [BlacksmithLine.NoRecipes] =
         [
-            "Por ahora no tengo nada para vos en esta zona. Volvé más adelante.",
-            "Todavía no sé qué hacerte por acá. Pasá por otra zona y hablamos.",
+            Loc.Mark("Por ahora no tengo nada para vos en esta zona. Volvé más adelante."),
+            Loc.Mark("Todavía no sé qué hacerte por acá. Pasá por otra zona y hablamos."),
         ],
     };
 
     // El saludo de quien ya hizo un Fuego Nuevo (la historia, GameData/Lore.cs): el Herrero le confesó lo de la parrilla y duerme mejor.
     private static readonly string[] BlacksmithReturningGreetings =
     [
-        "Pase, pase. Desde que me saqué eso de adentro duermo mejor. ¿Qué le forjo?",
-        "El yunque está caliente y yo, más liviano. ¿Qué necesita?",
-        "Otra vuelta, ¿eh? Elija de la lista; el que fue aprendiz del Soberano le da forma.",
+        Loc.Mark("Pase, pase. Desde que me saqué eso de adentro duermo mejor. ¿Qué le forjo?"),
+        Loc.Mark("El yunque está caliente y yo, más liviano. ¿Qué necesita?"),
+        Loc.Mark("Otra vuelta, ¿eh? Elija de la lista; el que fue aprendiz del Soberano le da forma."),
     ];
 
     // fuegoNuevo: con 1 o más, el saludo es el de quien volvió (solo el saludo; el resto de las situaciones no cambia).
@@ -84,73 +85,73 @@ public static class NpcDialogue
     {
         [ShopkeeperLine.Greeting] =
         [
-            "Pase, pase, ¿qué le sirvo?",
-            "Bienvenido a la tienda. Mirá bien, que todo tiene su precio.",
-            "Buenas. Tengo comida fresca y cajas con sorpresa.",
+            Loc.Mark("Pase, pase, ¿qué le sirvo?"),
+            Loc.Mark("Bienvenido a la tienda. Mirá bien, que todo tiene su precio."),
+            Loc.Mark("Buenas. Tengo comida fresca y cajas con sorpresa."),
         ],
         [ShopkeeperLine.BuySuccess] =
         [
-            "¡Trato hecho! Que lo disfrutes.",
-            "Excelente elección. Vuelva cuando quiera.",
-            "Ahí tiene. Cuidalo bien.",
+            Loc.Mark("¡Trato hecho! Que lo disfrutes."),
+            Loc.Mark("Excelente elección. Vuelva cuando quiera."),
+            Loc.Mark("Ahí tiene. Cuidalo bien."),
         ],
         [ShopkeeperLine.NoGold] =
         [
-            "No te alcanza la plata, amigo. Juntá y volvé.",
-            "Sin monedas no hay trato. Andá a cazar un poco.",
-            "Uy, estás corto de oro. Vení cuando te sobre.",
+            Loc.Mark("No te alcanza la plata, amigo. Juntá y volvé."),
+            Loc.Mark("Sin monedas no hay trato. Andá a cazar un poco."),
+            Loc.Mark("Uy, estás corto de oro. Vení cuando te sobre."),
         ],
         [ShopkeeperLine.BoxWait] =
         [
-            "Ya te vendí una caja hace poco. Dejame que me reponga el stock.",
-            "Una caja cada dos horas, que si no me vacían el depósito. Volvé en un rato.",
+            Loc.Mark("Ya te vendí una caja hace poco. Dejame que me reponga el stock."),
+            Loc.Mark("Una caja cada dos horas, que si no me vacían el depósito. Volvé en un rato."),
         ],
         [ShopkeeperLine.SellSuccess] =
         [
-            "Bien, te lo compro. Aquí tenés tus monedas.",
-            "Hecho. Un placer hacer negocios.",
-            "Perfecto, lo anoto en el libro.",
+            Loc.Mark("Bien, te lo compro. Aquí tenés tus monedas."),
+            Loc.Mark("Hecho. Un placer hacer negocios."),
+            Loc.Mark("Perfecto, lo anoto en el libro."),
         ],
         [ShopkeeperLine.SellAll] =
         [
-            "¡Qué cargamento! Te llevo todo.",
-            "Vaya, vaya, traés la mochila llena. Cerramos trato por todo.",
+            Loc.Mark("¡Qué cargamento! Te llevo todo."),
+            Loc.Mark("Vaya, vaya, traés la mochila llena. Cerramos trato por todo."),
         ],
         [ShopkeeperLine.NothingToSell] =
         [
-            "No tenés nada para vender, che. Vení cuando traigas algo.",
-            "La mochila vacía, amigo. Salí a juntar y volvé.",
+            Loc.Mark("No tenés nada para vender, che. Vení cuando traigas algo."),
+            Loc.Mark("La mochila vacía, amigo. Salí a juntar y volvé."),
         ],
         [ShopkeeperLine.NotForSale] =
         [
-            "Eso no lo vendo, amigo. Fijate en el mostrador.",
-            "De eso no tengo. Mirá lo que hay en la tienda.",
+            Loc.Mark("Eso no lo vendo, amigo. Fijate en el mostrador."),
+            Loc.Mark("De eso no tengo. Mirá lo que hay en la tienda."),
         ],
         [ShopkeeperLine.NotOwned] =
         [
-            "No tenés eso para vender, che. Mirá bien la mochila.",
-            "Eso no lo veo por ningún lado. No me hagas perder el tiempo.",
+            Loc.Mark("No tenés eso para vender, che. Mirá bien la mochila."),
+            Loc.Mark("Eso no lo veo por ningún lado. No me hagas perder el tiempo."),
         ],
         [ShopkeeperLine.GearConfirm] =
         [
-            "Ojo, que eso es lo que llevás puesto. ¿Seguro que querés desprenderte?",
-            "¿Vender lo que traés encima? Pensalo bien, que después hay que volver a forjarlo.",
+            Loc.Mark("Ojo, que eso es lo que llevás puesto. ¿Seguro que querés desprenderte?"),
+            Loc.Mark("¿Vender lo que traés encima? Pensalo bien, que después hay que volver a forjarlo."),
         ],
         [ShopkeeperLine.GearKept] =
         [
-            "Hacés bien, quedate con tu pieza. Cuando quieras cambiar, acá estoy.",
-            "Sensato. Mejor guardarla hasta tener la próxima lista.",
+            Loc.Mark("Hacés bien, quedate con tu pieza. Cuando quieras cambiar, acá estoy."),
+            Loc.Mark("Sensato. Mejor guardarla hasta tener la próxima lista."),
         ],
         [ShopkeeperLine.Exchange] =
         [
-            "Tres por uno, trato hecho. La mala racha se compensa con un buen cambalache.",
-            "Mala suerte con los drops, ¿eh? Tomá, algo es algo.",
-            "Cambalache cerrado: yo me quedo con tres y vos con lo que te faltaba.",
+            Loc.Mark("Tres por uno, trato hecho. La mala racha se compensa con un buen cambalache."),
+            Loc.Mark("Mala suerte con los drops, ¿eh? Tomá, algo es algo."),
+            Loc.Mark("Cambalache cerrado: yo me quedo con tres y vos con lo que te faltaba."),
         ],
         [ShopkeeperLine.Unsellable] =
         [
-            "Eso no lo compro, es un premio. Quedátelo.",
-            "Ni loco te lo compro: eso es un regalo, no mercadería.",
+            Loc.Mark("Eso no lo compro, es un premio. Quedátelo."),
+            Loc.Mark("Ni loco te lo compro: eso es un regalo, no mercadería."),
         ],
     };
 
@@ -158,9 +159,9 @@ public static class NpcDialogue
     // El saludo de quien ya hizo un Fuego Nuevo (la historia, GameData/Lore.cs): el Tabernero lo reconoce, aunque haga como que no.
     private static readonly string[] ShopkeeperReturningGreetings =
     [
-        "Pasá, pasá. Ya te serví el mate; el otro es para nadie, no preguntes.",
-        "Mirá quién volvió. Siempre volvés vos. ¿Algo para comer, o un mate?",
-        "Buenas. Hoy el fuego del campamento anda más tranquilo. ¿Qué te sirvo?",
+        Loc.Mark("Pasá, pasá. Ya te serví el mate; el otro es para nadie, no preguntes."),
+        Loc.Mark("Mirá quién volvió. Siempre volvés vos. ¿Algo para comer, o un mate?"),
+        Loc.Mark("Buenas. Hoy el fuego del campamento anda más tranquilo. ¿Qué te sirvo?"),
     ];
 
     // fuegoNuevo: con 1 o más, el saludo es el de quien volvió (solo el saludo; el resto de las situaciones no cambia).
@@ -173,26 +174,26 @@ public static class NpcDialogue
     {
         [DeepShopkeeperLine.Greeting] =
         [
-            "Pasá, pasá. Acá abajo no hay mate, pero hay lo que arriba no se consigue.",
-            "Llegaste hasta el fondo. Pocos llegan. ¿Qué te falta?",
-            "Cerrá la puerta, que se va el calor. Mirá lo que tengo.",
+            Loc.Mark("Pasá, pasá. Acá abajo no hay mate, pero hay lo que arriba no se consigue."),
+            Loc.Mark("Llegaste hasta el fondo. Pocos llegan. ¿Qué te falta?"),
+            Loc.Mark("Cerrá la puerta, que se va el calor. Mirá lo que tengo."),
         ],
         [DeepShopkeeperLine.BuySuccess] =
         [
-            "Hecho. No preguntes de dónde sale: acá abajo nadie pregunta.",
-            "Tuyo. Cuidalo, que no hay otro igual en toda la superficie.",
-            "Un placer. El Polvo siempre es bienvenido.",
+            Loc.Mark("Hecho. No preguntes de dónde sale: acá abajo nadie pregunta."),
+            Loc.Mark("Tuyo. Cuidalo, que no hay otro igual en toda la superficie."),
+            Loc.Mark("Un placer. El Polvo siempre es bienvenido."),
         ],
         [DeepShopkeeperLine.NoDust] =
         [
-            "Con eso no alcanza ni para la mitad. Volvé con más Polvo.",
-            "Acá abajo no se fía, forastero. Desmantelá algo y volvé.",
-            "Me falta Polvo, y a vos también. Andá a juntar.",
+            Loc.Mark("Con eso no alcanza ni para la mitad. Volvé con más Polvo."),
+            Loc.Mark("Acá abajo no se fía, forastero. Desmantelá algo y volvé."),
+            Loc.Mark("Me falta Polvo, y a vos también. Andá a juntar."),
         ],
         [DeepShopkeeperLine.NotFound] =
         [
-            "Eso no lo vendo. Tengo la Corteza y el Meteorito, nada más.",
-            "No sé de qué hablás. Corteza o Meteorito, elegí.",
+            Loc.Mark("Eso no lo vendo. Tengo la Corteza y el Meteorito, nada más."),
+            Loc.Mark("No sé de qué hablás. Corteza o Meteorito, elegí."),
         ],
     };
 
@@ -204,24 +205,24 @@ public static class NpcDialogue
     {
         [InnkeeperLine.Healed] =
         [
-            "Comé tranquilo, que estás entre amigos. ¡Salud!",
-            "Buen provecho, forastero. Con esto te ponés de pie.",
-            "Un guiso y una siesta y quedás como nuevo.",
+            Loc.Mark("Comé tranquilo, que estás entre amigos. ¡Salud!"),
+            Loc.Mark("Buen provecho, forastero. Con esto te ponés de pie."),
+            Loc.Mark("Un guiso y una siesta y quedás como nuevo."),
         ],
         [InnkeeperLine.NothingToEat] =
         [
-            "No tenés nada para comer. Comprá algo en la tienda y vení.",
-            "Con la panza vacía no te puedo servir nada. Pasá por la tienda.",
+            Loc.Mark("No tenés nada para comer. Comprá algo en la tienda y vení."),
+            Loc.Mark("Con la panza vacía no te puedo servir nada. Pasá por la tienda."),
         ],
         [InnkeeperLine.FullHp] =
         [
-            "Estás más sano que un roble. No necesitás nada.",
-            "Pero si estás hecho un toro. Guardá el hambre para después.",
+            Loc.Mark("Estás más sano que un roble. No necesitás nada."),
+            Loc.Mark("Pero si estás hecho un toro. Guardá el hambre para después."),
         ],
         [InnkeeperLine.InCombat] =
         [
-            "¡Ahora no, che! Primero terminá la pelea.",
-            "En medio de un combate no te sirvo ni un mate. ¡Pelea!",
+            Loc.Mark("¡Ahora no, che! Primero terminá la pelea."),
+            Loc.Mark("En medio de un combate no te sirvo ni un mate. ¡Pelea!"),
         ],
     };
 
@@ -235,40 +236,40 @@ public static class NpcDialogue
     {
         ["Rey Jabalí"] = new()
         {
-            [BossLine.Intro] = ["¡Nadie pisa mis praderas sin pagar tributo!", "¡Soy el Rey de las Praderas! ¡Arrodillate!"],
-            [BossLine.Defeated] = ["No… no puede ser… un simple aventurero…", "Las praderas… ya no son mías…"],
-            [BossLine.Victory] = ["¡Jajaja! ¡Otro más para mi colección!", "Volvé cuando seas digno, plebeyo."],
+            [BossLine.Intro] = [Loc.Mark("¡Nadie pisa mis praderas sin pagar tributo!"), Loc.Mark("¡Soy el Rey de las Praderas! ¡Arrodillate!")],
+            [BossLine.Defeated] = [Loc.Mark("No… no puede ser… un simple aventurero…"), Loc.Mark("Las praderas… ya no son mías…")],
+            [BossLine.Victory] = [Loc.Mark("¡Jajaja! ¡Otro más para mi colección!"), Loc.Mark("Volvé cuando seas digno, plebeyo.")],
         },
         ["Lobisón Alfa"] = new()
         {
-            [BossLine.Intro] = ["La manada ya te olió, forastero. No saldrás vivo.", "¡Aúúú! Esta luna es tuya... y la última."],
-            [BossLine.Defeated] = ["La manada... recordará tu nombre...", "Ganaste... esta noche."],
-            [BossLine.Victory] = ["Aullá de dolor, cachorro.", "La manada se alimenta esta noche."],
+            [BossLine.Intro] = [Loc.Mark("La manada ya te olió, forastero. No saldrás vivo."), Loc.Mark("¡Aúúú! Esta luna es tuya... y la última.")],
+            [BossLine.Defeated] = [Loc.Mark("La manada... recordará tu nombre..."), Loc.Mark("Ganaste... esta noche.")],
+            [BossLine.Victory] = [Loc.Mark("Aullá de dolor, cachorro."), Loc.Mark("La manada se alimenta esta noche.")],
         },
         ["Capataz de Hierro"] = new()
         {
-            [BossLine.Intro] = ["¡Aquí se trabaja, no se pasea! ¡Fuera de mis minas!", "Otro intruso. Vas a cargar yunques toda la vida."],
-            [BossLine.Defeated] = ["Mis... mis minas... el yunque se enfría...", "Qué golpe... tenés buen brazo."],
-            [BossLine.Victory] = ["A trabajar, vago. Esto no es para vos.", "Tomá nota: hierro duro, cabeza dura."],
+            [BossLine.Intro] = [Loc.Mark("¡Aquí se trabaja, no se pasea! ¡Fuera de mis minas!"), Loc.Mark("Otro intruso. Vas a cargar yunques toda la vida.")],
+            [BossLine.Defeated] = [Loc.Mark("Mis... mis minas... el yunque se enfría..."), Loc.Mark("Qué golpe... tenés buen brazo.")],
+            [BossLine.Victory] = [Loc.Mark("A trabajar, vago. Esto no es para vos."), Loc.Mark("Tomá nota: hierro duro, cabeza dura.")],
         },
         ["Señor del Volcán"] = new()
         {
-            [BossLine.Intro] = ["El fuego es mi voz y la ceniza mi trono. ¡Arde!", "¿Osás desafiar al Señor del Volcán? ¡Que se abra la tierra!"],
-            [BossLine.Defeated] = ["El fuego... se apaga...", "Imposible... la lava no me abandona..."],
-            [BossLine.Victory] = ["Reducido a cenizas, como todos.", "Calentito, ¿no? Eso era solo el principio."],
+            [BossLine.Intro] = [Loc.Mark("El fuego es mi voz y la ceniza mi trono. ¡Arde!"), Loc.Mark("¿Osás desafiar al Señor del Volcán? ¡Que se abra la tierra!")],
+            [BossLine.Defeated] = [Loc.Mark("El fuego... se apaga..."), Loc.Mark("Imposible... la lava no me abandona...")],
+            [BossLine.Victory] = [Loc.Mark("Reducido a cenizas, como todos."), Loc.Mark("Calentito, ¿no? Eso era solo el principio.")],
         },
         ["Soberano de la Escoria"] = new()
         {
-            [BossLine.Intro] = ["Mi reino es polvo, y vos serás parte de él.", "De rodillas ante el Soberano. Todo termina en escoria."],
-            [BossLine.Defeated] = ["Mi reino... se desmorona... sos digno...", "Así que existe alguien más fuerte..."],
-            [BossLine.Victory] = ["Ahora sos escoria, como todos.", "El abismo te reclama."],
+            [BossLine.Intro] = [Loc.Mark("Mi reino es polvo, y vos serás parte de él."), Loc.Mark("De rodillas ante el Soberano. Todo termina en escoria.")],
+            [BossLine.Defeated] = [Loc.Mark("Mi reino... se desmorona... sos digno..."), Loc.Mark("Así que existe alguien más fuerte...")],
+            [BossLine.Victory] = [Loc.Mark("Ahora sos escoria, como todos."), Loc.Mark("El abismo te reclama.")],
         },
         // El jefe de El Fogón Eterno (zona 0, v0.11.0). Es la VUELTA 1: desde la v0.15.0 es el Asador de la tragedia (GameData/Lore.cs); con los Fuegos Nuevos habla distinto (AsadorStages).
         [FogonRules.BossName] = new()
         {
-            [BossLine.Intro] = ["Pasá, pasá. Todavía no llegaron los demás, pero la mesa está lista.", "La brasa no se apaga. No se tiene que apagar. ¿Entendés? ¡No se tiene que apagar!"],
-            [BossLine.Defeated] = ["¿Van a venir? Decime que van a venir...", "Llevate el carbón. Pero dejame la mesa puesta."],
-            [BossLine.Victory] = ["Quedate. Hay lugar en la mesa para uno más.", "Descansá acá, que afuera hace frío. Yo te cocino."],
+            [BossLine.Intro] = [Loc.Mark("Pasá, pasá. Todavía no llegaron los demás, pero la mesa está lista."), Loc.Mark("La brasa no se apaga. No se tiene que apagar. ¿Entendés? ¡No se tiene que apagar!")],
+            [BossLine.Defeated] = [Loc.Mark("¿Van a venir? Decime que van a venir..."), Loc.Mark("Llevate el carbón. Pero dejame la mesa puesta.")],
+            [BossLine.Victory] = [Loc.Mark("Quedate. Hay lugar en la mesa para uno más."), Loc.Mark("Descansá acá, que afuera hace frío. Yo te cocino.")],
         },
     };
 
@@ -278,27 +279,27 @@ public static class NpcDialogue
     [
         (10, new()
         {
-            [BossLine.Intro] = ["Vos otra vez. Siempre volvés vos.", "Ya te conozco la cara. Pasá, que hay para uno más."],
-            [BossLine.Defeated] = ["Otra vez el carbón... Está bien. Llevalo.", "Ya no duele tanto como antes. Raro."],
-            [BossLine.Victory] = ["Quedate un rato. Contame cómo está el mundo.", "Hoy no. Hoy quedate a comer."],
+            [BossLine.Intro] = [Loc.Mark("Vos otra vez. Siempre volvés vos."), Loc.Mark("Ya te conozco la cara. Pasá, que hay para uno más.")],
+            [BossLine.Defeated] = [Loc.Mark("Otra vez el carbón... Está bien. Llevalo."), Loc.Mark("Ya no duele tanto como antes. Raro.")],
+            [BossLine.Victory] = [Loc.Mark("Quedate un rato. Contame cómo está el mundo."), Loc.Mark("Hoy no. Hoy quedate a comer.")],
         }),
         (25, new()
         {
-            [BossLine.Intro] = ["Levanté diez platos. Todavía me acuerdo de cada nombre.", "Pasá. Hoy la mesa está más liviana."],
-            [BossLine.Defeated] = ["Ramona hubiera querido que me ganaras.", "Un plato menos por cada vez que volvés. Seguí."],
-            [BossLine.Victory] = ["No te vayas todavía. Falta poco para cenar.", "Descansá. Yo cuido el fuego."],
+            [BossLine.Intro] = [Loc.Mark("Levanté diez platos. Todavía me acuerdo de cada nombre."), Loc.Mark("Pasá. Hoy la mesa está más liviana.")],
+            [BossLine.Defeated] = [Loc.Mark("Ramona hubiera querido que me ganaras."), Loc.Mark("Un plato menos por cada vez que volvés. Seguí.")],
+            [BossLine.Victory] = [Loc.Mark("No te vayas todavía. Falta poco para cenar."), Loc.Mark("Descansá. Yo cuido el fuego.")],
         }),
         (50, new()
         {
-            [BossLine.Intro] = ["Pasá. Ya no hace falta que pelees... pero sé que querés.", "El fuego se mantiene solo, ¿viste? Tardé años en notarlo."],
-            [BossLine.Defeated] = ["Gracias por volver. Acá siempre sos bienvenido.", "No es un adiós. Es un hasta la próxima vuelta."],
-            [BossLine.Victory] = ["Sentate. Hoy cocino yo y vos mirás.", "Descansá, que mañana hay otra vuelta."],
+            [BossLine.Intro] = [Loc.Mark("Pasá. Ya no hace falta que pelees... pero sé que querés."), Loc.Mark("El fuego se mantiene solo, ¿viste? Tardé años en notarlo.")],
+            [BossLine.Defeated] = [Loc.Mark("Gracias por volver. Acá siempre sos bienvenido."), Loc.Mark("No es un adiós. Es un hasta la próxima vuelta.")],
+            [BossLine.Victory] = [Loc.Mark("Sentate. Hoy cocino yo y vos mirás."), Loc.Mark("Descansá, que mañana hay otra vuelta.")],
         }),
         (90, new()
         {
-            [BossLine.Intro] = ["Estaba esperándote. No a los demás: a vos.", "Por fin entendí quién era el que llegaba."],
-            [BossLine.Defeated] = ["Ya casi. Una vuelta más y me siento.", "Guardame un lugar en la próxima."],
-            [BossLine.Victory] = ["No pasa nada. Hay tiempo. Siempre hubo tiempo.", "Descansá. Yo no me voy a ningún lado."],
+            [BossLine.Intro] = [Loc.Mark("Estaba esperándote. No a los demás: a vos."), Loc.Mark("Por fin entendí quién era el que llegaba.")],
+            [BossLine.Defeated] = [Loc.Mark("Ya casi. Una vuelta más y me siento."), Loc.Mark("Guardame un lugar en la próxima.")],
+            [BossLine.Victory] = [Loc.Mark("No pasa nada. Hay tiempo. Siempre hubo tiempo."), Loc.Mark("Descansá. Yo no me voy a ningún lado.")],
         }),
     ];
 
@@ -312,9 +313,9 @@ public static class NpcDialogue
     // Para un jefe que no está en la tabla (uno nuevo en la base): frases genéricas, así nunca queda mudo.
     private static readonly Dictionary<BossLine, string[]> GenericBossLines = new()
     {
-        [BossLine.Intro] = ["¡Nadie pasa por aquí sin pelear conmigo!", "Llegaste lejos, pero hasta acá llegaste."],
-        [BossLine.Defeated] = ["Imposible... me venciste...", "Esto... no termina acá..."],
-        [BossLine.Victory] = ["¿Eso era todo? Volvé cuando seas más fuerte.", "Otro que cae ante mí."],
+        [BossLine.Intro] = [Loc.Mark("¡Nadie pasa por aquí sin pelear conmigo!"), Loc.Mark("Llegaste lejos, pero hasta acá llegaste.")],
+        [BossLine.Defeated] = [Loc.Mark("Imposible... me venciste..."), Loc.Mark("Esto... no termina acá...")],
+        [BossLine.Victory] = [Loc.Mark("¿Eso era todo? Volvé cuando seas más fuerte."), Loc.Mark("Otro que cae ante mí.")],
     };
 
     public static string Boss(string bossName, string emoji, BossLine line, Random? rng = null)
@@ -332,106 +333,106 @@ public static class NpcDialogue
         // Zona 1 — Praderas del Mate
         ["Jabalí Rabioso"] = new()
         {
-            [BossLine.Intro] = ["¡Groink! Este pastizal es mío, forastero.", "Mis colmillos tienen hambre... y vos tenés cara de almuerzo."],
-            [BossLine.Defeated] = ["Groink... me ganaste... bien jugado...", "Mis colmillos... ya no clavan como antes..."],
-            [BossLine.Victory] = ["¡Jajá! Pisoteado como el pasto.", "Volvé cuando tengas más garra, flaco."],
+            [BossLine.Intro] = [Loc.Mark("¡Groink! Este pastizal es mío, forastero."), Loc.Mark("Mis colmillos tienen hambre... y vos tenés cara de almuerzo.")],
+            [BossLine.Defeated] = [Loc.Mark("Groink... me ganaste... bien jugado..."), Loc.Mark("Mis colmillos... ya no clavan como antes...")],
+            [BossLine.Victory] = [Loc.Mark("¡Jajá! Pisoteado como el pasto."), Loc.Mark("Volvé cuando tengas más garra, flaco.")],
         },
         ["Ñandú Salvaje"] = new()
         {
-            [BossLine.Intro] = ["¡Brrruum! ¡Salí de mi pampa o te corro a picotazos!", "Soy más rápido que vos y más terco también."],
-            [BossLine.Defeated] = ["Ay, mis plumas... me ganaste de pura suerte...", "Hoy corrí... pero no alcanzó."],
-            [BossLine.Victory] = ["¡Ja! Te dejé más pelado que una gallina.", "Corré, corré, que mañana te alcanzo."],
+            [BossLine.Intro] = [Loc.Mark("¡Brrruum! ¡Salí de mi pampa o te corro a picotazos!"), Loc.Mark("Soy más rápido que vos y más terco también.")],
+            [BossLine.Defeated] = [Loc.Mark("Ay, mis plumas... me ganaste de pura suerte..."), Loc.Mark("Hoy corrí... pero no alcanzó.")],
+            [BossLine.Victory] = [Loc.Mark("¡Ja! Te dejé más pelado que una gallina."), Loc.Mark("Corré, corré, que mañana te alcanzo.")],
         },
         ["Toro Bravo"] = new()
         {
-            [BossLine.Intro] = ["¡MUUU! Se acabó el corral: ahora la plaza es mía.", "Agitá el trapo, que te voy a embestir."],
-            [BossLine.Defeated] = ["Mu... qué cornada la tuya...", "Vas a ser leyenda en el pago... yo me voy a la sombra."],
-            [BossLine.Victory] = ["¡Embestido y por los aires!", "Olé. Eso se llama faena."],
+            [BossLine.Intro] = [Loc.Mark("¡MUUU! Se acabó el corral: ahora la plaza es mía."), Loc.Mark("Agitá el trapo, que te voy a embestir.")],
+            [BossLine.Defeated] = [Loc.Mark("Mu... qué cornada la tuya..."), Loc.Mark("Vas a ser leyenda en el pago... yo me voy a la sombra.")],
+            [BossLine.Victory] = [Loc.Mark("¡Embestido y por los aires!"), Loc.Mark("Olé. Eso se llama faena.")],
         },
         // Zona 2 — Bosque de Cenizas
         ["Espíritu del Monte"] = new()
         {
-            [BossLine.Intro] = ["Uuuh... este monte tiene dueño, y no está vivo.", "Un susurro en la ceniza... y vos sos el próximo."],
-            [BossLine.Defeated] = ["Me desvanezco... el monte me llama...", "Otro que me deja descansar... gracias."],
-            [BossLine.Victory] = ["Uuuh... ahora el monte te susurra a vos.", "Un alma más para el humo."],
+            [BossLine.Intro] = [Loc.Mark("Uuuh... este monte tiene dueño, y no está vivo."), Loc.Mark("Un susurro en la ceniza... y vos sos el próximo.")],
+            [BossLine.Defeated] = [Loc.Mark("Me desvanezco... el monte me llama..."), Loc.Mark("Otro que me deja descansar... gracias.")],
+            [BossLine.Victory] = [Loc.Mark("Uuuh... ahora el monte te susurra a vos."), Loc.Mark("Un alma más para el humo.")],
         },
         ["Puma de las Cenizas"] = new()
         {
-            [BossLine.Intro] = ["Grrr... te vengo siguiendo desde el último árbol quemado.", "El silencio es mi garra. Y ya estás a tiro."],
-            [BossLine.Defeated] = ["Mi garra... se apagó...", "Fuiste más rápido que mi sombra..."],
-            [BossLine.Victory] = ["Cayó el cazador, cazado.", "Ni me oíste venir, ¿no?"],
+            [BossLine.Intro] = [Loc.Mark("Grrr... te vengo siguiendo desde el último árbol quemado."), Loc.Mark("El silencio es mi garra. Y ya estás a tiro.")],
+            [BossLine.Defeated] = [Loc.Mark("Mi garra... se apagó..."), Loc.Mark("Fuiste más rápido que mi sombra...")],
+            [BossLine.Victory] = [Loc.Mark("Cayó el cazador, cazado."), Loc.Mark("Ni me oíste venir, ¿no?")],
         },
         ["Ciervo Sagrado"] = new()
         {
-            [BossLine.Intro] = ["La ceniza bendice a quien camina en paz. ¿Venís en paz?", "Mis astas guardan este bosque. Retrocedé."],
-            [BossLine.Defeated] = ["Que la ceniza te sea leve, cazador...", "El bosque... recordará esto."],
-            [BossLine.Victory] = ["Volvé cuando aprendas a respetar el monte.", "Ni la ceniza bendita te salvó."],
+            [BossLine.Intro] = [Loc.Mark("La ceniza bendice a quien camina en paz. ¿Venís en paz?"), Loc.Mark("Mis astas guardan este bosque. Retrocedé.")],
+            [BossLine.Defeated] = [Loc.Mark("Que la ceniza te sea leve, cazador..."), Loc.Mark("El bosque... recordará esto.")],
+            [BossLine.Victory] = [Loc.Mark("Volvé cuando aprendas a respetar el monte."), Loc.Mark("Ni la ceniza bendita te salvó.")],
         },
         // Zona 3 — Minas del Yunque
         ["Excavador Profundo"] = new()
         {
-            [BossLine.Intro] = ["Cavé hasta acá... y no pienso soltar mi veta.", "Clic, clac. ¿Venís a robarme las gemas?"],
-            [BossLine.Defeated] = ["Mis gemas... mi veta... todo para vos...", "Me derrumbaste más rápido que un túnel."],
-            [BossLine.Victory] = ["¡Enterrado! Ahí te quedás, con las piedras.", "Cavá más hondo la próxima, minero."],
+            [BossLine.Intro] = [Loc.Mark("Cavé hasta acá... y no pienso soltar mi veta."), Loc.Mark("Clic, clac. ¿Venís a robarme las gemas?")],
+            [BossLine.Defeated] = [Loc.Mark("Mis gemas... mi veta... todo para vos..."), Loc.Mark("Me derrumbaste más rápido que un túnel.")],
+            [BossLine.Victory] = [Loc.Mark("¡Enterrado! Ahí te quedás, con las piedras."), Loc.Mark("Cavá más hondo la próxima, minero.")],
         },
         ["Gólem del Yunque"] = new()
         {
-            [BossLine.Intro] = ["CLANG. INTRUSO DETECTADO. FORJA ACTIVA.", "Mi puño es yunque. Tu cabeza es clavo."],
-            [BossLine.Defeated] = ["CLANG... sistema... enfriando...", "Me desarmaste... pieza por pieza..."],
-            [BossLine.Victory] = ["CLANG. UN CLAVO MENOS.", "GOLPE EJECUTADO. VOLVÉ CUANDO SEAS DE ACERO."],
+            [BossLine.Intro] = [Loc.Mark("CLANG. INTRUSO DETECTADO. FORJA ACTIVA."), Loc.Mark("Mi puño es yunque. Tu cabeza es clavo.")],
+            [BossLine.Defeated] = [Loc.Mark("CLANG... sistema... enfriando..."), Loc.Mark("Me desarmaste... pieza por pieza...")],
+            [BossLine.Victory] = [Loc.Mark("CLANG. UN CLAVO MENOS."), Loc.Mark("GOLPE EJECUTADO. VOLVÉ CUANDO SEAS DE ACERO.")],
         },
         ["Mole de Escoria"] = new()
         {
-            [BossLine.Intro] = ["Rrrmmm... soy la montaña que se mueve.", "La mina entera es mi cuerpo. Vas a sentir cada piedra."],
-            [BossLine.Defeated] = ["Me... desmoronooo...", "Rrrm... solo quedan escombros..."],
-            [BossLine.Victory] = ["Rrrmmm. Aplastado como un mineral más.", "La escoria no perdona, minero."],
+            [BossLine.Intro] = [Loc.Mark("Rrrmmm... soy la montaña que se mueve."), Loc.Mark("La mina entera es mi cuerpo. Vas a sentir cada piedra.")],
+            [BossLine.Defeated] = [Loc.Mark("Me... desmoronooo..."), Loc.Mark("Rrrm... solo quedan escombros...")],
+            [BossLine.Victory] = [Loc.Mark("Rrrmmm. Aplastado como un mineral más."), Loc.Mark("La escoria no perdona, minero.")],
         },
         // Zona 4 — Cordillera del Fuego
         ["Coloso de Magma"] = new()
         {
-            [BossLine.Intro] = ["El monte entero arde en mis venas. ¡Arrodillate o derretite!", "BRRRM. Cada paso mío es una erupción."],
-            [BossLine.Defeated] = ["Mi lava... se enfría...", "Qué fuego tenés, mortal..."],
-            [BossLine.Victory] = ["Derretido, como cera de vela.", "Eso se llama volcán, aventurero."],
+            [BossLine.Intro] = [Loc.Mark("El monte entero arde en mis venas. ¡Arrodillate o derretite!"), Loc.Mark("BRRRM. Cada paso mío es una erupción.")],
+            [BossLine.Defeated] = [Loc.Mark("Mi lava... se enfría..."), Loc.Mark("Qué fuego tenés, mortal...")],
+            [BossLine.Victory] = [Loc.Mark("Derretido, como cera de vela."), Loc.Mark("Eso se llama volcán, aventurero.")],
         },
         ["Salamandra Infernal"] = new()
         {
-            [BossLine.Intro] = ["¡Ssss! Tengo las llamas más sabrosas de la cordillera.", "Ssss... ¿venís a calentarte un poco?"],
-            [BossLine.Defeated] = ["Ssss... se me apagó la cola...", "Ahora sí... me enfrié..."],
-            [BossLine.Victory] = ["¡Ssss! Quedaste bien crocante.", "Chamuscado y servido."],
+            [BossLine.Intro] = [Loc.Mark("¡Ssss! Tengo las llamas más sabrosas de la cordillera."), Loc.Mark("Ssss... ¿venís a calentarte un poco?")],
+            [BossLine.Defeated] = [Loc.Mark("Ssss... se me apagó la cola..."), Loc.Mark("Ahora sí... me enfrié...")],
+            [BossLine.Victory] = [Loc.Mark("¡Ssss! Quedaste bien crocante."), Loc.Mark("Chamuscado y servido.")],
         },
         ["Dragón de Lava"] = new()
         {
-            [BossLine.Intro] = ["¡RAAAWR! Mi aliento derrite el acero. ¿Probamos con tu armadura?", "Volé sobre estos picos mil años. Nadie sube sin mi permiso."],
-            [BossLine.Defeated] = ["Mi fuego... se extingue... digno guerrero...", "Que los picos... me guarden..."],
-            [BossLine.Victory] = ["Una pizca de aliento y listo. Qué decepción.", "Chamuscado. Volvé en otros mil años."],
+            [BossLine.Intro] = [Loc.Mark("¡RAAAWR! Mi aliento derrite el acero. ¿Probamos con tu armadura?"), Loc.Mark("Volé sobre estos picos mil años. Nadie sube sin mi permiso.")],
+            [BossLine.Defeated] = [Loc.Mark("Mi fuego... se extingue... digno guerrero..."), Loc.Mark("Que los picos... me guarden...")],
+            [BossLine.Victory] = [Loc.Mark("Una pizca de aliento y listo. Qué decepción."), Loc.Mark("Chamuscado. Volvé en otros mil años.")],
         },
         // Zona 5 — Cráter de la Escoria
         ["Devorador de Almas"] = new()
         {
-            [BossLine.Intro] = ["Tu alma huele... deliciosa...", "Tengo hambre... y vos traés algo para llenar el vacío."],
-            [BossLine.Defeated] = ["Mi hambre era infinita... y aun así...", "Me devolvés las almas... qué cruel."],
-            [BossLine.Victory] = ["Ñam. Gracias por el alma, caminante.", "Un bocado más para el vacío."],
+            [BossLine.Intro] = [Loc.Mark("Tu alma huele... deliciosa..."), Loc.Mark("Tengo hambre... y vos traés algo para llenar el vacío.")],
+            [BossLine.Defeated] = [Loc.Mark("Mi hambre era infinita... y aun así..."), Loc.Mark("Me devolvés las almas... qué cruel.")],
+            [BossLine.Victory] = [Loc.Mark("Ñam. Gracias por el alma, caminante."), Loc.Mark("Un bocado más para el vacío.")],
         },
         ["Titán de Escoria"] = new()
         {
-            [BossLine.Intro] = ["Soy el corazón de piedra del cráter. No hay paso.", "Mil años dormí. ¿Quién me despierta?"],
-            [BossLine.Defeated] = ["Mi corazón de piedra... se agrieta...", "Un mortal... derribó a un titán..."],
-            [BossLine.Victory] = ["Aplastado como una hormiga.", "El cráter no se rinde ante nadie."],
+            [BossLine.Intro] = [Loc.Mark("Soy el corazón de piedra del cráter. No hay paso."), Loc.Mark("Mil años dormí. ¿Quién me despierta?")],
+            [BossLine.Defeated] = [Loc.Mark("Mi corazón de piedra... se agrieta..."), Loc.Mark("Un mortal... derribó a un titán...")],
+            [BossLine.Victory] = [Loc.Mark("Aplastado como una hormiga."), Loc.Mark("El cráter no se rinde ante nadie.")],
         },
         ["Quimera del Abismo"] = new()
         {
-            [BossLine.Intro] = ["¡Rraaaw, ssss! Tres bocas, tres hambres, ¡y una sola presa!", "Del abismo vengo... y al abismo te llevo."],
-            [BossLine.Defeated] = ["Tres cabezas... y ninguna ganó...", "El abismo... me recibe..."],
-            [BossLine.Victory] = ["Tres bocas para un solo bocado.", "El abismo siempre cobra."],
+            [BossLine.Intro] = [Loc.Mark("¡Rraaaw, ssss! Tres bocas, tres hambres, ¡y una sola presa!"), Loc.Mark("Del abismo vengo... y al abismo te llevo.")],
+            [BossLine.Defeated] = [Loc.Mark("Tres cabezas... y ninguna ganó..."), Loc.Mark("El abismo... me recibe...")],
+            [BossLine.Victory] = [Loc.Mark("Tres bocas para un solo bocado."), Loc.Mark("El abismo siempre cobra.")],
         },
     };
 
     // Para un monstruo que no está en la tabla (uno nuevo en la base): frases genéricas, así nunca queda mudo.
     private static readonly Dictionary<BossLine, string[]> GenericMonsterLines = new()
     {
-        [BossLine.Intro] = ["¡Grrr! Este es mi territorio.", "Te estaba esperando... con hambre."],
-        [BossLine.Defeated] = ["Ugh... me ganaste esta vez...", "Qué golpe... me voy a acordar."],
-        [BossLine.Victory] = ["¡Grrr! Volvé cuando seas más fuerte.", "Uno menos en mi territorio."],
+        [BossLine.Intro] = [Loc.Mark("¡Grrr! Este es mi territorio."), Loc.Mark("Te estaba esperando... con hambre.")],
+        [BossLine.Defeated] = [Loc.Mark("Ugh... me ganaste esta vez..."), Loc.Mark("Qué golpe... me voy a acordar.")],
+        [BossLine.Victory] = [Loc.Mark("¡Grrr! Volvé cuando seas más fuerte."), Loc.Mark("Uno menos en mi territorio.")],
     };
 
     // Lo que dice CUALQUIER monstruo (de cacería, de viaje o jefe) en esa situación. isBoss solo importa si no está en ninguna tabla: elige qué genéricas usar.
@@ -452,6 +453,7 @@ public static class NpcDialogue
             .Concat([("herrero:Greeting@FN1", (IReadOnlyList<string>)BlacksmithReturningGreetings), ("tendero:Greeting@FN1", ShopkeeperReturningGreetings)])
             .Concat(ShopkeeperLines.Select(kv => ($"tendero:{kv.Key}", (IReadOnlyList<string>)kv.Value)))
             .Concat(InnkeeperLines.Select(kv => ($"tabernero:{kv.Key}", (IReadOnlyList<string>)kv.Value)))
+            .Concat(DeepShopkeeperLines.Select(kv => ($"inframundo:{kv.Key}", (IReadOnlyList<string>)kv.Value)))
             .Concat(BossLines.SelectMany(b => b.Value.Select(kv => ($"{b.Key}:{kv.Key}", (IReadOnlyList<string>)kv.Value))))
             .Concat(AsadorStages.SelectMany(s => s.Lines.Select(kv => ($"{FogonRules.BossName}@FN{s.FromFuegoNuevo}:{kv.Key}", (IReadOnlyList<string>)kv.Value))))
             .Concat(GenericBossLines.Select(kv => ($"jefe-genérico:{kv.Key}", (IReadOnlyList<string>)kv.Value)))

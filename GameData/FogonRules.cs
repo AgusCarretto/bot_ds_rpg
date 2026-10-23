@@ -56,12 +56,13 @@ public static class FogonRules
     }
 
     // Los textos de las dos victorias (primera vez sobre el jefe de la última zona, y ganarle al Asador).
-    public static readonly string OpenedText =
-        $"¡Se abrió **El Fogón Eterno**, la puerta al Fuego Nuevo! Forjá el **{WeaponName}** y la **{AmuletName}** en la herrería (**/forge**) y entrá con **/zona 0**. Mirá cómo funciona con **/info tema:fogon**.";
+    // Propiedades (no campos) para que salgan en el idioma de quien las lee en ese momento (GameData/Loc.cs).
+    public static string OpenedText =>
+        Loc.F($"¡Se abrió **El Fogón Eterno**, la puerta al Fuego Nuevo! Forjá el **{WeaponName}** y la **{AmuletName}** en la herrería (**/forge**) y entrá con **/zona 0**. Mirá cómo funciona con **/info tema:fogon**.");
 
-    public static readonly string ClearedText =
-        "Volviste a la última zona y se habilitó el **Fuego Nuevo**: volver a empezar, más rápido, con porcentajes permanentes, una bendición y todo lo que juntaste (mascotas, oro y logros). " +
-        "Es voluntario: mirá lo que se va y lo que se queda con **/fuegonuevo**, y cómo funciona con **/info tema:fuego**.";
+    public static string ClearedText =>
+        Loc.T("Volviste a la última zona y se habilitó el **Fuego Nuevo**: volver a empezar, más rápido, con porcentajes permanentes, una bendición y todo lo que juntaste (mascotas, oro y logros). " +
+        "Es voluntario: mirá lo que se va y lo que se queda con **/fuegonuevo**, y cómo funciona con **/info tema:fuego**.");
 
     // Lo que falta, en palabras: "el Trinche del Asador Eterno y la Brasa del Fogón Eterno".
     public static string MissingText(EntryCheck check) => (check.MissingWeapon, check.MissingAmulet) switch

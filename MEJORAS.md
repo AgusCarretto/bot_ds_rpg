@@ -1,6 +1,6 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-23 (v0.25.4: en plena pelea solo valen los comandos de la pelea)_
+_Última revisión: 2026-10-23 (v0.26.0: el bot en español e inglés, `/language`)_
 
 ## Pendiente de un vistazo (puesto al día el 2026-10-22)
 
@@ -12,7 +12,7 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - **Blackjack: ya está (v0.25.0, ver abajo).** Lo que queda abierto: dividir (split) y el seguro, que no se hicieron a propósito para mantenerlo simple.
 - **Habilidades de clase** (pedido de los jugadores, ver «Sugerencias»): aprender, mejorar o evolucionar la habilidad, y «nerfear las iniciales». Necesita diseño antes de tocar nada: están calibradas con `PveTuning`, `PvpTuning` y los jefes, no debe contar en duelos
   ni en la Arena, y habría que preguntar CUÁL clase les parece pasada (en PvE la débil es el Arquero).
-- **Idioma:** pasar todo a inglés con un selector (`/language`). Espera a que la v0.22.0 esté verificada en producción. Hay que decidir el idioma por defecto de los jugadores nuevos, si se mantienen los nombres de sabor argentino y quién revisa el tono del inglés.
+- **Idioma:** el primer corte ya está (v0.26.0, ver abajo: motor, `/language` y las pantallas principales en inglés). Lo que falta es traducir el resto pantalla por pantalla (hay una checklist con casillas en esa sección: «Lo que falta en inglés») y que alguien que hable inglés revise el tono de `Locales/en.json`.
 - **Comida para las zonas altas** (el dueño avisa cuándo), un cooldown en `/play` y zonas cada ~10 niveles (opinión dada, sin construir).
 
 **Ya hablado, falta hacerlo**
@@ -31,6 +31,48 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
   Términos y Privacidad públicos, y hay que confirmar si hay Premium Apps en Uruguay (Developer Portal, Monetization). Punto de enganche: `ReminderPolicy.IsEligible` y `CooldownCatalog`. El título especial entra como categoría «Especiales» del sistema de títulos.
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
+
+## El bot en español e inglés: `/language` (v0.26.0, 2026-10-23)
+
+- **Pedido del dueño**: pasar el bot a inglés con un selector; «son dos idiomas, español e inglés» (no se diseña para un tercero) y «más que un riesgo es una ventaja» que los comandos de texto también acepten las palabras en inglés (`aa enchant weapon`).
+- **Qué hay**: el motor `GameData/Loc.cs` (`T`, `F`, `Mark`, `Tr`) con el catálogo `Locales/en.json` (plantilla en español → plantilla en inglés, 759 entradas, embebido en el programa); el idioma de cada jugador (`player_language`, `/language idioma:English` o `aa language en`; sin elegir, el de su Discord: `es*` → español, el resto → inglés); el escáner `tools/loc`; y el arnés `loctest` (~220 comprobaciones). El diseño y las 15 tareas: `docs/superpowers/specs/2026-10-23-idioma-design.md` y `docs/superpowers/plans/2026-10-23-idioma.md`; cómo se traduce una pantalla: «Language» en `CLAUDE.md`.
+- **Migración**: `Database/add_language.sql` (la tabla `player_language`). **No hace falta correrla antes del binario**: sin la tabla, el servicio registra el error (una vez por minuto) y todos ven español, que es lo de siempre; correrla con `psql` cuando quieras que `/language` guarde la elección.
+- **Ya está en inglés**: `/language`; los errores y avisos comunes («todavía no te registraste», «¡Upa!…», el bloqueo de pelea, «todavía no podés»); `/cd`; los recordatorios; `/profile`, el aviso de subir de nivel y `/start`; **todo el combate solitario** (`/hunt`, `/travel`, `/boss` solo, `/autohunt`, `/use` dentro y fuera de la pelea, el aviso de combate abandonado y las frases de los 15 monstruos, los 6 jefes y el Asador en sus 5 escalones); `/chop`, `/mine` e `/inventory`; la taberna, `/heal` y `/shop` con las frases del Herrero, el Tendero, el Tabernero y el del Inframundo; `/daily` y `/missions` (con los 18 títulos de misión); y la ayuda: `/info`, `/tutorial` y los temas `hunt`, `gather`, `shop`, `daily` y `missions`.
+- **Los nombres se quedan en español** (decisión del dueño): ítems, monstruos, zonas, personajes, clases, habilidades, títulos, logros y sus páginas, «Fogón», «Sifón de Almas». Los oficios y las rarezas sí tienen nombre en inglés (Woodcutter, Miner, Enchanter; Common… Mythic) y lo que se guarda sigue en español.
+- **Todavía en español para quien juega en inglés** (cae al español solo; se traduce igual: envolver, `--skeleton`, `en.json`): `/enchant` y `/dismantle` (y los efectos), `/bank`, `/play` y el blackjack, `/forge` y la herrería (la escena y las recetas), `/forge-special`, las zonas (`/zona`, `/zonas`, `/drops`), el jefe en equipo (`RaidModule`), el jefe mundial, `/fight` y `/arena`, `/trade` y `/exchange`, `/pet`, `/professions`, `/fuegonuevo` y las bendiciones, `/deepshop`, `/story` y toda la historia (`Lore`), `/titles` y sus 113 nombres, `/achievements` y sus textos, `/leaderboard`, `/history`, `/reminders` (la pantalla; los avisos sí), `/vote`, `/tips`, el minievento, los avisos que llegan al terminar un comando (misión completada, logro, título nuevo, capítulo), las descripciones de las habilidades de clase (`aa hab`), los textos de ayuda de `aa sell` y `aa cf` sin argumentos, el resultado de `/exchange` dentro de la taberna, y 21 de los 26 temas de `/info` (salen enteros en español, sin mezclar: `HelpTopic.InEnglish`).
+- **Lo que no se puede traducir con este mecanismo**: los nombres y descripciones de los comandos en la lista de «/» de Discord (hace falta la localización propia de Discord, `NameLocalizations`/`DescriptionLocalizations`, que no se armó) y los nombres de los parámetros (`tema`, `modo`, `companero`…).
+- **Palabras en inglés al teclear**: `aa enchant weapon|amulet [critical|blood|edge|guard|life|dodge] [advanced]`, `aa enchant info|options|help`, `aa sell weapon|amulet|all|inventory|bag`, `aa cf heads|tails|h|t`, `aa chop advanced`; las palabras en español siguen valiendo. El arnés prueba 28 formas contra el `CommandService` real.
+- **Una trampa que se encontró al traducir**: la taberna reconocía «ya estás sano» mirando `Title.Contains("máximo")`; en inglés dejaba de funcionar y mostraba la frase equivocada. Ahora los dos lados comparan con `UseModule.AlreadyFullTitle()`. Si algún día algo decide mirando un texto, que sea el de una función compartida, nunca un literal en español.
+- **Lo que queda abierto para el dueño**: que alguien que hable inglés revise el tono de `Locales/en.json` (sobre todo las frases de los monstruos y de los NPC), y decidir con qué pantallas seguir (lo que más se ve: `/enchant`, `/bank`, el jefe en equipo y los avisos de misión/logro).
+
+### Lo que falta en inglés — checklist (anotado el 2026-10-23, de lo que más se ve a lo que menos)
+
+Cada casilla es una tarea chica y del mismo molde (ver «Language» en `CLAUDE.md`): prueba primero en `tests/loctest`, `dotnet run --project tools/loc -- --untranslated <archivos>`, envolver, `--skeleton`, `en.json`, suite completa. Las cantidades son textos sin envolver que cuenta el escáner (aproximadas: incluye algunos nombres de comando que no se traducen).
+
+**Alta (lo que más ve cualquiera)**
+- [ ] **Avisos al terminar un comando** — `Services/ProgressNotifier.cs`: «¡Misión completada!», «¡Logro desbloqueado!», «¡Título nuevo!», capítulo de la historia, y los de `NoticeDelivery`. Salen en español a todos.
+- [ ] **`/enchant` y `/dismantle`** — `Modules/DustModule.cs` (~105), `GameData/Enchantments.cs` (~39: nombres de tiers y efectos, descripciones), `Dismantling`. Los efectos (Filo, Crítico, Sangre, Guarda, Vida, Esquive) son nombres y se quedan; sus descripciones no.
+- [ ] **Jefe en equipo** — `Modules/RaidModule.cs` (~169: invitación, botones Aceptar/Rechazar/Empezar/Cancelar, turnos, aviso de turno, comer, victoria y derrota), `Services/RaidTurnOutput.cs`, `PartyBossService`, `IRaidSessionService`.
+- [ ] **`/bank`** (`BankModule` ~35 y `BankRules`), **`/play`** (`CasinoModule` ~18, `CasinoService`) y **blackjack** (`BlackjackModule` ~20, `BlackjackService` ~16, la mesa y los botones).
+- [ ] **Herrería** — `ForgeModule` (~36: las recetas, «have/need»), `BlacksmithModule` (~23: la escena y sus menús), `ForgeSpecialModule` (~14), `ItemStatLabel`, `RecipeCatalog`.
+- [ ] **Zonas** — `ZoneModule` (~29: `/zona`, `/zonas`), `DropsModule` y `DropsCatalog` (`/drops`).
+
+**Media**
+- [ ] **`/achievements`** — `AchievementsModule` (~26) y `AchievementCatalog` (~31 descripciones; los NOMBRES de logros y sus páginas se quedan).
+- [ ] **`/titles`** — `TitlesModule` (~30) y `TitleCatalog` (~134: pistas y páginas; los nombres de los títulos se quedan).
+- [ ] **`/pet`** — `PetModule` (~55), `PetRules`. **`/professions`** — `ProfessionModule` (~15), `ProfessionRules` (las descripciones de efectos y de la versión avanzada).
+- [ ] **`/fuegonuevo` y `/blessings`** — `FuegoNuevoModule` (~87), `BlessingCatalog` (~47), `FuegoNuevoRules`.
+- [ ] **`/story`** — `StoryModule` (~36) y toda `GameData/Lore.cs` (~97: los capítulos y las 13 escenas; es texto largo y literario: conviene que lo revise alguien nativo).
+- [ ] **PvP** — `DuelModule` (~54), `ArenaModule` (~47), `ArenaNarrator` y `ArenaStory` (los anuncios golpe por golpe), `DuelEngine` (~16), `GameHistory` (~21: `/history` y `/duels`).
+- [ ] **Jefe mundial** — `WorldBossModule` (~32), `WorldBoss` (~20).
+- [ ] **Intercambios** — `TradeModule` (~31), `ExchangeModule` (~20; su resultado aparece dentro de la taberna), `GiveModule` (~14), `BoxModule` (`/open`, ~16).
+- [ ] **Resto de pantallas** — `/leaderboard`, `/reminders` (la pantalla, ~17; los avisos ya están), `/vote` (`VoteModule` ~21), `/tips` (`FarmAdvisor` ~14), `/deepshop` (`DeepShopModule` ~18), el minievento (`MiniEvents` ~14, `MiniEventService` ~13), `OnboardingModule` (`/class` y lo que queda, ~13), `TextCommandModule.Economy` (~41) y `.Combat` (~24), los textos de uso de `TextCommandModule`.
+
+**Baja**
+- [ ] **Ayuda** — los 21 temas de `/info` que faltan (`HelpTopics`, ~270 textos; cada uno entero, con `InEnglish: true` al terminar), las descripciones de las habilidades de clase (`ClassAbilities`, `aa hab`), los textos de `aa sell` y `aa cf` sin argumentos (`TextShortcuts.SellHelp`/`CoinflipHelp`) y el «¿Qué hace?» del error de uso (`[Summary]` de cada comando de texto).
+- [ ] **Pulido del inglés ya hecho** — plurales con «(s)» (`turn(s)`, `hit(s)`, `crit(s)`), `Loc.Percent`/`Loc.Decimal` en los pocos lugares que todavía arman decimales a mano (`HelpTopics.Dec`), y la revisión del tono por alguien nativo.
+- [ ] **Lo que NO se resuelve con `Loc`** — los nombres y descripciones de los slash commands y de sus parámetros en la lista de «/» de Discord: hace falta la localización propia de Discord (`NameLocalizations` / `DescriptionLocalizations`); es un mecanismo aparte que no se armó.
+- [ ] **Deuda chica del propio idioma** — el caché de `PlayerLanguageService` no borra entradas vencidas; un jugador con Discord en inglés que nunca usó un comando de barra y escribe `aa …` ve español (el mensaje de texto no trae idioma; al usar cualquier barra queda guardado).
 
 ## En plena pelea solo valen los comandos de la pelea (v0.25.4, 2026-10-23)
 

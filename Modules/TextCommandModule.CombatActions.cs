@@ -1,3 +1,4 @@
+using BotDsRpg.GameData;
 using BotDsRpg.Services;
 using Discord.Commands;
 
@@ -57,12 +58,12 @@ public partial class TextCommandModule
                 return;
             }
 
-            await ReplyAsync("No tenés ningún combate activo. Empezá uno con /hunt, /travel, /boss o \"aa hunt\".");
+            await ReplyAsync(Loc.T("No tenés ningún combate activo. Empezá uno con /hunt, /travel, /boss o \"aa hunt\"."));
         }
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! Algo falló procesando el combate, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! Algo falló procesando el combate, intentá de nuevo en un momento."));
         }
     }
 }

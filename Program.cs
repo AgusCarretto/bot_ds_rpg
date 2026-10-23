@@ -24,6 +24,9 @@ class Program
     {
         BotLog.Info($"Asado y Acero RPG v{BotVersion.Current} arrancando...");
 
+        // El catálogo de traducciones al inglés (GameData/Loc.cs): no tira nunca, sin él todo sale en español.
+        Loc.LoadEmbedded();
+
         // Red de seguridad: lo que no pasa por ningún try/catch (una tarea en segundo plano, un evento del gateway)
         // se registra en vez de morir en silencio — en Railway los logs son lo único que hay para mirar.
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
@@ -283,6 +286,10 @@ class Program
     {
         try
         {
+            // El idioma del jugador (GameData/Loc.cs) se fija UNA vez, acá, antes de cualquier respuesta (el aviso de registro y el bloqueo de pelea también salen en su idioma). Se hace en este mismo método y
+            // no en un helper: un AsyncLocal fijado adentro de un método async no vuelve al que lo llamó. Los comandos que se lanzan después heredan el idioma. Nunca tira: sin dato, español.
+            using var languageScope = Loc.Use(await _services.GetRequiredService<IPlayerLanguageService>().ResolveAsync(interaction.User.Id, interaction.UserLocale));
+
             // Chequeo directo ANTES de despachar el comando: nada de inspeccionar el resultado
             // de una precondición (ese enfoque dependía de que Discord.Net devolviera el
             // ErrorReason exacto, y no coincidía — la interacción quedaba sin ninguna respuesta
@@ -329,7 +336,7 @@ class Program
                 {
                     var msg = await interaction.GetOriginalResponseAsync();
                     if (msg == null)
-                        await interaction.RespondAsync("¡Upa! Ocurrió un error inesperado al procesar tu comando.", ephemeral: true);
+                        await interaction.RespondAsync(CommonMessages.UnexpectedError(), ephemeral: true);
                 }
                 catch
                 {
@@ -361,6 +368,9 @@ class Program
         {
             // Mismo gate de registro que los slash commands, para que "aa hunt" no esquive /start.
             // "aa start" queda exento (es el único comando de texto que tiene que funcionar sin cuenta).
+            // El idioma (GameData/Loc.cs): un mensaje de texto no trae el idioma de Discord, así que vale el guardado del jugador (o español). Se fija en este método, no en un helper (ver HandleInteractionAsync).
+            using var languageScope = Loc.Use(await _services.GetRequiredService<IPlayerLanguageService>().ResolveAsync(message.Author.Id, null));
+
             string commandText = message.Content[argPos..].TrimStart();
             bool isStartCommand = commandText.Equals("start", StringComparison.OrdinalIgnoreCase)
                 || commandText.StartsWith("start ", StringComparison.OrdinalIgnoreCase);
@@ -436,8 +446,7 @@ class Program
                 // "aa shop sell") son mucho más comunes que un choque real con una frase de chat
                 // — y quedarse callado ahí es peor UX que un aviso corto. Se loguea también.
                 Console.WriteLine($"[COMANDO DESCONOCIDO] \"{message.Content}\" de {message.Author.Username}");
-                await message.Channel.SendMessageAsync(
-                    "❌ No reconozco ese comando. Probá `/info` o `aa info` para ver la lista completa.");
+                await message.Channel.SendMessageAsync(CommonMessages.UnknownCommand());
                 return;
 
             case CommandError.BadArgCount:
@@ -462,7 +471,7 @@ class Program
                 // dejarla morir en silencio, y avisamos sin tirar abajo el bot.
                 string detail = result is Discord.Commands.ExecuteResult { Exception: { } ex } ? ex.ToString() : result.ErrorReason;
                 Console.WriteLine($"[ERROR DE COMANDO DE TEXTO] {detail}");
-                await message.Channel.SendMessageAsync("¡Upa! Algo falló procesando ese comando, intentá de nuevo en un momento.");
+                await message.Channel.SendMessageAsync(CommonMessages.CommandFailed());
                 return;
         }
     }
@@ -470,21 +479,22 @@ class Program
     private static Embed BuildUsageErrorEmbed(CommandInfo? command)
     {
         var embed = new EmbedBuilder()
-            .WithTitle("⚠️ Faltan parámetros o son incorrectos")
+            .WithTitle(Loc.T("⚠️ Faltan parámetros o son incorrectos"))
             .WithColor(Color.Orange);
 
         if (command is not null)
         {
-            embed.AddField("Uso correcto", $"`{BuildUsageLine(command)}`", false);
+            embed.AddField(Loc.T("Uso correcto"), $"`{BuildUsageLine(command)}`", false);
 
             if (!string.IsNullOrWhiteSpace(command.Summary))
             {
-                embed.AddField("¿Qué hace?", command.Summary, false);
+                // El resumen de cada comando (command.Summary) sigue en español: es un atributo del comando y entra en una etapa siguiente.
+                embed.AddField(Loc.T("¿Qué hace?"), command.Summary, false);
             }
         }
         else
         {
-            embed.WithDescription("Revisá que el comando esté bien escrito. Usá `aa info` para ver la lista completa.");
+            embed.WithDescription(Loc.T("Revisá que el comando esté bien escrito. Usá `aa info` para ver la lista completa."));
         }
 
         return embed.Build();
@@ -518,7 +528,7 @@ class Program
         }
 
         // Público a propósito (no ephemeral): la idea es que se note en el canal que hace falta /start.
-        await respondAsync($"<@{discordId}> ¡Bienvenido a Asado y Acero RPG! 🥩 Para empezar tu aventura, primero tenés que elegir una clase con el comando `/start`.");
+        await respondAsync(CommonMessages.NotRegistered(discordId));
         return true;
     }
 }
@@ -554,6 +564,8 @@ public static class ServiceProviderBuilder
             .AddSingleton<IBlessingRepository, BlessingRepository>()
             .AddSingleton<IFuegoNuevoRepository, FuegoNuevoRepository>()
             .AddSingleton<IPlayerBonusService, PlayerBonusService>()
+            .AddSingleton<ILanguageRepository, LanguageRepository>()
+            .AddSingleton<IPlayerLanguageService, PlayerLanguageService>()
             .AddSingleton<IBuffRepository, BuffRepository>()
             .AddSingleton<IMissionRepository, MissionRepository>()
             .AddSingleton<IAchievementRepository, AchievementRepository>()

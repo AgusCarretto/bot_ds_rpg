@@ -12,6 +12,7 @@
     <ProjectReference Include="$(MSBuildThisFileDirectory)..\bot_ds_rpg.csproj" />
     <Compile Include="$(MSBuildThisFileDirectory)Shared\TestEnv.cs" Link="TestEnv.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Shared\ProfileProbe.cs" Link="ProfileProbe.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Shared\LeakCheck.cs" Link="LeakCheck.cs" />
     <PackageReference Include="Dapper" Version="2.1.79" />
     <PackageReference Include="Npgsql" Version="10.0.3" />
     <PackageReference Include="Discord.Net" Version="3.20.1" />

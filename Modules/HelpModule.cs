@@ -1,3 +1,4 @@
+using BotDsRpg.GameData;
 using Discord;
 using Discord.Interactions;
 using BotDsRpg.Services;
@@ -20,7 +21,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
         {
             BotLog.Error(ex);
             // Si algo inesperado ocurre, avisamos sin tirar abajo el bot.
-            await RespondAsync("No pude cargar el tutorial ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
+            await RespondAsync(Loc.T("No pude cargar el tutorial ahora mismo, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -36,7 +37,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await RespondAsync("No pude cargar la ayuda ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
+            await RespondAsync(Loc.T("No pude cargar la ayuda ahora mismo, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -49,28 +50,28 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
     public static Embed BuildTutorialEmbed()
     {
         return new EmbedBuilder()
-            .WithTitle("📖 Cómo jugar Asado y Acero RPG")
+            .WithTitle(Loc.T("📖 Cómo jugar Asado y Acero RPG"))
             .WithColor(OnboardingModule.BrandColor)
-            .WithDescription("El loop básico del juego, en 5 pasos:")
-            .AddField("🪓 Recolección", "Usá `/chop` o `/mine` para conseguir recursos básicos.", false)
-            .AddField("⚒️ Herrería", "Usá `/forge` para ver las recetas de cada zona y crear armas y amuletos: se equipan solos (para cambiar, vendé el que llevás en `/taberna`). ¿No sabés qué farmear? `/tips` te dice qué te falta.", false)
+            .WithDescription(Loc.T("El loop básico del juego, en 5 pasos:"))
+            .AddField(Loc.T("🪓 Recolección"), Loc.T("Usá `/chop` o `/mine` para conseguir recursos básicos."), false)
+            .AddField(Loc.T("⚒️ Herrería"), Loc.T("Usá `/forge` para ver las recetas de cada zona y crear armas y amuletos: se equipan solos (para cambiar, vendé el que llevás en `/taberna`). ¿No sabés qué farmear? `/tips` te dice qué te falta."), false)
             .AddField(
-                "⚔️ Combate",
-                "Usá `/hunt` (manual) o `aa ah` (automático) para ganar Oro, XP y drops de monstruos. " +
+                Loc.T("⚔️ Combate"),
+                Loc.T("Usá `/hunt` (manual) o `aa ah` (automático) para ganar Oro, XP y drops de monstruos. " +
                 "En la pelea manual cada clase tiene una habilidad especial (botón verde, ver `/profile`); " +
-                "el modo automático solo ataca normal.",
+                "el modo automático solo ataca normal."),
                 false)
             .AddField(
-                "🥩 Supervivencia",
-                "Usá `/shop` para comprar comida y `/heal` para curarte (¡cuidado, curarte en combate le da un turno extra al enemigo!). " +
-                "Perder un combate te cuesta la EXP del nivel y el 5 % del oro que llevás: lo que guardes en el banco (`/bank`) no se toca.",
+                Loc.T("🥩 Supervivencia"),
+                Loc.T("Usá `/shop` para comprar comida y `/heal` para curarte (¡cuidado, curarte en combate le da un turno extra al enemigo!). " +
+                "Perder un combate te cuesta la EXP del nivel y el 5 % del oro que llevás: lo que guardes en el banco (`/bank`) no se toca."),
                 false)
             .AddField(
-                "📋 Misiones y logros",
-                "Cada día hay 3 misiones y cada semana 2 (`/missions`), y hay logros por tramos (`/achievements`). Se cuentan solas mientras jugás " +
-                "y dan oro, XP y cajas para abrir con `/open`. Las diarias se reinician a medianoche, hora de Uruguay.",
+                Loc.T("📋 Misiones y logros"),
+                Loc.T("Cada día hay 3 misiones y cada semana 2 (`/missions`), y hay logros por tramos (`/achievements`). Se cuentan solas mientras jugás " +
+                "y dan oro, XP y cajas para abrir con `/open`. Las diarias se reinician a medianoche, hora de Uruguay."),
                 false)
-            .WithFooter("Usá /info para ver la lista completa de comandos.")
+            .WithFooter(Loc.T("Usá /info para ver la lista completa de comandos."))
             .Build();
     }
 
@@ -80,17 +81,17 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
     public static Embed BuildInfoEmbed()
     {
         return new EmbedBuilder()
-            .WithTitle("📜 Comandos de Asado y Acero RPG")
+            .WithTitle(Loc.T("📜 Comandos de Asado y Acero RPG"))
             .WithColor(OnboardingModule.BrandColor)
-            .WithDescription("Todo comando de barra tiene su versión de texto con el prefijo `aa ` (ej. `aa hunt`). Para saber **cómo funciona** algo: `/info tema:<tema>`.")
-            .AddField("⚔️ Pelear", "`/hunt` (`aa ah` es el automático) · `/travel` · `/boss` (solo o con amigos) · `/zona` · `/drops`", false)
-            .AddField("🪓 Recolectar y forjar", "`/chop` · `/mine` · `/forge` · `/enchant` · `/dismantle` · `/tips` (qué te falta farmear)", false)
-            .AddField("🍖 Comida y plata", "`/taberna` (comer, comprar y vender) · `/heal` · `/use` · `/open` · `/daily` · `/bank` · `/play`", false)
-            .AddField("📋 Progreso", "`/missions` · `/achievements` · `/titles` · `/pet` · `/professions` · `/story` · `/leaderboard`", false)
-            .AddField("👥 Con otros jugadores", "`/fight` · `/arena` · `/boss @amigo` · `/give` · `/trade` · `/exchange`", false)
-            .AddField("🔥 Final del juego", "`/forge-special` · `/zona 0` · `/fuegonuevo` · `/deepshop`", false)
-            .AddField("🛠️ Tu cuenta", "`/start` · `/class` · `/profile` · `/inventory` · `/cd` · `/reminders` · `/vote` · `/tutorial`", false)
-            .AddField("📚 Cómo funciona cada cosa", $"`/info tema:<tema>` o `aa info <tema>`. Temas: {HelpTopics.KeysLine()}.", false)
+            .WithDescription(Loc.T("Todo comando de barra tiene su versión de texto con el prefijo `aa ` (ej. `aa hunt`). Para saber **cómo funciona** algo: `/info tema:<tema>`."))
+            .AddField(Loc.T("⚔️ Pelear"), Loc.T("`/hunt` (`aa ah` es el automático) · `/travel` · `/boss` (solo o con amigos) · `/zona` · `/drops`"), false)
+            .AddField(Loc.T("🪓 Recolectar y forjar"), Loc.T("`/chop` · `/mine` · `/forge` · `/enchant` · `/dismantle` · `/tips` (qué te falta farmear)"), false)
+            .AddField(Loc.T("🍖 Comida y plata"), Loc.T("`/taberna` (comer, comprar y vender) · `/heal` · `/use` · `/open` · `/daily` · `/bank` · `/play`"), false)
+            .AddField(Loc.T("📋 Progreso"), "`/missions` · `/achievements` · `/titles` · `/pet` · `/professions` · `/story` · `/leaderboard`", false)
+            .AddField(Loc.T("👥 Con otros jugadores"), "`/fight` · `/arena` · `/boss @amigo` · `/give` · `/trade` · `/exchange`", false)
+            .AddField(Loc.T("🔥 Final del juego"), "`/forge-special` · `/zona 0` · `/fuegonuevo` · `/deepshop`", false)
+            .AddField(Loc.T("🛠️ Tu cuenta"), "`/start` · `/class` · `/profile` · `/inventory` · `/cd` · `/reminders` · `/vote` · `/tutorial`", false)
+            .AddField(Loc.T("📚 Cómo funciona cada cosa"), Loc.F($"`/info tema:<tema>` o `aa info <tema>`. Temas: {HelpTopics.KeysLine()}."), false)
             .WithFooter($"Asado y Acero RPG v{BotVersion.Current}")
             .Build();
     }

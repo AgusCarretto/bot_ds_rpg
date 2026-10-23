@@ -83,17 +83,17 @@ public static class DailyRewardCalculator
         int next = currentStreak + 1;
         if (IsWeekMilestone(next))
         {
-            return $"Mañana es el día {next}: ¡caja grande y monedas extra!";
+            return Loc.F($"Mañana es el día {next}: ¡caja grande y monedas extra!");
         }
 
         if (next == IronBoxFromDay)
         {
-            return $"Mañana es el día {next}: ¡desde ahí hay caja todos los días!";
+            return Loc.F($"Mañana es el día {next}: ¡desde ahí hay caja todos los días!");
         }
 
         if (IsThreeDayBonus(next))
         {
-            return $"Mañana es el día {next}: ¡monedas extra!";
+            return Loc.F($"Mañana es el día {next}: ¡monedas extra!");
         }
 
         return null;

@@ -56,7 +56,7 @@ public class TabernaModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! La taberna está cerrada ahora, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! La taberna está cerrada ahora, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -83,7 +83,7 @@ public class TabernaModule(
         {
             if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
             {
-                await FollowupAsync("Esa charla es de otra persona: pasá por la taberna con **/taberna**.", ephemeral: true);
+                await FollowupAsync(Loc.T("Esa charla es de otra persona: pasá por la taberna con **/taberna**."), ephemeral: true);
                 return;
             }
 
@@ -99,7 +99,7 @@ public class TabernaModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude abrir el cambio, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude abrir el cambio, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -113,13 +113,13 @@ public class TabernaModule(
         {
             if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
             {
-                await FollowupAsync("Esa charla es de otra persona: pasá por la taberna con **/taberna**.", ephemeral: true);
+                await FollowupAsync(Loc.T("Esa charla es de otra persona: pasá por la taberna con **/taberna**."), ephemeral: true);
                 return;
             }
 
             if (!int.TryParse(giveIdRaw, out int giveId) || await itemRepository.GetByIdAsync(giveId) is not { } give)
             {
-                await FollowupAsync("No encuentro ese drop: probá de nuevo desde la taberna.", ephemeral: true);
+                await FollowupAsync(Loc.T("No encuentro ese drop: probá de nuevo desde la taberna."), ephemeral: true);
                 return;
             }
 
@@ -135,7 +135,7 @@ public class TabernaModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude hacer el cambio, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude hacer el cambio, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -155,16 +155,16 @@ public class TabernaModule(
         var receivable = ExchangeChoices.Receivable(drops, give.Name);
         var have = inventory.ToDictionary(e => e.ItemName, e => e.Quantity, StringComparer.Ordinal);
         var menu = Menu(
-            SwapGet, discordId, $"¿Qué querés a cambio de {DropExchange.GiveAmount}×?",
-            receivable.Select(d => (d.Name, $"Recibís {DropExchange.GetAmount} · tenés {have.GetValueOrDefault(d.Name)}", d.Name)));
+            SwapGet, discordId, Loc.F($"¿Qué querés a cambio de {DropExchange.GiveAmount}×?"),
+            receivable.Select(d => (d.Name, Loc.F($"Recibís {DropExchange.GetAmount} · tenés {have.GetValueOrDefault(d.Name)}"), d.Name)));
         // Esta lista lleva en el id, además del dueño, QUÉ entregás (Menu arma solo "prefijo:dueño").
         menu.WithCustomId($"{SwapGet}:{discordId}:{give.ItemId}");
 
         var embed = new EmbedBuilder()
-            .WithTitle("🔁 Cambiar drops")
+            .WithTitle(Loc.T("🔁 Cambiar drops"))
             .WithColor(Color.Gold)
             .WithDescription(
-                $"{NpcDialogue.Say("El Tabernero", "🍺", $"Me das {DropExchange.GiveAmount} de {give.Name} (tenés {have[give.Name]}) y te doy {DropExchange.GetAmount} de lo que quieras de {give.ZoneName}. ¿Cuál va a ser?")}")
+                $"{NpcDialogue.Say("El Tabernero", "🍺", Loc.F($"Me das {DropExchange.GiveAmount} de {give.Name} (tenés {have[give.Name]}) y te doy {DropExchange.GetAmount} de lo que quieras de {give.ZoneName}. ¿Cuál va a ser?"))}")
             .Build();
         return (embed, new ComponentBuilder().WithSelectMenu(menu).Build());
     }
@@ -179,13 +179,13 @@ public class TabernaModule(
         {
             if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
             {
-                await FollowupAsync("Esa charla es de otra persona: pasá por la taberna con **/taberna**.", ephemeral: true);
+                await FollowupAsync(Loc.T("Esa charla es de otra persona: pasá por la taberna con **/taberna**."), ephemeral: true);
                 return;
             }
 
             if (!int.TryParse(itemIdRaw, out int itemId) || await itemRepository.GetByIdAsync(itemId) is not { } item)
             {
-                await FollowupAsync("No encuentro esa pieza: probá de nuevo desde la taberna.", ephemeral: true);
+                await FollowupAsync(Loc.T("No encuentro esa pieza: probá de nuevo desde la taberna."), ephemeral: true);
                 return;
             }
 
@@ -201,7 +201,7 @@ public class TabernaModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude hacer la venta, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude hacer la venta, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -214,7 +214,7 @@ public class TabernaModule(
         {
             if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
             {
-                await FollowupAsync("Esa charla es de otra persona: pasá por la taberna con **/taberna**.", ephemeral: true);
+                await FollowupAsync(Loc.T("Esa charla es de otra persona: pasá por la taberna con **/taberna**."), ephemeral: true);
                 return;
             }
 
@@ -227,7 +227,7 @@ public class TabernaModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! Algo falló, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! Algo falló, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -239,7 +239,7 @@ public class TabernaModule(
         {
             if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
             {
-                await FollowupAsync("Esa charla es de otra persona: pasá por la taberna con **/taberna**.", ephemeral: true);
+                await FollowupAsync(Loc.T("Esa charla es de otra persona: pasá por la taberna con **/taberna**."), ephemeral: true);
                 return;
             }
 
@@ -268,7 +268,7 @@ public class TabernaModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude pasarle el pedido al tabernero, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude pasarle el pedido al tabernero, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -305,20 +305,22 @@ public class TabernaModule(
         }
 
         bool weapon = item.Type == "Weapon";
-        string slot = weapon ? "arma" : "amuleto";
 
+        // Una frase entera por pieza (no se arma con "otr{a/o}"): el género del español no existe en inglés.
         var embed = new EmbedBuilder()
-            .WithTitle($"⚠️ ¿Vender tu {slot}?")
+            .WithTitle(weapon ? Loc.T("⚠️ ¿Vender tu arma?") : Loc.T("⚠️ ¿Vender tu amuleto?"))
             .WithColor(Color.Orange)
             .WithDescription(
                 $"{NpcDialogue.Shopkeeper(ShopkeeperLine.GearConfirm)}\n\n" +
-                $"Vas a vender **{ItemDisplay.Format(item.Emoji, item.Name)}** ({ItemStatLabel.FormatFor(item, player.Class)}) por **{item.SellPrice}** de oro.\n" +
-                $"Te quedás sin {slot} hasta que forjes otr{(weapon ? "a" : "o")}, y forjarl{(weapon ? "a" : "o")} cuesta bastante más de lo que te pagan.")
+                Loc.F($"Vas a vender **{ItemDisplay.Format(item.Emoji, item.Name)}** ({ItemStatLabel.FormatFor(item, player.Class)}) por **{item.SellPrice}** de oro.\n") +
+                (weapon
+                    ? Loc.T("Te quedás sin arma hasta que forjes otra, y forjarla cuesta bastante más de lo que te pagan.")
+                    : Loc.T("Te quedás sin amuleto hasta que forjes otro, y forjarlo cuesta bastante más de lo que te pagan.")))
             .Build();
 
         var buttons = new ComponentBuilder()
-            .WithButton("Sí, venderla", $"{GearYes}:{discordId}:{item.ItemId}", ButtonStyle.Danger, new Emoji("💰"))
-            .WithButton("No, me la quedo", $"{GearNo}:{discordId}", ButtonStyle.Secondary, new Emoji("🛡️"))
+            .WithButton(Loc.T("Sí, venderla"), $"{GearYes}:{discordId}:{item.ItemId}", ButtonStyle.Danger, new Emoji("💰"))
+            .WithButton(Loc.T("No, me la quedo"), $"{GearNo}:{discordId}", ButtonStyle.Secondary, new Emoji("🛡️"))
             .Build();
 
         return (embed, buttons);
@@ -371,7 +373,7 @@ public class TabernaModule(
                     return used.PlainMessage ?? string.Empty;
                 }
 
-                bool full = used.Embed.Title?.Contains("máximo") == true;
+                bool full = used.Embed.Title == UseModule.AlreadyFullTitle();   // NO por el texto en español: el título cambia con el idioma
                 return $"{NpcDialogue.Innkeeper(full ? InnkeeperLine.FullHp : InnkeeperLine.Healed)}\n\n{used.Embed.Description}";
             }
         }
@@ -387,8 +389,8 @@ public class TabernaModule(
         if (player is null)
         {
             return new TabernaScene(
-                new EmbedBuilder().WithTitle("🍺 La Taberna").WithColor(Color.Gold)
-                    .WithDescription("Primero tenés que empezar tu aventura con **/start**.").Build(),
+                new EmbedBuilder().WithTitle(Loc.T("🍺 La Taberna")).WithColor(Color.Gold)
+                    .WithDescription(Loc.T("Primero tenés que empezar tu aventura con **/start**.")).Build(),
                 null);
         }
 
@@ -414,28 +416,28 @@ public class TabernaModule(
             int missingHp = HpDisplay.Scale(player.MaxHp, hpMultiplier) - HpDisplay.Scale(player.CurrentHp, hpMultiplier);
             if (missingHp > 0 && foodItems.Any(o => !buffs.ContainsKey(o.Item.ItemId)))
             {
-                eatOptions.Add(("🍖 Curarme del todo", $"Come lo necesario de tu mochila · te faltan {missingHp} HP", FullHeal));
+                eatOptions.Add((Loc.T("🍖 Curarme del todo"), Loc.F($"Come lo necesario de tu mochila · te faltan {missingHp} HP"), FullHeal));
             }
 
             eatOptions.AddRange(foodItems.OrderByDescending(o => o.Item.StatValue).Take(25 - eatOptions.Count).Select(o => (
-                $"{o.Item.Name} ×{o.Quantity}", $"Cura {o.Item.StatValue} HP{BuffText(o.Item, buffs)}", o.Item.Name)));
+                $"{o.Item.Name} ×{o.Quantity}", Loc.F($"Cura {o.Item.StatValue} HP{BuffText(o.Item, buffs)}"), o.Item.Name)));
 
-            components.WithSelectMenu(Menu(Eat, discordId, "Comer algo de tu mochila", eatOptions), row++);
+            components.WithSelectMenu(Menu(Eat, discordId, Loc.T("Comer algo de tu mochila"), eatOptions), row++);
         }
 
         var foodForSale = shopItems.Where(i => i.Type != "Caja").OrderBy(i => i.BuyPrice).Take(25).ToList();
         if (foodForSale.Count > 0)
         {
             components.WithSelectMenu(Menu(
-                BuyFood, discordId, "Comprar comida",
-                foodForSale.Select(i => (i.Name, i.Type == ShopCatalog.PetFoodType ? ShopModule.PetFoodLine(i) : $"Cura {i.StatValue} HP{BuffText(i, buffs)} · {i.BuyPrice} oro", i.Name))), row++);
+                BuyFood, discordId, Loc.T("Comprar comida"),
+                foodForSale.Select(i => (i.Name, i.Type == ShopCatalog.PetFoodType ? ShopModule.PetFoodLine(i) : Loc.F($"Cura {i.StatValue} HP{BuffText(i, buffs)} · {i.BuyPrice} oro"), i.Name))), row++);
         }
 
         var boxesForSale = shopItems.Where(i => i.Type == "Caja").OrderBy(i => i.BuyPrice).Take(25).ToList();
         if (boxesForSale.Count > 0)
         {
             components.WithSelectMenu(Menu(
-                BuyBox, discordId, "Comprar una caja (una cada 2 horas)",
+                BuyBox, discordId, Loc.T("Comprar una caja (una cada 2 horas)"),
                 boxesForSale.Select(i => (i.Name, ShopModule.BoxLine(i, unlockedRank), i.Name))), row++);
         }
 
@@ -446,9 +448,9 @@ public class TabernaModule(
         if (equippedGear.Count + sellable.Count > 0)
         {
             components.WithSelectMenu(Menu(
-                Sell, discordId, "Vender algo (de a una unidad)",
-                equippedGear.Select(i => ($"{GearMark(i)}{i.Name} (equipad{(i.Type == "Weapon" ? "a" : "o")})", $"⚠️ Lo que llevás puesto · {i.SellPrice} oro", i.Name))
-                    .Concat(sellable.Select(e => ($"{e.ItemName} ×{e.Quantity}", $"{e.SellPrice} oro c/u", e.ItemName)))), row++);
+                Sell, discordId, Loc.T("Vender algo (de a una unidad)"),
+                equippedGear.Select(i => (i.Type == "Weapon" ? Loc.F($"{GearMark(i)}{i.Name} (equipada)") : Loc.F($"{GearMark(i)}{i.Name} (equipado)"), Loc.F($"⚠️ Lo que llevás puesto · {i.SellPrice} oro"), i.Name))
+                    .Concat(sellable.Select(e => ($"{e.ItemName} ×{e.Quantity}", Loc.F($"{e.SellPrice} oro c/u"), e.ItemName)))), row++);
         }
 
         // El trueque (GameData/DropExchange.cs): solo aparece si tenés al menos 3 de algún drop de monstruo. Es la quinta y última fila que admite Discord.
@@ -458,8 +460,8 @@ public class TabernaModule(
             if (givable.Count > 0 && row <= 4)
             {
                 components.WithSelectMenu(Menu(
-                    Swap, discordId, $"Cambiar drops ({DropExchange.GiveAmount} por {DropExchange.GetAmount}, de la misma zona)",
-                    givable.Take(25).Select(x => ($"{x.Drop.Name} ×{x.Have}", $"Entregás {DropExchange.GiveAmount} · recibís {DropExchange.GetAmount} de {x.Drop.ZoneName}", x.Drop.Name))), row);
+                    Swap, discordId, Loc.F($"Cambiar drops ({DropExchange.GiveAmount} por {DropExchange.GetAmount}, de la misma zona)"),
+                    givable.Take(25).Select(x => ($"{x.Drop.Name} ×{x.Have}", Loc.F($"Entregás {DropExchange.GiveAmount} · recibís {DropExchange.GetAmount} de {x.Drop.ZoneName}"), x.Drop.Name))), row);
             }
         }
 
@@ -468,7 +470,7 @@ public class TabernaModule(
 
     // " · +15% ATQ 30 min" para los banquetes.
     private static string BuffText(Item item, IReadOnlyDictionary<int, ItemBuff>? buffs) =>
-        buffs is not null && buffs.TryGetValue(item.ItemId, out var buff) ? $" · +{buff.AttackPercent}% ATQ {buff.Minutes} min" : string.Empty;
+        buffs is not null && buffs.TryGetValue(item.ItemId, out var buff) ? Loc.F($" · +{buff.AttackPercent}% ATQ {buff.Minutes} min") : string.Empty;
 
     // La marca de una pieza equipada en la lista de vender: 🗡️ / 📿 solo si la pieza NO tiene su propio emoji (si lo tiene, la opción lo lleva en su campo de emoji y la marca sobraría).
     private static string GearMark(Item item) =>

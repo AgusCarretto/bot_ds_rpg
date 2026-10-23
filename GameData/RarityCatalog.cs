@@ -26,6 +26,17 @@ public static class RarityCatalog
     // Orden de menor a mayor rareza, para listados (ej. /inventory). -1 si la rareza no se reconoce.
     public static int RankOf(string rarity) => Array.IndexOf(Order, rarity);
 
+    // El nombre de la rareza para mostrar, en el idioma de quien lo lee. Lo que se guarda y se compara (items.rarity) sigue siendo el español de arriba.
+    public static string DisplayName(string rarity) => rarity switch
+    {
+        "Común" => Loc.T("Común"),
+        "Raro" => Loc.T("Raro"),
+        "Épico" => Loc.T("Épico"),
+        "Legendario" => Loc.T("Legendario"),
+        "Mítico" => Loc.T("Mítico"),
+        _ => rarity,
+    };
+
     // Usado por /chop y /mine: Común 68% / Raro 21% / Épico 7% / Legendario 3.5% / Mítico 0.5%.
     public static string RollGatheringRarity() => Roll(GatheringWeights);
 

@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using BotDsRpg.GameData;
 using BotDsRpg.Repositories;
 using Discord;
 
@@ -108,16 +109,7 @@ public sealed class CombatSessionService(IUserRepository userRepository) : IComb
 
             try
             {
-                var embed = new EmbedBuilder()
-                    .WithTitle("💨 Combate abandonado")
-                    .WithDescription(
-                        $"No respondiste a tiempo y te retiraste del combate contra " +
-                        $"**{session.State.MonsterName}** {session.State.MonsterEmoji}.")
-                    .WithColor(Color.DarkGrey)
-                    .WithMonsterPortrait(session.State.MonsterPortrait)
-                    .Build();
-
-                await session.ReplyTarget.UpdateAsync(embed, new ComponentBuilder().Build());
+                await session.ReplyTarget.UpdateAsync(BuildAbandonedEmbed(session.State), new ComponentBuilder().Build());
             }
             catch (Exception ex)
             {
@@ -127,4 +119,13 @@ public sealed class CombatSessionService(IUserRepository userRepository) : IComb
             }
         }, token);
     }
+
+    // El aviso que reemplaza el mensaje de un combate que venció por inactividad. Público y puro: se prueba sin esperar un minuto. Sale en el idioma con el que corría el comando que armó el reloj (Loc.cs lo hereda).
+    public static Embed BuildAbandonedEmbed(CombatState state) =>
+        new EmbedBuilder()
+            .WithTitle(Loc.T("💨 Combate abandonado"))
+            .WithDescription(Loc.F($"No respondiste a tiempo y te retiraste del combate contra **{state.MonsterName}** {state.MonsterEmoji}."))
+            .WithColor(Color.DarkGrey)
+            .WithMonsterPortrait(state.MonsterPortrait)
+            .Build();
 }
