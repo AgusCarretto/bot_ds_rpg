@@ -501,6 +501,80 @@ using (Loc.Use("en"))
 Check(introEs.StartsWith("🐗 **Jabalí Rabioso:** «") && introEn.StartsWith("🐗 **Jabalí Rabioso:** «") && introEn != introEs && bossEn.StartsWith("👑 **Rey Jabalí:** «") && LeakCheck.NoSpanish(bossEn + genericEn, allowedNames).Ok,
     $"la frase se elige igual en los dos idiomas, con el nombre del monstruo sin traducir ({introEn} | {bossEn} | {genericEn})");
 
+Console.WriteLine("\n== 10. Recolectar e inventario ==");
+const ulong G10 = 999000000000098010UL;
+var gatherRepo10 = sp.GetRequiredService<IGatheringRepository>(); var itemSvc10 = sp.GetRequiredService<IItemRepository>();
+var bonusSvc10 = sp.GetRequiredService<IPlayerBonusService>(); var eventsSvc10 = sp.GetRequiredService<IGameEvents>(); var invRepo10 = sp.GetRequiredService<IInventoryRepository>();
+var woodcutter = ProfessionCatalog.Get(ProfessionCatalog.WoodcutterKey);
+ProfessionProgress Prog(long xp) => ProfessionRules.ProgressFor(xp);
+(string Name, Func<string> Make)[] footerCases =
+[
+    ("pie normal", () => GatheringModule.ProfessionFooter(woodcutter, Prog(100), Prog(107), 7)),
+    ("pie al subir de nivel", () => GatheringModule.ProfessionFooter(woodcutter, Prog(0), Prog(30), 30)),
+    ("pie al llegar al máximo", () => GatheringModule.ProfessionFooter(woodcutter, Prog(0), Prog(100_000_000), 1)),
+    ("pie con el máximo ya alcanzado", () => GatheringModule.ProfessionFooter(woodcutter, Prog(100_000_000), Prog(100_000_000), 1)),
+];
+
+foreach (var (footerName, makeFooter) in footerCases)
+{
+    string footerEs = makeFooter(); string footerEn; using (Loc.Use("en")) { footerEn = makeFooter(); }
+    var footerLeak = LeakCheck.NoSpanish(footerEn, allowedNames);
+    Check(footerEs.Contains("Leñador") && footerEn.Contains("Woodcutter") && footerLeak.Ok, $"{footerName}: «{footerEs}» / «{footerEn}» ({footerLeak.Found})");
+}
+
+var woodItem = (await itemSvc10.GetRandomByTypeAndRarityAsync("Madera", "Común"))!;
+var rareOre = (await itemSvc10.GetRandomByTypeAndRarityAsync("Mineral", "Raro"))!;
+(string Name, Func<Embed> Make)[] gatherScreens =
+[
+    ("resultado de /chop", () => GatheringModule.BuildResultEmbed(CooldownCatalog.Chop, woodItem, 3, GatheringModule.ProfessionFooter(woodcutter, Prog(100), Prog(107), 7))),
+    ("resultado de /mine con un material raro", () => GatheringModule.BuildResultEmbed(CooldownCatalog.Mine, rareOre, 1)),
+    ("resultado de la tala avanzada", () => GatheringModule.BuildAdvancedResultEmbed(CooldownCatalog.ChopAdvanced, [(woodItem, 4), (rareOre, 2)], GatheringModule.ProfessionFooter(woodcutter, Prog(0), Prog(30), 30))),
+    ("cooldown de /mine", () => GatheringModule.BuildCooldownEmbed(CooldownCatalog.Mine, TimeSpan.FromSeconds(90))),
+];
+
+foreach (var (gatherName, makeGather) in gatherScreens)
+{
+    Embed gatherEs = makeGather(); Embed gatherEn; using (Loc.Use("en")) { gatherEn = makeGather(); }
+    string gatherEnText = LeakCheck.AllText(gatherEn); var gatherLeak = LeakCheck.NoSpanish(gatherEnText, allowedNames);
+    Check(gatherLeak.Ok && LeakCheck.FitsDiscord(gatherEn) && gatherEnText != LeakCheck.AllText(gatherEs), $"en inglés, {gatherName}: sin español colado ({gatherLeak.Found})");
+}
+
+Embed chopEs = GatheringModule.BuildResultEmbed(CooldownCatalog.Chop, woodItem, 3); Embed chopEn; using (Loc.Use("en")) { chopEn = GatheringModule.BuildResultEmbed(CooldownCatalog.Chop, woodItem, 3); }
+Check(chopEs.Title == "🪓 ¡Talar exitoso!" && chopEs.Fields[0].Name == "Rareza" && chopEs.Fields[0].Value == "Común" && chopEs.Description!.StartsWith("Conseguiste **3× "), "el resultado de /chop en español es el de siempre");
+Check(chopEn.Title == "🪓 Chop successful!" && chopEn.Fields[0].Name == "Rarity" && chopEn.Fields[0].Value == "Common" && chopEn.Description!.StartsWith("You got **3× "), $"y en inglés ({chopEn.Title} | {chopEn.Fields[0].Name}: {chopEn.Fields[0].Value} | {chopEn.Description})");
+Embed advEn; using (Loc.Use("en")) { advEn = GatheringModule.BuildAdvancedResultEmbed(CooldownCatalog.ChopAdvanced, [(woodItem, 4), (rareOre, 2)]); }
+Check(advEn.Title == "🪓 Advanced chopping successful!" && advEn.Description!.Contains("Rare") && advEn.Description.Contains("Common"), $"la recolección avanzada en inglés ({advEn.Title} | {advEn.Description!.Replace("\n", " | ")})");
+
+// El flujo de verdad contra la base: el oficio bloqueado, un /chop y el cooldown inmediato.
+await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)G10 });
+await userRepo.GetOrCreateUserAsync(G10);
+Task<GatheringModule.GatherResult> Gather(bool advanced) => GatheringModule.ExecuteGatherAsync(cooldowns, gatherRepo10, userRepo, itemSvc10, bonusSvc10, eventsSvc10, G10, CooldownCatalog.Chop, "Madera", advanced);
+var lockedEs = await Gather(true); GatheringModule.GatherResult lockedEn, firstEn, secondEn;
+using (Loc.Use("en")) { lockedEn = await Gather(true); firstEn = await Gather(false); secondEn = await Gather(false); }
+Check(lockedEs.PlainMessage!.Contains("se desbloquea con el oficio **Leñador**") && lockedEn.PlainMessage!.Contains("unlocks with the **Woodcutter** profession") && LeakCheck.NoSpanish(lockedEn.PlainMessage, allowedNames).Ok, $"«la tala avanzada está bloqueada» en los dos idiomas ({lockedEn.PlainMessage})");
+Check(firstEn.Embed!.Title == "🪓 Chop successful!" && firstEn.Embed.Footer!.Value.Text.Contains("Woodcutter") && firstEn.Embed.Footer!.Value.Text.Contains("level") &&LeakCheck.NoSpanish(LeakCheck.AllText(firstEn.Embed), allowedNames).Ok, $"un /chop de verdad sale en inglés ({firstEn.Embed.Title} | {firstEn.Embed.Footer!.Value.Text})");
+Check(secondEn.Embed!.Title.Contains("Chop") && secondEn.Embed.Title.Contains("you can't yet") && secondEn.Embed.Description!.StartsWith("You need to wait **"),$"y el segundo, seguido, trae el cooldown en inglés ({secondEn.Embed.Title} | {secondEn.Embed.Description})");
+
+// El inventario de dos columnas.
+await db.ExecuteAsync("""
+    INSERT INTO inventory (discord_id, item_id, quantity)
+    SELECT @id, item_id, CASE WHEN name = 'Madera de Pino' THEN 1234 ELSE 3 END FROM items
+    WHERE name IN ('Madera de Pino', 'Hierro', 'Colmillo de Jabalí', 'Mate Amargo', 'Cajón de Pino') OR type = 'Huevo'
+    ON CONFLICT (discord_id, item_id) DO UPDATE SET quantity = EXCLUDED.quantity
+    """, new { id = (long)G10 });
+Embed invEs = await GameModule.BuildInventoryEmbedAsync(invRepo10, G10, "Pepe"); Embed invEn; using (Loc.Use("en")) { invEn = await GameModule.BuildInventoryEmbedAsync(invRepo10, G10, "Pepe"); }
+string invEsText = LeakCheck.AllText(invEs), invEnText = LeakCheck.AllText(invEn);
+Check(invEs.Title == "🎒 Inventario de Pepe" && invEsText.Contains("🪵 Madera") && invEsText.Contains("🩸 Drops de monstruo") && invEsText.Contains("🍖 Consumibles") && invEsText.Contains("1.234") && invEs.Footer!.Value.Text == "📦 Abrí tus cajas y huevos con /open", "el inventario en español es el de siempre");
+Check(invEn.Title == "🎒 Pepe's inventory" && invEnText.Contains("🪵 Wood") && invEnText.Contains("🩸 Monster drops") && invEnText.Contains("🍖 Consumables") && invEnText.Contains("1,234") && invEn.Footer!.Value.Text == "📦 Open your boxes and eggs with /open" && LeakCheck.NoSpanish(invEnText, allowedNames).Ok && LeakCheck.FitsDiscord(invEn),
+    $"y en inglés, con la coma de miles ({LeakCheck.NoSpanish(invEnText, allowedNames).Found})");
+await db.ExecuteAsync("DELETE FROM inventory WHERE discord_id = @id AND item_id IN (SELECT item_id FROM items WHERE type = 'Huevo')", new { id = (long)G10 });
+Embed invBoxesEn; using (Loc.Use("en")) { invBoxesEn = await GameModule.BuildInventoryEmbedAsync(invRepo10, G10, "Pepe"); }
+Check(invBoxesEn.Footer!.Value.Text == "📦 Open your boxes with /open" && LeakCheck.AllText(invBoxesEn).Contains("📦 **Boxes**") && !LeakCheck.AllText(invBoxesEn).Contains("eggs"),$"sin huevos el título y el pie dicen solo «cajas» ({invBoxesEn.Footer!.Value.Text})");
+await db.ExecuteAsync("DELETE FROM inventory WHERE discord_id = @id", new { id = (long)G10 });
+Embed invEmptyEn; using (Loc.Use("en")) { invEmptyEn = await GameModule.BuildInventoryEmbedAsync(invRepo10, G10, "Pepe"); }
+Check(invEmptyEn.Description == "You don't have any materials yet. Try /hunt, /chop or /mine!", $"el inventario vacío en inglés ({invEmptyEn.Description})");
+await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)G10 });
+
 // El repositorio de verdad: nada falta, nada sobra, ningún {0} desparejo, ningún literal raro.
 var catalogOnDisk = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(Path.Combine(TestEnv.RepoRoot, "Locales", "en.json")))!;
 var repoReport = LocScan.Compare(LocScan.Extract(TestEnv.RepoRoot), catalogOnDisk);

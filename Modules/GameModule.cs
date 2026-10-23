@@ -220,7 +220,7 @@ public class GameModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("No pude consultar ese inventario ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("No pude consultar ese inventario ahora mismo, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -247,7 +247,7 @@ public class GameModule(
         var entries = await inventoryRepository.GetByDiscordIdAsync(discordId);
 
         var embed = new EmbedBuilder()
-            .WithTitle($"🎒 Inventario de {username}")
+            .WithTitle(Loc.F($"🎒 Inventario de {username}"))
             .WithColor(Color.Orange)
             .WithCurrentTimestamp();
 
@@ -257,29 +257,30 @@ public class GameModule(
         var food = Lines(entries.Where(e => e.Type is "Consumable" or "PetFood"));
         var drops = Lines(entries.Where(e => e.Type == "Material"));
         var boxes = Lines(entries.Where(e => e.Type is "Caja" or "Huevo"));
-        string boxTitle = entries.Any(e => e.Type == "Huevo" && e.Quantity > 0) ? "Cajas y huevos" : "Cajas";
+        bool hasEggs = entries.Any(e => e.Type == "Huevo" && e.Quantity > 0);
+        string boxTitle = hasEggs ? Loc.T("Cajas y huevos") : Loc.T("Cajas");
 
         if (wood.Count + minerals.Count + food.Count + drops.Count + boxes.Count == 0)
         {
-            embed.WithDescription("Todavía no tenés ningún material. ¡Probá /hunt, /chop o /mine!");
+            embed.WithDescription(Loc.T("Todavía no tenés ningún material. ¡Probá /hunt, /chop o /mine!"));
             return embed.Build();
         }
 
         // Columna izquierda: Madera y, debajo, los drops. Columna derecha: Mineral y, debajo, los consumibles. Las Cajas van con la comida (en el mismo campo) si entran juntas.
         var left = new List<(string Name, string Value)>();
         var right = new List<(string Name, string Value)>();
-        AddFields(left, "🪵 Madera", wood);
-        AddFields(right, "⛏️ Mineral", minerals);
-        AddFields(left, "🩸 Drops de monstruo", drops);
+        AddFields(left, Loc.T("🪵 Madera"), wood);
+        AddFields(right, Loc.T("⛏️ Mineral"), minerals);
+        AddFields(left, Loc.T("🩸 Drops de monstruo"), drops);
 
         string stacked = food.Count > 0 && boxes.Count > 0 ? string.Join('\n', food) + $"\n\n📦 **{boxTitle}**\n" + string.Join('\n', boxes) : string.Empty;
         if (stacked.Length > 0 && stacked.Length <= FieldLimit)
         {
-            right.Add(("🍖 Consumibles", stacked));
+            right.Add((Loc.T("🍖 Consumibles"), stacked));
         }
         else
         {
-            AddFields(right, "🍖 Consumibles", food);
+            AddFields(right, Loc.T("🍖 Consumibles"), food);
             AddFields(right, $"📦 {boxTitle}", boxes);
         }
 
@@ -304,7 +305,7 @@ public class GameModule(
 
         if (boxes.Count > 0)
         {
-            embed.WithFooter(boxTitle == "Cajas" ? "📦 Abrí tus cajas con /open" : "📦 Abrí tus cajas y huevos con /open");
+            embed.WithFooter(hasEggs ? Loc.T("📦 Abrí tus cajas y huevos con /open") : Loc.T("📦 Abrí tus cajas con /open"));
         }
 
         return embed.Build();

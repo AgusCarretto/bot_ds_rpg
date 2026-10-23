@@ -7,7 +7,12 @@ namespace BotDsRpg.GameData;
 // que salió, ProfessionRules.GatherXp); el Encantador sigue por intentos (25 de XP cada uno). Así el progreso NO se guarda en ningún lado (no hay tabla ni migración, no se puede desincronizar) y lo que el jugador ya
 // hizo antes de que existieran los oficios cuenta. Command es el comando que lo sube; AdvancedName, el nombre de su versión avanzada (se desbloquea al nivel máximo).
 public sealed record ProfessionDefinition(
-    string Key, string Name, string Emoji, string StatKind, int XpPerAction, string Command, string AdvancedName, IReadOnlyList<string> Aliases);
+    string Key, string Name, string Emoji, string StatKind, int XpPerAction, string Command, string AdvancedName, IReadOnlyList<string> Aliases)
+{
+    // Los nombres para mostrar, en el idioma de quien los lee. Name y AdvancedName siguen siendo el español (Loc.Mark): es lo que buscan Find y los contadores.
+    public string DisplayName => Loc.Tr(Name);
+    public string DisplayAdvancedName => Loc.Tr(AdvancedName);
+}
 
 public static class ProfessionCatalog
 {
@@ -18,9 +23,9 @@ public static class ProfessionCatalog
     // Sumar un oficio es una fila acá (y su efecto en ProfessionRules / PlayerBonuses): el resto del juego lo recorre.
     public static readonly IReadOnlyList<ProfessionDefinition> All =
     [
-        new(WoodcutterKey, "Leñador", "🪓", GameEventKinds.ChopXp, 1, "/chop", "Tala avanzada", ["lenador", "leñador", "woodcutter", "chop", "talar", "tala", "madera"]),
-        new(MinerKey, "Minero", "⛏️", GameEventKinds.MineXp, 1, "/mine", "Minería avanzada", ["minero", "miner", "mine", "minar", "mineria", "mineral"]),
-        new(EnchanterKey, "Encantador", "✨", GameEventKinds.Enchant, 25, "/enchant", "Encantamiento avanzado", ["encantador", "enchanter", "enchant", "encantar", "encantamiento"]),
+        new(WoodcutterKey, Loc.Mark("Leñador"), "🪓", GameEventKinds.ChopXp, 1, "/chop", Loc.Mark("Tala avanzada"), ["lenador", "leñador", "woodcutter", "chop", "talar", "tala", "madera"]),
+        new(MinerKey, Loc.Mark("Minero"), "⛏️", GameEventKinds.MineXp, 1, "/mine", Loc.Mark("Minería avanzada"), ["minero", "miner", "mine", "minar", "mineria", "mineral"]),
+        new(EnchanterKey, Loc.Mark("Encantador"), "✨", GameEventKinds.Enchant, 25, "/enchant", Loc.Mark("Encantamiento avanzado"), ["encantador", "enchanter", "enchant", "encantar", "encantamiento"]),
     ];
 
     public static ProfessionDefinition? Find(string? textOrKey) =>
