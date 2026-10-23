@@ -18,7 +18,8 @@ public sealed class ReminderScheduler(
     IReminderService service,
     ICombatSessionService combat,
     IRaidSessionService raids,
-    DiscordSocketClient client)
+    DiscordSocketClient client,
+    IPlayerLanguageService? languages = null)
 {
     private static readonly TimeSpan Interval = TimeSpan.FromSeconds(5);
 
@@ -89,6 +90,8 @@ public sealed class ReminderScheduler(
                 return;
             }
 
+            // Cada aviso sale en el idioma de SU destinatario (el reloj no corre dentro de ningún comando, así que no hay idioma ya fijado). El alcance se abre acá, en este mismo método, y se suelta al terminar.
+            using var languageScope = Loc.Use(languages is null ? Loc.Spanish : await languages.ResolveAsync(discordId, null));
             string text = ReminderCatalog.Compose(discordId, kinds);
             if (text.Length == 0)
             {

@@ -286,6 +286,10 @@ class Program
     {
         try
         {
+            // El idioma del jugador (GameData/Loc.cs) se fija UNA vez, acá, antes de cualquier respuesta (el aviso de registro y el bloqueo de pelea también salen en su idioma). Se hace en este mismo método y
+            // no en un helper: un AsyncLocal fijado adentro de un método async no vuelve al que lo llamó. Los comandos que se lanzan después heredan el idioma. Nunca tira: sin dato, español.
+            using var languageScope = Loc.Use(await _services.GetRequiredService<IPlayerLanguageService>().ResolveAsync(interaction.User.Id, interaction.UserLocale));
+
             // Chequeo directo ANTES de despachar el comando: nada de inspeccionar el resultado
             // de una precondición (ese enfoque dependía de que Discord.Net devolviera el
             // ErrorReason exacto, y no coincidía — la interacción quedaba sin ninguna respuesta
@@ -364,6 +368,9 @@ class Program
         {
             // Mismo gate de registro que los slash commands, para que "aa hunt" no esquive /start.
             // "aa start" queda exento (es el único comando de texto que tiene que funcionar sin cuenta).
+            // El idioma (GameData/Loc.cs): un mensaje de texto no trae el idioma de Discord, así que vale el guardado del jugador (o español). Se fija en este método, no en un helper (ver HandleInteractionAsync).
+            using var languageScope = Loc.Use(await _services.GetRequiredService<IPlayerLanguageService>().ResolveAsync(message.Author.Id, null));
+
             string commandText = message.Content[argPos..].TrimStart();
             bool isStartCommand = commandText.Equals("start", StringComparison.OrdinalIgnoreCase)
                 || commandText.StartsWith("start ", StringComparison.OrdinalIgnoreCase);

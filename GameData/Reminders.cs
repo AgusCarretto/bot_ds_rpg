@@ -20,17 +20,18 @@ public static class ReminderCatalog
 
     public static readonly IReadOnlyList<ReminderKind> All =
     [
-        new("hunt", "🏹", "Cacería", "/hunt", "¡Cacería lista! Ya podés volver a cazar con `/hunt`.", ShortLived),
-        new("travel", "🗺️", "Viaje", "/travel", "¡Viaje listo! Ya podés salir de expedición con `/travel`.", null),
-        new("chop", "🪓", "Talar", "/chop", "¡Ya podés talar de nuevo con `/chop`!", ShortLived),
-        new("mine", "⛏️", "Minar", "/mine", "¡Ya podés minar de nuevo con `/mine`!", ShortLived),
-        new("boss", "👑", "Jefe", "/boss", "¡Jefe listo! Ya podés enfrentarlo con `/boss`, solo o con amigos (`/boss companero:@amigo`).", null),
-        new("buybox", "📦", "Comprar caja", "/taberna", "¡Ya podés comprar otra caja! Pasá por la `/taberna`.", null),
-        new("chop_adv", "🪓", "Tala avanzada", "/chop", "¡La tala avanzada está lista! `/chop modo:Avanzada`.", null),
-        new("mine_adv", "⛏️", "Minería avanzada", "/mine", "¡La minería avanzada está lista! `/mine modo:Avanzada`.", null),
-        new("pet", "🐾", "Mascotas", "/pet feed", "¡Tus mascotas ya pueden comer! Dales de comer con `/pet feed`.", null),
-        new("daily", "🎁", "Diario", "/daily", "¡Tu recompensa diaria está lista! Reclamala con `/daily`.", null),
-        new("vote", "🗳️", "Votar", "/vote", "¡Ya podés votar de nuevo! Votá en top.gg y cobrá con `/vote`: un Baúl de Roble y el jefe reseteado.", null),
+        // Los textos van con Loc.Mark (GameData/Loc.cs): son una tabla que se arma una sola vez, así que se traducen al MOSTRARLOS (Compose, con Loc.Tr), no acá.
+        new("hunt", "🏹", Loc.Mark("Cacería"), "/hunt", Loc.Mark("¡Cacería lista! Ya podés volver a cazar con `/hunt`."), ShortLived),
+        new("travel", "🗺️", Loc.Mark("Viaje"), "/travel", Loc.Mark("¡Viaje listo! Ya podés salir de expedición con `/travel`."), null),
+        new("chop", "🪓", Loc.Mark("Talar"), "/chop", Loc.Mark("¡Ya podés talar de nuevo con `/chop`!"), ShortLived),
+        new("mine", "⛏️", Loc.Mark("Minar"), "/mine", Loc.Mark("¡Ya podés minar de nuevo con `/mine`!"), ShortLived),
+        new("boss", "👑", Loc.Mark("Jefe"), "/boss", Loc.Mark("¡Jefe listo! Ya podés enfrentarlo con `/boss`, solo o con amigos (`/boss companero:@amigo`)."), null),
+        new("buybox", "📦", Loc.Mark("Comprar caja"), "/taberna", Loc.Mark("¡Ya podés comprar otra caja! Pasá por la `/taberna`."), null),
+        new("chop_adv", "🪓", Loc.Mark("Tala avanzada"), "/chop", Loc.Mark("¡La tala avanzada está lista! `/chop modo:Avanzada`."), null),
+        new("mine_adv", "⛏️", Loc.Mark("Minería avanzada"), "/mine", Loc.Mark("¡La minería avanzada está lista! `/mine modo:Avanzada`."), null),
+        new("pet", "🐾", Loc.Mark("Mascotas"), "/pet feed", Loc.Mark("¡Tus mascotas ya pueden comer! Dales de comer con `/pet feed`."), null),
+        new("daily", "🎁", Loc.Mark("Diario"), "/daily", Loc.Mark("¡Tu recompensa diaria está lista! Reclamala con `/daily`."), null),
+        new("vote", "🗳️", Loc.Mark("Votar"), "/vote", Loc.Mark("¡Ya podés votar de nuevo! Votá en top.gg y cobrá con `/vote`: un Baúl de Roble y el jefe reseteado."), null),
     ];
 
     public static ReminderKind? Find(string? key) => All.FirstOrDefault(k => k.Key == key);
@@ -123,10 +124,10 @@ public static class ReminderCatalog
 
         if (found.Count == 1)
         {
-            return $"<@{discordId}> {found[0].Emoji} {found[0].ReadyText}";
+            return $"<@{discordId}> {found[0].Emoji} {Loc.Tr(found[0].ReadyText)}";
         }
 
-        return $"<@{discordId}> ⏰ ¡Ya podés de nuevo!\n" + string.Join('\n', found.Select(k => $"{k.Emoji} **{k.Name}** — `{k.Command}`"));
+        return $"<@{discordId}> " + Loc.T("⏰ ¡Ya podés de nuevo!") + "\n" + string.Join('\n', found.Select(k => $"{k.Emoji} **{Loc.Tr(k.Name)}** — `{k.Command}`"));
     }
 
     // Si TODOS los avisos del mensaje son de esperas cortas, el mensaje se borra solo; si hay uno largo, queda (el jugador lo necesita aunque vuelva tarde).

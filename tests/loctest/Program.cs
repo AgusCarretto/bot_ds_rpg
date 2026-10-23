@@ -157,6 +157,58 @@ await textCommands.AddModuleAsync<TextCommandModule>(sp);
 Check(textCommands.Search("idioma").Commands.FirstOrDefault().Command?.Name == "language" && textCommands.Search("language en").IsSuccess, "con el CommandService real «aa idioma» y «aa language» llegan al mismo comando");
 await CleanLanguages();
 
+Console.WriteLine("\n== 5. El idioma al despachar y en los recordatorios ==");
+// La trampa del AsyncLocal (ver el comentario de GameData/Loc.cs): fijado ADENTRO de un helper async no vuelve al que lo llamó; fijado en el propio método, sí vale para todo lo que sigue.
+static async Task<IDisposable> UseInsideHelperAsync(string language) { await Task.Yield(); return Loc.Use(language); }
+async Task<string> InCallerFrame(IPlayerLanguageService svc, ulong id, string? locale)
+{
+    using var scope = Loc.Use(await svc.ResolveAsync(id, locale));
+    await Task.Yield();
+    return Loc.Current;
+}
+
+using (await UseInsideHelperAsync("en")) { Check(Loc.Current == "es", "un Loc.Use hecho adentro de un helper async NO le llega a quien lo llamó (por eso el idioma se fija en el propio método despachador)"); }
+await langService.SetAsync(L3, "en");
+Check(await InCallerFrame(langService, L3, null) == "en" && Loc.Current == "es", "el patrón de Program.cs: Loc.Use(await ResolveAsync(…)) en el propio método vale para todo lo que sigue y se suelta al terminar");
+Check(await InCallerFrame(new PlayerLanguageService(new ThrowingRepo()), L5, "en-US") == "es", "si el servicio de idioma falla, el comando sigue en español");
+
+Check(ReminderCatalog.Compose(L1, ["hunt"]) == $"<@{L1}> 🏹 ¡Cacería lista! Ya podés volver a cazar con `/hunt`.", "el recordatorio en español es el de siempre");
+using (Loc.Use("en"))
+{
+    string one = ReminderCatalog.Compose(L1, ["hunt"]);
+    string two = ReminderCatalog.Compose(L1, ["travel", "daily"]);
+    Check(one.StartsWith($"<@{L1}> 🏹 ") && one.Contains("Hunt ready") && one.Contains("`/hunt`") && !one.Contains("Cacería"), $"un recordatorio en inglés ({one})");
+    Check(two.Contains("You can go again") && two.Contains("**Travel**") && two.Contains("**Daily**") && !two.Contains("Viaje") && !two.Contains("Diario"), $"varios juntos, en inglés ({two.Replace("\n", " | ")})");
+}
+
+// El reloj arma el aviso de cada jugador en SU idioma (mismo ciclo, dos jugadores).
+const ulong R1 = 999000000000098006UL, R2 = 999000000000098007UL;
+const ulong CHAN = 777000000000000011UL;
+var reminders = new ReminderRepository(factory);
+var cooldowns = new CooldownRepository(factory);
+var userRepo = new UserRepository(factory);
+var bonusService = new PlayerBonusService(new PetRepository(factory), new BlessingRepository(factory), new GameEventRepository(factory));
+foreach (var id in new[] { R1, R2 }) { await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)id }); await userRepo.GetOrCreateUserAsync(id); }
+await langService.SetAsync(R1, "en");
+await langService.SetAsync(R2, "es");
+var sentMessages = new System.Collections.Concurrent.ConcurrentQueue<(ulong User, string Text)>();
+var scheduler = new ReminderScheduler(reminders, new ReminderService(reminders, cooldowns, userRepo, new PetRepository(factory), bonusService), new CombatSessionService(userRepo), new RaidSessionService(), new DiscordSocketClient(), langService)
+{
+    Sender = (user, channel, text, del) => { sentMessages.Enqueue((user, text)); return Task.CompletedTask; },
+};
+foreach (var id in new[] { R1, R2 })
+{
+    await db.ExecuteAsync("INSERT INTO reminders (discord_id, kind, channel_id, due_at) VALUES (@id, 'boss', @c, now() - interval '1 second') ON CONFLICT (discord_id, kind) DO UPDATE SET due_at = EXCLUDED.due_at", new { id = (long)id, c = (long)CHAN });
+}
+
+await scheduler.TickAsync(DateTime.UtcNow);
+var delivered = sentMessages.ToList();
+Check(delivered.Count == 2 && delivered.Single(m => m.User == R1).Text.Contains("Boss ready") && delivered.Single(m => m.User == R2).Text.Contains("Jefe listo"), $"en el mismo ciclo, un jugador con inglés guardado recibe «Boss ready» y el otro «Jefe listo» ({string.Join(" || ", delivered.Select(d => d.Text))})");
+Check(Loc.Current == "es", "y el reloj no deja el idioma pisado");
+foreach (var id in new[] { R1, R2 }) { await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)id }); }
+await CleanLanguages();
+await db.ExecuteAsync("DELETE FROM player_language WHERE discord_id IN (999000000000098006, 999000000000098007)");
+
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;
 
