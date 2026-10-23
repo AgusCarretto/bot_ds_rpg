@@ -316,11 +316,11 @@ var profPlain = await GameModule.BuildProfileEmbedAsync(users, itemsRepo, zonesR
 var meNow = await Me();
 var profBonuses = await bonusSvc.GetAsync(U, 3);
 var profCombat = PlayerCombatProfileCalculator.Resolve(meNow, weaponItem, amuletItem, 0, profBonuses);
-string ProfBlock(Embed e) => e.Fields.Single(f => f.Name == "Estado").Value;
-string ProfLine(Embed e, string label) => ProfBlock(e).Split('\n').FirstOrDefault(l => l.StartsWith($"**{label}**")) ?? string.Empty;
+string ProfBlock(Embed e) => ProfileProbe.Stats(e);
+string ProfLine(Embed e, string label) => ProfileProbe.Line(e, label);
 string atkField = ProfLine(prof, "ATQ"), defField = ProfLine(prof, "DEF");
 Check(prof.Description.Contains("FN **3**") && !prof.Title.Contains("FN") && !prof.Fields.Any(f => f.Name.Contains("Fuego Nuevo") || f.Name.Contains("Bendiciones") || f.Name.Contains("Mascotas") || f.Name.Contains("Oficios")), "el perfil muestra «FN 3» en la primera línea de la descripción (v0.19.4: ya no en el título) pero YA NO lista porcentajes, bendiciones, mascotas ni oficios (v0.14.3: están en aa fn, aa pet, aa bendiciones y aa oficios)");
-Check(atkField.StartsWith($"**ATQ** {profCombat.Damage} ") && defField.StartsWith($"**DEF** {profCombat.Defense} ") && profCombat.Damage > PlayerCombatProfileCalculator.Resolve(meNow, weaponItem, amuletItem, 0).Damage, $"el ataque ({profCombat.Damage}) y la defensa ({profCombat.Defense}) del perfil son los que pelean");
+Check(ProfileProbe.Number(prof, "ATQ") == profCombat.Damage && ProfileProbe.Number(prof, "DEF") == profCombat.Defense && profCombat.Damage > PlayerCombatProfileCalculator.Resolve(meNow, weaponItem, amuletItem, 0).Damage, $"el ataque ({profCombat.Damage}) y la defensa ({profCombat.Defense}) del perfil son los que pelean");
 Check(!prof.Description.Contains(BlessingCatalog.ColorTitle(2)) && TitleCatalog.IsUnlocked(TitleCatalog.Find("color_2")!, new TitleContext(new Dictionary<string, long>(), 1, new HashSet<int>(), new HashSet<string>(), 2)) && prof.Color == new Color((uint)BlessingCatalog.ColorValue(2)) && profPlain.Color == Color.Orange && !profPlain.Fields.Any(f => f.Name.Contains("Bendiciones")), "Brasa de Color II cambia el color del perfil; su título (v0.23.0) ya no es una línea fija: es el título «Llama Dorada», que se desbloquea con el nivel de la bendición y se pone con /titles; sin el servicio no hay bendiciones ni color");
 foreach (var b in all) await SetBlessing(b.Key, 5);
 await db.ExecuteAsync("UPDATE users SET fuego_nuevo = 40 WHERE discord_id = @id", new { id = (long)U });

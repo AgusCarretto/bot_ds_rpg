@@ -254,13 +254,13 @@ Console.WriteLine("\n== 10. Perfil, tienda y desplegable de curar muestran el bu
 {
     await ClearBuff();
     var e0 = await GameModule.BuildProfileEmbedAsync(users, items, zones, buffs, U, "Test", "https://example.com/a.png");
-    string ProfLine(Embed e, string label) => e.Fields.Single(f => f.Name == "Estado").Value.Split('\n').First(l => l.StartsWith($"**{label}**"));
+    string ProfLine(Embed e, string label) => ProfileProbe.Line(e, label);
     string atk0 = ProfLine(e0, "ATQ");
     await buffs.ActivateAttackAsync(U, 15, 30, Banquete1);
     var e1 = await GameModule.BuildProfileEmbedAsync(users, items, zones, buffs, U, "Test", "https://example.com/a.png");
     string atk1 = ProfLine(e1, "ATQ");
-    int n0 = int.Parse(atk0.Split(' ')[1]);
-    int n1 = int.Parse(atk1.Split(' ')[1]);
+    int n0 = ProfileProbe.Number(e0, "ATQ");
+    int n1 = ProfileProbe.Number(e1, "ATQ");
     Check(!atk0.Contains("🍖") && atk1.Contains("🍖") && atk1.Contains("+15 %") && n1 == AttackBuff.Apply(n0, 15), $"/profile: «{atk0.Trim()}» -> «{atk1.Trim()}»");
     await ClearBuff();
 

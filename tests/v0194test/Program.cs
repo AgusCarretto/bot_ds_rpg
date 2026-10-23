@@ -99,24 +99,38 @@ async Task<Embed> Profile(ulong id) => await GameModule.BuildProfileEmbedAsync(u
 
 UiEmojis.Set([]);
 var plain = await Profile(U);
-Check(plain.Title == "⚔️ T - Recién Llegado (Guerrero)" && plain.Description == "🔥 FN **3** · Nivel **41**" && plain.Fields[0].Name == "XP" && plain.Fields[0].Value.StartsWith("░░░░░░░░░░") && !plain.Fields[0].Value.Contains("<:") && plain.Fields[0].Value.Contains("120 / ") && plain.Fields[0].Value.EndsWith(" 📊"),
-    $"perfil sin emojis subidos: el encabezado es «Nombre - Título (Clase)» (v0.23.0), la descripción dice «🔥 FN 3 · Nivel 41» (el FN va antes del nivel), el campo es «XP» con barra de texto y «120 / N 📊» sin repetir XP");
+Check(plain.Title == "⚔️ T - Recién Llegado (Guerrero)" && plain.Description.StartsWith("🔥 FN **3** · Nivel **41**\n") && plain.Fields[0].Name == "XP" && plain.Fields[0].Value.Split('\n')[0] == new string('░', GameModule.ProfileBarSegments) && !plain.Fields[0].Value.Contains("<:") && plain.Fields[0].Value.Contains("120 / ") && plain.Fields[0].Value.EndsWith(" 📊"),
+    $"perfil sin emojis subidos: el encabezado es «Nombre - Título (Clase)» (v0.23.0), la descripción empieza con «🔥 FN 3 · Nivel 41» (el FN va antes del nivel) y sigue la zona, el campo es «XP» con barra de texto de {GameModule.ProfileBarSegments} tramos y «120 / N 📊» sin repetir XP");
 var plainV = await Profile(V);
-Check(plainV.Description == "Nivel **7**" && !plainV.Description.Contains("FN"), "sin Fuego Nuevo la línea es solo el nivel (no aparece «FN 0»)");
+Check(plainV.Description.StartsWith("Nivel **7**\n") && !plainV.Description.Contains("FN"), "sin Fuego Nuevo la línea es solo el nivel (no aparece «FN 0»)");
 
 UiEmojis.Set(Full());
 bool StartsWithBar(string value, string kind) { var b = UiEmojis.Bar(kind)!; return value.StartsWith(b.LeftFull) || value.StartsWith(b.LeftEmpty); }
 await db.ExecuteAsync("UPDATE users SET has_bank = true, bank_gold = 99, dust = 5, daily_streak = 2, gold = 1234 WHERE discord_id = @id", new { id = (long)U });
 var rich = await Profile(U);
 string lv = UiEmojis.Lv!, fn = UiEmojis.FuegoNuevo;
-Check(rich.Description == $"{fn} **3** · {lv} **41**" && !rich.Title.Contains("<:") && rich.Fields[0].Name == "XP" && rich.Fields[0].Value.EndsWith($" {UiEmojis.Xp}") && StartsWithBar(rich.Fields[0].Value, "xp") && StartsWithBar(rich.Fields[1].Value, "hp"),
+Check(rich.Description.StartsWith($"{fn} **3** · {lv} **41**\n") && !rich.Title.Contains("<:") && rich.Fields[0].Name == "XP" && rich.Fields[0].Value.EndsWith($" {UiEmojis.Xp}") && StartsWithBar(rich.Fields[0].Value, "xp") && StartsWithBar(rich.Fields[1].Value, "hp"),
     "perfil con los emojis subidos: «<FN> 3 · <LV> 41» arriba, el campo XP con su ícono y las barras de XP y de vida con sus piezas (el título sin emojis propios)");
 Check(rich.Length <= 6000 && rich.Fields.All(f => f.Value.Length <= 1024) && rich.Fields.All(f => !f.Inline), $"el perfil con barras de emojis entra en los límites de Discord ({rich.Length} de 6000) y sigue apilado");
-string BlockLine(Embed e, string label) => e.Fields.Single(f => f.Name == "Estado").Value.Split('\n').First(l => l.StartsWith($"**{label}**"));
-Check(BlockLine(rich, "Oro") == $"**Oro** 1.234 {UiEmojis.Gold}" && BlockLine(rich, "Banco") == $"**Banco** 99 {UiEmojis.Bank}" && BlockLine(rich, "Polvo") == $"**Polvo** 5 {UiEmojis.Dust}" && BlockLine(rich, "Racha") == $"**Racha** día 2 {UiEmojis.Streak}" && UiEmojis.Gold.StartsWith("<:ui_oro:") && UiEmojis.Streak.StartsWith("<:ui_racha:"),
-    "con los íconos subidos, cada línea del bloque (Oro, Banco, Polvo, Racha) termina con el suyo");
-Check(rich.Fields.Select(f => f.Name).SequenceEqual(["XP", "Vida", "Estado", "✨ Habilidad"]) && BlockLine(rich, "ATQ").StartsWith("**ATQ** ") && BlockLine(rich, "DEF").StartsWith("**DEF** "),
-    "el perfil son cuatro campos: XP, Vida, el bloque «Estado» (ATQ, DEF, Oro, Banco...) y Habilidad");
+string BlockLine(Embed e, string label) => ProfileProbe.Line(e, label);
+Check(BlockLine(rich, "Oro") == $"{UiEmojis.Gold} **Oro:** 1.234" && BlockLine(rich, "Banco") == $"{UiEmojis.Bank} **Banco:** 99" && BlockLine(rich, "Polvo") == $"{UiEmojis.Dust} **Polvo:** 5" && BlockLine(rich, "Racha") == $"{UiEmojis.Streak} **Racha:** día 2" && UiEmojis.Gold.StartsWith("<:ui_oro:") && UiEmojis.Streak.StartsWith("<:ui_racha:"),
+    "con los íconos subidos, cada línea del bloque (Oro, Banco, Polvo, Racha) empieza con el suyo y después el nombre con dos puntos (v0.25.2)");
+Check(rich.Fields.Select(f => f.Name).SequenceEqual(["XP", "Vida", GameModule.ProfileStatsFieldName]) && BlockLine(rich, "ATQ").Contains(" **ATQ:** ") && BlockLine(rich, "DEF").Contains(" **DEF:** "),
+    "el perfil son tres campos: XP, Vida y el bloque de números sin título (ni «Estado» ni «Habilidad»)");
+
+// El perfil de la v0.25.2 (el dueño, 2026-10-23: zona arriba de la XP, sin «Estado», sin «Habilidad», íconos primero, líneas en blanco entre grupos, «(sin arma)», sin la marca de mascotas).
+var descLines = rich.Description.Split('\n');
+Check(descLines.Length >= 2 && descLines[1].Contains("**Zona:** ") && descLines[1].Contains("(máx. ") && !descLines[1].EndsWith("**Zona:**") && ProfileProbe.ZoneLine(rich) == descLines[1] && !ProfileProbe.Stats(rich).Contains("**Zona:**"),
+    $"la zona va en la descripción, justo debajo del nivel y arriba de la XP, con el ícono primero y sin nombre ({descLines.ElementAtOrDefault(1)})");
+string[] groups = ProfileProbe.Stats(rich).Split("\n\n");
+Check(groups.Length == 3 && groups[0].Split('\n').Length == 2 && groups[0].Contains("**ATQ:**") && groups[0].Contains("**DEF:**") && groups[1].Split('\n').Length == 3 && groups[1].Contains("**Oro:**") && groups[1].Contains("**Banco:**") && groups[1].Contains("**Polvo:**") && groups[2].Contains("**Racha:**"),
+    "una línea en blanco separa lo que pelea (ATQ, DEF), la plata (oro, banco, Polvo) y la racha");
+Check(ProfileProbe.Stats(await Profile(V)).Split("\n\n").Length == 2 && !ProfileProbe.Stats(await Profile(V)).EndsWith("\n"),
+    "sin racha no queda una línea en blanco de más al final (y sin banco ni Polvo solo hay oro)");
+int barPieces = rich.Fields[0].Value.Split('\n')[0].Split("<:bar_xp_").Length - 1, hpPieces = rich.Fields[1].Value.Split('\n')[0].Split("<:bar_hp_").Length - 1;
+Check(GameModule.ProfileBarSegments <= 8 && barPieces == GameModule.ProfileBarSegments && hpPieces == GameModule.ProfileBarSegments, $"las barras del perfil son más cortas para que entren en el celu ({barPieces} y {hpPieces} piezas)");
+Check(BlockLine(plain, "ATQ").StartsWith("⚔️ **ATQ:** ") && BlockLine(plain, "ATQ").Contains("(sin arma)") && BlockLine(plain, "DEF").StartsWith("🛡️ **DEF:** ") && BlockLine(plain, "DEF").Contains("(sin amuleto)") && !BlockLine(plain, "DEF").Contains("🐾"),
+    "sin arma ni amuleto: un ícono genérico primero y «(sin arma)» / «(sin amuleto)» entre paréntesis, sin marca de mascotas");
 
 // El ranking.
 await db.ExecuteAsync("UPDATE users SET fuego_nuevo = 996 WHERE discord_id = @id", new { id = (long)U });
