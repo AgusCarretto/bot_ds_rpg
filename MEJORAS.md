@@ -1,6 +1,6 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-22 (v0.25.1: la Guarda baja un poco)_
+_Última revisión: 2026-10-23 (v0.25.2: el perfil, ordenado para el celu)_
 
 ## Pendiente de un vistazo (puesto al día el 2026-10-22)
 
@@ -31,6 +31,16 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
   Términos y Privacidad públicos, y hay que confirmar si hay Premium Apps en Uruguay (Developer Portal, Monetization). Punto de enganche: `ReminderPolicy.IsEligible` y `CooldownCatalog`. El título especial entra como categoría «Especiales» del sistema de títulos.
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
+
+## El perfil, ordenado para el celu (v0.25.2, 2026-10-23)
+
+- **Pedido del dueño** (viendo el perfil en el celu, ya con la v0.25.1 en Railway): la XP y la vida se cortaban y bajaban de renglón; sacar la habilidad («eso con `aa hab` ya se ve»), la marca de mascotas («ya queda incluido»), el título «Estado»; la zona arriba de la XP; una línea en blanco entre DEF y oro y entre banco y racha; «ATQ:» con dos puntos y «(sin arma)» / «(sin amuleto)» entre paréntesis; el ícono primero y después el nombre.
+- **Las barras** pasan de 10 a **8 piezas** (`GameModule.ProfileBarSegments`): en el celu la miniatura le saca ancho al campo y 10 piezas no entraban. Sin forma de saber desde el bot si alguien mira en el celu, es el mismo largo para todos. Si todavía se parte en algún celu, bajar ese número (7 o 6).
+- **El perfil queda así**: título «⚔️ Nombre - Título (Clase)»; descripción «FN · LV», la zona («🌲 Zona: 2 (máx. 2)») y, solo si corresponde, «Venció al Asador»; campos XP y Vida (barra de 8 + números) y un bloque **sin título** con tres grupos separados por una línea en blanco: «<arma> ATQ: 48», «<amuleto> DEF: 14 (sin amuleto)» / «<oro> Oro», «<banco> Banco», «<polvo> Polvo» / «<racha> Racha: día 15». Las marcas ⚡ 🍖 🔥 ✨ siguen detrás del número; la 🐾 de las mascotas ya no (el número de DEF las incluye).
+- **El campo sin título** lleva un carácter de ancho cero como nombre (Discord exige uno): se dibuja como un renglón en blanco entre las barras y los números. No es el «campo vacío como separador» que dejaba un hueco enorme en la v0.9.1: este tiene contenido y solo le falta el título. Si en el celu se ve demasiado aire, la salida es pasar XP, Vida y los números a la descripción (sin campos).
+- **Dejé sin tocar** a propósito: los renglones de XP y Vida siguen «1646 / 4687 <ícono>» (el ícono al final, como unidad) y el nombre de cada campo en texto plano (un emoji propio no se garantiza en el nombre de un campo).
+- **Pruebas**: los arneses que leían el campo «Estado» (`pettest`, `stage2btest`, `stage13test`, `v90test`, `fogontest`, `v0220test`, `fntest`, `v0194test`) pasan por `tests/Shared/ProfileProbe.cs`, y `v0194test` suma las comprobaciones del formato nuevo (zona en la descripción, tres grupos, ícono primero, 8 piezas, «(sin arma)»).
+- **Para la base viva**: nada (sin migración).
 
 ## La Guarda baja un poco (v0.25.1, 2026-10-22)
 

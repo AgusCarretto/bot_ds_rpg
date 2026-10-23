@@ -55,6 +55,14 @@ public class GameModule(
     public static string BuildNotRegisteredMessage(string displayName) =>
         $"🚫 **{displayName}** todavía no arrancó su aventura en Asado y Acero. ¡Decile que pruebe `/start`!";
 
+    // Tramos de la barra de XP y de Vida del perfil. Con 10 se veía bien en la compu, pero en el celu (donde la miniatura le saca ancho al campo) la barra se partía en dos renglones
+    // (el dueño, 2026-10-23: «en celu la vida y la xp se cortan y se van para abajo»): con 8 entra en las dos. Si todavía se parte en algún celu, bajar este número.
+    public const int ProfileBarSegments = 8;
+
+    // El campo con el bloque de números (ATQ, DEF, oro...) no lleva título (el dueño: «el título Estado sacalo»), pero Discord exige un nombre: va un carácter de ancho cero, que se dibuja
+    // como un renglón en blanco y separa el bloque de las barras. Los arneses buscan el campo por esta constante.
+    public const string ProfileStatsFieldName = "​";
+
     // Estático (sin dependencia de Context) para que Modules/TextCommandModule.cs arme el mismo
     // embed en "aa profile" — acá vive tanto la lectura de datos como el embed.
     public static async Task<Embed> BuildProfileEmbedAsync(
@@ -96,81 +104,75 @@ public class GameModule(
         // Todo lo permanente junto (v0.12.0: Fuego Nuevo y bendiciones además de las mascotas): el ataque y la defensa del perfil salen de la MISMA cuenta que usa el combate contra
         // monstruos (PlayerCombatProfileCalculator.Resolve), así el número que se ve es el que pelea. Sin servicio (pruebas) cuenta solo las mascotas, como antes.
         PlayerBonuses bonuses = bonusService is null ? PetRules.Total(pets) : await bonusService.GetAsync(discordId, player.FuegoNuevo);
-        var petBonuses = bonuses.Pets;
         var combat = PlayerCombatProfileCalculator.Resolve(player, weapon, amulet, buff?.AttackPercent ?? 0, bonuses);
         int attack = combat.Damage;
         int defense = combat.Defense;
 
         var classDef = ClassCatalog.All.FirstOrDefault(c => c.Name == player.Class);
-        var ability = ClassAbilities.For(player.Class);
         int requiredXp = LevelingCalculator.RequiredXpForLevel(player.Level);
 
-        // El bloque «Estado», una línea cada uno: la zona, el ataque, la defensa, el oro, el banco... (el dueño, 2026-10-20: «ATQ: el número y el arma, pero no el nombre, solo el emoji; abajo lo mismo con DEF; abajo el oro y luego el banco»):
-        //   ATQ 123 <arma> ⚡ ...      DEF 45 <amuleto> ...      Oro 1.234 <moneda>      Banco 99 <banco>
-        // Después del número va el emoji PROPIO de la pieza (el nombre lo dice /inventory y la herrería; sin emoji cargado se escribe el nombre para no dejar la línea muda). Las marcas de lo que suma
-        // aparecen solo cuando existen: ⚡ sinergia de clase, 🍖 banquete (con los minutos que le quedan), 🔥 Fuego Nuevo / bendición, 🐾 mascotas, ✨ encantamiento (el porcentaje de la pieza).
-        string PieceMark(Item? piece, string none) =>
-            piece is null ? none : (string.IsNullOrWhiteSpace(piece.Emoji) ? piece.Name : piece.Emoji);
+        // El bloque de números, una línea cada uno, con el ícono PRIMERO y después el nombre con dos puntos (el dueño, 2026-10-23: «dejá primero el ícono y después el nombre», «después de ATQ poné :»):
+        //   <arma> ATQ: 123 ⚡ ...      <amuleto> DEF: 45 ...      <moneda> Oro: 1.234      <banco> Banco: 99
+        // El ícono de ATQ y DEF es el emoji PROPIO de la pieza (el nombre lo dice /inventory y la herrería); sin pieza va uno genérico y «(sin arma)» / «(sin amuleto)» entre paréntesis, y si la pieza no tiene
+        // emoji cargado se escribe su nombre para no dejar la línea muda. Las marcas de lo que suma aparecen solo cuando existen: ⚡ sinergia de clase, 🍖 banquete (con los minutos que le quedan),
+        // 🔥 Fuego Nuevo / bendición, ✨ encantamiento (el porcentaje de la pieza). Las mascotas YA NO tienen marca (el dueño: «el +6 % de la mascota sacalo, ya queda incluido»): el número de DEF las incluye.
+        string PieceIcon(Item? piece, string generic) =>
+            piece is not null && !string.IsNullOrWhiteSpace(piece.Emoji) ? piece.Emoji : generic;
+        string PieceTail(Item? piece, string none) =>
+            piece is null ? $" ({none})" : (string.IsNullOrWhiteSpace(piece.Emoji) ? $" {piece.Name}" : string.Empty);
         // «✨+13 %» (Filo o Guarda) o «✨Crít +6» / «✨Sangre 3 %» / «✨Vida +13 %» / «✨Esq +6» (los efectos nuevos, v0.22.0).
         string EnchantMark(string kind, int tier) => Enchantments.IsValidTier(tier) ? $" ✨{Enchantments.ShortText(kind, tier)}" : string.Empty;
 
-        string attackLine = $"**ATQ** {attack} {PieceMark(weapon, "_sin arma_")}" + (hasSynergy ? " ⚡" : string.Empty)
+        string attackLine = $"{PieceIcon(weapon, "⚔️")} **ATQ:** {attack}{PieceTail(weapon, "sin arma")}" + (hasSynergy ? " ⚡" : string.Empty)
             + (buff is null ? string.Empty : $" 🍖+{buff.AttackPercent} % ({Math.Max(1, (int)Math.Ceiling(buff.Remaining.TotalMinutes))} min)")
             + (bonuses.AttackMultiplier > 1.0 ? $" 🔥{FuegoNuevoRules.PercentText(bonuses.AttackMultiplier)}" : string.Empty)
             + EnchantMark(player.WeaponEnchantKind, weapon is null ? 0 : player.WeaponEnchant);
-        string defenseLine = $"**DEF** {defense} {PieceMark(amulet, "_sin amuleto_")}" + (petBonuses.DefensePercent > 0 ? $" 🐾{PetRules.PercentText(petBonuses.DefensePercent)}" : string.Empty)
+        string defenseLine = $"{PieceIcon(amulet, "🛡️")} **DEF:** {defense}{PieceTail(amulet, "sin amuleto")}"
             + (bonuses.BlessingLevel(BlessingCatalog.DefenseKey) > 0 ? $" 🔥{FuegoNuevoRules.PercentText(1 + (BlessingCatalog.DefensePerLevel * bonuses.BlessingLevel(BlessingCatalog.DefenseKey)))}" : string.Empty)
             + EnchantMark(player.AmuletEnchantKind, amulet is null ? 0 : player.AmuletEnchant);
 
-        // El oro, el banco (a salvo de la penalidad por morir), el Polvo (solo cuando hay) y la racha del /daily (solo cuando hay) debajo, cada uno en su línea y con su ícono propio al final.
-        var numberLines = new List<string>
-        {
-            attackLine,
-            defenseLine,
-            $"**Oro** {GameHistory.Number(player.Gold)} {UiEmojis.Gold}",
-        };
+        // Tres grupos separados por una línea en blanco (el dueño: «entre DEF y oro tirá un br para separar un poquito, lo mismo entre banco y racha»): lo que pelea (ATQ y DEF), la plata (el oro, el banco a
+        // salvo de la penalidad por morir y el Polvo, estos dos solo cuando hay) y la racha del /daily (solo cuando hay). Un grupo vacío no deja línea en blanco de más.
+        var wealthLines = new List<string> { $"{UiEmojis.Gold} **Oro:** {GameHistory.Number(player.Gold)}" };
         if (player.HasBank)
         {
-            numberLines.Add($"**Banco** {GameHistory.Number(player.BankGold)} {UiEmojis.Bank}");
+            wealthLines.Add($"{UiEmojis.Bank} **Banco:** {GameHistory.Number(player.BankGold)}");
         }
 
         if (player.Dust > 0)
         {
-            numberLines.Add($"**Polvo** {GameHistory.Number(player.Dust)} {UiEmojis.Dust}");
+            wealthLines.Add($"{UiEmojis.Dust} **Polvo:** {GameHistory.Number(player.Dust)}");
         }
 
+        var statGroups = new List<string> { attackLine + "\n" + defenseLine, string.Join("\n", wealthLines) };
         if (player.DailyStreak > 0)
         {
-            numberLines.Add($"**Racha** día {player.DailyStreak} {UiEmojis.Streak}");
+            statGroups.Add($"{UiEmojis.Streak} **Racha:** día {player.DailyStreak}");
         }
 
-        // La zona va en el bloque de abajo, SIN el nombre (el dueño, 2026-10-20: «no poner el nombre, Zona 1 (máx. 3) y el ícono»): «Zona 1 (máx. 3) 🌾», con el ícono de la zona al final como las demás líneas.
+        // La zona va ARRIBA de la XP, en la descripción (el dueño: «la zona dejala arriba de la xp»), SIN el nombre (2026-10-20: «no poner el nombre, Zona 1 (máx. 3)»), con el ícono de la zona primero.
+        string zoneIcon = zone is null || string.IsNullOrWhiteSpace(zone.Emoji) ? string.Empty : zone.Emoji + " ";
         string zoneRow = zone is null
-            ? "**Zona** _desconocida_"
-            : $"**Zona** {zone.ZoneId}" + (maxZone is null ? string.Empty : $" (máx. {maxZone.ZoneId})") + (string.IsNullOrWhiteSpace(zone.Emoji) ? string.Empty : $" {zone.Emoji}");
+            ? "**Zona:** _desconocida_"
+            : $"{zoneIcon}**Zona:** {zone.ZoneId}" + (maxZone is null ? string.Empty : $" (máx. {maxZone.ZoneId})");
 
         // Parado en El Fogón Eterno (zona 0, GameData/FogonRules.cs): la zona de siempre sigue siendo la última normal, pero el jugador está en la puerta.
         if (player.InGate)
         {
-            zoneRow = $"**Zona** 0 🔥 (tu zona: {(zone is null ? "?" : zone.ZoneId.ToString())})";
-        }
-
-        numberLines.Insert(0, zoneRow);
-
-        // Debajo de la primera línea de la descripción, solo cuando corresponde: que venció al Asador. El texto de la bendición Brasa de Color ya no va acá: desde la v0.23.0 sus 5 nombres son títulos que se
-        // desbloquean con el nivel de la bendición y se ponen con /titles (el color del perfil sigue cambiando con su nivel).
-        var descriptionLines = new List<string>();
-        if (player.GateCleared)
-        {
-            descriptionLines.Add("🔥 _Venció al Asador Eterno._");
+            zoneRow = $"🔥 **Zona:** 0 (tu zona: {(zone is null ? "?" : zone.ZoneId.ToString())})";
         }
 
         int colorLevel = bonuses.BlessingLevel(BlessingCatalog.ColorKey);
 
-        // Debajo de la clase (el título) van el Fuego Nuevo y el nivel, en ese orden (el dueño, 2026-10-20: «clase, FN, LVL»): el título no se garantiza para emojis propios, así que viven en la
-        // descripción. Sin Fuego Nuevo solo el nivel. Sin los emojis subidos queda «🔥 FN 3 · Nivel 41» (GameData/UiEmojis.cs).
+        // La descripción, de arriba para abajo: el Fuego Nuevo y el nivel, en ese orden (el dueño, 2026-10-20: «clase, FN, LVL»; el título no se garantiza para emojis propios, así que viven acá; sin
+        // Fuego Nuevo solo el nivel, y sin los emojis subidos queda «🔥 FN 3 · Nivel 41», GameData/UiEmojis.cs), la zona y, solo cuando corresponde, que venció al Asador. El texto de la bendición Brasa de
+        // Color ya no va acá: desde la v0.23.0 sus 5 nombres son títulos que se desbloquean con el nivel de la bendición y se ponen con /titles (el color del perfil sigue cambiando con su nivel).
         string levelLine = (player.FuegoNuevo > 0 ? UiEmojis.FuegoNuevoTag(player.FuegoNuevo) + " · " : string.Empty) + UiEmojis.LevelTag(player.Level);
-        descriptionLines.Insert(0, levelLine);
+        var descriptionLines = new List<string> { levelLine, zoneRow };
+        if (player.GateCleared)
+        {
+            descriptionLines.Add("🔥 _Venció al Asador Eterno._");
+        }
 
         // El encabezado es «Nombre - Título (Clase)» (el dueño, 2026-10-22): el título es el que tiene puesto con /titles, o «Recién Llegado» si no puso ninguno. Va en el título del embed (texto plano), así que
         // no hay línea de autor: el nombre ya está acá y la foto sigue de miniatura.
@@ -180,21 +182,15 @@ public class GameModule(
             .WithColor(colorLevel > 0 ? new Color((uint)BlessingCatalog.ColorValue(colorLevel)) : Color.Orange) // Color cálido acorde al asado
             .WithThumbnailUrl(avatarUrl)
             // Los nombres de campo van en texto plano («XP», «Vida») y el ícono al final de la línea de números: un emoji propio no se garantiza en el nombre de un campo.
-            .AddField("XP", $"{ProgressBar.Render(player.Xp, requiredXp, kind: UiEmojis.BarXp)}\n{player.Xp} / {requiredXp} {UiEmojis.Xp}", false)
-            .AddField("Vida", $"{ProgressBar.Render(player.CurrentHp, player.MaxHp, kind: UiEmojis.BarHp)}\n{player.CurrentHp} / {player.MaxHp} HP ❤️", false)
-            .AddField("Estado", string.Join("\n", numberLines), false);
+            .AddField("XP", $"{ProgressBar.Render(player.Xp, requiredXp, ProfileBarSegments, UiEmojis.BarXp)}\n{player.Xp} / {requiredXp} {UiEmojis.Xp}", false)
+            .AddField("Vida", $"{ProgressBar.Render(player.CurrentHp, player.MaxHp, ProfileBarSegments, UiEmojis.BarHp)}\n{player.CurrentHp} / {player.MaxHp} HP ❤️", false)
+            .AddField(ProfileStatsFieldName, string.Join("\n\n", statGroups), false);
 
         // Las mascotas, los porcentajes del Fuego Nuevo, las bendiciones y los oficios YA NO van en el perfil (el dueño, 2026-10-07: «dejalas aparte»): cada uno tiene su comando propio,
-        // /pet (aa pet), /fuegonuevo (aa fn), /blessings (aa bendiciones) y /professions (aa oficios). El perfil queda con lo básico y el número que pelea: el ataque y la defensa siguen
-        // mostrando sus extras (🔥 / 🐾) en la misma línea, y el título y el color de la bendición Brasa de Color son cosméticos de acá arriba.
+        // /pet (aa pet), /fuegonuevo (aa fn), /blessings (aa bendiciones) y /professions (aa oficios). La habilidad de la clase tampoco (2026-10-23: «eso con aa hab ya se ve»). El perfil queda con
+        // lo básico y el número que pelea: el ataque y la defensa siguen mostrando sus extras (🔥 / ✨) en la misma línea, y el título y el color de la bendición Brasa de Color son cosméticos de acá arriba.
 
         return embed
-            .AddField(
-                "✨ Habilidad",
-                ability is null
-                    ? "_Ninguna_"
-                    : $"{ability.Emoji} **{ability.Name}** (enfriamiento: {ability.CooldownTurns} turnos)\n{ability.Description}",
-                false)
             .WithFooter("Asado y Acero RPG • Preparando las brasas...")
             .WithCurrentTimestamp()
             .Build();
