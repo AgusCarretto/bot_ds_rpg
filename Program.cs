@@ -557,6 +557,8 @@ public static class ServiceProviderBuilder
             .AddSingleton<IBlessingRepository, BlessingRepository>()
             .AddSingleton<IFuegoNuevoRepository, FuegoNuevoRepository>()
             .AddSingleton<IPlayerBonusService, PlayerBonusService>()
+            .AddSingleton<ILanguageRepository, LanguageRepository>()
+            .AddSingleton<IPlayerLanguageService, PlayerLanguageService>()
             .AddSingleton<IBuffRepository, BuffRepository>()
             .AddSingleton<IMissionRepository, MissionRepository>()
             .AddSingleton<IAchievementRepository, AchievementRepository>()

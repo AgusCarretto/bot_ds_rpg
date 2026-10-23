@@ -459,3 +459,10 @@ CREATE TABLE IF NOT EXISTS reminder_settings (
     discord_id BIGINT PRIMARY KEY REFERENCES users (discord_id) ON DELETE CASCADE,
     off_kinds  TEXT[] NOT NULL DEFAULT '{}'
 );
+
+-- El idioma de cada jugador (v0.26.0, Database/add_language.sql): español o inglés. Sin clave foránea: se puede elegir idioma antes de /start.
+CREATE TABLE IF NOT EXISTS player_language (
+    discord_id BIGINT PRIMARY KEY,
+    language   VARCHAR(5) NOT NULL CHECK (language IN ('es', 'en')),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);

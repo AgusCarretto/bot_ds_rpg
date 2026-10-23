@@ -1,4 +1,10 @@
+using BotDsRpg.Data;
 using BotDsRpg.GameData;
+using BotDsRpg.Repositories;
+using BotDsRpg.Services;
+using Dapper;
+using Microsoft.Extensions.Configuration;
+using Npgsql;
 
 // Idioma (español / inglés): el motor Loc, el formato regional, el idioma de cada jugador, /language, cómo se fija al despachar, el escáner de textos y, pantalla por pantalla, que el inglés
 // no deje caer español. Diseño: docs/superpowers/specs/2026-10-23-idioma-design.md. Plan: docs/superpowers/plans/2026-10-23-idioma.md.
@@ -71,5 +77,57 @@ using (Loc.Use("en"))
 Check(AmountParser.Parse("1,000", 5000).Amount == 1000 && AmountParser.Parse("1.000", 5000).Amount == 1000 && AmountParser.Parse("10k", 5000).Amount == 10_000 && AmountParser.Parse("1.5m", 5000).Amount == 1_500_000 && AmountParser.Parse("1,5m", 5000).Amount == 1_500_000,
     "los montos tecleados con separadores ingleses ya se entienden («1,000», «1.000», «10k», «1.5m»): un jugador puede escribir lo que lee en su idioma");
 
+Console.WriteLine("\n== 3. El idioma de cada jugador ==");
+string conn = TestEnv.Connection();
+var cfg = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Postgres:ConnectionString"] = conn }).Build();
+var factory = new NpgsqlConnectionFactory(cfg);
+await using var db = new NpgsqlConnection(conn);
+await db.OpenAsync();
+const ulong L1 = 999000000000098001UL, L2 = 999000000000098002UL, L3 = 999000000000098003UL, L4 = 999000000000098004UL, L5 = 999000000000098005UL;
+async Task CleanLanguages() => await db.ExecuteAsync("DELETE FROM player_language WHERE discord_id BETWEEN 999000000000098001 AND 999000000000098009");
+await CleanLanguages();
+var languageRepo = new LanguageRepository(factory);
+var service = new PlayerLanguageService(languageRepo);
+
+Check(PlayerLanguageService.LanguageForLocale("es-ES") == "es" && PlayerLanguageService.LanguageForLocale("es-419") == "es" && PlayerLanguageService.LanguageForLocale("ES") == "es"
+    && PlayerLanguageService.LanguageForLocale("en-US") == "en" && PlayerLanguageService.LanguageForLocale("pt-BR") == "en" && PlayerLanguageService.LanguageForLocale("fr") == "en"
+    && PlayerLanguageService.LanguageForLocale(null) is null && PlayerLanguageService.LanguageForLocale("") is null && PlayerLanguageService.LanguageForLocale("  ") is null,
+    "el idioma de Discord: es* → español, cualquier otro → inglés, y sin dato → ninguno");
+Check(await service.ResolveAsync(L1, "es-ES") == "es" && await languageRepo.GetAsync(L1) == "es", "con locale español devuelve es y lo deja guardado");
+Check(await service.ResolveAsync(L2, "en-US") == "en" && await languageRepo.GetAsync(L2) == "en", "con locale inglés devuelve en y lo deja guardado");
+Check(await new PlayerLanguageService(languageRepo).ResolveAsync(L2, "es-ES") == "en", "lo guardado gana al locale (un servicio nuevo, sin caché)");
+Check(await service.ResolveAsync(L3, null) == "es" && await languageRepo.GetAsync(L3) is null, "sin locale (un comando de texto) y sin nada guardado: es, y NO guarda");
+Check(await service.ResolveAsync(L4, "pt-BR") == "en", "un locale raro (pt-BR) cae a inglés");
+await service.SetAsync(L1, "en");
+Check(await service.ResolveAsync(L1, "es-ES") == "en" && await languageRepo.GetAsync(L1) == "en", "SetAsync guarda y el caché se actualiza al instante");
+await service.SetAsync(L1, "klingon");
+Check(await languageRepo.GetAsync(L1) == "es", "un idioma desconocido se guarda como español (Normalize)");
+
+var counting = new CountingRepo(languageRepo);
+var cached = new PlayerLanguageService(counting);
+await cached.ResolveAsync(L2, null);
+await cached.ResolveAsync(L2, "en-US");
+await cached.ResolveAsync(L2, "es-ES");
+Check(counting.Gets == 1, $"la 2.ª y la 3.ª resolución salen del caché (lecturas a la base: {counting.Gets})");
+
+var broken = new PlayerLanguageService(new ThrowingRepo());
+Check(await broken.ResolveAsync(L5, "en-US") == "es", "si la base falla (o la tabla no existe) devuelve español y NO tira");
+await CleanLanguages();
+
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;
+
+// Un repositorio que cuenta las lecturas, para probar el caché.
+sealed class CountingRepo(ILanguageRepository inner) : ILanguageRepository
+{
+    public int Gets;
+    public Task<string?> GetAsync(ulong discordId, CancellationToken ct = default) { Gets++; return inner.GetAsync(discordId, ct); }
+    public Task SetAsync(ulong discordId, string language, CancellationToken ct = default) => inner.SetAsync(discordId, language, ct);
+}
+
+// Un repositorio que falla siempre (la tabla sin crear, la base caída).
+sealed class ThrowingRepo : ILanguageRepository
+{
+    public Task<string?> GetAsync(ulong discordId, CancellationToken ct = default) => throw new InvalidOperationException("simulado: la tabla no existe");
+    public Task SetAsync(ulong discordId, string language, CancellationToken ct = default) => throw new InvalidOperationException("simulado");
+}
