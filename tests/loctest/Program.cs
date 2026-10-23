@@ -966,6 +966,16 @@ var flakyRepo = new CountingThrowingRepo(); var flakyService = new PlayerLanguag
 for (ulong i = 0; i < 30; i++) { await flakyService.ResolveAsync(990000000000 + i, "en-US"); }
 Check(flakyRepo.Calls == 1 && await flakyService.ResolveAsync(990000000099, "en-US") == "es", $"con la base fallando, 30 comandos hacen una sola consulta y todos salen en español ({flakyRepo.Calls})");
 
+// (2b) La vida de la victoria a mano es de ancho completo, así que su barra es la de ÍCONOS (como la del perfil: 8 piezas); sin las piezas cargadas, la de texto de siempre (pedido del dueño, 2026-10-23: «como el autohunt, con los íconos, incluida la barra de vida»).
+Embed HpVictory() => CallE(typeof(AdventureModule), "BuildVictoryEmbed", Fight("hunt"), killTurn, rewardFight, null, outcomeFight, true);
+string HpOf(Embed e) => e.Fields.Single(f => f.Name == "❤️ Tu HP").Value;
+string hpPlain = HpOf(HpVictory());
+UiEmojis.Set(new[] { "l_f", "m_f", "r_f", "l_e", "m_e", "r_e" }.Select(p => ($"bar_hp_{p}", $"<:bar_hp_{p}:1234567890123456{p.Length}{(int)p[0]}>")));
+string hpIcons = HpOf(HpVictory());
+UiEmojis.Set([]);
+Check(hpPlain.StartsWith("████████░░\n") && hpPlain.EndsWith("96/120") && !hpPlain.Contains("<:"), $"sin las piezas de la barra cargadas, la vida de la victoria es la barra de texto de siempre ({hpPlain.Replace("\n", " | ")})");
+Check(hpIcons.Split('\n')[0].Split("<:bar_hp_").Length - 1 == 8 && hpIcons.Split('\n')[0].StartsWith("<:bar_hp_l_f:") && hpIcons.Split('\n')[0].EndsWith(">") && !hpIcons.Contains('█') && hpIcons.EndsWith("\n96/120"), $"con las piezas cargadas, la vida de la victoria usa la barra de íconos de 8 piezas y debajo los números ({hpIcons.Replace("\n", " | ")})");
+
 // (3) El oro y la XP del resultado del /autohunt llevan su ícono (el propio de la interfaz si está cargado; si no, el de siempre), en los dos idiomas (pedido del dueño, 2026-10-23).
 Embed AutoVictory() => CallE(typeof(AutoHuntModule), "BuildVictoryEmbed", Fight("hunt"), outcomeFight, rewardFight, null);
 Embed autoPlainEs = AutoVictory(); Embed autoPlainEn; using (Loc.Use("en")) { autoPlainEn = AutoVictory(); }

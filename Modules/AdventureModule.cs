@@ -657,8 +657,13 @@ public class AdventureModule(
 
     // La vida del jugador tal como se ve en la pelea: la de la base (que es lo que devuelve la victoria, ya con la subida de nivel) con el factor de combate de ESA pelea. Antes la victoria mostraba la vida
     // real y la pelea la escalada, y el máximo «cambiaba» de una pantalla a la otra (v0.25.3, ver GameData/HpDisplay.cs).
-    public static string ShownHpLine(User player, double hpMultiplier) =>
-        HpLine(HpDisplay.Scale(player.CurrentHp, hpMultiplier), HpDisplay.Scale(player.MaxHp, hpMultiplier));
+    // Va en un campo de ANCHO COMPLETO (la victoria), así que lleva la barra de ÍCONOS como el perfil (8 piezas); sin las piezas cargadas sale la de texto de siempre.
+    public static string ShownHpLine(User player, double hpMultiplier)
+    {
+        int current = HpDisplay.Scale(player.CurrentHp, hpMultiplier), max = HpDisplay.Scale(player.MaxHp, hpMultiplier);
+        int segments = UiEmojis.Bar(UiEmojis.BarHp) is null ? 10 : GameModule.ProfileBarSegments;
+        return $"{ProgressBar.Render(current, max, segments, UiEmojis.BarHp)}\n{current}/{max}";
+    }
 
     // La victoria sin capítulo nuevo (la firma de siempre: los arneses de prueba la invocan por reflexión con estos 6 argumentos).
     private static Embed BuildVictoryEmbed(
