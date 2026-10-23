@@ -72,8 +72,20 @@ public static class Enchantments
             return null;
         }
 
-        return KindTable.FirstOrDefault(k => k.Slot == slot && (AutocompleteText.SameName(k.Key, text) || AutocompleteText.SameName(k.Name, text)))?.Key;
+        return KindTable.FirstOrDefault(k => k.Slot == slot && (AutocompleteText.SameName(k.Key, text) || AutocompleteText.SameName(k.Name, text) || EnglishWords(k.Key).Any(w => AutocompleteText.SameName(w, text))))?.Key;
     }
+
+    // Cómo se pide un efecto en inglés (el nombre del efecto sigue siendo el español, pero quien juega en inglés puede teclear «aa enchant weapon critical»): v0.26.0.
+    private static IEnumerable<string> EnglishWords(string kindKey) => kindKey switch
+    {
+        Filo => ["edge", "sharp", "sharpness"],
+        Critico => ["critical", "crit"],
+        Sangre => ["blood", "leech", "lifesteal"],
+        Guarda => ["guard"],
+        Vida => ["life", "health", "hp"],
+        Esquive => ["dodge", "evade"],
+        _ => [],
+    };
 
     // Un efecto que cambia el STAT de la pieza (Filo, Guarda) y no el combate: el único que usa Apply.
     public static bool IsStatKind(string? key) => key is Filo or Guarda;

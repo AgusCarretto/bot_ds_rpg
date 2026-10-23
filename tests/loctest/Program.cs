@@ -853,6 +853,39 @@ Embed notFoundEn; using (Loc.Use("en")) { notFoundEn = HelpTopics.Resolve("xyzzy
 Check(LeakCheck.NoSpanish(notFoundEn.Title + " " + notFoundEn.Description + " " + string.Join(" ", notFoundEn.Fields.Select(f => f.Name)), allowedNames).Ok,"el marco de la lista de temas está en inglés (los resúmenes de los temas sin traducir siguen en español)");
 Check(notFoundEn.Title == "📚 Help by topic" && notFoundEn.Description!.Contains("I couldn't find the topic **xyzzy**") && notFoundEn.Fields.Length == 2, $"un tema que no existe (en inglés): {notFoundEn.Description!.Split('\n')[0]}");
 
+Console.WriteLine("\n== 14. Palabras en inglés para lo que se teclea ==");
+// El dueño (2026-10-23): «aa enchant arma o weapon: me gusta». Todo lo que un texto en inglés sugiera teclear tiene que existir, y cada palabra en inglés llega al MISMO lugar que la del español.
+var normalizeSlot = typeof(DustModule).GetMethod("NormalizeSlot", BindingFlags.NonPublic | BindingFlags.Static)!;
+string? Slot14(string word) => (string?)normalizeSlot.Invoke(null, [word]);
+Check(Slot14("weapon") == "weapon" && Slot14("arma") == "weapon" && Slot14(" Weapon ") == "weapon" && Slot14("amulet") == "amulet" && Slot14("amuleto") == "amulet" && Slot14("AMULET") == "amulet" && Slot14("ring") is null,
+    "aa enchant: la pieza se entiende como weapon/arma y amulet/amuleto (mayúsculas y espacios no importan)");
+Check(new[] { "advanced", "avanzada", "avanzado", "adv", "Advanced" }.All(w => GatheringModule.ParseAdvanced(w) == true) && new[] { "", "normal" }.All(w => GatheringModule.ParseAdvanced(w) == false) && GatheringModule.ParseAdvanced("xyzzy") is null,
+    "aa chop / aa mine / aa enchant: advanced y avanzada/avanzado son el mismo modo");
+bool SameKind(string slot, string a, string b) => Enchantments.ParseKind(slot, a) is { } ka && ka == Enchantments.ParseKind(slot, b);
+Check(SameKind("weapon", "crítico", "critical") && SameKind("weapon", "critico", "crit") && SameKind("weapon", "sangre", "blood") && SameKind("weapon", "sangre", "leech") && SameKind("weapon", "filo", "edge") && SameKind("amulet", "guarda", "guard") && SameKind("amulet", "vida", "life") && SameKind("amulet", "vida", "health") && SameKind("amulet", "esquive", "dodge"),
+    "aa enchant arma critical|blood|edge y aa enchant amulet guard|life|dodge: los efectos también se piden en inglés");
+Check(Enchantments.ParseKind("amulet", "critical") is null && Enchantments.ParseKind("weapon", "dodge") is null && Enchantments.ParseKind("weapon", "nada") is null, "y un efecto de la otra pieza (o inexistente) sigue sin entenderse");
+Check(new[] { "info", "options", "help", "ayuda", "opciones", "chances", "tiers" }.All(DustModule.IsInfoRequest) && !DustModule.IsInfoRequest("weapon"), "aa enchant info|options|help abre la explicación");
+
+Check(TextShortcuts.ParseSell("weapon").Kind == SellKind.Weapon && TextShortcuts.ParseSell("arma").Kind == SellKind.Weapon && TextShortcuts.ParseSell("amulet").Kind == SellKind.Amulet && TextShortcuts.ParseSell("amuleto").Kind == SellKind.Amulet
+    && new[] { "all", "todo", "inventory", "inventario", "bag", "mochila" }.All(w => TextShortcuts.ParseSell(w).Kind == SellKind.All) && TextShortcuts.ParseSell("Hierro").Kind == SellKind.Item && TextShortcuts.ParseSell("10k Hierro") is { Kind: SellKind.Item, Quantity: "10k", Item: "Hierro" },
+    "aa sell weapon|amulet|all|inventory|bag y aa sell 10k <ítem>");
+Check(new[] { "h", "head", "heads", "cara" }.All(w => TextShortcuts.SideOf(w) == "heads") && new[] { "t", "tail", "tails", "cruz" }.All(w => TextShortcuts.SideOf(w) == "tails")
+    && TextShortcuts.ParseCoinflip("heads", "100") is { Amount: "100", Side: "heads" } && TextShortcuts.ParseCoinflip("100", "t") is { Amount: "100", Side: "tails" } && TextShortcuts.ParseCoinflip("cruz", "1k") is { Side: "tails" },
+    "aa cf heads|tails|h|t|cara|cruz con la apuesta antes o después");
+
+// Contra el CommandService de verdad: cada forma en inglés (y la de español) llega al comando que corresponde.
+string? CommandFor(string typed) => textCommands.Search(typed) is { IsSuccess: true } found ? found.Commands.First().Command.Name : null;
+var typedForms = new (string Typed, string Command)[]
+{
+    ("enchant weapon", "enchant"), ("enchant arma", "enchant"), ("enchant amulet advanced", "enchant"), ("encantar amuleto avanzado", "enchant"), ("enchant weapon critical", "enchant"), ("enchant info", "enchant"),
+    ("chop advanced", "chop"), ("chop avanzada", "chop"), ("mine advanced", "mine"), ("sell weapon", "sell"), ("sell arma", "sell"), ("sell amulet", "sell"), ("sell all", "sell"),
+    ("cf heads 100", "cf"), ("cf tails 100", "cf"), ("cf h 100", "cf"), ("cf t 100", "cf"), ("cf cara 100", "cf"), ("cf cruz 100", "cf"),
+    ("heal", "heal"), ("heal Mate Amargo", "heal"), ("deposit all", "deposit"), ("withdraw 10k", "withdraw"), ("language en", "language"), ("daily", "daily"), ("missions", "missions"), ("inventory", "inventory"), ("profile", "profile"),
+};
+var wrongForms = typedForms.Where(f => CommandFor(f.Typed) != f.Command).Select(f => $"{f.Typed} → {CommandFor(f.Typed) ?? "nada"}").ToList();
+Check(wrongForms.Count == 0, $"las {typedForms.Length} formas tecleadas (inglés y español) llegan al comando que corresponde ({string.Join("; ", wrongForms)})");
+
 // El repositorio de verdad: nada falta, nada sobra, ningún {0} desparejo, ningún literal raro.
 var catalogOnDisk = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(Path.Combine(TestEnv.RepoRoot, "Locales", "en.json")))!;
 var repoReport = LocScan.Compare(LocScan.Extract(TestEnv.RepoRoot), catalogOnDisk);

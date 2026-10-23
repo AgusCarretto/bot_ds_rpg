@@ -340,8 +340,8 @@ public class DustModule(
             .WithButton("No, dejarlo como está", $"enchant_cancel:{owner}", ButtonStyle.Secondary)
             .Build();
 
-    // "info", "opciones", "ayuda" o "chances" (con o sin acento): lo que pide quien quiere ver cómo funciona el encantamiento.
-    public static bool IsInfoRequest(string? text) => text?.Trim().ToLowerInvariant() is "info" or "opciones" or "ayuda" or "chances" or "tiers";
+    // "info", "opciones"/"options", "ayuda"/"help", "chances" o "tiers": lo que pide quien quiere ver cómo funciona el encantamiento.
+    public static bool IsInfoRequest(string? text) => text?.Trim().ToLowerInvariant() is "info" or "opciones" or "options" or "ayuda" or "help" or "chances" or "tiers";
 
     private static string? NormalizeSlot(string? slot) => slot?.Trim().ToLowerInvariant() switch
     {
