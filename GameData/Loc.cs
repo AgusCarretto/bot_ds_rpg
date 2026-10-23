@@ -66,6 +66,16 @@ public static class Loc
     // Traduce un texto que ya viene de una tabla (declarado con Mark): lo busca en el catálogo igual que T.
     public static string Tr(string esRuntime) => T(esRuntime);
 
+    // Formato regional: el español escribe «4,9» y «4,9 %» y el inglés «4.9» y «4.9%». Los miles los resuelve GameHistory.Number (punto en español, coma en inglés).
+    public static string Decimal(double value, int digits)
+    {
+        string text = value.ToString("F" + Math.Max(0, digits), CultureInfo.InvariantCulture);
+        return Current == English ? text : text.Replace('.', ',');
+    }
+
+    public static string Percent(double value, int digits = 1) =>
+        Current == English ? Decimal(value, digits) + "%" : Decimal(value, digits) + " %";
+
     // Reemplaza todo el catálogo inglés (pruebas y arranque).
     public static void SetCatalog(IReadOnlyDictionary<string, string> english) =>
         _english = new Dictionary<string, string>(english, StringComparer.Ordinal);
