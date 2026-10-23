@@ -270,8 +270,12 @@ public class UseModule(
             .WithDescription(
                 Loc.F($"Usaste **{ItemDisplay.Format(item.Emoji, item.Name)}**, pero el **{state.MonsterName}** te hizo **{monsterHit}** de daño y te dejó fuera de combate. Usá **/heal** para recuperarte.") +
                 $"\n\n{AdventureModule.MonsterSays(state, NpcDialogue.BossLine.Victory)}")
-            .AddField(Loc.T("❤️ Tu HP"), HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
-            .AddField(Loc.T("📋 Resumen del combate"), AdventureModule.BuildCombatSummaryLine(state), false);
+            .AddField(Loc.T("❤️ Tu HP"), HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), !state.ShowFightSummary);   // en su propia fila: la tablita arranca en una fila nueva
+
+        if (state.ShowFightSummary)
+        {
+            AdventureModule.AddCombatSummary(embed, state);
+        }
 
         return AdventureModule.WithDeathPenalty(embed, penalty).Build();
     }

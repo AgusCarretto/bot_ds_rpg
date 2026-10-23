@@ -14,7 +14,8 @@ public sealed class AdventureCombatStarter(
     IBuffRepository buffRepository,
     IPlayerBonusService bonusService,
     ICombatSessionService combatSessions,
-    IRaidSessionService raidSessions) : IAdventureCombatStarter
+    IRaidSessionService raidSessions,
+    IPlayerSettingsService? settingsService = null) : IAdventureCombatStarter   // opcional como bonusService en otros: los arneses viejos que lo arman a mano siguen igual (con el resumen prendido)
 {
     public Task<CombatStartOutcome> PrepareTravelAsync(ulong discordId, CancellationToken cancellationToken = default) =>
         PrepareInternalAsync(
@@ -174,7 +175,9 @@ public sealed class AdventureCombatStarter(
             PlayerClass: player.Class,
             Passives: profile.Passives,
             AttackBuffPercent: profile.AttackBuffPercent,
-            Bonuses: bonuses);
+            Bonuses: bonuses,
+            // La tablita del resumen se lee UNA vez, al arrancar (/config); el servicio nunca tira (sin dato: se muestra, como siempre).
+            ShowFightSummary: settingsService is null || (await settingsService.GetAsync(discordId)).ShowFightSummary);
 
         return new CombatStartOutcome(CombatStartStatus.Started, null, state);
     }

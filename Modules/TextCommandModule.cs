@@ -50,6 +50,7 @@ public partial class TextCommandModule(
     IPetRepository petRepository,
     IPlayerBonusService bonusService,
     IPlayerLanguageService languageService,
+    IPlayerSettingsService settingsService,
     IZoneBoxService zoneBoxService,
     IBlessingRepository blessingRepository,
     IFuegoNuevoRepository fuegoNuevoRepository,
