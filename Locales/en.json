@@ -201,7 +201,7 @@
   "Curate con **/heal**, o peleá a mano con **/hunt**, donde podés huir. No se gastó el cooldown.": "Heal with **/heal**, or fight by hand with **/hunt**, where you can flee. The cooldown wasn't spent.",
   "⚔️ Auto-Cacería Exitosa": "⚔️ Auto-Hunt Success",
   "Venciste al **{0}** {1}. Te quedan **{2}/{3}** HP.\n": "You defeated the **{0}** {1}. You have **{2}/{3}** HP left.\n",
-  "Ganaste: **{0}** Oro, **{1}** XP.\n\n": "You earned: **{0}** Gold, **{1}** XP.\n\n",
+  "Ganaste: {0} **{1}** Oro, {2} **{3}** XP.\n\n": "You earned: {0} **{1}** Gold, {2} **{3}** XP.\n\n",
   "☠️ Derrota Rápida": "☠️ Quick Defeat",
   "El **{0}** {1} fue demasiado fuerte. Quedaste a **{2}** HP. Usá **/heal** para recuperarte.\n\n": "The **{0}** {1} was too strong. You're left with **{2}** HP. Use **/heal** to recover.\n\n",
   "No tenés ningún combate activo. Empezá uno con /hunt, /travel, /boss o \"aa hunt\".": "You have no active fight. Start one with /hunt, /travel, /boss or \"aa hunt\".",

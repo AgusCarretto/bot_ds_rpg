@@ -911,6 +911,15 @@ var flakyRepo = new CountingThrowingRepo(); var flakyService = new PlayerLanguag
 for (ulong i = 0; i < 30; i++) { await flakyService.ResolveAsync(990000000000 + i, "en-US"); }
 Check(flakyRepo.Calls == 1 && await flakyService.ResolveAsync(990000000099, "en-US") == "es", $"con la base fallando, 30 comandos hacen una sola consulta y todos salen en español ({flakyRepo.Calls})");
 
+// (3) El oro y la XP del resultado del /autohunt llevan su ícono (el propio de la interfaz si está cargado; si no, el de siempre), en los dos idiomas (pedido del dueño, 2026-10-23).
+Embed AutoVictory() => CallE(typeof(AutoHuntModule), "BuildVictoryEmbed", Fight("hunt"), outcomeFight, rewardFight, null);
+Embed autoPlainEs = AutoVictory(); Embed autoPlainEn; using (Loc.Use("en")) { autoPlainEn = AutoVictory(); }
+UiEmojis.Set([("ui_oro", "<:ui_oro:111111111111111111>"), ("ui_xp", "<:ui_xp:222222222222222222>")]);
+Embed autoIconsEs = AutoVictory(); Embed autoIconsEn; using (Loc.Use("en")) { autoIconsEn = AutoVictory(); }
+UiEmojis.Set([]);
+Check(autoPlainEs.Description!.Contains("Ganaste: 💰 **10** Oro, 📊 **10** XP.") && autoPlainEn.Description!.Contains("You earned: 💰 **10** Gold, 📊 **10** XP."), $"sin los íconos de la interfaz cargados, el /autohunt muestra 💰 y 📊 ({autoPlainEn.Description!.Split('\n')[1]})");
+Check(autoIconsEs.Description!.Contains("Ganaste: <:ui_oro:111111111111111111> **10** Oro, <:ui_xp:222222222222222222> **10** XP.") && autoIconsEn.Description!.Contains("You earned: <:ui_oro:111111111111111111> **10** Gold, <:ui_xp:222222222222222222> **10** XP."), "y con los íconos propios cargados usa esos, en español y en inglés");
+
 // El repositorio de verdad: nada falta, nada sobra, ningún {0} desparejo, ningún literal raro.
 var catalogOnDisk = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(Path.Combine(TestEnv.RepoRoot, "Locales", "en.json")))!;
 var repoReport = LocScan.Compare(LocScan.Extract(TestEnv.RepoRoot), catalogOnDisk);

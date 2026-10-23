@@ -188,7 +188,7 @@ public class AutoHuntModule(
             .WithMonsterPortrait(state.MonsterPortrait) // siempre la cara del monstruo, haya drop o no
             .WithDescription(
                 Loc.F($"Venciste al **{state.MonsterName}** {state.MonsterEmoji}. Te quedan **{HpDisplay.Scale(player.CurrentHp, state.Passives.MaxHpMultiplier)}/{HpDisplay.Scale(player.MaxHp, state.Passives.MaxHpMultiplier)}** HP.\n") +
-                Loc.F($"Ganaste: **{reward.Gold}** Oro, **{reward.Xp}** XP.\n\n") +
+                Loc.F($"Ganaste: {UiEmojis.Gold} **{reward.Gold}** Oro, {UiEmojis.Xp} **{reward.Xp}** XP.\n\n") +
                 AdventureModule.MonsterSays(state, NpcDialogue.BossLine.Defeated))
             .AddField(Loc.T("📋 Resumen del combate"), AdventureModule.BuildCombatSummaryLine(state), false);
 
