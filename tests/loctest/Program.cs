@@ -886,6 +886,31 @@ var typedForms = new (string Typed, string Command)[]
 var wrongForms = typedForms.Where(f => CommandFor(f.Typed) != f.Command).Select(f => $"{f.Typed} → {CommandFor(f.Typed) ?? "nada"}").ToList();
 Check(wrongForms.Count == 0, $"las {typedForms.Length} formas tecleadas (inglés y español) llegan al comando que corresponde ({string.Join("; ", wrongForms)})");
 
+Console.WriteLine("\n== 15. Revisión final de la rama ==");
+// (1) El inglés no puede depender de la cultura de la máquina: con el servidor en es-AR, «1.234.567» saldría con puntos en una frase en inglés.
+var cultureBefore = System.Globalization.CultureInfo.CurrentCulture;
+System.Globalization.CultureInfo? spanishCulture = null;
+try { spanishCulture = new System.Globalization.CultureInfo("es-AR"); } catch (System.Globalization.CultureNotFoundException) { }
+if (spanishCulture is null || spanishCulture.NumberFormat.NumberGroupSeparator == ",")
+{
+    Console.WriteLine("  [--] este equipo no tiene la cultura es-AR: se salta la prueba del formato (el servidor real sí la puede tener)");
+}
+else
+{
+    Loc.SetCatalog(new Dictionary<string, string> { ["Tenés {0:N0} HP"] = "You have {0:N0} HP" });   // el catálogo de verdad no tiene ninguna plantilla con un número formateado
+    System.Globalization.CultureInfo.CurrentCulture = spanishCulture;
+    string numberEs = Loc.F($"Tenés {1234567:N0} HP"), numberEn;
+    using (Loc.Use("en")) { numberEn = Loc.F($"Tenés {1234567:N0} HP"); }
+    System.Globalization.CultureInfo.CurrentCulture = cultureBefore;
+    Loc.LoadEmbedded();
+    Check(numberEs == "Tenés 1.234.567 HP" && numberEn == "You have 1,234,567 HP", $"con la cultura del servidor en es-AR, el español usa puntos y el inglés comas ({numberEs} | {numberEn})");
+}
+
+// (2) Sin la tabla de idiomas (o con la base caída) cada comando NO tiene que repetir una consulta que falla: se intenta una vez y se espera un rato.
+var flakyRepo = new CountingThrowingRepo(); var flakyService = new PlayerLanguageService(flakyRepo);
+for (ulong i = 0; i < 30; i++) { await flakyService.ResolveAsync(990000000000 + i, "en-US"); }
+Check(flakyRepo.Calls == 1 && await flakyService.ResolveAsync(990000000099, "en-US") == "es", $"con la base fallando, 30 comandos hacen una sola consulta y todos salen en español ({flakyRepo.Calls})");
+
 // El repositorio de verdad: nada falta, nada sobra, ningún {0} desparejo, ningún literal raro.
 var catalogOnDisk = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(Path.Combine(TestEnv.RepoRoot, "Locales", "en.json")))!;
 var repoReport = LocScan.Compare(LocScan.Extract(TestEnv.RepoRoot), catalogOnDisk);
@@ -913,6 +938,14 @@ sealed class CountingRepo(ILanguageRepository inner) : ILanguageRepository
     public int Gets;
     public Task<string?> GetAsync(ulong discordId, CancellationToken ct = default) { Gets++; return inner.GetAsync(discordId, ct); }
     public Task SetAsync(ulong discordId, string language, CancellationToken ct = default) => inner.SetAsync(discordId, language, ct);
+}
+
+// Lo mismo, pero cuenta cuántas veces lo consultaron.
+sealed class CountingThrowingRepo : ILanguageRepository
+{
+    public int Calls;
+    public Task<string?> GetAsync(ulong discordId, CancellationToken ct = default) { Interlocked.Increment(ref Calls); throw new InvalidOperationException("simulado: la tabla no existe"); }
+    public Task SetAsync(ulong discordId, string language, CancellationToken ct = default) { Interlocked.Increment(ref Calls); throw new InvalidOperationException("simulado"); }
 }
 
 // Un repositorio que falla siempre (la tabla sin crear, la base caída).

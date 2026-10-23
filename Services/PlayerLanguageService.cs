@@ -20,8 +20,12 @@ public sealed class PlayerLanguageService(ILanguageRepository repository) : IPla
     private static readonly TimeSpan CacheLifetime = TimeSpan.FromMinutes(30);
     private static readonly TimeSpan LogEvery = TimeSpan.FromMinutes(1);
 
+    // Después de un fallo (la tabla sin crear, la base caída) no se vuelve a consultar durante este rato: sin esto CADA comando repetiría la consulta que falla (y llenaría el registro de Postgres de errores).
+    private static readonly TimeSpan RetryAfterFailure = TimeSpan.FromSeconds(30);
+
     private readonly ConcurrentDictionary<ulong, (string Language, DateTime ExpiresUtc)> _cache = new();
     private DateTime _lastLogUtc = DateTime.MinValue;
+    private DateTime _failingUntilUtc = DateTime.MinValue;
 
     // El idioma de Discord del jugador («es-ES», «es-419», «en-US», «pt-BR»…): los que empiezan con «es» son español y cualquier otro, inglés. Sin dato, ninguno.
     public static string? LanguageForLocale(string? locale)
@@ -40,6 +44,11 @@ public sealed class PlayerLanguageService(ILanguageRepository repository) : IPla
         if (_cache.TryGetValue(discordId, out var hit) && hit.ExpiresUtc > DateTime.UtcNow)
         {
             return hit.Language;
+        }
+
+        if (DateTime.UtcNow < _failingUntilUtc)
+        {
+            return Loc.Spanish;
         }
 
         try
@@ -70,6 +79,7 @@ public sealed class PlayerLanguageService(ILanguageRepository repository) : IPla
         }
         catch (Exception ex)
         {
+            _failingUntilUtc = DateTime.UtcNow + RetryAfterFailure;
             LogThrottled(ex);
             return Loc.Spanish;
         }

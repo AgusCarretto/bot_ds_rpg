@@ -49,7 +49,8 @@ public static class Loc
         {
             try
             {
-                return string.Format(CultureInfo.CurrentCulture, template, es.GetArguments());
+                // Cultura fija: el inglés no puede salir con puntos de miles porque el servidor esté configurado en es-AR (el español sigue con la cultura de siempre, abajo).
+                return string.Format(CultureInfo.InvariantCulture, template, es.GetArguments());
             }
             catch (FormatException)
             {
