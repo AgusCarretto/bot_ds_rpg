@@ -32,6 +32,13 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
 
+## El inventario con los drops pegados en el celu (v0.26.3, 2026-10-26)
+
+- **Lo que vio el dueño** (captura del celu): «Fragmento de Alma: 5» aparecía solo al final, después de los Consumibles, como una tabla aparte. **La causa**: los ~15 drops no entran en un campo de embed (1024 caracteres), así que el último renglón pasaba a un campo de continuación; el armado era fila por fila (Madera | Mineral, Drops | Consumibles, continuación | vacío) y el celu apila los campos en el orden en que vienen, o sea que la continuación quedaba DESPUÉS de los Consumibles. En la compu (tres columnas) se veía bien, por eso nadie lo notó.
+- **El arreglo**: el inventario se arma por bloques (madera, minerales, drops, comida + cajas). Dos bloques de un solo campo van lado a lado como siempre; un bloque que no entra en un campo reparte sus renglones PAREJOS (8 y 7, no 14 y uno suelto) y sus campos van uno al lado del otro, antes de lo que sigue. Con todo el catálogo: Madera | Mineral, Drops | resto de los drops, Consumibles | Cajas. En el celu el orden es Madera, Mineral, Drops (completo), Consumibles. Un inventario chico queda igual que antes.
+- **Pruebas**: `v83test` y `v90test` fijaban el reparto viejo con todo el catálogo (la continuación abajo a la izquierda): ahora fijan el nuevo y `v83test` suma el orden del celu y el reparto parejo.
+- **Sin probar**: cómo se ve en Android (el dueño dice que ahí «se va bien abajo»; con el orden arreglado no debería, pero los campos vacíos que cierran cada fila podrían sumar espacio en algunos celulares: si pasa, la salida es sacarlos y aceptar columnas desparejas en la compu).
+
 ## La victoria a mano como la del autohunt, pero con barra de vida (v0.26.2, 2026-10-23)
 
 - **Pedido del dueño** (con dos capturas, la victoria de `/hunt` con tres campos «Oro ganado / EXP ganada / Tu HP» y la del `/autohunt` con su línea «Ganaste: …»): «estaría bueno que se muestre como el autohunt pero con barra de vida».
