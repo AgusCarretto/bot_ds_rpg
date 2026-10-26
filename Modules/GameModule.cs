@@ -266,38 +266,54 @@ public class GameModule(
             return embed.Build();
         }
 
-        // Columna izquierda: Madera y, debajo, los drops. Columna derecha: Mineral y, debajo, los consumibles. Las Cajas van con la comida (en el mismo campo) si entran juntas.
-        var left = new List<(string Name, string Value)>();
-        var right = new List<(string Name, string Value)>();
-        AddFields(left, Loc.T("🪵 Madera"), wood);
-        AddFields(right, Loc.T("⛏️ Mineral"), minerals);
-        AddFields(left, Loc.T("🩸 Drops de monstruo"), drops);
+        // Cuatro bloques (cada uno son sus campos, el primero con título): columna izquierda = Madera y, debajo, los drops; derecha = Mineral y, debajo, los consumibles.
+        // Las Cajas van con la comida (en el mismo campo) si entran juntas.
+        var woodFields = Fields(Loc.T("🪵 Madera"), wood);
+        var mineralFields = Fields(Loc.T("⛏️ Mineral"), minerals);
+        var dropFields = Fields(Loc.T("🩸 Drops de monstruo"), drops);
+        var foodFields = new List<(string Name, string Value)>();
 
         string stacked = food.Count > 0 && boxes.Count > 0 ? string.Join('\n', food) + $"\n\n📦 **{boxTitle}**\n" + string.Join('\n', boxes) : string.Empty;
         if (stacked.Length > 0 && stacked.Length <= FieldLimit)
         {
-            right.Add((Loc.T("🍖 Consumibles"), stacked));
+            foodFields.Add((Loc.T("🍖 Consumibles"), stacked));
         }
         else
         {
-            AddFields(right, Loc.T("🍖 Consumibles"), food);
-            AddFields(right, $"📦 {boxTitle}", boxes);
+            foodFields.AddRange(Fields(Loc.T("🍖 Consumibles"), food));
+            foodFields.AddRange(Fields($"📦 {boxTitle}", boxes));
         }
 
-        if (left.Count > 0 && right.Count > 0)
+        var leftBlocks = new[] { woodFields, dropFields }.Where(b => b.Count > 0).ToList();
+        var rightBlocks = new[] { mineralFields, foodFields }.Where(b => b.Count > 0).ToList();
+
+        if (leftBlocks.Count > 0 && rightBlocks.Count > 0)
         {
-            // Fila por fila: el campo de la izquierda, el de la derecha y un tercero vacío que cierra la fila (si una columna es más larga, la otra se rellena con vacíos).
-            for (int row = 0; row < Math.Max(left.Count, right.Count); row++)
+            // Bloque por bloque: el de la izquierda y el de la derecha lado a lado, con un tercer campo vacío que cierra la fila. Si uno de los dos NO entra en un campo (los ~15 drops),
+            // sus campos van juntos, uno al lado del otro, ANTES de lo que sigue: el celu apila los campos en el orden en que vienen, y con el reparto fila por fila la segunda mitad
+            // de los drops caía después de los Consumibles, como una tabla aparte (v0.26.3, «Fragmento de Alma»).
+            for (int i = 0; i < Math.Max(leftBlocks.Count, rightBlocks.Count); i++)
             {
-                var (leftName, leftValue) = row < left.Count ? left[row] : (Blank, Blank);
-                var (rightName, rightValue) = row < right.Count ? right[row] : (Blank, Blank);
-                embed.AddField(leftName, leftValue, true).AddField(rightName, rightValue, true).AddField(Blank, Blank, true);
+                var l = i < leftBlocks.Count ? leftBlocks[i] : [];
+                var r = i < rightBlocks.Count ? rightBlocks[i] : [];
+
+                if (l.Count <= 1 && r.Count <= 1)
+                {
+                    AddInventoryRow(embed, l.Count > 0 ? l[0] : (Blank, Blank), r.Count > 0 ? r[0] : (Blank, Blank));
+                    continue;
+                }
+
+                var overflowed = l.Concat(r).ToList();
+                for (int j = 0; j < overflowed.Count; j += 2)
+                {
+                    AddInventoryRow(embed, overflowed[j], j + 1 < overflowed.Count ? overflowed[j + 1] : (Blank, Blank));
+                }
             }
         }
         else
         {
             // Una sola columna con algo: a ancho completo (angosta no tiene sentido).
-            foreach (var (name, value) in left.Concat(right))
+            foreach (var (name, value) in leftBlocks.Concat(rightBlocks).SelectMany(b => b))
             {
                 embed.AddField(name, value, false);
             }
@@ -318,15 +334,22 @@ public class GameModule(
     private const int FieldLimit = 1000;
 
     // Los renglones de una lista, repartidos en los campos que hagan falta (de a lo sumo FieldLimit caracteres): el primero lleva el título y los demás un título
-    // invisible. No agrega nada si no hay renglones.
-    private static void AddFields(List<(string Name, string Value)> column, string title, IReadOnlyList<string> lines)
+    // invisible. Lista vacía si no hay renglones.
+    private static List<(string Name, string Value)> Fields(string title, IReadOnlyList<string> lines)
     {
         var fields = PackLines(lines);
+        var result = new List<(string Name, string Value)>();
         for (int i = 0; i < fields.Count; i++)
         {
-            column.Add((i == 0 ? title : Blank, fields[i]));
+            result.Add((i == 0 ? title : Blank, fields[i]));
         }
+
+        return result;
     }
+
+    // Una fila del inventario: dos campos en línea y un tercero vacío que la cierra (al costado de algo con contenido no suma altura).
+    private static void AddInventoryRow(EmbedBuilder embed, (string Name, string Value) left, (string Name, string Value) right) =>
+        embed.AddField(left.Name, left.Value, true).AddField(right.Name, right.Value, true).AddField(Blank, Blank, true);
 
     // "<emoji> **Madera de Roble**: 3": de lo más común a lo más raro y por nombre dentro de la misma rareza.
     private static List<string> Lines(IEnumerable<InventoryEntry> entries) =>
@@ -339,8 +362,22 @@ public class GameModule(
 
     private static string Icon(InventoryEntry e) => string.IsNullOrWhiteSpace(e.Emoji) ? RarityDot(e.Rarity) : e.Emoji;
 
-    // Junta los renglones (uno por ítem) en campos de a lo sumo FieldLimit caracteres, cortando siempre entre renglón y renglón.
+    // Junta los renglones (uno por ítem) en campos de a lo sumo FieldLimit caracteres, cortando siempre entre renglón y renglón. Si no entran en uno, se reparten PAREJOS
+    // (8 y 7, no 14 y uno suelto): van lado a lado y así se leen como una sola lista en dos columnas.
     internal static List<string> PackLines(IReadOnlyList<string> lines)
+    {
+        var greedy = PackGreedy(lines);
+        if (greedy.Count <= 1)
+        {
+            return greedy;
+        }
+
+        int perField = (lines.Count + greedy.Count - 1) / greedy.Count;
+        var balanced = lines.Chunk(perField).Select(chunk => string.Join('\n', chunk)).ToList();
+        return balanced.All(field => field.Length <= FieldLimit) ? balanced : greedy;
+    }
+
+    private static List<string> PackGreedy(IReadOnlyList<string> lines)
     {
         var fields = new List<string>();
         var current = new StringBuilder();

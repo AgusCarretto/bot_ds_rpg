@@ -437,8 +437,8 @@ await db.ExecuteAsync("INSERT INTO inventory (discord_id, item_id, quantity) SEL
 int materialCount = await db.ExecuteScalarAsync<int>("SELECT count(*)::int FROM items WHERE type = 'Material'");
 var invBig = await GameModule.BuildInventoryEmbedAsync(inventoryRepo, U, "Tester");
 var bigLeft = invBig.Fields.Where((f, i) => i % 3 == 0).ToList(); var bigRight = invBig.Fields.Where((f, i) => i % 3 == 1).ToList();
-var bigDropFields = bigLeft.SkipWhile(f => !f.Name.Contains("Drops de monstruo")).Where(f => f.Value != ZW).ToList();
-Check(bigLeft[0].Name.Contains("Madera") && bigRight[0].Name.Contains("Mineral") && bigLeft[1].Name.Contains("Drops") && bigRight[1].Name.Contains("Consumibles") && invBig.Fields.All(f => f.Inline), "con todo: izquierda Madera y los drops; derecha Mineral y la Comida (con las Cajas)");
+var bigDropFields = invBig.Fields.SkipWhile(f => !f.Name.Contains("Drops de monstruo")).TakeWhile((f, i) => i == 0 || f.Name == ZW).Where(f => f.Value != ZW).ToList();   // el campo de los drops y su continuación sin título
+Check(bigLeft[0].Name.Contains("Madera") && bigRight[0].Name.Contains("Mineral") && bigLeft[1].Name.Contains("Drops") && bigRight[1].Name == ZW && bigRight[1].Value != ZW && bigLeft[2].Name.Contains("Consumibles") && invBig.Fields.All(f => f.Inline), "con todo (v0.26.3): Madera | Mineral, los drops en dos columnas y debajo la Comida (con las Cajas)");
 int bigDropLines = bigDropFields.Sum(f => f.Value.Split('\n').Length);
 Check(invBig.Length <= 6000 && invBig.Fields.All(f => f.Value.Length <= 1024) && bigDropLines == materialCount && bigDropFields.Skip(1).All(f => f.Name == ZW), $"con todo el catálogo a 9.999 entra ({invBig.Length} de 6000 caracteres), los {materialCount} drops van uno por renglón repartidos en {bigDropFields.Count} campos, los de abajo sin título");
 await db.ExecuteAsync("DELETE FROM inventory WHERE discord_id = @id", new { id = (long)U });
