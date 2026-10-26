@@ -55,14 +55,30 @@ foreach (var cls in new[] { "Guerrero", "Ninja", "Arquero", "Hechicero" })
         var groups = view.Recipes.Select(RecipeCatalog.GroupOf).OrderBy(g => g).ToList();
         if (groups.Count != 3 || !groups.SequenceEqual([RecipeGroup.ClassWeapon, RecipeGroup.GeneralWeapon, RecipeGroup.Amulet])) bad.Add($"zona {z.ZoneId}: {string.Join("/", groups)}");
         var mine = view.Recipes.Single(r => RecipeCatalog.GroupOf(r) == RecipeGroup.ClassWeapon).ResultItem;
-        if (!ClassWeaponSynergy.Applies(cls, mine.WeaponFamily)) bad.Add($"zona {z.ZoneId}: el arma de clase no es de {cls}");
+        if (ClassCatalog.All.First(c => c.Name == cls).WeaponType != mine.WeaponFamily) bad.Add($"zona {z.ZoneId}: el arma de clase no es de {cls}");
     }
-    Check(bad.Count == 0, $"{cls}: ve exactamente 3 recetas por zona (su arma de clase, la general y el amuleto) {(bad.Count == 0 ? "" : string.Join("; ", bad))}");
+    Check(bad.Count == 0, $"{cls}: en cada zona ve su arma de clase y el amuleto, más la única arma general (sin zona) {(bad.Count == 0 ? "" : string.Join("; ", bad))}");
 }
-Check(allRecipes.Where(r => RecipeCatalog.GroupOf(r) == RecipeGroup.GeneralWeapon).All(r => r.ResultItem.WeaponFamily is null && r.ResultItem.ClassRequirement is null), "las 5 generales no tienen familia (nadie recibe el boost) ni clase");
+// v0.27.0 (el dueño, 2026-10-26: «nadie hace el arma general porque se ahorra los drops con la de sinergia o el amuleto»): se fue la sinergia ×1,5 (el número ya viene en el ATQ del arma de clase) y las armas
+// generales de las zonas 2 a 5; queda UNA sola, la primera, sin zona y hecha solo con materiales de recolección, como base para cualquiera.
+var normalZoneIds = zones.Select(z => z.ZoneId).ToHashSet();
+var generalsInZones = allRecipes.Where(r => RecipeCatalog.GroupOf(r) == RecipeGroup.GeneralWeapon && r.ZoneId is int zid && normalZoneIds.Contains(zid)).ToList();
+var baseGeneral = allRecipes.Where(r => RecipeCatalog.GroupOf(r) == RecipeGroup.GeneralWeapon && r.ZoneId is null).ToList();
+Check(generalsInZones.Count == 0 && baseGeneral.Count == 1 && baseGeneral[0].ResultItem.Name == "Hoja de Acero Puro", "ninguna zona tiene arma general; hay UNA sola, sin zona: la Hoja de Acero Puro");
+Check(baseGeneral[0].ResultItem.WeaponFamily is null && baseGeneral[0].ResultItem.ClassRequirement is null && baseGeneral[0].ResultItem.StatValue == 9, "la Hoja de Acero Puro es de cualquier clase y suma +9 ATQ");
+var baseGeneralTypes = new List<string>();
+foreach (var ing in baseGeneral[0].Ingredients) baseGeneralTypes.Add((await itemRepo.GetByNameAsync(ing.ItemName))!.Type);
+Check(baseGeneralTypes.Count >= 2 && baseGeneralTypes.All(t => t is "Madera" or "Mineral"), $"la Hoja de Acero Puro se hace SOLO con materiales de recolección, sin drops de monstruos ({string.Join(", ", baseGeneral[0].Ingredients.Select(i => $"{i.Quantity}× {i.ItemName}"))})");
+foreach (var retired in new[] { "Cuchilla de Cenizas", "Pico de Minero Reforzado", "Lanza de Magma", "Martillo del Titán" })
+{
+    Check(await itemRepo.GetByNameAsync(retired) is not null && !allRecipes.Any(r => r.ResultItem.Name == retired), $"{retired}: el ítem sigue en el catálogo (quien lo tenga lo conserva) pero ya no tiene receta");
+}
 Check(allRecipes.Where(r => RecipeCatalog.GroupOf(r) == RecipeGroup.ClassWeapon).All(r => r.ResultItem.WeaponFamily is not null && r.ResultItem.ClassRequirement is not null), "las 20 armas de clase tienen familia y son exclusivas de su clase");
-var baseAtk = allRecipes.Where(r => RecipeCatalog.GroupOf(r) != RecipeGroup.Amulet).GroupBy(r => r.ZoneId).Select(g => g.Select(r => r.ResultItem.StatValue).Distinct().Count()).ToList();
-Check(baseAtk.All(n => n == 1), "en cada zona la general y las 4 de clase tienen el MISMO ATQ base (la diferencia es solo el boost de clase)");
+var classStats = allRecipes.Where(r => RecipeCatalog.GroupOf(r) == RecipeGroup.ClassWeapon && r.ZoneId is not null)
+    .GroupBy(r => zones.First(z => z.ZoneId == r.ZoneId).MinLevel).OrderBy(g => g.Key)
+    .Select(g => g.Select(r => r.ResultItem.StatValue).Distinct().ToList()).ToList();
+Check(classStats.Count == 5 && classStats.All(s => s.Count == 1) && classStats.Select(s => s[0]).SequenceEqual([14, 30, 48, 75, 120]), $"las 4 armas de clase de cada zona suman el MISMO ATQ fijo: {string.Join(" / ", classStats.Select(s => string.Join(",", s)))} (lo que antes salía de 9/20/32/50/80 × 1,5)");
+Check(zones.All(z => allRecipes.Count(r => r.ZoneId == z.ZoneId && RecipeCatalog.GroupOf(r) == RecipeGroup.ClassWeapon) == 4 && allRecipes.Count(r => r.ZoneId == z.ZoneId && RecipeCatalog.GroupOf(r) == RecipeGroup.Amulet) == 1), "cada zona: 4 armas de clase (una por clase) + 1 amuleto");
 
 var monstersAll = await monsterRepo.GetAllAsync();
 foreach (var z in zones)

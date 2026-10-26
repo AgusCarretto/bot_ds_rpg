@@ -58,10 +58,10 @@ public static class PlayerCombatProfileCalculator
     // (v0.25.3, el dueño: «siempre mostrá la vida que debería tener, si es ×0,95 mostrá el resultado»). Sin bonuses (no hay servicio a mano) cuenta lo que sale de la fila del jugador: la clase y el encantamiento, sin la bendición.
     public static double HpMultiplier(User player, PlayerBonuses? bonuses = null) => CombatPassives(player, bonuses ?? PlayerBonuses.None).MaxHpMultiplier;
 
-    // Lo que SUMA el arma puesta al ataque: su stat con la sinergia de la clase y, encima, el encantamiento Filo si es ese el que tiene (GameData/Enchantments.cs; con los de efecto, el stat no cambia). El perfil, el combate y
-    // /enchant usan estas dos cuentas para mostrar y pelear con lo mismo.
+    // Lo que SUMA el arma puesta al ataque: su stat (desde la v0.27.0 el arma de clase ya trae el ×1,5 de la vieja sinergia en su número: no hay multiplicador) y, encima, el encantamiento Filo si es ese el que tiene
+    // (GameData/Enchantments.cs; con los de efecto, el stat no cambia). El perfil, el combate y /enchant usan estas dos cuentas para mostrar y pelear con lo mismo.
     public static int WeaponDamage(User player, Item? weapon) =>
-        Enchantments.Apply(ClassWeaponSynergy.ApplyBonus(weapon?.StatValue ?? 0, player.Class, weapon?.WeaponFamily), player.WeaponEnchantKind, Enchantments.StatTier(player.WeaponEnchantKind, player.WeaponEnchant));
+        Enchantments.Apply(weapon?.StatValue ?? 0, player.WeaponEnchantKind, Enchantments.StatTier(player.WeaponEnchantKind, player.WeaponEnchant));
 
     // Lo que SUMA el amuleto puesto a la defensa, con su encantamiento.
     public static int AmuletDefense(User player, Item? amulet) => Enchantments.Apply(amulet?.StatValue ?? 0, player.AmuletEnchantKind, Enchantments.StatTier(player.AmuletEnchantKind, player.AmuletEnchant));

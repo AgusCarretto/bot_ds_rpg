@@ -56,17 +56,17 @@ await db.ExecuteAsync("DELETE FROM inventory WHERE discord_id = @id", new { id =
 var e4 = await BotDsRpg_GameModule.Build(inventory, U);
 Check(e4.Description.Contains("Todavía no tenés"), "inventario vacío: el mensaje de siempre");
 
-Console.WriteLine("\n== Recetas con 'tenés X de Y' ==");
+Console.WriteLine("\n== El recetario: una línea por receta, con emojis ==");
 var user = (await users.GetByDiscordIdAsync(U))!;
 await db.ExecuteAsync("UPDATE users SET gold = 50 WHERE discord_id = @id", new { id = (long)U });
 await Give("Madera de Pino", 2); await Give("Hierro", 5);
-var owned = (await inventory.GetByDiscordIdAsync(U)).ToDictionary(x => x.ItemName, x => x.Quantity);
-var r1 = await ForgeModule.BuildRecipesEmbed(recipes, zones, user.Class, user.CurrentZoneId, owned, 50);
+var r1 = await ForgeModule.BuildRecipesEmbed(recipes, zones, user.Class, null, user.Level);
 Show(r1);
 string all = string.Join("\n", r1.Fields.Select(f => f.Value));
-Check(all.Contains("✅") && all.Contains("❌") && all.Contains("2/") && r1.Fields.All(f => f.Value.Contains((char)10 + "" + (char)10)), "cada ingrediente dice cuánto tenés de cuánto hace falta, con ✅/❌, el oro también, y una línea en blanco separa el resumen de los ingredientes");
-var r0 = await ForgeModule.BuildRecipesEmbed(recipes, zones, user.Class, user.CurrentZoneId);
-Check(r0.Fields.All(f => f.Value.Contains("• ")) && !string.Join("", r0.Fields.Select(f => f.Value)).Contains("✅"), "sin inventario (como antes) sigue la lista de siempre");
+Check(all.Contains(" → ") && all.Contains("`+") && !all.Contains("✅") && !all.Contains("❌") && !all.Contains("/") && r1.Fields.All(f => !f.Inline), "una línea por receta («Nombre `+N ATQ` → cantidad emoji + …») y sin «tenés X de Y»: el recetario no depende de tu inventario");
+await Give("Hierro", 50);
+var r0 = await ForgeModule.BuildRecipesEmbed(recipes, zones, user.Class, null, user.Level);
+Check(r0.Fields.Select(f => f.Value).SequenceEqual(r1.Fields.Select(f => f.Value)), "con más o menos materiales en la mochila, la lista es la misma");
 
 Console.WriteLine("\n== Íconos grandes: la imagen del emoji como miniatura ==");
 string? U1 = BotDsRpg.GameData.ItemDisplay.ImageUrl("<:espada_madera:1555633462432636958>");

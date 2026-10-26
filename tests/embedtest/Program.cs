@@ -19,20 +19,23 @@ void Check(bool ok, string what) { Console.WriteLine($"  [{(ok ? "OK" : "FALLA")
 int Total(Embed e) => (e.Title?.Length ?? 0) + (e.Description?.Length ?? 0) + (e.Footer?.Text.Length ?? 0) + e.Fields.Sum(f => f.Name.Length + f.Value.Length);
 
 Console.WriteLine("== /forge recipes ==");
+// v0.27.0: el recetario completo, una línea por receta con los emojis de cada ítem. Cada zona muestra SU arma de clase y el amuleto; al final, «Sin zona específica» (la Hoja de Acero Puro).
 int worst = 0; bool allOk = true;
-foreach (var z in zones)
-    foreach (var cls in new[] { "Guerrero", "Hechicero", "Ninja", "Arquero" })
-    {
-        var e = await ForgeModule.BuildRecipesEmbed(recipeRepo, zoneRepo, cls, z.ZoneId);
-        worst = Math.Max(worst, Total(e));
-        allOk &= e.Fields.Length == 3 && e.Fields.All(f => f.Value.Length <= 1024 && f.Name.Length <= 256 && f.Value.Contains("• ") && f.Value.Contains("oro")) && Total(e) < 6000 && e.Fields.All(f => !f.Inline);
-    }
-
-Check(allOk, $"5 zonas x 4 clases: 3 recetas (clase, general y amuleto; una por bloque), cada una con sus ingredientes en líneas aparte; el más grande mide {worst} de 6000");
-var sample = await ForgeModule.BuildRecipesEmbed(recipeRepo, zoneRepo, "Guerrero", zones[1].ZoneId);
+foreach (var cls in new[] { "Guerrero", "Hechicero", "Ninja", "Arquero" })
+{
+    var e = await ForgeModule.BuildRecipesEmbed(recipeRepo, zoneRepo, cls);
+    worst = Math.Max(worst, Total(e));
+    allOk &= e.Fields.Length == zones.Count + 1 && e.Fields.Take(zones.Count).All(f => f.Value.Split('\n').Length == 2) && e.Fields.Last().Name == "🧰 Sin zona específica"
+        && e.Fields.All(f => f.Value.Length <= 1024 && f.Name.Length <= 256 && f.Value.Contains(" → ") && f.Value.Contains("`+") && !f.Inline) && Total(e) < 6000 && e.Footer is null;
+}
+Check(allOk, $"4 clases: un campo por zona con SUS 2 recetas (arma de clase y amuleto) y «Sin zona específica» al final, una línea por receta; el más grande mide {worst} de 6000");
+var sample = await ForgeModule.BuildRecipesEmbed(recipeRepo, zoneRepo, "Guerrero");
 Console.WriteLine($"\n--- {sample.Title}\n{sample.Description}");
 foreach (var f in sample.Fields) Console.WriteLine($"\n{f.Name}\n{f.Value}");
-Console.WriteLine($"\n[footer] {sample.Footer?.Text}");
+var allRecipesDb = await recipeRepo.GetAllAsync();
+var emojiMissing = allRecipesDb.Where(r => string.IsNullOrWhiteSpace(r.ResultItem.Emoji) || r.Ingredients.Any(i => string.IsNullOrWhiteSpace(i.Emoji))).Select(r => r.ResultItem.Name).ToList();
+bool everyEmojiShown = sample.Fields.SelectMany(f => f.Value.Split('\n')).All(l => System.Text.RegularExpressions.Regex.Matches(l, "<a?:[A-Za-z0-9_]+:\\d+>").Count >= 3);
+Check(emojiMissing.Count == 0 && everyEmojiShown, $"los emojis: el resultado y cada ingrediente de cada línea van con su emoji propio ({(emojiMissing.Count == 0 ? "todas las recetas tienen emoji en todo" : "sin emoji en: " + string.Join(", ", emojiMissing))})");
 
 Console.WriteLine("\n== /drops ==");
 var msg = await DropsModule.BuildDropsMessageAsync(new UserRepository(factory), zoneRepo, new MonsterRepository(factory), new ItemRepository(factory), 1UL);

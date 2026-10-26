@@ -34,8 +34,9 @@ public static class WorldBossRules
     public const double MinStrength = 0.15;
     public const double MaxStrength = 3.0;
 
-    // El ataque base de las armas por zona (la escalera: Z1 +9, Z2 +20, Z3 +32, Z4 +50, Z5 +80; ver CLAUDE.md) y lo que suma la de su clase (×1,5): con eso se arma «lo que se espera» de alguien equipado para su zona.
-    private static readonly int[] WeaponLadder = [9, 20, 32, 50, 80];
+    // Lo que suma el arma de clase de cada zona (la escalera: Z1 +14, Z2 +30, Z3 +48, Z4 +75, Z5 +120; ver CLAUDE.md): con eso se arma «lo que se espera» de alguien equipado para su zona.
+    // Son los 9/20/32/50/80 × 1,5 de antes de la v0.27.0 (cuando la sinergia se hizo parte del número del arma): el mismo resultado de siempre.
+    private static readonly int[] WeaponLadder = [14, 30, 48, 75, 120];
 
     public static readonly IReadOnlyList<WorldBossDef> Bosses =
     [
@@ -53,7 +54,7 @@ public static class WorldBossRules
 
     // Lo que se espera que pegue alguien equipado para su zona: el ataque base de un nivel 3 por encima del mínimo de la zona más el arma de su clase.
     public static int ReferenceAttack(int zoneMinLevel, int zoneRank) =>
-        CombatStats.BaseAttack(Math.Max(1, zoneMinLevel) + 3) + (int)Math.Round(WeaponLadder[Math.Clamp(zoneRank, 1, WeaponLadder.Length) - 1] * 1.5);
+        CombatStats.BaseAttack(Math.Max(1, zoneMinLevel) + 3) + WeaponLadder[Math.Clamp(zoneRank, 1, WeaponLadder.Length) - 1];
 
     // Cuánto aporta alguien: su ataque dividido por lo que se espera en su zona (1,0 = lo esperado), acotado.
     public static double Strength(int attack, int zoneMinLevel, int zoneRank) =>

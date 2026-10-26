@@ -220,10 +220,10 @@ Check(noDust.PlainMessage!.Contains("Polvo") && noDust.PlainMessage.Contains("/d
 // -- el combate y el perfil usan el encantamiento
 var player0 = new User { Class = "Guerrero", Level = 10, WeaponEnchant = 0, AmuletEnchant = 0 };
 var player5 = new User { Class = "Guerrero", Level = 10, WeaponEnchant = 5, AmuletEnchant = 5 };
-var hoja = (await items.GetByNameAsync("Hoja de Acero Puro"))!;     // arma de Espadas: con sinergia de Guerrero
+var hoja = (await items.GetByNameAsync("Hoja de Acero Puro"))!;     // el arma general (+9): desde la v0.27.0 no hay sinergia de clase en ninguna
 var prof0 = PlayerCombatProfileCalculator.Resolve(player0, hoja, talisman);
 var prof5 = PlayerCombatProfileCalculator.Resolve(player5, hoja, talisman);
-int weaponWithSynergy = ClassWeaponSynergy.ApplyBonus(hoja.StatValue, "Guerrero", hoja.WeaponFamily);
+int weaponWithSynergy = hoja.StatValue;
 Check(prof5.Damage - prof0.Damage == Enchantments.Apply(weaponWithSynergy, 5) - weaponWithSynergy && prof5.Damage > prof0.Damage, $"el combate pega con el encantamiento: ATQ {prof0.Damage} ➜ {prof5.Damage} (Soberano sobre el arma con sinergia de clase)");
 Check(prof5.Defense - prof0.Defense == Enchantments.Apply(talisman.StatValue, "guarda", 5) - talisman.StatValue && prof5.Defense > prof0.Defense, $"y se defiende con el del amuleto (la Guarda, con su tabla propia desde la v0.25.1): DEF {prof0.Defense} ➜ {prof5.Defense}");
 Check(PlayerCombatProfileCalculator.Resolve(player5, null, null).Damage == PlayerCombatProfileCalculator.Resolve(player0, null, null).Damage, "sin arma puesta, un encantamiento «fantasma» no suma nada");
@@ -623,7 +623,7 @@ string T(string key) => AllText(HelpTopics.Find(key)!.Build()) + " " + (HelpTopi
 Check(T("death").Contains("5 %") && T("death").Contains("65 %") && T("death").Contains("20 de oro") && T("bank").Contains("1.000") && T("dismantle").Contains("sin tope") && T("dismantle").Contains("todo") && T("dismantle").Contains("Mítico 500"), "muerte: 5 % y 65 %; banco: 1.000; desmantelar: sin tope y 500 por Mítico");
 Check(T("play").Contains("×5") && T("play").Contains("×2") && T("play").Contains("10") && T("hunt").Contains("1 min") && T("hunt").Contains("30 min") && T("hunt").Contains("6 %") && T("hunt").Contains("40 %"), "casino: ×5 y ×2 y apuesta mínima 10; combate: cooldowns 1 y 30 min, drops 6 % y 40 %");
 Check(T("boss").Contains("5 h") && T("boss").Contains("30 min") && T("boss").Contains("15 cacerías") && T("boss").Contains("2 a 6") && T("boxes").Contains("2 h") && T("boxes").Contains("1 a 10") && T("daily").Contains("24 h") && T("daily").Contains("20 cacerías de oro") && T("daily").Contains("48 h") && T("arena").Contains("32") && T("trade").Contains("2 minutos"), "jefes: 5 h / 30 min / ×15 / 2 a 6; cajas: 2 h y 1 a 10; diario: 24 h, 20 cacerías de oro, 48 h; arena: 32; intercambio: 2 min");
-Check(T("gather").Contains("Común 1 a 5") && T("gather").Contains("68 %") && T("gather").Contains("Mítico 0,5 %") && T("stats").Contains("15 de vida") && T("stats").Contains("100 × nivel^1,5") && T("forge").Contains("×1,5") && T("missions").Contains("23 logros") && T("missions").Contains("3 misiones por día"), "recolección 1 a 5 y 68 %; nivel: +15 de vida; herrería ×1,5; 23 logros y 3 misiones por día");
+Check(T("gather").Contains("Común 1 a 5") && T("gather").Contains("68 %") && T("gather").Contains("Mítico 0,5 %") && T("stats").Contains("15 de vida") && T("stats").Contains("100 × nivel^1,5") && T("forge").Contains("Hoja de Acero Puro") && !T("forge").Contains("×1,5") && T("missions").Contains("23 logros") && T("missions").Contains("3 misiones por día"), "recolección 1 a 5 y 68 %; nivel: +15 de vida; herrería con la Hoja y sin el ×1,5; 23 logros y 3 misiones por día");
 var classesText = T("classes");
 Check(new[] { "Guerrero", "Ninja", "Arquero", "Hechicero", "Aguante", "Sombra", "Lluvia de Flechas", "Bola de Fuego", "Sifón de Almas" }.All(classesText.Contains), "clases: las cuatro con su pasiva y su habilidad");
 // resolver: sin tema → comandos, tema → su ayuda, desconocido → la lista de temas avisando

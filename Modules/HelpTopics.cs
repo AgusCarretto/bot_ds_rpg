@@ -253,11 +253,11 @@ public static class HelpTopics
         ("🎒 Antes de ir", "Llevá el arma y el amuleto de tu zona (**/info tema:forge**) y la vida llena. Si perdés, pagás la penalidad: **/info tema:death**."));
 
     private static Embed Forge() => Topic(Self("forge"),
-        "En la herrería forjás armas y amuletos con materiales y oro. Todo está en la base de datos y cada uno ve las recetas de **su** zona.",
+        "En la herrería forjás armas y amuletos con materiales y oro. Todo está en la base de datos y cada uno ve las recetas de **su** clase.",
         ("🔨 Cómo",
-            "**/forge** (en texto `aa herrero`): el herrero te muestra un menú con lo que podés forjar (✅ lo que ya podés pagar, ❌ lo que te falta). Cada zona tiene 6 recetas pero ves 3: **el arma de tu clase**, **un arma general** y **el amuleto**."),
-        ("⚔️ Arma de clase o general",
-            $"Las dos tienen el mismo ataque base, pero el arma de **tu clase** rinde ×{Dec(ClassWeaponSynergy.Multiplier)}. La general sirve a cualquiera y es la más fácil de juntar: buena para empezar."),
+            "**/forge** (en texto `aa herrero`): el herrero te muestra un menú con lo que podés forjar (✅ lo que ya podés pagar, ❌ lo que te falta). Cada zona tiene 5 recetas pero ves 2: **el arma de tu clase** y **el amuleto**. El botón **📜 Ver todas las recetas** (o `aa forge recipes`) muestra las de todas las zonas, una línea cada una."),
+        ("⚔️ Tu arma y la Hoja",
+            "Cada clase tiene su arma en cada zona (espada, daga, arco o grimorio) con un ataque FIJO que sube de zona en zona: lo que dice la receta es lo que pega, sin multiplicadores. Además hay una sola arma general, la **Hoja de Acero Puro**, sin zona y hecha solo con materiales de recolección: sirve para empezar."),
         ("🎽 Se equipa sola",
             "Lo forjado queda **puesto**: no va a la mochila ni hace falta equiparlo. Para cambiarlo, vendés la pieza que llevás (en la **/taberna** o con **/shop sell**) y forjás la siguiente. Ojo: al venderla pierde su encantamiento."),
         ("🧱 Los materiales", "Madera y minerales con **/chop** y **/mine**; los drops, de los monstruos (**/drops**). **/tips** te dice qué te falta para tu próxima forja."));
@@ -464,7 +464,7 @@ public static class HelpTopics
                 false);
         }
 
-        return embed.WithFooter($"El arma de tu clase rinde ×{Dec(ClassWeaponSynergy.Multiplier)}. La habilidad se recarga {AbilityTuning.CooldownTurns} turnos y /autohunt no la usa.").Build();
+        return embed.WithFooter($"La habilidad se recarga {AbilityTuning.CooldownTurns} turnos y /autohunt no la usa.").Build();
     }
 
     private static Embed Gather() => Topic(Self("gather"),
@@ -503,7 +503,7 @@ public static class HelpTopics
         ("⬆️ Al subir de nivel",
             $"+{LevelingCalculator.HpGainedPerLevel} de vida máxima (y te curás entera), +{CombatStats.BaseAttack(2) - CombatStats.BaseAttack(1)} de ataque y +{CombatStats.BaseDefense(2) - CombatStats.BaseDefense(1)} de defensa."),
         ("⚔️ Ataque y defensa",
-            $"Ataque = {CombatStats.BaseAttack(0)} + {CombatStats.BaseAttack(2) - CombatStats.BaseAttack(1)} por nivel + tu arma (×{Dec(ClassWeaponSynergy.Multiplier)} si es de tu clase, más su encantamiento). Defensa = tu nivel + tu amuleto (con su encantamiento)."));
+            $"Ataque = {CombatStats.BaseAttack(0)} + {CombatStats.BaseAttack(2) - CombatStats.BaseAttack(1)} por nivel + tu arma (más su encantamiento). Defensa = tu nivel + tu amuleto (con su encantamiento)."));
 }
 
 // La lista desplegable de /info tema: los temas que contienen lo escrito (en su clave, su nombre o sus alias). El valor es la clave, así que escribirla a mano también anda.

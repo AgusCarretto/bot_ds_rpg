@@ -251,12 +251,12 @@ string G(object r) => groupOf.Invoke(null, [r])!.ToString()!;
 var tpl = Zone1Template();
 Check("molde: agrupa en ClassWeapon / GeneralWeapon / Amulet", G(tpl[0]) == "ClassWeapon" && G(tpl[4]) == "GeneralWeapon" && G(tpl[6]) == "Amulet", $"{G(tpl[0])}, {G(tpl[4])}, {G(tpl[6])}");
 
-// ---------- /forge recipes (embed de la zona actual) ----------
-async Task<(List<(string Name, string Value)> Fields, string? Description, string? Footer, int Length)> RecipesEmbedFields(IEnumerable<object> recipeList, string playerClass, int currentZone)
+// ---------- /forge recipes (el recetario completo, v0.27.0: una línea por receta, todas las zonas) ----------
+async Task<(List<(string Name, string Value)> Fields, string? Description, string? Footer, int Length)> RecipesEmbedFields(IEnumerable<object> recipeList, string playerClass, int? zoneId = null)
 {
     var recipeRepo = FakeProxy.Create(recipeRepoType, (n, a) => n == "GetAllAsync" ? ListOf(recipeType, recipeList.ToArray()) : throw new NotSupportedException(n));
     var zoneRepo = FakeProxy.Create(zoneRepoType, (n, a) => n == "GetAllAsync" ? zones : throw new NotSupportedException(n));
-    var task = (Task)forgeModule.GetMethod("BuildRecipesEmbed")!.Invoke(null, [recipeRepo, zoneRepo, playerClass, currentZone, null, null, null, null])!;
+    var task = (Task)forgeModule.GetMethod("BuildRecipesEmbed")!.Invoke(null, [recipeRepo, zoneRepo, playerClass, zoneId, null, null])!;
     await task;
     var embed = task.GetType().GetProperty("Result")!.GetValue(task)!;
     var description = (string?)embed.GetType().GetProperty("Description")!.GetValue(embed);
@@ -267,29 +267,40 @@ async Task<(List<(string Name, string Value)> Fields, string? Description, strin
     return (fields.Cast<object>().Select(x => ((string)x.GetType().GetProperty("Name")!.GetValue(x)!, (string)x.GetType().GetProperty("Value")!.GetValue(x)!)).ToList(), description, footer, length);
 }
 
-var (gf, gDesc, gFoot, gLen) = await RecipesEmbedFields(Zone1Template(), "Guerrero", 1);
-Check("embed: título de zona en la descripción", gDesc!.Contains("Zona 1: Praderas del Mate"), gDesc);
-Check("embed: una receta por bloque, en orden: arma de clase, armas generales, amuletos",
-    gf.Select(x => x.Name).SequenceEqual(new[] { "Espada de Madera", "Hoja de Acero Puro", "Hacha de Hierro MK3", "Amuleto del Levantador", "Hombreras de Cuero Grueso" }), string.Join(" | ", gf.Select(x => x.Name)));
-Check("embed: el arma de clase dice cuánto suma, con la sinergia (+5 ATQ, +8 con tu clase ⭐), el oro y cada ingrediente en su línea", gf[0].Value == "**+5 ATQ (+8 con tu clase ⭐)** · _arma de tu clase_\n💰 40 oro\n\n• 3× Madera de Pino\n• 1× Hierro", gf[0].Value);
-Check("embed: solo UN arma de clase (la de su clase)", gf.Count(x => x.Value.Contains("_arma de tu clase_")) == 1, string.Join(" | ", gf.Select(x => x.Name)));
-Check("embed: 2 armas generales, de menor a mayor poder (Hoja +15 antes que Hacha +35)", gf.Count(x => x.Value.Contains("_arma general_")) == 2 && gf[1].Name.Contains("Hoja de Acero Puro") && gf[2].Name.Contains("Hacha de Hierro MK3"), string.Join(" | ", gf.Select(x => x.Name)));
-Check("embed: 2 amuletos, con +DEF", gf.Count(x => x.Value.Contains("_amuleto_")) == 2 && gf[3].Value.Contains("**+10 DEF**") && gf[4].Value.Contains("**+20 DEF**"), gf[3].Value + " / " + gf[4].Value);
-Check("embed: sin leyenda de íconos al pie (la etiqueta va en cada receta) y muy por debajo de los límites de Discord (cada receta es un bloque no en línea)", gFoot is null && gf.All(x => !x.Name.Contains("🎯") && !x.Name.Contains("⚔️") && !x.Name.Contains("📿")) && gLen < 2000 && gf.All(x => x.Value.Length <= 1024), $"largo total {gLen}");
+var (gf, gDesc, gFoot, gLen) = await RecipesEmbedFields(Zone1Template(), "Guerrero");
+Check("recetario: la zona es el título de su campo (con el nivel) y la descripción nombra la clase", gf.Count == 1 && gf[0].Name.Contains("Zona 1 · Praderas del Mate · nivel ") && gDesc!.Contains("Guerrero"), gf.FirstOrDefault().Name ?? "(sin campos)");
+var gl = gf[0].Value.Split('\n');
+Check("recetario: una línea por receta, en orden: arma de clase, armas generales (de menor a mayor poder) y amuletos",
+    gl.Length == 5 && gl[0].StartsWith("**Espada de Madera**") && gl[1].StartsWith("**Hoja de Acero Puro**") && gl[2].StartsWith("**Hacha de Hierro MK3**") && gl[3].StartsWith("**Amuleto del Levantador**") && gl[4].StartsWith("**Hombreras de Cuero Grueso**"), string.Join(" | ", gl.Select(l => l.Split('`')[0].Trim())));
+Check("recetario: cada línea dice lo que suma, los ingredientes con su cantidad y el oro (sin ingredientes uno por línea ni ✅/❌)", gl[0] == "**Espada de Madera** `+5 ATQ` → 3 Madera de Pino + 1 Hierro · 💰 40" && gl[3] == "**Amuleto del Levantador** `+10 DEF` → 5 Piedra + 1 Colmillo de Jabalí · 💰 150", gl[0] + " // " + gl[3]);
+Check("recetario: sin leyenda al pie, sin campos en línea, y muy por debajo de los límites de Discord", gFoot is null && gLen < 2000 && gf.All(x => x.Value.Length <= 1024 && x.Name.Length <= 256), $"largo total {gLen}");
+Check("recetario: sin sinergia no hay «(+8 con tu clase ⭐)» ni etiquetas de tipo (_arma de tu clase_)", !gf[0].Value.Contains("⭐") && !gf[0].Value.Contains("con tu clase") && !gf[0].Value.Contains("_arma"), gf[0].Value);
 
-var (nf, _, _, _) = await RecipesEmbedFields(Zone1Template(), "Ninja", 1);
-Check("embed: un Ninja ve la Daga Oxidada como arma de clase y NO la Espada", nf[0].Name == "Daga Oxidada" && nf[0].Value.Contains("**+5 ATQ (+8 con tu clase ⭐)** · _arma de tu clase_") && !nf.Any(x => x.Name.Contains("Espada de Madera")), nf[0].Name + " " + nf[0].Value);
-Check("embed: la Hoja (Espadas) NO tiene sinergia para un Ninja: solo +15 ATQ", nf[1].Name.Contains("Hoja de Acero Puro") && nf[1].Value.StartsWith("**+15 ATQ** · _arma general_"+"\n💰"), nf[1].Value);
+var (nf, _, _, _) = await RecipesEmbedFields(Zone1Template(), "Ninja");
+Check("recetario: un Ninja ve la Daga Oxidada como arma de clase y NO la Espada", nf[0].Value.Split('\n')[0].StartsWith("**Daga Oxidada** `+5 ATQ`") && !nf[0].Value.Contains("Espada de Madera"), nf[0].Value.Split('\n')[0]);
 
-var (fbf, fbDesc, _, _) = await RecipesEmbedFields(Zone1Template(), "Guerrero", 4);
-Check("embed: desde una zona sin recetas muestra las de Zona 1 y lo aclara", fbDesc!.Contains("Zona 1: Praderas del Mate") && fbDesc.Contains("todavía no tiene recetas propias") && fbf.Count == 5, fbDesc);
-var (vacio, vacioDesc, _, _) = await RecipesEmbedFields(new List<object>(), "Guerrero", 1);
-Check("embed: sin recetas cargadas avisa en vez de romper", vacio.Count == 0 && vacioDesc!.Contains("no hay recetas cargadas"), vacioDesc ?? "(null)");
-var (alto, altoDesc, _, _) = await RecipesEmbedFields(soloZ5, "Guerrero", 1);
-Check("embed: si no hay recetas hasta tu zona avisa 'para tu zona'", alto.Count == 0 && altoDesc!.Contains("para tu zona"), altoDesc ?? "(null)");
-var soloOtraClase = new[] { Rcp(1, false, Item(62, "Filo del Ninja", "Weapon", 30, family: "Dagas", classReq: "Ninja"), 100, Ing("Hierro", 1)) };
-var (otra, otraDesc, _, _) = await RecipesEmbedFields(soloOtraClase, "Guerrero", 1);
-Check("embed: si en tu zona no hay nada para tu clase lo dice", otra.Count == 0 && otraDesc!.Contains("No hay recetas para vos"), otraDesc ?? "(null)");
+var withZone = Zone1Template().Append(Rcp(4, true, Item(60, "Arco de Prueba", "Weapon", 60, family: "Arcos"), 500, Ing("Madera de Ébano", 2))).ToArray();
+var (zf, _, _, _) = await RecipesEmbedFields(withZone, "Arquero", 4);
+var (af, _, _, _) = await RecipesEmbedFields(withZone, "Arquero");
+Check("recetario: con una zona pedida muestra SOLO esa; sin zona, todas (en orden de dificultad)", zf.Count == 1 && zf[0].Name.Contains("Zona 4") && zf[0].Value.StartsWith("**Arco de Prueba**") && af.Count == 2 && af[0].Name.Contains("Zona 1") && af[1].Name.Contains("Zona 4"), string.Join(" | ", af.Select(x => x.Name)));
+var (nof, nofDesc, _, _) = await RecipesEmbedFields(Zone1Template(), "Guerrero", 4);
+Check("recetario: una zona sin recetas lo dice en vez de romper", nof.Count == 0 && nofDesc!.Contains("zona 4"), nofDesc ?? "(null)");
+
+var sinZona = Zone1Template().Append(Rcp(null, false, Item(70, "Hoja de Prueba", "Weapon", 9), 40, Ing("Hierro", 2), Ing("Madera de Pino", 10))).ToArray();
+var (sf, _, _, _) = await RecipesEmbedFields(sinZona, "Guerrero");
+Check("recetario: la receta SIN ZONA va en su propia parte al final: «Sin zona específica»", sf.Count == 2 && sf[1].Name == "🧰 Sin zona específica" && sf[1].Value == "**Hoja de Prueba** `+9 ATQ` → 2 Hierro + 10 Madera de Pino · 💰 40", string.Join(" | ", sf.Select(x => x.Name)));
+var (sz, _, _, _) = await RecipesEmbedFields(sinZona, "Guerrero", 1);
+Check("recetario: pidiendo una zona NO aparece «Sin zona específica»", sz.Count == 1 && sz[0].Name.Contains("Zona 1"), string.Join(" | ", sz.Select(x => x.Name)));
+
+var (vacio, vacioDesc, _, _) = await RecipesEmbedFields(new List<object>(), "Guerrero");
+Check("recetario: sin recetas cargadas avisa en vez de romper", vacio.Count == 0 && vacioDesc!.Contains("no hay recetas cargadas"), vacioDesc ?? "(null)");
+var soloOtraClase = new[] { Rcp(1, true, Item(62, "Filo del Ninja", "Weapon", 30, family: "Dagas", classReq: "Ninja"), 100, Ing("Hierro", 1)) };
+var (otra, otraDesc, _, _) = await RecipesEmbedFields(soloOtraClase, "Guerrero");
+Check("recetario: si no hay nada para tu clase lo dice", otra.Count == 0 && otraDesc!.Contains("No hay recetas para vos"), otraDesc ?? "(null)");
+
+// La vista del menú (ViewFor) suma la receta sin zona a la de la zona; y el menú de /forge la esconde si ya llevás un arma puesta.
+var (nSin, zSin, _) = View(sinZona, "Guerrero", 1);
+Check("molde: la receta sin zona la ve cualquiera, en cualquier zona", nSin.Contains("Hoja de Prueba") && zSin == 1 && View(sinZona, "Guerrero", 4).Names.Contains("Hoja de Prueba"), string.Join(", ", nSin));
 
 // ---------- /forge make (lista desplegable) ----------
 List<(string Name, string Value)> RunForge(IEnumerable<object> recipes, object player, Dictionary<string, int> owned, string typed)

@@ -13,7 +13,7 @@ public partial class TextCommandModule
     {
         try
         {
-            var scene = await BlacksmithModule.BuildSceneAsync(userRepository, recipeRepository, zoneRepository, inventoryRepository, Context.User.Id, null);
+            var scene = await BlacksmithModule.BuildSceneAsync(userRepository, recipeRepository, zoneRepository, inventoryRepository, Context.User.Id);
             await NpcImages.SendAsync(Context.Channel, scene.Embed, scene.Components);
         }
         catch (Exception ex)

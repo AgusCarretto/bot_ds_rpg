@@ -129,16 +129,15 @@ Check(partial.Where(x => x.Option.Value == food).All(x => x.Option.Emote is null
 // 4d. El herrero.
 await Reload(AppList());
 await db.ExecuteAsync("UPDATE users SET weapon_id = NULL, gold = 999999 WHERE discord_id = @id", new { id = (long)U });
-var forge = await BlacksmithModule.BuildSceneAsync(users, recipes, zonesRepo, inventory, U, null);
+var forge = await BlacksmithModule.BuildSceneAsync(users, recipes, zonesRepo, inventory, U);
 var forgeOptions = Menus(forge.Components).Single(m => m.CustomId.StartsWith("blacksmith_pick")).Options.ToList();
 Check(forgeOptions.Count >= 3 && forgeOptions.All(o => CodeOfItem(o.Value) is { } c ? o.Emote is Emote e && e.Id == IdOf(c) : o.Emote is null),
     $"el menú del herrero: cada una de las {forgeOptions.Count} recetas lleva el emoji del ítem que forja (y solo si tiene)");
 Check(forgeOptions.All(o => o.Label.StartsWith("✅") || o.Label.StartsWith("❌") || o.Label.StartsWith("🔁") || o.Label.StartsWith("🟢")), "el ✅ / ❌ / 🔁 / 🟢 del estado de la receta se queda en el texto, el emoji del ítem va aparte");
 await Reload([]);
-var forgeNone = Menus((await BlacksmithModule.BuildSceneAsync(users, recipes, zonesRepo, inventory, U, null)).Components).Single(m => m.CustomId.StartsWith("blacksmith_pick")).Options;
+var forgeNone = Menus((await BlacksmithModule.BuildSceneAsync(users, recipes, zonesRepo, inventory, U)).Components).Single(m => m.CustomId.StartsWith("blacksmith_pick")).Options;
 Check(forgeNone.Count == forgeOptions.Count && forgeNone.All(o => o.Emote is null), "el herrero sin lista de emojis: las mismas recetas, sin emoji");
-var zoneMenu = Menus(forge.Components).Single(m => m.CustomId.StartsWith("blacksmith_zone"));
-Check(zoneMenu.Options.All(o => o.Emote is null), "el menú de zonas del herrero no cambia (usa emojis comunes en el texto)");
+Check(Menus(forge.Components).Count() == 1 && !Menus(forge.Components).Any(m => m.CustomId.StartsWith("blacksmith_zone")), "la herrería ya no tiene el menú de zonas (v0.27.0: el botón «Ver todas las recetas» lo reemplaza), solo la lista para forjar");
 
 // 4e. El menú de curación del combate (el que no puede romperse: sin él no se empieza un /travel ni un /boss).
 await Reload(AppList());

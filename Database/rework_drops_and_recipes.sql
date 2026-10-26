@@ -6,12 +6,14 @@
 --   · 3 drops de material por zona (los 2 de /hunt y el de /travel; chances 6% y 20% sin tocar);
 --   · el jefe NO suelta material: su único "drop" es el COFRE de su zona (la chance 100% la primera vez / 40% después
 --     vive en GameData/CombatRewardCalculator, no acá);
---   · 6 recetas por zona (30 en total): 4 armas de clase, 1 general SIN familia (no recibe el boost de clase) y 1 amuleto
---     que pide los 3 drops de la zona; ATQ base 9/20/32/50/80 y DEF 10/35/60/85/120 (la escalera de zonas; la DEF era 10/18/30/46/75 hasta la v0.15.1);
+--   · 5 recetas por zona (25 en total) + 1 sin zona (26): 4 armas de clase y 1 amuleto que pide los 3 drops de la zona, más la Hoja de Acero Puro, la ÚNICA arma general (v0.27.0), sin zona y solo con materiales
+--     de recolección; ATQ 14/30/48/75/120 (9/20/32/50/80 × 1,5: desde la v0.27.0 no hay sinergia de clase y el número ya viene en el arma) y DEF 10/35/60/85/120 (la escalera de zonas; la DEF era 10/18/30/46/75 hasta la v0.15.1);
 --   · salen 6 materiales (Colmillo de Cimarrón y los 5 drops de jefe) y 5 amuletos (los "bajos" de cada zona).
 -- Las cantidades salen del modelo de Database/report_recipe_pacing.sql con el rendimiento de GatheringYield (Común 1-5, Raro 1-3,
 -- Épico 1-2, Legendario/Mítico 1): general ~100 min, de clase ~150, amuleto ~200 (Zona 1 más corto). Se generó desde ese modelo.
 -- v0.14.2: las generales de las zonas 2 a 5 pasaron a 2 de cada ingrediente (ver rebalance_general_weapons.sql).
+-- v0.27.0 (el dueño, 2026-10-26): se va la sinergia ×1,5 y las 4 armas generales de las zonas 2 a 5 (nadie las hacía: se ahorraba los drops con el arma de clase o el amuleto). Sus ÍTEMS siguen en el catálogo (kind 'retirada':
+-- quien tenga uno lo conserva y puede venderlo) pero ya no tienen receta. Migración para la base viva: remove_synergy_and_general_weapons.sql.
 -- v0.15.1 (revisión de balance del 2026-10-08, ver MEJORAS.md): al bajar el drop de /travel a 40 % (v0.10.2) las recetas quedaron 1,5 veces más lentas que su diseño y nadie las retocó.
 -- Ahora cada arma de clase de las zonas 2 a 5 pide UNA unidad menos del drop de viaje de su zona (3 → 2: ~150 min otra vez) y cada amuleto UNA menos (4 → 3: ~225 min), y las armas de
 -- clase de la Zona 5 ya no piden el material MÍTICO de recolección (Fragmento de Meteorito / Corteza del Árbol de Vida: 0,5 % por acción, ~1000 min y una cola de hasta 40 h de mala suerte):
@@ -31,44 +33,45 @@
 -- =========================================================
 
 -- 0) Chequeo previo: que existan las zonas, los cofres y todo lo que las recetas nombran.
-CREATE TEMP TABLE rw_gear (result_name TEXT, kind TEXT, zone_name TEXT, stat INTEGER, gold INTEGER);
+-- stat = lo que suma la pieza (el ATQ de las armas de clase ya trae el ×1,5 desde la v0.27.0); sell_stat = el stat con el que se calcula el precio de venta (el de antes de la v0.27.0: los precios no se tocaron).
+-- kind: 'clase', 'general' (sin zona), 'amuleto' o 'retirada' (el ítem se queda en el catálogo, sin receta).
+CREATE TEMP TABLE rw_gear (result_name TEXT, kind TEXT, zone_name TEXT, stat INTEGER, gold INTEGER, sell_stat INTEGER);
 INSERT INTO rw_gear VALUES
-    ('Hoja de Acero Puro', 'general', 'Praderas del Mate', 9, 40),
-    ('Espada de Madera', 'clase', 'Praderas del Mate', 9, 100),
-    ('Daga Oxidada', 'clase', 'Praderas del Mate', 9, 100),
-    ('Arco Corto de Sauce', 'clase', 'Praderas del Mate', 9, 100),
-    ('Grimorio Desgastado', 'clase', 'Praderas del Mate', 9, 100),
-    ('Hombreras de Cuero Grueso', 'amuleto', 'Praderas del Mate', 10, 200),
-    ('Cuchilla de Cenizas', 'general', 'Bosque de Cenizas', 20, 300),
-    ('Hacha de Hierro MK3', 'clase', 'Bosque de Cenizas', 20, 400),
-    ('Colmillo Nocturno', 'clase', 'Bosque de Cenizas', 20, 400),
-    ('Arco Élfico Ancestral', 'clase', 'Bosque de Cenizas', 20, 400),
-    ('Grimorio de las Tormentas', 'clase', 'Bosque de Cenizas', 20, 400),
-    ('Talismán de Ceniza Bendita', 'amuleto', 'Bosque de Cenizas', 35, 400),
-    ('Pico de Minero Reforzado', 'general', 'Minas del Yunque', 32, 450),
-    ('Mazo de Escoria', 'clase', 'Minas del Yunque', 32, 600),
-    ('Dagas de Garra Maldita', 'clase', 'Minas del Yunque', 32, 600),
-    ('Boleadoras de Escoria', 'clase', 'Minas del Yunque', 32, 600),
-    ('Báculo de Tizón', 'clase', 'Minas del Yunque', 32, 600),
-    ('Peto de Escoria Templada', 'amuleto', 'Minas del Yunque', 60, 650),
-    ('Lanza de Magma', 'general', 'Cordillera del Fuego', 50, 700),
-    ('Facón de Hueso Añejo', 'clase', 'Cordillera del Fuego', 50, 900),
-    ('Cuchillos de Ceniza', 'clase', 'Cordillera del Fuego', 50, 900),
-    ('Arco de Caza Mayor', 'clase', 'Cordillera del Fuego', 50, 900),
-    ('Códice de las Brasas', 'clase', 'Cordillera del Fuego', 50, 900),
-    ('Talismán del Volcán', 'amuleto', 'Cordillera del Fuego', 85, 1000),
-    ('Martillo del Titán', 'general', 'Cráter de la Escoria', 80, 1100),
-    ('Espada del Abismo', 'clase', 'Cráter de la Escoria', 80, 1400),
-    ('Colmillo del Cráter', 'clase', 'Cráter de la Escoria', 80, 1400),
-    ('Arco del Alma Errante', 'clase', 'Cráter de la Escoria', 80, 1400),
-    ('Báculo del Árbol de Vida', 'clase', 'Cráter de la Escoria', 80, 1400),
-    ('Corazón de Titán Engarzado', 'amuleto', 'Cráter de la Escoria', 120, 1500);
+    ('Hoja de Acero Puro', 'general', NULL, 9, 40, 9),
+    ('Espada de Madera', 'clase', 'Praderas del Mate', 14, 100, 9),
+    ('Daga Oxidada', 'clase', 'Praderas del Mate', 14, 100, 9),
+    ('Arco Corto de Sauce', 'clase', 'Praderas del Mate', 14, 100, 9),
+    ('Grimorio Desgastado', 'clase', 'Praderas del Mate', 14, 100, 9),
+    ('Hombreras de Cuero Grueso', 'amuleto', 'Praderas del Mate', 10, 200, 10),
+    ('Cuchilla de Cenizas', 'retirada', 'Bosque de Cenizas', 20, 300, 20),
+    ('Hacha de Hierro MK3', 'clase', 'Bosque de Cenizas', 30, 400, 20),
+    ('Colmillo Nocturno', 'clase', 'Bosque de Cenizas', 30, 400, 20),
+    ('Arco Élfico Ancestral', 'clase', 'Bosque de Cenizas', 30, 400, 20),
+    ('Grimorio de las Tormentas', 'clase', 'Bosque de Cenizas', 30, 400, 20),
+    ('Talismán de Ceniza Bendita', 'amuleto', 'Bosque de Cenizas', 35, 400, 35),
+    ('Pico de Minero Reforzado', 'retirada', 'Minas del Yunque', 32, 450, 32),
+    ('Mazo de Escoria', 'clase', 'Minas del Yunque', 48, 600, 32),
+    ('Dagas de Garra Maldita', 'clase', 'Minas del Yunque', 48, 600, 32),
+    ('Boleadoras de Escoria', 'clase', 'Minas del Yunque', 48, 600, 32),
+    ('Báculo de Tizón', 'clase', 'Minas del Yunque', 48, 600, 32),
+    ('Peto de Escoria Templada', 'amuleto', 'Minas del Yunque', 60, 650, 60),
+    ('Lanza de Magma', 'retirada', 'Cordillera del Fuego', 50, 700, 50),
+    ('Facón de Hueso Añejo', 'clase', 'Cordillera del Fuego', 75, 900, 50),
+    ('Cuchillos de Ceniza', 'clase', 'Cordillera del Fuego', 75, 900, 50),
+    ('Arco de Caza Mayor', 'clase', 'Cordillera del Fuego', 75, 900, 50),
+    ('Códice de las Brasas', 'clase', 'Cordillera del Fuego', 75, 900, 50),
+    ('Talismán del Volcán', 'amuleto', 'Cordillera del Fuego', 85, 1000, 85),
+    ('Martillo del Titán', 'retirada', 'Cráter de la Escoria', 80, 1100, 80),
+    ('Espada del Abismo', 'clase', 'Cráter de la Escoria', 120, 1400, 80),
+    ('Colmillo del Cráter', 'clase', 'Cráter de la Escoria', 120, 1400, 80),
+    ('Arco del Alma Errante', 'clase', 'Cráter de la Escoria', 120, 1400, 80),
+    ('Báculo del Árbol de Vida', 'clase', 'Cráter de la Escoria', 120, 1400, 80),
+    ('Corazón de Titán Engarzado', 'amuleto', 'Cráter de la Escoria', 120, 1500, 120);
 
 CREATE TEMP TABLE rw_ingredients (result_name TEXT, ingredient_name TEXT, quantity INTEGER);
 INSERT INTO rw_ingredients VALUES
     ('Hoja de Acero Puro', 'Hierro', 2),
-    ('Hoja de Acero Puro', 'Colmillo de Jabalí', 1),
-    ('Hoja de Acero Puro', 'Pluma de Ñandú', 1),
+    ('Hoja de Acero Puro', 'Madera de Pino', 10),
     ('Espada de Madera', 'Madera de Pino', 12),
     ('Espada de Madera', 'Hierro', 4),
     ('Espada de Madera', 'Colmillo de Jabalí', 2),
@@ -89,9 +92,6 @@ INSERT INTO rw_ingredients VALUES
     ('Hombreras de Cuero Grueso', 'Colmillo de Jabalí', 4),
     ('Hombreras de Cuero Grueso', 'Pluma de Ñandú', 4),
     ('Hombreras de Cuero Grueso', 'Cuero Grueso', 2),
-    ('Cuchilla de Cenizas', 'Carbón', 2),
-    ('Cuchilla de Cenizas', 'Garra de Puma Cenizo', 2),
-    ('Cuchilla de Cenizas', 'Esencia Espectral', 2),
     ('Hacha de Hierro MK3', 'Hierro', 6),
     ('Hacha de Hierro MK3', 'Madera de Roble', 6),
     ('Hacha de Hierro MK3', 'Garra de Puma Cenizo', 4),
@@ -112,9 +112,6 @@ INSERT INTO rw_ingredients VALUES
     ('Talismán de Ceniza Bendita', 'Garra de Puma Cenizo', 4),
     ('Talismán de Ceniza Bendita', 'Esencia Espectral', 4),
     ('Talismán de Ceniza Bendita', 'Ceniza Bendita', 3),
-    ('Pico de Minero Reforzado', 'Hierro', 2),
-    ('Pico de Minero Reforzado', 'Yunque Fragmentado', 2),
-    ('Pico de Minero Reforzado', 'Gema en Bruto', 2),
     ('Mazo de Escoria', 'Hierro', 6),
     ('Mazo de Escoria', 'Madera de Nogal', 3),
     ('Mazo de Escoria', 'Yunque Fragmentado', 4),
@@ -135,9 +132,6 @@ INSERT INTO rw_ingredients VALUES
     ('Peto de Escoria Templada', 'Yunque Fragmentado', 4),
     ('Peto de Escoria Templada', 'Gema en Bruto', 4),
     ('Peto de Escoria Templada', 'Escoria Metálica Densa', 3),
-    ('Lanza de Magma', 'Hierro', 2),
-    ('Lanza de Magma', 'Escama Ígnea', 2),
-    ('Lanza de Magma', 'Núcleo de Magma', 2),
     ('Facón de Hueso Añejo', 'Hierro', 6),
     ('Facón de Hueso Añejo', 'Gema de Zafiro', 1),
     ('Facón de Hueso Añejo', 'Escama Ígnea', 4),
@@ -158,9 +152,6 @@ INSERT INTO rw_ingredients VALUES
     ('Talismán del Volcán', 'Escama Ígnea', 4),
     ('Talismán del Volcán', 'Núcleo de Magma', 4),
     ('Talismán del Volcán', 'Aliento de Fuego Eterno', 3),
-    ('Martillo del Titán', 'Hierro', 2),
-    ('Martillo del Titán', 'Corazón de Titán', 2),
-    ('Martillo del Titán', 'Fragmento de Alma', 2),
     ('Espada del Abismo', 'Gema de Zafiro', 1),
     ('Espada del Abismo', 'Hierro', 6),
     ('Espada del Abismo', 'Corazón de Titán', 4),
@@ -227,41 +218,47 @@ FROM rw_boss_chest b
 JOIN monsters m ON m.name = b.boss_name AND m.is_boss
 JOIN items i ON i.name = b.chest_name;
 
--- 3) Stats y precios de las 30 piezas. Venta = lo menor entre 6 x el stat y el 60% del oro de la receta (forjar y vender nunca da
--- ganancia); compra = 1,3 x la venta. Las 5 armas generales quedan sin familia: nadie recibe el boost de clase con ellas.
+-- 3) Stats y precios de las 30 piezas. Venta = lo menor entre 6 x el stat de antes del ×1,5 (sell_stat) y el 60% del oro de la receta (forjar y vender nunca da
+-- ganancia); compra = 1,3 x la venta. Las armas generales (la Hoja y las 4 retiradas) quedan sin familia.
 UPDATE items i
 SET stat_value = g.stat,
-    sell_price = LEAST(6 * g.stat, g.gold * 6 / 10),
-    buy_price  = ROUND(LEAST(6 * g.stat, g.gold * 6 / 10) * 1.3)::INTEGER
+    sell_price = LEAST(6 * g.sell_stat, g.gold * 6 / 10),
+    buy_price  = ROUND(LEAST(6 * g.sell_stat, g.gold * 6 / 10) * 1.3)::INTEGER
 FROM rw_gear g
 WHERE i.name = g.result_name;
 
 UPDATE items SET weapon_family = NULL
-WHERE name IN (SELECT result_name FROM rw_gear WHERE kind = 'general');
+WHERE name IN (SELECT result_name FROM rw_gear WHERE kind IN ('general', 'retirada'));
+
+-- Las 3 armas de clase viejas que ya nadie puede forjar (seed_class_gear_and_monster_drops.sql) tenían +15 y rendían 22 con la sinergia (redondeo al par): desde la v0.27.0 el número ya viene en el arma.
+UPDATE items SET stat_value = 22
+WHERE name IN ('Arco Largo del Cazador', 'Dagas Gemelas de Sombra', 'Báculo del Aprendiz') AND type = 'Weapon';
 
 -- Las 20 armas de clase son exclusivas de la clase de su familia (hasta ahora solo las de Zona 3 y 4 lo tenían cargado).
 UPDATE items SET class_requirement = CASE weapon_family
         WHEN 'Espadas' THEN 'Guerrero' WHEN 'Dagas' THEN 'Ninja' WHEN 'Arcos' THEN 'Arquero' WHEN 'Grimorios' THEN 'Hechicero' END
 WHERE name IN (SELECT result_name FROM rw_gear WHERE kind = 'clase') AND weapon_family IS NOT NULL;
 
--- 4) Recetas: las 30 de arriba, y fuera cualquier otra (las de los 5 amuletos que salen).
+-- 4) Recetas: las 26 de arriba (25 con zona + la Hoja sin zona), y fuera cualquier otra (las de los 5 amuletos que salen y las de las 4 generales retiradas).
 INSERT INTO recipes (result_item_id, gold_cost, zone_id, affinity)
 SELECT i.item_id, g.gold, z.zone_id, g.kind = 'clase'
 FROM rw_gear g
 JOIN items i ON i.name = g.result_name
-JOIN zones z ON z.name = g.zone_name
+LEFT JOIN zones z ON z.name = g.zone_name
+WHERE g.kind <> 'retirada'
 ON CONFLICT (result_item_id) DO UPDATE SET
     gold_cost = EXCLUDED.gold_cost, zone_id = EXCLUDED.zone_id, affinity = EXCLUDED.affinity;
 
 DELETE FROM recipes
-WHERE result_item_id NOT IN (SELECT i.item_id FROM rw_gear g JOIN items i ON i.name = g.result_name);
+WHERE result_item_id NOT IN (SELECT i.item_id FROM rw_gear g JOIN items i ON i.name = g.result_name WHERE g.kind <> 'retirada');
 
 -- Los ingredientes los define ESTE archivo: se borran los que tuvieran y se cargan de nuevo.
 DELETE FROM recipe_ingredients
 WHERE recipe_id IN (
     SELECT rec.recipe_id FROM rw_gear g
     JOIN items i ON i.name = g.result_name
-    JOIN recipes rec ON rec.result_item_id = i.item_id);
+    JOIN recipes rec ON rec.result_item_id = i.item_id
+    WHERE g.kind <> 'retirada');
 
 INSERT INTO recipe_ingredients (recipe_id, item_id, quantity)
 SELECT rec.recipe_id, ing.item_id, a.quantity
@@ -331,8 +328,8 @@ BEGIN
     END IF;
 
     SELECT COUNT(*) INTO v_n FROM recipes;
-    IF v_n <> 30 THEN
-        RAISE EXCEPTION 'rework_drops_and_recipes: hay % recetas y tienen que ser 30', v_n;
+    IF v_n <> 26 THEN
+        RAISE EXCEPTION 'rework_drops_and_recipes: hay % recetas y tienen que ser 26 (25 por zona y la Hoja de Acero Puro sin zona)', v_n;
     END IF;
 
     SELECT string_agg(z.name, ', ') INTO v_bad
@@ -342,9 +339,16 @@ BEGIN
                  COUNT(*) FILTER (WHERE NOT r.affinity AND i.type = 'Weapon') AS general,
                  COUNT(*) FILTER (WHERE i.type = 'Amulet') AS amuleto
           FROM recipes r JOIN items i ON i.item_id = r.result_item_id GROUP BY r.zone_id) x USING (zone_id)
-    WHERE z.zone_id > 0 AND NOT (x.clase = 4 AND x.general = 1 AND x.amuleto = 1);
+    WHERE z.zone_id > 0 AND NOT (x.clase = 4 AND x.general = 0 AND x.amuleto = 1);
     IF v_bad IS NOT NULL THEN
-        RAISE EXCEPTION 'rework_drops_and_recipes: estas zonas no tienen 4 armas de clase + 1 general + 1 amuleto: [%]', v_bad;
+        RAISE EXCEPTION 'rework_drops_and_recipes: estas zonas no tienen 4 armas de clase + 1 amuleto (y ninguna general): [%]', v_bad;
+    END IF;
+
+    SELECT COUNT(*) INTO v_n FROM recipes r JOIN items i ON i.item_id = r.result_item_id
+    WHERE r.zone_id IS NULL AND i.name = 'Hoja de Acero Puro' AND NOT r.affinity AND i.type = 'Weapon'
+      AND NOT EXISTS (SELECT 1 FROM recipe_ingredients ri JOIN items ing ON ing.item_id = ri.item_id WHERE ri.recipe_id = r.recipe_id AND ing.type NOT IN ('Madera', 'Mineral'));
+    IF v_n <> 1 THEN
+        RAISE EXCEPTION 'rework_drops_and_recipes: tiene que haber UNA receta sin zona, la Hoja de Acero Puro, hecha solo con materiales de recolección';
     END IF;
 
     -- Cada receta tiene EXACTAMENTE los ingredientes de la tabla (ni uno de menos ni uno de más), el oro, la zona y el stat.
@@ -362,8 +366,9 @@ BEGIN
         UNION ALL
         SELECT 'receta distinta ' || g.result_name
         FROM rw_gear g
-        WHERE NOT EXISTS (SELECT 1 FROM recipes rec JOIN items i ON i.item_id = rec.result_item_id JOIN zones z ON z.zone_id = rec.zone_id
-                          WHERE i.name = g.result_name AND z.name = g.zone_name AND rec.gold_cost = g.gold AND rec.affinity = (g.kind = 'clase')
+        WHERE g.kind <> 'retirada'
+          AND NOT EXISTS (SELECT 1 FROM recipes rec JOIN items i ON i.item_id = rec.result_item_id LEFT JOIN zones z ON z.zone_id = rec.zone_id
+                          WHERE i.name = g.result_name AND z.name IS NOT DISTINCT FROM g.zone_name AND rec.gold_cost = g.gold AND rec.affinity = (g.kind = 'clase')
                             AND i.stat_value = g.stat)
     ) x;
     IF v_bad IS NOT NULL THEN
@@ -371,7 +376,7 @@ BEGIN
     END IF;
 
     SELECT string_agg(i.name, ', ') INTO v_bad FROM items i
-    WHERE (i.name IN (SELECT result_name FROM rw_gear WHERE kind = 'general') AND i.weapon_family IS NOT NULL)
+    WHERE (i.name IN (SELECT result_name FROM rw_gear WHERE kind IN ('general', 'retirada')) AND i.weapon_family IS NOT NULL)
        OR (i.name IN (SELECT result_name FROM rw_gear WHERE kind = 'clase') AND (i.weapon_family IS NULL OR i.class_requirement IS NULL));
     IF v_bad IS NOT NULL THEN
         RAISE EXCEPTION 'rework_drops_and_recipes: familia/clase mal en: [%] (los generales sin familia, las de clase con familia y clase)', v_bad;
@@ -390,4 +395,4 @@ DROP TABLE rw_gear;
 
 -- Chequeo rápido: las recetas por zona.
 -- SELECT z.min_level, CASE WHEN r.affinity THEN 'clase' WHEN i.type = 'Weapon' THEN 'general' ELSE 'amuleto' END AS tipo, i.name, i.stat_value, r.gold_cost
--- FROM recipes r JOIN items i ON i.item_id = r.result_item_id JOIN zones z USING (zone_id) ORDER BY z.min_level, tipo, i.name;
+-- FROM recipes r JOIN items i ON i.item_id = r.result_item_id LEFT JOIN zones z USING (zone_id) ORDER BY z.min_level NULLS FIRST, tipo, i.name;

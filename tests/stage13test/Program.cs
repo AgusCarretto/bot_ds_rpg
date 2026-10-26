@@ -106,7 +106,7 @@ await Make(U, "Guerrero", 5, gold: 0);
 await GiveRecipe(U, "Espada de Madera");
 int goldBefore = await GoldOf(U);
 var forgedSword = await ForgeModule.ExecuteMakeAsync(users, recipes, crafting, events, U, "Espada de Madera");
-Check(forgedSword.Embed is not null && forgedSword.Embed.Title == "⚒️ ¡Forjado y equipado!" && forgedSword.Embed.Description.Contains("equipada") && forgedSword.Embed.Description.Contains("arma") && forgedSword.Embed.Description.Contains("+9 ATQ"), $"forjar un arma: «{forgedSword.Embed?.Title}» y dice que quedó equipada con su ataque");
+Check(forgedSword.Embed is not null && forgedSword.Embed.Title == "⚒️ ¡Forjado y equipado!" && forgedSword.Embed.Description.Contains("equipada") && forgedSword.Embed.Description.Contains("arma") && forgedSword.Embed.Description.Contains("+14 ATQ"), $"forjar un arma: «{forgedSword.Embed?.Title}» y dice que quedó equipada con su ataque");
 Check(await Worn(U, "weapon") == "Espada de Madera" && await Have(U, "Espada de Madera") == 0 && await GoldOf(U) == goldBefore - 100 && await Have(U, "Madera de Pino") == 0 && await Have(U, "Hierro") == 0, "queda en weapon_id, NO en el inventario; se cobró el oro y se gastaron los materiales");
 Console.WriteLine("   " + forgedSword.Embed!.Description.Replace("\n", " / "));
 
@@ -205,10 +205,11 @@ Check(free.Count == 3 && free.Where(c => c.Name.StartsWith("✅")).Count() >= 3,
 await ForgeModule.ExecuteMakeAsync(users, recipes, crafting, events, U, "Espada de Madera");
 await GiveRecipe(U, "Espada de Madera");
 var withWeapon = await Choices();
-var sameC = withWeapon.Single(c => c.Value.ToString() == "Espada de Madera"); var otherW = withWeapon.Single(c => c.Value.ToString() == "Hoja de Acero Puro"); var amuC = withWeapon.Single(c => c.Value.ToString() == "Hombreras de Cuero Grueso");
-Check(sameC.Name.StartsWith("🟢") && sameC.Name.Contains("ya la llevás equipada") && otherW.Name.StartsWith("🔁") && otherW.Name.Contains("primero vendé tu arma equipada") && amuC.Name.StartsWith("✅"), $"con una espada puesta: la espada dice 🟢 ya equipada, la otra arma 🔁 vendé primero, y el amuleto sigue ✅ ({otherW.Name})");
-Check(withWeapon.ToList().FindIndex(c => c.Value.ToString() == "Hombreras de Cuero Grueso") < withWeapon.ToList().FindIndex(c => c.Value.ToString() == "Hoja de Acero Puro") && withWeapon.ToList().FindIndex(c => c.Value.ToString() == "Hoja de Acero Puro") < withWeapon.ToList().FindIndex(c => c.Value.ToString() == "Espada de Madera") && withWeapon.All(c => c.Name.Length <= 100),
-    "el orden: lo que se puede forjar ya, después lo que pide vender, al final la que ya llevás (y todas dentro de 100 caracteres)");
+// v0.27.0: la Hoja de Acero Puro (la única arma general, sin zona) es la base de quien empieza: con CUALQUIER arma puesta el menú ya no la ofrece (sería una opción «🔁 vendé tu arma primero» para algo que no sirve).
+var sameC = withWeapon.Single(c => c.Value.ToString() == "Espada de Madera"); var amuC = withWeapon.Single(c => c.Value.ToString() == "Hombreras de Cuero Grueso");
+Check(withWeapon.Count == 2 && sameC.Name.StartsWith("🟢") && sameC.Name.Contains("ya la llevás equipada") && amuC.Name.StartsWith("✅") && !withWeapon.Any(c => c.Value.ToString() == "Hoja de Acero Puro"), $"con una espada puesta: la espada dice 🟢 ya equipada, el amuleto sigue ✅ y la Hoja ya no aparece ({string.Join(" | ", withWeapon.Select(c => c.Name.Split((char)8212)[0].Trim()))})");
+Check(withWeapon.ToList().FindIndex(c => c.Value.ToString() == "Hombreras de Cuero Grueso") < withWeapon.ToList().FindIndex(c => c.Value.ToString() == "Espada de Madera") && withWeapon.All(c => c.Name.Length <= 100),
+    "el orden: lo que se puede forjar ya, al final la que ya llevás (y todas dentro de 100 caracteres)");
 
 Console.WriteLine("\n== 6. El consejo (/tips) con equipo puesto ==");
 var advisor = sp.GetRequiredService<IFarmAdvisor>();

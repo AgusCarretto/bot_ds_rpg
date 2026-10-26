@@ -374,8 +374,8 @@ public class DustModule(
                     ? $"Era justo el que ya tenías: seguís con **{Enchantments.KindLabel(newKind, previous)}**."
                     : $"Ya tenías **{Enchantments.KindLabel(newKind, previous)}**, que es mejor: te quedás con ese.";
 
-        // Lo que rinde la pieza (con la sinergia de clase si es un arma) antes y después.
-        int baseStat = isWeapon ? ClassWeaponSynergy.ApplyBonus(gear.StatValue, playerBefore.Class, gear.WeaponFamily) : gear.StatValue;
+        // Lo que rinde la pieza antes y después (el arma de clase ya trae el ×1,5 de la vieja sinergia en su stat, v0.27.0).
+        int baseStat = gear.StatValue;
         int before = Enchantments.Apply(baseStat, prevKind, Enchantments.StatTier(prevKind, previous)), after = Enchantments.Apply(baseStat, newKind, Enchantments.StatTier(newKind, now));
 
         var embed = new EmbedBuilder()

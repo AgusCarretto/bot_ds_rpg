@@ -79,10 +79,8 @@ public class GameModule(
 
         var weapon = player.WeaponId is int weaponId ? await itemRepository.GetByIdAsync(weaponId) : null;
         var amulet = player.AmuletId is int amuletId ? await itemRepository.GetByIdAsync(amuletId) : null;
-        bool hasSynergy = weapon is not null && ClassWeaponSynergy.Applies(player.Class, weapon.WeaponFamily);
 
-        // Ataque/Defensa = Nivel (Base) + equipo (arma con sinergia de clase si corresponde /
-        // amuleto), misma fórmula que usa el combate real — ver GameData/CombatStats.cs.
+        // Ataque/Defensa = Nivel (Base) + equipo (arma / amuleto), misma fórmula que usa el combate real — ver GameData/CombatStats.cs.
         // El arma y el amuleto cuentan CON su encantamiento (/enchant): son las mismas dos cuentas del combate real (PlayerCombatProfileCalculator.WeaponDamage/AmuletDefense, dentro de Resolve).
         // El banquete activo (si lo hay) suma a lo que se ve igual que en el combate real.
         var buff = await buffRepository.GetActiveAttackAsync(discordId);
@@ -112,9 +110,9 @@ public class GameModule(
         int requiredXp = LevelingCalculator.RequiredXpForLevel(player.Level);
 
         // El bloque de números, una línea cada uno, con el ícono PRIMERO y después el nombre con dos puntos (el dueño, 2026-10-23: «dejá primero el ícono y después el nombre», «después de ATQ poné :»):
-        //   <arma> ATQ: 123 ⚡ ...      <amuleto> DEF: 45 ...      <moneda> Oro: 1.234      <banco> Banco: 99
+        //   <arma> ATQ: 123 ...      <amuleto> DEF: 45 ...      <moneda> Oro: 1.234      <banco> Banco: 99
         // El ícono de ATQ y DEF es el emoji PROPIO de la pieza (el nombre lo dice /inventory y la herrería); sin pieza va uno genérico y «(sin arma)» / «(sin amuleto)» entre paréntesis, y si la pieza no tiene
-        // emoji cargado se escribe su nombre para no dejar la línea muda. Las marcas de lo que suma aparecen solo cuando existen: ⚡ sinergia de clase, 🍖 banquete (con los minutos que le quedan),
+        // emoji cargado se escribe su nombre para no dejar la línea muda. Las marcas de lo que suma aparecen solo cuando existen (la ⚡ de la sinergia de clase se fue en la v0.27.0): 🍖 banquete (con los minutos que le quedan),
         // 🔥 Fuego Nuevo / bendición, ✨ encantamiento (el porcentaje de la pieza). Las mascotas YA NO tienen marca (el dueño: «el +6 % de la mascota sacalo, ya queda incluido»): el número de DEF las incluye.
         string PieceIcon(Item? piece, string generic) =>
             piece is not null && !string.IsNullOrWhiteSpace(piece.Emoji) ? piece.Emoji : generic;
@@ -123,7 +121,7 @@ public class GameModule(
         // «✨+13 %» (Filo o Guarda) o «✨Crít +6» / «✨Sangre 3 %» / «✨Vida +13 %» / «✨Esq +6» (los efectos nuevos, v0.22.0).
         string EnchantMark(string kind, int tier) => Enchantments.IsValidTier(tier) ? $" ✨{Enchantments.ShortText(kind, tier)}" : string.Empty;
 
-        string attackLine = $"{PieceIcon(weapon, "⚔️")} **{Loc.T("ATQ")}:** {attack}{PieceTail(weapon, Loc.T("sin arma"))}" + (hasSynergy ? " ⚡" : string.Empty)
+        string attackLine = $"{PieceIcon(weapon, "⚔️")} **{Loc.T("ATQ")}:** {attack}{PieceTail(weapon, Loc.T("sin arma"))}"
             + (buff is null ? string.Empty : Loc.F($" 🍖+{buff.AttackPercent} % ({Math.Max(1, (int)Math.Ceiling(buff.Remaining.TotalMinutes))} min)"))
             + (bonuses.AttackMultiplier > 1.0 ? $" 🔥{FuegoNuevoRules.PercentText(bonuses.AttackMultiplier)}" : string.Empty)
             + EnchantMark(player.WeaponEnchantKind, weapon is null ? 0 : player.WeaponEnchant);
