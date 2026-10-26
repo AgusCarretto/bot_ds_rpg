@@ -44,7 +44,7 @@ async Task Reset(int gold, int level, int zone, string cls = "Guerrero")
 }
 
 List<SelectMenuComponent> Menus(BlacksmithScene s) => s.Components?.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<SelectMenuComponent>().ToList() ?? [];
-Task<BlacksmithScene> Forge(int? zone = null, ulong? id = null) => BlacksmithModule.BuildSceneAsync(users, recipesRepo, zonesRepo, inventory, id ?? U, zone);
+Task<BlacksmithScene> Forge(bool book = false, ulong? id = null) => BlacksmithModule.BuildSceneAsync(users, recipesRepo, zonesRepo, inventory, id ?? U, book);
 
 var zones = await zonesRepo.GetAllAsync();
 var zonesByRank = ZoneRanking.OrderByDifficulty(zones);
@@ -54,7 +54,7 @@ await interactions.AddModulesAsync(typeof(BoxModule).Assembly, sp);
 await texts.AddModulesAsync(typeof(BoxModule).Assembly, sp);
 var slash = interactions.SlashCommands.Select(c => c.Name).ToList();
 Check(slash.Contains("tips") && slash.Contains("forge") && slash.Contains("taberna"), "existen /tips, /forge y /taberna");
-Check(interactions.ComponentCommands.Any(c => c.Name.StartsWith("blacksmith_zone")) && interactions.ComponentCommands.Any(c => c.Name.StartsWith("blacksmith_pick")), "el selector de zonas de la herrería tiene su handler (y el de forjar sigue)");
+Check(interactions.ComponentCommands.Any(c => c.Name.StartsWith("blacksmith_book")) && interactions.ComponentCommands.Any(c => c.Name.StartsWith("blacksmith_home")) && interactions.ComponentCommands.Any(c => c.Name.StartsWith("blacksmith_pick")) && !interactions.ComponentCommands.Any(c => c.Name.StartsWith("blacksmith_zone")), "los botones del recetario (ver todo / volver) tienen su handler, el de forjar sigue y el selector de zonas ya no existe");
 Check(texts.Commands.Any(c => c.Name == "tips" && c.Aliases.Contains("consejo")) && texts.Commands.Any(c => c.Name == "forge recipes" && c.Parameters.Count == 1 && c.Parameters[0].IsOptional), "en texto: 'aa tips' (alias consejo) y 'aa forge recipes [zona]' con la zona opcional");
 var fakeCtx = (ICommandContext)FakeProxy.Create(typeof(ICommandContext), (n, a) => null);
 async Task<List<string>> ParsesOk(string input)
@@ -183,44 +183,45 @@ Check(empty.Title == "💡 Consejo" && empty.Description.Contains("/zonas"), "si
 var ghostTip = await TipsModule.BuildTipsEmbedAsync(advisor, GHOST);
 Check(ghostTip.Title == "💡 Consejo", "alguien sin cuenta: no se rompe ni se le crea cuenta");
 
-Console.WriteLine("\n== 8. La herrería: saludo y selector de zonas ==");
+Console.WriteLine("\n== 8. La herrería: saludo y botón del recetario ==");
 await Reset(500, 3, 1);
 var home = await Forge();
 var hm = Menus(home);
-Check(hm.Count == 2 && hm[0].CustomId == $"blacksmith_pick:{U}" && hm[1].CustomId == $"blacksmith_zone:{U}", $"dos listas: forjar y ver zonas ({string.Join(", ", hm.Select(m => m.CustomId))})");
-var zoneOpts = hm[1].Options.ToList();
-Check(zoneOpts.Count == zonesByRank.Count && zoneOpts.Select(o => o.Value).SequenceEqual(zonesByRank.Select(z => z.ZoneId.ToString())) && zoneOpts.All(o => !o.IsDefault.GetValueOrDefault() && o.Label.Length <= 100 && o.Label.Contains("Zona") && o.Description.StartsWith("Nivel ")) && zoneOpts[0].Description.Contains("tu zona") && zoneOpts.Count(o => o.Description.Contains("tu zona")) == 1,
-    $"una opción por zona, de la más fácil a la más difícil, sin ninguna marcada y la tuya avisada ({string.Join(" / ", zoneOpts.Select(o => o.Label + " [" + o.Description + "]"))})");
-Check(home.Embed.Title == "⚒️ La Herrería" && home.Embed.Description.Contains("segunda lista") && home.Embed.Footer is not null && home.Embed.Footer.Value.Text.Contains("abajo"), "el saludo avisa que la segunda lista muestra las recetas por zona y que la respuesta sale abajo");
+List<ButtonComponent> Buttons(BlacksmithScene s) => s.Components?.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<ButtonComponent>().ToList() ?? [];
+Check(hm.Count == 1 && hm[0].CustomId == $"blacksmith_pick:{U}" && Buttons(home).Count == 1 && Buttons(home)[0].CustomId == $"blacksmith_book:{U}" && Buttons(home)[0].Label.Contains("Ver todas las recetas"), $"una lista para forjar y un botón «Ver todas las recetas» (v0.27.0: ya no hay selector de zonas) ({string.Join(", ", hm.Select(m => m.CustomId))} + {string.Join(", ", Buttons(home).Select(b => b.CustomId))})");
+Check(home.Embed.Title == "⚒️ La Herrería" && home.Embed.Description.Contains("botón de abajo") && home.Embed.Footer is not null && home.Embed.Footer.Value.Text.Contains("abajo"), "el saludo avisa que el botón muestra todas las recetas y que la respuesta sale abajo");
 Console.WriteLine("   " + home.Embed.Description.Replace("\n", "\n   "));
-Check(hm.All(m => m.Options.Count is >= 1 and <= 25) && home.Components!.Components.OfType<ActionRowComponent>().Count() == 2, "dentro de los límites de Discord (2 filas, hasta 25 opciones por lista)");
+Check(hm.All(m => m.Options.Count is >= 1 and <= 25) && home.Components!.Components.OfType<ActionRowComponent>().Count() == 2, "dentro de los límites de Discord (2 filas, hasta 25 opciones en la lista)");
 
-Console.WriteLine("\n== 9. Ver las recetas de una zona ==");
+Console.WriteLine("\n== 9. El recetario completo ==");
+var book = await Forge(true);
+var bm = Menus(book);
+string ZW11 = ((char)0x200B).ToString();
+Check(book.Embed.Title == "⚒️ Recetas del Herrero" && book.Embed.Length < 6000 && bm.Count == 1 && bm[0].CustomId == $"blacksmith_pick:{U}" && Buttons(book).Single().CustomId == $"blacksmith_home:{U}" && Buttons(book).Single().Label.Contains("Volver"),
+    $"el recetario: título propio, la lista para forjar sigue, y el botón vuelve al saludo ({book.Embed.Length} caracteres)");
+var zoneFields = book.Embed.Fields.Where(f => f.Name.Contains(" · nivel ")).ToList();
+Check(zoneFields.Count == zonesByRank.Count && book.Embed.Fields.Length == zonesByRank.Count + 1 && book.Embed.Fields.Last().Name == "🧰 Sin zona específica" && zoneFields.All(f => f.Value.Split('\n').Length == 2),
+    $"un campo por zona (en orden de dificultad) con SUS 2 recetas (el arma de tu clase y el amuleto) y, al final, «Sin zona específica» ({string.Join(" | ", book.Embed.Fields.Select(f => f.Name))})");
 foreach (var z in zonesByRank)
 {
-    var view = await Forge(z.ZoneId);
-    var vm = Menus(view);
     bool locked = z.MinLevel > 3;
-    Check(view.Embed.Title == "⚒️ Recetas del Herrero" && view.Embed.Description.Contains($"Zona {z.ZoneId}: {z.Name}") && view.Embed.Fields.Length == 3 && view.Embed.Length < 6000
-        && view.Embed.Description.Contains("🔒") == locked && vm.Count == 2 && vm[1].Options.Single(o => o.IsDefault.GetValueOrDefault()).Value == z.ZoneId.ToString() && vm[0].Options.All(o => !o.IsDefault.GetValueOrDefault()),
-        $"Zona {z.ZoneId}: sus 3 recetas ({view.Embed.Fields.Length}), {(locked ? "🔒 avisa el nivel" : "sin candado")}, la zona elegida queda marcada ({view.Embed.Length} caracteres)");
+    var f = book.Embed.Fields.Single(x => x.Name.Contains($"Zona {z.ZoneId} · {z.Name}"));
+    Check(f.Name.Contains($"nivel {z.MinLevel}") && f.Name.Contains("🔒") == locked, $"Zona {z.ZoneId}: «{f.Name}» {(locked ? "lleva el 🔒 (sos nivel 3)" : "sin candado")}");
 }
-
-var z5 = await Forge(zonesByRank[^1].ZoneId);
-Check(z5.Embed.Description.Contains($"nivel {zonesByRank[^1].MinLevel}") && z5.Embed.Description.Contains("vos sos nivel 3"), "el candado dice qué nivel pide y cuál sos");
-Check(z5.Embed.Description.Contains("primera lista") && !z5.Embed.Description.Contains("/forge make"), "la frase de cómo forjar es la de la escena (la primera lista), no la del comando viejo");
+Check(book.Embed.Description.Contains("lista de arriba") && !book.Embed.Description.Contains("/forge make"), "la frase de cómo forjar es la de la escena (la lista de arriba), no la del comando viejo");
 await Give("Hierro", 5);
-var withIron = await Forge(zonesByRank[1].ZoneId);
-Check(withIron.Embed.Fields.Any(f => f.Value.Contains("Hierro") && f.Value.Contains("5/")), "las recetas muestran lo que tenés de cada material (Hierro 5/N)");
-var nonView = await Forge(zone: 9999);
-Check(nonView.Embed.Fields.Length >= 0 && nonView.Embed.Length < 6000, "una zona inexistente no rompe (muestra la más cercana que tenga recetas)");
-var ghostForge = await Forge(null, GHOST);
+var bookWithIron = await Forge(true);
+Check(!string.Join(" ", bookWithIron.Embed.Fields.Select(f => f.Value)).Contains("5/") && !string.Join(" ", bookWithIron.Embed.Fields.Select(f => f.Value)).Contains("✅"), "el recetario es una lista simple: sin «tenés X de Y» ni ✅/❌ (eso lo marca la lista para forjar)");
+var ghostForge = await Forge(false, GHOST);
 Check(ghostForge.Components is null && ghostForge.Embed.Description.Contains("/start"), "sin cuenta: manda a /start");
 
 Console.WriteLine("\n== 10. El texto ('aa forge recipes') con zona ==");
-var textZone3 = await ForgeModule.BuildRecipesEmbed(recipesRepo, zonesRepo, "Guerrero", zonesByRank[2].ZoneId, null, null, 3);
-var textDefault = await ForgeModule.BuildRecipesEmbed(recipesRepo, zonesRepo, "Guerrero", zonesByRank[0].ZoneId);
-Check(textZone3.Description.Contains($"Zona {zonesByRank[2].ZoneId}") && textZone3.Description.Contains("🔒") && textZone3.Description.Contains("aa forge make") && !textDefault.Description.Contains("🔒") && !textDefault.Description.Contains("/forge make"), "'aa forge recipes 3' muestra esa zona (con 🔒 si no llegás) y la frase de cómo forjar ya no nombra el /forge make que no existe");
+var textAll = await ForgeModule.BuildRecipesEmbed(recipesRepo, zonesRepo, "Guerrero", null, 3);
+var textZone3 = await ForgeModule.BuildRecipesEmbed(recipesRepo, zonesRepo, "Guerrero", zonesByRank[2].ZoneId, 3);
+var textNone = await ForgeModule.BuildRecipesEmbed(recipesRepo, zonesRepo, "Guerrero", 9999, 3);
+Check(textAll.Fields.Length == zonesByRank.Count + 1 && textZone3.Fields.Length == 1 && textZone3.Fields[0].Name.Contains($"Zona {zonesByRank[2].ZoneId}") && textZone3.Fields[0].Name.Contains("🔒") && textAll.Description.Contains("aa forge make") && !textAll.Description.Contains("/forge make"),
+    "'aa forge recipes' muestra todas las zonas y «Sin zona específica»; 'aa forge recipes 3' solo esa zona (con 🔒 si no llegás); la frase de cómo forjar es la del comando de texto");
+Check(textNone.Fields.Length == 0 && textNone.Description.Contains("9999"), "una zona que no existe no rompe: lo dice");
 
 Console.WriteLine("\n== 11. Respuestas aparte (herrero y tabernero) ==");
 var forged = new ForgeModule.ForgeMakeResult(null, new EmbedBuilder().WithTitle("⚒️ ¡Forjado con éxito!").WithDescription("ok").Build());

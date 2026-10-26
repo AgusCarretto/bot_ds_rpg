@@ -19,11 +19,13 @@ public static class ForgeChoices
     public static IReadOnlyList<AutocompleteResult> For(
         IReadOnlyList<RecipeDetails> recipes, IReadOnlyList<Zone> zones, User player, IReadOnlyDictionary<string, int> owned, string typed)
     {
-        // Exactamente las recetas que muestra /forge recipes: las de la zona actual del jugador (ver
-        // GameData/RecipeCatalog.cs) que le corresponden a su clase.
+        // Las recetas de la zona actual del jugador (ver GameData/RecipeCatalog.cs) que le corresponden a su clase (el recetario completo, todas las zonas, es /forge recipes).
         // + las recetas del Fogón Eterno cuando ya venció al jefe de la última zona (GameData/FogonRules.cs).
+        // + la Hoja de Acero Puro (la única arma general, sin zona y solo con materiales) mientras no lleves NINGUNA arma puesta: es la base de quien empieza; con un arma puesta
+        //   sería una opción más cada vez ("🔁 vendé tu arma primero") para algo que ya no sirve.
         bool gateOpen = FogonRules.IsGateOpen(ZoneRanking.OrderByDifficulty(zones), player.HighestZoneCleared);
         return RecipeCatalog.ViewFor(recipes, zones, player.Class, player.CurrentZoneId, gateOpen).Recipes
+            .Where(recipe => !(recipe.ZoneId is null && recipe.ResultItem.Type == "Weapon" && player.WeaponId is not null))
             .Where(recipe => FitsAsValue(recipe.ResultItem.Name) && Matches(recipe.ResultItem.Name, typed))
             .Select(recipe => new Candidate(recipe, player, owned))
             .OrderBy(c => c.Group)

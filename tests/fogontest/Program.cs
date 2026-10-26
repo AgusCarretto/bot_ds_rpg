@@ -158,10 +158,10 @@ var pOpen = new User { Class = "Guerrero", Level = 30, HighestZoneCleared = last
 var pClosed = new User { Class = "Guerrero", Level = 30, HighestZoneCleared = z4, CurrentZoneId = lastZoneId, Gold = 100000 };
 var owned0 = new Dictionary<string, int>();
 Check(ForgeChoices.For(recipes, normal, pOpen, owned0, "").Any(c => c.Value.ToString() == FogonRules.WeaponName) && !ForgeChoices.For(recipes, normal, pClosed, owned0, "").Any(c => c.Value.ToString() == FogonRules.WeaponName), "el menú y el autocompletado de /forge ofrecen el equipo del Fogón solo con la puerta abierta");
-var page = ForgeModule.RenderRecipesEmbed(recipes, normal, "Guerrero", lastZoneId, owned0, 100000, 30, highestZoneCleared: lastZoneId);
-var pageClosed = ForgeModule.RenderRecipesEmbed(recipes, normal, "Guerrero", lastZoneId, owned0, 100000, 30, highestZoneCleared: z4);
-var pageZ1 = ForgeModule.RenderRecipesEmbed(recipes, normal, "Guerrero", ordered[0].ZoneId, owned0, 100000, 30, highestZoneCleared: lastZoneId);
-Check(AllText(page).Contains("🔥 El Fogón Eterno") && AllText(page).Contains(FogonRules.WeaponName) && AllText(page).Contains("equipo del Fogón") && !AllText(pageClosed).Contains("Fogón") && !AllText(pageZ1).Contains("Fogón"), "la página de recetas de la última zona suma el bloque del Fogón solo con la puerta abierta (y no en las otras zonas)");
+var page = ForgeModule.RenderRecipesEmbed(recipes, normal, "Guerrero", null, 30, highestZoneCleared: lastZoneId);
+var pageClosed = ForgeModule.RenderRecipesEmbed(recipes, normal, "Guerrero", null, 30, highestZoneCleared: z4);
+var pageZ1 = ForgeModule.RenderRecipesEmbed(recipes, normal, "Guerrero", ordered[0].ZoneId, 30, highestZoneCleared: lastZoneId);
+Check(page.Fields.Any(f => f.Name == "🔥 El Fogón Eterno" && f.Value.Split('\n').Length == 2 && f.Value.Contains(FogonRules.WeaponName)) && !AllText(pageClosed).Contains("Fogón") && !AllText(pageZ1).Contains("Fogón"), "el recetario suma el bloque del Fogón (sus 2 piezas) solo con la puerta abierta (y no si pedís una sola zona)");
 Check(page.Length <= 6000 && page.Fields.All(f => f.Value.Length <= 1024), $"y entra en los límites de Discord ({page.Length} / 6000)");
 var scene = await BlacksmithModule.BuildSceneAsync(users, recipesRepo, zonesRepo, new InventoryRepository(factory), U);
 await db.ExecuteAsync("UPDATE users SET highest_zone_cleared = @h, current_zone_id = @z WHERE discord_id = @id", new { id = (long)U, h = lastZoneId, z = lastZoneId });

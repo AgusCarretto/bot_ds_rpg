@@ -312,7 +312,7 @@ public class TabernaModule(
             .WithColor(Color.Orange)
             .WithDescription(
                 $"{NpcDialogue.Shopkeeper(ShopkeeperLine.GearConfirm)}\n\n" +
-                Loc.F($"Vas a vender **{ItemDisplay.Format(item.Emoji, item.Name)}** ({ItemStatLabel.FormatFor(item, player.Class)}) por **{item.SellPrice}** de oro.\n") +
+                Loc.F($"Vas a vender **{ItemDisplay.Format(item.Emoji, item.Name)}** ({ItemStatLabel.Format(item)}) por **{item.SellPrice}** de oro.\n") +
                 (weapon
                     ? Loc.T("Te quedás sin arma hasta que forjes otra, y forjarla cuesta bastante más de lo que te pagan.")
                     : Loc.T("Te quedás sin amuleto hasta que forjes otro, y forjarlo cuesta bastante más de lo que te pagan.")))

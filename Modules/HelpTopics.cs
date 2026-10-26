@@ -253,11 +253,11 @@ public static class HelpTopics
         ("🎒 Antes de ir", "Llevá el arma y el amuleto de tu zona (**/info tema:forge**) y la vida llena. Si perdés, pagás la penalidad: **/info tema:death**."));
 
     private static Embed Forge() => Topic(Self("forge"),
-        "En la herrería forjás armas y amuletos con materiales y oro. Todo está en la base de datos y cada uno ve las recetas de **su** zona.",
+        "En la herrería forjás armas y amuletos con materiales y oro. Todo está en la base de datos y cada uno ve las recetas de **su** clase.",
         ("🔨 Cómo",
-            "**/forge** (en texto `aa herrero`): el herrero te muestra un menú con lo que podés forjar (✅ lo que ya podés pagar, ❌ lo que te falta). Cada zona tiene 6 recetas pero ves 3: **el arma de tu clase**, **un arma general** y **el amuleto**."),
-        ("⚔️ Arma de clase o general",
-            $"Las dos tienen el mismo ataque base, pero el arma de **tu clase** rinde ×{Dec(ClassWeaponSynergy.Multiplier)}. La general sirve a cualquiera y es la más fácil de juntar: buena para empezar."),
+            "**/forge** (en texto `aa herrero`): el herrero te muestra un menú con lo que podés forjar (✅ lo que ya podés pagar, ❌ lo que te falta). Cada zona tiene 5 recetas pero ves 2: **el arma de tu clase** y **el amuleto**. El botón **📜 Ver todas las recetas** (o `aa forge recipes`) muestra las de todas las zonas, una línea cada una."),
+        ("⚔️ Tu arma y la Hoja",
+            "Cada clase tiene su arma en cada zona (espada, daga, arco o grimorio) con un ataque FIJO que sube de zona en zona: lo que dice la receta es lo que pega, sin multiplicadores. Además hay una sola arma general, la **Hoja de Acero Puro**, sin zona y hecha solo con materiales de recolección: sirve para empezar."),
         ("🎽 Se equipa sola",
             "Lo forjado queda **puesto**: no va a la mochila ni hace falta equiparlo. Para cambiarlo, vendés la pieza que llevás (en la **/taberna** o con **/shop sell**) y forjás la siguiente. Ojo: al venderla pierde su encantamiento."),
         ("🧱 Los materiales", "Madera y minerales con **/chop** y **/mine**; los drops, de los monstruos (**/drops**). **/tips** te dice qué te falta para tu próxima forja."));
@@ -374,7 +374,7 @@ public static class HelpTopics
             $"🏹 Chance de drop en **/hunt**: **{FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.HuntDropStep)}** sobre la base por cada Fuego Nuevo (lineal: el 10.º es {FuegoNuevoRules.PercentText(FuegoNuevoRules.HuntDropMultiplier(10))}, no se compone)\n" +
             $"🗺️ Chance de drop en **/travel**: arranca en **{FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.TravelStep(1))}** y cada vuelta suma un poco menos (el 10.º acumula {FuegoNuevoRules.PercentText(FuegoNuevoRules.TravelDropMultiplier(10))}, con piso de {FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.TravelStep(1000))} por vuelta)\n" +
             $"🪓⛏️ Cantidad por **/chop** y **/mine**: **{FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.GatherStep)}** por Fuego Nuevo (el 10.º es ×{FuegoNuevoRules.GatherMultiplier(10).ToString("0.#", CultureInfo.InvariantCulture).Replace('.', ',')})\n" +
-            $"📊 EXP de las peleas: **{FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.XpStep)}** por Fuego Nuevo\n" +
+            $"📊 EXP de las peleas: **{FuegoNuevoRules.PercentText(FuegoNuevoRules.XpMultiplier(1))}** el primero y cada vuelta suma más que la anterior (el 5.º acumula {FuegoNuevoRules.PercentText(FuegoNuevoRules.XpMultiplier(5))}, el 10.º {FuegoNuevoRules.PercentText(FuegoNuevoRules.XpMultiplier(10))})\n" +
             $"Con la chance base de /hunt ({CombatRewardCalculator.HuntDropChancePercent} %) y de /travel ({CombatRewardCalculator.TravelDropChancePercent} %). El oro y el cofre del jefe no cambian."),
         ("💨 Lo que se va",
             "Nivel y EXP, la zona y los jefes vencidos, el arma y el amuleto (con sus encantamientos), todos los materiales, drops, cajas y consumibles, el Polvo, los banquetes y los enfriamientos. Sin reembolso."),
@@ -464,7 +464,7 @@ public static class HelpTopics
                 false);
         }
 
-        return embed.WithFooter($"El arma de tu clase rinde ×{Dec(ClassWeaponSynergy.Multiplier)}. La habilidad se recarga {AbilityTuning.CooldownTurns} turnos y /autohunt no la usa.").Build();
+        return embed.WithFooter($"La habilidad se recarga {AbilityTuning.CooldownTurns} turnos y /autohunt no la usa.").Build();
     }
 
     private static Embed Gather() => Topic(Self("gather"),
@@ -498,12 +498,12 @@ public static class HelpTopics
     private static Embed Stats() => Topic(Self("stats"),
         "Tu **/profile** muestra todo esto junto.",
         ("📊 EXP y nivel",
-            $"Para pasar de nivel hace falta 100 × nivel^1,5 de EXP (nivel 5: {Num(LevelingCalculator.RequiredXpForLevel(5))}, nivel 10: {Num(LevelingCalculator.RequiredXpForLevel(10))}, nivel 20: {Num(LevelingCalculator.RequiredXpForLevel(20))}). " +
+            $"Para pasar de nivel hace falta {LevelingCalculator.XpPerLevelSquared} × nivel² de EXP (nivel 5: {Num(LevelingCalculator.RequiredXpForLevel(5))}, nivel 10: {Num(LevelingCalculator.RequiredXpForLevel(10))}, nivel 20: {Num(LevelingCalculator.RequiredXpForLevel(20))}). " +
             "La EXP es la del nivel actual: se reinicia cuando subís (y también si perdés un combate: **/info tema:death**)."),
         ("⬆️ Al subir de nivel",
             $"+{LevelingCalculator.HpGainedPerLevel} de vida máxima (y te curás entera), +{CombatStats.BaseAttack(2) - CombatStats.BaseAttack(1)} de ataque y +{CombatStats.BaseDefense(2) - CombatStats.BaseDefense(1)} de defensa."),
         ("⚔️ Ataque y defensa",
-            $"Ataque = {CombatStats.BaseAttack(0)} + {CombatStats.BaseAttack(2) - CombatStats.BaseAttack(1)} por nivel + tu arma (×{Dec(ClassWeaponSynergy.Multiplier)} si es de tu clase, más su encantamiento). Defensa = tu nivel + tu amuleto (con su encantamiento)."));
+            $"Ataque = {CombatStats.BaseAttack(0)} + {CombatStats.BaseAttack(2) - CombatStats.BaseAttack(1)} por nivel + tu arma (más su encantamiento). Defensa = tu nivel + tu amuleto (con su encantamiento)."));
 }
 
 // La lista desplegable de /info tema: los temas que contienen lo escrito (en su clave, su nombre o sus alias). El valor es la clave, así que escribirla a mano también anda.

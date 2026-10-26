@@ -4,19 +4,19 @@ namespace BotDsRpg.GameData;
 // docs/superpowers/specs/2026-10-06-fuego-nuevo-design.md). "FN 3" = tres Fuegos Nuevos hechos (users.fuego_nuevo).
 //
 // Son LINEALES y siempre iguales: cada Fuego Nuevo suma lo mismo sobre la base (FN N = base × (1 + paso × N), no se compone), así el FN 10 se nota muchísimo contra el FN 1.
-// La única excepción es /travel, cuyo paso BAJA con cada vuelta (arranca en +10 % y pierde 0,5 puntos por Fuego Nuevo, con un mínimo de +2 %): su drop es el cuello de botella
+// Las excepciones son la EXP de las peleas (desde la v0.28.0, ver abajo: sube más con cada vuelta) y /travel, cuyo paso BAJA con cada vuelta (arranca en +10 % y pierde 0,5 puntos por Fuego Nuevo, con un mínimo de +2 %): su drop es el cuello de botella
 // de las armas de clase y los amuletos y, con una base de 40 %, un paso parejo lo toparía en 100 % antes de tiempo.
 //   · /hunt   la CHANCE de drop del monstruo   ×1,30 por FN     (6 % de base → 7,8 % en el FN 1, 24 % en el FN 10)
 //   · /travel la CHANCE de drop del monstruo   +10 % bajando    (40 % de base → 44 % en el FN 1, 71 % en el FN 10, 100 % en el FN 41)
 //   · /chop y /mine  la CANTIDAD por acción    ×1,20 por FN     (×3 en el FN 10)
-//   · EXP de las peleas                        +10 % por FN
+//   · EXP de las peleas                        (99 + x) × x / 2 % (v0.28.0, la fórmula de EPIC RPG): +50 % en el FN 1, +545 % en el FN 10, +1.550 % en el FN 25. NO es lineal: cada vuelta suma más que la anterior
+//                                              (hasta la v0.27.x era +10 % por FN), porque la curva de nivel ahora es cuadrática y cada vuelta tiene que volver a subir de nivel rápido.
 //   · Oro: sin %, el oro ya se queda entre vueltas.
 // El cofre del jefe no cambia. Medido con report_recipe_pacing.sql: las recetas bajan a ~51 % del tiempo de la vuelta 1 en el FN 10 y a ~34 % en el FN 30.
 public static class FuegoNuevoRules
 {
     public const double HuntDropStep = 0.30;   // /hunt: +30 % relativo a la chance por Fuego Nuevo
     public const double GatherStep = 0.20;     // /chop y /mine: +20 % de cantidad por Fuego Nuevo
-    public const double XpStep = 0.10;         // EXP de las peleas: +10 % por Fuego Nuevo (el paso lo puse yo; el dueño no lo fijó)
 
     // Los tipos de ítem que SOBREVIVEN al reinicio: los huevos y la comida de las mascotas (items.type), porque las mascotas se quedan y perder el huevo de una que todavía no
     // nació o la comida que las hace crecer sería castigar justo lo que el dueño dijo que se conserva. Todo lo demás de la mochila se va, sin reembolso.
@@ -52,7 +52,12 @@ public static class FuegoNuevoRules
 
     public static double GatherMultiplier(int fuegoNuevo) => 1 + (GatherStep * Math.Max(0, fuegoNuevo));
 
-    public static double XpMultiplier(int fuegoNuevo) => 1 + (XpStep * Math.Max(0, fuegoNuevo));
+    // La EXP de las peleas, a la manera de EPIC RPG: +(99 + x) × x / 2 % con x vueltas (x = 1: +50 %; 5: +260 %; 10: +545 %; 25: +1.550 %). Un número de vueltas negativo cuenta como 0.
+    public static double XpMultiplier(int fuegoNuevo)
+    {
+        int x = Math.Max(0, fuegoNuevo);
+        return 1 + ((99 + x) * (double)x / 200.0);
+    }
 
     // Lo que da hoy ese Fuego Nuevo, un renglón por cosa (para el perfil y /fuegonuevo). Son los multiplicadores sobre la base; la chance real de /travel la topa el 100 %.
     public static string BonusLines(int fuegoNuevo) =>

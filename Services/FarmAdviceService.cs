@@ -61,7 +61,7 @@ public sealed class FarmAdviceService(
                 }
             }
 
-            int WeaponPower(Item item) => ClassWeaponSynergy.ApplyBonus(item.StatValue, player.Class, item.WeaponFamily);
+            int WeaponPower(Item item) => item.StatValue;
             var candidates = view.Recipes
                 .Where(r => r.ResultItem.Type switch
                 {

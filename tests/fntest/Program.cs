@@ -55,9 +55,9 @@ var ordered = ZoneRanking.OrderByDifficulty((await zonesRepo.GetAllAsync()).ToLi
 int firstZone = ordered[0].ZoneId, thirdZone = ordered[2].ZoneId;
 
 Console.WriteLine("== 1. Reglas puras: Fuego Nuevo ==");
-Check(FuegoNuevoRules.HuntDropStep == 0.30 && FuegoNuevoRules.GatherStep == 0.20 && FuegoNuevoRules.XpStep == 0.10, "pasos acordados: /hunt ×1,30, /chop y /mine ×1,20 y EXP +10 % por vuelta");
+Check(FuegoNuevoRules.HuntDropStep == 0.30 && FuegoNuevoRules.GatherStep == 0.20, "pasos acordados: /hunt ×1,30 y /chop y /mine ×1,20 por vuelta (la EXP ya no es un paso parejo desde la v0.28.0: ver v0280test)");
 Check(Near(FuegoNuevoRules.HuntDropMultiplier(1), 1.3, 1e-9) && Near(FuegoNuevoRules.HuntDropMultiplier(10), 4.0, 1e-9) && FuegoNuevoRules.HuntDropMultiplier(0) == 1.0 && FuegoNuevoRules.HuntDropMultiplier(-3) == 1.0, "el drop de /hunt es LINEAL (FN 10 = ×4, no se compone) y sin Fuego Nuevo no cambia nada");
-Check(Near(FuegoNuevoRules.GatherMultiplier(10), 3.0, 1e-9) && Near(FuegoNuevoRules.XpMultiplier(10), 2.0, 1e-9), "FN 10: ×3 de cantidad y ×2 de EXP");
+Check(Near(FuegoNuevoRules.GatherMultiplier(10), 3.0, 1e-9) && Near(FuegoNuevoRules.XpMultiplier(10), 6.45, 1e-9), "FN 10: ×3 de cantidad y ×6,45 de EXP (la fórmula de EPIC RPG, v0.28.0)");
 Check(Near(FuegoNuevoRules.TravelStep(1), 0.10, 1e-9) && Near(FuegoNuevoRules.TravelStep(2), 0.095, 1e-9) && Near(FuegoNuevoRules.TravelStep(17), 0.02, 1e-9) && Near(FuegoNuevoRules.TravelStep(500), 0.02, 1e-9) && FuegoNuevoRules.TravelStep(0) == 0, "el paso de /travel arranca en +10 %, baja 0,5 puntos por vuelta y se queda en +2 %");
 Check(Near(FuegoNuevoRules.TravelStepsTotal(1), 0.10, 1e-9) && Near(FuegoNuevoRules.TravelStepsTotal(2), 0.195, 1e-9) && FuegoNuevoRules.TravelStepsTotal(41) > 1.5 - 1e-9 && FuegoNuevoRules.TravelStepsTotal(0) == 0, "la suma de pasos de /travel (0,10 + 0,095 + ...) es exacta");
 double t10 = CombatRewardCalculator.TravelDropChancePercent * FuegoNuevoRules.TravelDropMultiplier(10);
@@ -90,7 +90,7 @@ Check(noBonus.IsNone && noBonus.HuntDropMultiplier == 1 && noBonus.TravelDropMul
 var lv5 = all.ToDictionary(b => b.Key, _ => 5);
 var maxed = new PlayerBonuses(new PetBonuses(10, 20, 6, 6), 10, lv5);
 Check(Near(maxed.HuntDropMultiplier, 4.0 * 1.06 * 1.25, 1e-9) && Near(maxed.TravelDropMultiplier, FuegoNuevoRules.TravelDropMultiplier(10) * 1.06 * 1.25, 1e-9), "el drop multiplica Fuego Nuevo × mascota × bendición (los tres factores)");
-Check(Near(maxed.XpMultiplier, 2.0 * 1.2 * 1.2, 1e-9) && Near(maxed.GoldMultiplier, 1.1 * 1.15, 1e-9), "EXP y oro también multiplican sus fuentes");
+Check(Near(maxed.XpMultiplier, 6.45 * 1.2 * 1.2, 1e-9) && Near(maxed.GoldMultiplier, 1.1 * 1.15, 1e-9), "EXP y oro también multiplican sus fuentes");
 Check(Near(maxed.AttackMultiplier, 1.05, 1e-9) && Near(maxed.DefenseMultiplier, 1.06 * 1.05, 1e-9) && Near(maxed.MaxHpMultiplier, 1.10, 1e-9), "poder: ataque +5 %, defensa +5 % (y +6 % de la mascota), vida +10 % al nivel V (CHICO a propósito)");
 Check(Near(maxed.ChopMultiplier, 3.0 * 1.25, 1e-9) && Near(maxed.MineMultiplier, 3.0 * 1.25, 1e-9) && maxed.PetFeedCooldown == TimeSpan.FromMinutes(35) && Near(maxed.PetsBlessingMultiplier, 1.5, 1e-9), "recolección ×3 × 1,25; Buen Pienso V deja la espera en 35 min; Manada V = ×1,5");
 Check(new PlayerBonuses(PetBonuses.None, 0, new Dictionary<string, int> { [BlessingCatalog.AttackKey] = 99, [BlessingCatalog.HpKey] = -4 }).AttackMultiplier == 1.05 && new PlayerBonuses(PetBonuses.None, 0, new Dictionary<string, int> { [BlessingCatalog.HpKey] = -4 }).MaxHpMultiplier == 1.0, "un nivel fuera de rango en la base se acota (nunca más que V ni menos que 0)");
@@ -108,7 +108,7 @@ for (int i = 0; i < 40000; i++) { if (CombatRewardCalculator.RollHuntReward(10, 
 Check(Near(dropsHunt / 40000.0, 0.24, 0.012) && Near(dropsNone / 40000.0, 0.06, 0.008), $"medido en 40.000 cacerías: FN 10 = {dropsHunt / 400.0:0.#} % (esperado 24) y sin Fuego Nuevo {dropsNone / 400.0:0.#} % (esperado 6)");
 double xpBase = Enumerable.Range(0, 20000).Average(_ => CombatRewardCalculator.RollHuntReward(10).Xp);
 double xpFn = Enumerable.Range(0, 20000).Average(_ => CombatRewardCalculator.RollHuntReward(10, 0, 0, fn10).Xp);
-Check(Near(xpFn / xpBase, 2.0, 0.03), $"la EXP del FN 10 es ×{xpFn / xpBase:0.00} (esperado ×2)");
+Check(Near(xpFn / xpBase, 6.45, 0.12), $"la EXP del FN 10 es ×{xpFn / xpBase:0.00} (esperado ×6,45, la fórmula de EPIC RPG)");
 var bossFn = Enumerable.Range(0, 2000).Select(_ => CombatRewardCalculator.RollBossReward(10, 100, 100, true, fn10)).ToList();
 var bossNo = Enumerable.Range(0, 2000).Select(_ => CombatRewardCalculator.RollBossReward(10, 100, 100, true)).ToList();
 Check(bossFn.All(r => r.DroppedSomething) && bossNo.All(r => r.DroppedSomething) && bossFn.Min(r => r.Gold) == bossNo.Min(r => r.Gold), "el cofre del jefe NO cambia con Fuego Nuevo (primera vez 100 % en los dos) y el oro tampoco");

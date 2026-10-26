@@ -38,7 +38,7 @@ Check(GatheringYield.Roll("Raro", runMultiplier: 3) is >= 3 and <= 9 && Gatherin
 Check(GatheringYield.Roll("Rareza inventada") == 1, "rareza desconocida = 1");
 
 Console.WriteLine("\n== 2. Cantidades de las recetas ==");
-var recipes = (await new RecipeRepository(factory).GetAllAsync()).Where(r => r.ZoneId > 0).ToList(); // la escalera; el Fogón (zona 0) pide más a propósito, ver fogontest
+var recipes = (await new RecipeRepository(factory).GetAllAsync()).Where(r => r.ZoneId is null or > 0).ToList(); // la escalera + la Hoja de Acero Puro (sin zona); el Fogón (zona 0) pide más a propósito, ver fogontest
 var gathered = await items.GetAllByTypeAsync("Madera");
 var minerals = await items.GetAllByTypeAsync("Mineral");
 var rarityOf = gathered.Concat(minerals).ToDictionary(i => i.Name, i => i.Rarity);
@@ -55,10 +55,10 @@ foreach (var r in recipes)
 
 Check(bad.Count == 0, $"ninguna receta pide más de 1 Legendario/Mítico de recolección ({(bad.Count == 0 ? "ok" : string.Join("; ", bad))})");
 int Qty(string recipe, string ing) => recipes.First(r => r.ResultItem.Name == recipe).Ingredients.First(i => i.ItemName == ing).Quantity;
-Check(Qty("Hoja de Acero Puro", "Hierro") == 2 && Qty("Hombreras de Cuero Grueso", "Piedra") == 25, "Zona 1: la general pide 2 Hierro (accesible), el amuleto 25 Piedra");
+Check(Qty("Hoja de Acero Puro", "Hierro") == 2 && Qty("Hoja de Acero Puro", "Madera de Pino") == 10 && Qty("Hombreras de Cuero Grueso", "Piedra") == 25, "la Hoja de Acero Puro (sin zona, solo materiales) pide 2 Hierro y 10 Madera de Pino (accesible); el amuleto de la Zona 1, 25 Piedra");
 Check(Qty("Hacha de Hierro MK3", "Hierro") == 6 && Qty("Mazo de Escoria", "Hierro") == 6 && Qty("Arco de Caza Mayor", "Madera de Ébano") == 1 && Qty("Báculo del Árbol de Vida", "Madera de Nogal") == 3 && Qty("Báculo del Árbol de Vida", "Madera de Ébano") == 1 && Qty("Espada del Abismo", "Gema de Zafiro") == 1 && Qty("Hacha de Hierro MK3", "Ceniza Bendita") == 2 && Qty("Talismán de Ceniza Bendita", "Ceniza Bendita") == 3 && Qty("Espada del Abismo", "Ceniza del Abismo") == 2 && Qty("Corazón de Titán Engarzado", "Ceniza del Abismo") == 3,
     "Zonas 2-5: 6 Hierro en las armas pesadas de clase; Ébano en 1; sin Mítico en la Zona 5 (Nogal x3 / Zafiro); drop de viaje 2 en el arma y 3 en el amuleto (v0.15.1)");
-Check(recipes.Count == 30 && recipes.All(r => r.Ingredients.Count is >= 2 and <= 4), $"30 recetas, ninguna con más de 4 tipos de ingrediente (hay {recipes.Count})");
+Check(recipes.Count == 26 && recipes.All(r => r.Ingredients.Count is >= 2 and <= 4), $"26 recetas (4 armas de clase y 1 amuleto por zona, más la Hoja sin zona), ninguna con más de 4 tipos de ingrediente (hay {recipes.Count})");
 
 Console.WriteLine("\n== 3. Precios de las comidas ==");
 var foods = (await items.GetAllByTypeAsync("Consumable")).OrderBy(i => i.StatValue).ThenBy(i => i.BuyPrice).ToList(); // el Cordero y el Asado Completo curan lo mismo (150) desde la v0.19.2: desempata el precio

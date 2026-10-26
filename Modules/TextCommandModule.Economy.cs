@@ -125,10 +125,10 @@ public partial class TextCommandModule
         }
     }
 
-    // "aa forge recipes [zona]" / "aa fr [zona]" — las recetas de tu zona actual, o de la zona que digas (en /forge es el selector de zonas).
+    // "aa forge recipes [zona]" / "aa fr [zona]" — el recetario completo (todas las zonas, una línea por receta), o solo la zona que digas (en /forge es el botón «Ver todas las recetas»).
     [Command("forge recipes")]
     [Alias("fr")]
-    [Summary("Mostrá las recetas de forja de tu zona actual, o de otra: \"aa forge recipes [zona]\".")]
+    [Summary("Mostrá todas las recetas de forja, o las de una zona: \"aa forge recipes [zona]\".")]
     public async Task ForgeRecipesAsync(int? zoneId = null)
     {
         try
@@ -136,9 +136,7 @@ public partial class TextCommandModule
             // Si es la primera vez que este usuario ejecuta un comando, se crea acá con los valores por defecto.
             var player = await userRepository.GetOrCreateUserAsync(Context.User.Id);
             await ReplyAsync(embed: await ForgeModule.BuildRecipesEmbed(
-                recipeRepository, zoneRepository, player.Class, zoneId ?? player.CurrentZoneId,
-                (await inventoryRepository.GetByDiscordIdAsync(Context.User.Id)).ToDictionary(e => e.ItemName, e => e.Quantity), player.Gold, player.Level,
-                player.HighestZoneCleared));
+                recipeRepository, zoneRepository, player.Class, zoneId, player.Level, player.HighestZoneCleared));
         }
         catch (Exception ex)
         {

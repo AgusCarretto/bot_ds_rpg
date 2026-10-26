@@ -578,7 +578,7 @@ public sealed class Journey
         inv[name] = inv.GetValueOrDefault(name) + GatheringYield.Roll(rarity);
     }
 
-    int EffectiveWeapon(int stat, bool cw) => cw ? ClassWeaponSynergy.ApplyBonus(stat, cls, World.FamilyOf(cls)) : stat;
+    int EffectiveWeapon(int stat, bool cw) => stat;   // desde la v0.27.0 el ×1,5 de la sinergia ya está en el ATQ del arma de clase (items.stat_value)
 
     bool CanMake(Recipe r) => Gold >= r.Gold && r.Ingredients.All(kv => inv.GetValueOrDefault(kv.Key) >= kv.Value);
 

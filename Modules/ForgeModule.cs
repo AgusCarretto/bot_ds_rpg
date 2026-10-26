@@ -14,30 +14,29 @@ public static class ForgeModule
     // Todo lo que sigue es estático (sin dependencia de Context) para que
     // Modules/TextCommandModule.cs comparta exactamente la misma lógica en "aa forge recipes"/"aa forge make".
     //
-    // Muestra SOLO las recetas de la zona actual del jugador (o, si esa todavía no tiene ninguna, la anterior
-    // más cercana que sí — ver GameData/RecipeCatalog.cs), de esas las que le corresponden: su arma de afinidad,
-    // el arma general y los amuletos. Son 4 recetas (2 armas y 2 amuletos), una por bloque, así que entra sobrado en
-    // los límites de Discord (un campo de embed admite 1024 caracteres y el embed entero 6000; Build() tira excepción
-    // si se pasa) — por eso el molde de 7 recetas por zona y ver solo la propia. Cada bloque dice cuánto suma el
-    // resultado ("+15 ATQ" un arma, "+20 DEF" un amuleto; con ⭐ y el valor real si es de la familia de la clase del
-    // jugador), el oro y los ingredientes uno por línea.
-    // playerLevel: si viene y la zona que se muestra pide más nivel, se avisa (🔒). currentZoneId es la zona A MOSTRAR: la del jugador en
-    // "aa forge recipes", o la que elija en el selector de zonas de /forge (ver Modules/BlacksmithModule.cs).
+    // EL RECETARIO (v0.27.0, el dueño: «quiero que sea así de sencillo, como el `rpg recipes`»): TODAS las zonas en un solo mensaje, una línea por receta —
+    // «<emoji> Nombre `+14 ATQ` → 12 <emoji> + 4 <emoji> … · <oro>»—, agrupadas por zona de la más fácil a la más difícil, con lo que VE ese jugador (el arma de su clase y el amuleto), después
+    // «Sin zona específica» (la Hoja de Acero Puro, la única arma general, hecha solo con materiales) y, con la puerta abierta, el equipo del Fogón. Sin las listas de ✅/❌ ni «tenés X de Y»: la herrería (/forge) ya te marca
+    // qué podés forjar y qué te falta. Cada parte es un campo (1024 caracteres: dos recetas con cinco emojis cada una, ~600) y el embed entero tiene que entrar en 6000: si algún día no entra (más zonas, herramientas) se
+    // corta con un aviso en vez de reventar (Build() tira excepción si se pasa).
+    // zoneId: solo esa zona (aa forge recipes 3; 0 es el Fogón); null = todas. playerLevel: si viene, las zonas que piden más nivel llevan un 🔒.
     public static async Task<Embed> BuildRecipesEmbed(
-        IRecipeRepository recipeRepository, IZoneRepository zoneRepository, string playerClass, int currentZoneId,
-        IReadOnlyDictionary<string, int>? owned = null, int? playerGold = null, int? playerLevel = null, int? highestZoneCleared = null)
+        IRecipeRepository recipeRepository, IZoneRepository zoneRepository, string playerClass, int? zoneId = null,
+        int? playerLevel = null, int? highestZoneCleared = null)
     {
         var recipes = await recipeRepository.GetAllAsync();
         var zones = await zoneRepository.GetAllAsync();
-        return RenderRecipesEmbed(recipes, zones, playerClass, currentZoneId, owned, playerGold, playerLevel, highestZoneCleared: highestZoneCleared);
+        return RenderRecipesEmbed(recipes, zones, playerClass, zoneId, playerLevel, highestZoneCleared: highestZoneCleared);
     }
 
     // Lo mismo sin tocar la base (el que ya tiene recetas y zonas cargadas, como la escena de la herrería, lo usa directo).
     // forgeHint: la frase de cómo forjar; la escena de /forge pone la suya (ya estás en la lista), y el resto el comando de siempre.
     public static Embed RenderRecipesEmbed(
-        IReadOnlyList<RecipeDetails> recipes, IReadOnlyList<Zone> zones, string playerClass, int currentZoneId,
-        IReadOnlyDictionary<string, int>? owned = null, int? playerGold = null, int? playerLevel = null, string? forgeHint = null, int? highestZoneCleared = null)
+        IReadOnlyList<RecipeDetails> recipes, IReadOnlyList<Zone> zones, string playerClass, int? zoneId = null,
+        int? playerLevel = null, string? forgeHint = null, int? highestZoneCleared = null)
     {
+        const int EmbedBudget = 5800; // el límite de Discord es 6000 entre título, descripción y campos
+
         var embed = new EmbedBuilder()
             .WithTitle("⚒️ Recetas del Herrero")
             .WithColor(Color.DarkGrey);
@@ -48,51 +47,89 @@ public static class ForgeModule
             return embed.Build();
         }
 
-        // El Fogón Eterno (v0.11.0): si ya venció al jefe de la última zona, la página de ESA zona suma, en su propio bloque, las recetas del equipo del Fogón.
+        // El Fogón Eterno (v0.11.0): si ya venció al jefe de la última zona, el recetario suma, en su propio bloque, las recetas del equipo del Fogón.
         var orderedZones = ZoneRanking.OrderByDifficulty(zones);
         bool gateOpen = highestZoneCleared is int cleared && FogonRules.IsGateOpen(orderedZones, cleared);
-        var view = RecipeCatalog.ViewFor(recipes, zones, playerClass, currentZoneId, gateOpen);
-        if (view.Zone is null)
+        var sections = RecipeCatalog.BookFor(recipes, zones, playerClass, gateOpen, zoneId);
+
+        if (sections.Count == 0)
         {
-            embed.WithDescription("Todavía no hay recetas para tu zona.");
+            embed.WithDescription(zoneId is null ? "No hay recetas para vos todavía." : $"No hay recetas para vos en la zona {zoneId}.");
             return embed.Build();
         }
 
-        var gateRecipes = gateOpen && view.Zone.ZoneId == FogonRules.LastZone(orderedZones)?.ZoneId ? view.GateRecipes ?? [] : [];
-        var zoneRecipes = view.Recipes.Where(r => r.ZoneId != FogonRules.GateZoneId).ToList();
+        string hint = forgeHint ?? "Forjá con `/forge` (o `aa forge make <nombre>`).";
+        embed.WithDescription($"Lo que ves es lo de tu clase (**{playerClass}**). {hint}");
 
-        string zoneName = $"{view.Zone.Emoji ?? "🗺️"} **Zona {view.Zone.ZoneId}: {view.Zone.Name}**";
-        string fallbackNote = view.IsFallback
-            ? "\n_Tu zona actual todavía no tiene recetas propias: te muestro las de la última zona que sí._"
-            : string.Empty;
-        string lockNote = playerLevel is int level && view.Zone.MinLevel > level
-            ? $"\n🔒 _Esta zona pide nivel {view.Zone.MinLevel} (vos sos nivel {level}): mirá qué te espera._"
-            : string.Empty;
-
-        if (zoneRecipes.Count == 0 && gateRecipes.Count == 0)
+        int used = (embed.Title?.Length ?? 0) + (embed.Description?.Length ?? 0);
+        int shown = 0;
+        foreach (var section in sections)
         {
-            embed.WithDescription($"{zoneName}{fallbackNote}{lockNote}\nNo hay recetas para vos en esta zona todavía.");
-            return embed.Build();
-        }
+            string name = SectionTitle(section, playerLevel);
+            string value = SectionLines(section.Recipes);
+            if (used + name.Length + value.Length > EmbedBudget)
+            {
+                embed.AddField("…", $"Hay más zonas: miralas de a una con `aa forge recipes <zona>`.", false);
+                break;
+            }
 
-        embed.WithDescription($"{zoneName}{fallbackNote}{lockNote}\n{forgeHint ?? "Forjá con `/forge` (o `aa forge make <nombre>`): la lista te marca ✅ lo que ya podés hacer."}");
-
-        // Sin íconos de espada / amuleto al lado del nombre: el ítem ya trae su propio emoji y dos íconos juntos lo achicaban. Qué tipo es cada uno
-        // lo dice una etiqueta bajo el nombre.
-        AddRecipes(embed, zoneRecipes, RecipeGroup.ClassWeapon, "arma de tu clase", playerClass, owned, playerGold);
-        AddRecipes(embed, zoneRecipes, RecipeGroup.GeneralWeapon, "arma general", playerClass, owned, playerGold);
-        AddRecipes(embed, zoneRecipes, RecipeGroup.Amulet, "amuleto", playerClass, owned, playerGold);
-        AddRecipes(embed, zoneRecipes, RecipeGroup.Other, "otro", playerClass, owned, playerGold);
-
-        // El equipo de El Fogón Eterno (zona 0): el arma y el amuleto que hay que llevar PUESTOS para entrar. Son caros a propósito (drops de las 5 zonas).
-        if (gateRecipes.Count > 0)
-        {
-            embed.AddField("🔥 El Fogón Eterno", $"Para entrar con **/zona 0** hay que llevar puestos los dos (no hay sinergia de clase). Mirá `/info tema:fogon`.", false);
-            AddRecipes(embed, gateRecipes, RecipeGroup.GeneralWeapon, "equipo del Fogón", playerClass, owned, playerGold);
-            AddRecipes(embed, gateRecipes, RecipeGroup.Amulet, "equipo del Fogón", playerClass, owned, playerGold);
+            embed.AddField(name, value, false);
+            used += name.Length + value.Length;
+            shown++;
         }
 
         return embed.Build();
+    }
+
+    // El título de cada parte del recetario: «🌾 Zona 1 · Praderas del Mate · nivel 1» (con 🔒 si todavía no llegás), «🧰 Sin zona específica» o «🔥 El Fogón Eterno».
+    private static string SectionTitle(RecipeCatalog.RecipeSection section, int? playerLevel)
+    {
+        if (section.IsGate)
+        {
+            return "🔥 El Fogón Eterno";
+        }
+
+        if (section.Zone is null)
+        {
+            return "🧰 Sin zona específica";
+        }
+
+        string locked = playerLevel is int level && section.Zone.MinLevel > level ? " 🔒" : string.Empty;
+        return $"{section.Zone.Emoji ?? "🗺️"} Zona {section.Zone.ZoneId} · {section.Zone.Name} · nivel {section.Zone.MinLevel}{locked}";
+    }
+
+    // Una línea por receta (con el emoji de CADA ítem: el resultado y cada ingrediente; un ingrediente sin emoji cargado se escribe con su nombre). Si no entran todas en el campo
+    // (1024), se cortan las últimas en vez de partir un emoji a la mitad.
+    internal static string SectionLines(IEnumerable<RecipeDetails> recipes)
+    {
+        const int FieldBudget = 1024;
+        var lines = new List<string>();
+        int length = 0;
+        foreach (var recipe in recipes)
+        {
+            string line = RecipeLine(recipe);
+            if (length + line.Length + 1 > FieldBudget)
+            {
+                break;
+            }
+
+            lines.Add(line);
+            length += line.Length + 1;
+        }
+
+        return string.Join('\n', lines);
+    }
+
+    // «🗡️ **Espada de Madera** `+14 ATQ` → 12 <pino> + 4 <hierro> + 2 <colmillo> + 1 <cuero> · 💰 100».
+    internal static string RecipeLine(RecipeDetails recipe)
+    {
+        string stat = ItemStatLabel.Format(recipe.ResultItem) ?? recipe.ResultItem.Type;
+        string ingredients = string.Join(" + ", recipe.Ingredients.Select(i =>
+            $"{i.Quantity} {(string.IsNullOrWhiteSpace(i.Emoji) ? i.ItemName : i.Emoji)}"));
+        string result = string.IsNullOrWhiteSpace(recipe.ResultItem.Emoji)
+            ? $"**{recipe.ResultItem.Name}**"
+            : $"{recipe.ResultItem.Emoji} **{recipe.ResultItem.Name}**";
+        return $"{result} `{stat}` → {ingredients} · {UiEmojis.Gold} {GameHistory.Number(recipe.GoldCost)}";
     }
 
     // UNA receta por bloque (un field no en línea), en vez de una línea larga por receta: el título lleva el ítem, y
@@ -109,7 +146,7 @@ public static class ForgeModule
 
         foreach (var recipe in inGroup)
         {
-            string stat = ItemStatLabel.FormatFor(recipe.ResultItem, playerClass) ?? recipe.ResultItem.Type;
+            string stat = ItemStatLabel.Format(recipe.ResultItem) ?? recipe.ResultItem.Type;
             // Con el inventario a mano cada ingrediente dice cuánto tenés de cuánto hace falta (✅ / ❌) y el oro también; sin él, la
             // lista de siempre. Una línea en blanco separa el resumen de los ingredientes para que no quede apretado.
             string ingredients = string.Join('\n', recipe.Ingredients.Select(i =>
@@ -197,7 +234,7 @@ public static class ForgeModule
         string itemText = ItemDisplay.Format(recipe.ResultItem.Emoji, recipe.ResultItem.Name);
         string madeLine = outcome.EquippedSlot is null
             ? $"¡El Herrero ha forjado **{itemText}** con éxito!"
-            : $"**{itemText}** ya quedó **equipad{(outcome.EquippedSlot == "weapon" ? "a" : "o")}** como {(outcome.EquippedSlot == "weapon" ? "arma" : "amuleto")} ({ItemStatLabel.FormatFor(recipe.ResultItem, player.Class) ?? recipe.ResultItem.Type}).";
+            : $"**{itemText}** ya quedó **equipad{(outcome.EquippedSlot == "weapon" ? "a" : "o")}** como {(outcome.EquippedSlot == "weapon" ? "arma" : "amuleto")} ({ItemStatLabel.Format(recipe.ResultItem) ?? recipe.ResultItem.Type}).";
 
         return new ForgeMakeResult(null, new EmbedBuilder()
             .WithTitle(outcome.EquippedSlot is null ? "⚒️ ¡Forjado con éxito!" : "⚒️ ¡Forjado y equipado!")

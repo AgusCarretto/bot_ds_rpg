@@ -72,15 +72,15 @@ Check(NpcDialogue.Boss("Jefe Nuevo", "👑", NpcDialogue.BossLine.Intro).Contain
 Console.WriteLine("\n== 3. La escena del herrero ==");
 Environment.SetEnvironmentVariable("Images__Blacksmith", null);
 await Reset(gold: 0);
-var scene = await BlacksmithModule.BuildSceneAsync(users, recipes, zones, inventory, U, null);
+var scene = await BlacksmithModule.BuildSceneAsync(users, recipes, zones, inventory, U);
 var opts = Options(scene);
 var menu = scene.Components!.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<SelectMenuComponent>().Single(m => m.CustomId.StartsWith("blacksmith_pick"));
 Check(opts.Count >= 3 && menu.CustomId == $"blacksmith_pick:{U}" && opts.All(o => o.Label.Length <= 100 && o.Value.Length <= 100) && scene.Embed.Description.Contains("El Herrero") && scene.Embed.Thumbnail is null, $"escena inicial: el herrero saluda, y trae la lista con {opts.Count} recetas de tu zona (sin imagen si no hay una configurada)");
 Check(InTable(scene.Embed.Description, "herrero:Greeting") && opts[0].Label.Contains("❌"), $"saludo de la tabla y primer renglón de la lista: «{opts[0].Label}»");
 Environment.SetEnvironmentVariable("Images__Blacksmith", "https://example.com/herrero.png");
-var withImg = await BlacksmithModule.BuildSceneAsync(users, recipes, zones, inventory, U, null);
+var withImg = await BlacksmithModule.BuildSceneAsync(users, recipes, zones, inventory, U);
 Environment.SetEnvironmentVariable("Images__Blacksmith", "no es una url");
-var badImg = await BlacksmithModule.BuildSceneAsync(users, recipes, zones, inventory, U, null);
+var badImg = await BlacksmithModule.BuildSceneAsync(users, recipes, zones, inventory, U);
 Environment.SetEnvironmentVariable("Images__Blacksmith", null);
 Check(withImg.Embed.Thumbnail?.Url == "https://example.com/herrero.png" && withImg.AttachmentPath is null && badImg.Embed.Thumbnail is null, "con Images__Blacksmith la foto del herrero va de miniatura (sin adjunto); con algo que no es una URL se ignora");
 // La foto que viene con el bot (Assets/npc): se adjunta al mensaje y el embed la referencia como attachment://.
@@ -90,8 +90,8 @@ File.Copy(Path.Combine(TestEnv.RepoRoot, "Assets/npc/blacksmith.jpg"), Path.Comb
 File.Copy(Path.Combine(TestEnv.RepoRoot, "Assets/npc/innkeeper.jpg"), Path.Combine(assetDir, "innkeeper.jpg"), true);
 var local = await BlacksmithModule.BuildSceneAsync(users, recipes, zones, inventory, U);
 Check(local.Embed.Thumbnail?.Url == "attachment://blacksmith.jpg" && local.AttachmentPath is { } lp && File.Exists(lp) && new FileInfo(lp).Length < 100_000, $"con la foto del bot en Assets/npc: miniatura attachment://blacksmith.jpg y el archivo a adjuntar ({new FileInfo(local.AttachmentPath!).Length / 1024} KB)");
-var afterLocal = await BlacksmithModule.BuildSceneAsync(users, recipes, zones, inventory, U, 2);
-Check(afterLocal.Embed.Thumbnail?.Url == "attachment://blacksmith.jpg" && afterLocal.AttachmentPath is not null, "la página de recetas de una zona conserva la miniatura (el mensaje mantiene el adjunto al editarse)");
+var afterLocal = await BlacksmithModule.BuildSceneAsync(users, recipes, zones, inventory, U, true);
+Check(afterLocal.Embed.Thumbnail?.Url == "attachment://blacksmith.jpg" && afterLocal.AttachmentPath is not null, "el recetario completo conserva la miniatura (el mensaje mantiene el adjunto al editarse)");
 var healEmbed = await TavernModule.ExecuteHealAsync(users, sp.GetRequiredService<IInventoryRepository>(), combat, sp.GetRequiredService<IBuffRepository>(), U);
 Check(healEmbed.Thumbnail?.Url == "attachment://innkeeper.jpg" && NpcImages.AttachmentPathFor(healEmbed) is not null && NpcImages.AttachmentPathFor(new EmbedBuilder().WithDescription("z").Build()) is null, "/heal lleva la foto del tabernero adjunta; un embed común no adjunta nada");
 Environment.SetEnvironmentVariable("Images__Innkeeper", "https://example.com/tabernero.png");
