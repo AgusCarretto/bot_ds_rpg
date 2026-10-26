@@ -32,6 +32,16 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
 
+## La XP al estilo de EPIC RPG (v0.28.0, 2026-10-26)
+
+- **Pedido del dueño** (después de estudiar su wiki): «me gusta su niveleo con esa subida por FN. Acomodala a las zonas que tenemos».
+- **La curva**: la EXP para pasar de nivel pasa de `100 × nivel^1,5` a **`40 × nivel²`** (EPIC usa `125 × nivel²`, que con nuestros premios de EXP dejaba el nivel 25 del Fogón a las 58 h de juego perfecto). Nivel 5 pide 1.000, nivel 10 4.000, nivel 20 16.000, nivel 50 100.000 (antes 35.355).
+- **El ritmo medido** (`tests/v0280test`, el juego perfecto contra los monstruos reales: cacería cada minuto, viaje cada 30 min ×30, jefe cada 5 h ×15, siempre en la zona más alta que permite el nivel): nivel **12 / 18 / 26 / 32** a las 6 / 12 / 20 / 31 h (antes 13 / 22 / 33 / 43); los niveles de zona 5 / 10 / 15 / 20 / 25 a las 1,3 / 4,5 / 9 / 14 / 19 h (antes 1,8 / 5 / 7,8 / 10,5 / 13,5). Las primeras horas se sienten como antes y las de después van más lentas, como en EPIC. Alternativas medidas y descartadas: 30·nivel² (14/22/30/37), 60·nivel² (9/14/19/26, nivel 25 a las 28 h), 125·nivel² (7/9/13/16).
+- **El bono de EXP por Fuego Nuevo** es la fórmula de EPIC `(99 + x) × x / 2 %` (antes +10 % parejo): +50 % la primera vuelta, +260 % la quinta, +545 % la décima, +1.550 % la 25.ª. Horas hasta el nivel 25 con 0 / 1 / 3 / 5 / 10 vueltas: 19 / 13 / 8 / 5,5 / 3,5 (antes 13,5 / 12,5 / 10,5 / 9,5 / 7). Desde ~la vuelta 3 el nivel deja de ser lo que frena a una vuelta (lo frena el equipo, ~31 h × el factor de sus drops), como en EPIC.
+- **Efectos que quedaron así a propósito**: los premios en % del nivel (daily, misiones, logros, Arena) siguen la curva y pesan más en horas (×1,8 en el nivel 20, ×2,5 en el 40); morir (perder la EXP del nivel actual) cuesta más recuperarlo (×1,8 en el nivel 20); nadie baja de nivel y no hace falta migración.
+- **Sin migración**: cambia solo código y números. Arnés nuevo `v0280test` (57 en total); `fntest` y `v90test` se actualizaron.
+- **Queda abierto**: re-medir los jefes con `tools/balance2` (se llega menos sobrado de nivel a cada uno: es el objetivo, pero conviene ver los números), y el costo de morir si se quiere acotar.
+
 ## El recetario simple, sin sinergia ni armas generales por zona (v0.27.0, 2026-10-26)
 
 - **Pedido del dueño** (después de estudiar EPIC RPG y mandar capturas de su `rpg recipes`): «quiero que sea así de sencillo el forge recipes»; con todas las zonas a la vista, «zona 1: armas y amuletos, zona 2: …», con los emojis de todo; y sobre el arma general: «nadie las hace, porque se ahorra los drops con el arma con sinergia o el amuleto… sacamos la sinergia y el arma sin sinergia: queda un arma de cada clase con un ATQ fijo y un amuleto por zona… dejá, sin zona específica, la primera arma general pero SOLO con materiales».

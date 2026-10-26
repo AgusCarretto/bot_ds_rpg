@@ -374,7 +374,7 @@ public static class HelpTopics
             $"🏹 Chance de drop en **/hunt**: **{FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.HuntDropStep)}** sobre la base por cada Fuego Nuevo (lineal: el 10.º es {FuegoNuevoRules.PercentText(FuegoNuevoRules.HuntDropMultiplier(10))}, no se compone)\n" +
             $"🗺️ Chance de drop en **/travel**: arranca en **{FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.TravelStep(1))}** y cada vuelta suma un poco menos (el 10.º acumula {FuegoNuevoRules.PercentText(FuegoNuevoRules.TravelDropMultiplier(10))}, con piso de {FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.TravelStep(1000))} por vuelta)\n" +
             $"🪓⛏️ Cantidad por **/chop** y **/mine**: **{FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.GatherStep)}** por Fuego Nuevo (el 10.º es ×{FuegoNuevoRules.GatherMultiplier(10).ToString("0.#", CultureInfo.InvariantCulture).Replace('.', ',')})\n" +
-            $"📊 EXP de las peleas: **{FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.XpStep)}** por Fuego Nuevo\n" +
+            $"📊 EXP de las peleas: **{FuegoNuevoRules.PercentText(FuegoNuevoRules.XpMultiplier(1))}** el primero y cada vuelta suma más que la anterior (el 5.º acumula {FuegoNuevoRules.PercentText(FuegoNuevoRules.XpMultiplier(5))}, el 10.º {FuegoNuevoRules.PercentText(FuegoNuevoRules.XpMultiplier(10))})\n" +
             $"Con la chance base de /hunt ({CombatRewardCalculator.HuntDropChancePercent} %) y de /travel ({CombatRewardCalculator.TravelDropChancePercent} %). El oro y el cofre del jefe no cambian."),
         ("💨 Lo que se va",
             "Nivel y EXP, la zona y los jefes vencidos, el arma y el amuleto (con sus encantamientos), todos los materiales, drops, cajas y consumibles, el Polvo, los banquetes y los enfriamientos. Sin reembolso."),
@@ -498,7 +498,7 @@ public static class HelpTopics
     private static Embed Stats() => Topic(Self("stats"),
         "Tu **/profile** muestra todo esto junto.",
         ("📊 EXP y nivel",
-            $"Para pasar de nivel hace falta 100 × nivel^1,5 de EXP (nivel 5: {Num(LevelingCalculator.RequiredXpForLevel(5))}, nivel 10: {Num(LevelingCalculator.RequiredXpForLevel(10))}, nivel 20: {Num(LevelingCalculator.RequiredXpForLevel(20))}). " +
+            $"Para pasar de nivel hace falta {LevelingCalculator.XpPerLevelSquared} × nivel² de EXP (nivel 5: {Num(LevelingCalculator.RequiredXpForLevel(5))}, nivel 10: {Num(LevelingCalculator.RequiredXpForLevel(10))}, nivel 20: {Num(LevelingCalculator.RequiredXpForLevel(20))}). " +
             "La EXP es la del nivel actual: se reinicia cuando subís (y también si perdés un combate: **/info tema:death**)."),
         ("⬆️ Al subir de nivel",
             $"+{LevelingCalculator.HpGainedPerLevel} de vida máxima (y te curás entera), +{CombatStats.BaseAttack(2) - CombatStats.BaseAttack(1)} de ataque y +{CombatStats.BaseDefense(2) - CombatStats.BaseDefense(1)} de defensa."),

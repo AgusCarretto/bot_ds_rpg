@@ -164,7 +164,7 @@ Check(MissionRewards.BoxName(BoxGrant.ZoneTier, 1, live) == "Cajón de Pino" && 
     "la caja sigue la zona (Cajón -> Baúl -> Arcón -> Cofre), la 'una más' sube un escalón sin pasarse del Cofre, y la Mítica es solo la Mítica");
 var r1 = MissionRewards.Resolve(new RewardSpec(6, 4), 1, 1, live);
 var r10 = MissionRewards.Resolve(new RewardSpec(6, 4), 5, 10, live);
-Check(r1 == new ResolvedReward(84, 4, null, 0) && r10.Gold == 2250 && r10.Xp == (int)(LevelingCalculator.RequiredXpForLevel(10) * 4 / 100.0), $"6 unidades de oro: zona 1 = {r1.Gold}, zona 5 = {r10.Gold}; el XP es 4% del nivel ({r1.Xp} a nivel 1, {r10.Xp} a nivel 10)");
+Check(r1 == new ResolvedReward(84, 1, null, 0) && r10.Gold == 2250 && r10.Xp == (int)(LevelingCalculator.RequiredXpForLevel(10) * 4 / 100.0), $"6 unidades de oro: zona 1 = {r1.Gold}, zona 5 = {r10.Gold}; el XP es 4% del nivel ({r1.Xp} a nivel 1, {r10.Xp} a nivel 10)");
 Check(MissionRewards.Resolve(new RewardSpec(0, 1), 1, 1, live).Xp >= 1 && MissionRewards.Resolve(new RewardSpec(0, 0), 1, 7, live).Xp == 0, "el XP nunca queda en 0 si el premio lo tiene, y es 0 si no hay");
 Check(MissionRewards.Describe(MissionRewards.Resolve(new RewardSpec(6, 4, BoxGrant.ZoneTier, 2), 2, 5, live)).Contains("💰 348 oro") && MissionRewards.Describe(MissionRewards.Resolve(new RewardSpec(0, 0), 1, 1, live)) == "—", "el texto del premio muestra oro, XP y cajas (y '—' si no hay)");
 // Calibración: lo que vale cada período en "cacerías de oro" de la zona del jugador.
@@ -212,10 +212,10 @@ var early = await missions.ClaimMissionAsync(U, T("t_big", GameEventKinds.HuntWi
 Check(early.Status == ClaimStatus.NotCompleted && await Gold() == 0 && await Claims("mission_claims") == 0, "cobrar sin llegar a la meta (5 de 6): NotCompleted, no paga y no deja marca");
 var c1 = await missions.ClaimMissionAsync(U, mA, dayStart, dayEnd, 1);
 var lv = await Lvl();
-Check(c1.Status == ClaimStatus.Claimed && c1.Receipt!.Reward.Gold == 84 && await Gold() == 84 && c1.Receipt.GoldAfter == 84 && lv.xp == 4 && lv.level == 1 && await Claims("mission_claims") == 1,
-    $"con la meta cumplida (5 de 5) cobra: +84 oro (6 x 14), +4 XP, una marca. Recibo: {MissionRewards.Describe(c1.Receipt!.Reward)}");
+Check(c1.Status == ClaimStatus.Claimed && c1.Receipt!.Reward.Gold == 84 && await Gold() == 84 && c1.Receipt.GoldAfter == 84 && lv.xp == 1 && lv.level == 1 && await Claims("mission_claims") == 1,
+    $"con la meta cumplida (5 de 5) cobra: +84 oro (6 x 14), +1 XP (el 4 % de los 40 que pide el nivel 1), una marca. Recibo: {MissionRewards.Describe(c1.Receipt!.Reward)}");
 var c2 = await missions.ClaimMissionAsync(U, mA, dayStart, dayEnd, 1);
-Check(c2.Status == ClaimStatus.AlreadyClaimed && await Gold() == 84 && (await Lvl()).xp == 4, "cobrarla de nuevo: AlreadyClaimed y no paga otra vez");
+Check(c2.Status == ClaimStatus.AlreadyClaimed && await Gold() == 84 && (await Lvl()).xp == 1, "cobrarla de nuevo: AlreadyClaimed y no paga otra vez");
 var claimedSet = await missions.GetClaimedAsync(U, MissionPeriod.Daily, dayStart);
 Check(claimedSet.SetEquals(["t_a"]) && (await missions.GetClaimedAsync(U, MissionPeriod.Weekly, dayStart)).Count == 0 && (await missions.GetClaimedAsync(U, MissionPeriod.Daily, dayStart.AddDays(-1))).Count == 0, "GetClaimed devuelve solo lo cobrado en ese período (no se mezcla con la semana ni con otro día)");
 var yesterday = await missions.ClaimMissionAsync(U, T("t_old", GameEventKinds.HuntWin, 1, new RewardSpec(6, 4)), dayStart.AddDays(-1), dayStart, 1);
@@ -261,7 +261,7 @@ await db.ExecuteAsync("UPDATE users SET level = 1, xp = 99, current_hp = 1 WHERE
 await InsertEvent(U, GameEventKinds.Mine, 1, dayStart.AddSeconds(12));
 var up = await missions.ClaimMissionAsync(U, T("t_lvl", GameEventKinds.Mine, 1, new RewardSpec(1, 4)), dayStart, dayEnd, 1);
 lv = await Lvl();
-Check(up.Status == ClaimStatus.Claimed && up.Receipt!.LevelsGained == 1 && up.Receipt.NewLevel == 2 && lv.level == 2 && lv.xp == 3 && lv.hp == lv.maxHp && lv.maxHp > 100, $"el XP del premio sube de nivel (nivel 2, xp sobrante {lv.xp}) y cura al máximo ({lv.hp}/{lv.maxHp})");
+Check(up.Status == ClaimStatus.Claimed && up.Receipt!.LevelsGained == 1 && up.Receipt.NewLevel == 2 && lv.level == 2 && lv.xp == 60 && lv.hp == lv.maxHp && lv.maxHp > 100, $"el XP del premio sube de nivel (nivel 2, xp sobrante {lv.xp}) y cura al máximo ({lv.hp}/{lv.maxHp})");
 
 // Si la caja del premio no existe, NO se cobra nada (ni oro ni la marca): todo o nada.
 await db.ExecuteAsync("UPDATE users SET gold = 1000 WHERE discord_id = @id", new { id = (long)U });
@@ -292,7 +292,7 @@ await ResetPlayer();
 var cazador = AchievementCatalog.Find("cazador")!;
 await db.ExecuteAsync("INSERT INTO player_stats (discord_id, stat_key, value) VALUES (@id, 'hunt_win', 30)", new { id = (long)U });
 var a1 = await achievements.ClaimTierAsync(U, cazador, 1, 1);
-Check(a1.Status == ClaimStatus.Claimed && await Gold() == 12 * 14 && a1.Receipt!.Reward.Xp == 4, $"Cazador I (30 de 25): cobra 12 x 14 = {12 * 14} de oro y 4 XP");
+Check(a1.Status == ClaimStatus.Claimed && await Gold() == 12 * 14 && a1.Receipt!.Reward.Xp == 1, $"Cazador I (30 de 25): cobra 12 x 14 = {12 * 14} de oro y 1 XP (el 4 % de los 40 del nivel 1)");
 Check((await achievements.ClaimTierAsync(U, cazador, 2, 1)).Status == ClaimStatus.NotCompleted && (await achievements.ClaimTierAsync(U, cazador, 1, 1)).Status == ClaimStatus.AlreadyClaimed && await Gold() == 168, "el tramo II sin llegar (30 de 150) no cobra, y el I de nuevo no paga otra vez");
 Check((await achievements.ClaimTierAsync(U, cazador, 0, 1)).Status == ClaimStatus.NotCompleted && (await achievements.ClaimTierAsync(U, cazador, 4, 1)).Status == ClaimStatus.NotCompleted, "tramos que no existen (0 y 4) no cobran ni tiran excepción");
 await db.ExecuteAsync("UPDATE player_stats SET value = 150 WHERE discord_id = @id AND stat_key = 'hunt_win'", new { id = (long)U });
