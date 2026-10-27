@@ -99,9 +99,7 @@ var legacy = new[] { "Bombilla de Hierro Maldito", "Botas de Silencio", "Collar 
 await using var rawDb = new Npgsql.NpgsqlConnection(conn);
 await rawDb.OpenAsync();
 var allItems = (await Dapper.SqlMapper.QueryAsync<(string Name, string? Emoji)>(rawDb, "SELECT name, emoji FROM items")).ToList();
-// Pendientes de arte (el dueño todavía no subió el emoji): la Comida de Dragón (v0.32.0) lleva el 🍖 provisorio. Sacarla de esta lista cuando tenga su emoji en update_item_emojis.sql.
-var pendingArt = new[] { "Comida de Dragón" };
-var noArt = allItems.Where(i => !legacy.Contains(i.Name) && !pendingArt.Contains(i.Name) && !System.Text.RegularExpressions.Regex.IsMatch(i.Emoji ?? string.Empty, @"^<a?:[A-Za-z0-9_]+:[0-9]+>$")).Select(i => i.Name).ToList();
+var noArt = allItems.Where(i => !legacy.Contains(i.Name) && !System.Text.RegularExpressions.Regex.IsMatch(i.Emoji ?? string.Empty, @"^<a?:[A-Za-z0-9_]+:[0-9]+>$")).Select(i => i.Name).ToList();
 Check(noArt.Count == 0, $"todo ítem que se puede conseguir tiene arte propio (sin arte: {string.Join(", ", noArt)})");
 var nine = new Dictionary<string, string>
 {
