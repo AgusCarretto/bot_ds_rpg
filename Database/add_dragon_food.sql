@@ -1,7 +1,7 @@
 -- =========================================================
 -- La Comida de Dragón (v0.32.0)
 --
--- Cuando un dragón sube de tier cambia de tipo al azar (GameData/DragonRules.cs). Quien tenga esta comida en la mochila conserva el tipo: se gasta UNA sola, sola, en el momento en que el dragón sube.
+-- En cada cría (cada intento de criar, salga bien o mal) el dragón cambia de tipo al azar (GameData/DragonRules.cs). Quien tenga esta comida en la mochila conserva el tipo: se gasta UNA, sola, en cada cría. El precio (5.000) lo fijó el dueño: «el que quiera mantener su tipo que pague».
 -- Se compra en la taberna / la tienda (items.type = 'DragonFood', ver GameData/ShopCatalog.cs), no cura (no se come) y sobrevive al Fuego Nuevo igual que el dragón y la comida de las mascotas.
 --
 -- Se corre contra una base ya andando ANTES o DESPUÉS del binario v0.32.0: sin este ítem el dragón cría igual (cambia el tipo siempre) y la tienda simplemente no la ofrece.

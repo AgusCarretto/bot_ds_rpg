@@ -14,7 +14,7 @@ public enum DragonBreedStatus { Bred, NoDragon, TierMismatch, MaxTier, OnCooldow
 
 // Success: si subió de tier el dragón A (el de quien invita; el único si se crió solo). SuccessB: si subió el B (solo en pareja): cada dragón tira su propia suerte, puede subir uno y el otro no. Tier: el tier de los dos ANTES del intento.
 // BlockedId: de quién es el dragón que impidió criar (sin dragón, en cooldown). A y B son los dragones DESPUÉS del intento.
-// Lo que pasó con el TIPO de un dragón que subió de tier (v0.32.0): From es el tipo que tenía; FoodKept = su dueño tenía Comida de Dragón y se gastó una, así que el tipo NO cambió. Si no, el tipo nuevo (que puede ser el mismo) está en el dragón de A o B.
+// Lo que pasó con el TIPO de un dragón después de un intento de criar (v0.32.0, en cada intento): From es el tipo que tenía; FoodKept = su dueño tenía Comida de Dragón y se gastó una, así que el tipo NO cambió. Si no, el tipo nuevo (que puede ser el mismo) está en el dragón de A o B.
 public sealed record DragonTypeChange(string From, bool FoodKept);
 
 public sealed record DragonBreedResult(DragonBreedStatus Status, bool Success = false, int Tier = 0, PlayerDragon? A = null, PlayerDragon? B = null, ulong? BlockedId = null, TimeSpan Wait = default, bool SuccessB = false, DragonTypeChange? TypeA = null, DragonTypeChange? TypeB = null);

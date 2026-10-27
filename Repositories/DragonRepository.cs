@@ -243,15 +243,10 @@ public sealed class DragonRepository(IDbConnectionFactory connectionFactory) : I
             new { DiscordId = (long)discordId, Food = DragonRules.FoodItemName, FoodType = ShopCatalog.DragonFoodType }, cancellationToken: cancellationToken));
     }
 
-    // El tipo de un dragón después de un intento (v0.32.0): si subió de tier (o RerollTypeOnFailure) se sortea otro tipo, salvo que su dueño tenga Comida de Dragón: entonces se gasta UNA y el tipo se queda. Null si el tipo no estaba en juego.
+    // El tipo de un dragón después de CADA intento de criar (v0.32.0, salga bien o mal): se sortea otro tipo (puede ser el mismo), salvo que su dueño tenga Comida de Dragón: entonces se gasta UNA y el tipo se queda.
     // La comida se descuenta con un UPDATE guardado (quantity >= 1) en la MISMA transacción que la cría: de varios intentos a la vez no se gasta de más ni queda en negativo, y sin el ítem en la base simplemente no hay comida.
-    private static async Task<DragonTypeChange?> ChangeTypeAsync(DbConnection connection, DbTransaction transaction, long discordId, string currentKind, bool leveledUp, Random? rng, CancellationToken cancellationToken)
+    private static async Task<DragonTypeChange> ChangeTypeAsync(DbConnection connection, DbTransaction transaction, long discordId, string currentKind, Random? rng, CancellationToken cancellationToken)
     {
-        if (!leveledUp && !DragonRules.RerollTypeOnFailure)
-        {
-            return null;
-        }
-
         int? left = await connection.QuerySingleOrDefaultAsync<int?>(new CommandDefinition(
             "UPDATE inventory SET quantity = quantity - 1 WHERE discord_id = @DiscordId AND quantity >= 1 AND item_id = (SELECT item_id FROM items WHERE name = @Food AND type = @FoodType) RETURNING quantity;",
             new { DiscordId = discordId, Food = DragonRules.FoodItemName, FoodType = ShopCatalog.DragonFoodType }, transaction: transaction, cancellationToken: cancellationToken));
@@ -312,7 +307,7 @@ public sealed class DragonRepository(IDbConnectionFactory connectionFactory) : I
                     : "UPDATE player_dragons SET fail_streak = fail_streak + 1, last_bred_at = now() WHERE discord_id = @DiscordId;",
                 new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
 
-            var typeChange = await ChangeTypeAsync(connection, transaction, (long)discordId, row.Kind, success, rng, cancellationToken);
+            var typeChange = await ChangeTypeAsync(connection, transaction, (long)discordId, row.Kind, rng, cancellationToken);
 
             var after = await connection.QuerySingleAsync<DragonRow>(new CommandDefinition(
                 $"SELECT {SelectColumns} FROM player_dragons WHERE discord_id = @DiscordId;",
@@ -378,9 +373,9 @@ public sealed class DragonRepository(IDbConnectionFactory connectionFactory) : I
             await connection.ExecuteAsync(new CommandDefinition(successA ? up : stay, new { DiscordId = (long)firstId }, transaction: transaction, cancellationToken: cancellationToken));
             await connection.ExecuteAsync(new CommandDefinition(successB ? up : stay, new { DiscordId = (long)secondId }, transaction: transaction, cancellationToken: cancellationToken));
 
-            // Después de la tirada de los dos (el orden del azar no cambia): el que subió se sortea un tipo nuevo, salvo que gaste su Comida de Dragón.
-            var typeA = await ChangeTypeAsync(connection, transaction, (long)firstId, a.Kind, successA, rng, cancellationToken);
-            var typeB = await ChangeTypeAsync(connection, transaction, (long)secondId, b.Kind, successB, rng, cancellationToken);
+            // Después de la tirada de los dos (el orden del azar no cambia): cada dragón se sortea un tipo nuevo (suba o no), salvo que su dueño gaste una Comida de Dragón.
+            var typeA = await ChangeTypeAsync(connection, transaction, (long)firstId, a.Kind, rng, cancellationToken);
+            var typeB = await ChangeTypeAsync(connection, transaction, (long)secondId, b.Kind, rng, cancellationToken);
 
             var after = (await connection.QueryAsync<DragonRow>(new CommandDefinition(
                 $"SELECT {SelectColumns} FROM player_dragons WHERE discord_id = ANY(@Ids);",

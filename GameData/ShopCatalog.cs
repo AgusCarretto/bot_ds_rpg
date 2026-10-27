@@ -10,7 +10,7 @@ public static class ShopCatalog
     // items.type de la "Comida para Mascotas": no cura (no se come con /use ni /heal), se le da a una mascota con /pet feed.
     public const string PetFoodType = "PetFood";
 
-    // items.type de la "Comida de Dragón" (v0.32.0): tampoco se come; se gasta sola cuando el dragón sube de tier y le deja el tipo que tiene.
+    // items.type de la "Comida de Dragón" (v0.32.0): tampoco se come; se gasta sola en cada cría del dragón y le deja el tipo que tiene.
     public const string DragonFoodType = "DragonFood";
 
     public static readonly string[] SoldTypes = ["Consumable", "Caja", PetFoodType, DragonFoodType];

@@ -438,7 +438,7 @@ Check(msgMixed.Description.Contains($"<@{A}>") && msgMixed.Description.Contains(
     "el mensaje cuenta qué le pasó a CADA dragón (uno sube, el otro se queda con sus fallos) y avisa que ahora tienen tiers distintos");
 await Dragon(A, "oro", 2); await Dragon(B, "defensa", 2);
 var msgNone = await DragonModule.ResolveBreedAsync(dragons, new DragonBreedOffer(Guid.NewGuid(), A, B, DateTime.UtcNow.AddMinutes(1)), new SequenceRandom(0.999, 0.999));
-Check(msgNone.Description.Contains("No se dio") && msgNone.Description.Contains("se queda") && !msgNone.Description.Contains("tiers distintos") && !msgNone.Description.Contains("Salió bien"), "si no sube ninguno: lo dice, los dos se quedan y no avisa de tiers distintos");
+Check(msgNone.Description.Contains("No se dio") && msgNone.Description.Contains("se queda") && !msgNone.Description.Contains("tiers distintos") && !msgNone.Description.Contains("Salió bien") && msgNone.Description.Contains("Cambió de tipo"), "si no sube ninguno: lo dice, los dos se quedan, no avisa de tiers distintos y cuenta que igual cambiaron de tipo");
 await Dragon(A, "oro", 2); await Dragon(B, "defensa", 2);
 var msgBoth = await DragonModule.ResolveBreedAsync(dragons, new DragonBreedOffer(Guid.NewGuid(), A, B, DateTime.UtcNow.AddMinutes(1)), new SequenceRandom(0.1, 0.2));
 Check(msgBoth.Description.Contains("Salió bien") && msgBoth.Description.Contains("Tier 3") && !msgBoth.Description.Contains("tiers distintos"), "si suben los dos: «Salió bien» y nada de tiers distintos");
@@ -460,8 +460,9 @@ Check(kept.Success && kept.SuccessB && kept.A is { Tier: 3, Kind: "oro" } && kep
     "al subir de tier el dragón cambia de tipo al azar (el B pasa de defensa a especial) y el que tenía Comida de Dragón conserva el suyo: se gastó UNA (le queda 1)");
 await Dragon(A, "oro", 2); await Dragon(B, "defensa", 2);
 var noChange = await dragons.BreedAsync(A, B, new SequenceRandom(0.999, 0.999));
-Check(!noChange.Success && !noChange.SuccessB && noChange.TypeA is null && noChange.TypeB is null && noChange.A!.Kind == "oro" && noChange.B!.Kind == "defensa" && await dragons.CountFoodAsync(A) == 1, "si el intento falla no pasa nada con el tipo y la comida NO se gasta");
-await Dragon(A, "oro", 2); await Dragon(B, "defensa", 2);
+Check(!noChange.Success && !noChange.SuccessB && noChange.TypeA is { From: "oro", FoodKept: true } && noChange.A!.Kind == "oro" && noChange.TypeB is { From: "defensa", FoodKept: false } && noChange.B!.Kind == "especial" && await dragons.CountFoodAsync(A) == 0,
+    "el tipo se sortea en CADA cría, también si el intento falla: B (sin comida) cambia a Especial y A gasta su comida y conserva el suyo");
+await Dragon(A, "oro", 2); await Dragon(B, "defensa", 2); await SetFood(A, 1);
 var lastFood = await dragons.BreedAsync(A, B, new SequenceRandom(0.1, 0.2, 0.05));
 Check(lastFood.TypeA is { FoodKept: true } && lastFood.A!.Kind == "oro" && lastFood.B!.Kind == "fuerza" && await dragons.CountFoodAsync(A) == 0 && await FoodRows(A) == 0, "con la última comida: se gasta y la fila de la mochila desaparece (sin cantidades en cero)");
 
@@ -474,6 +475,12 @@ Check(soloChange.Success && soloChange.TypeA is { From: "oro", FoodKept: false }
 await Dragon(A, "fuerza", 2);
 var same = await dragons.BreedSoloAsync(A, new FixedRandom(0.1));
 Check(same.TypeA is { From: "fuerza", FoodKept: false } && same.A!.Kind == "fuerza", "el sorteo puede devolver el mismo tipo: pasa y se cuenta como tal");
+await Dragon(A, "oro", 2); await SetFood(A, 2);
+var soloFailFood = await dragons.BreedSoloAsync(A, new FixedRandom(0.999));
+Check(!soloFailFood.Success && soloFailFood.TypeA is { From: "oro", FoodKept: true } && soloFailFood.A!.Kind == "oro" && await dragons.CountFoodAsync(A) == 1, "criando solo y fallando también se gasta una comida y se conserva el tipo");
+await Dragon(A, "oro", 2); await SetFood(A, 0);
+var soloFailNoFood = await dragons.BreedSoloAsync(A, new FixedRandom(0.999));
+Check(!soloFailNoFood.Success && soloFailNoFood.TypeA is { From: "oro", FoodKept: false } && soloFailNoFood.A!.Kind == "especial", "y sin comida el tipo cambia igual aunque el intento falle");
 await Dragon(A, "oro", 2); await SetFood(A, 5);
 var foodRace = await Task.WhenAll(Enumerable.Range(0, 12).Select(_ => dragons.BreedSoloAsync(A, new FixedRandom(0.1))));
 Check(foodRace.Count(r => r.Status == DragonBreedStatus.Bred) == 1 && await dragons.CountFoodAsync(A) == 4, "12 intentos a la vez: se hace uno solo y se gasta UNA comida");
@@ -481,12 +488,23 @@ Check(foodRace.Count(r => r.Status == DragonBreedStatus.Bred) == 1 && await drag
 await Dragon(A, "oro", 2); await Dragon(B, "defensa", 2); await SetFood(A, 1);
 var msgType = await DragonModule.ResolveBreedAsync(dragons, new DragonBreedOffer(Guid.NewGuid(), A, B, DateTime.UtcNow.AddMinutes(1)), new SequenceRandom(0.1, 0.2, 0.95));
 Check(msgType.Description.Contains("Gastó 1") && msgType.Description.Contains("Comida de Dragón") && msgType.Description.Contains("sigue siendo") && msgType.Description.Contains("Cambió de tipo") && msgType.Description.Contains("Especial"), "el mensaje de la cría cuenta qué pasó con el tipo de cada dragón (uno lo conservó con comida, el otro cambió)");
+Check(msgType.Description.Contains($"<@{A}> 🍖:") && !msgType.Description.Contains($"<@{B}> 🍖"), "y el emoji de la comida va al lado del nombre de quien la usó (y de nadie más)");
 await Dragon(A, "oro", 2);
 var soloMsg = await DragonModule.ExecuteSoloBreedAsync(dragons, A, new FixedRandom(0.1));
 Check(soloMsg.Description.Contains("Cambió de tipo") && soloMsg.Description.Contains("Fuerza"), "y criando solo también");
+await Dragon(A, "oro", 2); await SetFood(A, 0);
+var soloFailMsg = await DragonModule.ExecuteSoloBreedAsync(dragons, A, new FixedRandom(0.999));
+Check(soloFailMsg.Description.Contains("No se dio") && soloFailMsg.Description.Contains("Cambió de tipo") && soloFailMsg.Description.Contains("Especial"), "cuando el intento solo falla el mensaje cuenta igual que cambió de tipo");
 await Dragon(A, "oro", 2); await Dragon(B, "defensa", 2);
 var inviteFood = await DragonModule.PrepareBreedAsync(dragons, offers, A, B, false);
-Check(inviteFood.Embed!.Description.Contains("cambia de tipo al azar") && inviteFood.Embed.Description.Contains("Comida de Dragón"), "la invitación avisa que el que suba cambia de tipo y que la comida lo evita");
+Check(inviteFood.Embed!.Description.Contains("cambia de tipo al azar") && inviteFood.Embed.Description.Contains("Comida de Dragón") && !inviteFood.Embed.Description.Contains("🍖 quiere") && !inviteFood.Embed.Description.Contains("🍖:"), "la invitación avisa que cada dragón cambia de tipo y que la comida lo evita; si nadie la tiene no hay emoji al lado de ningún nombre");
+await SetFood(A, 1);
+var inviteMarks = await DragonModule.PrepareBreedAsync(dragons, offers, A, B, false);
+Check(inviteMarks.Embed!.Description.Contains($"<@{A}> 🍖 quiere criar") && inviteMarks.Embed.Description.Contains($"<@{B}>: los dos") && !inviteMarks.Embed.Description.Contains($"<@{B}> 🍖"), "al lado del nombre de quien tiene Comida de Dragón aparece su emoji (y de quien no tiene, nada)");
+await SetFood(B, 1);
+var inviteBoth = await DragonModule.PrepareBreedAsync(dragons, offers, A, B, false);
+Check(inviteBoth.Embed!.Description.Contains($"<@{A}> 🍖 quiere criar") && inviteBoth.Embed.Description.Contains($"<@{B}> 🍖: los dos"), "y si los dos tienen, los dos lo llevan");
+await SetFood(A, 0); await SetFood(B, 0);
 
 await Dragon(D, "oro", 3); await SetFood(D, 2);
 var typeFields = (await DragonModule.BuildDragonViewAsync(dragons, D)).Embed.Fields.Where(f => f.Name == "Tipo y comida").ToList();

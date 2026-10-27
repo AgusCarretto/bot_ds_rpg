@@ -78,7 +78,7 @@ public partial class ShopModule
     // "Para tus mascotas · 100 oro": la comida de las mascotas no cura, así que no lleva el "Cura N HP" de la comida común.
     public static string PetFoodLine(Item food) => Loc.F($"Para tus mascotas · {GameHistory.Number(food.BuyPrice)} oro");
 
-    // "Para tu dragón · 5.000 oro": la Comida de Dragón (v0.32.0) tampoco cura; se gasta sola cuando el dragón sube de tier.
+    // "Para tu dragón · 5.000 oro": la Comida de Dragón (v0.32.0) tampoco cura; se gasta sola en cada cría del dragón.
     public static string DragonFoodLine(Item food) => Loc.F($"Para tu dragón · {GameHistory.Number(food.BuyPrice)} oro");
 
     // "entre 1 y 10 ítems · 1.000 oro", y si es de una zona que todavía no desbloqueaste, "🔒 Zona 2" adelante.

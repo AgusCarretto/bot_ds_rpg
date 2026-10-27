@@ -77,10 +77,10 @@ public class UseModule(
             return new UseResult(Loc.F($"**{ItemDisplay.Format(item.Emoji, item.Name)}** es para tus mascotas, no para vos: dásela con **/pet feed**."), null);
         }
 
-        // La Comida de Dragón (v0.32.0) no se come: se gasta sola cuando el dragón sube de tier y le deja el tipo que tiene.
+        // La Comida de Dragón (v0.32.0) no se come: se gasta sola en cada cría del dragón y le deja el tipo que tiene.
         if (item.Type == ShopCatalog.DragonFoodType)
         {
-            return new UseResult(Loc.F($"**{ItemDisplay.Format(item.Emoji, item.Name)}** no se come: se gasta sola cuando tu dragón sube de tier y le deja el tipo que tiene (mirá **/dragon**)."), null);
+            return new UseResult(Loc.F($"**{ItemDisplay.Format(item.Emoji, item.Name)}** no se come: se gasta sola cuando criás a tu dragón y le deja el tipo que tiene (mirá **/dragon**)."), null);
         }
 
         if (item.Type == "Huevo")
