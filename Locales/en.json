@@ -770,8 +770,16 @@
   "❌ **Desactivado**: las peleas terminan sin la tablita.": "❌ **Off**: fights end without the little table.",
   "Ocultar el resumen": "Hide the summary",
   "Mostrar el resumen": "Show the summary",
-  "No conozco esa opción. Probá `aa config resumen off` (o `on`).": "I don't know that option. Try `aa config summary off` (or `on`).",
+  "No conozco esa opción. Probá `aa config resumen off` o `aa config recetas completo`.": "I don't know that option. Try `aa config summary off` or `aa config recipes full`.",
   "Decime si lo querés **on** u **off**: `aa config resumen off`.": "Tell me whether you want it **on** or **off**: `aa config summary off`.",
   "✅ Listo: el resumen del combate está **activado**.": "✅ Done: the fight summary is now **on**.",
-  "✅ Listo: el resumen del combate está **desactivado**.": "✅ Done: the fight summary is now **off**."
+  "✅ Listo: el resumen del combate está **desactivado**.": "✅ Done: the fight summary is now **off**.",
+  "📜 Recetario de la herrería": "📜 Forge recipe book",
+  "📜 **Completo**: todas las zonas juntas en un solo mensaje, una línea por receta.": "📜 **Full**: every zone together in one message, one line per recipe.",
+  "📖 **Clásico**: las recetas de una zona por vez, con lo que tenés de cada material (✅/❌).": "📖 **Classic**: one zone's recipes at a time, with how much of each material you have (✅/❌).",
+  "Recetario clásico": "Classic recipe book",
+  "Recetario completo": "Full recipe book",
+  "Decime cuál querés, **completo** o **clásico**: `aa config recetas completo`.": "Tell me which one you want, **full** or **classic**: `aa config recipes full`.",
+  "✅ Listo: el recetario de la herrería es el **completo**.": "✅ Done: the forge recipe book is now the **full** one.",
+  "✅ Listo: el recetario de la herrería es el **clásico**.": "✅ Done: the forge recipe book is now the **classic** one."
 }

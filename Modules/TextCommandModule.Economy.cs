@@ -125,18 +125,19 @@ public partial class TextCommandModule
         }
     }
 
-    // "aa forge recipes [zona]" / "aa fr [zona]" — el recetario completo (todas las zonas, una línea por receta), o solo la zona que digas (en /forge es el botón «Ver todas las recetas»).
+    // "aa forge recipes [zona]" / "aa fr [zona]" — el recetario que el jugador eligió en /config (v0.28.1): el CLÁSICO (por defecto) muestra la página de tu zona actual, o de la que digas, con lo que tenés de cada material;
+    // el COMPLETO, todas las zonas juntas (una línea por receta), o solo la zona que digas (en /forge es el botón «Ver todas las recetas»).
     [Command("forge recipes")]
     [Alias("fr")]
-    [Summary("Mostrá todas las recetas de forja, o las de una zona: \"aa forge recipes [zona]\".")]
+    [Summary("Mostrá las recetas de forja de tu zona, o de otra: \"aa forge recipes [zona]\" (con \"aa config recetas completo\" salen todas las zonas juntas).")]
     public async Task ForgeRecipesAsync(int? zoneId = null)
     {
         try
         {
             // Si es la primera vez que este usuario ejecuta un comando, se crea acá con los valores por defecto.
             var player = await userRepository.GetOrCreateUserAsync(Context.User.Id);
-            await ReplyAsync(embed: await ForgeModule.BuildRecipesEmbed(
-                recipeRepository, zoneRepository, player.Class, zoneId, player.Level, player.HighestZoneCleared));
+            bool fullBook = (await settingsService.GetAsync(Context.User.Id)).FullRecipeBook;
+            await ReplyAsync(embed: await ForgeModule.BuildRecipeBookForPlayerAsync(recipeRepository, zoneRepository, inventoryRepository, player, fullBook, zoneId));
         }
         catch (Exception ex)
         {

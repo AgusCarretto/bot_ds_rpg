@@ -10,8 +10,11 @@ public interface IPlayerSettingsService
     // NUNCA tira: sin fila, o si la tabla no existe o la base falla, devuelve PlayerSettings.Default (el bot anda como siempre).
     Task<PlayerSettings> GetAsync(ulong discordId);
 
-    // Guarda la opción y la deja al día en el caché. A propósito NO atrapa errores: /config tiene que poder decirle al jugador que no se guardó.
+    // Guarda la opción y la deja al día en el caché (sin tocar las otras opciones del jugador). A propósito NO atrapa errores: /config tiene que poder decirle al jugador que no se guardó.
     Task SetShowFightSummaryAsync(ulong discordId, bool value);
+
+    // Qué recetario ve en la herrería (v0.28.1): true = el completo, false = el clásico. Misma regla: no atrapa errores.
+    Task SetFullRecipeBookAsync(ulong discordId, bool value);
 }
 
 public sealed class PlayerSettingsService(ISettingsRepository repository) : IPlayerSettingsService
@@ -54,7 +57,28 @@ public sealed class PlayerSettingsService(ISettingsRepository repository) : IPla
     public async Task SetShowFightSummaryAsync(ulong discordId, bool value)
     {
         await repository.SetShowFightSummaryAsync(discordId, value);
-        Remember(discordId, new PlayerSettings(value));
+        await RefreshAsync(discordId);
+    }
+
+    public async Task SetFullRecipeBookAsync(ulong discordId, bool value)
+    {
+        await repository.SetFullRecipeBookAsync(discordId, value);
+        await RefreshAsync(discordId);
+    }
+
+    // Después de guardar una opción se vuelve a leer la fila ENTERA: con varias opciones, armar el caché solo con la que se acaba de cambiar pisaría las otras con su valor por defecto (cuando el caché estaba frío).
+    // Si esa lectura falla, el guardado ya se hizo: se saca al jugador del caché y la próxima lectura trae lo que haya.
+    private async Task RefreshAsync(ulong discordId)
+    {
+        try
+        {
+            Remember(discordId, await repository.GetAsync(discordId) ?? PlayerSettings.Default);
+        }
+        catch (Exception ex)
+        {
+            _cache.TryRemove(discordId, out _);
+            LogThrottled(ex);
+        }
     }
 
     private PlayerSettings Remember(ulong discordId, PlayerSettings settings)

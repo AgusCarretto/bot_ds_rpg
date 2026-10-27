@@ -32,6 +32,15 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
 
+## El recetario clásico vuelve por defecto; el completo, desde /config (v0.28.1, 2026-10-27)
+
+- **Pedido del dueño** (a pedido de los jugadores): volver al menú de `forge recipes` de antes porque el nuevo «está muy apretado, pide muchas cosas distintas y es más complicado de utilizar»; que el viejo sea el de siempre y el nuevo se pueda elegir en `/config`. «Es el diseño viejo pero con lo actual»; la Hoja de Acero Puro (el arma general que no es de zona) «dejala en la zona 1».
+- **El clásico (por defecto)**: una zona por página, un bloque por receta con `✅/❌ … tenés/necesitás` por ingrediente y el oro; en `/forge`, la lista para forjar + un selector de zonas (`blacksmith_zone`); `aa forge recipes [zona]` muestra la página de tu zona (o la que pidas). Cada jugador ve su arma de clase y el amuleto; la Hoja solo en la página de la Zona 1 (la lista para forjar sigue ofreciéndola desde cualquier zona); el equipo del Fogón en la página de la última zona con la puerta abierta.
+- **El completo** (el de la v0.27.0, con el botón «📜 Ver todas las recetas») pasó a ser la otra opción: botón «Recetario completo» en `/config` o `aa config recetas completo` (`clasico` vuelve). Se guarda por jugador en `player_settings.full_recipe_book`.
+- **Espacio entre zonas** en el completo: cada parte menos la última termina en un salto de línea + un espacio de ancho cero. **A verificar en el celu** (no lo puedo ver desde acá): que Discord lo dibuje como una línea en blanco y que no se corte nada.
+- **Migración**: `Database/add_recipe_book_setting.sql` (una columna con `DEFAULT FALSE`, re-ejecutable) **antes** del binario; `schema.sql` ya la trae. Arnés nuevo `v0281test` (58 en total); `stage11test`, `v0222test`, `stage6test`, `fogontest` y `v0261test` se actualizaron.
+- **Abierto**: «pulir» el recetario completo («capaz cambiar la receta, luego vemos»): hoy el espacio es lo único que se hizo.
+
 ## La XP al estilo de EPIC RPG (v0.28.0, 2026-10-26)
 
 - **Pedido del dueño** (después de estudiar su wiki): «me gusta su niveleo con esa subida por FN. Acomodala a las zonas que tenemos».

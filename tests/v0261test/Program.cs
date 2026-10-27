@@ -147,6 +147,7 @@ sealed class CountingThrowingRepo : ISettingsRepository
     public int Calls;
     public Task<PlayerSettings?> GetAsync(ulong discordId, CancellationToken ct = default) { Interlocked.Increment(ref Calls); throw new InvalidOperationException("simulado: la tabla no existe"); }
     public Task SetShowFightSummaryAsync(ulong discordId, bool value, CancellationToken ct = default) { Interlocked.Increment(ref Calls); throw new InvalidOperationException("simulado"); }
+    public Task SetFullRecipeBookAsync(ulong discordId, bool value, CancellationToken ct = default) { Interlocked.Increment(ref Calls); throw new InvalidOperationException("simulado"); }
 }
 
 // Un servicio que lee bien pero NO puede guardar.
@@ -154,6 +155,7 @@ sealed class FailingSetService : IPlayerSettingsService
 {
     public Task<PlayerSettings> GetAsync(ulong discordId) => Task.FromResult(PlayerSettings.Default);
     public Task SetShowFightSummaryAsync(ulong discordId, bool value) => throw new InvalidOperationException("simulado");
+    public Task SetFullRecipeBookAsync(ulong discordId, bool value) => throw new InvalidOperationException("simulado");
 }
 
 public class FakeProxy : DispatchProxy

@@ -467,9 +467,11 @@ CREATE TABLE IF NOT EXISTS player_language (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- La configuración de cada jugador (v0.26.1, Database/add_player_settings.sql): por ahora, mostrar u ocultar la tablita del resumen del combate. Sin clave foránea (como player_language).
+-- La configuración de cada jugador (v0.26.1, Database/add_player_settings.sql): mostrar u ocultar la tablita del resumen del combate y (v0.28.1, Database/add_recipe_book_setting.sql) qué recetario ve en la herrería
+-- (false = el clásico, una zona por página; true = el completo). Sin clave foránea (como player_language).
 CREATE TABLE IF NOT EXISTS player_settings (
     discord_id         BIGINT PRIMARY KEY,
     show_fight_summary BOOLEAN NOT NULL DEFAULT TRUE,
+    full_recipe_book   BOOLEAN NOT NULL DEFAULT FALSE,
     updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
 );

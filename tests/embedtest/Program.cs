@@ -20,12 +20,14 @@ int Total(Embed e) => (e.Title?.Length ?? 0) + (e.Description?.Length ?? 0) + (e
 
 Console.WriteLine("== /forge recipes ==");
 // v0.27.0: el recetario completo, una línea por receta con los emojis de cada ítem. Cada zona muestra SU arma de clase y el amuleto; al final, «Sin zona específica» (la Hoja de Acero Puro).
+// v0.28.1: es la opción «completo» de /config (el clásico es el de por defecto). Cada parte menos la última termina con una línea en blanco (un espacio de ancho cero) que NO es una receta: se descarta al contar las líneas.
+string[] RecipeLines(string value) => value.Split('\n').Where(l => l.Trim((char)0x200B).Length > 0).ToArray();
 int worst = 0; bool allOk = true;
 foreach (var cls in new[] { "Guerrero", "Hechicero", "Ninja", "Arquero" })
 {
     var e = await ForgeModule.BuildRecipesEmbed(recipeRepo, zoneRepo, cls);
     worst = Math.Max(worst, Total(e));
-    allOk &= e.Fields.Length == zones.Count + 1 && e.Fields.Take(zones.Count).All(f => f.Value.Split('\n').Length == 2) && e.Fields.Last().Name == "🧰 Sin zona específica"
+    allOk &= e.Fields.Length == zones.Count + 1 && e.Fields.Take(zones.Count).All(f => RecipeLines(f.Value).Length == 2) && e.Fields.Last().Name == "🧰 Sin zona específica"
         && e.Fields.All(f => f.Value.Length <= 1024 && f.Name.Length <= 256 && f.Value.Contains(" → ") && f.Value.Contains("`+") && !f.Inline) && Total(e) < 6000 && e.Footer is null;
 }
 Check(allOk, $"4 clases: un campo por zona con SUS 2 recetas (arma de clase y amuleto) y «Sin zona específica» al final, una línea por receta; el más grande mide {worst} de 6000");
@@ -34,7 +36,7 @@ Console.WriteLine($"\n--- {sample.Title}\n{sample.Description}");
 foreach (var f in sample.Fields) Console.WriteLine($"\n{f.Name}\n{f.Value}");
 var allRecipesDb = await recipeRepo.GetAllAsync();
 var emojiMissing = allRecipesDb.Where(r => string.IsNullOrWhiteSpace(r.ResultItem.Emoji) || r.Ingredients.Any(i => string.IsNullOrWhiteSpace(i.Emoji))).Select(r => r.ResultItem.Name).ToList();
-bool everyEmojiShown = sample.Fields.SelectMany(f => f.Value.Split('\n')).All(l => System.Text.RegularExpressions.Regex.Matches(l, "<a?:[A-Za-z0-9_]+:\\d+>").Count >= 3);
+bool everyEmojiShown = sample.Fields.SelectMany(f => RecipeLines(f.Value)).All(l => System.Text.RegularExpressions.Regex.Matches(l, "<a?:[A-Za-z0-9_]+:\\d+>").Count >= 3);
 Check(emojiMissing.Count == 0 && everyEmojiShown, $"los emojis: el resultado y cada ingrediente de cada línea van con su emoji propio ({(emojiMissing.Count == 0 ? "todas las recetas tienen emoji en todo" : "sin emoji en: " + string.Join(", ", emojiMissing))})");
 
 Console.WriteLine("\n== /drops ==");

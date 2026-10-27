@@ -44,6 +44,21 @@ public static class RecipeCatalog
         return new RecipeView(zone, zone.ZoneId != currentZoneId, visible, gateRecipes);
     }
 
+    // La PÁGINA CLÁSICA de una zona (v0.28.1, el recetario por defecto): lo mismo que ViewFor menos un detalle. La receta sin zona (la Hoja de Acero Puro) se muestra SOLO en la página de la primera zona (la más fácil), que
+    // es donde empieza todo el mundo, y no se repite en las demás; el dueño: «el general que no es de zona dejalo en la zona 1». La lista para forjar sigue usando ViewFor (ahí la Hoja se ofrece desde cualquier zona).
+    public static RecipeView PageFor(
+        IReadOnlyList<RecipeDetails> recipes, IReadOnlyList<Zone> zones, string playerClass, int currentZoneId, bool includeGate = false)
+    {
+        var view = ViewFor(recipes, zones, playerClass, currentZoneId, includeGate);
+        if (view.Zone is null)
+        {
+            return view;
+        }
+
+        bool isFirstZone = ZoneRanking.OrderByDifficulty(zones).FirstOrDefault()?.ZoneId == view.Zone.ZoneId;
+        return view with { Recipes = view.Recipes.Where(r => r.ZoneId is not null || isFirstZone).ToList() };
+    }
+
     // Una parte del recetario: las recetas de UNA zona (Zone), las de «Sin zona específica» (Zone null y no IsGate) o las del Fogón Eterno (IsGate).
     public sealed record RecipeSection(Zone? Zone, bool IsGate, IReadOnlyList<RecipeDetails> Recipes);
 
