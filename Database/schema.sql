@@ -483,3 +483,13 @@ CREATE TABLE IF NOT EXISTS player_tools (
     item_id    INTEGER NOT NULL REFERENCES items(item_id) ON DELETE CASCADE,
     PRIMARY KEY (discord_id, kind)
 );
+
+-- El dragón de cada jugador (v0.30.0, Database/add_dragons.sql): uno por jugador, tipo y tier (1 a 10); la cría sube el tier. El Fuego Nuevo no lo toca.
+CREATE TABLE IF NOT EXISTS player_dragons (
+    discord_id   BIGINT PRIMARY KEY REFERENCES users(discord_id) ON DELETE CASCADE,
+    kind         TEXT NOT NULL CHECK (kind IN ('fuerza', 'defensa', 'oro', 'especial')),
+    tier         INTEGER NOT NULL DEFAULT 1 CHECK (tier BETWEEN 1 AND 10),
+    fail_streak  INTEGER NOT NULL DEFAULT 0 CHECK (fail_streak >= 0),
+    last_bred_at TIMESTAMPTZ,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);

@@ -39,7 +39,7 @@ public static class PlayerBonusExtensions
 // userRepository y zoneRepository son opcionales: con ellos se calcula el minibuff del banco (v0.21.0); sin ellos (algunas pruebas) el banco no suma.
 public sealed class PlayerBonusService(
     IPetRepository petRepository, IBlessingRepository blessingRepository, IGameEventRepository eventRepository,
-    IUserRepository? userRepository = null, IZoneRepository? zoneRepository = null, IToolRepository? toolRepository = null) : IPlayerBonusService
+    IUserRepository? userRepository = null, IZoneRepository? zoneRepository = null, IToolRepository? toolRepository = null, IDragonRepository? dragonRepository = null) : IPlayerBonusService
 {
     public async Task<PlayerBonuses> GetAsync(ulong discordId, int fuegoNuevo, CancellationToken cancellationToken = default)
     {
@@ -112,6 +112,23 @@ public sealed class PlayerBonusService(
             }
         }
 
-        return new PlayerBonuses(pets, Math.Max(0, fuegoNuevo), levels.Count == 0 ? null : levels, professionXp, bankPercent, chopTool, mineTool);
+        // El dragón (v0.30.0): su tipo y su tier dan oro, EXP, ataque o defensa. Sin servicio, sin dragón o si no se puede leer queda sin efecto.
+        DragonBonuses? dragon = null;
+        if (dragonRepository is not null)
+        {
+            try
+            {
+                if (await dragonRepository.GetAsync(discordId, cancellationToken) is { } owned)
+                {
+                    dragon = DragonRules.BonusesFor(owned.Kind, owned.Tier);
+                }
+            }
+            catch (Exception ex)
+            {
+                BotLog.Warn(ex);
+            }
+        }
+
+        return new PlayerBonuses(pets, Math.Max(0, fuegoNuevo), levels.Count == 0 ? null : levels, professionXp, bankPercent, chopTool, mineTool, dragon);
     }
 }

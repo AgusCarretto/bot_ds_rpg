@@ -87,7 +87,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             .AddField(Loc.T("⚔️ Pelear"), Loc.T("`/hunt` (`aa ah` es el automático) · `/travel` · `/boss` (solo o con amigos) · `/zona` · `/drops`"), false)
             .AddField(Loc.T("🪓 Recolectar y forjar"), Loc.T("`/chop` · `/mine` · `/tools` (hacha y pico) · `/forge` · `/enchant` · `/dismantle` · `/tips` (qué te falta farmear)"), false)
             .AddField(Loc.T("🍖 Comida y plata"), Loc.T("`/taberna` (comer, comprar y vender) · `/heal` · `/use` · `/open` · `/daily` · `/bank` · `/play`"), false)
-            .AddField(Loc.T("📋 Progreso"), "`/missions` · `/achievements` · `/titles` · `/pet` · `/professions` · `/story` · `/leaderboard`", false)
+            .AddField(Loc.T("📋 Progreso"), "`/missions` · `/achievements` · `/titles` · `/pet` · `/dragon` · `/professions` · `/story` · `/leaderboard`", false)
             .AddField(Loc.T("👥 Con otros jugadores"), "`/fight` · `/arena` · `/boss @amigo` · `/give` · `/trade` · `/exchange`", false)
             .AddField(Loc.T("🔥 Final del juego"), "`/forge-special` · `/zona 0` · `/fuegonuevo` · `/deepshop`", false)
             .AddField(Loc.T("🛠️ Tu cuenta"), "`/start` · `/class` · `/profile` · `/inventory` · `/cd` · `/config` · `/reminders` · `/vote` · `/tutorial`", false)

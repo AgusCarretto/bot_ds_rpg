@@ -32,6 +32,15 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
 
+## El dragón (el «horse» de EPIC RPG): comprarlo, criarlo, tiers 1 a 10 (v0.30.0, 2026-10-27)
+
+- **Pedido del dueño**: «arrancá a armar el tema del dragón como el horse del epic, agregalo para comprar en la taberna, que sea del 1 al 10 tier, por ahora solo horse breed… armá las mejoras de cada tier… tipos: fuerza, defensa, especial, de oro… armá toda la base». Las decisiones las tomé yo (ver CLAUDE.md, «The dragon»).
+- **Qué hay**: un dragón por cuenta, que se **compra en la taberna** (3.000 de oro; la opción «🐲 Dragón de cría» está en la lista de las cajas) con un **tipo al azar**: 🗡️ Fuerza (+ATQ hasta +12 %), 🛡️ Defensa (+DEF hasta +8 %), 💰 Oro (+oro hasta +30 %) o ✨ Especial (+EXP hasta +25 %, el raro: 10 %). Empieza de **Cría** (tier 1) y llega al **Eterno** (tier 10); el bono sube en curva (poco al principio, todo al final). Solo cuenta contra monstruos y dura toda la vida de la cuenta (el Fuego Nuevo no lo toca).
+- **Criar**: `/dragon-breed @amigo` (o `aa dragon breed @amigo`) con alguien del **mismo tier**; acepta con un botón y, si sale bien, **suben los dos**. Chance 100 / 60 / 30 / 15 / 5 / 2 / 1 / 0,33 / 0,11 % según el tier, con «piedad» (tras N fallos seguidos el siguiente sale seguro) y 12 h de descanso para los dos. Del tier 1 al 10 son unos 152 intentos (~76 días a 2 por día).
+- **Migración**: `Database/add_dragons.sql` (tabla `player_dragons`, re-ejecutable) **antes** del binario. `schema.sql` ya la trae. Arnés nuevo `dragontest` (60 en total).
+- **Lo que NO está (a propósito, «por ahora solo criar»)**: entrenar (niveles por tier), carreras, perks de tier alto (el de «te salva con 1 HP» del tier IV de EPIC), vender o intercambiar, logros/títulos, y un tablón para encontrar pareja del mismo tier (los tiers altos van a ser un cuello de botella social).
+- **A vigilar**: el oro tipo Oro en tier 10 junto con mascotas, bendición y banco da ~×1,65 de oro por pelea; el ritmo de 152 intentos puede ser largo si los jugadores son pocos; y que el tipo no se pueda cambiar (la salida, si molesta, es dejar elegir el tipo al comprarlo).
+
 ## Herramientas y el Carpintero: hacha y pico (v0.29.0, 2026-10-27)
 
 - **Pedido del dueño**: «otro comando para no sobrecargar todo… un carpintero o constructor… que solo con materiales se haga la herramienta… zona 3 y zona 5 por ahora, de base la zona 1 que es lo actual ×1… que no esté en el perfil, que sea `aa equipamiento` o `aa herramientas`… 2 picos y 2 hachas… armá las recetas». Las decisiones las tomé yo (ver CLAUDE.md, «Tools: the Carpenter»).

@@ -781,5 +781,8 @@
   "Recetario completo": "Full recipe book",
   "Decime cuál querés, **completo** o **clásico**: `aa config recetas completo`.": "Tell me which one you want, **full** or **classic**: `aa config recipes full`.",
   "✅ Listo: el recetario de la herrería es el **completo**.": "✅ Done: the forge recipe book is now the **full** one.",
-  "✅ Listo: el recetario de la herrería es el **clásico**.": "✅ Done: the forge recipe book is now the **classic** one."
+  "✅ Listo: el recetario de la herrería es el **clásico**.": "✅ Done: the forge recipe book is now the **classic** one.",
+  "🐲 Dragón de cría": "🐲 Breeding dragon",
+  "Una sola vez · {0} oro · el tipo sale al azar": "Once only · {0} gold · the type is random",
+  "Comprar una caja (una cada 2 horas) o un dragón": "Buy a box (one every 2 hours) or a dragon"
 }
