@@ -137,7 +137,11 @@ Check(forgeOptions.All(o => o.Label.StartsWith("✅") || o.Label.StartsWith("❌
 await Reload([]);
 var forgeNone = Menus((await BlacksmithModule.BuildSceneAsync(users, recipes, zonesRepo, inventory, U)).Components).Single(m => m.CustomId.StartsWith("blacksmith_pick")).Options;
 Check(forgeNone.Count == forgeOptions.Count && forgeNone.All(o => o.Emote is null), "el herrero sin lista de emojis: las mismas recetas, sin emoji");
-Check(Menus(forge.Components).Count() == 1 && !Menus(forge.Components).Any(m => m.CustomId.StartsWith("blacksmith_zone")), "la herrería ya no tiene el menú de zonas (v0.27.0: el botón «Ver todas las recetas» lo reemplaza), solo la lista para forjar");
+var forgeZoneMenu = Menus(forge.Components).Where(m => m.CustomId.StartsWith("blacksmith_zone")).ToList();
+Check(Menus(forge.Components).Count() == 2 && forgeZoneMenu.Count == 1 && forgeZoneMenu[0].Options.All(o => o.Emote is null),
+    "la herrería clásica (la de por defecto desde la v0.28.1) tiene la lista para forjar y el selector de zonas, y las opciones de zona no llevan emoji personalizado (solo los de texto)");
+var forgeFull = await BlacksmithModule.BuildSceneAsync(users, recipes, zonesRepo, inventory, U, fullBook: true);
+Check(Menus(forgeFull.Components).Count() == 1 && !Menus(forgeFull.Components).Any(m => m.CustomId.StartsWith("blacksmith_zone")), "con el recetario completo elegido en /config no hay selector de zonas: solo la lista para forjar (y el botón «Ver todas las recetas»)");
 
 // 4e. El menú de curación del combate (el que no puede romperse: sin él no se empieza un /travel ni un /boss).
 await Reload(AppList());

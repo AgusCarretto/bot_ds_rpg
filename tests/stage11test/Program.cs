@@ -44,7 +44,8 @@ async Task Reset(int gold, int level, int zone, string cls = "Guerrero")
 }
 
 List<SelectMenuComponent> Menus(BlacksmithScene s) => s.Components?.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<SelectMenuComponent>().ToList() ?? [];
-Task<BlacksmithScene> Forge(bool book = false, ulong? id = null) => BlacksmithModule.BuildSceneAsync(users, recipesRepo, zonesRepo, inventory, id ?? U, book);
+// v0.28.1: estas pantallas son las del recetario COMPLETO (la opción de /config); el clásico, que es el de por defecto, lo prueba v0281test.
+Task<BlacksmithScene> Forge(bool book = false, ulong? id = null) => BlacksmithModule.BuildSceneAsync(users, recipesRepo, zonesRepo, inventory, id ?? U, book, fullBook: true);
 
 var zones = await zonesRepo.GetAllAsync();
 var zonesByRank = ZoneRanking.OrderByDifficulty(zones);
@@ -54,7 +55,7 @@ await interactions.AddModulesAsync(typeof(BoxModule).Assembly, sp);
 await texts.AddModulesAsync(typeof(BoxModule).Assembly, sp);
 var slash = interactions.SlashCommands.Select(c => c.Name).ToList();
 Check(slash.Contains("tips") && slash.Contains("forge") && slash.Contains("taberna"), "existen /tips, /forge y /taberna");
-Check(interactions.ComponentCommands.Any(c => c.Name.StartsWith("blacksmith_book")) && interactions.ComponentCommands.Any(c => c.Name.StartsWith("blacksmith_home")) && interactions.ComponentCommands.Any(c => c.Name.StartsWith("blacksmith_pick")) && !interactions.ComponentCommands.Any(c => c.Name.StartsWith("blacksmith_zone")), "los botones del recetario (ver todo / volver) tienen su handler, el de forjar sigue y el selector de zonas ya no existe");
+Check(interactions.ComponentCommands.Any(c => c.Name.StartsWith("blacksmith_book")) && interactions.ComponentCommands.Any(c => c.Name.StartsWith("blacksmith_home")) && interactions.ComponentCommands.Any(c => c.Name.StartsWith("blacksmith_pick")) && interactions.ComponentCommands.Any(c => c.Name.StartsWith("blacksmith_zone")), "los botones del recetario completo (ver todo / volver) tienen su handler, el de forjar sigue y el selector de zonas del clásico (v0.28.1) también");
 Check(texts.Commands.Any(c => c.Name == "tips" && c.Aliases.Contains("consejo")) && texts.Commands.Any(c => c.Name == "forge recipes" && c.Parameters.Count == 1 && c.Parameters[0].IsOptional), "en texto: 'aa tips' (alias consejo) y 'aa forge recipes [zona]' con la zona opcional");
 var fakeCtx = (ICommandContext)FakeProxy.Create(typeof(ICommandContext), (n, a) => null);
 async Task<List<string>> ParsesOk(string input)
@@ -200,7 +201,7 @@ string ZW11 = ((char)0x200B).ToString();
 Check(book.Embed.Title == "⚒️ Recetas del Herrero" && book.Embed.Length < 6000 && bm.Count == 1 && bm[0].CustomId == $"blacksmith_pick:{U}" && Buttons(book).Single().CustomId == $"blacksmith_home:{U}" && Buttons(book).Single().Label.Contains("Volver"),
     $"el recetario: título propio, la lista para forjar sigue, y el botón vuelve al saludo ({book.Embed.Length} caracteres)");
 var zoneFields = book.Embed.Fields.Where(f => f.Name.Contains(" · nivel ")).ToList();
-Check(zoneFields.Count == zonesByRank.Count && book.Embed.Fields.Length == zonesByRank.Count + 1 && book.Embed.Fields.Last().Name == "🧰 Sin zona específica" && zoneFields.All(f => f.Value.Split('\n').Length == 2),
+Check(zoneFields.Count == zonesByRank.Count && book.Embed.Fields.Length == zonesByRank.Count + 1 && book.Embed.Fields.Last().Name == "🧰 Sin zona específica" && zoneFields.All(f => f.Value.Split('\n').Count(l => l.Trim((char)0x200B).Length > 0) == 2),
     $"un campo por zona (en orden de dificultad) con SUS 2 recetas (el arma de tu clase y el amuleto) y, al final, «Sin zona específica» ({string.Join(" | ", book.Embed.Fields.Select(f => f.Name))})");
 foreach (var z in zonesByRank)
 {

@@ -255,7 +255,7 @@ public static class HelpTopics
     private static Embed Forge() => Topic(Self("forge"),
         "En la herrería forjás armas y amuletos con materiales y oro. Todo está en la base de datos y cada uno ve las recetas de **su** clase.",
         ("🔨 Cómo",
-            "**/forge** (en texto `aa herrero`): el herrero te muestra un menú con lo que podés forjar (✅ lo que ya podés pagar, ❌ lo que te falta). Cada zona tiene 5 recetas pero ves 2: **el arma de tu clase** y **el amuleto**. El botón **📜 Ver todas las recetas** (o `aa forge recipes`) muestra las de todas las zonas, una línea cada una."),
+            "**/forge** (en texto `aa herrero`): el herrero te muestra un menú con lo que podés forjar (✅ lo que ya podés pagar, ❌ lo que te falta). Cada zona tiene 5 recetas pero ves 2: **el arma de tu clase** y **el amuleto**. Con la segunda lista elegís una zona y ves sus recetas con lo que tenés de cada material (o `aa forge recipes [zona]`). Si preferís ver todas las zonas juntas, una línea cada una, activá el **recetario completo** en **/config**."),
         ("⚔️ Tu arma y la Hoja",
             "Cada clase tiene su arma en cada zona (espada, daga, arco o grimorio) con un ataque FIJO que sube de zona en zona: lo que dice la receta es lo que pega, sin multiplicadores. Además hay una sola arma general, la **Hoja de Acero Puro**, sin zona y hecha solo con materiales de recolección: sirve para empezar."),
         ("🎽 Se equipa sola",

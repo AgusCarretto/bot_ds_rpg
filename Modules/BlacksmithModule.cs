@@ -14,14 +14,18 @@ public sealed record BlacksmithScene(Embed Embed, MessageComponent? Components, 
 // texto de la escena se perdía), y la lista se vuelve a armar después de cada pedido, así podés seguir pidiendo. Por debajo es EXACTAMENTE la
 // misma forja de "aa forge make" (ForgeModule.ExecuteMakeAsync): mismas validaciones, mismo cobro atómico y mismos eventos para misiones y logros.
 //
-// El botón de abajo es para VER las recetas: abre el recetario completo (todas las zonas, una línea por receta, con lo de tu clase y con un 🔒 en las zonas que todavía no alcanzás) y desde ahí volvés al saludo.
-// Es solo para mirar: la lista desplegable sigue siendo la de tu zona.
+// VER las recetas tiene DOS formas y cada jugador elige la suya en /config (PlayerSettings.FullRecipeBook; el clásico es el que viene por defecto, v0.28.1):
+//  - CLÁSICO: la segunda lista elige una zona y la escena muestra las recetas de esa zona para tu clase (con lo que tenés de cada material ✅/❌), las de zonas que todavía no alcanzás con un 🔒.
+//  - COMPLETO (v0.27.0): un botón abre el recetario con todas las zonas, una línea por receta, y desde ahí volvés al saludo.
+// Las dos son solo para mirar: la primera lista sigue siendo la de tu zona.
 public class BlacksmithModule(
     IUserRepository userRepository, IRecipeRepository recipeRepository, IZoneRepository zoneRepository,
-    IInventoryRepository inventoryRepository, ICraftingRepository craftingRepository, IGameEvents gameEvents)
+    IInventoryRepository inventoryRepository, ICraftingRepository craftingRepository, IGameEvents gameEvents,
+    IPlayerSettingsService settingsService)
     : InteractionModuleBase<SocketInteractionContext>
 {
     private const string MenuPrefix = "blacksmith_pick";
+    private const string ZonePrefix = "blacksmith_zone";
     private const string BookPrefix = "blacksmith_book";
     private const string HomePrefix = "blacksmith_home";
 
@@ -32,7 +36,7 @@ public class BlacksmithModule(
 
         try
         {
-            var scene = await BuildSceneAsync(userRepository, recipeRepository, zoneRepository, inventoryRepository, Context.User.Id);
+            var scene = await BuildSceneAsync(userRepository, recipeRepository, zoneRepository, inventoryRepository, Context.User.Id, fullBook: (await settingsService.GetAsync(Context.User.Id)).FullRecipeBook);
             if (scene.AttachmentPath is { } file)
             {
                 await FollowupWithFileAsync(file, embed: scene.Embed, components: scene.Components);
@@ -67,7 +71,7 @@ public class BlacksmithModule(
                 userRepository, recipeRepository, craftingRepository, gameEvents, Context.User.Id, selected.FirstOrDefault() ?? string.Empty);
 
             // La escena se refresca (tus materiales y tu oro al día) y lo que contestó el herrero va en un mensaje aparte.
-            var scene = await BuildSceneAsync(userRepository, recipeRepository, zoneRepository, inventoryRepository, Context.User.Id);
+            var scene = await BuildSceneAsync(userRepository, recipeRepository, zoneRepository, inventoryRepository, Context.User.Id, fullBook: (await settingsService.GetAsync(Context.User.Id)).FullRecipeBook);
 
             await ModifyOriginalResponseAsync(p =>
             {
@@ -84,14 +88,50 @@ public class BlacksmithModule(
         }
     }
 
-    // Tocaste «Ver todas las recetas»: la escena muestra el recetario completo (todas las zonas, una línea por receta) en vez del saludo. Es solo para mirar.
+    // CLÁSICO: elegiste una zona para ver sus recetas: la escena cambia a esa zona (y deja marcada la que elegiste).
+    [ComponentInteraction($"{ZonePrefix}:*")]
+    public async Task HandleZoneAsync(string ownerRaw, string[] selected)
+    {
+        await DeferAsync();
+
+        try
+        {
+            if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
+            {
+                await FollowupAsync("Esa charla es de otra persona: hablá con el herrero con **/forge**.", ephemeral: true);
+                return;
+            }
+
+            if (!int.TryParse(selected.FirstOrDefault(), out int zoneId))
+            {
+                await FollowupAsync("No entendí qué zona querías ver, probá de nuevo.", ephemeral: true);
+                return;
+            }
+
+            var scene = await BuildSceneAsync(userRepository, recipeRepository, zoneRepository, inventoryRepository, Context.User.Id, viewZoneId: zoneId);
+
+            await ModifyOriginalResponseAsync(p =>
+            {
+                p.Embed = scene.Embed;
+                p.Components = scene.Components ?? new ComponentBuilder().Build();
+            });
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            await FollowupAsync("¡Upa! No pude abrir esa página de recetas, intentá de nuevo en un momento.", ephemeral: true);
+        }
+    }
+
+    // COMPLETO: tocaste «Ver todas las recetas»: la escena muestra el recetario completo (todas las zonas, una línea por receta) en vez del saludo. Es solo para mirar.
     [ComponentInteraction($"{BookPrefix}:*")]
     public async Task HandleBookAsync(string ownerRaw) => await ShowSceneAsync(ownerRaw, showBook: true);
 
-    // Tocaste «Volver a la herrería»: vuelve el saludo del herrero.
+    // COMPLETO: tocaste «Volver a la herrería»: vuelve el saludo del herrero.
     [ComponentInteraction($"{HomePrefix}:*")]
     public async Task HandleHomeAsync(string ownerRaw) => await ShowSceneAsync(ownerRaw, showBook: false);
 
+    // Estos dos botones solo existen en la escena del recetario completo, así que acá la escena siempre se arma en ese modo (aunque el jugador haya cambiado /config con un mensaje viejo a la vista).
     private async Task ShowSceneAsync(string ownerRaw, bool showBook)
     {
         await DeferAsync();
@@ -104,7 +144,7 @@ public class BlacksmithModule(
                 return;
             }
 
-            var scene = await BuildSceneAsync(userRepository, recipeRepository, zoneRepository, inventoryRepository, Context.User.Id, showBook);
+            var scene = await BuildSceneAsync(userRepository, recipeRepository, zoneRepository, inventoryRepository, Context.User.Id, showBook, fullBook: true);
 
             await ModifyOriginalResponseAsync(p =>
             {
@@ -126,10 +166,12 @@ public class BlacksmithModule(
             .WithDescription(string.IsNullOrWhiteSpace(result.PlainMessage) ? "⚒️" : result.PlainMessage)
             .Build();
 
-    // La escena: el saludo del herrero (o, con showBook, el recetario completo) y los controles. Pública y sin Context para que "aa herrero" muestre exactamente lo mismo.
+    // La escena: el saludo del herrero (o las recetas) y los controles. Pública y sin Context para que "aa herrero" muestre exactamente lo mismo.
+    //  - fullBook = false (el clásico, el de siempre): el saludo lleva la lista para forjar y el selector de zonas; con viewZoneId se muestra la página de esa zona.
+    //  - fullBook = true (el completo): el saludo lleva la lista para forjar y el botón «Ver todas las recetas»; con showBook se muestra el recetario completo y el botón para volver.
     public static async Task<BlacksmithScene> BuildSceneAsync(
         IUserRepository userRepository, IRecipeRepository recipeRepository, IZoneRepository zoneRepository,
-        IInventoryRepository inventoryRepository, ulong discordId, bool showBook = false)
+        IInventoryRepository inventoryRepository, ulong discordId, bool showBook = false, bool fullBook = false, int? viewZoneId = null)
     {
         var player = await userRepository.GetByDiscordIdAsync(discordId);
         if (player is null)
@@ -146,12 +188,27 @@ public class BlacksmithModule(
         var owned = inventory.ToDictionary(entry => entry.ItemName, entry => entry.Quantity);
         var choices = ForgeChoices.For(recipes, zones, player, owned, string.Empty);
 
+        // Las zonas con recetas, de la más fácil a la más difícil: lo que se puede mirar en el selector del recetario clásico.
+        var zonesWithRecipes = ZoneRanking.OrderByDifficulty(zones)
+            .Where(z => recipes.Any(r => r.ZoneId == z.ZoneId))
+            .ToList();
+
         var image = NpcImages.Blacksmith;
         EmbedBuilder embed;
 
-        if (showBook)
+        if (!fullBook && viewZoneId is int zoneId)
         {
-            // El recetario completo (todas las zonas para tu clase, con 🔒 en las que todavía no alcanzás). La frase de cómo forjar es la de la escena.
+            // CLÁSICO: la página de recetas de la zona elegida (con lo que tenés de cada material). La frase de cómo forjar es la de la escena.
+            embed = ForgeModule.RenderZonePageEmbed(
+                    recipes, zones, player.Class, zoneId, owned, player.Gold, player.Level,
+                    forgeHint: choices.Count > 0 ? "Forjá desde la primera lista (✅ lo que ya podés hacer)." : "Todavía no tenés nada para forjar en tu zona.",
+                    highestZoneCleared: player.HighestZoneCleared)
+                .ToEmbedBuilder()
+                .WithColor(Color.Orange);
+        }
+        else if (fullBook && showBook)
+        {
+            // COMPLETO: el recetario con todas las zonas para tu clase, con 🔒 en las que todavía no alcanzás. La frase de cómo forjar es la de la escena.
             embed = ForgeModule.RenderRecipesEmbed(
                     recipes, zones, player.Class, null, player.Level,
                     forgeHint: choices.Count > 0 ? "Forjá desde la lista de arriba (✅ lo que ya podés hacer)." : "Todavía no tenés nada para forjar en tu zona.",
@@ -165,7 +222,14 @@ public class BlacksmithModule(
                 ? NpcDialogue.Blacksmith(BlacksmithLine.NoRecipes)
                 : $"{NpcDialogue.Blacksmith(BlacksmithLine.Greeting, fuegoNuevo: player.FuegoNuevo)}\n\n_✅ lo que ya podés forjar · ❌ lo que todavía te falta (te digo qué)_";
 
-            talk += "\n_📜 Con el botón de abajo ves todas las recetas._";
+            if (fullBook)
+            {
+                talk += "\n_📜 Con el botón de abajo ves todas las recetas._";
+            }
+            else if (zonesWithRecipes.Count > 0)
+            {
+                talk += "\n_📜 En la segunda lista mirás las recetas de cada zona._";
+            }
 
             embed = new EmbedBuilder().WithTitle("⚒️ La Herrería").WithColor(Color.Orange).WithDescription(talk);
 
@@ -200,13 +264,44 @@ public class BlacksmithModule(
             components.WithSelectMenu(menu, row++);
         }
 
-        // Un solo botón: abre el recetario completo, y desde el recetario vuelve al saludo.
-        components.WithButton(
-            showBook ? "↩ Volver a la herrería" : "📜 Ver todas las recetas",
-            showBook ? $"{HomePrefix}:{discordId}" : $"{BookPrefix}:{discordId}",
-            ButtonStyle.Secondary, row: row);
+        if (fullBook)
+        {
+            // Un solo botón: abre el recetario completo, y desde el recetario vuelve al saludo.
+            components.WithButton(
+                showBook ? "↩ Volver a la herrería" : "📜 Ver todas las recetas",
+                showBook ? $"{HomePrefix}:{discordId}" : $"{BookPrefix}:{discordId}",
+                ButtonStyle.Secondary, row: row);
+        }
+        else if (zonesWithRecipes.Count > 0)
+        {
+            components.WithSelectMenu(ZoneMenu(discordId, player, zonesWithRecipes, viewZoneId), row);
+        }
 
         var built = embed.Build();
-        return new BlacksmithScene(built, components.Build(), NpcImages.AttachmentPathFor(built));
+        return new BlacksmithScene(built, fullBook || row > 0 || zonesWithRecipes.Count > 0 ? components.Build() : null, NpcImages.AttachmentPathFor(built));
+    }
+
+    // Una opción por zona: "🌲 Zona 2 · Bosque de Cenizas" y, abajo, el nivel que pide (y si es la tuya). Sin emojis personalizados en las
+    // opciones (si el bot no puede usar uno, Discord rechaza el mensaje ENTERO): los de las zonas son emojis comunes de texto.
+    private static SelectMenuBuilder ZoneMenu(ulong discordId, User player, IReadOnlyList<Zone> zones, int? viewZoneId)
+    {
+        var menu = new SelectMenuBuilder()
+            .WithCustomId($"{ZonePrefix}:{discordId}")
+            .WithPlaceholder("📜 Ver las recetas de una zona")
+            .WithMinValues(1)
+            .WithMaxValues(1);
+
+        foreach (var zone in zones)
+        {
+            string label = $"{zone.Emoji ?? "🗺️"} Zona {zone.ZoneId} · {zone.Name}";
+            string description = $"Nivel {zone.MinLevel}+" + (zone.ZoneId == player.CurrentZoneId ? " · tu zona" : string.Empty);
+            menu.AddOption(
+                label.Length <= 100 ? label : label[..99] + "…",
+                zone.ZoneId.ToString(),
+                description,
+                isDefault: viewZoneId == zone.ZoneId);
+        }
+
+        return menu;
     }
 }

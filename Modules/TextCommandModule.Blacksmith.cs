@@ -5,7 +5,7 @@ using Discord.Commands;
 // Parte de TextCommandModule (ver el comentario en TextCommandModule.cs): hablar con el herrero.
 public partial class TextCommandModule
 {
-    // "aa herrero" / "aa forge" — misma escena que /forge (con el desplegable de recetas).
+    // "aa herrero" / "aa forge" — misma escena que /forge (con el desplegable de recetas y, según tu /config, el selector de zonas o el botón del recetario completo).
     [Command("blacksmith")]
     [Alias("herrero", "forge")]
     [Summary("Hablá con el herrero y elegí de la lista qué querés que te forje: \"aa herrero\".")]
@@ -13,7 +13,8 @@ public partial class TextCommandModule
     {
         try
         {
-            var scene = await BlacksmithModule.BuildSceneAsync(userRepository, recipeRepository, zoneRepository, inventoryRepository, Context.User.Id);
+            var scene = await BlacksmithModule.BuildSceneAsync(
+                userRepository, recipeRepository, zoneRepository, inventoryRepository, Context.User.Id, fullBook: (await settingsService.GetAsync(Context.User.Id)).FullRecipeBook);
             await NpcImages.SendAsync(Context.Channel, scene.Embed, scene.Components);
         }
         catch (Exception ex)
