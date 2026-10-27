@@ -289,6 +289,13 @@ var turnEmbedSuffix = typeof(AdventureModule).GetMethod("LastStandSuffix", Bindi
 string lastLine = (string)turnEmbedSuffix.Invoke(null, [saved])!; string lastLineEn; using (Loc.Use("en")) { lastLineEn = (string)turnEmbedSuffix.Invoke(null, [saved])!; }
 Check(lastLine.Contains("Aliento final") && lastLineEn.Contains("Last breath") && (string)turnEmbedSuffix.Invoke(null, [noPerk])! == string.Empty, "el texto del turno avisa el Aliento final (en español y en inglés) solo cuando saltó");
 
+Console.WriteLine("\n== 13. Los emojis propios del dragón (se levantan por nombre) ==");
+string beforeGold = DragonRules.KindEmoji("oro"), beforeDragon = UiEmojis.Dragon;
+UiEmojis.Set([("dragon_oro", "<:dragon_oro:123456789012345678>"), ("ui_dragon", "<:ui_dragon:123456789012345679>")]);
+Check(beforeGold == "💰" && beforeDragon == "🐲" && DragonRules.KindEmoji("oro") == "<:dragon_oro:123456789012345678>" && DragonRules.KindEmoji("fuerza") == "🗡️" && DragonRules.KindEmoji("defensa") == "🛡️" && DragonRules.KindEmoji("especial") == "✨" && UiEmojis.Dragon == "<:ui_dragon:123456789012345679>",
+    "sin emojis subidos valen los de siempre; con «dragon_oro» y «ui_dragon» subidos esos se usan solos y los demás tipos siguen con el suyo de siempre");
+UiEmojis.Set([]);
+
 await Clean();
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;

@@ -88,6 +88,12 @@ public static class UiEmojis
     public static string Dust => Icon(DustName, "✨");
     public static string Streak => Icon(StreakName, "🎁");
 
+    // El dragón (v0.30.0): un ícono general («ui_dragon») y uno por tipo («dragon_fuerza», «dragon_defensa», «dragon_oro», «dragon_especial», ver docs/dragon-emojis/README.md). Se suben al portal con ese nombre y las pantallas
+    // los usan solas; mientras no estén, valen los emojis de siempre. No están en AllNames a propósito (esa lista son los 25 de la interfaz que cubre v0194test); Icon() busca cualquier nombre que la aplicación tenga.
+    public const string DragonName = "ui_dragon";
+    public static string Dragon => Icon(DragonName, "🐲");
+    public static string DragonKind(string kind, string fallback) => Icon($"dragon_{kind}", fallback);
+
     // El «LV» azul, o null si todavía no está subido (los textos de siempre dicen «Nivel»).
     public static string? Lv => _byName.TryGetValue(LevelName, out var code) ? code : null;
 

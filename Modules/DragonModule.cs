@@ -293,7 +293,7 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
         return result.Status switch
         {
             DragonBuyStatus.Bought =>
-                $"{NpcDialogue.Shopkeeper(ShopkeeperLine.BuySuccess)}\n\n🐲 Compraste un dragón: sale del huevo un **{DragonRules.KindEmoji(kind)} {DragonRules.KindName(kind)}** (tier 1, **{DragonRules.TierName(1)}**) y ya te da {TypeBonus(kind, 1, 0)}. Miralo con **/dragon**, entrenalo con **/dragon-train** y criálo con un amigo con **/dragon-breed**.",
+                $"{NpcDialogue.Shopkeeper(ShopkeeperLine.BuySuccess)}\n\n{UiEmojis.Dragon} Compraste un dragón: sale del huevo un **{DragonRules.KindEmoji(kind)} {DragonRules.KindName(kind)}** (tier 1, **{DragonRules.TierName(1)}**) y ya te da {TypeBonus(kind, 1, 0)}. Miralo con **/dragon**, entrenalo con **/dragon-train** y criálo con un amigo con **/dragon-breed**.",
             DragonBuyStatus.AlreadyHave => "Pero si ya tenés un dragón. Cada uno tiene el suyo: miralo con **/dragon**.",
             DragonBuyStatus.NotEnoughGold => $"{NpcDialogue.Shopkeeper(ShopkeeperLine.NoGold)}\nUn dragón cuesta **{GameHistory.Number(DragonRules.ShopPrice)}** de oro.",
             _ => "Primero tenés que empezar tu aventura con **/start**.",
