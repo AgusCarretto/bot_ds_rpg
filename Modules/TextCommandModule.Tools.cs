@@ -14,7 +14,7 @@ public partial class TextCommandModule
         try
         {
             var scene = await ToolsModule.BuildSceneAsync(userRepository, recipeRepository, zoneRepository, inventoryRepository, toolRepository, Context.User.Id);
-            await ReplyAsync(embed: scene.Embed, components: scene.Components);
+            await NpcImages.SendAsync(Context.Channel, scene.Embed, scene.Components);
         }
         catch (Exception ex)
         {

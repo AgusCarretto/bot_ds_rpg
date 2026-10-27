@@ -149,7 +149,7 @@ public class GameModule(
             {
                 if (await dragonRepository.GetAsync(discordId) is { } dragon)
                 {
-                    wealthLines.Add(Loc.F($"{DragonRules.KindEmoji(dragon.Kind)} **Dragón:** {dragon.Name ?? DragonRules.TierName(dragon.Tier)}") + Loc.F($" · tier {dragon.Tier} · nivel {dragon.Level}"));
+                    wealthLines.Add($"{DragonRules.KindEmoji(dragon.Kind)} **{dragon.Name ?? DragonRules.TierName(dragon.Tier)}** ({DragonRules.TierNumeral(dragon.Tier)}) lvl {dragon.Level}");
                 }
             }
             catch (Exception ex)

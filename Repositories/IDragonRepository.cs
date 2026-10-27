@@ -12,8 +12,9 @@ public sealed record DragonBuyResult(DragonBuyStatus Status, PlayerDragon? Drago
 
 public enum DragonBreedStatus { Bred, NoDragon, TierMismatch, MaxTier, OnCooldown }
 
-// Success: si el intento subió de tier a los dos. Tier: el tier de los dos ANTES del intento. BlockedId: de quién es el dragón que impidió criar (sin dragón, en cooldown). A y B son los dragones DESPUÉS del intento.
-public sealed record DragonBreedResult(DragonBreedStatus Status, bool Success = false, int Tier = 0, PlayerDragon? A = null, PlayerDragon? B = null, ulong? BlockedId = null, TimeSpan Wait = default);
+// Success: si subió de tier el dragón A (el de quien invita; el único si se crió solo). SuccessB: si subió el B (solo en pareja): cada dragón tira su propia suerte, puede subir uno y el otro no. Tier: el tier de los dos ANTES del intento.
+// BlockedId: de quién es el dragón que impidió criar (sin dragón, en cooldown). A y B son los dragones DESPUÉS del intento.
+public sealed record DragonBreedResult(DragonBreedStatus Status, bool Success = false, int Tier = 0, PlayerDragon? A = null, PlayerDragon? B = null, ulong? BlockedId = null, TimeSpan Wait = default, bool SuccessB = false);
 
 public enum DragonTrainStatus { Trained, NoDragon, AtCap, NotEnoughGold }
 
@@ -33,8 +34,12 @@ public interface IDragonRepository
     Task<DragonBuyResult> BuyAsync(ulong discordId, int price, string kind, CancellationToken cancellationToken = default);
 
     // Cría los dragones de dos jugadores en UNA transacción: bloquea las dos filas en orden de discord_id (dos crías cruzadas no se traban), valida (los dos con dragón, mismo tier, tier < 10, los dos descansados), sortea
-    // con DragonRules.RollBreed (la piedad es la del que más fallos seguidos lleva) y, sea cual sea el resultado, pone el cooldown a los dos. Si sale bien suben los dos de tier y los fallos vuelven a 0; si no, los dos suman un fallo.
+    // UNA tirada por dragón con DragonRules.RollBreed, cada uno con SU chance y SU contador de fallos seguidos (puede subir uno y el otro no), y, sea cual sea el resultado, pone el cooldown a los dos. El que sube pasa de tier y reinicia sus fallos; el que no, suma un fallo.
     Task<DragonBreedResult> BreedAsync(ulong firstId, ulong secondId, Random? rng = null, CancellationToken cancellationToken = default);
+
+    // Cría el dragón SOLO (v0.31.0), sin pareja, en UNA transacción: valida (con dragón, tier < 10, descansado), sortea con UN TERCIO de la chance del tier (DragonRules.SoloChanceFactor; la piedad cuenta con el triple de fallos) y, salga como salga,
+    // pone el descanso. Sube de tier solo ese dragón; si no, suma un fallo. El resultado trae el dragón en A (B va vacío).
+    Task<DragonBreedResult> BreedSoloAsync(ulong discordId, Random? rng = null, CancellationToken cancellationToken = default);
 
     // Entrena el dragón hasta `times` niveles en UNA transacción (bloquea la fila del jugador y la del dragón): cada nivel cuesta DragonRules.TrainCost(nivel actual), siempre más que el anterior, y se entrena hasta donde alcance el oro
     // y el tope del tier (tier × 10). Si no se puede ni uno, no se toca nada (AtCap / NotEnoughGold). El cobro es un UPDATE guardado: nunca deja el oro en negativo.

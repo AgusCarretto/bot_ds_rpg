@@ -155,22 +155,28 @@ await GiveRecipe(U1, AxeZ3);
 Task<ToolsScene> Scene(ulong id) => ToolsModule.BuildSceneAsync(users, recipesRepo, zonesRepo, inventory, toolRepo, id, new Random(1));
 var s1 = await Scene(U1);
 var menu1 = s1.Components?.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<SelectMenuComponent>().Single();
-Check(s1.Embed.Title == "🪚 El Carpintero" && s1.Embed.Fields.Length == 6 && s1.Embed.Fields[0].Name.Contains("Hacha") && s1.Embed.Fields[0].Value.Contains("×1") && s1.Embed.Length < 6000,
-    $"sin herramientas: el hacha y el pico en ×1 y sus 4 mejoras abajo ({string.Join(" | ", s1.Embed.Fields.Select(f => f.Name))})");
-Check(menu1 is not null && menu1.CustomId == $"tools_pick:{U1}" && menu1.Options.Count == 2 && menu1.Options.All(o => o.Value is AxeZ3 or PickZ3), "la lista solo ofrece lo que ya se desbloqueó (las dos de la Zona 3)");
-Check(menu1!.Options.Single(o => o.Value == AxeZ3).Label.StartsWith("✅") && menu1.Options.Single(o => o.Value == PickZ3).Label.StartsWith("❌"), "marca ✅ la que podés armar ahora (tenés todo para el hacha) y ❌ la que te falta");
-var axeField = s1.Embed.Fields.Single(f => f.Name.Contains(AxeZ3)); var lockedField = s1.Embed.Fields.Single(f => f.Name.Contains(AxeZ5));
-Check(axeField.Value.Contains("✅") && !axeField.Value.Contains("🔒") && lockedField.Value.Contains("🔒") && lockedField.Value.Contains("Zona 5"), "cada mejora lista los materiales con ✅/❌ y «tenés/necesitás»; la cerrada dice en qué zona se abre");
+Check(s1.Embed.Title == "🪚 El Carpintero" && s1.Embed.Fields.Length == 0 && s1.Embed.Description.Contains("🪓 **Hacha:**") && s1.Embed.Description.Contains("⛏️ **Pico:**") && s1.Embed.Description.Contains("ninguna · **×1**") && s1.Embed.Length < 1500,
+    "la escena es compacta (como la de la taberna): sin campos grandes, con lo que llevás puesto (nada: ×1) en la descripción");
+Check(menu1 is not null && menu1.CustomId == $"tools_pick:{U1}" && menu1.Options.Count == 4 && new[] { AxeZ3, AxeZ5, PickZ3, PickZ5 }.All(n => menu1.Options.Any(o => o.Value == n)), "UNA lista con las 4 mejoras (las de una zona cerrada también)");
+string Label(string n) => menu1!.Options.Single(o => o.Value == n).Label;
+string Desc(string n) => menu1!.Options.Single(o => o.Value == n).Description;
+Check(Label(AxeZ3).StartsWith("✅") && Label(PickZ3).StartsWith("❌") && Label(AxeZ5).StartsWith("🔒") && Label(PickZ5).StartsWith("🔒") && Label(AxeZ3).Contains("(×2)") && Label(AxeZ5).Contains("(×3)"), "cada opción dice su estado en la etiqueta: ✅ la que podés armar ahora, ❌ la que te falta y 🔒 las de una zona cerrada");
+Check(Desc(AxeZ3).Contains("Roble 12/12") && Desc(AxeZ3).Contains("Piedra 18/18") && Desc(PickZ3).Contains("Carbón 0/6") && Desc(AxeZ5).Contains("Zona 5") && Desc(PickZ5).Contains("se abre en la Zona 5") && menu1!.Options.All(o => o.Description.Length <= 100), "abajo, los materiales con lo que tenés de cuántos hacen falta; la cerrada dice en qué zona se abre (todo dentro de los 100 caracteres de Discord)");
 await db.ExecuteAsync("UPDATE users SET highest_zone_cleared = @h WHERE discord_id = @id", new { id = (long)U1, h = Z4 });
 var s2 = await Scene(U1);
-Check(s2.Components?.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<SelectMenuComponent>().Single().Options.Count == 4, "al desbloquear la Zona 5 la lista ofrece las cuatro");
+var menu2 = s2.Components?.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<SelectMenuComponent>().Single();
+Check(menu2 is not null && menu2.Options.Count == 4 && menu2.Options.All(o => !o.Label.StartsWith("🔒")), "al desbloquear la Zona 5 ya no queda ninguna cerrada");
 var made = await Make(U1, AxeZ3);
 await GiveRecipe(U1, AxeZ5); await Make(U1, AxeZ5);
 await GiveRecipe(U1, PickZ5); await Make(U1, PickZ5);
 var s3 = await Scene(U1);
-Check(made.Embed is not null && s3.Components is null && s3.Embed.Fields.Length == 2 && s3.Embed.Fields.All(f => f.Value.Contains("lo mejor que arma") && f.Value.Contains("×3")), "con las dos de la Zona 5 puestas: dice «lo mejor que arma» y no ofrece nada más");
+Check(made.Embed is not null && s3.Components is null && s3.Embed.Description.Contains("lo mejor que arma") && s3.Embed.Description.Contains("×3") && s3.Embed.Description.Contains(AxeZ5) && s3.Embed.Description.Contains(PickZ5), "con las dos de la Zona 5 puestas: dice «lo mejor que arma», muestra lo que llevás y no ofrece nada más");
 var s4 = await Scene(UGhost);
 Check(s4.Components is null && s4.Embed.Description.Contains("/start"), "sin cuenta: manda a /start");
+UiEmojis.Set([("carpintero", "<:carpintero:123456789012345671>")]);
+var s5 = await Scene(U1);
+UiEmojis.Set([]);
+Check(s1.Embed.Thumbnail is null && s5.Embed.Thumbnail?.Url is { } photoUrl && photoUrl.Contains("123456789012345671") && s5.AttachmentPath is null, "con un emoji «carpintero» subido a la aplicación su foto aparece de miniatura (sin ids que copiar); sin él, sin foto");
 
 Console.WriteLine("\n== 6. La recolección de verdad ==");
 await Player(UBase, 30, Z4); await Player(UTool, 30, Z4);

@@ -11,7 +11,7 @@ using Discord.Interactions;
 // que para poder separar archivos sin romper el grupo, ambos son la misma clase de C#.
 // Las recetas de forja viven en /forge (ForgeModule.cs), separadas de la Tienda por diseño de juego.
 [Group("shop", "Comprá objetos con tu oro.")]
-public partial class ShopModule(IUserRepository userRepository, IItemRepository itemRepository, IShopRepository shopRepository, ICombatSessionService combatSessions, IGameEvents gameEvents, IBuffRepository buffRepository, IBoxContextService boxContextService)
+public partial class ShopModule(IUserRepository userRepository, IItemRepository itemRepository, IShopRepository shopRepository, ICombatSessionService combatSessions, IGameEvents gameEvents, IBuffRepository buffRepository, IBoxContextService boxContextService, IDragonRepository dragonRepository)
     : InteractionModuleBase<SocketInteractionContext>
 {
     // Comando barra: /shop buy
@@ -25,7 +25,7 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
 
         try
         {
-            var result = await ExecuteBuyAsync(userRepository, itemRepository, shopRepository, combatSessions, gameEvents, Context.User.Id, itemName, quantity, boxContextService);
+            var result = await ExecuteBuyAsync(userRepository, itemRepository, shopRepository, combatSessions, gameEvents, Context.User.Id, itemName, quantity, boxContextService, dragonRepository);
             await FollowupAsync(result.PlainMessage, embed: result.Embed, ephemeral: result.Embed is null);
         }
         catch (Exception ex)
@@ -86,13 +86,19 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
 
     public static async Task<ShopActionResult> ExecuteBuyAsync(
         IUserRepository userRepository, IItemRepository itemRepository, IShopRepository shopRepository, ICombatSessionService combatSessions,
-        IGameEvents gameEvents, ulong discordId, string itemName, int quantity, IBoxContextService? boxContext = null)
+        IGameEvents gameEvents, ulong discordId, string itemName, int quantity, IBoxContextService? boxContext = null, IDragonRepository? dragonRepository = null)
     {
         // No se puede ir de compras en pleno combate — mismo espíritu que el bloqueo de /heal
         // (Modules/TavernModule.cs): comprar no debería ser una salida gratuita en medio de una pelea.
         if (combatSessions.Peek(discordId) is not null)
         {
             return new ShopActionResult(Loc.T("No podés ir de compras en medio de un combate. Terminalo (atacando o huyendo) antes de pasar por la tienda."), null);
+        }
+
+        // El dragón (v0.30.0) también se compra acá: «/shop buy dragon» o «aa shop buy dragon» (el dueño: «que sea shop buy dragon»), con el mismo cobro y las mismas reglas que desde la taberna. Es uno por cuenta: la cantidad no cuenta.
+        if (dragonRepository is not null && DragonModule.IsDragonName(itemName))
+        {
+            return new ShopActionResult(await DragonModule.ExecuteBuyAsync(dragonRepository, discordId), null);
         }
 
         if (quantity < 1)

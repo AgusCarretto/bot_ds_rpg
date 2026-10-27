@@ -66,8 +66,12 @@ Check(DragonRules.RollBreed(1, 0, new FixedRandom(0.999)) && !DragonRules.RollBr
     "el tier 1 sube siempre; con mala suerte falla, pero al llegar al tope de fallos seguidos sale SEGURO (también en el tier 9); el tier 10 no sube más");
 var stat = new Random(7); int wins = Enumerable.Range(0, 20000).Count(_ => DragonRules.RollBreed(3, 0, stat));
 Check(wins is > 5700 and < 6300, $"el tier 3 sube el 30 % de las veces (en 20.000 intentos: {wins})");
-double total = Enumerable.Range(1, 9).Sum(DragonRules.ExpectedAttempts);
-Check(Math.Abs(DragonRules.ExpectedAttempts(2) - 1.56) < 0.01 && total is > 130 and < 175, $"con la piedad, subir de tier lleva en promedio 1,6 intentos del 2 al 3 y unos {total:0} intentos hasta el tier 10 (a 2 por día, ~{total / 2:0} días: una meta de meses)");
+double total = Enumerable.Range(1, 9).Sum(t => DragonRules.ExpectedAttempts(t));
+Check(Math.Abs(DragonRules.ExpectedAttempts(2) - 1.56) < 0.01 && total is > 400 and < 450, $"con la piedad, subir de tier lleva en promedio 1,6 intentos del 2 al 3 y unos {total:0} intentos hasta el tier 10 (a 2 por día, ~{total / 2:0} días: una meta de meses)");
+Check(DragonRules.PityCap(1) == 0 && DragonRules.PityCap(2) == 2 && DragonRules.PityCap(9) == 256 && Enumerable.Range(2, 7).All(t => DragonRules.PityCap(t + 1) == DragonRules.PityCap(t) * 2) && DragonRules.PityCap(10) == 0,
+    "el tope de fallos seguidos crece EXPONENCIAL: cada tier pide el doble que el anterior (0 / 2 / 4 / 8 / 16 / 32 / 64 / 128 / 256)");
+double soloTotal = Enumerable.Range(1, 9).Sum(t => DragonRules.ExpectedAttempts(t, DragonRules.SoloChanceFactor));
+Check(Enumerable.Range(2, 8).All(t => DragonRules.SoloPityCap(t) == DragonRules.PityCap(t) * 3) && soloTotal > total * 2.8 && soloTotal < total * 3.2, $"criar solo lleva de verdad el triple: el tope de fallos también se triplica ({soloTotal:0} intentos contra {total:0} con pareja)");
 var kindRoll = new Random(11); var counts = DragonRules.Kinds.ToDictionary(k => k, _ => 0); for (int i = 0; i < 20000; i++) counts[DragonRules.RollKind(kindRoll)]++;
 Check(DragonRules.Kinds.Sum(DragonRules.ShopWeight) == 100 && counts["fuerza"] is > 5700 and < 6300 && counts["especial"] is > 1800 and < 2200, $"la tienda da fuerza / defensa / oro 30 % y especial 10 % ({counts["fuerza"]}, {counts["defensa"]}, {counts["oro"]}, {counts["especial"]} de 20.000)");
 Check(DragonRules.Percent(12) == "12" && DragonRules.Percent(2.5) == "2,5" && DragonRules.Percent(0.33) == "0,33", "los porcentajes se escriben con coma, sin ceros de más");
@@ -99,17 +103,17 @@ var mism = await dragons.BreedAsync(A, C);
 Check(self.Status == DragonBreedStatus.NoDragon && noDrag.Status == DragonBreedStatus.NoDragon && noDrag.BlockedId == GHOST && mism.Status == DragonBreedStatus.TierMismatch && mism.Tier == 1, "consigo mismo, con alguien sin dragón o de otro tier: se rechaza");
 var first = await dragons.BreedAsync(A, B, new FixedRandom(0.999));
 var a1 = await dragons.GetAsync(A); var b1 = await dragons.GetAsync(B);
-Check(first.Status == DragonBreedStatus.Bred && first.Success && first.Tier == 1 && a1 is { Tier: 2, FailStreak: 0 } && b1 is { Tier: 2, FailStreak: 0 } && a1.Kind == "oro" && b1.Kind == "fuerza" && !a1.CanBreed && !b1.CanBreed && a1.Wait > TimeSpan.FromHours(11),
+Check(first.Status == DragonBreedStatus.Bred && first.Success && first.SuccessB && first.Tier == 1 && a1 is { Tier: 2, FailStreak: 0 } && b1 is { Tier: 2, FailStreak: 0 } && a1.Kind == "oro" && b1.Kind == "fuerza" && !a1.CanBreed && !b1.CanBreed && a1.Wait > TimeSpan.FromHours(11),
     "el tier 1 sube seguro: los DOS dragones pasan al tier 2, cada uno conserva su tipo y los dos descansan ~12 h");
 var rest = await dragons.BreedAsync(A, B, new FixedRandom(0));
 Check(rest.Status == DragonBreedStatus.OnCooldown && rest.Wait > TimeSpan.FromHours(11) && (await dragons.GetAsync(A))!.Tier == 2, "mientras descansan no se puede volver a criar y no pasa nada");
 await db.ExecuteAsync("UPDATE player_dragons SET last_bred_at = NULL WHERE discord_id = ANY(@ids)", new { ids = new long[] { (long)A, (long)B } });
 var fail = await dragons.BreedAsync(A, B, new FixedRandom(0.999));
-Check(fail.Status == DragonBreedStatus.Bred && !fail.Success && fail.A is { Tier: 2, FailStreak: 1 } && fail.B is { Tier: 2, FailStreak: 1 } && !fail.A.CanBreed, "un intento fallido: siguen en el tier 2, los dos suman un fallo y descansan igual");
+Check(fail.Status == DragonBreedStatus.Bred && !fail.Success && !fail.SuccessB && fail.A is { Tier: 2, FailStreak: 1 } && fail.B is { Tier: 2, FailStreak: 1 } && !fail.A.CanBreed, "un intento fallido: siguen en el tier 2, los dos suman un fallo y descansan igual");
 await db.ExecuteAsync("UPDATE player_dragons SET last_bred_at = NULL WHERE discord_id = ANY(@ids)", new { ids = new long[] { (long)A, (long)B } });
 await db.ExecuteAsync("UPDATE player_dragons SET fail_streak = @cap WHERE discord_id = @id", new { id = (long)B, cap = DragonRules.PityCap(2) });
 var pity = await dragons.BreedAsync(A, B, new FixedRandom(0.999));
-Check(pity.Success && pity.A is { Tier: 3, FailStreak: 0 } && pity.B is { Tier: 3, FailStreak: 0 }, "la piedad es la del que más fallos lleva: con el compañero en el tope, el intento sale SEGURO aunque la suerte sea mala");
+Check(!pity.Success && pity.SuccessB && pity.A is { Tier: 2, FailStreak: 2 } && pity.B is { Tier: 3, FailStreak: 0 } && !pity.A.CanBreed && !pity.B.CanBreed, "cada dragón con su propio contador: el que llegó al tope (B) sube SEGURO aunque la suerte sea mala y el otro (A, con un solo fallo) se queda; los dos descansan");
 await Dragon(A, "oro", 10); await Dragon(B, "oro", 10);
 Check((await dragons.BreedAsync(A, B)).Status == DragonBreedStatus.MaxTier, "dos dragones del tier 10 no tienen nada más que criar");
 await Dragon(A, "oro", 4); await Dragon(B, "oro", 4);
@@ -332,13 +336,13 @@ await db.ExecuteAsync("UPDATE users SET dust = 50 WHERE discord_id = @id", new {
 Task<Embed> Profile(ulong id, bool withDragons = true) => GameModule.BuildProfileEmbedAsync(users, items, zonesRepo, buffs, id, "T", "https://example.com/a.png", null, null, withDragons ? dragons : null);
 var profA = await Profile(A);
 string statsA = profA.Fields.Single(f => f.Name == GameModule.ProfileStatsFieldName).Value;
-Check(statsA.Contains("**Polvo:**") && statsA.Contains("**Dragón:** Ceniza") && statsA.Contains("tier 2 · nivel 0") && statsA.IndexOf("**Dragón:**", StringComparison.Ordinal) > statsA.IndexOf("**Polvo:**", StringComparison.Ordinal) && statsA.Contains("<:dragon_fuerza:123456789012345670>"), "el perfil muestra el dragón justo debajo del Polvo: su emoji de tipo, su nombre, el tier y el nivel");
+Check(statsA.Contains("**Polvo:**") && statsA.Contains("**Ceniza** (II) lvl 0") && statsA.IndexOf("**Ceniza**", StringComparison.Ordinal) > statsA.IndexOf("**Polvo:**", StringComparison.Ordinal) && statsA.Contains("<:dragon_fuerza:123456789012345670> **Ceniza**") && !statsA.Contains("Dragón:") && !statsA.Contains("tier") && !statsA.Contains("nivel"), "el perfil muestra el dragón justo debajo del Polvo como «emoji nombre (II) lvl 0»: sin el rótulo «Dragón:» ni las palabras tier y nivel");
 Embed profEn; using (Loc.Use("en")) { profEn = await Profile(A); }
 string statsEn = profEn.Fields.Single(f => f.Name == GameModule.ProfileStatsFieldName).Value;
-Check(statsEn.Contains("**Dragon:** Ceniza") && statsEn.Contains("tier 2 · level 0"), "y en inglés");
+Check(statsEn.Contains("**Ceniza** (II) lvl 0") && !statsEn.Contains("Dragon"), "y en inglés es lo mismo (el número romano y «lvl» no se traducen)");
 var profB = await Profile(B); string statsB = profB.Fields.Single(f => f.Name == GameModule.ProfileStatsFieldName).Value;
 var profD = await Profile(D); var profNone = await Profile(A, false);
-Check(statsB.Contains("**Dragón:** Oro") == false && statsB.Contains("**Dragón:** Cría") && !profD.Fields.Single(f => f.Name == GameModule.ProfileStatsFieldName).Value.Contains("Dragón") && !profNone.Fields.Single(f => f.Name == GameModule.ProfileStatsFieldName).Value.Contains("Dragón"), "sin nombre muestra el de su tier (Cría); sin dragón, o sin el repositorio, el perfil no cambia");
+Check(statsB.Contains("**Cría** (I) lvl 0") && !profD.Fields.Single(f => f.Name == GameModule.ProfileStatsFieldName).Value.Contains("lvl") && !profNone.Fields.Single(f => f.Name == GameModule.ProfileStatsFieldName).Value.Contains("lvl"), "sin nombre muestra el de su tier (Cría, I); sin dragón, o sin el repositorio, el perfil no cambia");
 UiEmojis.Set([]);
 
 Task<Embed> Cd(ulong id) => CooldownModule.BuildStatusEmbedAsync(sp.GetRequiredService<ICooldownRepository>(), users, id, null, null, false, null, dragons);
@@ -354,11 +358,101 @@ Check(!(await Cd(B)).Description.Contains("Dragón") && !(await Cd(D)).Descripti
 var slashName = interactions.SlashCommands.Single(c => c.Name == "dragon-name");
 Check(slashName.Parameters.Count == 1 && slashName.Parameters[0].Name == "nombre" && slashName.Description.Length <= 100 && texts.Search("dragon name Chispa Roja").Commands.Any(c => c.Command.Name == "dragon name") && !FightLock.IsAllowed("dragon-name"), "/dragon-name y «aa dragon name <nombre>» existen (bloqueados en plena pelea)");
 
+Console.WriteLine("\n== 15. Criar solo, /shop buy dragon y la pantalla ==");
+Check(Math.Abs(DragonRules.SoloChanceFactor - 1.0 / 3.0) < 1e-12 && Math.Abs(DragonRules.SoloBreedChance(1) - 1.0 / 3.0) < 1e-12 && Math.Abs(DragonRules.SoloBreedChance(2) - 0.20) < 1e-12 && Math.Abs(DragonRules.SoloBreedChance(9) - DragonRules.BreedChance(9) / 3) < 1e-12 && DragonRules.SoloPityCap(1) == 1 && DragonRules.SoloPityCap(5) == DragonRules.PityCap(5) * 3 && DragonRules.ExpectedAttempts(3, DragonRules.SoloChanceFactor) > DragonRules.ExpectedAttempts(3),
+    "criar solo: la chance de subir es UN TERCIO de la del tier (en el tier 1, 33 %; en el 2, 20 %) y en promedio lleva más intentos");
+Check(!DragonRules.RollBreed(2, 0, new FixedRandom(0.5), DragonRules.SoloChanceFactor) && DragonRules.RollBreed(2, 0, new FixedRandom(0.5)) && !DragonRules.RollBreed(1, 0, new FixedRandom(0.7), DragonRules.SoloChanceFactor) && DragonRules.RollBreed(1, 0, new FixedRandom(0.7)) && DragonRules.RollBreed(1, 1, new FixedRandom(0.7), DragonRules.SoloChanceFactor) && DragonRules.RollBreed(2, DragonRules.SoloPityCap(2), new FixedRandom(0.999), DragonRules.SoloChanceFactor) && !DragonRules.RollBreed(2, DragonRules.PityCap(2), new FixedRandom(0.999), DragonRules.SoloChanceFactor),
+    "con la misma suerte, con amigo sube y solo no; el tier 1 (seguro con pareja) solo puede fallar una vez; y solo el seguro llega con el TRIPLE de fallos seguidos");
+await Clean(); await Player(A, 100000); await Player(B, 1000); await Player(C, 1000);
+await Dragon(A, "oro", 2);
+var soloFail = await dragons.BreedSoloAsync(A, new FixedRandom(0.5));
+Check(soloFail.Status == DragonBreedStatus.Bred && !soloFail.Success && soloFail.A is { Tier: 2, FailStreak: 1 } && !soloFail.A.CanBreed, "solo, con mala suerte: el dragón sigue en el tier 2, suma un fallo y descansa igual que criando con alguien");
+Check((await dragons.BreedSoloAsync(A, new FixedRandom(0))).Status == DragonBreedStatus.OnCooldown, "y mientras descansa no puede criar solo");
+await db.ExecuteAsync("UPDATE player_dragons SET last_bred_at = NULL WHERE discord_id = @id", new { id = (long)A });
+var soloWin = await dragons.BreedSoloAsync(A, new FixedRandom(0.1));
+Check(soloWin.Success && soloWin.Tier == 2 && soloWin.A is { Tier: 3, FailStreak: 0 } && !soloWin.A.CanBreed, "con suerte (por debajo del tercio de la chance) sube de tier, reinicia los fallos y descansa");
+await db.ExecuteAsync("UPDATE player_dragons SET last_bred_at = NULL, fail_streak = @cap WHERE discord_id = @id", new { id = (long)A, cap = DragonRules.PityCap(3) });
+Check(!(await dragons.BreedSoloAsync(A, new FixedRandom(0.999))).Success, "solo, el tope de fallos que ya alcanza con pareja todavía NO alcanza (hace falta el triple)");
+await db.ExecuteAsync("UPDATE player_dragons SET last_bred_at = NULL, fail_streak = @cap WHERE discord_id = @id", new { id = (long)A, cap = DragonRules.SoloPityCap(3) });
+Check((await dragons.BreedSoloAsync(A, new FixedRandom(0.999))).Success, "la piedad cuenta también solo: con el tope de fallos seguidos (el triple) el intento sale seguro");
+Check((await dragons.BreedSoloAsync(GHOST)).Status == DragonBreedStatus.NoDragon && (await dragons.BreedSoloAsync(B)).Status == DragonBreedStatus.NoDragon, "sin dragón no se cría solo");
+await Dragon(B, "oro", 10);
+Check((await dragons.BreedSoloAsync(B)).Status == DragonBreedStatus.MaxTier, "en el tier máximo tampoco");
+await Dragon(C, "defensa", 4);
+var soloRace = await Task.WhenAll(Enumerable.Range(0, 12).Select(_ => dragons.BreedSoloAsync(C, new FixedRandom(0.999))));
+Check(soloRace.Count(r => r.Status == DragonBreedStatus.Bred) == 1 && soloRace.Count(r => r.Status == DragonBreedStatus.OnCooldown) == 11 && (await dragons.GetAsync(C))!.FailStreak == 1, "12 intentos solos a la vez: se hace UNO y los demás encuentran el descanso");
+await db.ExecuteAsync("UPDATE player_dragons SET tier = 2, fail_streak = 0, last_bred_at = NULL WHERE discord_id = @id", new { id = (long)A });
+var winEmbed = await DragonModule.ExecuteSoloBreedAsync(dragons, A, new FixedRandom(0.1));
+await db.ExecuteAsync("UPDATE player_dragons SET fail_streak = 0, last_bred_at = NULL WHERE discord_id = @id", new { id = (long)A });
+var failEmbed = await DragonModule.ExecuteSoloBreedAsync(dragons, A, new FixedRandom(0.9));
+Check(winEmbed.Description.Contains("¡Lo lograste solo!") && winEmbed.Description.Contains("Tier 3") && failEmbed.Description.Contains("un tercio") && failEmbed.Description.Contains("Fallos seguidos") && (await DragonModule.ExecuteSoloBreedAsync(dragons, GHOST)).Description.Contains("/taberna") && (await DragonModule.ExecuteSoloBreedAsync(dragons, A)).Description.Contains("descansando"),
+    "los mensajes de criar solo: éxito, fallo (dice que la chance es un tercio), sin dragón y descansando");
+var viewSolo = await DragonModule.BuildDragonViewAsync(dragons, A);
+Check(viewSolo.Embed.Fields.Single(f => f.Name == "Criar").Value.Contains("**solo**") && viewSolo.Embed.Fields.Single(f => f.Name == "Criar").Value.Contains("un tercio"), "la pantalla del dragón avisa que se puede criar solo y con un tercio de la chance");
+var slashBreed2 = interactions.SlashCommands.Single(c => c.Name == "dragon-breed");
+Check(slashBreed2.Parameters.Count == 1 && !slashBreed2.Parameters[0].IsRequired && slashBreed2.Description.Length <= 100 && texts.Search("dragon breed").Commands.Any(c => c.Command.Name == "dragon breed"), "/dragon-breed y «aa dragon breed» sin amigo son criar solo (el parámetro es opcional)");
+
+await Player(E, 20000); await Player(F, 20000); await Player(G, 20000);
+Task<ShopModule.ShopActionResult> Buy(ulong id, string name, int qty = 1, bool withRepo = true) => ShopModule.ExecuteBuyAsync(users, items, shop, combat, events, id, name, qty, boxCtx, withRepo ? dragons : null);
+var buyDragon = await Buy(E, "Dragón");
+Check(buyDragon.PlainMessage!.Contains("Compraste un dragón") && await dragons.GetAsync(E) is not null && await Gold(E) == 20000 - DragonRules.ShopPrice, "«/shop buy dragón» compra el dragón (mismo cobro y mismas reglas que desde la taberna)");
+var buyAgain = await Buy(E, "dragon", 3);
+Check(buyAgain.PlainMessage!.Contains("ya tenés un dragón") && await Gold(E) == 20000 - DragonRules.ShopPrice, "pedir otro (aunque sea «3»): «ya tenés un dragón» y no cobra");
+Check((await Buy(F, "DRAGON DE CRÍA")).PlainMessage!.Contains("Compraste un dragón") && await dragons.GetAsync(F) is not null, "se entiende «dragon de cría» en mayúsculas y con tilde");
+var noRepo = await Buy(G, "dragon", 1, withRepo: false);
+Check((noRepo.PlainMessage ?? noRepo.Embed?.Description ?? "").Contains("no está disponible") && await dragons.GetAsync(G) is null, "sin el repositorio del dragón (arneses viejos), «dragon» es un nombre más de la tienda: no está");
+Check(DragonModule.IsDragonName("dragon") && DragonModule.IsDragonName(" Dragón ") && DragonModule.IsDragonName("Dragon de cria") && !DragonModule.IsDragonName("dragones") && !DragonModule.IsDragonName("Mate Amargo") && DragonModule.MatchesDragon("") && DragonModule.MatchesDragon("dra") && DragonModule.MatchesDragon("dragón") && !DragonModule.MatchesDragon("espada"), "los nombres que valen para el dragón en /shop buy y lo que se ofrece en la lista mientras se escribe");
+
+Console.WriteLine("\n== 16. En pareja, cada dragón tira su propia suerte ==");
+await Clean(); await Player(A); await Player(B); await Player(C); await Player(D);
+await Dragon(A, "oro", 2); await Dragon(B, "defensa", 2, streak: 1);
+var mixed = await dragons.BreedAsync(A, B, new SequenceRandom(0.1, 0.999));
+Check(mixed.Status == DragonBreedStatus.Bred && mixed.Success && !mixed.SuccessB && mixed.Tier == 2 && mixed.A is { Tier: 3, FailStreak: 0 } && mixed.B is { Tier: 2, FailStreak: 2 } && !mixed.A.CanBreed && !mixed.B.CanBreed,
+    "cada dragón tira su suerte: sube el A (0,1 contra 60 %) y el B no (0,999); el A reinicia sus fallos, el B suma uno (de 1 a 2) y los dos descansan");
+await Dragon(A, "oro", 2); await Dragon(B, "defensa", 2);
+var mixed2 = await dragons.BreedAsync(A, B, new SequenceRandom(0.999, 0.1));
+Check(!mixed2.Success && mixed2.SuccessB && mixed2.A is { Tier: 2, FailStreak: 1 } && mixed2.B is { Tier: 3, FailStreak: 0 }, "y al revés: puede subir el segundo y quedarse el primero");
+await Dragon(A, "oro", 2); await Dragon(B, "defensa", 2);
+var both = await dragons.BreedAsync(A, B, new SequenceRandom(0.1, 0.2));
+Check(both.Success && both.SuccessB && both.A is { Tier: 3 } && both.B is { Tier: 3 }, "también pueden subir los dos");
+await Dragon(A, "oro", 2); await Dragon(B, "defensa", 2);
+await dragons.BreedAsync(A, B, new SequenceRandom(0.1, 0.999));
+await db.ExecuteAsync("UPDATE player_dragons SET last_bred_at = NULL WHERE discord_id = ANY(@ids)", new { ids = new long[] { (long)A, (long)B } });
+Check((await dragons.BreedAsync(A, B)).Status == DragonBreedStatus.TierMismatch, "si subió uno solo ya no tienen el mismo tier: para seguir criando cada uno necesita un compañero de SU tier");
+
+await Dragon(A, "oro", 2); await Dragon(B, "defensa", 2);
+var msgMixed = await DragonModule.ResolveBreedAsync(dragons, new DragonBreedOffer(Guid.NewGuid(), A, B, DateTime.UtcNow.AddMinutes(1)), new SequenceRandom(0.1, 0.999));
+Check(msgMixed.Description.Contains($"<@{A}>") && msgMixed.Description.Contains($"<@{B}>") && msgMixed.Description.Contains("Tier 3") && msgMixed.Description.Contains("se queda") && msgMixed.Description.Contains("fallos seguidos") && msgMixed.Description.Contains("tiers distintos"),
+    "el mensaje cuenta qué le pasó a CADA dragón (uno sube, el otro se queda con sus fallos) y avisa que ahora tienen tiers distintos");
+await Dragon(A, "oro", 2); await Dragon(B, "defensa", 2);
+var msgNone = await DragonModule.ResolveBreedAsync(dragons, new DragonBreedOffer(Guid.NewGuid(), A, B, DateTime.UtcNow.AddMinutes(1)), new SequenceRandom(0.999, 0.999));
+Check(msgNone.Description.Contains("No se dio") && msgNone.Description.Contains("se queda") && !msgNone.Description.Contains("tiers distintos") && !msgNone.Description.Contains("Salió bien"), "si no sube ninguno: lo dice, los dos se quedan y no avisa de tiers distintos");
+await Dragon(A, "oro", 2); await Dragon(B, "defensa", 2);
+var msgBoth = await DragonModule.ResolveBreedAsync(dragons, new DragonBreedOffer(Guid.NewGuid(), A, B, DateTime.UtcNow.AddMinutes(1)), new SequenceRandom(0.1, 0.2));
+Check(msgBoth.Description.Contains("Salió bien") && msgBoth.Description.Contains("Tier 3") && !msgBoth.Description.Contains("tiers distintos"), "si suben los dos: «Salió bien» y nada de tiers distintos");
+
+await Dragon(A, "oro", 2); await Dragon(B, "defensa", 2);
+var invite2 = await DragonModule.PrepareBreedAsync(dragons, offers, A, B, false);
+Check(invite2.Embed!.Description.Contains("uno y el otro no") && invite2.Embed.Description.Contains("60"), "la invitación avisa que cada dragón tira su suerte (puede subir uno y el otro no)");
+await Dragon(D, "oro", 6, streak: 5);
+var viewD = (await DragonModule.BuildDragonViewAsync(dragons, D)).Embed.Fields.Single(f => f.Name == "Criar").Value;
+Check(viewD.Contains("Fallos seguidos: **5**") && viewD.Contains($"**{DragonRules.PityCap(6)}**") && viewD.Contains($"**{DragonRules.SoloPityCap(6)}**"), "la pantalla muestra los fallos seguidos del dragón y los dos topes: con un amigo y solo (el triple)");
+
 await Clean();
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;
 
 // Un Random que siempre devuelve el mismo valor: sortea lo que el arnés necesita (0 = siempre sale, 0,999 = nunca sale por suerte).
+// Un Random que devuelve los valores en orden (el último se repite): para que cada dragón de una pareja reciba SU propia suerte.
+sealed class SequenceRandom(params double[] values) : Random
+{
+    private int _next;
+    private double Take() => values[Math.Min(_next++, values.Length - 1)];
+    protected override double Sample() => Take();
+    public override double NextDouble() => Take();
+    public override int Next(int maxValue) => (int)(Take() * maxValue);
+}
+
 sealed class FixedRandom(double value) : Random
 {
     protected override double Sample() => value;

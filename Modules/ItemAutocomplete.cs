@@ -127,7 +127,15 @@ public sealed class BuyItemAutocompleteHandler : SafeAutocompleteHandler
         var player = await services.GetRequiredService<IUserRepository>().GetByDiscordIdAsync(userId);
         var buffs = await services.GetRequiredService<IBuffRepository>().GetItemBuffsAsync();
 
-        return ItemChoices.ForBuy(catalog, player?.Gold, typed, buffs, await services.GetRequiredService<IBoxContextService>().MaxUnlockedRankAsync(userId));
+        var choices = ItemChoices.ForBuy(catalog, player?.Gold, typed, buffs, await services.GetRequiredService<IBoxContextService>().MaxUnlockedRankAsync(userId)).ToList();
+
+        // El dragón (v0.30.0) también se compra con /shop buy: aparece en la lista mientras no tengas uno (y lo que se escriba lo nombre).
+        if (DragonModule.MatchesDragon(typed) && await services.GetRequiredService<IDragonRepository>().GetAsync(userId) is null)
+        {
+            choices.Insert(0, new AutocompleteResult($"🐲 Dragón de cría · {GameHistory.Number(DragonRules.ShopPrice)} oro (una vez, tipo al azar)", "dragon"));
+        }
+
+        return choices.Take(25).ToList();
     }
 }
 
