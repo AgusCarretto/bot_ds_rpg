@@ -264,7 +264,7 @@ public sealed class DragonRepository(IDbConnectionFactory connectionFactory) : I
                 return new DragonBreedResult(DragonBreedStatus.OnCooldown, Tier: row.Tier, A: ToDragon(row), BlockedId: discordId, Wait: TimeSpan.FromSeconds(row.WaitSeconds));
             }
 
-            // Solo: la mitad de la chance del tier; la piedad (el tope de fallos seguidos) es la de siempre.
+            // Solo: un tercio de la chance del tier; la piedad cuenta con el triple de fallos seguidos (SoloPityCap).
             bool success = DragonRules.RollBreed(row.Tier, row.FailStreak, rng, DragonRules.SoloChanceFactor);
 
             await connection.ExecuteAsync(new CommandDefinition(
@@ -328,14 +328,14 @@ public sealed class DragonRepository(IDbConnectionFactory connectionFactory) : I
                 return new DragonBreedResult(DragonBreedStatus.OnCooldown, Tier: a.Tier, A: ToDragon(a), B: ToDragon(b), BlockedId: (ulong)resting.DiscordId, Wait: TimeSpan.FromSeconds(resting.WaitSeconds));
             }
 
-            // La piedad es la del que más fallos seguidos lleva: un compañero con mala racha le da la suerte al otro.
-            bool success = DragonRules.RollBreed(a.Tier, Math.Max(a.FailStreak, b.FailStreak), rng);
+            // Cada dragón tira SU propia suerte con SU contador de fallos seguidos (v0.31.0, el dueño: «cada uno con su contador y su probabilidad, puede subir uno y el otro no»): primero el de quien invita, después el del otro.
+            bool successA = DragonRules.RollBreed(a.Tier, a.FailStreak, rng);
+            bool successB = DragonRules.RollBreed(b.Tier, b.FailStreak, rng);
 
-            await connection.ExecuteAsync(new CommandDefinition(
-                success
-                    ? "UPDATE player_dragons SET tier = tier + 1, fail_streak = 0, last_bred_at = now() WHERE discord_id = ANY(@Ids);"
-                    : "UPDATE player_dragons SET fail_streak = fail_streak + 1, last_bred_at = now() WHERE discord_id = ANY(@Ids);",
-                new { Ids = new[] { (long)firstId, (long)secondId } }, transaction: transaction, cancellationToken: cancellationToken));
+            const string up = "UPDATE player_dragons SET tier = tier + 1, fail_streak = 0, last_bred_at = now() WHERE discord_id = @DiscordId;";
+            const string stay = "UPDATE player_dragons SET fail_streak = fail_streak + 1, last_bred_at = now() WHERE discord_id = @DiscordId;";
+            await connection.ExecuteAsync(new CommandDefinition(successA ? up : stay, new { DiscordId = (long)firstId }, transaction: transaction, cancellationToken: cancellationToken));
+            await connection.ExecuteAsync(new CommandDefinition(successB ? up : stay, new { DiscordId = (long)secondId }, transaction: transaction, cancellationToken: cancellationToken));
 
             var after = (await connection.QueryAsync<DragonRow>(new CommandDefinition(
                 $"SELECT {SelectColumns} FROM player_dragons WHERE discord_id = ANY(@Ids);",
@@ -344,8 +344,8 @@ public sealed class DragonRepository(IDbConnectionFactory connectionFactory) : I
 
             await transaction.CommitAsync(cancellationToken);
             return new DragonBreedResult(
-                DragonBreedStatus.Bred, success, a.Tier,
-                ToDragon(after.First(r => r.DiscordId == (long)firstId)), ToDragon(after.First(r => r.DiscordId == (long)secondId)));
+                DragonBreedStatus.Bred, successA, a.Tier,
+                ToDragon(after.First(r => r.DiscordId == (long)firstId)), ToDragon(after.First(r => r.DiscordId == (long)secondId)), SuccessB: successB);
         }
         catch
         {

@@ -173,20 +173,24 @@ public static class DragonRules
     private static readonly double[] BreedChances = [1.0, 0.60, 0.30, 0.15, 0.05, 0.02, 0.01, 0.0033, 0.0011];
 
     // Cuántos intentos fallidos SEGUIDOS aguanta ese tier: con ese tope de fallos, el siguiente intento sale seguro (así el camino tiene fin aunque la chance sea de 0,11 %). Es una «piedad» como la de EPIC.
-    private static readonly int[] PityCaps = [0, 2, 4, 7, 12, 20, 30, 40, 50];
+    // EXPONENCIAL (v0.31.0, el dueño: «que sea exponencial, más difícil, sino es muy fácil»): el tier 1 → 2 es seguro (tope 0) y desde el 2 → 3 el tope arranca en PityStart y se multiplica por PityGrowth en cada tier:
+    // 2 / 4 / 8 / 16 / 32 / 64 / 128 / 256. (Era 0 / 2 / 4 / 7 / 12 / 20 / 30 / 40 / 50: desde el tier 6 el tope salía casi siempre antes que la suerte y la chance casi no se notaba.)
+    public const int PityStart = 2;
+    public const double PityGrowth = 2.0;
 
     public static double BreedChance(int tier) => tier is >= 1 and < MaxTier ? BreedChances[tier - 1] : 0;
 
-    public static int PityCap(int tier) => tier is >= 1 and < MaxTier ? PityCaps[tier - 1] : 0;
+    public static int PityCap(int tier) => tier is >= 2 and < MaxTier ? (int)Math.Round(PityStart * Math.Pow(PityGrowth, tier - 2)) : 0;
 
     // Criar SOLO, sin pareja (v0.31.0, el dueño: «que el dragón se pueda criar solo también y cuente como intento, pero sacale la mitad del % de subir de tier»; después el dueño la bajó a UN TERCIO: «me gusta que sea un tercio, así promovés el breed con más gente»): la chance es un TERCIO de la del tier. Cuenta como un intento
-    // de verdad: pone el descanso de 12 h y suma (o reinicia) los fallos seguidos, así que la piedad sigue funcionando igual (con el tope de fallos el siguiente intento sale seguro, también solo).
+    // de verdad: pone el descanso de 12 h y suma (o reinicia) los fallos seguidos, así que la piedad también cuenta, pero con el TRIPLE de fallos seguidos (SoloPityCap).
     public const double SoloChanceFactor = 1.0 / 3.0;
 
     public static double SoloBreedChance(int tier) => BreedChance(tier) * SoloChanceFactor;
 
-    // El tope de fallos seguidos criando SOLO: el de siempre pero de al menos 1. Con pareja el tier 1 es seguro (su tope es 0), pero solo tiene un tercio de la chance: puede fallar una vez y recién después sale seguro.
-    public static int SoloPityCap(int tier) => tier is >= 1 and < MaxTier ? Math.Max(1, PityCaps[tier - 1]) : 0;
+    // El tope de fallos seguidos criando SOLO: el TRIPLE del de pareja (la chance es un tercio, así que el «seguro» también se estira; si no, desde el tier 6 el tope salía casi siempre antes que la suerte y criar solo costaba apenas un 10 % más),
+    // de al menos 1: con pareja el tier 1 es seguro (su tope es 0), pero solo tiene un tercio de la chance: puede fallar una vez y recién después sale seguro.
+    public static int SoloPityCap(int tier) => tier is >= 1 and < MaxTier ? Math.Max(1, (int)Math.Round(PityCap(tier) / SoloChanceFactor)) : 0;
 
     // Un intento de criar: sale seguro si los fallos seguidos ya llegaron al tope; si no, se sortea con la chance del tier (por chanceFactor: 1 con pareja, SoloChanceFactor solo). En el tier máximo no hay nada que subir.
     public static bool RollBreed(int tier, int failStreak, Random? rng = null, double chanceFactor = 1.0)

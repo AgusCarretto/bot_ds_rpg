@@ -279,14 +279,15 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
         if (!maxTier)
         {
             int pityCap = DragonRules.PityCap(dragon.Tier);
+            int soloCap = DragonRules.SoloPityCap(dragon.Tier);
             string pity = pityCap == 0
-                ? "En este tier la cría con un amigo es **segura**."
-                : $"Fallos seguidos: **{dragon.FailStreak}/{pityCap}**. Con {pityCap} fallos seguidos, el siguiente intento sale **seguro**.";
+                ? $"En este tier la cría con un amigo es **segura** (solo, si falla una vez, la siguiente sale segura). Fallos seguidos: **{dragon.FailStreak}**."
+                : $"Fallos seguidos: **{dragon.FailStreak}**. Con un amigo, con **{pityCap}** fallos seguidos el siguiente intento sale **seguro**; solo, con **{soloCap}**.";
             embed.AddField(
                 "Criar",
                 $"Chance de subir de tier: **{DragonRules.Percent(Math.Round(DragonRules.BreedChance(dragon.Tier) * 100, 2))} %** por intento · en promedio, unos **{DragonRules.ExpectedAttempts(dragon.Tier):0.#}** intentos.\n{pity}\n" +
-                $"Se cría con un amigo que tenga tu mismo tier: **/dragon-breed @amigo** (cada intento los hace descansar {TimeFormat.Remaining(DragonRules.BreedCooldown)}; cuánto falta para el próximo lo ves en **/cd**).\n" +
-                $"También podés criarlo **solo**, sin amigo (**/dragon-breed** a secas): cuenta como intento, pero con **un tercio** de la chance ({DragonRules.Percent(Math.Round(DragonRules.SoloBreedChance(dragon.Tier) * 100, 2))} %).",
+                $"Se cría con un amigo que tenga tu mismo tier: **/dragon-breed @amigo**. Cada dragón tira su propia suerte, así que puede subir uno y el otro no. Cada intento los hace descansar {TimeFormat.Remaining(DragonRules.BreedCooldown)}; cuánto falta para el próximo lo ves en **/cd**.\n" +
+                $"También podés criarlo **solo**, sin amigo (**/dragon-breed** a secas): cuenta como intento, pero con **un tercio** de la chance ({DragonRules.Percent(Math.Round(DragonRules.SoloBreedChance(dragon.Tier) * 100, 2))} %) y en promedio unos **{DragonRules.ExpectedAttempts(dragon.Tier, DragonRules.SoloChanceFactor):0.#}** intentos.",
                 false);
         }
 
@@ -459,14 +460,22 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
 
         var offer = offerService.Create(fromId, toId);
         var perk = DragonRules.Perks[mine.Tier]; // la mejora que desbloquea el tier siguiente
+        int cap = DragonRules.PityCap(mine.Tier);
+        string certain = (mine.FailStreak >= cap, theirs.FailStreak >= cap) switch
+        {
+            (true, true) => " (¡los dos suben **seguro** esta vez!)",
+            (true, false) => $" (¡el de <@{fromId}> sube **seguro** esta vez!)",
+            (false, true) => $" (¡el de <@{toId}> sube **seguro** esta vez!)",
+            _ => string.Empty,
+        };
         var embed = new EmbedBuilder()
             .WithTitle("🐲 Invitación a criar")
             .WithColor(Color.DarkOrange)
             .WithDescription(
                 $"<@{fromId}> quiere criar su dragón con el de <@{toId}>: los dos son **Tier {mine.Tier} ({DragonRules.TierName(mine.Tier)})**.\n" +
-                $"Chance de que los dos suban al tier {mine.Tier + 1} (**{perk.Name}**: {perk.Text}): **{DragonRules.Percent(Math.Round(DragonRules.BreedChance(mine.Tier) * 100, 2))} %**" +
-                (Math.Max(mine.FailStreak, theirs.FailStreak) >= DragonRules.PityCap(mine.Tier) ? " (¡y esta vez sale **segura**!)" : string.Empty) +
-                $". Pase lo que pase, los dos descansan {TimeFormat.Remaining(DragonRules.BreedCooldown)}.\n\n<@{toId}>, ¿aceptás? Tenés 2 minutos.")
+                $"Cada dragón tira su propia suerte: la chance de subir al tier {mine.Tier + 1} (**{perk.Name}**: {perk.Text}) es de **{DragonRules.Percent(Math.Round(DragonRules.BreedChance(mine.Tier) * 100, 2))} %** para cada uno, así que puede subir uno y el otro no." +
+                certain +
+                $" Pase lo que pase, los dos descansan {TimeFormat.Remaining(DragonRules.BreedCooldown)}.\n\n<@{toId}>, ¿aceptás? Tenés 2 minutos.")
             .Build();
         var buttons = new ComponentBuilder()
             .WithButton("Aceptar", $"{AcceptPrefix}:{offer.Id}", ButtonStyle.Success, new Emoji("🥚"))
@@ -484,25 +493,44 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
 
         switch (result.Status)
         {
-            case DragonBreedStatus.Bred when result.Success:
-            {
-                int tier = result.Tier + 1;
-                var perk = DragonRules.Perks[tier - 1];
-                return embed.WithColor(Color.Gold).WithDescription(
-                    $"✨ **¡Salió bien!** Los dos dragones suben al **Tier {tier}: {DragonRules.TierName(tier)}** y desbloquean una mejora nueva: **{perk.Name}** — {perk.Text}\n" +
-                    $"<@{offer.FromId}>: {DragonRules.KindEmoji(result.A!.Kind)} {DragonRules.KindName(result.A.Kind)} · {TypeBonus(result.A.Kind, tier, result.A.Level)}\n" +
-                    $"<@{offer.ToId}>: {DragonRules.KindEmoji(result.B!.Kind)} {DragonRules.KindName(result.B.Kind)} · {TypeBonus(result.B.Kind, tier, result.B.Level)}\n" +
-                    (tier >= DragonRules.MaxTier ? "\n🏆 ¡Llegaron al tier máximo!" : $"\nAhora pueden entrenar hasta el nivel {DragonRules.LevelCap(tier)} y descansan {TimeFormat.Remaining(DragonRules.BreedCooldown)} antes de volver a criar.")).Build();
-            }
-
             case DragonBreedStatus.Bred:
             {
+                // Cada dragón tiró SU suerte: pueden subir los dos, uno solo o ninguno.
+                int tier = result.Tier + 1;
                 int cap = DragonRules.PityCap(result.Tier);
-                int streak = Math.Max(result.A!.FailStreak, result.B!.FailStreak);
-                return embed.WithDescription(
-                    $"💨 No se dio esta vez: los dragones se quedan en el **Tier {result.Tier}**.\n" +
-                    $"Fallos seguidos: **{streak}/{cap}**; con {cap} fallos seguidos, el siguiente intento sale **seguro**.\n" +
-                    $"Descansan {TimeFormat.Remaining(DragonRules.BreedCooldown)} antes de volver a intentar.").Build();
+                bool anyUp = result.Success || result.SuccessB;
+                string DragonLine(ulong id, PlayerDragon dragon, bool up) => up
+                    ? $"<@{id}>: ✨ sube al **Tier {tier}: {DragonRules.TierName(tier)}** · {DragonRules.KindEmoji(dragon.Kind)} {DragonRules.KindName(dragon.Kind)} · {TypeBonus(dragon.Kind, tier, dragon.Level)}"
+                    : $"<@{id}>: 💨 se queda en el **Tier {result.Tier}** · fallos seguidos **{dragon.FailStreak}/{cap}**";
+                var parts = new List<string>
+                {
+                    result.Success && result.SuccessB ? "✨ **¡Salió bien!** Los dos dragones suben de tier."
+                        : anyUp ? "✨ **¡Subió uno!** Cada dragón tira su propia suerte y esta vez la tuvo uno solo."
+                        : "💨 **No se dio esta vez.** Ninguno de los dos dragones subió.",
+                    string.Empty,
+                    DragonLine(offer.FromId, result.A!, result.Success),
+                    DragonLine(offer.ToId, result.B!, result.SuccessB),
+                    string.Empty,
+                };
+                if (anyUp)
+                {
+                    var perk = DragonRules.Perks[tier - 1];
+                    parts.Add($"Mejora nueva del tier {tier}: **{perk.Name}** — {perk.Text}");
+                    parts.Add(tier >= DragonRules.MaxTier ? "🏆 ¡Llegó al tier máximo!" : $"El que subió ahora puede entrenar hasta el nivel {DragonRules.LevelCap(tier)}.");
+                }
+
+                if (result.Success != result.SuccessB)
+                {
+                    parts.Add("Ahora tienen **tiers distintos**: para seguir criando, cada uno necesita un compañero de su mismo tier.");
+                }
+
+                if (!result.Success || !result.SuccessB)
+                {
+                    parts.Add($"Con {cap} fallos seguidos, el siguiente intento de ese dragón sale **seguro**.");
+                }
+
+                parts.Add($"Los dos descansan {TimeFormat.Remaining(DragonRules.BreedCooldown)} antes de volver a criar.");
+                return embed.WithColor(anyUp ? Color.Gold : Color.Orange).WithDescription(string.Join("\n", parts)).Build();
             }
 
             case DragonBreedStatus.TierMismatch:
