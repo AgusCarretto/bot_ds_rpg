@@ -34,6 +34,7 @@ public static class ItemChoices
                 string what = item.Type == "Caja"
                     ? ShopModule.BoxLine(item, unlockedZoneRank).Replace(" · " + GameHistory.Number(item.BuyPrice) + " oro", string.Empty)
                     : item.Type == ShopCatalog.PetFoodType ? "para tus mascotas"
+                    : item.Type == ShopCatalog.DragonFoodType ? "para tu dragón"
                     : buffs is not null && buffs.TryGetValue(item.ItemId, out var buff) ? $"cura {item.StatValue} HP y +{buff.AttackPercent}% ATQ" : $"cura {item.StatValue} HP";
                 return new AutocompleteResult(
                     Truncate($"{item.Name} — {what} · {GameHistory.Number(item.BuyPrice)} oro{missingGold}"), item.Name);

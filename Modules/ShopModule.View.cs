@@ -67,16 +67,19 @@ public partial class ShopModule
             $"{talk ?? NpcDialogue.Shopkeeper(ShopkeeperLine.Greeting)}{goldLine}\n\n" +
             Loc.T("Las cajas se compran **de a una y una vez cada 2 horas**; abrilas con `/open`."));
 
-        AddColumn(embed, Loc.T("Comida"), items.Where(i => i.Type is not ("Caja" or ShopCatalog.PetFoodType)), i => Loc.F($"Cura {i.StatValue} HP{BuffText(i, buffs)} · {i.BuyPrice} oro"));
+        AddColumn(embed, Loc.T("Comida"), items.Where(i => i.Type is not ("Caja" or ShopCatalog.PetFoodType or ShopCatalog.DragonFoodType)), i => Loc.F($"Cura {i.StatValue} HP{BuffText(i, buffs)} · {i.BuyPrice} oro"));
         AddColumn(embed, Loc.T("Cajas"), items.Where(i => i.Type == "Caja"), i => BoxLine(i, unlockedZoneRank));
         // La comida de las mascotas va en su propia columna (es la tercera del renglón, que quedaba vacía): no cura, se le da a una mascota con /pet feed.
-        AddColumn(embed, Loc.T("Mascotas"), items.Where(i => i.Type == ShopCatalog.PetFoodType), PetFoodLine);
+        AddColumn(embed, Loc.T("Mascotas"), items.Where(i => i.Type is ShopCatalog.PetFoodType or ShopCatalog.DragonFoodType), i => i.Type == ShopCatalog.DragonFoodType ? DragonFoodLine(i) : PetFoodLine(i));
 
         return embed.Build();
     }
 
     // "Para tus mascotas · 100 oro": la comida de las mascotas no cura, así que no lleva el "Cura N HP" de la comida común.
     public static string PetFoodLine(Item food) => Loc.F($"Para tus mascotas · {GameHistory.Number(food.BuyPrice)} oro");
+
+    // "Para tu dragón · 5.000 oro": la Comida de Dragón (v0.32.0) tampoco cura; se gasta sola cuando el dragón sube de tier.
+    public static string DragonFoodLine(Item food) => Loc.F($"Para tu dragón · {GameHistory.Number(food.BuyPrice)} oro");
 
     // "entre 1 y 10 ítems · 1.000 oro", y si es de una zona que todavía no desbloqueaste, "🔒 Zona 2" adelante.
     public static string BoxLine(Item box, int? unlockedZoneRank)

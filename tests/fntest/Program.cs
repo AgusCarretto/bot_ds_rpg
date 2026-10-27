@@ -64,7 +64,7 @@ double t10 = CombatRewardCalculator.TravelDropChancePercent * FuegoNuevoRules.Tr
 Check(CombatRewardCalculator.TravelDropChancePercent == 40 && Near(t10, 40 * (1 + FuegoNuevoRules.TravelStepsTotal(10)), 1e-9) && t10 > 70 && t10 < 72, $"/travel: 40 % de base y {t10:0.#} % en el FN 10 (el spec decía ~71 %)");
 Check(FuegoNuevoRules.PercentText(1.3) == "+30 %" && FuegoNuevoRules.PercentText(1.195) == "+19,5 %" && FuegoNuevoRules.PercentText(1.0) == "+0 %", "PercentText: coma decimal y sin ceros de más");
 Check(FuegoNuevoRules.CanChangeClass(1, 0) && !FuegoNuevoRules.CanChangeClass(1, 5) && !FuegoNuevoRules.CanChangeClass(2, 0), "/class solo con nivel 1 y 0 de EXP");
-Check(FuegoNuevoRules.KeptItemTypes.SequenceEqual(["Huevo", "PetFood"]), "al reiniciar sobreviven los huevos y la comida de mascotas");
+Check(FuegoNuevoRules.KeptItemTypes.SequenceEqual(["Huevo", "PetFood", "DragonFood"]), "al reiniciar sobreviven los huevos, la comida de mascotas y la del dragón (v0.32.0)");
 
 Console.WriteLine("\n== 2. Bendiciones: catálogo y sorteo ==");
 var all = BlessingCatalog.All;

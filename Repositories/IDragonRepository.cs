@@ -14,7 +14,10 @@ public enum DragonBreedStatus { Bred, NoDragon, TierMismatch, MaxTier, OnCooldow
 
 // Success: si subió de tier el dragón A (el de quien invita; el único si se crió solo). SuccessB: si subió el B (solo en pareja): cada dragón tira su propia suerte, puede subir uno y el otro no. Tier: el tier de los dos ANTES del intento.
 // BlockedId: de quién es el dragón que impidió criar (sin dragón, en cooldown). A y B son los dragones DESPUÉS del intento.
-public sealed record DragonBreedResult(DragonBreedStatus Status, bool Success = false, int Tier = 0, PlayerDragon? A = null, PlayerDragon? B = null, ulong? BlockedId = null, TimeSpan Wait = default, bool SuccessB = false);
+// Lo que pasó con el TIPO de un dragón que subió de tier (v0.32.0): From es el tipo que tenía; FoodKept = su dueño tenía Comida de Dragón y se gastó una, así que el tipo NO cambió. Si no, el tipo nuevo (que puede ser el mismo) está en el dragón de A o B.
+public sealed record DragonTypeChange(string From, bool FoodKept);
+
+public sealed record DragonBreedResult(DragonBreedStatus Status, bool Success = false, int Tier = 0, PlayerDragon? A = null, PlayerDragon? B = null, ulong? BlockedId = null, TimeSpan Wait = default, bool SuccessB = false, DragonTypeChange? TypeA = null, DragonTypeChange? TypeB = null);
 
 public enum DragonTrainStatus { Trained, NoDragon, AtCap, NotEnoughGold }
 
@@ -47,4 +50,7 @@ public interface IDragonRepository
 
     // Le pone nombre al dragón (o se lo cambia) por `price` de oro, en UNA transacción: sin dragón o con el mismo nombre que ya tiene no se toca nada ni se cobra; sin oro tampoco. El nombre ya viene limpio (DragonRules.CleanName).
     Task<DragonRenameResult> RenameAsync(ulong discordId, string name, int price, CancellationToken cancellationToken = default);
+
+    // Cuántas Comidas de Dragón tiene en la mochila (0 si no tiene o si el ítem todavía no está en la base).
+    Task<int> CountFoodAsync(ulong discordId, CancellationToken cancellationToken = default);
 }

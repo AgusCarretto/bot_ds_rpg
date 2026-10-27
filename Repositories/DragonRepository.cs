@@ -234,6 +234,45 @@ public sealed class DragonRepository(IDbConnectionFactory connectionFactory) : I
         }
     }
 
+    public async Task<int> CountFoodAsync(ulong discordId, CancellationToken cancellationToken = default)
+    {
+        using DbConnection connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        return await connection.ExecuteScalarAsync<int>(new CommandDefinition(
+            "SELECT COALESCE(SUM(inv.quantity), 0)::int FROM inventory inv JOIN items i ON i.item_id = inv.item_id WHERE inv.discord_id = @DiscordId AND i.name = @Food AND i.type = @FoodType;",
+            new { DiscordId = (long)discordId, Food = DragonRules.FoodItemName, FoodType = ShopCatalog.DragonFoodType }, cancellationToken: cancellationToken));
+    }
+
+    // El tipo de un dragón después de un intento (v0.32.0): si subió de tier (o RerollTypeOnFailure) se sortea otro tipo, salvo que su dueño tenga Comida de Dragón: entonces se gasta UNA y el tipo se queda. Null si el tipo no estaba en juego.
+    // La comida se descuenta con un UPDATE guardado (quantity >= 1) en la MISMA transacción que la cría: de varios intentos a la vez no se gasta de más ni queda en negativo, y sin el ítem en la base simplemente no hay comida.
+    private static async Task<DragonTypeChange?> ChangeTypeAsync(DbConnection connection, DbTransaction transaction, long discordId, string currentKind, bool leveledUp, Random? rng, CancellationToken cancellationToken)
+    {
+        if (!leveledUp && !DragonRules.RerollTypeOnFailure)
+        {
+            return null;
+        }
+
+        int? left = await connection.QuerySingleOrDefaultAsync<int?>(new CommandDefinition(
+            "UPDATE inventory SET quantity = quantity - 1 WHERE discord_id = @DiscordId AND quantity >= 1 AND item_id = (SELECT item_id FROM items WHERE name = @Food AND type = @FoodType) RETURNING quantity;",
+            new { DiscordId = discordId, Food = DragonRules.FoodItemName, FoodType = ShopCatalog.DragonFoodType }, transaction: transaction, cancellationToken: cancellationToken));
+        if (left is not null)
+        {
+            if (left <= 0)
+            {
+                await connection.ExecuteAsync(new CommandDefinition(
+                    "DELETE FROM inventory WHERE discord_id = @DiscordId AND quantity <= 0 AND item_id = (SELECT item_id FROM items WHERE name = @Food AND type = @FoodType);",
+                    new { DiscordId = discordId, Food = DragonRules.FoodItemName, FoodType = ShopCatalog.DragonFoodType }, transaction: transaction, cancellationToken: cancellationToken));
+            }
+
+            return new DragonTypeChange(currentKind, FoodKept: true);
+        }
+
+        await connection.ExecuteAsync(new CommandDefinition(
+            "UPDATE player_dragons SET kind = @Kind WHERE discord_id = @DiscordId;",
+            new { Kind = DragonRules.RollKind(rng), DiscordId = discordId }, transaction: transaction, cancellationToken: cancellationToken));
+        return new DragonTypeChange(currentKind, FoodKept: false);
+    }
+
     public async Task<DragonBreedResult> BreedSoloAsync(ulong discordId, Random? rng = null, CancellationToken cancellationToken = default)
     {
         using DbConnection connection = connectionFactory.CreateConnection();
@@ -273,12 +312,14 @@ public sealed class DragonRepository(IDbConnectionFactory connectionFactory) : I
                     : "UPDATE player_dragons SET fail_streak = fail_streak + 1, last_bred_at = now() WHERE discord_id = @DiscordId;",
                 new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
 
+            var typeChange = await ChangeTypeAsync(connection, transaction, (long)discordId, row.Kind, success, rng, cancellationToken);
+
             var after = await connection.QuerySingleAsync<DragonRow>(new CommandDefinition(
                 $"SELECT {SelectColumns} FROM player_dragons WHERE discord_id = @DiscordId;",
                 new { DiscordId = (long)discordId, Cooldown = DragonRules.BreedCooldown.TotalSeconds }, transaction: transaction, cancellationToken: cancellationToken));
 
             await transaction.CommitAsync(cancellationToken);
-            return new DragonBreedResult(DragonBreedStatus.Bred, success, row.Tier, ToDragon(after));
+            return new DragonBreedResult(DragonBreedStatus.Bred, success, row.Tier, ToDragon(after), TypeA: typeChange);
         }
         catch
         {
@@ -337,6 +378,10 @@ public sealed class DragonRepository(IDbConnectionFactory connectionFactory) : I
             await connection.ExecuteAsync(new CommandDefinition(successA ? up : stay, new { DiscordId = (long)firstId }, transaction: transaction, cancellationToken: cancellationToken));
             await connection.ExecuteAsync(new CommandDefinition(successB ? up : stay, new { DiscordId = (long)secondId }, transaction: transaction, cancellationToken: cancellationToken));
 
+            // Después de la tirada de los dos (el orden del azar no cambia): el que subió se sortea un tipo nuevo, salvo que gaste su Comida de Dragón.
+            var typeA = await ChangeTypeAsync(connection, transaction, (long)firstId, a.Kind, successA, rng, cancellationToken);
+            var typeB = await ChangeTypeAsync(connection, transaction, (long)secondId, b.Kind, successB, rng, cancellationToken);
+
             var after = (await connection.QueryAsync<DragonRow>(new CommandDefinition(
                 $"SELECT {SelectColumns} FROM player_dragons WHERE discord_id = ANY(@Ids);",
                 new { Ids = new[] { (long)firstId, (long)secondId }, Cooldown = DragonRules.BreedCooldown.TotalSeconds },
@@ -345,7 +390,7 @@ public sealed class DragonRepository(IDbConnectionFactory connectionFactory) : I
             await transaction.CommitAsync(cancellationToken);
             return new DragonBreedResult(
                 DragonBreedStatus.Bred, successA, a.Tier,
-                ToDragon(after.First(r => r.DiscordId == (long)firstId)), ToDragon(after.First(r => r.DiscordId == (long)secondId)), SuccessB: successB);
+                ToDragon(after.First(r => r.DiscordId == (long)firstId)), ToDragon(after.First(r => r.DiscordId == (long)secondId)), SuccessB: successB, TypeA: typeA, TypeB: typeB);
         }
         catch
         {

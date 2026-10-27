@@ -49,7 +49,7 @@ public sealed class FuegoNuevoRepository(IDbConnectionFactory connectionFactory)
             {
                 eggs += row.Units;
             }
-            else if (row.Type == FuegoNuevoRules.KeptItemTypes[1])
+            else if (row.Type == FuegoNuevoRules.KeptItemTypes[1] || row.Type == FuegoNuevoRules.KeptItemTypes[2]) // la comida de las mascotas y la del dragón cuentan juntas
             {
                 petFood += row.Units;
             }
@@ -104,10 +104,10 @@ public sealed class FuegoNuevoRepository(IDbConnectionFactory connectionFactory)
                 return new RenewOutcome(RenewStatus.StaleCount, player.FuegoNuevo, player.Class, player.Level, null, 0, 0);
             }
 
-            // La mochila: se va todo menos los huevos y la comida de las mascotas (FuegoNuevoRules.KeptItemTypes). Sin reembolso: lo dijo el dueño («nada de polvo ni nada»).
+            // La mochila: se va todo menos los huevos y la comida de las mascotas y del dragón (FuegoNuevoRules.KeptItemTypes). Sin reembolso: lo dijo el dueño («nada de polvo ni nada»).
             await connection.ExecuteAsync(new CommandDefinition(
-                "DELETE FROM inventory WHERE discord_id = @DiscordId AND item_id IN (SELECT item_id FROM items WHERE type <> @KeptEgg AND type <> @KeptFood);",
-                new { DiscordId = (long)discordId, KeptEgg = FuegoNuevoRules.KeptItemTypes[0], KeptFood = FuegoNuevoRules.KeptItemTypes[1] },
+                "DELETE FROM inventory WHERE discord_id = @DiscordId AND item_id IN (SELECT item_id FROM items WHERE type <> @KeptEgg AND type <> @KeptFood AND type <> @KeptDragonFood);",
+                new { DiscordId = (long)discordId, KeptEgg = FuegoNuevoRules.KeptItemTypes[0], KeptFood = FuegoNuevoRules.KeptItemTypes[1], KeptDragonFood = FuegoNuevoRules.KeptItemTypes[2] },
                 transaction: transaction, cancellationToken: cancellationToken));
 
             // Las herramientas (v0.29.0) son equipo como el arma y el amuleto: se vuelven a armar en cada vuelta (el hacha y el pico vuelven a ×1).
