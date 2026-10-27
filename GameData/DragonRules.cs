@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace BotDsRpg.GameData;
 
@@ -150,6 +151,21 @@ public static class DragonRules
         }
 
         return total;
+    }
+
+    // ---- El nombre (se paga cada vez que se cambia) ----
+    public const int RenamePrice = 5000;
+    public const int NameMinLength = 2;
+    public const int NameMaxLength = 24;
+
+    // Letras, números, espacios y . - ' ! (sin menciones, símbolos de formato de Discord ni códigos de emoji: el nombre se muestra en mensajes públicos y en el perfil).
+    private static readonly Regex NameRule = new(@"^[\p{L}\p{N}][\p{L}\p{N} '.\-!]*$", RegexOptions.Compiled);
+
+    // El nombre limpio (sin espacios de más) o null si no sirve.
+    public static string? CleanName(string? raw)
+    {
+        string name = Regex.Replace((raw ?? string.Empty).Trim(), @"\s+", " ");
+        return name.Length >= NameMinLength && name.Length <= NameMaxLength && NameRule.IsMatch(name) ? name : null;
     }
 
     // ---- Criar ----

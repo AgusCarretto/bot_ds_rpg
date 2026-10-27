@@ -86,6 +86,22 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
         }
     }
 
+    [SlashCommand("dragon-name", "Ponele nombre a tu dragón (o cambiáselo): cuesta oro cada vez.")]
+    public async Task HandleNameAsync([Summary("nombre", "El nombre nuevo (2 a 24 letras, números o espacios)")] string nombre)
+    {
+        await DeferAsync();
+
+        try
+        {
+            await FollowupAsync(await ExecuteRenameAsync(dragonRepository, Context.User.Id, nombre));
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            await FollowupAsync("¡Upa! No pude cambiarle el nombre a tu dragón, intentá de nuevo en un momento.", ephemeral: true);
+        }
+    }
+
     [SlashCommand("dragon-breed", "Criá tu dragón con el de un amigo que tenga tu mismo tier: si sale bien, suben los dos.")]
     public async Task HandleBreedAsync([Summary("amigo", "Con quién lo querés criar")] IUser amigo)
     {
@@ -194,41 +210,60 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
     public static async Task<DragonView> BuildDragonViewAsync(IDragonRepository dragonRepository, ulong discordId)
     {
         var dragon = await dragonRepository.GetAsync(discordId);
-        var embed = new EmbedBuilder().WithTitle("🐲 Tu dragón").WithColor(Color.DarkOrange);
+        var embed = new EmbedBuilder().WithColor(Color.DarkOrange);
 
         if (dragon is null)
         {
+            // El dragón general (ui_dragon) de miniatura si está subido; si no, el 🐲 de siempre en el título.
+            string? generic = ItemDisplay.ImageUrl(UiEmojis.Dragon, 256);
+            embed.WithTitle(generic is null ? "🐲 Tu dragón" : "Tu dragón");
+            if (generic is not null)
+            {
+                embed.WithThumbnailUrl(generic);
+            }
+
             return new DragonView(embed.WithDescription(
                 $"Todavía no tenés dragón. En la **/taberna** podés comprar uno por **{GameHistory.Number(DragonRules.ShopPrice)}** de oro (una sola vez): el tipo sale al azar —🗡️ Fuerza, 🛡️ Defensa, 💰 Oro o, con suerte, ✨ Especial— y empieza de **Cría**. " +
                 "Después lo **entrenás** con oro (**/dragon-train**) y lo **criás** con el de un amigo que tenga **tu mismo tier** (**/dragon-breed**): cada tier le desbloquea una mejora nueva.").Build(), null);
         }
 
         string kind = dragon.Kind;
+
+        // El dragón de SU tipo, grande, de miniatura (los títulos no garantizan dibujar emojis propios); sin el emoji subido, el 🐲 de siempre en el título.
+        string? thumb = ItemDisplay.ImageUrl(DragonRules.KindEmoji(kind), 256);
+        embed.WithTitle(thumb is null ? "🐲 Tu dragón" : "Tu dragón");
+        if (thumb is not null)
+        {
+            embed.WithThumbnailUrl(thumb);
+        }
+
+        string shownName = dragon.Name is { } named ? $"**{named}** ({DragonRules.TierName(dragon.Tier)})" : $"**{DragonRules.TierName(dragon.Tier)}**";
         int cap = DragonRules.LevelCap(dragon.Tier);
         bool maxTier = dragon.Tier >= DragonRules.MaxTier;
         string detail = maxTier
             ? $"base {DragonRules.Percent(DragonRules.BonusPercent(kind, dragon.Tier))} + entrenamiento {DragonRules.Percent(DragonRules.LevelBonusPercent(kind, dragon.Level))}, por la Llama eterna ×{DragonRules.Percent(DragonRules.EternalMultiplier)}"
             : $"del tier {DragonRules.Percent(DragonRules.BonusPercent(kind, dragon.Tier))} + del entrenamiento {DragonRules.Percent(DragonRules.LevelBonusPercent(kind, dragon.Level))}";
         embed.WithDescription(
-            $"{DragonRules.KindEmoji(kind)} **{DragonRules.TierName(dragon.Tier)}** · Tier **{dragon.Tier}/{DragonRules.MaxTier}** · Nivel **{dragon.Level}/{cap}** · tipo **{DragonRules.KindName(kind)}**\n" +
+            $"{DragonRules.KindEmoji(kind)} {shownName} · Tier **{dragon.Tier}/{DragonRules.MaxTier}** · Nivel **{dragon.Level}/{cap}** · tipo **{DragonRules.KindName(kind)}**\n" +
             $"Te da {TypeBonus(kind, dragon.Tier, dragon.Level)} ({detail}).\n" +
             (maxTier ? "🏆 Está en el tier máximo.\n" : string.Empty) +
+            (dragon.Name is null ? $"_Ponele nombre con **/dragon-name** ({GameHistory.Number(DragonRules.RenamePrice)} de oro)._\n" : string.Empty) +
             "_Solo cuenta contra los monstruos (no en duelos ni en la Arena) y dura toda la vida de tu cuenta: el Fuego Nuevo no lo toca._");
 
         // Una mejora nueva por tier: ✅ las que ya desbloqueó, 🔒 las que le faltan.
         var perkLines = DragonRules.Perks.Select(p => $"{(p.Tier <= dragon.Tier ? "✅" : "🔒")} **{DragonRules.TierNumeral(p.Tier)}** {p.Name}: {p.Text}");
         string perks = string.Join('\n', perkLines);
-        embed.AddField("🎁 Una mejora nueva en cada tier", perks.Length <= 1024 ? perks : perks[..1023] + "…", false);
+        embed.AddField("Una mejora nueva en cada tier", perks.Length <= 1024 ? perks : perks[..1023] + "…", false);
 
         if (dragon.Level >= cap)
         {
-            embed.AddField("🏋️ Entrenar", $"Llegó al nivel máximo de su tier (**{cap}**)." + (maxTier ? " ¡Es lo más alto que se puede!" : " Para seguir entrenándolo, subilo de tier criándolo (**/dragon-breed**): cada tier suma 10 niveles más."), false);
+            embed.AddField("Entrenar", $"Llegó al nivel máximo de su tier (**{cap}**)." + (maxTier ? " ¡Es lo más alto que se puede!" : " Para seguir entrenándolo, subilo de tier criándolo (**/dragon-breed**): cada tier suma 10 niveles más."), false);
         }
         else
         {
             long toCap = DragonRules.TrainCostBetween(dragon.Level, cap);
             embed.AddField(
-                "🏋️ Entrenar",
+                "Entrenar",
                 $"Próximo nivel: **{GameHistory.Number(DragonRules.TrainCost(dragon.Level))}** de oro (cada nivel sale más caro). Hasta el tope de este tier ({cap}): **{GameHistory.Number(toCap)}** de oro. " +
                 $"Cada nivel suma **+{DragonRules.Percent(DragonRules.MaxPercent(kind) * DragonRules.LevelShare)} %** {DragonRules.KindEffect(kind)}. Con el botón de abajo o con **/dragon-train**.",
                 false);
@@ -237,14 +272,13 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
         if (!maxTier)
         {
             int pityCap = DragonRules.PityCap(dragon.Tier);
-            string wait = dragon.CanBreed ? "✅ Puede criar **ya**" : $"⏳ Descansa: puede criar en **{TimeFormat.Remaining(dragon.Wait)}**";
             string pity = pityCap == 0
                 ? "En este tier la cría es **segura**."
                 : $"Fallos seguidos: **{dragon.FailStreak}/{pityCap}**. Con {pityCap} fallos seguidos, el siguiente intento sale **seguro**.";
             embed.AddField(
-                "🥚 Criar",
-                $"{wait}\nChance de subir de tier: **{DragonRules.Percent(Math.Round(DragonRules.BreedChance(dragon.Tier) * 100, 2))} %** por intento · en promedio, unos **{DragonRules.ExpectedAttempts(dragon.Tier):0.#}** intentos.\n{pity}\n" +
-                $"Se cría con un amigo que tenga tu mismo tier: **/dragon-breed @amigo** (cada intento los hace descansar {TimeFormat.Remaining(DragonRules.BreedCooldown)}).",
+                "Criar",
+                $"Chance de subir de tier: **{DragonRules.Percent(Math.Round(DragonRules.BreedChance(dragon.Tier) * 100, 2))} %** por intento · en promedio, unos **{DragonRules.ExpectedAttempts(dragon.Tier):0.#}** intentos.\n{pity}\n" +
+                $"Se cría con un amigo que tenga tu mismo tier: **/dragon-breed @amigo** (cada intento los hace descansar {TimeFormat.Remaining(DragonRules.BreedCooldown)}; cuánto falta para el próximo lo ves en **/cd**).",
                 false);
         }
 
@@ -283,6 +317,25 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
             default:
                 return "No tenés dragón: comprá uno en la **/taberna**.";
         }
+    }
+
+    // Ponerle nombre al dragón (o cambiárselo): cuesta DragonRules.RenamePrice cada vez. Devuelve lo que se le cuenta al jugador.
+    public static async Task<string> ExecuteRenameAsync(IDragonRepository dragonRepository, ulong discordId, string? rawName)
+    {
+        string? name = DragonRules.CleanName(rawName);
+        if (name is null)
+        {
+            return $"Ese nombre no sirve: tiene que tener entre {DragonRules.NameMinLength} y {DragonRules.NameMaxLength} caracteres, con letras, números, espacios y . - ' ! (sin menciones ni símbolos).";
+        }
+
+        var result = await dragonRepository.RenameAsync(discordId, name, DragonRules.RenamePrice);
+        return result.Status switch
+        {
+            DragonRenameStatus.Renamed => $"✏️ Listo: tu dragón ahora se llama **{name}**. Pagaste **{GameHistory.Number(DragonRules.RenamePrice)}** de oro (te quedan {GameHistory.Number(result.GoldLeft)}); cambiárselo de nuevo cuesta lo mismo.",
+            DragonRenameStatus.SameName => "Tu dragón ya se llama así: no te cobro nada.",
+            DragonRenameStatus.NotEnoughGold => $"Te falta oro: ponerle nombre a tu dragón cuesta **{GameHistory.Number(DragonRules.RenamePrice)}** y tenés **{GameHistory.Number(result.GoldLeft)}**.",
+            _ => "No tenés dragón: comprá uno en la **/taberna**.",
+        };
     }
 
     // Comprar el dragón (lo que hace la opción de la taberna). Devuelve lo que contesta el tabernero.

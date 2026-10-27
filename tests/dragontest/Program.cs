@@ -296,6 +296,64 @@ Check(beforeGold == "💰" && beforeDragon == "🐲" && DragonRules.KindEmoji("o
     "sin emojis subidos valen los de siempre; con «dragon_oro» y «ui_dragon» subidos esos se usan solos y los demás tipos siguen con el suyo de siempre");
 UiEmojis.Set([]);
 
+Console.WriteLine("\n== 14. El nombre, el perfil, /cd y la pantalla del dragón ==");
+Check(DragonRules.CleanName("  Chispa  ") == "Chispa" && DragonRules.CleanName("Fuego   Eterno") == "Fuego Eterno" && DragonRules.CleanName("Ñandú 2") == "Ñandú 2" && DragonRules.CleanName("a") is null && DragonRules.CleanName(new string('a', 25)) is null && DragonRules.CleanName(new string('a', 24)) is not null
+    && DragonRules.CleanName("@everyone") is null && DragonRules.CleanName("<:x:123>") is null && DragonRules.CleanName("**hola**") is null && DragonRules.CleanName("`x`") is null && DragonRules.CleanName("   ") is null && DragonRules.CleanName(null) is null,
+    "el nombre: 2 a 24 caracteres (sin espacios de más), con letras, números, espacios y . - ' !; nada de menciones, emojis, negritas ni símbolos");
+await Clean(); await Player(A, 20000); await Player(B, 100); await Player(C, DragonRules.RenamePrice * 3); await Player(D, 50000);
+await Dragon(A, "fuerza", 2); await Dragon(B, "oro", 1); await Dragon(C, "defensa", 3);
+var rn1 = await dragons.RenameAsync(A, "Chispa", DragonRules.RenamePrice);
+Check(rn1.Status == DragonRenameStatus.Renamed && rn1.Dragon!.Name == "Chispa" && rn1.GoldLeft == 20000 - DragonRules.RenamePrice && await Gold(A) == 20000 - DragonRules.RenamePrice && (await dragons.GetAsync(A))!.Name == "Chispa", "ponerle nombre cobra el precio exacto (5.000) y lo guarda");
+var rnSame = await dragons.RenameAsync(A, "Chispa", DragonRules.RenamePrice);
+Check(rnSame.Status == DragonRenameStatus.SameName && await Gold(A) == 20000 - DragonRules.RenamePrice, "ponerle el mismo nombre no cobra nada");
+var rn2 = await dragons.RenameAsync(A, "Brasa", DragonRules.RenamePrice);
+Check(rn2.Status == DragonRenameStatus.Renamed && (await dragons.GetAsync(A))!.Name == "Brasa" && await Gold(A) == 20000 - 2 * DragonRules.RenamePrice, "cambiárselo de nuevo cuesta lo mismo");
+Check((await dragons.RenameAsync(GHOST, "Chispa", DragonRules.RenamePrice)).Status == DragonRenameStatus.NoDragon && (await dragons.RenameAsync(D, "Chispa", DragonRules.RenamePrice)).Status == DragonRenameStatus.NoDragon && await Gold(D) == 50000, "sin cuenta o sin dragón no se cobra");
+var rnPoor = await dragons.RenameAsync(B, "Chispa", DragonRules.RenamePrice);
+Check(rnPoor.Status == DragonRenameStatus.NotEnoughGold && rnPoor.GoldLeft == 100 && await Gold(B) == 100 && (await dragons.GetAsync(B))!.Name is null, "sin oro: no cobra ni cambia el nombre");
+var rnRace = await Task.WhenAll(Enumerable.Range(0, 10).Select(i => dragons.RenameAsync(C, $"Nombre{i}", DragonRules.RenamePrice)));
+Check(rnRace.Count(r => r.Status == DragonRenameStatus.Renamed) == 3 && rnRace.Count(r => r.Status == DragonRenameStatus.NotEnoughGold) == 7 && await Gold(C) == 0, "10 renombres a la vez con oro para tres: se cobran exactamente tres y el oro no queda en negativo");
+Check((await DragonModule.ExecuteRenameAsync(dragons, A, "@everyone")).Contains("no sirve") && (await DragonModule.ExecuteRenameAsync(dragons, A, "Brasa")).Contains("no te cobro") && (await DragonModule.ExecuteRenameAsync(dragons, A, "Ceniza")).Contains("Ceniza") && (await DragonModule.ExecuteRenameAsync(dragons, B, "Chispa")).Contains("Te falta oro") && (await DragonModule.ExecuteRenameAsync(dragons, D, "Chispa")).Contains("/taberna"),
+    "los mensajes de /dragon-name: nombre inválido, mismo nombre, éxito, sin oro y sin dragón");
+
+var viewNamed = await DragonModule.BuildDragonViewAsync(dragons, A);
+var viewUnnamed = await DragonModule.BuildDragonViewAsync(dragons, B);
+Check(viewNamed.Embed.Description.Contains("**Ceniza** (Dragoncito)") && !viewNamed.Embed.Description.Contains("/dragon-name") && viewUnnamed.Embed.Description.Contains("**/dragon-name**"), "la pantalla muestra el nombre del dragón (con su tier) y, si no tiene, avisa cómo ponérselo");
+string allFieldNames = string.Join(" ", viewNamed.Embed.Fields.Select(f => f.Name));
+Check(!allFieldNames.Contains("🎁") && !allFieldNames.Contains("🏋") && !allFieldNames.Contains("🥚") && viewNamed.Embed.Fields.Any(f => f.Name == "Criar") && viewNamed.Embed.Fields.Any(f => f.Name == "Entrenar") && viewNamed.Embed.Fields.Any(f => f.Name == "Una mejora nueva en cada tier"), "los títulos de los campos ya no llevan 🎁, 🏋️ ni 🥚");
+Check(!viewNamed.Embed.Description.Contains("Descansa") && !string.Join(" ", viewNamed.Embed.Fields.Select(f => f.Value)).Contains("Descansa") && !string.Join(" ", viewNamed.Embed.Fields.Select(f => f.Value)).Contains("⏳"), "el descanso de la cría ya no está en /dragon: vive en /cd");
+Check(viewNamed.Embed.Title == "🐲 Tu dragón" && viewNamed.Embed.Thumbnail is null, "sin el emoji de su tipo subido: el 🐲 de siempre en el título y sin miniatura");
+UiEmojis.Set([("dragon_fuerza", "<:dragon_fuerza:123456789012345670>")]);
+var viewIcon = await DragonModule.BuildDragonViewAsync(dragons, A);
+Check(viewIcon.Embed.Title == "Tu dragón" && viewIcon.Embed.Thumbnail?.Url is { } thumbUrl && thumbUrl.Contains("123456789012345670") && viewIcon.Embed.Description.Contains("<:dragon_fuerza:123456789012345670>"), "con el emoji de su tipo subido: el título sin el 🐲 verde y SU dragón grande de miniatura (y en la descripción)");
+
+var zonesRepo = sp.GetRequiredService<IZoneRepository>();
+await db.ExecuteAsync("UPDATE users SET dust = 50 WHERE discord_id = @id", new { id = (long)A });
+Task<Embed> Profile(ulong id, bool withDragons = true) => GameModule.BuildProfileEmbedAsync(users, items, zonesRepo, buffs, id, "T", "https://example.com/a.png", null, null, withDragons ? dragons : null);
+var profA = await Profile(A);
+string statsA = profA.Fields.Single(f => f.Name == GameModule.ProfileStatsFieldName).Value;
+Check(statsA.Contains("**Polvo:**") && statsA.Contains("**Dragón:** Ceniza") && statsA.Contains("tier 2 · nivel 0") && statsA.IndexOf("**Dragón:**", StringComparison.Ordinal) > statsA.IndexOf("**Polvo:**", StringComparison.Ordinal) && statsA.Contains("<:dragon_fuerza:123456789012345670>"), "el perfil muestra el dragón justo debajo del Polvo: su emoji de tipo, su nombre, el tier y el nivel");
+Embed profEn; using (Loc.Use("en")) { profEn = await Profile(A); }
+string statsEn = profEn.Fields.Single(f => f.Name == GameModule.ProfileStatsFieldName).Value;
+Check(statsEn.Contains("**Dragon:** Ceniza") && statsEn.Contains("tier 2 · level 0"), "y en inglés");
+var profB = await Profile(B); string statsB = profB.Fields.Single(f => f.Name == GameModule.ProfileStatsFieldName).Value;
+var profD = await Profile(D); var profNone = await Profile(A, false);
+Check(statsB.Contains("**Dragón:** Oro") == false && statsB.Contains("**Dragón:** Cría") && !profD.Fields.Single(f => f.Name == GameModule.ProfileStatsFieldName).Value.Contains("Dragón") && !profNone.Fields.Single(f => f.Name == GameModule.ProfileStatsFieldName).Value.Contains("Dragón"), "sin nombre muestra el de su tier (Cría); sin dragón, o sin el repositorio, el perfil no cambia");
+UiEmojis.Set([]);
+
+Task<Embed> Cd(ulong id) => CooldownModule.BuildStatusEmbedAsync(sp.GetRequiredService<ICooldownRepository>(), users, id, null, null, false, null, dragons);
+var cdReady = await Cd(A);
+await db.ExecuteAsync("UPDATE player_dragons SET last_bred_at = now() WHERE discord_id = @id", new { id = (long)A });
+var cdWait = await Cd(A);
+await Dragon(B, "oro", 10);
+Embed cdEn; using (Loc.Use("en")) { cdEn = await Cd(A); }
+Check(cdReady.Description.Contains("**Dragón (criar)**") && cdReady.Description.Contains("¡Listo!") && cdReady.Description.Contains("/dragon-breed") && cdWait.Description.Contains("**Dragón (criar)**") && (cdWait.Description.Contains("11h") || cdWait.Description.Contains("12h")) && cdWait.Description.Contains("restantes") && cdEn.Description.Contains("**Dragon (breed)**"),
+    "/cd muestra cuándo puede volver a criar el dragón: «¡Listo!» o lo que falta (también en inglés)");
+Check(!(await Cd(B)).Description.Contains("Dragón") && !(await Cd(D)).Description.Contains("Dragón") && CooldownModule.DragonLine(null) is null, "en el tier máximo (nada que criar) o sin dragón, /cd no trae la línea");
+
+var slashName = interactions.SlashCommands.Single(c => c.Name == "dragon-name");
+Check(slashName.Parameters.Count == 1 && slashName.Parameters[0].Name == "nombre" && slashName.Description.Length <= 100 && texts.Search("dragon name Chispa Roja").Commands.Any(c => c.Command.Name == "dragon name") && !FightLock.IsAllowed("dragon-name"), "/dragon-name y «aa dragon name <nombre>» existen (bloqueados en plena pelea)");
+
 await Clean();
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;

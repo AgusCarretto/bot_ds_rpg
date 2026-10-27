@@ -15,15 +15,16 @@ public sealed class DragonRepository(IDbConnectionFactory connectionFactory) : I
         public int Tier { get; set; }
         public int FailStreak { get; set; }
         public int Level { get; set; }
+        public string? Name { get; set; }
         public double WaitSeconds { get; set; }
     }
 
     private const string SelectColumns = """
-        discord_id AS DiscordId, kind AS Kind, tier AS Tier, level AS Level, fail_streak AS FailStreak,
+        discord_id AS DiscordId, kind AS Kind, tier AS Tier, level AS Level, name AS Name, fail_streak AS FailStreak,
         COALESCE(GREATEST(0, EXTRACT(EPOCH FROM (last_bred_at + make_interval(secs => @Cooldown) - now()))), 0)::float8 AS WaitSeconds
         """;
 
-    private static PlayerDragon ToDragon(DragonRow row) => new(row.Kind, row.Tier, row.FailStreak, TimeSpan.FromSeconds(row.WaitSeconds), row.Level);
+    private static PlayerDragon ToDragon(DragonRow row) => new(row.Kind, row.Tier, row.FailStreak, TimeSpan.FromSeconds(row.WaitSeconds), row.Level, row.Name);
 
     public async Task<PlayerDragon?> GetAsync(ulong discordId, CancellationToken cancellationToken = default)
     {
@@ -169,6 +170,62 @@ public sealed class DragonRepository(IDbConnectionFactory connectionFactory) : I
             row.Level = newLevel;
             return new DragonTrainResult(
                 DragonTrainStatus.Trained, gained, spent, ToDragon(row), newLevel >= cap ? 0 : DragonRules.TrainCost(newLevel), left.Value);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
+
+    public async Task<DragonRenameResult> RenameAsync(ulong discordId, string name, int price, CancellationToken cancellationToken = default)
+    {
+        using DbConnection connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        using DbTransaction transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            // La fila del jugador (el oro) y la del dragón bloqueadas hasta el commit, como al entrenar.
+            int? gold = await connection.QuerySingleOrDefaultAsync<int?>(new CommandDefinition(
+                "SELECT gold FROM users WHERE discord_id = @DiscordId FOR UPDATE;",
+                new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
+
+            var row = gold is null ? null : await connection.QuerySingleOrDefaultAsync<DragonRow>(new CommandDefinition(
+                $"SELECT {SelectColumns} FROM player_dragons WHERE discord_id = @DiscordId FOR UPDATE;",
+                new { DiscordId = (long)discordId, Cooldown = DragonRules.BreedCooldown.TotalSeconds }, transaction: transaction, cancellationToken: cancellationToken));
+
+            if (gold is null || row is null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new DragonRenameResult(DragonRenameStatus.NoDragon);
+            }
+
+            if (string.Equals(row.Name, name, StringComparison.Ordinal))
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new DragonRenameResult(DragonRenameStatus.SameName, ToDragon(row), gold.Value);
+            }
+
+            // El cobro es un UPDATE guardado: si el oro no alcanza no vuelve ninguna fila y no se cambia nada.
+            int? left = await connection.QuerySingleOrDefaultAsync<int?>(new CommandDefinition(
+                "UPDATE users SET gold = gold - @Price WHERE discord_id = @DiscordId AND gold >= @Price RETURNING gold;",
+                new { DiscordId = (long)discordId, Price = price }, transaction: transaction, cancellationToken: cancellationToken));
+
+            if (left is null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new DragonRenameResult(DragonRenameStatus.NotEnoughGold, ToDragon(row), gold.Value);
+            }
+
+            await connection.ExecuteAsync(new CommandDefinition(
+                "UPDATE player_dragons SET name = @Name WHERE discord_id = @DiscordId;",
+                new { DiscordId = (long)discordId, Name = name }, transaction: transaction, cancellationToken: cancellationToken));
+
+            await transaction.CommitAsync(cancellationToken);
+
+            row.Name = name;
+            return new DragonRenameResult(DragonRenameStatus.Renamed, ToDragon(row), left.Value);
         }
         catch
         {

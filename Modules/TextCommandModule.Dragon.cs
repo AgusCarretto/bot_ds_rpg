@@ -40,6 +40,23 @@ public partial class TextCommandModule
         }
     }
 
+    // "aa dragon name <nombre>" — ponele nombre a tu dragón (cuesta oro cada vez).
+    [Command("dragon name")]
+    [Alias("dragon nombre", "dragón nombre")]
+    [Summary("Ponele nombre a tu dragón (cuesta oro cada vez): \"aa dragon name Chispa\".")]
+    public async Task DragonNameAsync([Remainder] string name)
+    {
+        try
+        {
+            await ReplyAsync(await DragonModule.ExecuteRenameAsync(dragonRepository, Context.User.Id, name));
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            await ReplyAsync("¡Upa! No pude cambiarle el nombre a tu dragón, intentá de nuevo en un momento.");
+        }
+    }
+
     // "aa dragon breed @amigo" — invitá a criar tu dragón con el de un amigo del mismo tier.
     [Command("dragon breed")]
     [Alias("dragon criar", "dragón criar")]

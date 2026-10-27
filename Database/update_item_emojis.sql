@@ -140,11 +140,11 @@ UPDATE items SET emoji = '<:huevo_5:1561758581702008842>' WHERE name = 'Huevo de
 UPDATE items SET emoji = '<:huevo_6:1561758579680092312>' WHERE name = 'Huevo del Fogón';
 UPDATE items SET emoji = '<:comida_pets:1561758577952039072>' WHERE name = 'Comida para Mascotas';
 
--- 🪓⛏️ Hacha y pico del Carpintero (v0.29.0), cargados el 2026-10-27 (por ahora los provisorios de docs/tool-emojis/; si se reemplazan, se sube otro con el MISMO nombre y se corre apply_emojis.sql).
-UPDATE items SET emoji = '<:hacha_hierro:1564630473152659496>' WHERE name = 'Hacha de Hierro Forjado';
-UPDATE items SET emoji = '<:pico_hierro:1564630476507840543>' WHERE name = 'Pico de Hierro Forjado';
-UPDATE items SET emoji = '<:hacha_escoria:1564630471638388817>' WHERE name = 'Hacha de Escoria Templada';
-UPDATE items SET emoji = '<:pico_escoria:1564630475035906079>' WHERE name = 'Pico de Escoria Templada';
+-- 🪓⛏️ Hacha y pico del Carpintero (v0.29.0), cargados el 2026-10-27; el mismo día el dueño los reemplazó por su arte propio (mismo nombre, id nuevo). Si se vuelven a reemplazar: se sube con el MISMO nombre, se actualiza el id acá y se corre apply_emojis.sql.
+UPDATE items SET emoji = '<:hacha_hierro:1564654471626096761>' WHERE name = 'Hacha de Hierro Forjado';
+UPDATE items SET emoji = '<:pico_hierro:1564654466118983751>' WHERE name = 'Pico de Hierro Forjado';
+UPDATE items SET emoji = '<:hacha_escoria:1564654463791403039>' WHERE name = 'Hacha de Escoria Templada';
+UPDATE items SET emoji = '<:pico_escoria:1564654461782204427>' WHERE name = 'Pico de Escoria Templada';
 
 -- Chequeo rápido: cuántos ítems totales todavía están en NULL, por tipo.
 -- SELECT type, COUNT(*) FROM items WHERE emoji IS NULL GROUP BY type ORDER BY type;
