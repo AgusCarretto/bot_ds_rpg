@@ -39,7 +39,7 @@ public static class PlayerBonusExtensions
 // userRepository y zoneRepository son opcionales: con ellos se calcula el minibuff del banco (v0.21.0); sin ellos (algunas pruebas) el banco no suma.
 public sealed class PlayerBonusService(
     IPetRepository petRepository, IBlessingRepository blessingRepository, IGameEventRepository eventRepository,
-    IUserRepository? userRepository = null, IZoneRepository? zoneRepository = null) : IPlayerBonusService
+    IUserRepository? userRepository = null, IZoneRepository? zoneRepository = null, IToolRepository? toolRepository = null) : IPlayerBonusService
 {
     public async Task<PlayerBonuses> GetAsync(ulong discordId, int fuegoNuevo, CancellationToken cancellationToken = default)
     {
@@ -88,6 +88,30 @@ public sealed class PlayerBonusService(
         int packLevel = levels.TryGetValue(BlessingCatalog.PetsKey, out int level) ? Math.Clamp(level, 0, BlessingCatalog.MaxLevel) : 0;
         var pets = (await petRepository.GetBonusesAsync(discordId, cancellationToken)).Scaled(1 + (BlessingCatalog.PetsPerLevel * packLevel));
 
-        return new PlayerBonuses(pets, Math.Max(0, fuegoNuevo), levels.Count == 0 ? null : levels, professionXp, bankPercent);
+        // Las herramientas (v0.29.0): el hacha multiplica /chop y el pico /mine. Sin servicio o si no se puede leer queda en ×1 y la recolección sigue como siempre.
+        double chopTool = 1, mineTool = 1;
+        if (toolRepository is not null)
+        {
+            try
+            {
+                foreach (var tool in await toolRepository.GetAsync(discordId, cancellationToken))
+                {
+                    if (tool.Kind == ToolRules.AxeKind)
+                    {
+                        chopTool = Math.Max(1, tool.Multiplier);
+                    }
+                    else if (tool.Kind == ToolRules.PickaxeKind)
+                    {
+                        mineTool = Math.Max(1, tool.Multiplier);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                BotLog.Warn(ex);
+            }
+        }
+
+        return new PlayerBonuses(pets, Math.Max(0, fuegoNuevo), levels.Count == 0 ? null : levels, professionXp, bankPercent, chopTool, mineTool);
     }
 }

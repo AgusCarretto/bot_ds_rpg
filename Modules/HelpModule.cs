@@ -85,7 +85,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             .WithColor(OnboardingModule.BrandColor)
             .WithDescription(Loc.T("Todo comando de barra tiene su versión de texto con el prefijo `aa ` (ej. `aa hunt`). Para saber **cómo funciona** algo: `/info tema:<tema>`."))
             .AddField(Loc.T("⚔️ Pelear"), Loc.T("`/hunt` (`aa ah` es el automático) · `/travel` · `/boss` (solo o con amigos) · `/zona` · `/drops`"), false)
-            .AddField(Loc.T("🪓 Recolectar y forjar"), Loc.T("`/chop` · `/mine` · `/forge` · `/enchant` · `/dismantle` · `/tips` (qué te falta farmear)"), false)
+            .AddField(Loc.T("🪓 Recolectar y forjar"), Loc.T("`/chop` · `/mine` · `/tools` (hacha y pico) · `/forge` · `/enchant` · `/dismantle` · `/tips` (qué te falta farmear)"), false)
             .AddField(Loc.T("🍖 Comida y plata"), Loc.T("`/taberna` (comer, comprar y vender) · `/heal` · `/use` · `/open` · `/daily` · `/bank` · `/play`"), false)
             .AddField(Loc.T("📋 Progreso"), "`/missions` · `/achievements` · `/titles` · `/pet` · `/professions` · `/story` · `/leaderboard`", false)
             .AddField(Loc.T("👥 Con otros jugadores"), "`/fight` · `/arena` · `/boss @amigo` · `/give` · `/trade` · `/exchange`", false)

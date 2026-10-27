@@ -563,6 +563,7 @@ public static class ServiceProviderBuilder
             .AddSingleton<IPetRepository, PetRepository>()
             .AddSingleton<IBlessingRepository, BlessingRepository>()
             .AddSingleton<IFuegoNuevoRepository, FuegoNuevoRepository>()
+            .AddSingleton<IToolRepository, ToolRepository>()
             .AddSingleton<IPlayerBonusService, PlayerBonusService>()
             .AddSingleton<ILanguageRepository, LanguageRepository>()
             .AddSingleton<IPlayerLanguageService, PlayerLanguageService>()

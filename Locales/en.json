@@ -675,7 +675,7 @@
   "⚔️ Pelear": "⚔️ Fight",
   "`/hunt` (`aa ah` es el automático) · `/travel` · `/boss` (solo o con amigos) · `/zona` · `/drops`": "`/hunt` (`aa ah` is the automatic one) · `/travel` · `/boss` (alone or with friends) · `/zona` · `/drops`",
   "🪓 Recolectar y forjar": "🪓 Gather and forge",
-  "`/chop` · `/mine` · `/forge` · `/enchant` · `/dismantle` · `/tips` (qué te falta farmear)": "`/chop` · `/mine` · `/forge` · `/enchant` · `/dismantle` · `/tips` (what you still need to farm)",
+  "`/chop` · `/mine` · `/tools` (hacha y pico) · `/forge` · `/enchant` · `/dismantle` · `/tips` (qué te falta farmear)": "`/chop` · `/mine` · `/tools` (axe and pickaxe) · `/forge` · `/enchant` · `/dismantle` · `/tips` (what you still need to farm)",
   "🍖 Comida y plata": "🍖 Food and money",
   "`/taberna` (comer, comprar y vender) · `/heal` · `/use` · `/open` · `/daily` · `/bank` · `/play`": "`/taberna` (eat, buy and sell) · `/heal` · `/use` · `/open` · `/daily` · `/bank` · `/play`",
   "📋 Progreso": "📋 Progress",

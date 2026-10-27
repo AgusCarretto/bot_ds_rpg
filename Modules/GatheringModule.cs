@@ -94,6 +94,7 @@ public class GatheringModule(
 
         int rolls = advanced ? ProfessionRules.AdvancedGatherRolls : 1;
         double multiplier = isChop ? bonuses.ChopMultiplier : bonuses.MineMultiplier;
+        double toolFactor = isChop ? bonuses.ChopToolFactor : bonuses.MineToolFactor;   // el hacha / el pico (v0.29.0): solo para Común, Raro y Épico
         double upgradeChance = isChop ? bonuses.ChopRarityUpgrade : bonuses.MineRarityUpgrade;
 
         var drops = new List<(Item Item, int Quantity)>();
@@ -125,7 +126,7 @@ public class GatheringModule(
             upgraded |= finalRarity != rarity;
 
             // Cuántas unidades salen depende de la rareza: lo común a montones, lo mejor de a una (GatheringYield), por el multiplicador del jugador.
-            drops.Add((item, GatheringYield.RollScaled(item.Rarity, multiplier, rng)));
+            drops.Add((item, GatheringYield.RollScaled(item.Rarity, multiplier * ToolRules.QuantityFactor(item.Rarity, toolFactor), rng)));
         }
 
         bool applied = await gatheringRepository.ApplyGatheringBatchAsync(
