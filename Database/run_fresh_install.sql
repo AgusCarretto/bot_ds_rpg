@@ -74,6 +74,8 @@
 \ir rebalance_dust.sql
 -- El hacha y el pico del Carpintero (v0.29.0): usan los materiales de recolección y las zonas, y crean ítems nuevos (su emoji, cuando haya arte, va en update_item_emojis.sql, que corre otra vez abajo).
 \ir add_tools.sql
+-- La Comida de Dragón (v0.32.0): crea un ítem nuevo (su emoji, cuando haya arte, va en update_item_emojis.sql, que corre otra vez abajo).
+\ir add_dragon_food.sql
 -- Los emojis de los ítems OTRA VEZ, ahora que existen TODOS: update_item_emojis.sql corre antes (arriba) y seed_pets / seed_fogon / seed_zone_boxes crean ítems DESPUÉS, así que sus UPDATE por nombre no encontraban el Trinche, la Brasa, los huevos ni las cajas nuevas y quedaban sin emoji (esa deriva ya pasó con otros ítems). Es re-ejecutable.
 \ir update_item_emojis.sql
 -- Y la cara de El Asador Eterno, que se crea en seed_fogon.sql (después del puesto en el que corre update_monster_portraits.sql arriba).

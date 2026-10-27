@@ -213,6 +213,30 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
     // «+12,5 % de ATQ contra monstruos» (el bono de su tipo, ya con tier y nivel).
     private static string TypeBonus(string kind, int tier, int level) => $"**+{DragonRules.Percent(DragonRules.TypePercent(kind, tier, level))} %** {DragonRules.KindEffect(kind)}";
 
+    // El emoji de la Comida de Dragón al lado del nombre de quien la tiene o la usó (v0.32.0, el dueño: «así se sabe cuando uno tiene o no»): vacío si no.
+    private static string FoodMark(bool has) => has ? $" {ItemEmojiRegistry.IconOf(DragonRules.FoodItemName, "🍖")}" : string.Empty;
+
+    private static string ChangeMark(DragonTypeChange? change) => FoodMark(change?.FoodKept == true);
+
+    // Qué pasó con el TIPO de un dragón después de criar (v0.32.0, en cada intento): lo conservó con Comida de Dragón, cambió, o el sorteo le devolvió el mismo. Vacía si no hubo cría.
+    private static string TypeNote(DragonTypeChange? change, PlayerDragon dragon)
+    {
+        if (change is null)
+        {
+            return string.Empty;
+        }
+
+        string now = $"{DragonRules.KindEmoji(dragon.Kind)} {DragonRules.KindName(dragon.Kind)}";
+        if (change.FoodKept)
+        {
+            return $"\n   🍖 Gastó 1 {ItemEmojiRegistry.Label(DragonRules.FoodItemName, "🍖")} y sigue siendo {now}.";
+        }
+
+        return change.From == dragon.Kind
+            ? $"\n   🎲 Cambió de tipo… y le tocó el mismo: {now}."
+            : $"\n   🎲 Cambió de tipo: {DragonRules.KindEmoji(change.From)} {DragonRules.KindName(change.From)} → {now}.";
+    }
+
     // La pantalla del dragón. Sin dragón, cómo conseguirlo; con él: tipo, tier, nivel, lo que da (base + entrenamiento), las mejoras de cada tier (las que ya desbloqueó y las que faltan), el entrenamiento y la cría.
     public static async Task<DragonView> BuildDragonViewAsync(IDragonRepository dragonRepository, ulong discordId)
     {
@@ -288,6 +312,14 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
                 $"Chance de subir de tier: **{DragonRules.Percent(Math.Round(DragonRules.BreedChance(dragon.Tier) * 100, 2))} %** por intento · en promedio, unos **{DragonRules.ExpectedAttempts(dragon.Tier):0.#}** intentos.\n{pity}\n" +
                 $"Se cría con un amigo que tenga tu mismo tier: **/dragon-breed @amigo**. Cada dragón tira su propia suerte, así que puede subir uno y el otro no. Cada intento los hace descansar {TimeFormat.Remaining(DragonRules.BreedCooldown)}; cuánto falta para el próximo lo ves en **/cd**.\n" +
                 $"También podés criarlo **solo**, sin amigo (**/dragon-breed** a secas): cuenta como intento, pero con **un tercio** de la chance ({DragonRules.Percent(Math.Round(DragonRules.SoloBreedChance(dragon.Tier) * 100, 2))} %) y en promedio unos **{DragonRules.ExpectedAttempts(dragon.Tier, DragonRules.SoloChanceFactor):0.#}** intentos.",
+                false);
+
+            int food = await dragonRepository.CountFoodAsync(discordId);
+            embed.AddField(
+                "Tipo y comida",
+                "En **cada cría** (cada intento de criar, salga bien o mal) tu dragón **cambia de tipo al azar** (🗡️ Fuerza, 🛡️ Defensa, 💰 Oro o ✨ Especial; puede tocarte el mismo). Los niveles entrenados se quedan y rinden según el tipo nuevo.\n" +
+                $"Para **conservar el tipo** tené {ItemEmojiRegistry.Label(DragonRules.FoodItemName, "🍖")} en la mochila: se gasta **una por cría**, sola. " +
+                (food > 0 ? $"Ahora tenés **{food}**." : "Ahora no tenés: se compra en la **/taberna**."),
                 false);
         }
 
@@ -379,7 +411,7 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
                 var dragon = result.A!;
                 return embed.WithColor(Color.Gold).WithDescription(
                     $"✨ **¡Lo lograste solo!** Tu dragón sube al **Tier {tier}: {DragonRules.TierName(tier)}** y desbloquea una mejora nueva: **{perk.Name}** — {perk.Text}\n" +
-                    $"{DragonRules.KindEmoji(dragon.Kind)} {DragonRules.KindName(dragon.Kind)} · {TypeBonus(dragon.Kind, tier, dragon.Level)}\n" +
+                    $"{DragonRules.KindEmoji(dragon.Kind)} {DragonRules.KindName(dragon.Kind)} · {TypeBonus(dragon.Kind, tier, dragon.Level)}{TypeNote(result.TypeA, dragon)}\n" +
                     (tier >= DragonRules.MaxTier ? "\n🏆 ¡Llegó al tier máximo!" : $"\nAhora puede entrenar hasta el nivel {DragonRules.LevelCap(tier)} y descansa {TimeFormat.Remaining(DragonRules.BreedCooldown)} antes de volver a criar.")).Build();
             }
 
@@ -388,7 +420,7 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
                 int cap = DragonRules.SoloPityCap(result.Tier);
                 return embed.WithDescription(
                     $"💨 No se dio esta vez: tu dragón se queda en el **Tier {result.Tier}**. Criándolo solo la chance es **un tercio** de la normal ({DragonRules.Percent(Math.Round(DragonRules.SoloBreedChance(result.Tier) * 100, 2))} %); con un amigo del mismo tier es del {DragonRules.Percent(Math.Round(DragonRules.BreedChance(result.Tier) * 100, 2))} %.\n" +
-                    $"Fallos seguidos: **{result.A!.FailStreak}/{cap}**; con {cap} fallos seguidos, el siguiente intento sale **seguro**.\n" +
+                    $"Fallos seguidos: **{result.A!.FailStreak}/{cap}**; con {cap} fallos seguidos, el siguiente intento sale **seguro**.{TypeNote(result.TypeA, result.A!)}\n" +
                     $"Descansa {TimeFormat.Remaining(DragonRules.BreedCooldown)} antes de volver a intentar.").Build();
             }
 
@@ -411,7 +443,7 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
         return result.Status switch
         {
             DragonBuyStatus.Bought =>
-                $"{NpcDialogue.Shopkeeper(ShopkeeperLine.BuySuccess)}\n\n{UiEmojis.Dragon} Compraste un dragón: sale del huevo un **{DragonRules.KindEmoji(kind)} {DragonRules.KindName(kind)}** (tier 1, **{DragonRules.TierName(1)}**) y ya te da {TypeBonus(kind, 1, 0)}. Miralo con **/dragon**, entrenalo con **/dragon-train** y criálo con un amigo con **/dragon-breed**.",
+                $"{NpcDialogue.Shopkeeper(ShopkeeperLine.BuySuccess)}\n\n{UiEmojis.Dragon} Compraste un dragón: sale del huevo un **{DragonRules.KindEmoji(kind)} {DragonRules.KindName(kind)}** (tier 1, **{DragonRules.TierName(1)}**) y ya te da {TypeBonus(kind, 1, 0)}. Miralo con **/dragon**, entrenalo con **/dragon-train** y criálo con un amigo con **/dragon-breed**. Ojo: cada vez que lo criás cambia de tipo al azar; para conservarlo, comprá **{DragonRules.FoodItemName}** acá en la taberna.",
             DragonBuyStatus.AlreadyHave => "Pero si ya tenés un dragón. Cada uno tiene el suyo: miralo con **/dragon**.",
             DragonBuyStatus.NotEnoughGold => $"{NpcDialogue.Shopkeeper(ShopkeeperLine.NoGold)}\nUn dragón cuesta **{GameHistory.Number(DragonRules.ShopPrice)}** de oro.",
             _ => "Primero tenés que empezar tu aventura con **/start**.",
@@ -461,6 +493,9 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
         var offer = offerService.Create(fromId, toId);
         var perk = DragonRules.Perks[mine.Tier]; // la mejora que desbloquea el tier siguiente
         int cap = DragonRules.PityCap(mine.Tier);
+        // El emoji de la comida al lado del nombre de cada uno: quien no la tiene no lleva nada.
+        string markFrom = FoodMark(await dragonRepository.CountFoodAsync(fromId) > 0);
+        string markTo = FoodMark(await dragonRepository.CountFoodAsync(toId) > 0);
         string certain = (mine.FailStreak >= cap, theirs.FailStreak >= cap) switch
         {
             (true, true) => " (¡los dos suben **seguro** esta vez!)",
@@ -472,10 +507,11 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
             .WithTitle("🐲 Invitación a criar")
             .WithColor(Color.DarkOrange)
             .WithDescription(
-                $"<@{fromId}> quiere criar su dragón con el de <@{toId}>: los dos son **Tier {mine.Tier} ({DragonRules.TierName(mine.Tier)})**.\n" +
+                $"<@{fromId}>{markFrom} quiere criar su dragón con el de <@{toId}>{markTo}: los dos son **Tier {mine.Tier} ({DragonRules.TierName(mine.Tier)})**.\n" +
                 $"Cada dragón tira su propia suerte: la chance de subir al tier {mine.Tier + 1} (**{perk.Name}**: {perk.Text}) es de **{DragonRules.Percent(Math.Round(DragonRules.BreedChance(mine.Tier) * 100, 2))} %** para cada uno, así que puede subir uno y el otro no." +
                 certain +
-                $" Pase lo que pase, los dos descansan {TimeFormat.Remaining(DragonRules.BreedCooldown)}.\n\n<@{toId}>, ¿aceptás? Tenés 2 minutos.")
+                $" Pase lo que pase, los dos descansan {TimeFormat.Remaining(DragonRules.BreedCooldown)}.\n\n" +
+                $"Cada dragón **cambia de tipo al azar** en este intento (salga bien o mal), salvo que su dueño tenga {ItemEmojiRegistry.Label(DragonRules.FoodItemName, "🍖")} en la mochila (se gasta una). El {ItemEmojiRegistry.IconOf(DragonRules.FoodItemName, "🍖")} al lado del nombre dice quién la tiene.\n\n<@{toId}>, ¿aceptás? Tenés 2 minutos.")
             .Build();
         var buttons = new ComponentBuilder()
             .WithButton("Aceptar", $"{AcceptPrefix}:{offer.Id}", ButtonStyle.Success, new Emoji("🥚"))
@@ -499,17 +535,17 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
                 int tier = result.Tier + 1;
                 int cap = DragonRules.PityCap(result.Tier);
                 bool anyUp = result.Success || result.SuccessB;
-                string DragonLine(ulong id, PlayerDragon dragon, bool up) => up
-                    ? $"<@{id}>: ✨ sube al **Tier {tier}: {DragonRules.TierName(tier)}** · {DragonRules.KindEmoji(dragon.Kind)} {DragonRules.KindName(dragon.Kind)} · {TypeBonus(dragon.Kind, tier, dragon.Level)}"
-                    : $"<@{id}>: 💨 se queda en el **Tier {result.Tier}** · fallos seguidos **{dragon.FailStreak}/{cap}**";
+                string DragonLine(ulong id, PlayerDragon dragon, bool up, DragonTypeChange? change) => up
+                    ? $"<@{id}>{ChangeMark(change)}: ✨ sube al **Tier {tier}: {DragonRules.TierName(tier)}** · {DragonRules.KindEmoji(dragon.Kind)} {DragonRules.KindName(dragon.Kind)} · {TypeBonus(dragon.Kind, tier, dragon.Level)}{TypeNote(change, dragon)}"
+                    : $"<@{id}>{ChangeMark(change)}: 💨 se queda en el **Tier {result.Tier}** · fallos seguidos **{dragon.FailStreak}/{cap}**{TypeNote(change, dragon)}";
                 var parts = new List<string>
                 {
                     result.Success && result.SuccessB ? "✨ **¡Salió bien!** Los dos dragones suben de tier."
                         : anyUp ? "✨ **¡Subió uno!** Cada dragón tira su propia suerte y esta vez la tuvo uno solo."
                         : "💨 **No se dio esta vez.** Ninguno de los dos dragones subió.",
                     string.Empty,
-                    DragonLine(offer.FromId, result.A!, result.Success),
-                    DragonLine(offer.ToId, result.B!, result.SuccessB),
+                    DragonLine(offer.FromId, result.A!, result.Success, result.TypeA),
+                    DragonLine(offer.ToId, result.B!, result.SuccessB, result.TypeB),
                     string.Empty,
                 };
                 if (anyUp)

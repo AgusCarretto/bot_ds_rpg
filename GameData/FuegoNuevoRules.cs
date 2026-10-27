@@ -20,7 +20,7 @@ public static class FuegoNuevoRules
 
     // Los tipos de ítem que SOBREVIVEN al reinicio: los huevos y la comida de las mascotas (items.type), porque las mascotas se quedan y perder el huevo de una que todavía no
     // nació o la comida que las hace crecer sería castigar justo lo que el dueño dijo que se conserva. Todo lo demás de la mochila se va, sin reembolso.
-    public static readonly IReadOnlyList<string> KeptItemTypes = ["Huevo", "PetFood"];
+    public static readonly IReadOnlyList<string> KeptItemTypes = ["Huevo", "PetFood", ShopCatalog.DragonFoodType];
 
     // /class (cambiar de clase) solo se puede empezando de cero (nivel 1 y 0 de EXP) o al hacer un Fuego Nuevo, que la vuelve a elegir: antes de la v0.12.0 se podía cambiar en cualquier
     // momento, pero con las vueltas la clase pasó a ser una decisión de cada vuelta (el dueño: «la clase se bloquea por run»).

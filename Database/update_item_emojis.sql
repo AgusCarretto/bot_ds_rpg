@@ -146,5 +146,8 @@ UPDATE items SET emoji = '<:pico_hierro:1564654466118983751>' WHERE name = 'Pico
 UPDATE items SET emoji = '<:hacha_escoria:1564654463791403039>' WHERE name = 'Hacha de Escoria Templada';
 UPDATE items SET emoji = '<:pico_escoria:1564654461782204427>' WHERE name = 'Pico de Escoria Templada';
 
+-- 🍖 Comida de Dragón (v0.32.0), cargada el 2026-10-28 (el dueño la subió con el nombre comida_dragon; add_dragon_food.sql la crea con el 🍖 de relleno).
+UPDATE items SET emoji = '<:comida_dragon:1564690547006775446>' WHERE name = 'Comida de Dragón';
+
 -- Chequeo rápido: cuántos ítems totales todavía están en NULL, por tipo.
 -- SELECT type, COUNT(*) FROM items WHERE emoji IS NULL GROUP BY type ORDER BY type;

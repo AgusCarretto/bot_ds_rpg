@@ -221,6 +221,13 @@ public static class DragonRules
         return total;
     }
 
+    // ---- El tipo al criar y la comida (v0.32.0) ----
+    // El dueño: «que el breed cambie el tipo de cada dragón, sino nunca se puede conseguir otro» y «una comida de dragón que, al tenerla en el inventario y hacer breed, se reste una automático: así podés tener el mismo tipo después del breed».
+    // En CADA cría (cada intento, salga bien o mal; como mucho cada 12 h) el tipo de cada dragón se sortea de nuevo con las chances de la tienda (puede tocar el mismo); si su dueño tiene Comida de Dragón en la mochila se gasta UNA, sola, y el tipo se queda.
+    // El dueño: «es cada 12 horas, dejalo en cada breed que se haga; que el que quiera compre». (Mi primera versión lo sorteaba solo al subir de tier.)
+    // Los niveles entrenados se quedan y rinden según el tipo nuevo.
+    public const string FoodItemName = "Comida de Dragón";
+
     // ---- Comprar ----
     // Qué tipo sale al comprarlo (al azar, como el caballo de EPIC): Especial es el raro.
     private static readonly (string Kind, int Weight)[] ShopOdds = [(Strength, 30), (Defense, 30), (Gold, 30), (Special, 10)];

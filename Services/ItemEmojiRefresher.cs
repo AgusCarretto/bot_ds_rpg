@@ -8,7 +8,7 @@ namespace BotDsRpg.Services;
 public sealed class ItemEmojiRefresher(IItemRepository itemRepository)
 {
     // Todos los tipos de ítem del catálogo (items.type).
-    private static readonly string[] Types = ["Weapon", "Amulet", "Consumable", "Madera", "Mineral", "Material", "Caja", "Huevo", "PetFood"];
+    private static readonly string[] Types = ["Weapon", "Amulet", "Consumable", "Madera", "Mineral", "Material", "Caja", "Huevo", "PetFood", "DragonFood"];
 
     public static readonly TimeSpan Every = TimeSpan.FromMinutes(10);
 

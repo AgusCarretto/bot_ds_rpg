@@ -436,7 +436,7 @@ public class TabernaModule(
         {
             components.WithSelectMenu(Menu(
                 BuyFood, discordId, Loc.T("Comprar comida"),
-                foodForSale.Select(i => (i.Name, i.Type == ShopCatalog.PetFoodType ? ShopModule.PetFoodLine(i) : Loc.F($"Cura {i.StatValue} HP{BuffText(i, buffs)} · {i.BuyPrice} oro"), i.Name))), row++);
+                foodForSale.Select(i => (i.Name, i.Type == ShopCatalog.PetFoodType ? ShopModule.PetFoodLine(i) : i.Type == ShopCatalog.DragonFoodType ? ShopModule.DragonFoodLine(i) : Loc.F($"Cura {i.StatValue} HP{BuffText(i, buffs)} · {i.BuyPrice} oro"), i.Name))), row++);
         }
 
         // El dragón (v0.30.0) se compra en la misma lista que las cajas, mientras no tengas uno.

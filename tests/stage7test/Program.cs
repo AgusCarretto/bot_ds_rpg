@@ -51,7 +51,7 @@ Console.WriteLine("\n== Peor caso: todos los ítems del juego ==");
 await db.ExecuteAsync("INSERT INTO inventory (discord_id, item_id, quantity) SELECT @id, item_id, 9999 FROM items ON CONFLICT (discord_id, item_id) DO UPDATE SET quantity = 9999", new { id = (long)U });
 var e3 = await BotDsRpg_GameModule.Build(inventory, U);
 Check(string.IsNullOrEmpty(e3.Description) && e3.Fields.All(f => f.Value.Length <= 1024) && e3.Fields.Length <= 25 && e3.Length < 6000 && !e3.Fields.Any(f => f.Name.Contains("(1/")), $"con los {await db.ExecuteScalarAsync<int>("SELECT count(*) FROM items")} ítems del catálogo y 9999 de cada uno: {e3.Fields.Length} columnas, total {e3.Length} de 6000, y nunca '(1/2)'");
-Check(T(e3).Contains("**Colmillo de Jabalí**: 9.999") && T(e3).Contains("**Cajón de Pino**: 9.999") && T(e3).Split(": 9.999").Length - 1 == await db.ExecuteScalarAsync<int>("SELECT count(*) FROM items WHERE type IN ('Madera','Mineral','Material','Consumable','Caja','PetFood','Huevo')"), "aparece cada uno de los ítems de inventario, ninguno se pierde");
+Check(T(e3).Contains("**Colmillo de Jabalí**: 9.999") && T(e3).Contains("**Cajón de Pino**: 9.999") && T(e3).Split(": 9.999").Length - 1 == await db.ExecuteScalarAsync<int>("SELECT count(*) FROM items WHERE type IN ('Madera','Mineral','Material','Consumable','Caja','PetFood','DragonFood','Huevo')"), "aparece cada uno de los ítems de inventario, ninguno se pierde");
 await db.ExecuteAsync("DELETE FROM inventory WHERE discord_id = @id", new { id = (long)U });
 var e4 = await BotDsRpg_GameModule.Build(inventory, U);
 Check(e4.Description.Contains("Todavía no tenés"), "inventario vacío: el mensaje de siempre");

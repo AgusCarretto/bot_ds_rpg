@@ -32,6 +32,13 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
 
+## El dragón cambia de tipo al subir de tier y la Comida de Dragón (v0.32.0, 2026-10-28)
+
+- **El tipo se sortea de nuevo en CADA cría** (salga bien o mal; en pareja o solo; como mucho cada 12 h): mismas chances que en la tienda (30 % fuerza, defensa y oro, 10 % especial) y puede tocar el mismo. El dueño: «que el breed cambie el tipo de cada dragón, sino nunca se puede conseguir otro». Los niveles entrenados se quedan y rinden según el tipo nuevo.
+- **Comida de Dragón** (5.000 de oro en la taberna y la tienda, se revende a 1.250): con una en la mochila, en cada cría se **gasta una sola, sola** y el tipo se queda. Cada dragón de una pareja se juzga con la mochila de su dueño. No se come con `/use`, aparece en el inventario con la comida y **sobrevive al Fuego Nuevo** (igual que el dragón y la comida de mascotas).
+- **Historia**: mi primera versión sorteaba el tipo solo al SUBIR de tier; el dueño pidió que fuera en cada cría («es cada 12 horas, dejalo en cada breed que se haga… que el que quiera compre») y se sacó la constante. Le ofrecí bajar la comida a ~500 (ahora se gasta en cada intento, como mucho 2 por día) y dijo que **no**: «el que quiera mantener su tipo que pague 5000», así que sigue en 5.000 (conservar el tipo toda la subida son varios millones de oro, a propósito). La comida de mascotas y la del dragón siguen sin perderse con el Fuego Nuevo.
+- **Migración**: `Database/add_dragon_food.sql` (crea el ítem; opcional antes del binario: sin él el dragón cría igual y la tienda no la ofrece). Su emoji (`comida_dragon`) ya está conectado en `update_item_emojis.sql`; en una base que ya anda hay que correr `Database/apply_emojis.sql` para cargarlo.
+
 ## El Carpintero como el tabernero, criar el dragón solo y el perfil con números romanos (v0.31.0, 2026-10-28)
 
 - **El Carpintero (`/tools`) pasa a ser compacto**, como la taberna: la foto del personaje de miniatura, lo que llevás puesto y **una lista** con las 4 mejoras. Cada opción dice su estado en la etiqueta (🔒 zona cerrada, ✅ tenés todo, ❌ te falta algo) y abajo los materiales «tenés/necesitás»; elegir una cerrada dice en qué zona se abre y no gasta nada. **Para ponerle foto**: subir al portal un emoji de la aplicación llamado **`carpintero`** (se levanta solo, sin ids) o dejar un `Assets/npc/carpenter.jpg` de 256×256.

@@ -51,6 +51,17 @@ async Task Dragon(ulong id, string kind, int tier, int streak = 0, bool rested =
     await db.ExecuteAsync("INSERT INTO player_dragons (discord_id, kind, tier, fail_streak, last_bred_at) VALUES (@id, @k, @t, @s, @l) ON CONFLICT (discord_id) DO UPDATE SET kind = @k, tier = @t, fail_streak = @s, last_bred_at = @l",
         new { id = (long)id, k = kind, t = tier, s = streak, l = rested ? (DateTime?)null : DateTime.UtcNow });
 
+async Task SetFood(ulong id, int quantity)
+{
+    await db.ExecuteAsync("DELETE FROM inventory WHERE discord_id = @id AND item_id IN (SELECT item_id FROM items WHERE name = @n)", new { id = (long)id, n = DragonRules.FoodItemName });
+    if (quantity > 0)
+    {
+        await db.ExecuteAsync("INSERT INTO inventory (discord_id, item_id, quantity) SELECT @id, item_id, @q FROM items WHERE name = @n", new { id = (long)id, q = quantity, n = DragonRules.FoodItemName });
+    }
+}
+
+async Task<int> FoodRows(ulong id) => await db.ExecuteScalarAsync<int>("SELECT count(*) FROM inventory inv JOIN items i ON i.item_id = inv.item_id WHERE inv.discord_id = @id AND i.name = @n", new { id = (long)id, n = DragonRules.FoodItemName });
+
 async Task<int> Gold(ulong id) => await db.ExecuteScalarAsync<int>("SELECT gold FROM users WHERE discord_id = @id", new { id = (long)id });
 
 await Clean();
@@ -103,8 +114,8 @@ var mism = await dragons.BreedAsync(A, C);
 Check(self.Status == DragonBreedStatus.NoDragon && noDrag.Status == DragonBreedStatus.NoDragon && noDrag.BlockedId == GHOST && mism.Status == DragonBreedStatus.TierMismatch && mism.Tier == 1, "consigo mismo, con alguien sin dragón o de otro tier: se rechaza");
 var first = await dragons.BreedAsync(A, B, new FixedRandom(0.999));
 var a1 = await dragons.GetAsync(A); var b1 = await dragons.GetAsync(B);
-Check(first.Status == DragonBreedStatus.Bred && first.Success && first.SuccessB && first.Tier == 1 && a1 is { Tier: 2, FailStreak: 0 } && b1 is { Tier: 2, FailStreak: 0 } && a1.Kind == "oro" && b1.Kind == "fuerza" && !a1.CanBreed && !b1.CanBreed && a1.Wait > TimeSpan.FromHours(11),
-    "el tier 1 sube seguro: los DOS dragones pasan al tier 2, cada uno conserva su tipo y los dos descansan ~12 h");
+Check(first.Status == DragonBreedStatus.Bred && first.Success && first.SuccessB && first.Tier == 1 && a1 is { Tier: 2, FailStreak: 0 } && b1 is { Tier: 2, FailStreak: 0 } && first.TypeA is { From: "oro", FoodKept: false } && first.TypeB is { From: "fuerza", FoodKept: false } && a1.Kind == "especial" && b1.Kind == "especial" && !a1.CanBreed && !b1.CanBreed && a1.Wait > TimeSpan.FromHours(11),
+    "el tier 1 sube seguro: los DOS dragones pasan al tier 2, cada uno se sortea un tipo nuevo (con el azar fijo en 0,999 sale Especial) y los dos descansan ~12 h");
 var rest = await dragons.BreedAsync(A, B, new FixedRandom(0));
 Check(rest.Status == DragonBreedStatus.OnCooldown && rest.Wait > TimeSpan.FromHours(11) && (await dragons.GetAsync(A))!.Tier == 2, "mientras descansan no se puede volver a criar y no pasa nada");
 await db.ExecuteAsync("UPDATE player_dragons SET last_bred_at = NULL WHERE discord_id = ANY(@ids)", new { ids = new long[] { (long)A, (long)B } });
@@ -187,10 +198,11 @@ Check(!(Options(sceneAfter, "taberna_box") ?? []).Any(o => o.Value == DragonModu
 Check((await Act(E, DragonModule.ShopKey)).Contains("ya tenés un dragón") && await Gold(E) == 5000 - DragonRules.ShopPrice, "pedir otro igual: «ya tenés un dragón» y no cobra");
 
 Console.WriteLine("\n== 8. El Fuego Nuevo no lo toca ==");
-await Player(G); await dragons.BuyAsync(G, 1, "especial");
+await Player(G); await dragons.BuyAsync(G, 1, "especial"); await SetFood(G, 4);
 await db.ExecuteAsync("UPDATE users SET gate_cleared = true WHERE discord_id = @id; UPDATE player_dragons SET tier = 7, fail_streak = 3 WHERE discord_id = @id", new { id = (long)G });
 var renewed = await sp.GetRequiredService<IFuegoNuevoRepository>().RenewAsync(G, 0, "Ninja");
 Check(renewed.Status == RenewStatus.Ok && await dragons.GetAsync(G) is { Kind: "especial", Tier: 7, FailStreak: 3 }, $"renacer deja el dragón como estaba (tipo, tier y fallos): dura toda la vida de la cuenta ({renewed.Status})");
+Check(await dragons.CountFoodAsync(G) == 4, "y la Comida de Dragón tampoco se pierde al renacer (se quedan los huevos, la comida de las mascotas y la del dragón)");
 
 Console.WriteLine("\n== 9. Registro con Discord.Net de verdad ==");
 await interactions.AddModulesAsync(typeof(DragonModule).Assembly, sp);
@@ -426,7 +438,7 @@ Check(msgMixed.Description.Contains($"<@{A}>") && msgMixed.Description.Contains(
     "el mensaje cuenta qué le pasó a CADA dragón (uno sube, el otro se queda con sus fallos) y avisa que ahora tienen tiers distintos");
 await Dragon(A, "oro", 2); await Dragon(B, "defensa", 2);
 var msgNone = await DragonModule.ResolveBreedAsync(dragons, new DragonBreedOffer(Guid.NewGuid(), A, B, DateTime.UtcNow.AddMinutes(1)), new SequenceRandom(0.999, 0.999));
-Check(msgNone.Description.Contains("No se dio") && msgNone.Description.Contains("se queda") && !msgNone.Description.Contains("tiers distintos") && !msgNone.Description.Contains("Salió bien"), "si no sube ninguno: lo dice, los dos se quedan y no avisa de tiers distintos");
+Check(msgNone.Description.Contains("No se dio") && msgNone.Description.Contains("se queda") && !msgNone.Description.Contains("tiers distintos") && !msgNone.Description.Contains("Salió bien") && msgNone.Description.Contains("Cambió de tipo"), "si no sube ninguno: lo dice, los dos se quedan, no avisa de tiers distintos y cuenta que igual cambiaron de tipo");
 await Dragon(A, "oro", 2); await Dragon(B, "defensa", 2);
 var msgBoth = await DragonModule.ResolveBreedAsync(dragons, new DragonBreedOffer(Guid.NewGuid(), A, B, DateTime.UtcNow.AddMinutes(1)), new SequenceRandom(0.1, 0.2));
 Check(msgBoth.Description.Contains("Salió bien") && msgBoth.Description.Contains("Tier 3") && !msgBoth.Description.Contains("tiers distintos"), "si suben los dos: «Salió bien» y nada de tiers distintos");
@@ -437,6 +449,76 @@ Check(invite2.Embed!.Description.Contains("uno y el otro no") && invite2.Embed.D
 await Dragon(D, "oro", 6, streak: 5);
 var viewD = (await DragonModule.BuildDragonViewAsync(dragons, D)).Embed.Fields.Single(f => f.Name == "Criar").Value;
 Check(viewD.Contains("Fallos seguidos: **5**") && viewD.Contains($"**{DragonRules.PityCap(6)}**") && viewD.Contains($"**{DragonRules.SoloPityCap(6)}**"), "la pantalla muestra los fallos seguidos del dragón y los dos topes: con un amigo y solo (el triple)");
+
+Console.WriteLine("\n== 17. Al subir de tier cambia el tipo; la Comida de Dragón lo conserva ==");
+var foodItem = await items.GetByNameAsync(DragonRules.FoodItemName);
+Check(foodItem is { Type: "DragonFood" } && ShopCatalog.IsForSale(foodItem) && foodItem.BuyPrice > 0, "la Comida de Dragón existe en la base (Database/add_dragon_food.sql), es de tipo DragonFood y se vende");
+await Clean(); await Player(A, 100000); await Player(B); await Player(C); await Player(D);
+await Dragon(A, "oro", 2); await Dragon(B, "defensa", 2); await SetFood(A, 2);
+var kept = await dragons.BreedAsync(A, B, new SequenceRandom(0.1, 0.2, 0.95));
+Check(kept.Success && kept.SuccessB && kept.A is { Tier: 3, Kind: "oro" } && kept.B is { Tier: 3, Kind: "especial" } && kept.TypeA is { From: "oro", FoodKept: true } && kept.TypeB is { From: "defensa", FoodKept: false } && await dragons.CountFoodAsync(A) == 1 && await dragons.CountFoodAsync(B) == 0,
+    "al subir de tier el dragón cambia de tipo al azar (el B pasa de defensa a especial) y el que tenía Comida de Dragón conserva el suyo: se gastó UNA (le queda 1)");
+await Dragon(A, "oro", 2); await Dragon(B, "defensa", 2);
+var noChange = await dragons.BreedAsync(A, B, new SequenceRandom(0.999, 0.999));
+Check(!noChange.Success && !noChange.SuccessB && noChange.TypeA is { From: "oro", FoodKept: true } && noChange.A!.Kind == "oro" && noChange.TypeB is { From: "defensa", FoodKept: false } && noChange.B!.Kind == "especial" && await dragons.CountFoodAsync(A) == 0,
+    "el tipo se sortea en CADA cría, también si el intento falla: B (sin comida) cambia a Especial y A gasta su comida y conserva el suyo");
+await Dragon(A, "oro", 2); await Dragon(B, "defensa", 2); await SetFood(A, 1);
+var lastFood = await dragons.BreedAsync(A, B, new SequenceRandom(0.1, 0.2, 0.05));
+Check(lastFood.TypeA is { FoodKept: true } && lastFood.A!.Kind == "oro" && lastFood.B!.Kind == "fuerza" && await dragons.CountFoodAsync(A) == 0 && await FoodRows(A) == 0, "con la última comida: se gasta y la fila de la mochila desaparece (sin cantidades en cero)");
+
+await Dragon(A, "oro", 2); await SetFood(A, 1);
+var soloKeep = await dragons.BreedSoloAsync(A, new FixedRandom(0.1));
+Check(soloKeep.Success && soloKeep.TypeA is { From: "oro", FoodKept: true } && soloKeep.A!.Kind == "oro" && await dragons.CountFoodAsync(A) == 0, "criando solo pasa lo mismo: sube, y con comida conserva el tipo");
+await Dragon(A, "oro", 2);
+var soloChange = await dragons.BreedSoloAsync(A, new FixedRandom(0.1));
+Check(soloChange.Success && soloChange.TypeA is { From: "oro", FoodKept: false } && soloChange.A!.Kind == "fuerza", "y sin comida cambia de tipo");
+await Dragon(A, "fuerza", 2);
+var same = await dragons.BreedSoloAsync(A, new FixedRandom(0.1));
+Check(same.TypeA is { From: "fuerza", FoodKept: false } && same.A!.Kind == "fuerza", "el sorteo puede devolver el mismo tipo: pasa y se cuenta como tal");
+await Dragon(A, "oro", 2); await SetFood(A, 2);
+var soloFailFood = await dragons.BreedSoloAsync(A, new FixedRandom(0.999));
+Check(!soloFailFood.Success && soloFailFood.TypeA is { From: "oro", FoodKept: true } && soloFailFood.A!.Kind == "oro" && await dragons.CountFoodAsync(A) == 1, "criando solo y fallando también se gasta una comida y se conserva el tipo");
+await Dragon(A, "oro", 2); await SetFood(A, 0);
+var soloFailNoFood = await dragons.BreedSoloAsync(A, new FixedRandom(0.999));
+Check(!soloFailNoFood.Success && soloFailNoFood.TypeA is { From: "oro", FoodKept: false } && soloFailNoFood.A!.Kind == "especial", "y sin comida el tipo cambia igual aunque el intento falle");
+await Dragon(A, "oro", 2); await SetFood(A, 5);
+var foodRace = await Task.WhenAll(Enumerable.Range(0, 12).Select(_ => dragons.BreedSoloAsync(A, new FixedRandom(0.1))));
+Check(foodRace.Count(r => r.Status == DragonBreedStatus.Bred) == 1 && await dragons.CountFoodAsync(A) == 4, "12 intentos a la vez: se hace uno solo y se gasta UNA comida");
+
+await Dragon(A, "oro", 2); await Dragon(B, "defensa", 2); await SetFood(A, 1);
+var msgType = await DragonModule.ResolveBreedAsync(dragons, new DragonBreedOffer(Guid.NewGuid(), A, B, DateTime.UtcNow.AddMinutes(1)), new SequenceRandom(0.1, 0.2, 0.95));
+Check(msgType.Description.Contains("Gastó 1") && msgType.Description.Contains("Comida de Dragón") && msgType.Description.Contains("sigue siendo") && msgType.Description.Contains("Cambió de tipo") && msgType.Description.Contains("Especial"), "el mensaje de la cría cuenta qué pasó con el tipo de cada dragón (uno lo conservó con comida, el otro cambió)");
+Check(msgType.Description.Contains($"<@{A}> 🍖:") && !msgType.Description.Contains($"<@{B}> 🍖"), "y el emoji de la comida va al lado del nombre de quien la usó (y de nadie más)");
+await Dragon(A, "oro", 2);
+var soloMsg = await DragonModule.ExecuteSoloBreedAsync(dragons, A, new FixedRandom(0.1));
+Check(soloMsg.Description.Contains("Cambió de tipo") && soloMsg.Description.Contains("Fuerza"), "y criando solo también");
+await Dragon(A, "oro", 2); await SetFood(A, 0);
+var soloFailMsg = await DragonModule.ExecuteSoloBreedAsync(dragons, A, new FixedRandom(0.999));
+Check(soloFailMsg.Description.Contains("No se dio") && soloFailMsg.Description.Contains("Cambió de tipo") && soloFailMsg.Description.Contains("Especial"), "cuando el intento solo falla el mensaje cuenta igual que cambió de tipo");
+await Dragon(A, "oro", 2); await Dragon(B, "defensa", 2);
+var inviteFood = await DragonModule.PrepareBreedAsync(dragons, offers, A, B, false);
+Check(inviteFood.Embed!.Description.Contains("cambia de tipo al azar") && inviteFood.Embed.Description.Contains("Comida de Dragón") && !inviteFood.Embed.Description.Contains("🍖 quiere") && !inviteFood.Embed.Description.Contains("🍖:"), "la invitación avisa que cada dragón cambia de tipo y que la comida lo evita; si nadie la tiene no hay emoji al lado de ningún nombre");
+await SetFood(A, 1);
+var inviteMarks = await DragonModule.PrepareBreedAsync(dragons, offers, A, B, false);
+Check(inviteMarks.Embed!.Description.Contains($"<@{A}> 🍖 quiere criar") && inviteMarks.Embed.Description.Contains($"<@{B}>: los dos") && !inviteMarks.Embed.Description.Contains($"<@{B}> 🍖"), "al lado del nombre de quien tiene Comida de Dragón aparece su emoji (y de quien no tiene, nada)");
+await SetFood(B, 1);
+var inviteBoth = await DragonModule.PrepareBreedAsync(dragons, offers, A, B, false);
+Check(inviteBoth.Embed!.Description.Contains($"<@{A}> 🍖 quiere criar") && inviteBoth.Embed.Description.Contains($"<@{B}> 🍖: los dos"), "y si los dos tienen, los dos lo llevan");
+await SetFood(A, 0); await SetFood(B, 0);
+
+await Dragon(D, "oro", 3); await SetFood(D, 2);
+var typeFields = (await DragonModule.BuildDragonViewAsync(dragons, D)).Embed.Fields.Where(f => f.Name == "Tipo y comida").ToList();
+Check(typeFields.Count == 1 && typeFields[0].Value.Contains("cambia de tipo") && typeFields[0].Value.Contains("tenés **2**"), "la pantalla del dragón explica el cambio de tipo y cuántas comidas tenés");
+await SetFood(D, 0);
+Check((await DragonModule.BuildDragonViewAsync(dragons, D)).Embed.Fields.Single(f => f.Name == "Tipo y comida").Value.Contains("no tenés"), "y si no tenés, manda a la taberna");
+await Dragon(D, "oro", 10);
+Check(!(await DragonModule.BuildDragonViewAsync(dragons, D)).Embed.Fields.Any(f => f.Name == "Tipo y comida"), "en el tier 10 ya no hay nada que criar: la pantalla no lo ofrece");
+
+await Player(E, 100000);
+await Buy(E, DragonRules.FoodItemName, 3);
+Check(await dragons.CountFoodAsync(E) == 3 && await Gold(E) == 100000 - 3 * foodItem!.BuyPrice, "la Comida de Dragón se compra en la tienda (sin cooldown, de a varias) y va a la mochila");
+var sceneFood = await TabernaModule.BuildSceneAsync(users, items, inventory, buffs, E, null, boxCtx, exchange, svc, dragons);
+Check((Options(sceneFood, "taberna_buy") ?? []).Any(o => o.Value == DragonRules.FoodItemName && o.Description.Contains("dragón")), "la taberna la ofrece en «Comprar comida» diciendo que es para el dragón");
 
 await Clean();
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
