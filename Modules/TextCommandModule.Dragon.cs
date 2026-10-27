@@ -13,12 +13,30 @@ public partial class TextCommandModule
     {
         try
         {
-            await ReplyAsync(embed: await DragonModule.BuildDragonEmbedAsync(dragonRepository, Context.User.Id));
+            var view = await DragonModule.BuildDragonViewAsync(dragonRepository, Context.User.Id);
+            await ReplyAsync(embed: view.Embed, components: view.Components);
         }
         catch (Exception ex)
         {
             BotLog.Error(ex);
             await ReplyAsync("¡Upa! No pude mirar tu dragón, intentá de nuevo en un momento.");
+        }
+    }
+
+    // "aa dragon train [veces]" — entrená a tu dragón con oro: cada nivel suma al bono de su tipo y sale más caro.
+    [Command("dragon train")]
+    [Alias("dragon entrenar", "dragón entrenar")]
+    [Summary("Entrená a tu dragón con oro (cada nivel sale más caro): \"aa dragon train [veces]\".")]
+    public async Task DragonTrainAsync(int times = 1)
+    {
+        try
+        {
+            await ReplyAsync(await DragonModule.ExecuteTrainAsync(dragonRepository, Context.User.Id, times));
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            await ReplyAsync("¡Upa! No pude entrenar a tu dragón, intentá de nuevo en un momento.");
         }
     }
 

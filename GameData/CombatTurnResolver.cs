@@ -3,7 +3,8 @@ namespace BotDsRpg.GameData;
 // Estado de la habilidad de UN jugador dentro de UN combate. default == lista para usar y sin efectos
 // activos. EffectTurnsRemaining son los turnos que le quedan al efecto de la habilidad (Aguante /
 // Sombra) — cuál es depende de la clase, por eso alcanza un solo contador.
-public readonly record struct AbilityState(int CooldownRemaining, int EffectTurnsRemaining);
+// LastStandUsed: el «Aliento final» del dragón (GameData/DragonRules.cs) ya se gastó en esta pelea: va en el mismo estado por jugador porque dura lo mismo que el combate.
+public readonly record struct AbilityState(int CooldownRemaining, int EffectTurnsRemaining, bool LastStandUsed = false);
 
 public enum PlayerAction { Attack, Ability }
 
@@ -26,7 +27,8 @@ public sealed record TurnResult(
     MonsterHitOutcome? MonsterHit,
     int PlayerHpAfter,
     AbilityState StatusAfter,
-    int LeechHeal = 0) // la parte de LifestealHeal que vino del encantamiento Sangre (para el texto del log)
+    int LeechHeal = 0, // la parte de LifestealHeal que vino del encantamiento Sangre (para el texto del log)
+    bool LastStand = false) // este turno el «Aliento final» del dragón te dejó con 1 de vida
 {
     public bool MonsterDefeated => MonsterHpAfter <= 0;
     public bool AnyCritical => CritCount > 0;
@@ -87,9 +89,19 @@ public static class CombatTurnResolver
         var counter = ResolveCounter(player, strike.StatusAfter, monsterDamage);
         int playerHpAfter = Math.Max(0, strike.HpAfterStrike - counter.Hit.Damage);
 
+        // El «Aliento final» del dragón (tier 4+): si este golpe te mataba y todavía no lo usaste en esta pelea, quedás con 1 de vida.
+        var statusAfter = counter.Status;
+        bool lastStand = false;
+        if (playerHpAfter <= 0 && player.Passives.LastStand && !statusAfter.LastStandUsed)
+        {
+            playerHpAfter = 1;
+            lastStand = true;
+            statusAfter = statusAfter with { LastStandUsed = true };
+        }
+
         return new TurnResult(
             strike.AbilityUsed, strike.Ambush, strike.Damage, strike.CritCount, strike.LifestealHeal, monsterHpAfter,
-            strike.HpAfterStrike, counter.Hit, playerHpAfter, counter.Status, strike.LeechHeal);
+            strike.HpAfterStrike, counter.Hit, playerHpAfter, statusAfter, strike.LeechHeal, lastStand);
     }
 
     // La mitad "yo pego" del turno: el golpe (o los de la habilidad), el Sifón de Almas y el enfriamiento. No toca al rival: el que
@@ -171,7 +183,7 @@ public static class CombatTurnResolver
 
         // Usar la habilidad arranca su enfriamiento y su efecto; cualquier otro turno lo hace bajar 1.
         var statusAfterStrike = used is not null
-            ? new AbilityState(used.CooldownTurns, EffectTurnsFor(used.Kind))
+            ? new AbilityState(used.CooldownTurns, EffectTurnsFor(used.Kind), status.LastStandUsed)
             : status with { CooldownRemaining = Math.Max(0, status.CooldownRemaining - 1) };
 
         return new StrikeResult(used, ambush, damage, crits, lifestealHeal, playerHpAfterStrike, statusAfterStrike, leech);

@@ -21,10 +21,10 @@ public sealed record PlayerBonuses(
 
     // La chance de drop de /hunt y de /travel se multiplica por esto (relativo: +24 % sobre un 6 % da 7,44 %); el cofre del jefe no.
     public double HuntDropMultiplier =>
-        FuegoNuevoRules.HuntDropMultiplier(FuegoNuevo) * PetDrop * (1 + (BlessingCatalog.HuntDropPerLevel * BlessingLevel(BlessingCatalog.HuntDropKey)));
+        FuegoNuevoRules.HuntDropMultiplier(FuegoNuevo) * PetDrop * (1 + (BlessingCatalog.HuntDropPerLevel * BlessingLevel(BlessingCatalog.HuntDropKey))) * DragonFactor(d => d.DropPercent);
 
     public double TravelDropMultiplier =>
-        FuegoNuevoRules.TravelDropMultiplier(FuegoNuevo) * PetDrop * (1 + (BlessingCatalog.TravelDropPerLevel * BlessingLevel(BlessingCatalog.TravelDropKey)));
+        FuegoNuevoRules.TravelDropMultiplier(FuegoNuevo) * PetDrop * (1 + (BlessingCatalog.TravelDropPerLevel * BlessingLevel(BlessingCatalog.TravelDropKey))) * DragonFactor(d => d.DropPercent);
 
     public double XpMultiplier =>
         FuegoNuevoRules.XpMultiplier(FuegoNuevo) * (1 + (Pets.XpPercent / 100.0)) * (1 + (BlessingCatalog.XpPerLevel * BlessingLevel(BlessingCatalog.XpKey))) * DragonFactor(d => d.XpPercent);
@@ -39,7 +39,7 @@ public sealed record PlayerBonuses(
     public double DefenseMultiplier =>
         (1 + (Pets.DefensePercent / 100.0)) * (1 + (BlessingCatalog.DefensePerLevel * BlessingLevel(BlessingCatalog.DefenseKey))) * DragonFactor(d => d.DefensePercent);
 
-    public double MaxHpMultiplier => 1 + (BlessingCatalog.HpPerLevel * BlessingLevel(BlessingCatalog.HpKey));
+    public double MaxHpMultiplier => (1 + (BlessingCatalog.HpPerLevel * BlessingLevel(BlessingCatalog.HpKey))) * DragonFactor(d => d.HpPercent);
 
     // Los oficios (v0.13.0, GameData/ProfessionRules.cs): XP total de cada uno (la saca PlayerBonusService de los contadores) y su nivel. Sin datos = nivel 0 = sin efecto.
     public long ProfessionXpOf(string key) => ProfessionXp is not null && ProfessionXp.TryGetValue(key, out long xp) ? Math.Max(0, xp) : 0;
@@ -49,11 +49,11 @@ public sealed record PlayerBonuses(
     // Recolección: cuántas unidades da un /chop o un /mine (se redondea al azar, ver GatheringYield.RollScaled). Multiplica Fuego Nuevo × bendición × oficio × la mascota del Fogón.
     public double ChopMultiplier =>
         FuegoNuevoRules.GatherMultiplier(FuegoNuevo) * (1 + (BlessingCatalog.ChopPerLevel * BlessingLevel(BlessingCatalog.ChopKey)))
-        * ProfessionRules.QuantityMultiplier(ProfessionLevel(ProfessionCatalog.WoodcutterKey)) * PetGather;
+        * ProfessionRules.QuantityMultiplier(ProfessionLevel(ProfessionCatalog.WoodcutterKey)) * PetGather * DragonFactor(d => d.GatherPercent);
 
     public double MineMultiplier =>
         FuegoNuevoRules.GatherMultiplier(FuegoNuevo) * (1 + (BlessingCatalog.MinePerLevel * BlessingLevel(BlessingCatalog.MineKey)))
-        * ProfessionRules.QuantityMultiplier(ProfessionLevel(ProfessionCatalog.MinerKey)) * PetGather;
+        * ProfessionRules.QuantityMultiplier(ProfessionLevel(ProfessionCatalog.MinerKey)) * PetGather * DragonFactor(d => d.GatherPercent);
 
     private double PetGather => 1 + (Pets.GatherPercent / 100.0);
 

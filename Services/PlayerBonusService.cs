@@ -120,7 +120,7 @@ public sealed class PlayerBonusService(
             {
                 if (await dragonRepository.GetAsync(discordId, cancellationToken) is { } owned)
                 {
-                    dragon = DragonRules.BonusesFor(owned.Kind, owned.Tier);
+                    dragon = DragonRules.BonusesFor(owned.Kind, owned.Tier, owned.Level);
                 }
             }
             catch (Exception ex)

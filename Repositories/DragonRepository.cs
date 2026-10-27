@@ -14,15 +14,16 @@ public sealed class DragonRepository(IDbConnectionFactory connectionFactory) : I
         public string Kind { get; set; } = string.Empty;
         public int Tier { get; set; }
         public int FailStreak { get; set; }
+        public int Level { get; set; }
         public double WaitSeconds { get; set; }
     }
 
     private const string SelectColumns = """
-        discord_id AS DiscordId, kind AS Kind, tier AS Tier, fail_streak AS FailStreak,
+        discord_id AS DiscordId, kind AS Kind, tier AS Tier, level AS Level, fail_streak AS FailStreak,
         COALESCE(GREATEST(0, EXTRACT(EPOCH FROM (last_bred_at + make_interval(secs => @Cooldown) - now()))), 0)::float8 AS WaitSeconds
         """;
 
-    private static PlayerDragon ToDragon(DragonRow row) => new(row.Kind, row.Tier, row.FailStreak, TimeSpan.FromSeconds(row.WaitSeconds));
+    private static PlayerDragon ToDragon(DragonRow row) => new(row.Kind, row.Tier, row.FailStreak, TimeSpan.FromSeconds(row.WaitSeconds), row.Level);
 
     public async Task<PlayerDragon?> GetAsync(ulong discordId, CancellationToken cancellationToken = default)
     {
@@ -85,7 +86,89 @@ public sealed class DragonRepository(IDbConnectionFactory connectionFactory) : I
                 new { DiscordId = (long)discordId, Kind = kind }, transaction: transaction, cancellationToken: cancellationToken));
 
             await transaction.CommitAsync(cancellationToken);
-            return new DragonBuyResult(DragonBuyStatus.Bought, new PlayerDragon(kind, 1, 0, TimeSpan.Zero));
+            return new DragonBuyResult(DragonBuyStatus.Bought, new PlayerDragon(kind, 1, 0, TimeSpan.Zero, 0));
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
+
+    public async Task<DragonTrainResult> TrainAsync(ulong discordId, int times, CancellationToken cancellationToken = default)
+    {
+        times = Math.Clamp(times, 1, DragonRules.MaxLevel);
+
+        using DbConnection connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        using DbTransaction transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            // La fila del jugador (el oro) y la del dragón bloqueadas hasta el commit: dos entrenamientos a la vez se ordenan y el segundo ya ve el nivel y el oro que dejó el primero.
+            int? gold = await connection.QuerySingleOrDefaultAsync<int?>(new CommandDefinition(
+                "SELECT gold FROM users WHERE discord_id = @DiscordId FOR UPDATE;",
+                new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
+
+            var row = gold is null ? null : await connection.QuerySingleOrDefaultAsync<DragonRow>(new CommandDefinition(
+                $"SELECT {SelectColumns} FROM player_dragons WHERE discord_id = @DiscordId FOR UPDATE;",
+                new { DiscordId = (long)discordId, Cooldown = DragonRules.BreedCooldown.TotalSeconds }, transaction: transaction, cancellationToken: cancellationToken));
+
+            if (gold is null || row is null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new DragonTrainResult(DragonTrainStatus.NoDragon);
+            }
+
+            int cap = DragonRules.LevelCap(row.Tier);
+            if (row.Level >= cap)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new DragonTrainResult(DragonTrainStatus.AtCap, Dragon: ToDragon(row), GoldLeft: gold.Value);
+            }
+
+            // Cuántos niveles se pueden pagar de los pedidos, hasta el tope del tier: cada uno cuesta lo que dice el nivel en el que está.
+            int gained = 0;
+            long spent = 0;
+            while (gained < times && row.Level + gained < cap)
+            {
+                int cost = DragonRules.TrainCost(row.Level + gained);
+                if (gold.Value - spent < cost)
+                {
+                    break;
+                }
+
+                spent += cost;
+                gained++;
+            }
+
+            if (gained == 0)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new DragonTrainResult(DragonTrainStatus.NotEnoughGold, Dragon: ToDragon(row), NextCost: DragonRules.TrainCost(row.Level), GoldLeft: gold.Value);
+            }
+
+            // El cobro es un UPDATE guardado: si el oro ya no alcanza no vuelve ninguna fila y no se entrena nada.
+            int? left = await connection.QuerySingleOrDefaultAsync<int?>(new CommandDefinition(
+                "UPDATE users SET gold = gold - @Spent WHERE discord_id = @DiscordId AND gold >= @Spent RETURNING gold;",
+                new { DiscordId = (long)discordId, Spent = (int)spent }, transaction: transaction, cancellationToken: cancellationToken));
+
+            if (left is null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new DragonTrainResult(DragonTrainStatus.NotEnoughGold, Dragon: ToDragon(row), NextCost: DragonRules.TrainCost(row.Level), GoldLeft: gold.Value);
+            }
+
+            await connection.ExecuteAsync(new CommandDefinition(
+                "UPDATE player_dragons SET level = level + @Gained WHERE discord_id = @DiscordId;",
+                new { DiscordId = (long)discordId, Gained = gained }, transaction: transaction, cancellationToken: cancellationToken));
+
+            await transaction.CommitAsync(cancellationToken);
+
+            int newLevel = row.Level + gained;
+            row.Level = newLevel;
+            return new DragonTrainResult(
+                DragonTrainStatus.Trained, gained, spent, ToDragon(row), newLevel >= cap ? 0 : DragonRules.TrainCost(newLevel), left.Value);
         }
         catch
         {

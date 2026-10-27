@@ -58,7 +58,8 @@ await Clean();
 Console.WriteLine("== 1. Las reglas puras ==");
 bool curveOk = DragonRules.Kinds.All(k => Enumerable.Range(1, 9).All(t => DragonRules.BonusPercent(k, t) < DragonRules.BonusPercent(k, t + 1)) && DragonRules.BonusPercent(k, 10) == DragonRules.MaxPercent(k) && DragonRules.BonusPercent(k, 1) > 0 && DragonRules.BonusPercent(k, 1) < DragonRules.MaxPercent(k) * 0.1);
 Check(curveOk && DragonRules.MaxPercent("fuerza") == 12 && DragonRules.MaxPercent("defensa") == 8 && DragonRules.MaxPercent("oro") == 30 && DragonRules.MaxPercent("especial") == 25, "el bono sube en cada tier (curva convexa), el tier 10 da el máximo de su tipo (12 ATQ / 8 DEF / 30 oro / 25 EXP) y el tier 1 menos del 10 % de eso");
-Check(DragonRules.BonusesFor("fuerza", 10).AttackPercent == 12 && DragonRules.BonusesFor("defensa", 10).DefensePercent == 8 && DragonRules.BonusesFor("oro", 10).GoldPercent == 30 && DragonRules.BonusesFor("especial", 10).XpPercent == 25 && DragonRules.BonusesFor("oro", 5).AttackPercent == 0, "cada tipo mejora SOLO lo suyo");
+Check(DragonRules.BonusesFor("fuerza", 3).AttackPercent == DragonRules.BonusPercent("fuerza", 3) && DragonRules.BonusesFor("defensa", 3).DefensePercent == DragonRules.BonusPercent("defensa", 3) && DragonRules.BonusesFor("oro", 3).GoldPercent == DragonRules.BonusPercent("oro", 3) && DragonRules.BonusesFor("especial", 3).XpPercent == DragonRules.BonusPercent("especial", 3)
+    && DragonRules.BonusesFor("oro", 3).AttackPercent == 0 && DragonRules.BonusesFor("oro", 3).XpPercent == 0 && DragonRules.BonusesFor("fuerza", 3).GoldPercent == 0, "cada tipo mejora SOLO lo suyo (la estadística de su especialidad; los extras de tier son aparte)");
 Check(DragonRules.TierName(1) == "Cría" && DragonRules.TierName(10) == "Eterno" && DragonRules.TierNumeral(4) == "IV" && Enumerable.Range(1, 10).Select(DragonRules.TierName).Distinct().Count() == 10, "diez nombres de tier distintos, de Cría a Eterno");
 Check(DragonRules.BreedChance(1) == 1.0 && DragonRules.BreedChance(2) == 0.60 && DragonRules.BreedChance(9) == 0.0011 && DragonRules.BreedChance(10) == 0 && Enumerable.Range(1, 8).All(t => DragonRules.BreedChance(t) > DragonRules.BreedChance(t + 1)) && Enumerable.Range(1, 8).All(t => DragonRules.PityCap(t) < DragonRules.PityCap(t + 1)), "la chance de criar baja tier a tier (100 / 60 / 30 / 15 / 5 / 2 / 1 / 0,33 / 0,11 %) y el tope de fallos sube");
 Check(DragonRules.RollBreed(1, 0, new FixedRandom(0.999)) && !DragonRules.RollBreed(2, 0, new FixedRandom(0.999)) && DragonRules.RollBreed(2, DragonRules.PityCap(2), new FixedRandom(0.999)) && DragonRules.RollBreed(9, DragonRules.PityCap(9), new FixedRandom(0.999)) && !DragonRules.RollBreed(10, 99, new FixedRandom(0)),
@@ -119,8 +120,9 @@ Check(raceBreed.Count(r => r.Status == DragonBreedStatus.Bred) == 1 && raceBreed
 Console.WriteLine("\n== 4. Los bonos en PlayerBonuses ==");
 var none = PlayerBonuses.None; var withGold = none with { Dragon = DragonRules.BonusesFor("oro", 10) };
 var withXp = none with { Dragon = DragonRules.BonusesFor("especial", 10) }; var withAtk = none with { Dragon = DragonRules.BonusesFor("fuerza", 10) }; var withDef = none with { Dragon = DragonRules.BonusesFor("defensa", 10) };
-Check(Math.Abs(withGold.GoldMultiplier / none.GoldMultiplier - 1.30) < 1e-9 && Math.Abs(withXp.XpMultiplier / none.XpMultiplier - 1.25) < 1e-9 && Math.Abs(withAtk.AttackMultiplier - 1.12) < 1e-9 && Math.Abs(withDef.DefenseMultiplier - 1.08) < 1e-9, "un dragón de tier 10 multiplica el oro ×1,30, la EXP ×1,25, el ataque ×1,12 o la defensa ×1,08 según su tipo");
-Check(withGold.XpMultiplier == none.XpMultiplier && withXp.GoldMultiplier == none.GoldMultiplier && withAtk.DefenseMultiplier == none.DefenseMultiplier && !withGold.IsNone && none.IsNone && (none with { Dragon = DragonBonuses.None }).IsNone, "cada tipo toca solo lo suyo; con dragón ya no es «sin bonos»");
+Check(Math.Abs(withGold.GoldMultiplier / none.GoldMultiplier - (1 + DragonRules.BonusesFor("oro", 10).GoldPercent / 100)) < 1e-9 && Math.Abs(withXp.XpMultiplier / none.XpMultiplier - (1 + DragonRules.BonusesFor("especial", 10).XpPercent / 100)) < 1e-9 && Math.Abs(withAtk.AttackMultiplier - (1 + DragonRules.BonusesFor("fuerza", 10).AttackPercent / 100)) < 1e-9 && Math.Abs(withDef.DefenseMultiplier - (1 + DragonRules.BonusesFor("defensa", 10).DefensePercent / 100)) < 1e-9
+    && withGold.GoldMultiplier > 1.4, $"un dragón de tier 10 multiplica el oro, la EXP, el ataque o la defensa según su tipo, con la Llama eterna y las mejoras de tier (oro ×{withGold.GoldMultiplier:0.000})");
+Check(withGold.AttackMultiplier == 1.0 + DragonRules.BonusesFor("oro", 10).AttackPercent / 100 && withGold.XpMultiplier / none.XpMultiplier == 1 + DragonRules.BonusesFor("oro", 10).XpPercent / 100 && !withGold.IsNone && none.IsNone && (none with { Dragon = DragonBonuses.None }).IsNone, "cada tipo toca solo lo suyo; con dragón ya no es «sin bonos»");
 await Clean(); await Player(D); await dragons.BuyAsync(D, 1, "oro"); await db.ExecuteAsync("UPDATE player_dragons SET tier = 6 WHERE discord_id = @id", new { id = (long)D });
 var svc = sp.GetRequiredService<IPlayerBonusService>();
 var bD = await svc.GetAsync(D, 0); var bNo = await svc.GetAsync(GHOST, 0);
@@ -130,9 +132,9 @@ Console.WriteLine("\n== 5. La pantalla ==");
 var empty = await DragonModule.BuildDragonEmbedAsync(dragons, GHOST);
 Check(empty.Description.Contains("/taberna") && empty.Description.Contains("3.000") && empty.Fields.Length == 0, "sin dragón: dice cómo conseguirlo (taberna, 3.000 de oro)");
 var view = await DragonModule.BuildDragonEmbedAsync(dragons, D);
-var ladder = view.Fields.Single(f => f.Name.Contains("Los tiers")).Value.Split('\n');
-Check(view.Description.Contains("Tier **6/10**") && view.Description.Contains("Curtido") && ladder.Length == 10 && ladder.Count(l => l.StartsWith("▶️")) == 1 && ladder[5].StartsWith("▶️") && view.Fields.Any(f => f.Name.Contains("Criar") && f.Value.Contains("/dragon-breed")) && view.Length < 6000,
-    "con dragón: el tier y su nombre, la escalera de 10 tiers con el actual marcado, y cómo va la cría");
+var ladder = view.Fields.Single(f => f.Name.Contains("mejora nueva")).Value.Split('\n');
+Check(view.Description.Contains("Tier **6/10**") && view.Description.Contains("Curtido") && ladder.Length == 10 && ladder.Count(l => l.StartsWith("✅")) == 6 && ladder.Count(l => l.StartsWith("🔒")) == 4 && ladder[3].Contains("Aliento final") && view.Description.Contains("Nivel **0/60**") && view.Fields.Any(f => f.Name.Contains("Criar") && f.Value.Contains("/dragon-breed")) && view.Fields.Any(f => f.Name.Contains("Entrenar")) && view.Length < 6000,
+    "con dragón: el tier, el nivel y su nombre, las 10 mejoras (✅ las 6 que ya desbloqueó, 🔒 las 4 que faltan), el entrenamiento y cómo va la cría");
 await Dragon(D, "oro", 10);
 var maxView = await DragonModule.BuildDragonEmbedAsync(dragons, D);
 Check(maxView.Description.Contains("tier máximo") && !maxView.Fields.Any(f => f.Name.Contains("Criar")), "en el tier 10: lo dice y ya no ofrece criar");
@@ -192,14 +194,100 @@ var slashDragon = interactions.SlashCommands.Single(c => c.Name == "dragon"); va
 Check(slashDragon.Parameters.Count == 0 && slashBreed.Parameters.Count == 1 && slashBreed.Parameters[0].Name == "amigo" && slashDragon.Description.Length <= 100 && slashBreed.Description.Length <= 100, $"/dragon y /dragon-breed existen, con descripciones de {slashDragon.Description.Length} y {slashBreed.Description.Length} caracteres (≤ 100)");
 IComponentInteraction Click(string id) => FakeProxy.Make<IComponentInteraction>(new() { ["Data"] = FakeProxy.Make<IComponentInteractionData>(new() { ["CustomId"] = id }) });
 var rAccept = interactions.SearchComponentCommand(Click($"dragon_accept:{Guid.NewGuid()}")); var rDecline = interactions.SearchComponentCommand(Click($"dragon_decline:{Guid.NewGuid()}"));
-Check(rAccept.IsSuccess && rAccept.Command.MethodName == "HandleAcceptAsync" && rDecline.IsSuccess && rDecline.Command.MethodName == "HandleDeclineAsync", "los botones dragon_accept / dragon_decline llegan a su método (sin que el grupo les cambie el id)");
+var rTrain = interactions.SearchComponentCommand(Click($"dragon_train:{A}"));
+Check(rAccept.IsSuccess && rAccept.Command.MethodName == "HandleAcceptAsync" && rDecline.IsSuccess && rDecline.Command.MethodName == "HandleDeclineAsync" && rTrain.IsSuccess && rTrain.Command.MethodName == "HandleTrainButtonAsync", "los botones dragon_accept / dragon_decline / dragon_train llegan a su método (sin que el grupo les cambie el id)");
+var slashTrain = interactions.SlashCommands.Single(c => c.Name == "dragon-train");
+Check(slashTrain.Parameters.Count == 1 && slashTrain.Parameters[0].Name == "veces" && !slashTrain.Parameters[0].IsRequired && slashTrain.Description.Length <= 100, $"/dragon-train existe con «veces» opcional y {slashTrain.Description.Length} caracteres de descripción (≤ 100)");
 var texts = new CommandService();
 texts.AddTypeReader<IUser>(new GuildUserTypeReader(), true);
 await texts.AddModuleAsync<TextCommandModule>(sp);
-Check(new[] { "dragon", "dragón", "dragones" }.All(a => texts.Search(a) is { IsSuccess: true } f && f.Commands.Any(c => c.Command.Name == "dragon")) && texts.Search("dragon breed @amigo").Commands.Any(c => c.Command.Name == "dragon breed") && texts.Search("dragon criar @amigo").Commands.Any(c => c.Command.Name == "dragon breed"), "aa dragon (y dragón / dragones) y aa dragon breed @amigo (o «criar») existen");
-Check(!FightLock.IsAllowed("dragon") && !FightLock.IsAllowed("dragon-breed"), "en plena pelea los comandos del dragón quedan bloqueados (como todo lo que no es de la pelea)");
+Check(new[] { "dragon", "dragón", "dragones" }.All(a => texts.Search(a) is { IsSuccess: true } f && f.Commands.Any(c => c.Command.Name == "dragon")) && texts.Search("dragon breed @amigo").Commands.Any(c => c.Command.Name == "dragon breed") && texts.Search("dragon criar @amigo").Commands.Any(c => c.Command.Name == "dragon breed") && texts.Search("dragon train 3").Commands.Any(c => c.Command.Name == "dragon train") && texts.Search("dragon entrenar").Commands.Any(c => c.Command.Name == "dragon train"), "aa dragon (y dragón / dragones), aa dragon breed @amigo (o «criar») y aa dragon train [veces] (o «entrenar») existen");
+Check(!FightLock.IsAllowed("dragon") && !FightLock.IsAllowed("dragon-breed") && !FightLock.IsAllowed("dragon-train"), "en plena pelea los comandos del dragón quedan bloqueados (como todo lo que no es de la pelea)");
 bool built = true; try { ActivatorUtilities.CreateInstance(sp, typeof(DragonModule)); ActivatorUtilities.CreateInstance(sp, typeof(TabernaModule)); ActivatorUtilities.CreateInstance(sp, typeof(TextCommandModule)); } catch (Exception ex) { built = false; Console.WriteLine("   " + ex.Message); }
 Check(built && HelpModule.BuildInfoEmbed().Fields.Any(f => f.Value.Contains("`/dragon`")), "los módulos se construyen con el DI real y /info nombra /dragon");
+
+Console.WriteLine("\n== 10. Una mejora nueva en cada tier ==");
+var kinds = DragonRules.Kinds;
+bool perksGrow = kinds.All(k => Enumerable.Range(1, 9).All(t => { var lo = DragonRules.BonusesFor(k, t); var hi = DragonRules.BonusesFor(k, t + 1); return hi.AttackPercent >= lo.AttackPercent && hi.DefensePercent >= lo.DefensePercent && hi.GoldPercent >= lo.GoldPercent && hi.XpPercent >= lo.XpPercent && hi.GatherPercent >= lo.GatherPercent && hi.DropPercent >= lo.DropPercent && hi.HpPercent >= lo.HpPercent && (hi.LastStand || !lo.LastStand); }));
+var t1 = DragonRules.BonusesFor("fuerza", 1); var t2 = DragonRules.BonusesFor("fuerza", 2); var t3 = DragonRules.BonusesFor("fuerza", 3); var t4 = DragonRules.BonusesFor("fuerza", 4); var t5 = DragonRules.BonusesFor("fuerza", 5);
+var t6 = DragonRules.BonusesFor("fuerza", 6); var t7 = DragonRules.BonusesFor("fuerza", 7); var t8 = DragonRules.BonusesFor("fuerza", 8); var t9 = DragonRules.BonusesFor("fuerza", 9);
+Check(perksGrow && DragonRules.Perks.Count == 10 && DragonRules.Perks.Select(p => p.Name).Distinct().Count() == 10 && DragonRules.Perks.Select(p => p.Tier).SequenceEqual(Enumerable.Range(1, 10)), "cada tier tiene su mejora (10 distintas) y los extras solo suben: nunca se pierde lo que dio un tier anterior");
+Check(t1.DropPercent == 0 && t1.GatherPercent == 0 && !t1.LastStand && t2.DropPercent == 4 && t2.GatherPercent == 0 && t3.GatherPercent == 5 && !t3.LastStand && t4.LastStand && t4.HpPercent == 0 && t5.HpPercent == 4 && t5.XpPercent == 0 && t6.XpPercent == 5 && t6.GoldPercent == 0 && t7.GoldPercent == 5
+    && t7.DefensePercent == 0 && t8.DefensePercent == 3 && t8.AttackPercent == DragonRules.BonusPercent("fuerza", 8) + 3 && t9.DropPercent == 7 && t9.GatherPercent == 8 && t9.GoldPercent == 8 && t9.XpPercent == 8,
+    "lo que desbloquea cada tier: II drop +4 %, III recolección +5 %, IV Aliento final, V vida +4 %, VI EXP +5 %, VII oro +5 %, VIII ATQ y DEF +3 %, IX +3 % a drop, recolección, oro y EXP");
+var eterno = DragonRules.BonusesFor("oro", 10, 0);
+Check(DragonRules.TypePercent("oro", 10, 0) == Math.Round(30 * DragonRules.EternalMultiplier, 1) && eterno.GoldPercent == DragonRules.TypePercent("oro", 10, 0) + 5 + 3 && DragonRules.TypePercent("oro", 9, 0) == DragonRules.BonusPercent("oro", 9), "en el tier 10 la Llama eterna hace rendir ×1,25 el bono de su tipo (y solo ahí)");
+var perkNone = PlayerBonuses.None;
+Check(Math.Abs((perkNone with { Dragon = t2 }).HuntDropMultiplier / perkNone.HuntDropMultiplier - 1.04) < 1e-9 && Math.Abs((perkNone with { Dragon = t2 }).TravelDropMultiplier / perkNone.TravelDropMultiplier - 1.04) < 1e-9 && Math.Abs((perkNone with { Dragon = t3 }).ChopMultiplier / perkNone.ChopMultiplier - 1.05) < 1e-9
+    && Math.Abs((perkNone with { Dragon = t3 }).MineMultiplier / perkNone.MineMultiplier - 1.05) < 1e-9 && Math.Abs((perkNone with { Dragon = t5 }).MaxHpMultiplier - 1.04) < 1e-9 && (perkNone with { Dragon = t1 }).HuntDropMultiplier == perkNone.HuntDropMultiplier,
+    "las mejoras entran en PlayerBonuses: drop de /hunt y /travel, cantidad de /chop y /mine y vida máxima");
+
+Console.WriteLine("\n== 11. Entrenar ==");
+Check(DragonRules.LevelCap(1) == 10 && DragonRules.LevelCap(5) == 50 && DragonRules.LevelCap(10) == 100 && DragonRules.MaxLevel == 100 && DragonRules.LevelBonusPercent("oro", 100) == 15 && DragonRules.LevelBonusPercent("fuerza", 100) == 6 && DragonRules.LevelBonusPercent("oro", 0) == 0
+    && DragonRules.TypePercent("oro", 5, 50) > DragonRules.TypePercent("oro", 5, 0) && DragonRules.BonusesFor("oro", 1, 99).GoldPercent == DragonRules.TypePercent("oro", 1, 10), "el nivel máximo es tier × 10, cada nivel suma al bono de su tipo y un nivel de más (pasado el tope del tier) no cuenta");
+bool dearer = Enumerable.Range(0, 99).All(l => DragonRules.TrainCost(l) < DragonRules.TrainCost(l + 1));
+long fullPrice = DragonRules.TrainCostBetween(0, 100);
+Check(dearer && DragonRules.TrainCost(0) == 50 && DragonRules.TrainCost(9) is > 3500 and < 4500 && DragonRules.TrainCost(99) is > 280000 and < 350000 && fullPrice is > 9_000_000 and < 14_000_000 && DragonRules.TrainCostBetween(0, 10) is > 10_000 and < 25_000,
+    $"cada nivel sale más caro que el anterior (nivel 1: {DragonRules.TrainCost(0)}, nivel 10: {DragonRules.TrainCost(9)}, nivel 100: {DragonRules.TrainCost(99)}); hasta el 10 son {DragonRules.TrainCostBetween(0, 10):N0} y hasta el 100 unos {fullPrice:N0} de oro");
+await Clean(); await Player(A, 100000); await Player(B, 10); await Player(C, 1_000_000);
+await Dragon(A, "oro", 1);
+Check((await dragons.TrainAsync(GHOST, 1)).Status == DragonTrainStatus.NoDragon && (await dragons.TrainAsync(B, 1)).Status == DragonTrainStatus.NoDragon, "sin cuenta o sin dragón no se entrena");
+var one = await dragons.TrainAsync(A, 1);
+Check(one.Status == DragonTrainStatus.Trained && one.LevelsGained == 1 && one.GoldSpent == DragonRules.TrainCost(0) && one.Dragon!.Level == 1 && await Gold(A) == 100000 - DragonRules.TrainCost(0) && one.NextCost == DragonRules.TrainCost(1), "entrenar un nivel: cobra lo que dice la tabla, sube el nivel y avisa lo que cuesta el próximo");
+var five = await dragons.TrainAsync(A, 5);
+long expectFive = Enumerable.Range(1, 5).Sum(l => (long)DragonRules.TrainCost(l));
+Check(five.LevelsGained == 5 && five.GoldSpent == expectFive && five.Dragon!.Level == 6 && await Gold(A) == 100000 - DragonRules.TrainCost(0) - (int)expectFive, "entrenar varios niveles juntos cobra cada uno a su precio (cada nivel más caro)");
+var capped = await dragons.TrainAsync(A, 50);
+Check(capped.Status == DragonTrainStatus.Trained && capped.LevelsGained == 4 && capped.Dragon!.Level == 10 && capped.NextCost == 0, "pidiendo de más, se entrena hasta el tope del tier (nivel 10 en el tier 1) y no pasa de ahí");
+int goldBefore = await Gold(A);
+var atCap = await dragons.TrainAsync(A, 1);
+Check(atCap.Status == DragonTrainStatus.AtCap && await Gold(A) == goldBefore && (await dragons.GetAsync(A))!.Level == 10, "en el tope del tier no se entrena ni se cobra");
+await db.ExecuteAsync("UPDATE player_dragons SET tier = 2 WHERE discord_id = @id", new { id = (long)A });
+Check((await dragons.TrainAsync(A, 1)).Status == DragonTrainStatus.Trained && (await dragons.GetAsync(A))!.Level == 11, "al subir de tier se abren 10 niveles más");
+await Dragon(B, "fuerza", 3); await db.ExecuteAsync("UPDATE users SET gold = @g WHERE discord_id = @id", new { id = (long)B, g = DragonRules.TrainCost(0) - 1 });
+var poorTrain = await dragons.TrainAsync(B, 1);
+Check(poorTrain.Status == DragonTrainStatus.NotEnoughGold && poorTrain.NextCost == DragonRules.TrainCost(0) && poorTrain.GoldLeft == DragonRules.TrainCost(0) - 1 && (await dragons.GetAsync(B))!.Level == 0, "sin oro para el siguiente nivel: no cobra, no entrena y dice cuánto falta");
+int threeLevels = DragonRules.TrainCost(0) + DragonRules.TrainCost(1) + DragonRules.TrainCost(2);
+await Dragon(C, "defensa", 5); await db.ExecuteAsync("UPDATE users SET gold = @g WHERE discord_id = @id", new { id = (long)C, g = threeLevels });
+var partial = await dragons.TrainAsync(C, 10);
+Check(partial.LevelsGained == 3 && partial.GoldSpent == threeLevels && await Gold(C) == 0 && partial.Dragon!.Level == 3, "con oro para 3 niveles y pidiendo 10: entrena 3 y deja el oro en cero (nunca en negativo)");
+await db.ExecuteAsync("UPDATE users SET gold = @g WHERE discord_id = @id; UPDATE player_dragons SET level = 0 WHERE discord_id = @id", new { id = (long)C, g = threeLevels });
+var trainRace = await Task.WhenAll(Enumerable.Range(0, 10).Select(_ => dragons.TrainAsync(C, 1)));
+Check(trainRace.Count(r => r.Status == DragonTrainStatus.Trained) == 3 && trainRace.Count(r => r.Status == DragonTrainStatus.NotEnoughGold) == 7 && await Gold(C) == 0 && (await dragons.GetAsync(C))!.Level == 3, "10 entrenamientos a la vez con oro para tres niveles: se entrenan exactamente 3 y el oro no queda en negativo");
+Check((await DragonModule.ExecuteTrainAsync(dragons, GHOST, 1)).Contains("/taberna") && (await DragonModule.ExecuteTrainAsync(dragons, B, 1)).Contains("Te falta oro") && (await DragonModule.ExecuteTrainAsync(dragons, A, 1)).Contains("nivel 12/20"), "los mensajes del entrenamiento: sin dragón, sin oro y éxito (con el nivel nuevo y el tope del tier)");
+var trainView = await DragonModule.BuildDragonViewAsync(dragons, B);
+var trainButton = trainView.Components!.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<ButtonComponent>().Single();
+await Dragon(B, "fuerza", 1); await db.ExecuteAsync("UPDATE player_dragons SET level = 10 WHERE discord_id = @id", new { id = (long)B });
+Check(trainButton.CustomId == $"dragon_train:{B}" && trainButton.Label.StartsWith("Entrenar (") && (await DragonModule.BuildDragonViewAsync(dragons, B)).Components is null, "la pantalla trae el botón «Entrenar (costo)» y en el tope del tier ya no lo trae");
+
+Console.WriteLine("\n== 12. El Aliento final (tier 4) en el resolutor de combate ==");
+var ghostProfile = new CombatantProfile(50, 0, "Guerrero", ClassPassives.For("Guerrero") with { LastStand = true });
+var plainProfile = new CombatantProfile(50, 0, "Guerrero", ClassPassives.For("Guerrero"));
+TurnResult Hit(CombatantProfile p, AbilityState st, int hp, PlayerAction action = PlayerAction.Attack)
+{
+    // El esquive es al azar: se repite hasta que el monstruo pegue (con 500 de daño siempre mata si pega).
+    for (int i = 0; i < 200; i++) { var r = CombatTurnResolver.ResolveTurn(p, st, action, hp, 100, 100000, 500); if (r.MonsterHit is { Damage: > 0 }) return r; }
+    throw new InvalidOperationException("el monstruo nunca pegó");
+}
+var saved = Hit(ghostProfile, default, 5);
+Check(saved.PlayerHpAfter == 1 && saved.LastStand && saved.StatusAfter.LastStandUsed, "el golpe que te mataba te deja con 1 de vida y gasta el Aliento final");
+var secondHit = Hit(ghostProfile, saved.StatusAfter, 1);
+Check(secondHit.PlayerHpAfter == 0 && !secondHit.LastStand, "es UNA vez por pelea: con el aliento ya gastado, el siguiente golpe mata");
+var noPerk = Hit(plainProfile, default, 5);
+Check(noPerk.PlayerHpAfter == 0 && !noPerk.LastStand, "sin dragón de tier 4 el golpe mata como siempre");
+var abilityKeeps = ClassAbilities.For("Guerrero") is not null ? Hit(new CombatantProfile(50, 0, "Guerrero", ClassPassives.For("Guerrero") with { LastStand = true }), new AbilityState(0, 0, true), 5, PlayerAction.Ability) : null;
+Check(abilityKeeps is not null && abilityKeeps.StatusAfter.LastStandUsed && abilityKeeps.PlayerHpAfter == 0, "usar la habilidad de clase no «recarga» el Aliento final (el estado gastado se conserva)");
+var survives = CombatTurnResolver.ResolveTurn(ghostProfile, default, PlayerAction.Attack, 100, 100, 100000, 3);
+Check(!survives.LastStand && survives.PlayerHpAfter > 0 && !survives.StatusAfter.LastStandUsed, "si el golpe no te mataba, el aliento no se gasta");
+var weapon = (await sp.GetRequiredService<IItemRepository>().GetByNameAsync("Espada de Madera"))!;
+await Player(D); await Dragon(D, "oro", 4); var pD = (await users.GetByDiscordIdAsync(D))!;
+var profile4 = PlayerCombatProfileCalculator.Resolve(pD, weapon, null, 0, PlayerBonuses.None with { Dragon = DragonRules.BonusesFor("oro", 4) });
+var profile3 = PlayerCombatProfileCalculator.Resolve(pD, weapon, null, 0, PlayerBonuses.None with { Dragon = DragonRules.BonusesFor("oro", 3) });
+var duel = PlayerCombatProfileCalculator.Resolve(pD, weapon, null);
+Check(profile4.Passives.LastStand && !profile3.Passives.LastStand && !duel.Passives.LastStand, "el perfil de combate trae el Aliento final desde el tier 4 y SOLO contra monstruos (sin bonos, como en duelos y Arena, no)");
+var turnEmbedSuffix = typeof(AdventureModule).GetMethod("LastStandSuffix", BindingFlags.NonPublic | BindingFlags.Static)!;
+string lastLine = (string)turnEmbedSuffix.Invoke(null, [saved])!; string lastLineEn; using (Loc.Use("en")) { lastLineEn = (string)turnEmbedSuffix.Invoke(null, [saved])!; }
+Check(lastLine.Contains("Aliento final") && lastLineEn.Contains("Last breath") && (string)turnEmbedSuffix.Invoke(null, [noPerk])! == string.Empty, "el texto del turno avisa el Aliento final (en español y en inglés) solo cuando saltó");
 
 await Clean();
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");

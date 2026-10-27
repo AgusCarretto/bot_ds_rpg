@@ -7,9 +7,13 @@ using Discord.Interactions;
 // Lo que sale de invitar a criar: Error (un rechazo, solo para quien invitó) o el mensaje con la invitación (Content pinguea al invitado) y sus botones.
 public sealed record BreedInvite(string? Error, string? Content = null, Embed? Embed = null, MessageComponent? Components = null);
 
+// La pantalla del dragón: el embed y, si todavía se puede entrenar, el botón de entrenar un nivel.
+public sealed record DragonView(Embed Embed, MessageComponent? Components);
+
 // El DRAGÓN (v0.30.0; GameData/DragonRules.cs, Repositories/DragonRepository.cs, tabla player_dragons): /dragon muestra el tuyo, /dragon-breed @amigo lo cría con el de un amigo del MISMO tier (si sale bien suben los
-// dos) y se compra en la taberna (DragonModule.ExecuteBuyAsync, que la lista de cajas de la taberna ofrece mientras no tengas uno). Los botones de la invitación viven en este mismo módulo (sin [Group], para que Discord.Net
-// no les pegue el nombre del grupo): Aceptar solo lo toca el invitado; Rechazar, cualquiera de los dos. Toda la lógica es estática y sin Context: el slash, los botones y el comando de texto llaman a lo mismo.
+// dos de TIER y cada tier desbloquea una mejora nueva), /dragon-train lo ENTRENA con oro (sube el NIVEL, cada uno más caro, hasta tier × 10) y se compra en la taberna (DragonModule.ExecuteBuyAsync, que la lista de cajas de la
+// taberna ofrece mientras no tengas uno). Los botones viven en este mismo módulo (sin [Group], para que Discord.Net no les pegue el nombre del grupo): Aceptar solo lo toca el invitado; Rechazar, cualquiera de los dos;
+// Entrenar, el dueño de la pantalla. Toda la lógica es estática y sin Context: el slash, los botones y el comando de texto llaman a lo mismo.
 public class DragonModule(IUserRepository userRepository, IDragonRepository dragonRepository, IDragonBreedOfferService offerService)
     : InteractionModuleBase<SocketInteractionContext>
 {
@@ -17,20 +21,68 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
     public const string ShopKey = "__dragon__";
     private const string AcceptPrefix = "dragon_accept";
     private const string DeclinePrefix = "dragon_decline";
+    private const string TrainPrefix = "dragon_train";
 
-    [SlashCommand("dragon", "Mirá tu dragón: su tipo, su tier, lo que te da y cómo criarlo con un amigo.")]
+    [SlashCommand("dragon", "Mirá tu dragón: su tipo, su tier, sus mejoras, y cómo entrenarlo y criarlo con un amigo.")]
     public async Task HandleDragonAsync()
     {
         await DeferAsync();
 
         try
         {
-            await FollowupAsync(embed: await BuildDragonEmbedAsync(dragonRepository, Context.User.Id));
+            var view = await BuildDragonViewAsync(dragonRepository, Context.User.Id);
+            await FollowupAsync(embed: view.Embed, components: view.Components);
         }
         catch (Exception ex)
         {
             BotLog.Error(ex);
             await FollowupAsync("¡Upa! No pude mirar tu dragón, intentá de nuevo en un momento.", ephemeral: true);
+        }
+    }
+
+    [SlashCommand("dragon-train", "Entrená a tu dragón con oro: cada nivel suma al bono de su tipo y sale más caro que el anterior.")]
+    public async Task HandleTrainAsync([Summary("veces", "Cuántos niveles (se entrena hasta donde alcance el oro)")] int veces = 1)
+    {
+        await DeferAsync();
+
+        try
+        {
+            await FollowupAsync(await ExecuteTrainAsync(dragonRepository, Context.User.Id, veces));
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            await FollowupAsync("¡Upa! No pude entrenar a tu dragón, intentá de nuevo en un momento.", ephemeral: true);
+        }
+    }
+
+    // El botón «Entrenar» de la pantalla del dragón: entrena UN nivel, refresca la pantalla en su lugar y dice cómo salió (solo lo ves vos).
+    [ComponentInteraction($"{TrainPrefix}:*")]
+    public async Task HandleTrainButtonAsync(string ownerRaw)
+    {
+        await DeferAsync();
+
+        try
+        {
+            if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
+            {
+                await FollowupAsync("Ese dragón es de otra persona: mirá el tuyo con **/dragon**.", ephemeral: true);
+                return;
+            }
+
+            string message = await ExecuteTrainAsync(dragonRepository, ownerId, 1);
+            var view = await BuildDragonViewAsync(dragonRepository, ownerId);
+            await ModifyOriginalResponseAsync(p =>
+            {
+                p.Embed = view.Embed;
+                p.Components = view.Components ?? new ComponentBuilder().Build();
+            });
+            await FollowupAsync(message, ephemeral: true);
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            await FollowupAsync("¡Upa! No pude entrenar a tu dragón, intentá de nuevo en un momento.", ephemeral: true);
         }
     }
 
@@ -135,39 +187,60 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
 
     // ---------------- La lógica (estática, sin Context) ----------------
 
-    private static string Bonus(string kind, int tier) => $"**+{DragonRules.Percent(DragonRules.BonusPercent(kind, tier))} %** {DragonRules.KindEffect(kind)}";
+    // «+12,5 % de ATQ contra monstruos» (el bono de su tipo, ya con tier y nivel).
+    private static string TypeBonus(string kind, int tier, int level) => $"**+{DragonRules.Percent(DragonRules.TypePercent(kind, tier, level))} %** {DragonRules.KindEffect(kind)}";
 
-    // La pantalla del dragón. Sin dragón, cómo conseguirlo; con él, tipo, tier, lo que da ahora y en el próximo tier, la escalera completa de su tipo y cómo va la cría.
-    public static async Task<Embed> BuildDragonEmbedAsync(IDragonRepository dragonRepository, ulong discordId)
+    // La pantalla del dragón. Sin dragón, cómo conseguirlo; con él: tipo, tier, nivel, lo que da (base + entrenamiento), las mejoras de cada tier (las que ya desbloqueó y las que faltan), el entrenamiento y la cría.
+    public static async Task<DragonView> BuildDragonViewAsync(IDragonRepository dragonRepository, ulong discordId)
     {
         var dragon = await dragonRepository.GetAsync(discordId);
         var embed = new EmbedBuilder().WithTitle("🐲 Tu dragón").WithColor(Color.DarkOrange);
 
         if (dragon is null)
         {
-            return embed.WithDescription(
-                $"Todavía no tenés dragón. En la **/taberna** podés comprar uno por **{DragonRules.ShopPrice:N0}** de oro (una sola vez): el tipo sale al azar —🗡️ Fuerza, 🛡️ Defensa, 💰 Oro o, con suerte, ✨ Especial— y empieza de **Cría**. " +
-                "Después lo criás con el de un amigo que tenga **tu mismo tier** (**/dragon-breed**): si sale bien, suben los dos. Cuanto más alto el tier, más te da.").Build();
+            return new DragonView(embed.WithDescription(
+                $"Todavía no tenés dragón. En la **/taberna** podés comprar uno por **{GameHistory.Number(DragonRules.ShopPrice)}** de oro (una sola vez): el tipo sale al azar —🗡️ Fuerza, 🛡️ Defensa, 💰 Oro o, con suerte, ✨ Especial— y empieza de **Cría**. " +
+                "Después lo **entrenás** con oro (**/dragon-train**) y lo **criás** con el de un amigo que tenga **tu mismo tier** (**/dragon-breed**): cada tier le desbloquea una mejora nueva.").Build(), null);
         }
 
         string kind = dragon.Kind;
-        bool max = dragon.Tier >= DragonRules.MaxTier;
+        int cap = DragonRules.LevelCap(dragon.Tier);
+        bool maxTier = dragon.Tier >= DragonRules.MaxTier;
+        string detail = maxTier
+            ? $"base {DragonRules.Percent(DragonRules.BonusPercent(kind, dragon.Tier))} + entrenamiento {DragonRules.Percent(DragonRules.LevelBonusPercent(kind, dragon.Level))}, por la Llama eterna ×{DragonRules.Percent(DragonRules.EternalMultiplier)}"
+            : $"del tier {DragonRules.Percent(DragonRules.BonusPercent(kind, dragon.Tier))} + del entrenamiento {DragonRules.Percent(DragonRules.LevelBonusPercent(kind, dragon.Level))}";
         embed.WithDescription(
-            $"{DragonRules.KindEmoji(kind)} **{DragonRules.TierName(dragon.Tier)}** · Tier **{dragon.Tier}/{DragonRules.MaxTier}** · tipo **{DragonRules.KindName(kind)}**\n" +
-            $"Te da {Bonus(kind, dragon.Tier)}" + (max ? "\n🏆 Está en el tier máximo." : $" · en el próximo tier: **+{DragonRules.Percent(DragonRules.BonusPercent(kind, dragon.Tier + 1))} %**") +
-            "\n_Solo cuenta contra los monstruos (no en duelos ni en la Arena) y dura toda la vida de tu cuenta: el Fuego Nuevo no lo toca._");
+            $"{DragonRules.KindEmoji(kind)} **{DragonRules.TierName(dragon.Tier)}** · Tier **{dragon.Tier}/{DragonRules.MaxTier}** · Nivel **{dragon.Level}/{cap}** · tipo **{DragonRules.KindName(kind)}**\n" +
+            $"Te da {TypeBonus(kind, dragon.Tier, dragon.Level)} ({detail}).\n" +
+            (maxTier ? "🏆 Está en el tier máximo.\n" : string.Empty) +
+            "_Solo cuenta contra los monstruos (no en duelos ni en la Arena) y dura toda la vida de tu cuenta: el Fuego Nuevo no lo toca._");
 
-        var ladder = Enumerable.Range(1, DragonRules.MaxTier).Select(t =>
-            $"{(t == dragon.Tier ? "▶️" : "▫️")} **{DragonRules.TierNumeral(t)}** {DragonRules.TierName(t)} · +{DragonRules.Percent(DragonRules.BonusPercent(kind, t))} %");
-        embed.AddField($"📈 Los tiers del tipo {DragonRules.KindName(kind)}", string.Join('\n', ladder), false);
+        // Una mejora nueva por tier: ✅ las que ya desbloqueó, 🔒 las que le faltan.
+        var perkLines = DragonRules.Perks.Select(p => $"{(p.Tier <= dragon.Tier ? "✅" : "🔒")} **{DragonRules.TierNumeral(p.Tier)}** {p.Name}: {p.Text}");
+        string perks = string.Join('\n', perkLines);
+        embed.AddField("🎁 Una mejora nueva en cada tier", perks.Length <= 1024 ? perks : perks[..1023] + "…", false);
 
-        if (!max)
+        if (dragon.Level >= cap)
         {
-            int cap = DragonRules.PityCap(dragon.Tier);
+            embed.AddField("🏋️ Entrenar", $"Llegó al nivel máximo de su tier (**{cap}**)." + (maxTier ? " ¡Es lo más alto que se puede!" : " Para seguir entrenándolo, subilo de tier criándolo (**/dragon-breed**): cada tier suma 10 niveles más."), false);
+        }
+        else
+        {
+            long toCap = DragonRules.TrainCostBetween(dragon.Level, cap);
+            embed.AddField(
+                "🏋️ Entrenar",
+                $"Próximo nivel: **{GameHistory.Number(DragonRules.TrainCost(dragon.Level))}** de oro (cada nivel sale más caro). Hasta el tope de este tier ({cap}): **{GameHistory.Number(toCap)}** de oro. " +
+                $"Cada nivel suma **+{DragonRules.Percent(DragonRules.MaxPercent(kind) * DragonRules.LevelShare)} %** {DragonRules.KindEffect(kind)}. Con el botón de abajo o con **/dragon-train**.",
+                false);
+        }
+
+        if (!maxTier)
+        {
+            int pityCap = DragonRules.PityCap(dragon.Tier);
             string wait = dragon.CanBreed ? "✅ Puede criar **ya**" : $"⏳ Descansa: puede criar en **{TimeFormat.Remaining(dragon.Wait)}**";
-            string pity = cap == 0
+            string pity = pityCap == 0
                 ? "En este tier la cría es **segura**."
-                : $"Fallos seguidos: **{dragon.FailStreak}/{cap}**. Con {cap} fallos seguidos, el siguiente intento sale **seguro**.";
+                : $"Fallos seguidos: **{dragon.FailStreak}/{pityCap}**. Con {pityCap} fallos seguidos, el siguiente intento sale **seguro**.";
             embed.AddField(
                 "🥚 Criar",
                 $"{wait}\nChance de subir de tier: **{DragonRules.Percent(Math.Round(DragonRules.BreedChance(dragon.Tier) * 100, 2))} %** por intento · en promedio, unos **{DragonRules.ExpectedAttempts(dragon.Tier):0.#}** intentos.\n{pity}\n" +
@@ -175,7 +248,41 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
                 false);
         }
 
-        return embed.Build();
+        MessageComponent? components = dragon.Level >= cap
+            ? null
+            : new ComponentBuilder().WithButton($"Entrenar ({GameHistory.Number(DragonRules.TrainCost(dragon.Level))} oro)", $"{TrainPrefix}:{discordId}", ButtonStyle.Primary, new Emoji("🏋️")).Build();
+
+        return new DragonView(embed.Build(), components);
+    }
+
+    // Solo el embed (lo que usan el comando de texto y las pruebas).
+    public static async Task<Embed> BuildDragonEmbedAsync(IDragonRepository dragonRepository, ulong discordId) => (await BuildDragonViewAsync(dragonRepository, discordId)).Embed;
+
+    // Entrenar al dragón (el slash, el botón y «aa dragon train»): hasta `times` niveles, hasta donde alcance el oro y el tope del tier. Devuelve lo que se le cuenta al jugador.
+    public static async Task<string> ExecuteTrainAsync(IDragonRepository dragonRepository, ulong discordId, int times)
+    {
+        var result = await dragonRepository.TrainAsync(discordId, times);
+        switch (result.Status)
+        {
+            case DragonTrainStatus.Trained:
+            {
+                var dragon = result.Dragon!;
+                string levels = result.LevelsGained == 1 ? "1 nivel" : $"{result.LevelsGained} niveles";
+                return $"🏋️ Entrenaste a tu dragón **{levels}** por **{GameHistory.Number(result.GoldSpent)}** de oro (te quedan {GameHistory.Number(result.GoldLeft)}): ahora está en el **nivel {dragon.Level}/{DragonRules.LevelCap(dragon.Tier)}** y te da {TypeBonus(dragon.Kind, dragon.Tier, dragon.Level)}. " +
+                       (result.NextCost > 0
+                           ? $"El próximo nivel cuesta **{GameHistory.Number(result.NextCost)}**."
+                           : "Llegó al nivel máximo de su tier: para seguir, subilo de tier criándolo con **/dragon-breed**.");
+            }
+
+            case DragonTrainStatus.AtCap:
+                return $"Tu dragón ya está en el nivel máximo de su tier (**{DragonRules.LevelCap(result.Dragon!.Tier)}**). Para seguir entrenándolo, subilo de tier criándolo con **/dragon-breed**.";
+
+            case DragonTrainStatus.NotEnoughGold:
+                return $"Te falta oro: el próximo nivel cuesta **{GameHistory.Number(result.NextCost)}** y tenés **{GameHistory.Number(result.GoldLeft)}**.";
+
+            default:
+                return "No tenés dragón: comprá uno en la **/taberna**.";
+        }
     }
 
     // Comprar el dragón (lo que hace la opción de la taberna). Devuelve lo que contesta el tabernero.
@@ -186,9 +293,9 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
         return result.Status switch
         {
             DragonBuyStatus.Bought =>
-                $"{NpcDialogue.Shopkeeper(ShopkeeperLine.BuySuccess)}\n\n🐲 Compraste un dragón: sale del huevo un **{DragonRules.KindEmoji(kind)} {DragonRules.KindName(kind)}** (tier 1, **{DragonRules.TierName(1)}**) y ya te da {Bonus(kind, 1)}. Miralo con **/dragon** y criálo con un amigo con **/dragon-breed**.",
+                $"{NpcDialogue.Shopkeeper(ShopkeeperLine.BuySuccess)}\n\n🐲 Compraste un dragón: sale del huevo un **{DragonRules.KindEmoji(kind)} {DragonRules.KindName(kind)}** (tier 1, **{DragonRules.TierName(1)}**) y ya te da {TypeBonus(kind, 1, 0)}. Miralo con **/dragon**, entrenalo con **/dragon-train** y criálo con un amigo con **/dragon-breed**.",
             DragonBuyStatus.AlreadyHave => "Pero si ya tenés un dragón. Cada uno tiene el suyo: miralo con **/dragon**.",
-            DragonBuyStatus.NotEnoughGold => $"{NpcDialogue.Shopkeeper(ShopkeeperLine.NoGold)}\nUn dragón cuesta **{DragonRules.ShopPrice:N0}** de oro.",
+            DragonBuyStatus.NotEnoughGold => $"{NpcDialogue.Shopkeeper(ShopkeeperLine.NoGold)}\nUn dragón cuesta **{GameHistory.Number(DragonRules.ShopPrice)}** de oro.",
             _ => "Primero tenés que empezar tu aventura con **/start**.",
         };
     }
@@ -234,12 +341,13 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
         }
 
         var offer = offerService.Create(fromId, toId);
+        var perk = DragonRules.Perks[mine.Tier]; // la mejora que desbloquea el tier siguiente
         var embed = new EmbedBuilder()
             .WithTitle("🐲 Invitación a criar")
             .WithColor(Color.DarkOrange)
             .WithDescription(
                 $"<@{fromId}> quiere criar su dragón con el de <@{toId}>: los dos son **Tier {mine.Tier} ({DragonRules.TierName(mine.Tier)})**.\n" +
-                $"Chance de que los dos suban al tier {mine.Tier + 1}: **{DragonRules.Percent(Math.Round(DragonRules.BreedChance(mine.Tier) * 100, 2))} %**" +
+                $"Chance de que los dos suban al tier {mine.Tier + 1} (**{perk.Name}**: {perk.Text}): **{DragonRules.Percent(Math.Round(DragonRules.BreedChance(mine.Tier) * 100, 2))} %**" +
                 (Math.Max(mine.FailStreak, theirs.FailStreak) >= DragonRules.PityCap(mine.Tier) ? " (¡y esta vez sale **segura**!)" : string.Empty) +
                 $". Pase lo que pase, los dos descansan {TimeFormat.Remaining(DragonRules.BreedCooldown)}.\n\n<@{toId}>, ¿aceptás? Tenés 2 minutos.")
             .Build();
@@ -262,11 +370,12 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
             case DragonBreedStatus.Bred when result.Success:
             {
                 int tier = result.Tier + 1;
+                var perk = DragonRules.Perks[tier - 1];
                 return embed.WithColor(Color.Gold).WithDescription(
-                    $"✨ **¡Salió bien!** Los dos dragones suben al **Tier {tier}: {DragonRules.TierName(tier)}**.\n" +
-                    $"<@{offer.FromId}>: {DragonRules.KindEmoji(result.A!.Kind)} {DragonRules.KindName(result.A.Kind)} · {Bonus(result.A.Kind, tier)}\n" +
-                    $"<@{offer.ToId}>: {DragonRules.KindEmoji(result.B!.Kind)} {DragonRules.KindName(result.B.Kind)} · {Bonus(result.B.Kind, tier)}\n" +
-                    (tier >= DragonRules.MaxTier ? "\n🏆 ¡Llegaron al tier máximo!" : $"\nDescansan {TimeFormat.Remaining(DragonRules.BreedCooldown)} antes de volver a criar.")).Build();
+                    $"✨ **¡Salió bien!** Los dos dragones suben al **Tier {tier}: {DragonRules.TierName(tier)}** y desbloquean una mejora nueva: **{perk.Name}** — {perk.Text}\n" +
+                    $"<@{offer.FromId}>: {DragonRules.KindEmoji(result.A!.Kind)} {DragonRules.KindName(result.A.Kind)} · {TypeBonus(result.A.Kind, tier, result.A.Level)}\n" +
+                    $"<@{offer.ToId}>: {DragonRules.KindEmoji(result.B!.Kind)} {DragonRules.KindName(result.B.Kind)} · {TypeBonus(result.B.Kind, tier, result.B.Level)}\n" +
+                    (tier >= DragonRules.MaxTier ? "\n🏆 ¡Llegaron al tier máximo!" : $"\nAhora pueden entrenar hasta el nivel {DragonRules.LevelCap(tier)} y descansan {TimeFormat.Remaining(DragonRules.BreedCooldown)} antes de volver a criar.")).Build();
             }
 
             case DragonBreedStatus.Bred:
