@@ -3,6 +3,7 @@ using BotDsRpg.Repositories;
 using BotDsRpg.Services;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 
 // Lo que sale de invitar a criar: Error (un rechazo, solo para quien invitó) o el mensaje con la invitación (Content pinguea al invitado) y sus botones.
 public sealed record BreedInvite(string? Error, string? Content = null, Embed? Embed = null, MessageComponent? Components = null);
@@ -10,11 +11,14 @@ public sealed record BreedInvite(string? Error, string? Content = null, Embed? E
 // La pantalla del dragón: el embed y, si todavía se puede entrenar, el botón de entrenar un nivel.
 public sealed record DragonView(Embed Embed, MessageComponent? Components);
 
+// La pantalla del tablón de crías (v0.33.0): el embed, sus componentes (la lista para invitar y los botones; null si no hay tablón para vos) y los jugadores que se pueden invitar desde esa lista.
+public sealed record DragonBoardView(Embed Embed, MessageComponent? Components, IReadOnlyList<ulong> Candidates);
+
 // El DRAGÓN (v0.30.0; GameData/DragonRules.cs, Repositories/DragonRepository.cs, tabla player_dragons): /dragon muestra el tuyo, /dragon-breed @amigo lo cría con el de un amigo del MISMO tier (si sale bien suben los
 // dos de TIER y cada tier desbloquea una mejora nueva), /dragon-train lo ENTRENA con oro (sube el NIVEL, cada uno más caro, hasta tier × 10) y se compra en la taberna (DragonModule.ExecuteBuyAsync, que la lista de cajas de la
 // taberna ofrece mientras no tengas uno). Los botones viven en este mismo módulo (sin [Group], para que Discord.Net no les pegue el nombre del grupo): Aceptar solo lo toca el invitado; Rechazar, cualquiera de los dos;
 // Entrenar, el dueño de la pantalla. Toda la lógica es estática y sin Context: el slash, los botones y el comando de texto llaman a lo mismo.
-public class DragonModule(IUserRepository userRepository, IDragonRepository dragonRepository, IDragonBreedOfferService offerService)
+public class DragonModule(IUserRepository userRepository, IDragonRepository dragonRepository, IDragonBreedOfferService offerService, IDragonBoardService boardService, IReminderService reminders)
     : InteractionModuleBase<SocketInteractionContext>
 {
     // El valor de la opción «Dragón» en la lista de la taberna. No choca con ningún nombre de ítem.
@@ -22,6 +26,9 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
     private const string AcceptPrefix = "dragon_accept";
     private const string DeclinePrefix = "dragon_decline";
     private const string TrainPrefix = "dragon_train";
+    private const string BoardTogglePrefix = "dragon_board_toggle";
+    private const string BoardRefreshPrefix = "dragon_board_refresh";
+    private const string BoardPickPrefix = "dragon_board_pick";
 
     [SlashCommand("dragon", "Mirá tu dragón: su tipo, su tier, sus mejoras, y cómo entrenarlo y criarlo con un amigo.")]
     public async Task HandleDragonAsync()
@@ -113,6 +120,7 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
             if (amigo is null)
             {
                 await FollowupAsync(embed: await ExecuteSoloBreedAsync(dragonRepository, Context.User.Id));
+                boardService.Remove(Context.User.Id);
                 return;
             }
 
@@ -165,6 +173,11 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
                 p.Embed = embed;
                 p.Components = new ComponentBuilder().Build();
             });
+
+            // Los dos criaron: salen del tablón y, como los dos descansan, se les arma el aviso de cuándo pueden volver (al que aceptó ya se lo arma el cierre del comando; el que invitó no tiene interacción propia).
+            boardService.Remove(offer.FromId);
+            boardService.Remove(offer.ToId);
+            await reminders.SyncManyAsync([offer.FromId, offer.ToId], Context.Channel.Id, "dragon");
         }
         catch (Exception ex)
         {
@@ -208,7 +221,280 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
         }
     }
 
+    // ---------------- El tablón de crías (v0.33.0) ----------------
+
+    private Task<string> BoardNameAsync(ulong id) => ResolveNameAsync(Context.Client, Context.Guild, id);
+
+    [SlashCommand("dragon-board", "Tablón de crías: anotate para buscar pareja de tu tier y mirá quién busca.")]
+    public async Task HandleBoardAsync()
+    {
+        await DeferAsync();
+
+        try
+        {
+            var view = await BuildBoardAsync(dragonRepository, boardService, Context.User.Id, Context.Guild?.Id ?? 0, BoardNameAsync);
+            await FollowupAsync(embed: view.Embed, components: view.Components);
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            await FollowupAsync("¡Upa! No pude abrir el tablón, intentá de nuevo en un momento.", ephemeral: true);
+        }
+    }
+
+    // El botón «Anotarme / Salir del tablón»: solo el dueño de la pantalla. Refresca la pantalla en su lugar y dice cómo quedó (solo lo ves vos).
+    [ComponentInteraction($"{BoardTogglePrefix}:*")]
+    public async Task HandleBoardToggleAsync(string ownerRaw)
+    {
+        await DeferAsync();
+
+        try
+        {
+            if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
+            {
+                await FollowupAsync("Ese tablón lo abrió otra persona: abrí el tuyo con **/dragon-board**.", ephemeral: true);
+                return;
+            }
+
+            ulong guildId = Context.Guild?.Id ?? 0;
+            string message = await ExecuteBoardToggleAsync(dragonRepository, boardService, ownerId, guildId);
+            var view = await BuildBoardAsync(dragonRepository, boardService, ownerId, guildId, BoardNameAsync);
+            await ModifyOriginalResponseAsync(p =>
+            {
+                p.Embed = view.Embed;
+                p.Components = view.Components ?? new ComponentBuilder().Build();
+            });
+            await FollowupAsync(message, ephemeral: true);
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            await FollowupAsync("¡Upa! No pude actualizar el tablón, intentá de nuevo en un momento.", ephemeral: true);
+        }
+    }
+
+    [ComponentInteraction($"{BoardRefreshPrefix}:*")]
+    public async Task HandleBoardRefreshAsync(string ownerRaw)
+    {
+        await DeferAsync();
+
+        try
+        {
+            if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
+            {
+                await FollowupAsync("Ese tablón lo abrió otra persona: abrí el tuyo con **/dragon-board**.", ephemeral: true);
+                return;
+            }
+
+            var view = await BuildBoardAsync(dragonRepository, boardService, ownerId, Context.Guild?.Id ?? 0, BoardNameAsync);
+            await ModifyOriginalResponseAsync(p =>
+            {
+                p.Embed = view.Embed;
+                p.Components = view.Components ?? new ComponentBuilder().Build();
+            });
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            await FollowupAsync("¡Upa! No pude actualizar el tablón, intentá de nuevo en un momento.", ephemeral: true);
+        }
+    }
+
+    // La lista «Invitar a criar a…»: manda la invitación de siempre (con sus botones Aceptar / Rechazar) a quien elegiste. Solo la usa el dueño de la pantalla.
+    [ComponentInteraction($"{BoardPickPrefix}:*")]
+    public async Task HandleBoardPickAsync(string ownerRaw, string[] values)
+    {
+        await DeferAsync();
+
+        try
+        {
+            if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
+            {
+                await FollowupAsync("Ese tablón lo abrió otra persona: abrí el tuyo con **/dragon-board**.", ephemeral: true);
+                return;
+            }
+
+            if (values.Length == 0 || !ulong.TryParse(values[0], out ulong toId))
+            {
+                await FollowupAsync("No entendí a quién querés invitar: elegí de la lista de nuevo.", ephemeral: true);
+                return;
+            }
+
+            var invite = await PrepareBoardInviteAsync(dragonRepository, offerService, boardService, ownerId, Context.Guild?.Id ?? 0, toId);
+            if (invite.Error is not null)
+            {
+                await FollowupAsync(invite.Error, ephemeral: true);
+                return;
+            }
+
+            await FollowupAsync(invite.Content, embed: invite.Embed, components: invite.Components);
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            await FollowupAsync("¡Upa! No pude armar la invitación, intentá de nuevo en un momento.", ephemeral: true);
+        }
+    }
+
     // ---------------- La lógica (estática, sin Context) ----------------
+
+    // ---- El tablón de crías (v0.33.0) ----
+    // El dueño (2026-10-28): «vamos con la 1 de lleno» = el aviso de cuándo puede volver a criar (ReminderCatalog, tipo «dragon») y un tablón para encontrar pareja del MISMO tier: con la piedad que se duplica por tier, los tiers
+    // altos dependen de encontrar a alguien. Anotarse (Services/DragonBoardService, en memoria) dura unas horas; la lista muestra solo a los que de verdad pueden criar con vos ahora, leyendo su dragón de la base cada vez.
+
+    // El nombre para mostrar de un jugador: el del servidor si el bot lo tiene en memoria, si no el de Discord (una consulta), si no «Jugador id». Nunca tira.
+    public static async Task<string> ResolveNameAsync(DiscordSocketClient client, SocketGuild? guild, ulong id)
+    {
+        try
+        {
+            if (guild?.GetUser(id) is { } member)
+            {
+                return member.DisplayName;
+            }
+
+            var user = await client.GetUserAsync(id);
+            return user?.Username ?? $"Jugador {id}";
+        }
+        catch
+        {
+            return $"Jugador {id}";
+        }
+    }
+
+    private static string Truncate(string text, int max) => text.Length <= max ? text : text[..(max - 1)] + "…";
+
+    // La pantalla del tablón: tu dragón, si estás anotado, quiénes de tu servidor buscan pareja de TU tier (y pueden criar ya) y cuántos buscan en otros tiers. nameOf: cómo se llama cada jugador (el módulo lo resuelve con Discord).
+    public static async Task<DragonBoardView> BuildBoardAsync(IDragonRepository dragonRepository, IDragonBoardService board, ulong viewerId, ulong guildId, Func<ulong, Task<string>> nameOf)
+    {
+        var embed = new EmbedBuilder().WithTitle("🐲 Tablón de crías").WithColor(Color.DarkOrange);
+        var mine = await dragonRepository.GetAsync(viewerId);
+        if (mine is null)
+        {
+            return new DragonBoardView(embed.WithDescription("Para usar el tablón necesitás un dragón: comprá uno en la **/taberna** (o con **/shop buy dragon**).").Build(), null, []);
+        }
+
+        if (mine.Tier >= DragonRules.MaxTier)
+        {
+            return new DragonBoardView(embed.WithDescription("Tu dragón ya está en el tier máximo: no hay nada más que criar.").Build(), null, []);
+        }
+
+        var listed = board.Get(viewerId);
+        bool iAmListed = listed is not null && listed.GuildId == guildId;
+
+        // Los anotados de este servidor que de verdad pueden criar ahora: los de tu tier se pueden invitar; de los otros solo se cuenta cuántos hay.
+        var sameTier = new List<(ulong Id, PlayerDragon Dragon)>();
+        var otherTiers = new SortedDictionary<int, int>();
+        foreach (var entry in board.Entries(guildId).Where(e => e.DiscordId != viewerId).Take(40))
+        {
+            var dragon = await dragonRepository.GetAsync(entry.DiscordId);
+            if (dragon is null || !dragon.CanBreed || dragon.Tier >= DragonRules.MaxTier)
+            {
+                continue;
+            }
+
+            if (dragon.Tier == mine.Tier)
+            {
+                sameTier.Add((entry.DiscordId, dragon));
+            }
+            else
+            {
+                otherTiers[dragon.Tier] = otherTiers.GetValueOrDefault(dragon.Tier) + 1;
+            }
+        }
+
+        string state = mine.CanBreed ? "puede criar ya" : $"descansa: puede criar en **{TimeFormat.Remaining(mine.Wait)}**";
+        string listing = iAmListed
+            ? $"📌 **Estás anotado** en el tablón (te quedan {TimeFormat.Remaining(board.Remaining(viewerId) ?? TimeSpan.Zero)})."
+            : "No estás anotado: tocá **Anotarme** para que los demás de tu tier sepan que buscás pareja.";
+        embed.WithDescription(
+            $"{DragonRules.KindEmoji(mine.Kind)} **{mine.Name ?? DragonRules.TierName(mine.Tier)}** · Tier **{mine.Tier}** ({DragonRules.TierName(mine.Tier)}) — {state}.\n{listing}\n" +
+            $"_Anotarte dura {(int)DragonBoardService.Lifetime.TotalHours} horas o hasta que críes. Solo aparecen los que pueden criar ahora._");
+
+        var lines = new List<string>();
+        int used = 0;
+        foreach (var (id, dragon) in sameTier)
+        {
+            string line = $"• <@{id}> — {DragonRules.KindEmoji(dragon.Kind)} {DragonRules.KindName(dragon.Kind)} · nivel {dragon.Level}";
+            if (used + line.Length + 1 > 900)
+            {
+                lines.Add($"… y {sameTier.Count - lines.Count} más");
+                break;
+            }
+
+            lines.Add(line);
+            used += line.Length + 1;
+        }
+
+        embed.AddField(
+            $"Buscan pareja de tu tier ({sameTier.Count})",
+            sameTier.Count > 0 ? string.Join('\n', lines) : "Nadie de tu tier por ahora. Anotate y esperá, o invitá a un amigo con **/dragon-breed @amigo**.",
+            false);
+        if (otherTiers.Count > 0)
+        {
+            embed.AddField("En otros tiers", string.Join(" · ", otherTiers.Select(t => $"Tier {t.Key}: {t.Value}")), false);
+        }
+
+        bool canInvite = sameTier.Count > 0 && mine.CanBreed;
+        embed.WithFooter(canInvite ? "Elegí a alguien de la lista para mandarle la invitación a criar." : "Cuando haya alguien de tu tier y tu dragón pueda criar, lo invitás desde acá.");
+
+        var components = new ComponentBuilder();
+        int row = 0;
+        if (canInvite)
+        {
+            var menu = new SelectMenuBuilder().WithCustomId($"{BoardPickPrefix}:{viewerId}").WithPlaceholder("Invitar a criar a…").WithMinValues(1).WithMaxValues(1);
+            foreach (var (id, dragon) in sameTier.Take(25))
+            {
+                string name = await nameOf(id);
+                menu.AddOption(
+                    Truncate(string.IsNullOrWhiteSpace(name) ? $"Jugador {id}" : name, 100),
+                    id.ToString(),
+                    Truncate($"Tier {dragon.Tier} · {DragonRules.KindName(dragon.Kind)} · nivel {dragon.Level}", 100));
+            }
+
+            components.WithSelectMenu(menu, row++);
+        }
+
+        components.WithButton(iAmListed ? "Salir del tablón" : "Anotarme en el tablón", $"{BoardTogglePrefix}:{viewerId}", iAmListed ? ButtonStyle.Secondary : ButtonStyle.Success, new Emoji(iAmListed ? "❌" : "📌"), row: row);
+        components.WithButton("Actualizar", $"{BoardRefreshPrefix}:{viewerId}", ButtonStyle.Secondary, new Emoji("🔄"), row: row);
+
+        return new DragonBoardView(embed.Build(), components.Build(), sameTier.Select(c => c.Id).ToList());
+    }
+
+    // «Anotarme / Salir»: si ya estás anotado en este servidor te saca; si no, te anota. Devuelve lo que se le cuenta al jugador.
+    public static async Task<string> ExecuteBoardToggleAsync(IDragonRepository dragonRepository, IDragonBoardService board, ulong userId, ulong guildId)
+    {
+        var dragon = await dragonRepository.GetAsync(userId);
+        if (dragon is null)
+        {
+            return "Para usar el tablón necesitás un dragón: comprá uno en la **/taberna** (o con **/shop buy dragon**).";
+        }
+
+        if (dragon.Tier >= DragonRules.MaxTier)
+        {
+            return "Tu dragón ya está en el tier máximo: no hay nada más que criar.";
+        }
+
+        if (board.Get(userId) is { } mine && mine.GuildId == guildId)
+        {
+            board.Remove(userId);
+            return "Saliste del tablón: ya no aparecés como que buscás pareja.";
+        }
+
+        board.List(guildId, userId);
+        return $"📌 Quedaste anotado en el tablón por **{(int)DragonBoardService.Lifetime.TotalHours} horas** (o hasta que críes): los de tu tier que miren el tablón te van a ver y te pueden invitar.";
+    }
+
+    // Invitar a alguien DEL TABLÓN: comprueba que siga anotado en este servidor y después es la invitación de siempre (mismo tier, descansados, etc.).
+    public static async Task<BreedInvite> PrepareBoardInviteAsync(IDragonRepository dragonRepository, IDragonBreedOfferService offerService, IDragonBoardService board, ulong fromId, ulong guildId, ulong toId)
+    {
+        if (board.Get(toId) is not { } entry || entry.GuildId != guildId)
+        {
+            return new BreedInvite($"<@{toId}> ya no está anotado en el tablón (se salió o venció): actualizá la lista.");
+        }
+
+        return await PrepareBreedAsync(dragonRepository, offerService, fromId, toId, false);
+    }
+
 
     // «+12,5 % de ATQ contra monstruos» (el bono de su tipo, ya con tier y nivel).
     private static string TypeBonus(string kind, int tier, int level) => $"**+{DragonRules.Percent(DragonRules.TypePercent(kind, tier, level))} %** {DragonRules.KindEffect(kind)}";

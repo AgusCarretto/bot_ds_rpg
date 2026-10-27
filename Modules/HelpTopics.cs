@@ -437,6 +437,9 @@ public static class HelpTopics
                 "Solo, sin amigo (**/dragon-breed** a secas): **un tercio** de la chance y el **triple** de fallos para el intento seguro."),
             ("🍖 Tipo y comida",
                 $"En **cada cría** (salga bien o mal) tu dragón **cambia de tipo al azar**: puede tocarte el mismo, y los niveles entrenados se quedan y rinden según el tipo nuevo. Para **conservar el tipo**, tené **{ItemEmojiRegistry.Label(DragonRules.FoodItemName, string.Empty)}** en la mochila: se gasta **una por cría**, sola. Se compra en la **/taberna**. En la invitación a criar, el 🍖 al lado del nombre dice quién tiene."),
+            ("📌 Tablón y aviso",
+                $"**/dragon-board** (en texto `aa dragon board`) es el tablón de crías de tu servidor: **anotate** para que los demás de tu mismo tier sepan que buscás pareja (dura {(int)DragonBoardService.Lifetime.TotalHours} horas o hasta que críes) y mirá quién busca; elegís a alguien de la lista y le llega la invitación a criar. Solo aparecen los que pueden criar ahora. " +
+                $"Además el bot te **avisa** cuando termina el descanso de la cría ({Dur(DragonRules.BreedCooldown)}); se apaga con **/reminders**."),
             ("✏️ Nombre",
                 $"**/dragon-name** le pone (o le cambia) el nombre por **{GameHistory.Number(DragonRules.RenamePrice)}** de oro cada vez; en texto `aa dragon name <nombre>`. Sale en tu **/profile**."));
     }
@@ -456,7 +459,7 @@ public static class HelpTopics
             ("⚙️ Elegir cuáles",
                 "**/reminders** (en texto `aa recordatorios` o `aa avisos`) abre una lista donde marcás cuáles querés recibir, con botones para recibir o silenciar todos. Al apagar uno se borra el aviso que estaba pendiente."),
             ("📌 Cosas a saber",
-                "El aviso se arma cuando usás el comando y sobrevive a un reinicio del bot; si el bot estuvo apagado y el aviso llega muy tarde, se descarta. Para las **mascotas** avisa cuando la primera que pueda subir de nivel puede comer de nuevo."));
+                "El aviso se arma cuando usás el comando y sobrevive a un reinicio del bot; si el bot estuvo apagado y el aviso llega muy tarde, se descarta. Para las **mascotas** avisa cuando la primera que pueda subir de nivel puede comer de nuevo. Para el **dragón**, cuando termina el descanso de la cría."));
     }
 
     private static Embed Vote() => Topic(Self("vote"),

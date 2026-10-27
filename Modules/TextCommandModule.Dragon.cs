@@ -69,6 +69,7 @@ public partial class TextCommandModule
             if (friend is null)
             {
                 await ReplyAsync(embed: await DragonModule.ExecuteSoloBreedAsync(dragonRepository, Context.User.Id));
+                dragonBoard.Remove(Context.User.Id);
                 return;
             }
 
@@ -85,6 +86,25 @@ public partial class TextCommandModule
         {
             BotLog.Error(ex);
             await ReplyAsync("¡Upa! No pude armar la invitación, intentá de nuevo en un momento.");
+        }
+    }
+
+
+    // "aa dragon board" — el tablón de crías de este servidor: anotate para buscar pareja de tu tier y mirá quién busca.
+    [Command("dragon board")]
+    [Alias("dragon tablon", "dragon tablón", "dragón tablón", "tablon", "tablón")]
+    [Summary("El tablón de crías: anotate para buscar pareja de dragón de tu tier y mirá quién busca: \"aa dragon board\".")]
+    public async Task DragonBoardAsync()
+    {
+        try
+        {
+            var view = await DragonModule.BuildBoardAsync(dragonRepository, dragonBoard, Context.User.Id, Context.Guild?.Id ?? 0, id => DragonModule.ResolveNameAsync(Context.Client, Context.Guild, id));
+            await ReplyAsync(embed: view.Embed, components: view.Components);
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            await ReplyAsync("¡Upa! No pude abrir el tablón, intentá de nuevo en un momento.");
         }
     }
 }

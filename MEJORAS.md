@@ -7,7 +7,7 @@ _Última revisión: 2026-10-28 (v0.32.1: la ayuda `/info` con el dragón y las h
 Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para no tener que recorrerlo entero, esto es lo que de verdad está abierto:
 
 **Lo último que se hizo (v0.28 a v0.32) y lo que dejó abierto**
-- **Dragón** (v0.30 a v0.32, ver abajo): comprarlo, 10 tiers con una mejora cada uno, entrenarlo con oro, criar en pareja (cada dragón con su suerte y su contador) o solo, y el tipo se sortea en cada cría salvo que gastes una Comida de Dragón (5.000). Abierto: un **recordatorio de cría** (cada 12 h; entra como un tipo más de `ReminderCatalog`), un **tablón para encontrar compañero del mismo tier** (con los topes de piedad que se duplican por tier, los tiers altos dependen de encontrar pareja), logros y títulos del dragón, mirar el balance del tipo Oro en el tier 10 (≈ ×1,65 de oro con mascotas, bendición y banco; `report_economy.sql`) y cuánta comida compra la gente.
+- **Dragón** (v0.30 a v0.32, ver abajo): comprarlo, 10 tiers con una mejora cada uno, entrenarlo con oro, criar en pareja (cada dragón con su suerte y su contador) o solo, y el tipo se sortea en cada cría salvo que gastes una Comida de Dragón (5.000). Hecho en v0.33.0: el **recordatorio de cría** y el **tablón de parejas** (ver abajo). Abierto: logros y títulos del dragón, mirar el balance del tipo Oro en el tier 10 (≈ ×1,65 de oro con mascotas, bendición y banco; `report_economy.sql`) y cuánta comida compra la gente.
 - **Herramientas** (v0.29 a v0.31): abiertas las de la Zona 2 y la 4, un **tercer tipo** bajo `/tools` (caña de pescar, cocina o granja) y **medir el Polvo** (el hacha ×3 triplica el Polvo por unidad desmantelada).
 - **Bug chico visto en una captura (2026-10-28):** en la lista de `/shop buy` en inglés las cajas repiten el precio («between 1 and 5 items · 2,300 gold · 2,300 oro»): `ItemAutocomplete` le saca el precio en español con un `Replace` y en inglés no coincide.
 - **Ayuda `/info`** (v0.32.1): tema `dragon` nuevo y las herramientas dentro de `forge`; los dos salen enteros en español para quien juega en inglés (falta traducirlos, igual que el resto de los temas).
@@ -37,6 +37,13 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
   Términos y Privacidad públicos, y hay que confirmar si hay Premium Apps en Uruguay (Developer Portal, Monetization). Punto de enganche: `ReminderPolicy.IsEligible` y `CooldownCatalog`. El título especial entra como categoría «Especiales» del sistema de títulos.
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
+
+## Aviso de cría y tablón de parejas del dragón (v0.33.0, 2026-10-28)
+
+- **Aviso de cría**: un 12.º tipo de recordatorio (`dragon`, 🐲): cuando termina el descanso de 12 h, el bot te escribe en el canal donde criaste «¡Tu dragón puede criar de nuevo!». Funciona igual con `/dragon-breed` (con amigo o solo) y con `aa dragon breed`; con un amigo, el aviso le llega a los DOS (el que invitó no tiene interacción propia, así que lo arma el botón Aceptar). Se apaga o enciende en `/reminders` como los demás, no avisa si ya puede criar ni en el tier 10, y tiene texto en inglés.
+- **Tablón de parejas** (`/dragon-board`, `aa dragon board` o `aa tablon`): una lista **por servidor** de «busco pareja de mi tier». Te anotás con un botón (dura 6 horas o hasta que críes) y la pantalla muestra a los anotados **de tu tier que pueden criar ahora**, más cuántos hay en otros tiers. Elegís a alguien de la lista «Invitar a criar a…» y le llega la invitación de siempre (Aceptar / Rechazar, con ping). Si tu dragón descansa podés anotarte pero no invitar hasta que termine.
+- **Decisiones mías**: el tablón vive **en memoria** (sin tabla ni migración, como las invitaciones; si el bot se reinicia la gente se vuelve a anotar) y **no guarda el dragón de nadie**: el tier y el descanso se leen de la base cada vez que se mira, así nunca muestra a alguien que ya subió o está descansando. El mensaje es público a propósito (es un tablón). Los textos del tablón salen en español para quien juega en inglés.
+- **Sin migración.** Para probarlo hace falta más de una persona con dragón del mismo tier en el mismo servidor.
 
 ## La ayuda al día: el dragón y las herramientas en `/info` (v0.32.1, 2026-10-28)
 

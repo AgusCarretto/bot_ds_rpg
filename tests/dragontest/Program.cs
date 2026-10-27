@@ -533,6 +533,85 @@ Check(forgeHelp.Length <= 6000 && forgeHelp.Fields.All(f => f.Value.Length <= 10
 var infoCmds = HelpModule.BuildInfoEmbed();
 Check(infoCmds.Fields.Any(f => f.Value.Contains("/dragon-breed")) && infoCmds.Fields.Any(f => f.Value.Contains("`/dragon`")) && infoCmds.Fields.Single(f => f.Name.Contains("Cómo funciona")).Value.Contains("dragon") && infoCmds.Length <= 6000, "/info sin tema nombra /dragon y /dragon-breed, y el tema dragon figura en la lista de temas");
 
+Console.WriteLine("\n== 19. El tablón de crías y el aviso de cría ==");
+const ulong GUILD = 777000000000000001UL, OTHER_GUILD = 777000000000000002UL;
+var fakeNow = new DateTime(2030, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+var clockBoard = new DragonBoardService(() => fakeNow);
+clockBoard.List(GUILD, A);
+Check(clockBoard.Get(A) is { GuildId: GUILD } && clockBoard.Entries(GUILD).Select(e => e.DiscordId).SequenceEqual([A]) && clockBoard.Entries(OTHER_GUILD).Count == 0 && clockBoard.Remaining(A) == DragonBoardService.Lifetime, "anotarse: queda en el tablón de ese servidor y no en otro, con las 6 horas completas por delante");
+fakeNow = fakeNow.AddHours(1); clockBoard.List(GUILD, B);
+Check(clockBoard.Entries(GUILD).Select(e => e.DiscordId).SequenceEqual([B, A]), "los más nuevos van primero");
+clockBoard.List(OTHER_GUILD, A);
+Check(clockBoard.Entries(GUILD).Select(e => e.DiscordId).SequenceEqual([B]) && clockBoard.Entries(OTHER_GUILD).Select(e => e.DiscordId).SequenceEqual([A]), "una sola anotación por jugador: anotarse en otro servidor lo muda");
+fakeNow = fakeNow.AddHours(5).AddMinutes(30);
+Check(clockBoard.Get(B) is not null && clockBoard.Remaining(B) is { } leftB && leftB < TimeSpan.FromMinutes(31), "antes de las 6 h sigue anotado");
+clockBoard.List(GUILD, B);
+fakeNow = fakeNow.AddHours(5);
+Check(clockBoard.Get(B) is not null, "anotarse otra vez renueva el tiempo");
+fakeNow = fakeNow.AddHours(1.5);
+Check(clockBoard.Get(B) is null && clockBoard.Entries(GUILD).Count == 0 && !clockBoard.Remove(B), "pasadas las 6 h vence solo y sale de la lista");
+
+await Clean(); await Player(A); await Player(B); await Player(C); await Player(D); await Player(E); await Player(F);
+await Dragon(A, "oro", 2); await Dragon(B, "defensa", 2); await Dragon(C, "fuerza", 2, rested: false); await Dragon(D, "especial", 3); await Dragon(E, "oro", 2); await Dragon(F, "oro", 2);
+var board = new DragonBoardService();
+board.List(GUILD, B); board.List(GUILD, C); board.List(GUILD, D); board.List(OTHER_GUILD, F);
+Task<string> NameOf(ulong id) => Task.FromResult($"Jugador{id % 1000}");
+var view19 = await DragonModule.BuildBoardAsync(dragons, board, A, GUILD, NameOf);
+var rows19 = view19.Components!.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).ToList();
+var menu19 = rows19.OfType<SelectMenuComponent>().SingleOrDefault();
+var buttons19 = rows19.OfType<ButtonComponent>().ToList();
+var sameField = view19.Embed.Fields.Single(f => f.Name.StartsWith("Buscan pareja"));
+Check(view19.Candidates.SequenceEqual([B]) && sameField.Name.Contains("(1)") && sameField.Value.Contains($"<@{B}>") && !sameField.Value.Contains($"<@{C}>") && !sameField.Value.Contains($"<@{E}>") && !sameField.Value.Contains($"<@{F}>"),
+    "el tablón muestra solo a los anotados de este servidor, de tu tier y que pueden criar ya (no al que descansa, al de otro tier, al que no se anotó ni al de otro servidor)");
+Check(view19.Embed.Fields.Single(f => f.Name == "En otros tiers").Value.Contains("Tier 3: 1") && menu19 is not null && menu19.CustomId == $"dragon_board_pick:{A}" && menu19.Options.Count == 1 && menu19.Options.Single().Value == B.ToString() && menu19.Options.Single().Label == $"Jugador{B % 1000}"
+    && buttons19.Count == 2 && buttons19[0].CustomId == $"dragon_board_toggle:{A}" && buttons19[0].Label.StartsWith("Anotarme") && buttons19[1].CustomId == $"dragon_board_refresh:{A}" && view19.Embed.Length < 6000,
+    "cuenta los de otros tiers, ofrece la lista para invitar (con el nombre de cada uno) y los botones Anotarme y Actualizar");
+string joined = await DragonModule.ExecuteBoardToggleAsync(dragons, board, A, GUILD);
+var viewIn = await DragonModule.BuildBoardAsync(dragons, board, A, GUILD, NameOf);
+var btnIn = viewIn.Components!.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<ButtonComponent>().First();
+Check(joined.Contains("anotado") && board.Get(A) is { GuildId: GUILD } && viewIn.Embed.Description.Contains("Estás anotado") && btnIn.Label.StartsWith("Salir"), "«Anotarme» te anota y la pantalla pasa a «Salir del tablón»");
+string leftMsg = await DragonModule.ExecuteBoardToggleAsync(dragons, board, A, GUILD);
+Check(leftMsg.Contains("Saliste") && board.Get(A) is null, "tocarlo otra vez te saca");
+var ghostView = await DragonModule.BuildBoardAsync(dragons, board, GHOST, GUILD, NameOf);
+Check((await DragonModule.ExecuteBoardToggleAsync(dragons, board, GHOST, GUILD)).Contains("necesitás un dragón") && ghostView.Components is null && ghostView.Embed.Description.Contains("necesitás un dragón"), "sin dragón no hay tablón: dice cómo conseguirlo");
+await Dragon(A, "oro", 2, rested: false);
+var restView = await DragonModule.BuildBoardAsync(dragons, board, A, GUILD, NameOf);
+var restRows = restView.Components!.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).ToList();
+Check(restView.Embed.Description.Contains("descansa") && !restRows.OfType<SelectMenuComponent>().Any() && restRows.OfType<ButtonComponent>().Count() == 2 && restView.Candidates.Count == 1, "si tu dragón descansa no se ofrece invitar a nadie (pero podés anotarte)");
+await Dragon(A, "oro", 10);
+Check((await DragonModule.ExecuteBoardToggleAsync(dragons, board, A, GUILD)).Contains("tier máximo") && (await DragonModule.BuildBoardAsync(dragons, board, A, GUILD, NameOf)).Components is null, "en el tier 10 no hay nada que criar");
+await Dragon(A, "oro", 2);
+var okInvite = await DragonModule.PrepareBoardInviteAsync(dragons, offers, board, A, GUILD, B);
+var notListed = await DragonModule.PrepareBoardInviteAsync(dragons, offers, board, A, GUILD, E);
+var otherGuild = await DragonModule.PrepareBoardInviteAsync(dragons, offers, board, A, GUILD, F);
+var restingTarget = await DragonModule.PrepareBoardInviteAsync(dragons, offers, board, A, GUILD, C);
+Check(okInvite.Error is null && okInvite.Content == $"<@{B}>" && okInvite.Components is not null && notListed.Error!.Contains("ya no está anotado") && otherGuild.Error!.Contains("ya no está anotado") && restingTarget.Error!.Contains("descansando"),
+    "invitar desde el tablón: manda la invitación de siempre a quien sigue anotado en el servidor; al que se salió, al de otro servidor o al que descansa lo rechaza diciendo por qué");
+var slashBoard = interactions.SlashCommands.Single(c => c.Name == "dragon-board");
+var rToggle = interactions.SearchComponentCommand(Click($"dragon_board_toggle:{A}")); var rRefresh = interactions.SearchComponentCommand(Click($"dragon_board_refresh:{A}"));
+Check(slashBoard.Description.Length <= 100 && slashBoard.Parameters.Count == 0 && rToggle.IsSuccess && rToggle.Command.MethodName == "HandleBoardToggleAsync" && rRefresh.IsSuccess && rRefresh.Command.MethodName == "HandleBoardRefreshAsync" && interactions.ComponentCommands.Any(c => c.MethodName == "HandleBoardPickAsync") && texts.Search("dragon board").Commands.Any(c => c.Command.Name == "dragon board") && !FightLock.IsAllowed("dragon-board"),
+    "/dragon-board y «aa dragon board» existen, los botones del tablón se rutean con Discord.Net de verdad y es un comando que no vale en plena pelea");
+
+var reminderSvc = sp.GetRequiredService<IReminderService>();
+async Task<List<(string Kind, double Secs)>> ReminderRows(ulong id) => (await db.QueryAsync<(string Kind, double Secs)>("SELECT kind AS Kind, EXTRACT(EPOCH FROM (due_at - now()))::float8 AS Secs FROM reminders WHERE discord_id = @id", new { id = (long)id })).ToList();
+await Clean(); await Player(A); await Player(B); await Player(C); await Player(D);
+await Dragon(A, "oro", 2, rested: false);
+await reminderSvc.SyncAsync(A, 4242, "dragon-breed");
+var rowsA = await ReminderRows(A);
+Check(rowsA.Any(r => r.Kind == "dragon" && r.Secs > 11.9 * 3600 && r.Secs <= 12 * 3600 + 60), $"después de criar, el aviso de la cría queda para dentro de ~12 h ({string.Join(", ", rowsA.Select(r => $"{r.Kind} {r.Secs / 3600:0.0} h"))})");
+await Dragon(B, "oro", 2, rested: false);
+await reminderSvc.SyncAsync(B, 4242, "hunt");
+await Dragon(C, "oro", 2);
+await reminderSvc.SyncAsync(C, 4242, "dragon");
+await Dragon(D, "oro", 10, rested: false);
+await reminderSvc.SyncAsync(D, 4242, "dragon");
+Check(!(await ReminderRows(B)).Any(r => r.Kind == "dragon") && !(await ReminderRows(C)).Any(r => r.Kind == "dragon") && !(await ReminderRows(D)).Any(r => r.Kind == "dragon"),
+    "sin aviso: si el comando no tiene que ver con el dragón, si ya puede criar o si está en el tier máximo (no hay nada que criar)");
+Check(ReminderCatalog.Find("dragon") is { Command: "/dragon-breed" } && ReminderCatalog.WaitOf("dragon") == DragonRules.BreedCooldown && ReminderCatalog.MayChangeDragon("dragon_accept:abc") && ReminderCatalog.MayChangeDragon("dragon-breed") && !ReminderCatalog.MayChangeDragon("hunt")
+    && ReminderCatalog.DragonDue(TimeSpan.FromHours(3), 2, DateTime.UtcNow) is { Kind: "dragon" } && ReminderCatalog.DragonDue(TimeSpan.Zero, 2, DateTime.UtcNow) is null && ReminderCatalog.DragonDue(TimeSpan.FromHours(3), 10, DateTime.UtcNow) is null
+    && ReminderCatalog.Compose(A, ["dragon"]).Contains("criar de nuevo") && ReminderCatalog.Compose(A, ["dragon"]).Contains("/dragon-breed"),
+    "las reglas puras del aviso de cría: su clave, su espera de 12 h, cuándo se vuelve a leer y el texto del mensaje");
+
 await Clean();
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;

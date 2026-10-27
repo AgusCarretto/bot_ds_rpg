@@ -6,7 +6,7 @@ namespace BotDsRpg.GameData;
 // el guardado está en Repositories/ReminderRepository.cs, el reloj en Services/ReminderScheduler.cs y la pantalla de ajustes en Modules/ReminderModule.cs.
 //
 // Un recordatorio es una fila (jugador, tipo, canal, cuándo): el tipo es la misma clave que usa el cooldown de la base ("hunt", "travel", "chop", "mine", "boss", "buybox", "chop_adv",
-// "mine_adv", y "vote" desde la v0.18.0) más dos que no viven en la tabla de cooldowns: "pet" (la comida de las mascotas, una hora por mascota) y "daily" (la recompensa diaria, 24 horas).
+// "mine_adv", y "vote" desde la v0.18.0) más tres que no viven en la tabla de cooldowns: "pet" (la comida de las mascotas, una hora por mascota), "daily" (la recompensa diaria, 24 horas) y "dragon" (el descanso de la cría del dragón, 12 horas, v0.33.0).
 // AutoDelete: los avisos de esperas CORTAS (cacería, talar, minar) se borran solos a los pocos minutos para no ensuciar el canal; los de esperas largas se quedan.
 public sealed record ReminderKind(string Key, string Emoji, string Name, string Command, string ReadyText, TimeSpan? AutoDelete);
 
@@ -32,6 +32,7 @@ public static class ReminderCatalog
         new("pet", "🐾", Loc.Mark("Mascotas"), "/pet feed", Loc.Mark("¡Tus mascotas ya pueden comer! Dales de comer con `/pet feed`."), null),
         new("daily", "🎁", Loc.Mark("Diario"), "/daily", Loc.Mark("¡Tu recompensa diaria está lista! Reclamala con `/daily`."), null),
         new("vote", "🗳️", Loc.Mark("Votar"), "/vote", Loc.Mark("¡Ya podés votar de nuevo! Votá en top.gg y cobrá con `/vote`: un Baúl de Roble y el jefe reseteado."), null),
+        new("dragon", "🐲", Loc.Mark("Dragón"), "/dragon-breed", Loc.Mark("¡Tu dragón puede criar de nuevo! Criá con `/dragon-breed` (con un amigo o solo)."), null),
     ];
 
     public static ReminderKind? Find(string? key) => All.FirstOrDefault(k => k.Key == key);
@@ -70,6 +71,7 @@ public static class ReminderCatalog
     {
         "pet" => PetRules.FeedCooldown,
         "daily" => DailyRewardCalculator.MinInterval,
+        "dragon" => DragonRules.BreedCooldown,
         _ => StoredCooldowns.FirstOrDefault(d => d.CommandName == key)?.Duration,
     };
 
@@ -113,6 +115,10 @@ public static class ReminderCatalog
         return ready > nowUtc ? new ReminderDue("daily", ready) : null;
     }
 
+    // La cría del dragón (v0.33.0): cuando termine su descanso de 12 h. wait: lo que falta según el reloj de la base (PlayerDragon.Wait). Sin descanso, o con el dragón en el tier máximo (no hay nada que criar), no hay aviso.
+    public static ReminderDue? DragonDue(TimeSpan wait, int tier, DateTime nowUtc) =>
+        wait > TimeSpan.Zero && tier < DragonRules.MaxTier ? new ReminderDue("dragon", nowUtc + wait) : null;
+
     // El mensaje de uno o varios avisos que vencieron juntos, para un jugador. Una sola cosa: una línea. Varias: un encabezado y una línea por cosa.
     public static string Compose(ulong discordId, IReadOnlyList<string> kinds)
     {
@@ -148,6 +154,9 @@ public static class ReminderCatalog
     public static bool MayChangePet(string commandHint) => ContainsAny(commandHint, "pet", "mascota");
 
     public static bool MayChangeDaily(string commandHint) => ContainsAny(commandHint, "daily", "diario", "racha");
+
+    // Criar (el slash /dragon-breed, los botones dragon_*, «aa dragon breed») cambia el descanso del dragón.
+    public static bool MayChangeDragon(string commandHint) => ContainsAny(commandHint, "dragon", "dragón");
 
     private static bool ContainsAny(string text, params string[] needles) =>
         needles.Any(n => text.Contains(n, StringComparison.OrdinalIgnoreCase));
