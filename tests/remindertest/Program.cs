@@ -54,8 +54,8 @@ IEnumerable<IMessageComponent> Flat(MessageComponent c) => c.Components.OfType<A
 DateTime now0 = DateTime.UtcNow;
 
 Console.WriteLine("== 1. Catálogo y reglas puras ==");
-Check(ReminderCatalog.All.Count == 11 && ReminderCatalog.Keys.Distinct().Count() == 11
-    && ReminderCatalog.Keys.SequenceEqual(["hunt", "travel", "chop", "mine", "boss", "buybox", "chop_adv", "mine_adv", "pet", "daily", "vote"]), "11 tipos, claves únicas: hunt travel chop mine boss buybox chop_adv mine_adv pet daily vote");
+Check(ReminderCatalog.All.Count == 12 && ReminderCatalog.Keys.Distinct().Count() == 12
+    && ReminderCatalog.Keys.SequenceEqual(["hunt", "travel", "chop", "mine", "boss", "buybox", "chop_adv", "mine_adv", "pet", "daily", "vote", "dragon"]), "12 tipos, claves únicas: hunt travel chop mine boss buybox chop_adv mine_adv pet daily vote dragon");
 Check(ReminderCatalog.All.All(k => k.Emoji.Length > 0 && k.Name.Length > 0 && k.Command.StartsWith('/') && k.ReadyText.Length > 0 && ReminderCatalog.Find(k.Key) == k), "cada tipo con emoji, nombre, comando y texto");
 Check(ReminderCatalog.Find("nada") is null && ReminderCatalog.Find(null) is null, "una clave que no existe no se encuentra");
 Check(ReminderCatalog.IsShort("hunt") && ReminderCatalog.IsShort("chop") && ReminderCatalog.IsShort("mine") && !ReminderCatalog.IsShort("travel") && !ReminderCatalog.IsShort("boss") && !ReminderCatalog.IsShort("buybox") && !ReminderCatalog.IsShort("pet") && !ReminderCatalog.IsShort("daily"),
@@ -124,24 +124,24 @@ Console.WriteLine("\n== 2. Pantalla de ajustes (pura) ==");
 var all = ReminderModule.Compose([], U);
 string allT = AllText(all.Embed!);
 Check(all.PlainMessage is null && all.Embed is not null && all.Components is not null, "con todo prendido hay embed y controles");
-Check(ReminderCatalog.All.All(k => allT.Contains(k.Name)) && allT.Split('\n').Count(l => l.StartsWith("✅")) == 11 && !allT.Contains("🔕"), "las 11 líneas con ✅, una por tipo, ninguna apagada");
+Check(ReminderCatalog.All.All(k => allT.Contains(k.Name)) && allT.Split('\n').Count(l => l.StartsWith("✅")) == 12 && !allT.Contains("🔕"), "las 12 líneas con ✅, una por tipo, ninguna apagada");
 Check(allT.Contains("cada 1 min") && allT.Contains("cada 24 h") && allT.Contains("cada 5 h"), "cada línea dice cada cuánto");
 Check(allT.Contains("2 minutos") && all.Embed!.Length <= 6000, $"avisa que los cortos se borran a los 2 minutos y entra en Discord ({all.Embed.Length})");
 var menu = Flat(all.Components!).OfType<SelectMenuComponent>().Single();
-Check(menu.CustomId == $"reminders_pick:{U}" && menu.MinValues == 0 && menu.MaxValues == 11 && menu.Options.Count == 11 && menu.Options.All(o => o.IsDefault == true) && menu.Options.Select(o => o.Value).SequenceEqual(ReminderCatalog.Keys), "el desplegable lleva al dueño, deja marcar de 0 a 11 y arranca con todos marcados");
+Check(menu.CustomId == $"reminders_pick:{U}" && menu.MinValues == 0 && menu.MaxValues == 12 && menu.Options.Count == 12 && menu.Options.All(o => o.IsDefault == true) && menu.Options.Select(o => o.Value).SequenceEqual(ReminderCatalog.Keys), "el desplegable lleva al dueño, deja marcar de 0 a 12 y arranca con todos marcados");
 Check(menu.Options.All(o => o.Label.Length is >= 1 and <= 100 && (o.Description?.Length ?? 0) <= 100 && o.Emote is null), "etiquetas dentro del límite y sin emojis en las opciones");
 var btns = Flat(all.Components).OfType<ButtonComponent>().ToList();
 Check(btns.Count == 2 && btns.Single(b => b.CustomId == $"reminders_all:{U}:on").IsDisabled && !btns.Single(b => b.CustomId == $"reminders_all:{U}:off").IsDisabled, "con todo prendido «Recibir todos» está deshabilitado y «Silenciar todos» no");
 var some = ReminderModule.Compose(["hunt", "pet"], U);
 string someT = AllText(some.Embed!);
 var someMenu = Flat(some.Components!).OfType<SelectMenuComponent>().Single();
-Check(someT.Split('\n').Count(l => l.StartsWith("✅")) == 9 && someT.Split('\n').Count(l => l.StartsWith("🔕")) == 2 && someMenu.Options.Count(o => o.IsDefault == true) == 9 && someMenu.Options.Single(o => o.Value == "hunt").IsDefault != true && someT.Contains("~~Cacería~~"),
-    "con 2 apagados: 9 ✅ y 2 🔕 (tachados), y el desplegable los deja desmarcados");
+Check(someT.Split('\n').Count(l => l.StartsWith("✅")) == 10 && someT.Split('\n').Count(l => l.StartsWith("🔕")) == 2 && someMenu.Options.Count(o => o.IsDefault == true) == 10 && someMenu.Options.Single(o => o.Value == "hunt").IsDefault != true && someT.Contains("~~Cacería~~"),
+    "con 2 apagados: 10 ✅ y 2 🔕 (tachados), y el desplegable los deja desmarcados");
 var none = ReminderModule.Compose(ReminderCatalog.Keys, U);
 var noneBtns = Flat(none.Components!).OfType<ButtonComponent>().ToList();
-Check(AllText(none.Embed!).Split('\n').Count(l => l.StartsWith("🔕")) == 11 && noneBtns.Single(b => b.CustomId.EndsWith(":off")).IsDisabled && !noneBtns.Single(b => b.CustomId.EndsWith(":on")).IsDisabled, "con todo apagado: 11 🔕, «Silenciar todos» deshabilitado");
-Check(ReminderModule.OffKindsFor(["hunt", "travel"]).Count == 9 && !ReminderModule.OffKindsFor(["hunt", "travel"]).Contains("hunt") && ReminderModule.OffKindsFor([]).Count == 11 && ReminderModule.OffKindsFor(ReminderCatalog.Keys).Count == 0
-    && ReminderModule.OffKindsFor(["hunt", "truco"]).Count == 10, "lo marcado se recibe y el resto se apaga; una clave inventada se ignora");
+Check(AllText(none.Embed!).Split('\n').Count(l => l.StartsWith("🔕")) == 12 && noneBtns.Single(b => b.CustomId.EndsWith(":off")).IsDisabled && !noneBtns.Single(b => b.CustomId.EndsWith(":on")).IsDisabled, "con todo apagado: 12 🔕, «Silenciar todos» deshabilitado");
+Check(ReminderModule.OffKindsFor(["hunt", "travel"]).Count == 10 && !ReminderModule.OffKindsFor(["hunt", "travel"]).Contains("hunt") && ReminderModule.OffKindsFor([]).Count == 12 && ReminderModule.OffKindsFor(ReminderCatalog.Keys).Count == 0
+    && ReminderModule.OffKindsFor(["hunt", "truco"]).Count == 11, "lo marcado se recibe y el resto se apaga; una clave inventada se ignora");
 Check(ReminderModule.Compose(["inventado"], U).Embed!.Length <= 6000, "una clave guardada que ya no existe no rompe la pantalla");
 
 Console.WriteLine("\n== 3. Repositorio contra la base ==");
@@ -184,7 +184,7 @@ await Wipe();
 foreach (var k in ReminderCatalog.Keys) await PutDue(U, k, CH, TimeSpan.FromSeconds(-2));
 var parallel = await Task.WhenAll(Enumerable.Range(0, 8).Select(_ => Task.Run(() => reminders.ClaimDueAsync(DateTime.UtcNow))));
 int mine = parallel.SelectMany(x => x).Count(d => d.DiscordId == U);
-Check(mine == 11 && parallel.SelectMany(x => x).Where(d => d.DiscordId == U).Select(d => d.Kind).Distinct().Count() == 11, $"8 relojes a la vez: los 11 avisos salen exactamente UNA vez ({mine})");
+Check(mine == 12 && parallel.SelectMany(x => x).Where(d => d.DiscordId == U).Select(d => d.Kind).Distinct().Count() == 12, $"8 relojes a la vez: los 12 avisos salen exactamente UNA vez ({mine})");
 
 Console.WriteLine("\n== 4. Servicio: arma la cola con el estado real ==");
 await Wipe();
@@ -389,16 +389,16 @@ var userRepo = new UserRepository(factory);
 var v0 = await ReminderModule.ExecuteViewAsync(userRepo, reminders, 999000000000039998UL);
 Check(v0.PlainMessage is not null && v0.PlainMessage.Contains("/start") && v0.Embed is null, "sin cuenta: pide empezar con /start (y no toca la base)");
 var v1 = await ReminderModule.ExecuteViewAsync(userRepo, reminders, U);
-Check(v1.Embed is not null && AllText(v1.Embed).Split('\n').Count(l => l.StartsWith("✅")) == 11, "con cuenta y sin ajustes: todo prendido");
+Check(v1.Embed is not null && AllText(v1.Embed).Split('\n').Count(l => l.StartsWith("✅")) == 12, "con cuenta y sin ajustes: todo prendido");
 await PutDue(U, "hunt", CH, TimeSpan.FromMinutes(1));
 var v2 = await ReminderModule.ExecuteSetAsync(userRepo, reminders, U, ReminderCatalog.Keys.Where(k => k != "hunt" && k != "mine"));
 Check(AllText(v2.Embed!).Split('\n').Count(l => l.StartsWith("🔕")) == 2 && (await reminders.GetOffKindsAsync(U)).OrderBy(x => x).SequenceEqual(["hunt", "mine"]) && !(await Queue(U)).Any(r => r.Kind == "hunt"), "desmarcar dos en la lista los apaga en la base y borra el aviso pendiente de cacería");
 var v3 = await ReminderModule.ExecuteSetAsync(userRepo, reminders, U, []);
-Check((await reminders.GetOffKindsAsync(U)).Count == 11 && AllText(v3.Embed!).Split('\n').Count(l => l.StartsWith("🔕")) == 11, "«Silenciar todos» (nada marcado) apaga los 11");
+Check((await reminders.GetOffKindsAsync(U)).Count == 12 && AllText(v3.Embed!).Split('\n').Count(l => l.StartsWith("🔕")) == 12, "«Silenciar todos» (nada marcado) apaga los 12");
 var v4 = await ReminderModule.ExecuteSetAsync(userRepo, reminders, U, ReminderCatalog.Keys);
-Check((await reminders.GetOffKindsAsync(U)).Count == 0 && AllText(v4.Embed!).Split('\n').Count(l => l.StartsWith("✅")) == 11, "«Recibir todos» los prende otra vez");
+Check((await reminders.GetOffKindsAsync(U)).Count == 0 && AllText(v4.Embed!).Split('\n').Count(l => l.StartsWith("✅")) == 12, "«Recibir todos» los prende otra vez");
 var v5 = await ReminderModule.ExecuteSetAsync(userRepo, reminders, U, ["hunt", "truco", "inventado"]);
-Check((await reminders.GetOffKindsAsync(U)).Count == 10 && !(await reminders.GetOffKindsAsync(U)).Contains("hunt"), "claves inventadas en el desplegable no se guardan (solo cuenta «hunt»)");
+Check((await reminders.GetOffKindsAsync(U)).Count == 11 && !(await reminders.GetOffKindsAsync(U)).Contains("hunt"), "claves inventadas en el desplegable no se guardan (solo cuenta «hunt»)");
 var v6 = await ReminderModule.ExecuteSetAsync(userRepo, reminders, 999000000000039998UL, ["hunt"]);
 Check(v6.PlainMessage is not null && v6.Embed is null, "guardar sin cuenta tampoco falla: pide /start");
 
@@ -413,8 +413,8 @@ var slashNames = interactions.SlashCommands.Select(c => c.Name).Concat(interacti
 var mentioned = System.Text.RegularExpressions.Regex.Matches(tt, @"/([a-z]+)").Select(m => m.Groups[1].Value).Distinct().ToList();
 Check(mentioned.All(m => slashNames.Contains(m)), $"todo comando que el tema nombra existe ({string.Join(", ", mentioned.Where(m => !slashNames.Contains(m)))})");
 var idx = HelpTopics.BuildIndexEmbed();
-Check(HelpTopics.All.All(t => { var e = t.Build(); return e.Length <= 6000 && e.Fields.All(f => f.Value.Length <= 1024 && f.Name.Length <= 256) && (e.Description?.Length ?? 0) <= 4096; }) && idx.Length <= 6000 && idx.Fields.All(f => f.Value.Length <= 1024) && HelpTopics.All.Count == 26,
-    $"los 26 temas y el índice entran en Discord (índice {idx.Length})");
+Check(HelpTopics.All.All(t => { var e = t.Build(); return e.Length <= 6000 && e.Fields.All(f => f.Value.Length <= 1024 && f.Name.Length <= 256) && (e.Description?.Length ?? 0) <= 4096; }) && idx.Length <= 6000 && idx.Fields.All(f => f.Value.Length <= 1024) && HelpTopics.All.Count == 27,
+    $"los 27 temas y el índice entran en Discord (índice {idx.Length})");
 var infoE = HelpModule.BuildInfoEmbed();
 Check(AllText(infoE).Contains("/reminders") && infoE.Length <= 6000 && infoE.Fields.All(f => f.Value.Length <= 1024), $"/info lista /reminders, dentro de los límites ({infoE.Length})");
 

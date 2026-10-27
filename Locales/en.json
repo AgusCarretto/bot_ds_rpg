@@ -462,6 +462,8 @@
   "Cura {0} HP{1} · {2} oro": "Heals {0} HP{1} · {2} gold",
   "Para tus mascotas · {0} oro": "For your pets · {0} gold",
   "Para tu dragón · {0} oro": "For your dragon · {0} gold",
+  "Dragón": "Dragon",
+  "¡Tu dragón puede criar de nuevo! Criá con `/dragon-breed` (con un amigo o solo).": "Your dragon can breed again! Use `/dragon-breed` (with a friend or alone).",
   "{0} oro": "{0} gold",
   "🔒 Zona {0} · {1}": "🔒 Zone {0} · {1}",
   " · +{0}% ATQ {1} min": " · +{0}% ATK {1} min",

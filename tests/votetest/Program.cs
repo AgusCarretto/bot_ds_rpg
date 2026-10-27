@@ -259,7 +259,7 @@ var nowR = DateTime.UtcNow;
 var dueList = ReminderCatalog.FromCooldowns([("vote", nowR.AddHours(-1))], nowR);
 Check(dueList.Count == 1 && dueList[0].Kind == "vote" && Math.Abs((dueList[0].DueUtc - nowR.AddHours(11)).TotalSeconds) < 2, "el recordatorio 'vote' vence 12 h después del voto cobrado");
 Check(ReminderCatalog.FromCooldowns([("vote", nowR.AddHours(-13))], nowR).Count == 0, "pasadas las 12 h ya no hay nada que avisar");
-Check(ReminderCatalog.Find("vote") is { } rk && rk.Command == "/vote" && rk.AutoDelete is null && ReminderCatalog.WaitOf("vote") == TimeSpan.FromHours(12) && ReminderCatalog.Compose(U, ["vote"]).Contains("/vote") && ReminderCatalog.All.Count == 11, "el aviso existe (largo: no se borra solo), dura 12 h y nombra /vote");
+Check(ReminderCatalog.Find("vote") is { } rk && rk.Command == "/vote" && rk.AutoDelete is null && ReminderCatalog.WaitOf("vote") == TimeSpan.FromHours(12) && ReminderCatalog.Compose(U, ["vote"]).Contains("/vote") && ReminderCatalog.All.Count == 12, "el aviso existe (largo: no se borra solo), dura 12 h y nombra /vote");
 
 Console.WriteLine("\n== 7. Comandos, ayuda y DI con el InteractionService real ==");
 var client = new Discord.WebSocket.DiscordSocketClient();
@@ -292,7 +292,7 @@ var mentioned = System.Text.RegularExpressions.Regex.Matches(tt, @"/([a-z]+)").S
 Check(mentioned.All(m => slashNames.Contains(m)), $"todo comando que el tema nombra existe ({string.Join(", ", mentioned.Where(m => !slashNames.Contains(m)))})");
 var infoE = HelpModule.BuildInfoEmbed();
 Check(AllText(infoE).Contains("/vote") && infoE.Length <= 6000 && infoE.Fields.Length <= 25 && infoE.Fields.All(f => f.Value.Length <= 1024), $"/info lista /vote, dentro de los límites ({infoE.Length} caracteres, {infoE.Fields.Length} campos)");
-Check(HelpTopics.All.Count == 26 && HelpTopics.All.All(t => { var e = t.Build(); return e.Length <= 6000 && e.Fields.All(f => f.Value.Length <= 1024 && f.Name.Length <= 256); }), "los 26 temas entran en Discord");
+Check(HelpTopics.All.Count == 27 && HelpTopics.All.All(t => { var e = t.Build(); return e.Length <= 6000 && e.Fields.All(f => f.Value.Length <= 1024 && f.Name.Length <= 256); }), "los 27 temas entran en Discord");
 Check(AllText(HelpTopics.Find("reminders")!.Build()).Contains("Votar"), "el tema de recordatorios lista también el aviso de votar");
 
 var vInfo = VoteModule.BuildInfoEmbed(VoteModule.VoteScreen.Ready, "https://top.gg/x", null);

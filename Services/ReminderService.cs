@@ -25,7 +25,8 @@ public sealed class ReminderService(
     ICooldownRepository cooldowns,
     IUserRepository users,
     IPetRepository pets,
-    IPlayerBonusService bonuses) : IReminderService
+    IPlayerBonusService bonuses,
+    IDragonRepository? dragons = null) : IReminderService
 {
     private readonly ConcurrentDictionary<ulong, DateTime> _lastActivity = new();
 
@@ -55,6 +56,7 @@ public sealed class ReminderService(
 
             bool pet = ReminderCatalog.MayChangePet(commandHint);
             bool daily = ReminderCatalog.MayChangeDaily(commandHint);
+            bool dragon = ReminderCatalog.MayChangeDragon(commandHint);
             if (pet || daily)
             {
                 var user = await users.GetByDiscordIdAsync(discordId, cancellationToken);
@@ -75,6 +77,13 @@ public sealed class ReminderService(
                         candidates.Add(dailyDue);
                     }
                 }
+            }
+
+            // La cría del dragón (v0.33.0) tampoco vive en cooldowns: el descanso sale de player_dragons, con el reloj de la base.
+            if (dragon && dragons is not null && await dragons.GetAsync(discordId, cancellationToken) is { } dragonOwned
+                && ReminderCatalog.DragonDue(dragonOwned.Wait, dragonOwned.Tier, now) is { } dragonDue)
+            {
+                candidates.Add(dragonDue);
             }
 
             if (candidates.Count > 0)

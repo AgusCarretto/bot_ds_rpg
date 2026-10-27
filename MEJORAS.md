@@ -1,10 +1,16 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-23 (v0.26.1: el resumen del combate en tablita y `/config` para apagarlo)_
+_Última revisión: 2026-10-28 (v0.32.1: la ayuda `/info` con el dragón y las herramientas, y esta lista puesta al día)_
 
-## Pendiente de un vistazo (puesto al día el 2026-10-22)
+## Pendiente de un vistazo (puesto al día el 2026-10-28)
 
 Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para no tener que recorrerlo entero, esto es lo que de verdad está abierto:
+
+**Lo último que se hizo (v0.28 a v0.32) y lo que dejó abierto**
+- **Dragón** (v0.30 a v0.32, ver abajo): comprarlo, 10 tiers con una mejora cada uno, entrenarlo con oro, criar en pareja (cada dragón con su suerte y su contador) o solo, y el tipo se sortea en cada cría salvo que gastes una Comida de Dragón (5.000). Hecho en v0.33.0: el **recordatorio de cría** y el **tablón de parejas** (ver abajo). Abierto: logros y títulos del dragón, mirar el balance del tipo Oro en el tier 10 (≈ ×1,65 de oro con mascotas, bendición y banco; `report_economy.sql`) y cuánta comida compra la gente.
+- **Herramientas** (v0.29 a v0.31): abiertas las de la Zona 2 y la 4, un **tercer tipo** bajo `/tools` (caña de pescar, cocina o granja) y **medir el Polvo** (el hacha ×3 triplica el Polvo por unidad desmantelada).
+- **Bug chico visto en una captura (2026-10-28):** en la lista de `/shop buy` en inglés las cajas repiten el precio («between 1 and 5 items · 2,300 gold · 2,300 oro»): `ItemAutocomplete` le saca el precio en español con un `Replace` y en inglés no coincide.
+- **Ayuda `/info`** (v0.32.1): tema `dragon` nuevo y las herramientas dentro de `forge`; los dos salen enteros en español para quien juega en inglés (falta traducirlos, igual que el resto de los temas).
 
 **Esperando una decisión del dueño**
 - **La Guarda ya se bajó (v0.25.1, ver abajo)**: el dueño dijo «bajala un poquito si te parece muy OP». Si se la quiere a la par del Filo, son +2/4/6/9/13 % (una línea en `KindTable`).
@@ -23,7 +29,7 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - `Database/report_live_health.sql`: el logro «Racha» tiene que desbloquear el tramo I (7 días) cuando reclamen los dos jugadores con racha de 8 a 13; si no pasa, es un bug.
 - `Database/report_gold_chest_origin.sql` (nuevo): de dónde salen los Cofres de Oro (29 abiertos en 7 días en el informe del 2026-10-20). Reconstruye por tienda, jefe, `/daily`, misiones, logros, Arena y cajas, y cuadra contra lo visto.
 - `/vote` con el bot público: hoy duplica los cofres gratis; con 3 votantes no preocupa. Palancas: cobrar el reseteo del jefe una vez por día, o cambiar el cofre.
-- Confirmar que `apply_emojis.sql` corrió en Railway: sin eso no se ven los emojis de los ítems (ni los de los desplegables).
+- Confirmar que `apply_emojis.sql` corrió en Railway: sin eso no se ven los emojis de los ítems (ni los de los desplegables), ni desde la v0.32.0 el de la Comida de Dragón (`comida_dragon`).
 
 **Hoja de ruta, no es para ahora**
 - Clase Monje (necesita una 5.ª familia de arma o una regla de «sin arma»; el dueño ya le contestó al foro que es para más adelante).
@@ -32,7 +38,21 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
 
-## El dragón cambia de tipo al subir de tier y la Comida de Dragón (v0.32.0, 2026-10-28)
+## Aviso de cría y tablón de parejas del dragón (v0.33.0, 2026-10-28)
+
+- **Aviso de cría**: un 12.º tipo de recordatorio (`dragon`, 🐲): cuando termina el descanso de 12 h, el bot te escribe en el canal donde criaste «¡Tu dragón puede criar de nuevo!». Funciona igual con `/dragon-breed` (con amigo o solo) y con `aa dragon breed`; con un amigo, el aviso le llega a los DOS (el que invitó no tiene interacción propia, así que lo arma el botón Aceptar). Se apaga o enciende en `/reminders` como los demás, no avisa si ya puede criar ni en el tier 10, y tiene texto en inglés.
+- **Tablón de parejas** (`/dragon-board`, `aa dragon board` o `aa tablon`): una lista **por servidor** de «busco pareja de mi tier». Te anotás con un botón (dura 6 horas o hasta que críes) y la pantalla muestra a los anotados **de tu tier que pueden criar ahora**, más cuántos hay en otros tiers. Elegís a alguien de la lista «Invitar a criar a…» y le llega la invitación de siempre (Aceptar / Rechazar, con ping). Si tu dragón descansa podés anotarte pero no invitar hasta que termine.
+- **Decisiones mías**: el tablón vive **en memoria** (sin tabla ni migración, como las invitaciones; si el bot se reinicia la gente se vuelve a anotar) y **no guarda el dragón de nadie**: el tier y el descanso se leen de la base cada vez que se mira, así nunca muestra a alguien que ya subió o está descansando. El mensaje es público a propósito (es un tablón). Los textos del tablón salen en español para quien juega en inglés.
+- **Sin migración.** Para probarlo hace falta más de una persona con dragón del mismo tier en el mismo servidor.
+
+## La ayuda al día: el dragón y las herramientas en `/info` (v0.32.1, 2026-10-28)
+
+- **Tema nuevo `dragon`** (`/info tema:dragon`, alias dragón, criar, breed, horse, caballo): cómo se compra, los cuatro tipos con su tope, los 10 tiers y sus mejoras, entrenar (costo del primer y del décimo nivel), criar en pareja (cada dragón con su suerte, las chances, la piedad que se duplica por tier hasta 256), criar solo (un tercio y el triple de fallos), tipo y Comida de Dragón, y el nombre. Los números salen de `DragonRules`, no están escritos a mano.
+- **Las herramientas**, dentro del tema `forge` (campo «El Carpintero (hacha y pico)» y los alias carpintero, herramientas, hacha, pico, tools, equipamiento): no se hizo un tema aparte porque Discord muestra 25 sugerencias como máximo.
+- **`/info` sin tema** nombra ahora `/dragon-breed @amigo` (en «Con otros jugadores») y la lista de temas incluye `dragon`.
+- Con **27 temas** la lista desplegable sin escribir nada deja afuera los dos últimos (`reminders` y `vote`, que quedaron al final por ser los menos urgentes); se encuentran escribiendo y figuran en `/info`. Sin migración; sin traducir al inglés.
+
+## El dragón cambia de tipo en cada cría y la Comida de Dragón (v0.32.0, 2026-10-28)
 
 - **El tipo se sortea de nuevo en CADA cría** (salga bien o mal; en pareja o solo; como mucho cada 12 h): mismas chances que en la tienda (30 % fuerza, defensa y oro, 10 % especial) y puede tocar el mismo. El dueño: «que el breed cambie el tipo de cada dragón, sino nunca se puede conseguir otro». Los niveles entrenados se quedan y rinden según el tipo nuevo.
 - **Comida de Dragón** (5.000 de oro en la taberna y la tienda, se revende a 1.250): con una en la mochila, en cada cría se **gasta una sola, sola** y el tipo se queda. Cada dragón de una pareja se juzga con la mochila de su dueño. No se come con `/use`, aparece en el inventario con la comida y **sobrevive al Fuego Nuevo** (igual que el dragón y la comida de mascotas).
