@@ -274,6 +274,12 @@ public static class ForgeModule
                 $"{NpcDialogue.Blacksmith(BlacksmithLine.UnknownRecipe)}\n(Mirá las recetas de tu zona con `/forge`.)", null);
         }
 
+        // El hacha y el pico (v0.29.0) las arma el Carpintero (/tools), no el herrero: acá no se forjan aunque se escriba el nombre.
+        if (ToolRules.IsToolType(recipe.ResultItem.Type))
+        {
+            return new ForgeMakeResult($"{NpcDialogue.Blacksmith(BlacksmithLine.UnknownRecipe)}\nLas herramientas las arma el Carpintero: pasá por **/tools**.", null);
+        }
+
         // Si es la primera vez que este usuario ejecuta un comando, se crea acá con los valores por defecto.
         var player = await userRepository.GetOrCreateUserAsync(discordId);
 

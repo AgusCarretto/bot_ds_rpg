@@ -2,6 +2,8 @@ namespace BotDsRpg.GameData;
 
 public enum BlacksmithLine { Greeting, Success, NotEnough, UnknownRecipe, WrongClass, NoRecipes, SlotTaken, AlreadyEquipped }
 
+public enum CarpenterLine { Greeting, Success, NotEnough, Locked, AlreadyHave, UnknownTool, Maxed }
+
 public enum ShopkeeperLine { Greeting, BuySuccess, NoGold, BoxWait, SellSuccess, SellAll, NothingToSell, NotForSale, NotOwned, Unsellable, GearConfirm, GearKept, Exchange }
 
 public enum InnkeeperLine { Healed, NothingToEat, FullHp, InCombat }
@@ -79,6 +81,51 @@ public static class NpcDialogue
     // fuegoNuevo: con 1 o más, el saludo es el de quien volvió (solo el saludo; el resto de las situaciones no cambia).
     public static string Blacksmith(BlacksmithLine line, Random? rng = null, int fuegoNuevo = 0) =>
         Say("El Herrero", "🔨", Pick(line == BlacksmithLine.Greeting && fuegoNuevo >= 1 ? BlacksmithReturningGreetings : BlacksmithLines[line], rng));
+
+    // ---------------- El Carpintero (v0.29.0, /tools: arma el hacha y el pico) ----------------
+    private static readonly Dictionary<CarpenterLine, string[]> CarpenterLines = new()
+    {
+        [CarpenterLine.Greeting] =
+        [
+            "Pase, pase, que acá hay aserrín de sobra. ¿Qué herramienta le armo?",
+            "Buenas. Un buen hacha le cambia el día a cualquier leñador. ¿Qué necesita?",
+            "Entre nomás. Traiga la madera y el hierro, que yo pongo las manos.",
+        ],
+        [CarpenterLine.Success] =
+        [
+            "Ahí la tiene: firme, derecha y lista para trabajar.",
+            "Esa no se le rompe ni en mil años. Cuídela bien.",
+            "Salió de primera. Ahora sí van a ver lo que es recolectar.",
+        ],
+        [CarpenterLine.NotEnough] =
+        [
+            "Así no puedo, amigo: me falta material. Salga a talar y a picar, y vuelva.",
+            "Con lo que trajo no alcanza ni para el mango. Junte más y vuelva.",
+        ],
+        [CarpenterLine.Locked] =
+        [
+            "Esa todavía no se la puedo armar: primero llegue a esa zona.",
+            "Paciencia, que esa herramienta es para más adelante. Todavía no llegó a esa zona.",
+        ],
+        [CarpenterLine.AlreadyHave] =
+        [
+            "Pero si ya tiene una igual o mejor. No le hago otra, amigo.",
+            "Esa ya la tiene, y la que lleva rinde lo mismo o más. Guarde el material.",
+        ],
+        [CarpenterLine.UnknownTool] =
+        [
+            "Esa no la hago yo. Elija de la lista.",
+            "No conozco esa herramienta. Mire lo que tengo en la lista.",
+        ],
+        [CarpenterLine.Maxed] =
+        [
+            "Ya tiene lo mejor que sé hacer. Por ahora no le puedo ofrecer más.",
+            "Más que eso no me sale, amigo: tiene lo mejor de mi taller.",
+        ],
+    };
+
+    public static string Carpenter(CarpenterLine line, Random? rng = null) =>
+        Say("El Carpintero", "🪚", Pick(CarpenterLines[line], rng));
 
     // ---------------- El Tendero ----------------
     private static readonly Dictionary<ShopkeeperLine, string[]> ShopkeeperLines = new()

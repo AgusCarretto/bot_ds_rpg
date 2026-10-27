@@ -32,6 +32,15 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
 
+## Herramientas y el Carpintero: hacha y pico (v0.29.0, 2026-10-27)
+
+- **Pedido del dueño**: «otro comando para no sobrecargar todo… un carpintero o constructor… que solo con materiales se haga la herramienta… zona 3 y zona 5 por ahora, de base la zona 1 que es lo actual ×1… que no esté en el perfil, que sea `aa equipamiento` o `aa herramientas`… 2 picos y 2 hachas… armá las recetas». Las decisiones las tomé yo (ver CLAUDE.md, «Tools: the Carpenter»).
+- **Qué hay**: `/tools` (`aa herramientas`, `aa equipamiento`, `aa carpintero`): El Carpintero muestra lo que llevás, las mejoras con ✅/❌ por material y una lista para armarlas. Sin herramienta ×1; hacha y pico de la Zona 3 (×2) y de la Zona 5 (×3), que multiplican la cantidad de `/chop` y `/mine` en lo Común, Raro y Épico (lo Legendario y lo Mítico siguen de a uno). Solo materiales de recolección, sin oro. La nueva reemplaza a la vieja; el Fuego Nuevo las borra (equipo de cada vuelta).
+- **Recetas** (tiempo de recolección según las chances reales; `/chop` y `/mine` corren en paralelo): Hacha de Hierro Forjado 4 Roble + 1 Nogal + 3 Hierro + 6 Piedra (~110 min); Pico de Hierro Forjado 2 Hierro + 2 Carbón + 3 Roble + 6 Piedra (~110 min); Hacha de Escoria Templada 1 Ébano + 2 Nogal + 3 Hierro + 2 Carbón (~240 min); Pico de Escoria Templada 1 Zafiro + 1 Oro Puro + 3 Hierro + 4 Roble (~260 min).
+- **Migración**: `Database/add_tools.sql` (tabla `player_tools`, 4 ítems, 4 recetas; re-ejecutable) **antes** del binario. `schema.sql` y `run_fresh_install.sql` ya lo traen. Arnés nuevo `toolstest` (59 en total); `healtest` ahora no cuenta las recetas de herramientas.
+- **Efecto lateral a vigilar**: desmantelar paga Polvo por UNIDAD, así que con el hacha ×3 el Polvo por `/chop` de madera Común–Épico se triplica; si encantar queda demasiado barato, hay que tocar el Polvo de la madera y el mineral. Medirlo con una simulación es lo próximo si el dueño ve que sobra Polvo.
+- **Pendiente / ideas**: el emoji de las 4 herramientas (arte), el craft/descraft («usar muchos palos para hacer un mejor palo»), más tiers (zonas 2 y 4), y más cosas dentro de `/tools` (granja, cocina).
+
 ## El recetario clásico vuelve por defecto; el completo, desde /config (v0.28.1, 2026-10-27)
 
 - **Pedido del dueño** (a pedido de los jugadores): volver al menú de `forge recipes` de antes porque el nuevo «está muy apretado, pide muchas cosas distintas y es más complicado de utilizar»; que el viejo sea el de siempre y el nuevo se pueda elegir en `/config`. «Es el diseño viejo pero con lo actual»; la Hoja de Acero Puro (el arma general que no es de zona) «dejala en la zona 1».

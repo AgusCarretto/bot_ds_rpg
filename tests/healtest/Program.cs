@@ -38,7 +38,7 @@ Check(GatheringYield.Roll("Raro", runMultiplier: 3) is >= 3 and <= 9 && Gatherin
 Check(GatheringYield.Roll("Rareza inventada") == 1, "rareza desconocida = 1");
 
 Console.WriteLine("\n== 2. Cantidades de las recetas ==");
-var recipes = (await new RecipeRepository(factory).GetAllAsync()).Where(r => r.ZoneId is null or > 0).ToList(); // la escalera + la Hoja de Acero Puro (sin zona); el Fogón (zona 0) pide más a propósito, ver fogontest
+var recipes = (await new RecipeRepository(factory).GetAllAsync()).Where(r => (r.ZoneId is null or > 0) && !ToolRules.IsToolType(r.ResultItem.Type)).ToList(); // la escalera + la Hoja de Acero Puro (sin zona); el Fogón (zona 0) pide más a propósito, ver fogontest; las herramientas (v0.29.0) son del Carpintero, ver toolstest
 var gathered = await items.GetAllByTypeAsync("Madera");
 var minerals = await items.GetAllByTypeAsync("Mineral");
 var rarityOf = gathered.Concat(minerals).ToDictionary(i => i.Name, i => i.Rarity);

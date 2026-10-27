@@ -61,7 +61,8 @@ public partial class TextCommandModule(
     IPartyBossService partyBoss,
     ITitleRepository titleRepository,
     IWorldBossService worldBossService,
-    IBlackjackService blackjackService) : ModuleBase<SocketCommandContext>
+    IBlackjackService blackjackService,
+    IToolRepository toolRepository) : ModuleBase<SocketCommandContext>
 {
     // ---- Onboarding / clase ----
 

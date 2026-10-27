@@ -1,5 +1,6 @@
 using System.Data.Common;
 using BotDsRpg.Data;
+using BotDsRpg.GameData;
 using BotDsRpg.Models;
 using Dapper;
 
@@ -39,12 +40,30 @@ public sealed class CraftingRepository(IDbConnectionFactory connectionFactory) :
                 new { ItemId = resultItemId }, transaction: transaction, cancellationToken: cancellationToken));
             bool isWeapon = resultType == "Weapon";
             bool isAmulet = resultType == "Amulet";
+            string? toolKind = ToolRules.KindOfItemType(resultType);
 
             if ((isWeapon && user.WeaponId is not null) || (isAmulet && user.AmuletId is not null))
             {
                 await transaction.RollbackAsync(cancellationToken);
                 return new CraftOutcome(
                     false, null, isWeapon ? "ya tenés un arma equipada: vendela primero." : "ya tenés un amuleto equipado: vendelo primero.", SlotOccupied: true);
+            }
+
+            // Una herramienta (v0.29.0) reemplaza a la que ya llevás de ese tipo, pero solo si es MEJOR: con una igual o mejor no se toca nada (ni materiales). Es el mismo candado de la fila del jugador que protege al arma.
+            if (toolKind is not null)
+            {
+                int newMultiplier = await connection.QuerySingleAsync<int>(new CommandDefinition(
+                    "SELECT stat_value FROM items WHERE item_id = @ItemId;",
+                    new { ItemId = resultItemId }, transaction: transaction, cancellationToken: cancellationToken));
+                int currentMultiplier = await connection.QuerySingleOrDefaultAsync<int>(new CommandDefinition(
+                    "SELECT i.stat_value FROM player_tools t JOIN items i ON i.item_id = t.item_id WHERE t.discord_id = @DiscordId AND t.kind = @Kind;",
+                    new { DiscordId = (long)discordId, Kind = toolKind }, transaction: transaction, cancellationToken: cancellationToken));
+
+                if (currentMultiplier >= newMultiplier)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    return new CraftOutcome(false, null, "ya tenés una herramienta igual o mejor.", SlotOccupied: true);
+                }
             }
 
             if (user.Gold < goldCost)
@@ -106,6 +125,16 @@ public sealed class CraftingRepository(IDbConnectionFactory connectionFactory) :
                 await connection.ExecuteAsync(new CommandDefinition(
                     equipSql, new { DiscordId = (long)discordId, ItemId = resultItemId }, transaction: transaction, cancellationToken: cancellationToken));
             }
+            else if (toolKind is not null)
+            {
+                // La herramienta queda puesta (una por tipo; la nueva pisa a la vieja): no pasa por el inventario.
+                await connection.ExecuteAsync(new CommandDefinition(
+                    """
+                    INSERT INTO player_tools (discord_id, kind, item_id) VALUES (@DiscordId, @Kind, @ItemId)
+                    ON CONFLICT (discord_id, kind) DO UPDATE SET item_id = EXCLUDED.item_id;
+                    """,
+                    new { DiscordId = (long)discordId, Kind = toolKind, ItemId = resultItemId }, transaction: transaction, cancellationToken: cancellationToken));
+            }
             else
             {
                 await InventoryUpsert.AddItemAsync(connection, transaction, discordId, resultItemId, 1, cancellationToken);
@@ -116,7 +145,7 @@ public sealed class CraftingRepository(IDbConnectionFactory connectionFactory) :
                 selectUpdatedUserSql, new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
 
             await transaction.CommitAsync(cancellationToken);
-            return new CraftOutcome(true, updated, null, isWeapon ? "weapon" : isAmulet ? "amulet" : null);
+            return new CraftOutcome(true, updated, null, isWeapon ? "weapon" : isAmulet ? "amulet" : toolKind is not null ? "tool" : null);
         }
         catch
         {

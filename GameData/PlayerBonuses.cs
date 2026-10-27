@@ -6,7 +6,8 @@ namespace BotDsRpg.GameData;
 // Todo son multiplicadores sobre la base (1,0 = sin efecto); los de cada fuente se MULTIPLICAN entre sí (Fuego Nuevo × mascotas × bendiciones), que es el "presupuesto de
 // multiplicadores" del spec. Las cuentas están acá y no repartidas: si una fuente cambia, cambia en un solo lugar.
 public sealed record PlayerBonuses(
-    PetBonuses Pets, int FuegoNuevo = 0, IReadOnlyDictionary<string, int>? BlessingLevels = null, IReadOnlyDictionary<string, long>? ProfessionXp = null, double BankGoldPercent = 0)
+    PetBonuses Pets, int FuegoNuevo = 0, IReadOnlyDictionary<string, int>? BlessingLevels = null, IReadOnlyDictionary<string, long>? ProfessionXp = null, double BankGoldPercent = 0,
+    double ChopToolFactor = 1, double MineToolFactor = 1)
 {
     public static readonly PlayerBonuses None = new(PetBonuses.None);
 
@@ -56,6 +57,9 @@ public sealed record PlayerBonuses(
 
     private double PetGather => 1 + (Pets.GatherPercent / 100.0);
 
+    // Las herramientas (v0.29.0, GameData/ToolRules.cs): el multiplicador del hacha (/chop) y del pico (/mine) que lleva puestos, 1 sin ninguna. NO está dentro de ChopMultiplier / MineMultiplier porque solo vale para
+    // Común, Raro y Épico (lo Legendario y lo Mítico siguen dando 1): la recolección lo aplica por rareza con ToolRules.QuantityFactor y lo multiplica con el resto.
+
     // La chance de que la rareza de lo recolectado suba un escalón (solo los oficios la dan).
     public double ChopRarityUpgrade => ProfessionRules.RarityUpgradeChance(ProfessionLevel(ProfessionCatalog.WoodcutterKey));
 
@@ -73,7 +77,7 @@ public sealed record PlayerBonuses(
 
     public bool IsNone =>
         Pets.IsNone && FuegoNuevo == 0 && (BlessingLevels is null || BlessingLevels.Count == 0)
-        && ProfessionCatalog.All.All(p => ProfessionLevel(p.Key) == 0) && BankGoldPercent <= 0;
+        && ProfessionCatalog.All.All(p => ProfessionLevel(p.Key) == 0) && BankGoldPercent <= 0 && ChopToolFactor <= 1 && MineToolFactor <= 1;
 
     // Aplica un multiplicador a una cantidad entera (oro, EXP, ataque, defensa), redondeando al más cercano. Con 1,0 o menos no toca nada.
     public static int Scale(int amount, double multiplier) =>

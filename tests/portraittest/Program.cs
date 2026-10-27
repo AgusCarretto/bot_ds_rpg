@@ -99,7 +99,8 @@ var legacy = new[] { "Bombilla de Hierro Maldito", "Botas de Silencio", "Collar 
 await using var rawDb = new Npgsql.NpgsqlConnection(conn);
 await rawDb.OpenAsync();
 var allItems = (await Dapper.SqlMapper.QueryAsync<(string Name, string? Emoji)>(rawDb, "SELECT name, emoji FROM items")).ToList();
-var noArt = allItems.Where(i => !legacy.Contains(i.Name) && !System.Text.RegularExpressions.Regex.IsMatch(i.Emoji ?? string.Empty, @"^<a?:[A-Za-z0-9_]+:[0-9]+>$")).Select(i => i.Name).ToList();
+// v0.29.0: el hacha y el pico del Carpintero todavía no tienen arte (el dueño lo sube después y va en update_item_emojis.sql): se exceptúan HASTA que lo tengan; sin emoji no rompen nada.
+var noArt = allItems.Where(i => !legacy.Contains(i.Name) && !BotDsRpg.GameData.ToolRules.IsToolType(i.Type) &&!System.Text.RegularExpressions.Regex.IsMatch(i.Emoji ?? string.Empty, @"^<a?:[A-Za-z0-9_]+:[0-9]+>$")).Select(i => i.Name).ToList();
 Check(noArt.Count == 0, $"todo ítem que se puede conseguir tiene arte propio (sin arte: {string.Join(", ", noArt)})");
 var nine = new Dictionary<string, string>
 {

@@ -138,8 +138,10 @@ public static class RecipeCatalog
 
     // Una receta la ve el jugador si no es exclusiva de otra clase, y — si es un arma de afinidad (de clase) — si es la
     // de SU clase (la familia del arma coincide con el tipo de arma de la clase).
+    // Las recetas del hacha y el pico (v0.29.0) no las ve el herrero: las arma el Carpintero (Modules/ToolsModule.cs).
     public static bool IsVisibleTo(RecipeDetails recipe, string playerClass) =>
-        (recipe.ResultItem.ClassRequirement is null
+        !ToolRules.IsToolType(recipe.ResultItem.Type)
+        && (recipe.ResultItem.ClassRequirement is null
             || string.Equals(recipe.ResultItem.ClassRequirement, playerClass, StringComparison.OrdinalIgnoreCase))
         && (!recipe.Affinity || IsOwnFamily(playerClass, recipe.ResultItem.WeaponFamily));
 
