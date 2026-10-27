@@ -644,7 +644,7 @@ public class AdventureModule(
             .WithTitle(Loc.F($"⚔️ Combate contra {state.MonsterName} {state.MonsterEmoji}"))
             .WithColor(Color.Gold)
             .WithMonsterPortrait(state.MonsterPortrait)
-            .WithDescription($"{turn.ActionFlavor}{CritPrefix(turn.CritCount)}{playerLine} {monsterLine}{LifestealSuffix(turn.LifestealHeal, turn.LeechHeal)}")
+            .WithDescription($"{turn.ActionFlavor}{CritPrefix(turn.CritCount)}{playerLine} {monsterLine}{LifestealSuffix(turn.LifestealHeal, turn.LeechHeal)}{LastStandSuffix(turn)}")
             .AddField(Loc.T("❤️ Tu HP"), HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
             .AddField(Loc.F($"{state.MonsterEmoji} HP de {state.MonsterName}"), HpLine(state.MonsterCurrentHp, state.MonsterMaxHp), true);
 
@@ -808,6 +808,9 @@ public class AdventureModule(
         1 => Loc.T("💥 ¡GOLPE CRÍTICO! "),
         _ => Loc.F($"💥 ¡{critCount} GOLPES CRÍTICOS! "),
     };
+
+    // El «Aliento final» del dragón (tier 4+): el golpe te iba a matar y quedaste con 1 de vida.
+    private static string LastStandSuffix(TurnResult turn) => turn.LastStand ? Loc.T("\n🐉 ¡Aliento final! Tu dragón te mantuvo en pie con 1 de vida.") : string.Empty;
 
     // "🔮 Sifón de Almas te curó X HP." si el Hechicero curó algo este turno y "🩸 Sangre te curó Y HP." si fue el encantamiento (healed = la cura total; leech = la parte de Sangre).
     private static string LifestealSuffix(int healed, int leech = 0)

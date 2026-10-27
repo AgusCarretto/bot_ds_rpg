@@ -45,6 +45,12 @@ public static class PlayerCombatProfileCalculator
             passives = passives with { MaxHpMultiplier = passives.MaxHpMultiplier * bonuses.MaxHpMultiplier };
         }
 
+        // El «Aliento final» del dragón (tier 4+, GameData/DragonRules.cs): solo contra monstruos, como todo lo que entra por los bonuses.
+        if (bonuses?.Dragon is { LastStand: true })
+        {
+            passives = passives with { LastStand = true };
+        }
+
         // El ajuste de vida por clase SOLO contra monstruos (GameData/PveTuning.cs): como los bonuses solo los pasan esas peleas, el PvP queda como estaba medido.
         if (bonuses is not null && PveTuning.HpFactor(player.Class) is var pveFactor && pveFactor != 1.0)
         {

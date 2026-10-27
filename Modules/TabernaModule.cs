@@ -18,7 +18,7 @@ public sealed record TabernaScene(Embed Embed, MessageComponent? Components, str
 public class TabernaModule(
     IUserRepository userRepository, IItemRepository itemRepository, IInventoryRepository inventoryRepository, IShopRepository shopRepository,
     IBuffRepository buffRepository, ICombatSessionService combatSessions, IGameEvents gameEvents, IBoxContextService boxContextService,
-    IDropExchangeRepository dropExchangeRepository, IRaidSessionService raidSessions, IPlayerBonusService bonusService)
+    IDropExchangeRepository dropExchangeRepository, IRaidSessionService raidSessions, IPlayerBonusService bonusService, IDragonRepository dragonRepository)
     : InteractionModuleBase<SocketInteractionContext>
 {
     // El trueque va en DOS pasos (hay que elegir qué entregás y qué querés a cambio): la lista "Cambiar drops" (Swap) y, debajo de lo que elegiste, una lista solo tuya
@@ -42,7 +42,7 @@ public class TabernaModule(
         try
         {
             var scene = await BuildSceneAsync(
-                userRepository, itemRepository, inventoryRepository, buffRepository, Context.User.Id, null, boxContextService, dropExchangeRepository, bonusService);
+                userRepository, itemRepository, inventoryRepository, buffRepository, Context.User.Id, null, boxContextService, dropExchangeRepository, bonusService, dragonRepository);
 
             if (scene.AttachmentPath is { } file)
             {
@@ -252,10 +252,10 @@ public class TabernaModule(
 
             string talk = await ExecuteActionAsync(
                 action, userRepository, itemRepository, inventoryRepository, shopRepository, buffRepository, combatSessions, gameEvents,
-                Context.User.Id, selected.FirstOrDefault() ?? string.Empty, boxContextService, raidSessions, bonusService);
+                Context.User.Id, selected.FirstOrDefault() ?? string.Empty, boxContextService, raidSessions, bonusService, dragonRepository);
 
             // La escena se refresca (tu oro y tus listas al día) y la respuesta va en un mensaje aparte.
-            var scene = await BuildSceneAsync(userRepository, itemRepository, inventoryRepository, buffRepository, Context.User.Id, null, boxContextService, dropExchangeRepository, bonusService);
+            var scene = await BuildSceneAsync(userRepository, itemRepository, inventoryRepository, buffRepository, Context.User.Id, null, boxContextService, dropExchangeRepository, bonusService, dragonRepository);
 
             await ModifyOriginalResponseAsync(p =>
             {
@@ -337,12 +337,18 @@ public class TabernaModule(
     public static async Task<string> ExecuteActionAsync(
         string action, IUserRepository userRepository, IItemRepository itemRepository, IInventoryRepository inventoryRepository,
         IShopRepository shopRepository, IBuffRepository buffRepository, ICombatSessionService combatSessions, IGameEvents gameEvents,
-        ulong discordId, string itemName, IBoxContextService? boxContext = null, IRaidSessionService? raidSessions = null, IPlayerBonusService? bonusService = null)
+        ulong discordId, string itemName, IBoxContextService? boxContext = null, IRaidSessionService? raidSessions = null, IPlayerBonusService? bonusService = null, IDragonRepository? dragonRepository = null)
     {
         switch (action)
         {
             case BuyFood or BuyBox:
             {
+                // El dragón (v0.30.0) se compra desde la lista de cajas: una opción propia, no un ítem.
+                if (itemName == DragonModule.ShopKey && dragonRepository is not null)
+                {
+                    return await DragonModule.ExecuteBuyAsync(dragonRepository, discordId);
+                }
+
                 var bought = await ShopModule.ExecuteBuyAsync(userRepository, itemRepository, shopRepository, combatSessions, gameEvents, discordId, itemName, 1, boxContext);
                 return bought.PlainMessage ?? bought.Embed!.Description;
             }
@@ -383,7 +389,7 @@ public class TabernaModule(
     // que "aa taberna" muestre exactamente lo mismo.
     public static async Task<TabernaScene> BuildSceneAsync(
         IUserRepository userRepository, IItemRepository itemRepository, IInventoryRepository inventoryRepository,
-        IBuffRepository buffRepository, ulong discordId, string? talk, IBoxContextService? boxContext = null, IDropExchangeRepository? dropExchange = null, IPlayerBonusService? bonusService = null)
+        IBuffRepository buffRepository, ulong discordId, string? talk, IBoxContextService? boxContext = null, IDropExchangeRepository? dropExchange = null, IPlayerBonusService? bonusService = null, IDragonRepository? dragonRepository = null)
     {
         var player = await userRepository.GetByDiscordIdAsync(discordId);
         if (player is null)
@@ -433,12 +439,20 @@ public class TabernaModule(
                 foodForSale.Select(i => (i.Name, i.Type == ShopCatalog.PetFoodType ? ShopModule.PetFoodLine(i) : Loc.F($"Cura {i.StatValue} HP{BuffText(i, buffs)} · {i.BuyPrice} oro"), i.Name))), row++);
         }
 
-        var boxesForSale = shopItems.Where(i => i.Type == "Caja").OrderBy(i => i.BuyPrice).Take(25).ToList();
-        if (boxesForSale.Count > 0)
+        // El dragón (v0.30.0) se compra en la misma lista que las cajas, mientras no tengas uno.
+        bool offerDragon = dragonRepository is not null && await dragonRepository.GetAsync(discordId) is null;
+        var boxesForSale = shopItems.Where(i => i.Type == "Caja").OrderBy(i => i.BuyPrice).Take(offerDragon ? 24 : 25).ToList();
+        if (boxesForSale.Count > 0 || offerDragon)
         {
+            var boxOptions = boxesForSale.Select(i => (i.Name, ShopModule.BoxLine(i, unlockedRank), i.Name)).ToList();
+            if (offerDragon)
+            {
+                boxOptions.Add((Loc.T("🐲 Dragón de cría"), Loc.F($"Una sola vez · {GameHistory.Number(DragonRules.ShopPrice)} oro · el tipo sale al azar"), DragonModule.ShopKey));
+            }
+
             components.WithSelectMenu(Menu(
-                BuyBox, discordId, Loc.T("Comprar una caja (una cada 2 horas)"),
-                boxesForSale.Select(i => (i.Name, ShopModule.BoxLine(i, unlockedRank), i.Name))), row++);
+                BuyBox, discordId, offerDragon ? Loc.T("Comprar una caja (una cada 2 horas) o un dragón") : Loc.T("Comprar una caja (una cada 2 horas)"),
+                boxOptions), row++);
         }
 
         // Primero lo que llevás puesto (avisando que es lo equipado: vender eso te deja sin la pieza) y después lo de la mochila.

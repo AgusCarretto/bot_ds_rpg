@@ -10,7 +10,8 @@ public sealed record ClassPassiveProfile(
     double CritChanceBonus, // Arquero: +0.15 sobre CombatMath.CritChance
     double LifestealChance, // Hechicero: probabilidad de Sifón de Almas
     double LifestealRatio, // Hechicero: % del daño infligido que cura si el Sifón procede
-    double LeechRatio = 0); // Encantamiento Sangre (v0.22.0, solo contra monstruos): % del daño infligido que cura SIEMPRE, en cada golpe
+    double LeechRatio = 0, // Encantamiento Sangre (v0.22.0, solo contra monstruos): % del daño infligido que cura SIEMPRE, en cada golpe
+    bool LastStand = false); // Aliento final del dragón (v0.30.0, tier 4+, solo contra monstruos): una vez por pelea, si el golpe te iba a matar, quedás con 1 de vida
 
 // Patrón strategy simple (switch por nombre de clase) para no repartir "if (player.Class == ...)"
 // por todo el código de combate — GameData/CombatMath.cs y Services/AdventureCombatStarter.cs son
