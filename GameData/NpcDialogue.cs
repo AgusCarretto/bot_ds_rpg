@@ -534,6 +534,14 @@ public static class NpcImages
         Find("Images__DeepShopkeeper", "deepshop.jpg")
         ?? (ItemDisplay.ImageUrl(DeepShopkeeperEmoji, size: 256) is { } emojiUrl ? new NpcImage(emojiUrl, null) : null);
 
+    // El Carpintero (v0.29.0): su foto sale de donde esté primero: una URL (Images__Carpenter), el archivo Assets/npc/carpenter.jpg (256x256) o un emoji de la APLICACIÓN llamado «carpintero» (se busca por NOMBRE, sin ids: se sube al
+    // portal y en unos minutos aparece de miniatura en /tools).
+    public const string CarpenterEmojiName = "carpintero";
+
+    public static NpcImage? Carpenter =>
+        Find("Images__Carpenter", "carpenter.jpg")
+        ?? (ItemDisplay.ImageUrl(UiEmojis.Icon(CarpenterEmojiName, string.Empty), size: 256) is { } carpenterUrl ? new NpcImage(carpenterUrl, null) : null);
+
     private static NpcImage? Find(string urlKey, string? fileName)
     {
         string? url = Environment.GetEnvironmentVariable(urlKey);
@@ -564,7 +572,7 @@ public static class NpcImages
             return null;
         }
 
-        return new[] { Blacksmith, Innkeeper }.FirstOrDefault(image => image?.Reference == url)?.LocalPath;
+        return new[] { Blacksmith, Innkeeper, Carpenter }.FirstOrDefault(image => image?.Reference == url)?.LocalPath;
     }
 
     // Manda el embed al canal, con su imagen adjunta si la tiene (comandos de texto).

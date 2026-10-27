@@ -32,6 +32,14 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
 
+## El Carpintero como el tabernero, criar el dragón solo y el perfil con números romanos (v0.31.0, 2026-10-28)
+
+- **El Carpintero (`/tools`) pasa a ser compacto**, como la taberna: la foto del personaje de miniatura, lo que llevás puesto y **una lista** con las 4 mejoras. Cada opción dice su estado en la etiqueta (🔒 zona cerrada, ✅ tenés todo, ❌ te falta algo) y abajo los materiales «tenés/necesitás»; elegir una cerrada dice en qué zona se abre y no gasta nada. **Para ponerle foto**: subir al portal un emoji de la aplicación llamado **`carpintero`** (se levanta solo, sin ids) o dejar un `Assets/npc/carpenter.jpg` de 256×256.
+- **`/shop buy dragon`** (y `aa shop buy dragon`): compra el dragón igual que desde la taberna; también aparece en el autocompletado de `/shop buy` mientras no tengas uno.
+- **El dragón se puede criar SOLO**: `/dragon-breed` sin amigo (o `aa dragon breed`). Cuenta como un intento (12 h de descanso, fallos seguidos, piedad) pero con la **MITAD de chance de subir de tier** (tier 1: 50 %, tier 2: 30 %…). Sube solo ese dragón. Opinión: resuelve el cuello de botella de buscar pareja del mismo tier en los tiers altos a cambio de tiempo (el doble de intentos en promedio), y con la piedad el camino sigue teniendo fin; en el tier 1, que con pareja es seguro, solo puede fallar una vez.
+- **Perfil**: la línea del dragón ahora es `<emoji de su tipo> **Nombre** (II) lvl 20` (sin «Dragón:», con el tier en números romanos).
+- **Sin migración**: no cambia la base. El emoji del Carpintero se sube cuando quieras.
+
 ## Las recetas de recolección suben: herramientas ×3 y el Fogón con 300 de madera y 300 de piedra (v0.30.2, 2026-10-28)
 
 - **Pedido del dueño**: «el pico y el hacha salen muy baratos para como multiplican las cosas, pedí más; y la receta para ir a la zona 0 tiene que pedir mucha piedra y madera, tipo 300 y 300… una persona FN2 sacó 27 maderas recién». Con las herramientas (×2 / ×3) y el Fuego Nuevo se junta mucho más material que cuando se calibraron las recetas.

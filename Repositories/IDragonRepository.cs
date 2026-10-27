@@ -36,6 +36,10 @@ public interface IDragonRepository
     // con DragonRules.RollBreed (la piedad es la del que más fallos seguidos lleva) y, sea cual sea el resultado, pone el cooldown a los dos. Si sale bien suben los dos de tier y los fallos vuelven a 0; si no, los dos suman un fallo.
     Task<DragonBreedResult> BreedAsync(ulong firstId, ulong secondId, Random? rng = null, CancellationToken cancellationToken = default);
 
+    // Cría el dragón SOLO (v0.31.0), sin pareja, en UNA transacción: valida (con dragón, tier < 10, descansado), sortea con la MITAD de la chance del tier (DragonRules.SoloChanceFactor; la piedad es la misma) y, salga como salga,
+    // pone el descanso. Sube de tier solo ese dragón; si no, suma un fallo. El resultado trae el dragón en A (B va vacío).
+    Task<DragonBreedResult> BreedSoloAsync(ulong discordId, Random? rng = null, CancellationToken cancellationToken = default);
+
     // Entrena el dragón hasta `times` niveles en UNA transacción (bloquea la fila del jugador y la del dragón): cada nivel cuesta DragonRules.TrainCost(nivel actual), siempre más que el anterior, y se entrena hasta donde alcance el oro
     // y el tope del tier (tier × 10). Si no se puede ni uno, no se toca nada (AtCap / NotEnoughGold). El cobro es un UPDATE guardado: nunca deja el oro en negativo.
     Task<DragonTrainResult> TrainAsync(ulong discordId, int times, CancellationToken cancellationToken = default);

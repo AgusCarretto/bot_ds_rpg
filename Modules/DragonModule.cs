@@ -102,13 +102,20 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
         }
     }
 
-    [SlashCommand("dragon-breed", "Criá tu dragón con el de un amigo que tenga tu mismo tier: si sale bien, suben los dos.")]
-    public async Task HandleBreedAsync([Summary("amigo", "Con quién lo querés criar")] IUser amigo)
+    [SlashCommand("dragon-breed", "Criá tu dragón con un amigo del mismo tier (suben los dos) o solo, con la mitad de chance.")]
+    public async Task HandleBreedAsync([Summary("amigo", "Con quién (si no ponés a nadie, lo criás solo, con la mitad de chance)")] IUser? amigo = null)
     {
         await DeferAsync();
 
         try
         {
+            // Sin amigo: se cría SOLO (cuenta como intento, con la mitad de chance).
+            if (amigo is null)
+            {
+                await FollowupAsync(embed: await ExecuteSoloBreedAsync(dragonRepository, Context.User.Id));
+                return;
+            }
+
             var invite = await PrepareBreedAsync(dragonRepository, offerService, Context.User.Id, amigo.Id, amigo.IsBot);
             if (invite.Error is not null)
             {
@@ -273,12 +280,13 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
         {
             int pityCap = DragonRules.PityCap(dragon.Tier);
             string pity = pityCap == 0
-                ? "En este tier la cría es **segura**."
+                ? "En este tier la cría con un amigo es **segura**."
                 : $"Fallos seguidos: **{dragon.FailStreak}/{pityCap}**. Con {pityCap} fallos seguidos, el siguiente intento sale **seguro**.";
             embed.AddField(
                 "Criar",
                 $"Chance de subir de tier: **{DragonRules.Percent(Math.Round(DragonRules.BreedChance(dragon.Tier) * 100, 2))} %** por intento · en promedio, unos **{DragonRules.ExpectedAttempts(dragon.Tier):0.#}** intentos.\n{pity}\n" +
-                $"Se cría con un amigo que tenga tu mismo tier: **/dragon-breed @amigo** (cada intento los hace descansar {TimeFormat.Remaining(DragonRules.BreedCooldown)}; cuánto falta para el próximo lo ves en **/cd**).",
+                $"Se cría con un amigo que tenga tu mismo tier: **/dragon-breed @amigo** (cada intento los hace descansar {TimeFormat.Remaining(DragonRules.BreedCooldown)}; cuánto falta para el próximo lo ves en **/cd**).\n" +
+                $"También podés criarlo **solo**, sin amigo (**/dragon-breed** a secas): cuenta como intento, pero con la **mitad** de chance ({DragonRules.Percent(Math.Round(DragonRules.SoloBreedChance(dragon.Tier) * 100, 2))} %).",
                 false);
         }
 
@@ -336,6 +344,62 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
             DragonRenameStatus.NotEnoughGold => $"Te falta oro: ponerle nombre a tu dragón cuesta **{GameHistory.Number(DragonRules.RenamePrice)}** y tenés **{GameHistory.Number(result.GoldLeft)}**.",
             _ => "No tenés dragón: comprá uno en la **/taberna**.",
         };
+    }
+
+    // El nombre «normalizado» para comparar lo que se escribe en /shop buy: sin tildes, sin mayúsculas y sin espacios de más.
+    private static string NormalizeName(string? text)
+    {
+        string decomposed = (text ?? string.Empty).Trim().ToLowerInvariant().Normalize(System.Text.NormalizationForm.FormD);
+        return new string(decomposed.Where(c => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.NonSpacingMark).ToArray());
+    }
+
+    // ¿Lo escrito en «/shop buy» o «aa shop buy» nombra al dragón? («dragon», «dragón», «dragon de cria»).
+    public static bool IsDragonName(string? text) => NormalizeName(text) is "dragon" or "dragon de cria";
+
+    // ¿Lo que se va escribiendo en la lista de /shop buy se parece al dragón (o todavía no se escribió nada)?
+    public static bool MatchesDragon(string? typed)
+    {
+        string normalized = NormalizeName(typed);
+        return normalized.Length == 0 || "dragon de cria".Contains(normalized, StringComparison.Ordinal);
+    }
+
+    // Criar el dragón SOLO (v0.31.0): sin pareja, con la mitad de la chance del tier; cuenta como intento (descanso de 12 h y fallos seguidos, la piedad sigue igual). Devuelve lo que se le cuenta al jugador.
+    public static async Task<Embed> ExecuteSoloBreedAsync(IDragonRepository dragonRepository, ulong discordId, Random? rng = null)
+    {
+        var result = await dragonRepository.BreedSoloAsync(discordId, rng);
+        var embed = new EmbedBuilder().WithTitle("🐲 Criar solo").WithColor(Color.Orange);
+
+        switch (result.Status)
+        {
+            case DragonBreedStatus.Bred when result.Success:
+            {
+                int tier = result.Tier + 1;
+                var perk = DragonRules.Perks[tier - 1];
+                var dragon = result.A!;
+                return embed.WithColor(Color.Gold).WithDescription(
+                    $"✨ **¡Lo lograste solo!** Tu dragón sube al **Tier {tier}: {DragonRules.TierName(tier)}** y desbloquea una mejora nueva: **{perk.Name}** — {perk.Text}\n" +
+                    $"{DragonRules.KindEmoji(dragon.Kind)} {DragonRules.KindName(dragon.Kind)} · {TypeBonus(dragon.Kind, tier, dragon.Level)}\n" +
+                    (tier >= DragonRules.MaxTier ? "\n🏆 ¡Llegó al tier máximo!" : $"\nAhora puede entrenar hasta el nivel {DragonRules.LevelCap(tier)} y descansa {TimeFormat.Remaining(DragonRules.BreedCooldown)} antes de volver a criar.")).Build();
+            }
+
+            case DragonBreedStatus.Bred:
+            {
+                int cap = DragonRules.SoloPityCap(result.Tier);
+                return embed.WithDescription(
+                    $"💨 No se dio esta vez: tu dragón se queda en el **Tier {result.Tier}**. Criándolo solo la chance es la **mitad** ({DragonRules.Percent(Math.Round(DragonRules.SoloBreedChance(result.Tier) * 100, 2))} %); con un amigo del mismo tier es del {DragonRules.Percent(Math.Round(DragonRules.BreedChance(result.Tier) * 100, 2))} %.\n" +
+                    $"Fallos seguidos: **{result.A!.FailStreak}/{cap}**; con {cap} fallos seguidos, el siguiente intento sale **seguro**.\n" +
+                    $"Descansa {TimeFormat.Remaining(DragonRules.BreedCooldown)} antes de volver a intentar.").Build();
+            }
+
+            case DragonBreedStatus.MaxTier:
+                return embed.WithColor(Color.Red).WithDescription("Tu dragón ya está en el tier máximo: no hay nada más que criar.").Build();
+
+            case DragonBreedStatus.OnCooldown:
+                return embed.WithColor(Color.Red).WithDescription($"Tu dragón está descansando: puede criar en **{TimeFormat.Remaining(result.Wait)}**.").Build();
+
+            default:
+                return embed.WithColor(Color.Red).WithDescription("No tenés dragón: comprá uno en la **/taberna** (o con **/shop buy dragon**).").Build();
+        }
     }
 
     // Comprar el dragón (lo que hace la opción de la taberna). Devuelve lo que contesta el tabernero.

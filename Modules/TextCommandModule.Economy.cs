@@ -75,7 +75,7 @@ public partial class TextCommandModule
     {
         try
         {
-            var result = await ShopModule.ExecuteBuyAsync(userRepository, itemRepository, shopRepository, combatSessions, gameEvents, Context.User.Id, item, cantidad, boxContextService);
+            var result = await ShopModule.ExecuteBuyAsync(userRepository, itemRepository, shopRepository, combatSessions, gameEvents, Context.User.Id, item, cantidad, boxContextService, dragonRepository);
             await ReplyAsync(result.PlainMessage, embed: result.Embed);
         }
         catch (Exception ex)

@@ -234,6 +234,59 @@ public sealed class DragonRepository(IDbConnectionFactory connectionFactory) : I
         }
     }
 
+    public async Task<DragonBreedResult> BreedSoloAsync(ulong discordId, Random? rng = null, CancellationToken cancellationToken = default)
+    {
+        using DbConnection connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        using DbTransaction transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            var row = await connection.QuerySingleOrDefaultAsync<DragonRow>(new CommandDefinition(
+                $"SELECT {SelectColumns} FROM player_dragons WHERE discord_id = @DiscordId FOR UPDATE;",
+                new { DiscordId = (long)discordId, Cooldown = DragonRules.BreedCooldown.TotalSeconds }, transaction: transaction, cancellationToken: cancellationToken));
+
+            if (row is null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new DragonBreedResult(DragonBreedStatus.NoDragon, BlockedId: discordId);
+            }
+
+            if (row.Tier >= DragonRules.MaxTier)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new DragonBreedResult(DragonBreedStatus.MaxTier, Tier: row.Tier, A: ToDragon(row));
+            }
+
+            if (row.WaitSeconds > 0)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new DragonBreedResult(DragonBreedStatus.OnCooldown, Tier: row.Tier, A: ToDragon(row), BlockedId: discordId, Wait: TimeSpan.FromSeconds(row.WaitSeconds));
+            }
+
+            // Solo: la mitad de la chance del tier; la piedad (el tope de fallos seguidos) es la de siempre.
+            bool success = DragonRules.RollBreed(row.Tier, row.FailStreak, rng, DragonRules.SoloChanceFactor);
+
+            await connection.ExecuteAsync(new CommandDefinition(
+                success
+                    ? "UPDATE player_dragons SET tier = tier + 1, fail_streak = 0, last_bred_at = now() WHERE discord_id = @DiscordId;"
+                    : "UPDATE player_dragons SET fail_streak = fail_streak + 1, last_bred_at = now() WHERE discord_id = @DiscordId;",
+                new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
+
+            var after = await connection.QuerySingleAsync<DragonRow>(new CommandDefinition(
+                $"SELECT {SelectColumns} FROM player_dragons WHERE discord_id = @DiscordId;",
+                new { DiscordId = (long)discordId, Cooldown = DragonRules.BreedCooldown.TotalSeconds }, transaction: transaction, cancellationToken: cancellationToken));
+
+            await transaction.CommitAsync(cancellationToken);
+            return new DragonBreedResult(DragonBreedStatus.Bred, success, row.Tier, ToDragon(after));
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
+
     public async Task<DragonBreedResult> BreedAsync(ulong firstId, ulong secondId, Random? rng = null, CancellationToken cancellationToken = default)
     {
         using DbConnection connection = connectionFactory.CreateConnection();

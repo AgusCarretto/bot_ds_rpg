@@ -179,27 +179,37 @@ public static class DragonRules
 
     public static int PityCap(int tier) => tier is >= 1 and < MaxTier ? PityCaps[tier - 1] : 0;
 
-    // Un intento de criar: sale seguro si los fallos seguidos ya llegaron al tope; si no, se sortea con la chance del tier. En el tier máximo no hay nada que subir.
-    public static bool RollBreed(int tier, int failStreak, Random? rng = null)
+    // Criar SOLO, sin pareja (v0.31.0, el dueño: «que el dragón se pueda criar solo también y cuente como intento, pero sacale la mitad del % de subir de tier»): la chance es la mitad de la del tier. Cuenta como un intento
+    // de verdad: pone el descanso de 12 h y suma (o reinicia) los fallos seguidos, así que la piedad sigue funcionando igual (con el tope de fallos el siguiente intento sale seguro, también solo).
+    public const double SoloChanceFactor = 0.5;
+
+    public static double SoloBreedChance(int tier) => BreedChance(tier) * SoloChanceFactor;
+
+    // El tope de fallos seguidos criando SOLO: el de siempre pero de al menos 1. Con pareja el tier 1 es seguro (su tope es 0), pero solo tiene la mitad de chance: puede fallar una vez y recién después sale seguro.
+    public static int SoloPityCap(int tier) => tier is >= 1 and < MaxTier ? Math.Max(1, PityCaps[tier - 1]) : 0;
+
+    // Un intento de criar: sale seguro si los fallos seguidos ya llegaron al tope; si no, se sortea con la chance del tier (por chanceFactor: 1 con pareja, SoloChanceFactor solo). En el tier máximo no hay nada que subir.
+    public static bool RollBreed(int tier, int failStreak, Random? rng = null, double chanceFactor = 1.0)
     {
         if (tier < 1 || tier >= MaxTier)
         {
             return false;
         }
 
-        return failStreak >= PityCap(tier) || (rng ?? Random.Shared).NextDouble() < BreedChance(tier);
+        return failStreak >= (chanceFactor < 1.0 ? SoloPityCap(tier) : PityCap(tier)) || (rng ?? Random.Shared).NextDouble() < BreedChance(tier) * chanceFactor;
     }
 
     // Cuántos intentos hacen falta en promedio para pasar de ese tier al siguiente (con la piedad): la suma de (1 − p)^k para k = 0..tope.
-    public static double ExpectedAttempts(int tier)
+    public static double ExpectedAttempts(int tier, double chanceFactor = 1.0)
     {
         if (tier is < 1 or >= MaxTier)
         {
             return 0;
         }
 
-        double p = BreedChance(tier), total = 0;
-        for (int k = 0; k <= PityCap(tier); k++)
+        double p = BreedChance(tier) * chanceFactor, total = 0;
+        int cap = chanceFactor < 1.0 ? SoloPityCap(tier) : PityCap(tier);
+        for (int k = 0; k <= cap; k++)
         {
             total += Math.Pow(1 - p, k);
         }

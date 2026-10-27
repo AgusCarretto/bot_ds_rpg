@@ -5,13 +5,17 @@ using BotDsRpg.Services;
 using Discord;
 using Discord.Interactions;
 
-public sealed record ToolsScene(Embed Embed, MessageComponent? Components);
+// AttachmentPath: el archivo de la foto del Carpintero que hay que adjuntar al mensaje (null si no hay foto o es una URL).
+public sealed record ToolsScene(Embed Embed, MessageComponent? Components, string? AttachmentPath = null);
 
 // /tools (aa tools | herramientas | equipamiento): el Carpintero arma tu HACHA (para /chop) y tu PICO (para /mine) (v0.29.0, el dueño: «un carpintero o constructor, que sea el de las herramientas, que solo con materiales se
 // haga la herramienta… zona 3 y zona 5 por ahora; de base está la zona 1, que es lo actual ×1… y que no esté en el perfil sino en aa equipamiento o aa herramientas»). Sin herramienta se recolecta ×1; la de la Zona 3 da ×2
 // y la de la Zona 5 ×3 de lo Común, Raro y Épico (lo Legendario y lo Mítico siguen dando 1, GameData/ToolRules.cs). Se arman solo con materiales de /chop y /mine (sin oro), se ponen solas y la nueva reemplaza a la vieja.
-// Los datos viven en la base (Database/add_tools.sql: ítems 'Hacha' y 'Pico' con su receta y la zona que la desbloquea; lo que tiene cada jugador, en player_tools). La escena es como la de la herrería: el saludo, lo que llevás,
-// lo que podés armar con ✅/❌ de cada material, y una lista para armar; la respuesta del carpintero sale como un mensaje aparte. Es el lugar pensado para sumar más equipamiento (granja, cocina…) más adelante.
+// Los datos viven en la base (Database/add_tools.sql: ítems 'Hacha' y 'Pico' con su receta y la zona que la desbloquea; lo que tiene cada jugador, en player_tools).
+// LA ESCENA ES COMO LA DE LA TABERNA (v0.31.0, el dueño: «que tire la opción como el tabernero… porque sino queda muy grande con las 4 opciones»): la foto del Carpintero de miniatura, lo que llevás puesto, y UNA lista con las
+// mejoras posibles. Cada opción dice su estado en la etiqueta —🔒 si todavía no abriste esa zona, ✅ si ya tenés todos los materiales, ❌ si te falta algo— y, abajo, los materiales que tenés de cuántos hacen falta; elegir una
+// cerrada contesta que se abre en tal zona, sin gastar nada (como las cajas de la taberna). La respuesta del carpintero sale en un mensaje aparte, como en la herrería. Es el lugar pensado para sumar más equipamiento
+// (granja, cocina…) más adelante.
 public class ToolsModule(
     IUserRepository userRepository, IRecipeRepository recipeRepository, IZoneRepository zoneRepository, IInventoryRepository inventoryRepository,
     ICraftingRepository craftingRepository, IToolRepository toolRepository, IGameEvents gameEvents)
@@ -27,7 +31,14 @@ public class ToolsModule(
         try
         {
             var scene = await BuildSceneAsync(userRepository, recipeRepository, zoneRepository, inventoryRepository, toolRepository, Context.User.Id);
-            await FollowupAsync(embed: scene.Embed, components: scene.Components);
+            if (scene.AttachmentPath is { } file)
+            {
+                await FollowupWithFileAsync(file, embed: scene.Embed, components: scene.Components);
+            }
+            else
+            {
+                await FollowupAsync(embed: scene.Embed, components: scene.Components);
+            }
         }
         catch (Exception ex)
         {
@@ -75,7 +86,18 @@ public class ToolsModule(
     private static int UnlockRank(RecipeDetails recipe, IReadOnlyList<Zone> orderedZones) =>
         recipe.ZoneId is int zoneId ? Math.Max(1, ZoneRanking.RankOf(orderedZones, zoneId)) : 1;
 
-    // La escena: el saludo, lo que llevás de cada herramienta, las mejoras que hay (con lo que tenés de cada material) y la lista para armarlas. Pública y sin Context para que "aa herramientas" muestre exactamente lo mismo.
+    // «Roble» en vez de «Madera de Roble» y «Zafiro» en vez de «Gema de Zafiro»: la descripción de una opción de lista admite 100 caracteres.
+    private static string ShortName(string itemName) => itemName.Replace("Madera de ", string.Empty).Replace("Gema de ", string.Empty);
+
+    private static string Cut(string text) => text.Length <= 100 ? text : text[..99] + "…";
+
+    // La línea de lo que llevás puesto: «🪓 **Hacha:** <emoji> Hacha de Hierro Forjado · ×2» o «sin hacha · ×1 (lo de siempre)».
+    private static string WornLine(string kind, PlayerTool? current) =>
+        $"{ToolRules.KindEmoji(kind)} **{ToolRules.KindLabel(kind)}:** " + (current is null
+            ? $"ninguna · **×1** (lo de siempre)"
+            : $"{ItemDisplay.Format(current.Emoji, current.Name)} · **×{current.Multiplier}**");
+
+    // La escena: el saludo, lo que llevás de cada herramienta y la lista de lo que podés armar. Pública y sin Context para que «aa herramientas» muestre exactamente lo mismo.
     public static async Task<ToolsScene> BuildSceneAsync(
         IUserRepository userRepository, IRecipeRepository recipeRepository, IZoneRepository zoneRepository, IInventoryRepository inventoryRepository,
         IToolRepository toolRepository, ulong discordId, Random? rng = null)
@@ -95,14 +117,6 @@ public class ToolsModule(
         var worn = await toolRepository.GetAsync(discordId);
         var owned = (await inventoryRepository.GetByDiscordIdAsync(discordId)).ToDictionary(e => e.ItemName, e => e.Quantity);
 
-        var embed = new EmbedBuilder()
-            .WithTitle("🪚 El Carpintero")
-            .WithColor(Color.DarkOrange)
-            .WithDescription(
-                $"{NpcDialogue.Carpenter(CarpenterLine.Greeting, rng)}\n\n" +
-                "_Las herramientas se arman solo con materiales de **/chop** y **/mine** (sin oro) y se ponen solas. Multiplican lo **Común, Raro y Épico** que recolectás; lo Legendario y lo Mítico siguen saliendo de a uno. " +
-                "Con cada Fuego Nuevo se arman de nuevo._");
-
         var menu = new SelectMenuBuilder()
             .WithCustomId($"{MenuPrefix}:{discordId}")
             .WithPlaceholder("🔨 ¿Qué querés que te arme?")
@@ -112,44 +126,46 @@ public class ToolsModule(
 
         foreach (string kind in new[] { ToolRules.AxeKind, ToolRules.PickaxeKind })
         {
-            var current = worn.FirstOrDefault(t => t.Kind == kind);
-            int currentMultiplier = current?.Multiplier ?? 1;
+            int currentMultiplier = worn.FirstOrDefault(t => t.Kind == kind)?.Multiplier ?? 1;
             var upgrades = toolRecipes
                 .Where(r => ToolRules.KindOfItemType(r.ResultItem.Type) == kind && r.ResultItem.StatValue > currentMultiplier)
-                .OrderBy(r => r.ResultItem.StatValue)
-                .ToList();
-
-            string label = $"{ToolRules.KindEmoji(kind)} {ToolRules.KindLabel(kind)} ({ToolRules.KindCommand(kind)})";
-            string wornText = current is null
-                ? $"Sin {ToolRules.KindLabel(kind).ToLowerInvariant()} · **×1** (lo de siempre)"
-                : $"{ItemDisplay.Format(current.Emoji, current.Name)} · **×{current.Multiplier}** de cantidad";
-            embed.AddField(label, upgrades.Count == 0 && current is not null ? $"{wornText}\n✨ Es lo mejor que arma el Carpintero por ahora." : wornText, false);
+                .OrderBy(r => r.ResultItem.StatValue);
 
             foreach (var recipe in upgrades)
             {
                 int rank = UnlockRank(recipe, orderedZones);
                 bool isLocked = rank > unlocked;
                 bool canMake = !isLocked && recipe.Ingredients.All(i => owned.GetValueOrDefault(i.ItemName) >= i.Quantity);
-                string ingredients = string.Join('\n', recipe.Ingredients.Select(i =>
-                    $"{(owned.GetValueOrDefault(i.ItemName) >= i.Quantity ? "✅" : "❌")} {ItemDisplay.Format(i.Emoji, i.ItemName)} — {owned.GetValueOrDefault(i.ItemName)}/{i.Quantity}"));
-                string lockNote = isLocked ? $"\n🔒 _Se desbloquea al llegar a la Zona {rank}: {orderedZones[Math.Min(rank, orderedZones.Count) - 1].Name}._" : string.Empty;
-                string value = $"**×{recipe.ResultItem.StatValue}** de cantidad en {ToolRules.KindCommand(kind)} · _{ToolRules.KindLabel(kind).ToLowerInvariant()}_{lockNote}\n\n{ingredients}";
-                embed.AddField(ItemDisplay.Format(recipe.ResultItem.Emoji, recipe.ResultItem.Name), value.Length <= 1024 ? value : value[..1023] + "…", false);
+                string mark = isLocked ? "🔒" : canMake ? "✅" : "❌";
+                // Cerrada: dice en qué zona se abre. Abierta: los materiales con lo que tenés de cuántos hacen falta (lo mismo que mostraba el campo grande de antes).
+                string description = isLocked
+                    ? $"×{recipe.ResultItem.StatValue} en {ToolRules.KindCommand(kind)} · se abre en la Zona {rank}: {orderedZones[Math.Min(rank, orderedZones.Count) - 1].Name}"
+                    : string.Join(" · ", recipe.Ingredients.Select(i => $"{ShortName(i.ItemName)} {owned.GetValueOrDefault(i.ItemName)}/{i.Quantity}"));
 
-                if (!isLocked)
-                {
-                    menu.AddItemOption(recipe.ResultItem.Name, $"{(canMake ? "✅" : "❌")} {recipe.ResultItem.Name}", recipe.ResultItem.Name, $"×{recipe.ResultItem.StatValue} en {ToolRules.KindCommand(kind)}");
-                    options++;
-                }
+                menu.AddItemOption(recipe.ResultItem.Name, $"{mark} {recipe.ResultItem.Name} (×{recipe.ResultItem.StatValue})", recipe.ResultItem.Name, Cut(description));
+                options++;
             }
         }
+
+        var embed = new EmbedBuilder()
+            .WithTitle("🪚 El Carpintero")
+            .WithColor(Color.DarkOrange)
+            .WithDescription(
+                $"{NpcDialogue.Carpenter(CarpenterLine.Greeting, rng)}\n\n" +
+                $"{WornLine(ToolRules.AxeKind, worn.FirstOrDefault(t => t.Kind == ToolRules.AxeKind))}\n" +
+                $"{WornLine(ToolRules.PickaxeKind, worn.FirstOrDefault(t => t.Kind == ToolRules.PickaxeKind))}\n\n" +
+                (options > 0
+                    ? "_Se arman solo con materiales de **/chop** y **/mine**, multiplican lo Común, Raro y Épico, y se ponen solas. ✅ = ya tenés todo · ❌ = te falta · 🔒 = zona cerrada._"
+                    : "_Ya tenés lo mejor que arma el Carpintero por ahora._"));
 
         if (options > 0)
         {
             embed.WithFooter("Lo que te conteste el carpintero sale abajo.");
         }
 
-        return new ToolsScene(embed.Build(), options > 0 ? new ComponentBuilder().WithSelectMenu(menu).Build() : null);
+        // La foto del Carpintero (NpcImages.Carpenter: una URL, Assets/npc/carpenter.jpg o un emoji de la aplicación llamado «carpintero»), de miniatura como en la taberna.
+        var built = NpcImages.Decorate(embed.Build(), NpcImages.Carpenter);
+        return new ToolsScene(built, options > 0 ? new ComponentBuilder().WithSelectMenu(menu).Build() : null, NpcImages.AttachmentPathFor(built));
     }
 
     // Armar una herramienta: la misma transacción del crafteo (ICraftingRepository.CraftAsync: valida cada material, los descuenta y deja la herramienta puesta, o no toca nada). Antes de gastar nada se chequea que la

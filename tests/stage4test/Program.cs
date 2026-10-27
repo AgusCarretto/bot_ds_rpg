@@ -189,7 +189,8 @@ Check(use.Count == 2 && use[0].Value.ToString() == "Asado Completo del Domingo e
 Check((await RunHandler(new UseItemAutocompleteHandler(), U, "mate")).Count == 1, "/use filtra por lo que escribís");
 var buyList = await RunHandler(new BuyItemAutocompleteHandler(), U, "");
 var boxList = await RunHandler(new BoxAutocompleteHandler(), U, "");
-Check(buyList.Count == 11 && boxList.Count == 2 && boxList[0].Value.ToString() == "Arca del Soberano" && boxList[1].Value.ToString() == "Cajón de Pino", "las listas de /shop buy (11, con la comida de mascotas), /abrir (2 cajas: la Mítica primero) y /equip (nada para equipar) siguen funcionando sobre la base nueva");
+// v0.31.0: /shop buy suma «🐲 Dragón de cría» (value «dragon») mientras el jugador no tenga uno: 11 ítems de la tienda + el dragón.
+Check(buyList.Count == 12 && buyList[0].Value.ToString() == "dragon" && buyList.Count(c => c.Value.ToString() != "dragon") == 11 && boxList.Count == 2 && boxList[0].Value.ToString() == "Arca del Soberano" && boxList[1].Value.ToString() == "Cajón de Pino", "las listas de /shop buy (11 de la tienda, con la comida de mascotas, y el dragón primero), /abrir (2 cajas: la Mítica primero) y /equip (nada para equipar) siguen funcionando sobre la base nueva");
 // El blindaje: una lista que se rompe NO tira excepción (devuelve vacío) y no deja a Discord sin respuesta.
 var broken = await RunHandler(new ExplodingHandler(), U, "algo");
 Check(broken.Count == 0, "una lista que falla por dentro devuelve vacío en vez de romperse (y deja el error en el log)");
