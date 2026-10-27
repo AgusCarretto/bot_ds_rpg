@@ -32,6 +32,14 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
 
+## Las recetas de recolección suben: herramientas ×3 y el Fogón con 300 de madera y 300 de piedra (v0.30.2, 2026-10-28)
+
+- **Pedido del dueño**: «el pico y el hacha salen muy baratos para como multiplican las cosas, pedí más; y la receta para ir a la zona 0 tiene que pedir mucha piedra y madera, tipo 300 y 300… una persona FN2 sacó 27 maderas recién». Con las herramientas (×2 / ×3) y el Fuego Nuevo se junta mucho más material que cuando se calibraron las recetas.
+- **Las 4 herramientas piden el TRIPLE**: Hacha de Hierro Forjado 12 Roble + 3 Nogal + 9 Hierro + 18 Piedra (~5 h de recolección), Pico de Hierro Forjado 6 Hierro + 6 Carbón + 9 Roble + 18 Piedra (~5,5 h), Hacha de Escoria Templada 3 Ébano + 6 Nogal + 9 Hierro + 6 Carbón (~12 h), Pico de Escoria Templada 3 Zafiro + 3 Oro Puro + 9 Hierro + 12 Roble (~13 h). Con la herramienta de la zona anterior puesta, la mitad.
+- **El equipo del Fogón** (lo que hay que llevar puesto para entrar a la Zona 0): el **Trinche** suma **300 de Madera de Pino** y la **Brasa** suma **300 de Piedra** (9 ingredientes cada una). Sin herramienta son ~9 h de `/chop` o de `/mine` (corren en paralelo); con el hacha o el pico de la Zona 5, ~3 h. Elegí repartirlas así (la madera en el arma, la piedra en el amuleto) para que sean «300 y 300» en total; si se quiere que cada pieza pida las dos, es cambiar dos filas.
+- **Migración**: `Database/rebalance_gather_recipes.sql` (datos, valores absolutos, re-ejecutable, no hace falta correrlo antes del binario). Los seeds (`add_tools.sql`, `seed_fogon.sql`) ya traen el mismo estado: comparados con un hash de las 34 filas, quedan idénticos. **No re-correr `seed_fogon.sql` suelto en una base viva**: borra el drop del Asador (el Brasero del Fogón) y `seed_zone_boxes.sql` no se puede volver a correr después de `retire_box_trophies.sql`.
+- **Efecto lateral a vigilar**: las recetas de las armas de clase y los amuletos (Hierro ×6, Piedra ×25…) también quedaron baratas frente a una recolección ×3 con Fuego Nuevo; no se tocaron porque no se pidió. Si se quiere, es la próxima palanca.
+
 ## El dragón (el «horse» de EPIC RPG): comprarlo, criarlo, tiers 1 a 10 (v0.30.0, 2026-10-27)
 
 - **Pedido del dueño**: «arrancá a armar el tema del dragón como el horse del epic, agregalo para comprar en la taberna, que sea del 1 al 10 tier, por ahora solo horse breed… armá las mejoras de cada tier… tipos: fuerza, defensa, especial, de oro… armá toda la base». Las decisiones las tomé yo (ver CLAUDE.md, «The dragon»).

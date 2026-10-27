@@ -6,8 +6,9 @@
 --     Multiplican la cantidad de /chop (hacha) y de /mine (pico) en Común, Raro y Épico; Legendario y Mítico siguen dando 1 (GameData/ToolRules.cs). Se ponen solas (como el arma) y la nueva reemplaza a la vieja.
 --   · SOLO materiales de recolección, sin oro (el dueño: «solo con materiales se haga la herramienta»). La cantidad de cada material sale del modelo de report_recipe_pacing.sql con el cooldown de 5 min de
 --     /chop y /mine y las chances de RarityCatalog.GatheringWeights (por uso: Pino 2,04 u, Roble 0,42, Nogal 0,105, Ébano 0,035; Piedra 2,04, Hierro 0,21, Carbón 0,21, Oro Puro 0,105, Zafiro 0,035):
---       Hacha de Hierro Forjado (Z3)   ~110 min de /chop y ~80 de /mine     Pico de Hierro Forjado (Z3)    ~110 min de /mine y ~35 de /chop
---       Hacha de Escoria Templada (Z5) ~240 min de /chop y ~120 de /mine    Pico de Escoria Templada (Z5)  ~260 min de /mine y ~50 de /chop
+--       Hacha de Hierro Forjado (Z3)   ~4,8 h de /chop y ~4,3 h de /mine   Pico de Hierro Forjado (Z3)    ~5,5 h de /mine y ~1,8 h de /chop
+--       Hacha de Escoria Templada (Z5) ~12 h de /chop y ~6 h de /mine      Pico de Escoria Templada (Z5)  ~13 h de /mine y ~2,4 h de /chop
+--     Desde la v0.30.2 piden el TRIPLE que en la v0.29.0 (el dueño: «salen muy baratos para como multiplican las cosas, pedí más»): con el hacha y el pico de la zona anterior puestos el tiempo se reduce a la mitad.
 --     (/chop y /mine tienen cooldown aparte: corren en paralelo, así que el tiempo es el del más largo).
 --   · Un ítem por herramienta: type 'Hacha' o 'Pico' (de ahí sale el tipo de herramienta), stat_value = el multiplicador (2 o 3), rareza Épico (Z3) o Mítico (Z5); no se compran ni se venden.
 --     La receta guarda en zone_id la zona que la desbloquea. Las recetas de herramientas NO las ven /forge ni el recetario (RecipeCatalog.IsVisibleTo las saca): las arma el Carpintero.
@@ -38,22 +39,22 @@ ON CONFLICT (name) DO UPDATE
 DROP TABLE IF EXISTS tool_ingredients;
 CREATE TEMP TABLE tool_ingredients (result_name TEXT, item_name TEXT, quantity INTEGER, zone_rank INTEGER);
 INSERT INTO tool_ingredients VALUES
-    ('Hacha de Hierro Forjado',   'Madera de Roble',  4, 3),
-    ('Hacha de Hierro Forjado',   'Madera de Nogal',  1, 3),
-    ('Hacha de Hierro Forjado',   'Hierro',           3, 3),
-    ('Hacha de Hierro Forjado',   'Piedra',           6, 3),
-    ('Pico de Hierro Forjado',    'Hierro',           2, 3),
-    ('Pico de Hierro Forjado',    'Carbón',           2, 3),
-    ('Pico de Hierro Forjado',    'Madera de Roble',  3, 3),
-    ('Pico de Hierro Forjado',    'Piedra',           6, 3),
-    ('Hacha de Escoria Templada', 'Madera de Ébano',  1, 5),
-    ('Hacha de Escoria Templada', 'Madera de Nogal',  2, 5),
-    ('Hacha de Escoria Templada', 'Hierro',           3, 5),
-    ('Hacha de Escoria Templada', 'Carbón',           2, 5),
-    ('Pico de Escoria Templada',  'Gema de Zafiro',   1, 5),
-    ('Pico de Escoria Templada',  'Oro Puro',         1, 5),
-    ('Pico de Escoria Templada',  'Hierro',           3, 5),
-    ('Pico de Escoria Templada',  'Madera de Roble',  4, 5);
+    ('Hacha de Hierro Forjado',   'Madera de Roble', 12, 3),
+    ('Hacha de Hierro Forjado',   'Madera de Nogal',  3, 3),
+    ('Hacha de Hierro Forjado',   'Hierro',           9, 3),
+    ('Hacha de Hierro Forjado',   'Piedra',          18, 3),
+    ('Pico de Hierro Forjado',    'Hierro',           6, 3),
+    ('Pico de Hierro Forjado',    'Carbón',           6, 3),
+    ('Pico de Hierro Forjado',    'Madera de Roble',  9, 3),
+    ('Pico de Hierro Forjado',    'Piedra',          18, 3),
+    ('Hacha de Escoria Templada', 'Madera de Ébano',  3, 5),
+    ('Hacha de Escoria Templada', 'Madera de Nogal',  6, 5),
+    ('Hacha de Escoria Templada', 'Hierro',           9, 5),
+    ('Hacha de Escoria Templada', 'Carbón',           6, 5),
+    ('Pico de Escoria Templada',  'Gema de Zafiro',   3, 5),
+    ('Pico de Escoria Templada',  'Oro Puro',         3, 5),
+    ('Pico de Escoria Templada',  'Hierro',           9, 5),
+    ('Pico de Escoria Templada',  'Madera de Roble', 12, 5);
 
 DO $$
 DECLARE
