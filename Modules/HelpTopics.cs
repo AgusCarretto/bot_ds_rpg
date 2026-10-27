@@ -27,7 +27,7 @@ public static class HelpTopics
         new("play", "🎰", "El casino", "coinflip y slots: cuánto paga cada uno", ["casino", "slots", "coinflip", "apostar", "juego"], Play),
         new("hunt", "🏹", Loc.Mark("Combate"), Loc.Mark("cazar, viajar, huir, curarte y el modo automático"), ["combate", "cazar", "caceria", "travel", "viaje", "autohunt", "pelea", "pelear", "combat"], Hunt, InEnglish: true),
         new("boss", "👑", "Jefes y equipo", "el jefe de cada zona y cómo hacerlo con amigos", ["jefe", "jefes", "raid", "raids", "grupo"], Boss),
-        new("forge", "🔨", "Herrería y equipo", "forjar armas y amuletos, y cambiarlos", ["herrero", "herreria", "forja", "forjar", "recetas", "receta", "equipo", "arma", "armas", "amuleto"], Forge),
+        new("forge", "🔨", "Herrería y equipo", "forjar armas y amuletos, y las herramientas del Carpintero", ["herrero", "herreria", "forja", "forjar", "recetas", "receta", "equipo", "arma", "armas", "amuleto", "carpintero", "herramientas", "herramienta", "hacha", "pico", "tools", "tool", "equipamiento"], Forge),
         new("zone", "🗺️", "Zonas", "cómo se avanza por el mundo", ["zona", "zonas", "mundo", "mapa"], Zone),
         new("boxes", "📦", "Cajas", "qué dan, cómo se consiguen y cada cuánto", ["caja", "cajas", "open", "abrir", "cofre", "cofres"], Boxes),
         new("shop", "🍺", Loc.Mark("Tienda, taberna y curarte"), Loc.Mark("comida, banquetes, /heal y vender"), ["tienda", "taberna", "comida", "consumibles", "consumible", "heal", "curar", "curarse", "vender", "comprar"], Shop, InEnglish: true),
@@ -40,13 +40,14 @@ public static class HelpTopics
         new("story", "📖", "Las Crónicas del Fogón", "la historia del juego: capítulos, escenas y cómo se abren", ["historia", "cronicas", "crónicas", "lore", "cuento"], Story),
         new("professions", "🛠️", "Oficios", "Leñador, Minero y Encantador: nivel, XP y la versión avanzada", ["oficios", "oficio", "profesion", "profesiones", "prof", "lenador", "leñador", "woodcutter"], Professions),
         new("pets", "🐾", "Mascotas", "huevos, bonus pasivos y cómo alimentarlas", ["mascota", "mascotas", "pet", "huevo", "huevos", "egg", "eggs"], Pets),
-        new("reminders", "⏰", "Recordatorios", "los avisos del bot cuando termina una espera", ["recordatorio", "recordatorios", "reminder", "reminders", "aviso", "avisos", "alarma", "alarmas"], Reminders),
+        new("dragon", "🐲", "Dragón", "comprarlo, entrenarlo y criarlo: tipo, tiers y comida", ["dragones", "dragons", "criar", "cria", "cría", "breed", "horse", "caballo", "comida de dragon", "comida de dragón"], Dragon),
         new("classes", "🎭", "Clases y habilidades", "qué hace cada clase", ["clase", "clases", "class", "habilidad", "habilidades"], Classes),
         new("gather", "🪓", Loc.Mark("Recolección"), Loc.Mark("talar y minar: unidades y rarezas"), ["chop", "mine", "talar", "minar", "recolectar", "recoleccion", "madera", "mineral"], Gather, InEnglish: true),
         new("daily", "🎁", Loc.Mark("Diario y regalos"), Loc.Mark("la recompensa diaria, la racha y regalar oro"), ["diario", "racha", "give", "dar", "regalo", "regalar"], Daily, InEnglish: true),
         new("stats", "📊", "Nivel y estadísticas", "EXP, vida, ataque y defensa", ["nivel", "exp", "xp", "ataque", "defensa", "vida", "hp", "perfil", "level"], Stats),
-        // OJO: Discord muestra como máximo 25 sugerencias, así que con 26 temas la lista desplegable SIN escribir nada deja afuera el último (este). Se encuentra escribiendo («votar») y figura en /info;
-        // el próximo tema que se sume no tiene lugar sin sacar otro o fundirlo con uno existente.
+        new("reminders", "⏰", "Recordatorios", "los avisos del bot cuando termina una espera", ["recordatorio", "recordatorios", "reminder", "reminders", "aviso", "avisos", "alarma", "alarmas"], Reminders),
+        // OJO: Discord muestra como máximo 25 sugerencias, así que con 27 temas la lista desplegable SIN escribir nada deja afuera los dos últimos (estos: reminders y vote, los menos urgentes). Se encuentran escribiendo («votar», «avisos») y figuran en /info;
+        // el próximo tema que se sume no tiene lugar sin sacar otro o fundirlo con uno existente (las herramientas del Carpintero, por eso, son un campo del tema forge y no un tema aparte).
         new("vote", "🗳️", "Votar en top.gg", "qué da cada voto y cómo se cobra", ["votar", "voto", "votos", "votacion", "votación", "topgg", "top.gg"], Vote),
     ];
 
@@ -260,6 +261,10 @@ public static class HelpTopics
             "Cada clase tiene su arma en cada zona (espada, daga, arco o grimorio) con un ataque FIJO que sube de zona en zona: lo que dice la receta es lo que pega, sin multiplicadores. Además hay una sola arma general, la **Hoja de Acero Puro**, sin zona y hecha solo con materiales de recolección: sirve para empezar."),
         ("🎽 Se equipa sola",
             "Lo forjado queda **puesto**: no va a la mochila ni hace falta equiparlo. Para cambiarlo, vendés la pieza que llevás (en la **/taberna** o con **/shop sell**) y forjás la siguiente. Ojo: al venderla pierde su encantamiento."),
+        ("🪓 El Carpintero (hacha y pico)",
+            "**/tools** (en texto `aa herramientas`): el Carpintero te arma el **hacha** (multiplica lo que sacás con **/chop**) y el **pico** (con **/mine**) **solo con materiales** de recolección, sin oro. " +
+            "Hay dos de cada uno, el de la **Zona 3** y el de la **Zona 5**: se arma cuando tenés esa zona desbloqueada y reemplaza al anterior (sin herramienta rendís ×1). La lista de **/tools** muestra qué pide cada una y cuánto te falta. " +
+            "Multiplican lo Común, Raro y Épico; los Legendarios y Míticos quedan en 1. Es equipo: se vuelve a armar después de cada **Fuego Nuevo**."),
         ("🧱 Los materiales", "Madera y minerales con **/chop** y **/mine**; los drops, de los monstruos (**/drops**). **/tips** te dice qué te falta para tu próxima forja."));
 
     private static Embed Zone() => Topic(Self("zone"),
@@ -409,6 +414,32 @@ public static class HelpTopics
             $"Comen **{PetRules.FoodItemName}** (se compra en la **/taberna**). Cada mascota puede comer **una vez por hora**; **/pet feed** alimenta a todas las que estén listas o elegís una. " +
             $"Tienen nivel de 1 a {PetRules.MaxLevel} y el bonus crece con el nivel (nivel 1 = el 10 % de su tope, nivel {PetRules.MaxLevel} = el tope entero). Llegar al máximo lleva {PetRules.TotalFeedsToMax} comidas por mascota."),
         ("📍 Comandos", "**/pet view** las muestra, **/pet feed** las alimenta y **/open** abre el huevo. En texto: `aa pet` y `aa pet feed`. También figuran en **/profile**."));
+
+    private static Embed Dragon()
+    {
+        string kinds = string.Join('\n', DragonRules.Kinds.Select(k =>
+            $"{DragonRules.KindEmoji(k)} **{DragonRules.KindName(k)}**: hasta **+{DragonRules.Percent(DragonRules.MaxPercent(k))} %** {DragonRules.KindEffect(k)} en el tier {DragonRules.MaxTier}"));
+        string chances = string.Join(" / ", Enumerable.Range(1, DragonRules.MaxTier - 1).Select(t => DragonRules.Percent(Math.Round(DragonRules.BreedChance(t) * 100, 2))));
+        string pity = string.Join(" / ", Enumerable.Range(1, DragonRules.MaxTier - 1).Select(DragonRules.PityCap));
+
+        return Topic(Self("dragon"),
+            "Un **dragón** por cuenta que te mejora **contra los monstruos**. Se compra, se entrena con oro y se cría (solo o con un amigo) para subirlo de tier. Dura toda la vida de la cuenta: el **Fuego Nuevo** no lo toca.",
+            ("🥚 Conseguirlo",
+                $"En la **/taberna** o con **/shop buy dragon**: **{GameHistory.Number(DragonRules.ShopPrice)}** de oro, una sola vez. Nace de tier 1 (**{DragonRules.TierName(1)}**) con un tipo al azar:\n{kinds}\n" +
+                $"El **Especial** es el raro ({DragonRules.ShopWeight(DragonRules.Special)} %); los otros salen {DragonRules.ShopWeight(DragonRules.Strength)} % cada uno. No cuenta en duelos ni en la Arena."),
+            ("📈 Tiers y mejoras",
+                $"Tiene **{DragonRules.MaxTier} tiers** (de **{DragonRules.TierName(1)}** a **{DragonRules.TierName(DragonRules.MaxTier)}**). El bonus de su tipo crece en cada uno (poco al principio, mucho al final) y **cada tier le suma una mejora nueva**: más drops, más recolección, el **Aliento final** (una vez por pelea, un golpe que te mataría te deja en 1 de vida), más vida, EXP u oro... Las ves todas, con las que ya desbloqueó, en **/dragon**."),
+            ("🏋️ Entrenarlo",
+                $"**/dragon-train** (o el botón de **/dragon**; en texto `aa dragon train [n]`): gastás oro y sube de nivel. Cada nivel cuesta más que el anterior (el primero {GameHistory.Number(DragonRules.TrainCost(0))}, el décimo unos {GameHistory.Number(DragonRules.TrainCost(9))}) y suma **{DragonRules.Percent(DragonRules.LevelShare * 100)} %** del máximo de su tipo. Llega hasta el nivel **tier × 10**: subirlo de tier abre 10 niveles más."),
+            ("💞 Criarlo",
+                $"**/dragon-breed @amigo** (en texto `aa dragon breed @amigo`): los dos con el **mismo tier**; el otro acepta con un botón. Cada intento los hace descansar **{Dur(DragonRules.BreedCooldown)}** (**/cd** dice cuánto falta). **Cada dragón tira su propia suerte**: puede subir uno y el otro no (ya no pueden criar entre ellos hasta que el otro lo alcance).\n" +
+                $"Chance de subir del tier 1 al 10: **{chances} %**. Con la **piedad**, tras {pity} fallos seguidos (uno por tier) el siguiente intento sale **seguro**.\n" +
+                "Solo, sin amigo (**/dragon-breed** a secas): **un tercio** de la chance y el **triple** de fallos para el intento seguro."),
+            ("🍖 Tipo y comida",
+                $"En **cada cría** (salga bien o mal) tu dragón **cambia de tipo al azar**: puede tocarte el mismo, y los niveles entrenados se quedan y rinden según el tipo nuevo. Para **conservar el tipo**, tené **{ItemEmojiRegistry.Label(DragonRules.FoodItemName, string.Empty)}** en la mochila: se gasta **una por cría**, sola. Se compra en la **/taberna**. En la invitación a criar, el 🍖 al lado del nombre dice quién tiene."),
+            ("✏️ Nombre",
+                $"**/dragon-name** le pone (o le cambia) el nombre por **{GameHistory.Number(DragonRules.RenamePrice)}** de oro cada vez; en texto `aa dragon name <nombre>`. Sale en tu **/profile**."));
+    }
 
     private static Embed Reminders()
     {

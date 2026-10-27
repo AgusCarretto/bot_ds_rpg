@@ -520,6 +520,19 @@ Check(await dragons.CountFoodAsync(E) == 3 && await Gold(E) == 100000 - 3 * food
 var sceneFood = await TabernaModule.BuildSceneAsync(users, items, inventory, buffs, E, null, boxCtx, exchange, svc, dragons);
 Check((Options(sceneFood, "taberna_buy") ?? []).Any(o => o.Value == DragonRules.FoodItemName && o.Description.Contains("dragón")), "la taberna la ofrece en «Comprar comida» diciendo que es para el dragón");
 
+Console.WriteLine("\n== 18. La ayuda /info: el dragón y las herramientas ==");
+var dragonTopic = HelpTopics.Find("dragon");
+Check(dragonTopic is { Key: "dragon" } && new[] { "dragón", "criar", "breed", "horse", "caballo", "dragones" }.All(a => HelpTopics.Find(a)?.Key == "dragon"), "/info tema:dragon (y sus alias: dragón, criar, breed, horse...) abre el tema del dragón");
+Check(new[] { "carpintero", "herramientas", "hacha", "pico", "tools", "equipamiento" }.All(a => HelpTopics.Find(a)?.Key == "forge"), "las herramientas se encuentran desde el tema de la herrería: carpintero, herramientas, hacha, pico...");
+var dragonHelp = HelpTopics.Render(dragonTopic!);
+string dragonText = dragonHelp.Description + string.Concat(dragonHelp.Fields.Select(f => f.Name + f.Value));
+Check(dragonHelp.Length <= 6000 && dragonHelp.Fields.All(f => f.Value.Length <= 1024 && f.Name.Length <= 256) && dragonText.Contains("3.000") && dragonText.Contains("256") && dragonText.Contains("mismo tier") && dragonText.Contains("un tercio") && dragonText.Contains("Comida de Dragón") && dragonText.Contains("/dragon-breed") && dragonText.Contains("/dragon-train") && dragonText.Contains("/dragon-name") && dragonText.Contains("5.000"),
+    "el tema del dragón entra en Discord y cuenta el precio, el tier, la piedad (hasta 256), criar solo (un tercio), la comida y los comandos");
+var forgeHelp = HelpTopics.Render(HelpTopics.Find("forge")!);
+Check(forgeHelp.Length <= 6000 && forgeHelp.Fields.All(f => f.Value.Length <= 1024) && forgeHelp.Fields.Any(f => f.Name.Contains("Carpintero") && f.Value.Contains("/tools") && f.Value.Contains("/chop") && f.Value.Contains("/mine")), "el tema de la herrería explica el Carpintero, el hacha y el pico");
+var infoCmds = HelpModule.BuildInfoEmbed();
+Check(infoCmds.Fields.Any(f => f.Value.Contains("/dragon-breed")) && infoCmds.Fields.Any(f => f.Value.Contains("`/dragon`")) && infoCmds.Fields.Single(f => f.Name.Contains("Cómo funciona")).Value.Contains("dragon") && infoCmds.Length <= 6000, "/info sin tema nombra /dragon y /dragon-breed, y el tema dragon figura en la lista de temas");
+
 await Clean();
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;

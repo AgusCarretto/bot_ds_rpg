@@ -259,7 +259,7 @@ var mentioned = System.Text.RegularExpressions.Regex.Matches(tt, @"/([a-z]+)").S
 Check(mentioned.All(m => slashNames.Contains(m)), $"todo comando que el tema nombra existe ({string.Join(", ", mentioned.Where(m => !slashNames.Contains(m)))})");
 var allTopicsOk = HelpTopics.All.All(t => { var e = t.Build(); return e.Length <= 6000 && e.Fields.All(f => f.Value.Length <= 1024 && f.Name.Length <= 256) && (e.Description?.Length ?? 0) <= 4096; });
 var idx = HelpTopics.BuildIndexEmbed();
-Check(allTopicsOk && idx.Length <= 6000 && idx.Fields.All(f => f.Value.Length <= 1024) && HelpTopics.All.Count == 26, $"los 26 temas y el índice entran en Discord (índice {idx.Length})");
+Check(allTopicsOk && idx.Length <= 6000 && idx.Fields.All(f => f.Value.Length <= 1024) && HelpTopics.All.Count == 27, $"los 27 temas y el índice entran en Discord (índice {idx.Length})");
 var infoE = HelpModule.BuildInfoEmbed();
 Check(AllText(infoE).Contains("/story") && infoE.Length <= 6000 && infoE.Fields.All(f => f.Value.Length <= 1024), $"/info lista /story, dentro de los límites ({infoE.Length})");
 var welcome = OnboardingModule_Confirmation();

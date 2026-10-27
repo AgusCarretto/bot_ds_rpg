@@ -153,7 +153,7 @@ var mentioned = System.Text.RegularExpressions.Regex.Matches(ft, @"/([a-z]+)").S
 Check(mentioned.All(m => slashNames.Contains(m)), $"todo comando que el tema nombra existe ({string.Join(", ", mentioned.Where(m => !slashNames.Contains(m)))})");
 var infoE = HelpModule.BuildInfoEmbed();
 Check(AllText(infoE).Contains("/deepshop") && infoE.Length <= 6000 && infoE.Fields.All(f => f.Value.Length <= 1024), $"/info lista /deepshop, dentro de los límites ({infoE.Length})");
-Check(HelpTopics.All.Count == 26 && HelpTopics.All.All(t => { var e = t.Build(); return e.Length <= 6000 && e.Fields.All(f => f.Value.Length <= 1024 && f.Name.Length <= 256); }), "los 26 temas siguen entrando en Discord");
+Check(HelpTopics.All.Count == 27 && HelpTopics.All.All(t => { var e = t.Build(); return e.Length <= 6000 && e.Fields.All(f => f.Value.Length <= 1024 && f.Name.Length <= 256); }), "los 27 temas siguen entrando en Discord");
 
 await db.ExecuteAsync("DELETE FROM users WHERE discord_id = ANY(@ids)", new { ids = new long[] { (long)U, (long)U2 } });
 Check(true, "(limpieza) usuarios descartables borrados");

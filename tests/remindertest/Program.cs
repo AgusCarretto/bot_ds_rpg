@@ -413,8 +413,8 @@ var slashNames = interactions.SlashCommands.Select(c => c.Name).Concat(interacti
 var mentioned = System.Text.RegularExpressions.Regex.Matches(tt, @"/([a-z]+)").Select(m => m.Groups[1].Value).Distinct().ToList();
 Check(mentioned.All(m => slashNames.Contains(m)), $"todo comando que el tema nombra existe ({string.Join(", ", mentioned.Where(m => !slashNames.Contains(m)))})");
 var idx = HelpTopics.BuildIndexEmbed();
-Check(HelpTopics.All.All(t => { var e = t.Build(); return e.Length <= 6000 && e.Fields.All(f => f.Value.Length <= 1024 && f.Name.Length <= 256) && (e.Description?.Length ?? 0) <= 4096; }) && idx.Length <= 6000 && idx.Fields.All(f => f.Value.Length <= 1024) && HelpTopics.All.Count == 26,
-    $"los 26 temas y el índice entran en Discord (índice {idx.Length})");
+Check(HelpTopics.All.All(t => { var e = t.Build(); return e.Length <= 6000 && e.Fields.All(f => f.Value.Length <= 1024 && f.Name.Length <= 256) && (e.Description?.Length ?? 0) <= 4096; }) && idx.Length <= 6000 && idx.Fields.All(f => f.Value.Length <= 1024) && HelpTopics.All.Count == 27,
+    $"los 27 temas y el índice entran en Discord (índice {idx.Length})");
 var infoE = HelpModule.BuildInfoEmbed();
 Check(AllText(infoE).Contains("/reminders") && infoE.Length <= 6000 && infoE.Fields.All(f => f.Value.Length <= 1024), $"/info lista /reminders, dentro de los límites ({infoE.Length})");
 
