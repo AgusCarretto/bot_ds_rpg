@@ -9,6 +9,7 @@
 -- Con clave foránea a users (borrar la cuenta borra el dragón). El Fuego Nuevo NO lo toca: como las mascotas, dura toda la vida de la cuenta.
 --   kind         fuerza (ATQ) | defensa (DEF) | oro (oro) | especial (EXP)
 --   tier         1 a 10 (cada tier desbloquea una mejora nueva)
+--   name         el nombre que le puso su dueño con /dragon-name (NULL = sin nombre; 2 a 24 caracteres, cuesta oro cada vez)
 --   level        nivel de entrenamiento: 0 hasta tier × 10 (lo valida el código; cada nivel suma al bono de su tipo y sale más caro que el anterior)
 --   fail_streak  intentos de criar fallidos SEGUIDOS en este tier (la «piedad»: al llegar al tope del tier el siguiente sale seguro)
 --   last_bred_at la última cría (el cooldown de 12 horas se mide con el reloj de la base)
@@ -19,10 +20,12 @@ CREATE TABLE IF NOT EXISTS player_dragons (
     kind         TEXT NOT NULL CHECK (kind IN ('fuerza', 'defensa', 'oro', 'especial')),
     tier         INTEGER NOT NULL DEFAULT 1 CHECK (tier BETWEEN 1 AND 10),
     level        INTEGER NOT NULL DEFAULT 0 CHECK (level >= 0),
+    name         TEXT CHECK (name IS NULL OR char_length(name) BETWEEN 2 AND 24),
     fail_streak  INTEGER NOT NULL DEFAULT 0 CHECK (fail_streak >= 0),
     last_bred_at TIMESTAMPTZ,
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Si la tabla ya existía de la primera versión (sin entrenamiento), le falta el nivel.
+-- Si la tabla ya existía de una versión anterior, le faltan el nivel (entrenamiento) y el nombre.
 ALTER TABLE player_dragons ADD COLUMN IF NOT EXISTS level INTEGER NOT NULL DEFAULT 0 CHECK (level >= 0);
+ALTER TABLE player_dragons ADD COLUMN IF NOT EXISTS name TEXT CHECK (name IS NULL OR char_length(name) BETWEEN 2 AND 24);

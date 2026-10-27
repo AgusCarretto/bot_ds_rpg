@@ -785,5 +785,8 @@
   "🐲 Dragón de cría": "🐲 Breeding dragon",
   "Una sola vez · {0} oro · el tipo sale al azar": "Once only · {0} gold · the type is random",
   "Comprar una caja (una cada 2 horas) o un dragón": "Buy a box (one every 2 hours) or a dragon",
-  "\n🐉 ¡Aliento final! Tu dragón te mantuvo en pie con 1 de vida.": "\n🐉 Last breath! Your dragon kept you standing at 1 HP."
+  "\n🐉 ¡Aliento final! Tu dragón te mantuvo en pie con 1 de vida.": "\n🐉 Last breath! Your dragon kept you standing at 1 HP.",
+  "{0} **Dragón:** {1}": "{0} **Dragon:** {1}",
+  " · tier {0} · nivel {1}": " · tier {0} · level {1}",
+  "Dragón (criar)": "Dragon (breed)"
 }

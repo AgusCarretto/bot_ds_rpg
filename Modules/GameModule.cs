@@ -10,7 +10,7 @@ using BotDsRpg.Services;
 
 public class GameModule(
     IUserRepository userRepository, IInventoryRepository inventoryRepository, IItemRepository itemRepository, IZoneRepository zoneRepository, IBuffRepository buffRepository,
-    IPetRepository petRepository, IPlayerBonusService bonusService)
+    IPetRepository petRepository, IPlayerBonusService bonusService, IDragonRepository dragonRepository)
     : InteractionModuleBase<SocketInteractionContext>
 {
     // Comando barra: /profile [jugador]
@@ -36,7 +36,7 @@ public class GameModule(
 
             var embed = await BuildProfileEmbedAsync(
                 userRepository, itemRepository, zoneRepository, buffRepository, target.Id, GetDisplayName(target),
-                target.GetAvatarUrl() ?? target.GetDefaultAvatarUrl(), petRepository, bonusService);
+                target.GetAvatarUrl() ?? target.GetDefaultAvatarUrl(), petRepository, bonusService, dragonRepository);
             await FollowupAsync(embed: embed);
         }
         catch (Exception ex)
@@ -67,7 +67,7 @@ public class GameModule(
     // embed en "aa profile" — acá vive tanto la lectura de datos como el embed.
     public static async Task<Embed> BuildProfileEmbedAsync(
         IUserRepository userRepository, IItemRepository itemRepository, IZoneRepository zoneRepository, IBuffRepository buffRepository,
-        ulong discordId, string username, string avatarUrl, IPetRepository? petRepository = null, IPlayerBonusService? bonusService = null)
+        ulong discordId, string username, string avatarUrl, IPetRepository? petRepository = null, IPlayerBonusService? bonusService = null, IDragonRepository? dragonRepository = null)
     {
         // Si es la primera vez que este usuario ejecuta un comando, se crea acá
         // automáticamente con los valores por defecto (Nivel 1, 0 EXP, 50 de oro, 100/100 HP, Guerrero).
@@ -140,6 +140,22 @@ public class GameModule(
         if (player.Dust > 0)
         {
             wealthLines.Add(Loc.F($"{UiEmojis.Dust} **Polvo:** {GameHistory.Number(player.Dust)}"));
+        }
+
+        // El dragón (v0.30.0), justo debajo del Polvo (el dueño: «agregame al dragón en el perfil, metelo abajo del polvo»): su emoji de tipo, su nombre (o el de su tier), el tier y el nivel. Un perfil nunca se cae por esto.
+        if (dragonRepository is not null)
+        {
+            try
+            {
+                if (await dragonRepository.GetAsync(discordId) is { } dragon)
+                {
+                    wealthLines.Add(Loc.F($"{DragonRules.KindEmoji(dragon.Kind)} **Dragón:** {dragon.Name ?? DragonRules.TierName(dragon.Tier)}") + Loc.F($" · tier {dragon.Tier} · nivel {dragon.Level}"));
+                }
+            }
+            catch (Exception ex)
+            {
+                BotLog.Warn(ex);
+            }
         }
 
         var statGroups = new List<string> { attackLine + "\n" + defenseLine, string.Join("\n", wealthLines) };

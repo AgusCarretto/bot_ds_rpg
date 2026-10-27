@@ -490,6 +490,7 @@ CREATE TABLE IF NOT EXISTS player_dragons (
     kind         TEXT NOT NULL CHECK (kind IN ('fuerza', 'defensa', 'oro', 'especial')),
     tier         INTEGER NOT NULL DEFAULT 1 CHECK (tier BETWEEN 1 AND 10),
     level        INTEGER NOT NULL DEFAULT 0 CHECK (level >= 0),
+    name         TEXT CHECK (name IS NULL OR char_length(name) BETWEEN 2 AND 24),
     fail_streak  INTEGER NOT NULL DEFAULT 0 CHECK (fail_streak >= 0),
     last_bred_at TIMESTAMPTZ,
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now()

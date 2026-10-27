@@ -143,7 +143,7 @@ public partial class TextCommandModule(
 
             string avatarUrl = target.GetAvatarUrl() ?? target.GetDefaultAvatarUrl();
             var embed = await GameModule.BuildProfileEmbedAsync(
-                userRepository, itemRepository, zoneRepository, buffRepository, target.Id, GameModule.GetDisplayName(target), avatarUrl, petRepository, bonusService);
+                userRepository, itemRepository, zoneRepository, buffRepository, target.Id, GameModule.GetDisplayName(target), avatarUrl, petRepository, bonusService, dragonRepository);
             await ReplyAsync(embed: embed);
         }
         catch (Exception ex)
@@ -187,7 +187,7 @@ public partial class TextCommandModule(
     {
         try
         {
-            var embed = await CooldownModule.BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id, arenaService, bonusService, voteClient.Enabled, petRepository);
+            var embed = await CooldownModule.BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id, arenaService, bonusService, voteClient.Enabled, petRepository, dragonRepository);
             await ReplyAsync(embed: embed);
         }
         catch (Exception ex)

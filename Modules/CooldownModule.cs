@@ -6,7 +6,7 @@ using Discord.Interactions;
 using BotDsRpg.Services;
 
 public class CooldownModule(
-    ICooldownRepository cooldownRepository, IUserRepository userRepository, IArenaService arenaService, IPlayerBonusService bonusService, ITopGgVoteClient voteClient, IPetRepository petRepository)
+    ICooldownRepository cooldownRepository, IUserRepository userRepository, IArenaService arenaService, IPlayerBonusService bonusService, ITopGgVoteClient voteClient, IPetRepository petRepository, IDragonRepository dragonRepository)
     : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("cd", "Mirá tus cooldowns: cazar, viajar, talar, minar, jefe, cajas, mascotas, diario y la Arena de hoy.")]
@@ -16,7 +16,7 @@ public class CooldownModule(
 
         try
         {
-            var embed = await BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id, arenaService, bonusService, voteClient.Enabled, petRepository);
+            var embed = await BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id, arenaService, bonusService, voteClient.Enabled, petRepository, dragonRepository);
             await FollowupAsync(embed: embed, ephemeral: true);
         }
         catch (Exception ex)
@@ -37,7 +37,7 @@ public class CooldownModule(
     // sin mascotas que puedan subir de nivel la línea no sale, y si falla leerlas tampoco: /cd nunca se rompe por esto.
     public static async Task<Embed> BuildStatusEmbedAsync(
         ICooldownRepository cooldownRepository, IUserRepository userRepository, ulong discordId, IArenaService? arenaService = null, IPlayerBonusService? bonusService = null, bool voteEnabled = false,
-        IPetRepository? petRepository = null)
+        IPetRepository? petRepository = null, IDragonRepository? dragonRepository = null)
     {
         var lines = new List<string>();
         var player = await userRepository.GetOrCreateUserAsync(discordId);
@@ -84,6 +84,12 @@ public class CooldownModule(
             lines.Add(petLine);
         }
 
+        // El dragón (v0.30.0): cuándo puede volver a criar (el descanso de 12 h vive en player_dragons, no en la tabla cooldowns). Sin dragón, o en el tier máximo (no hay nada que criar), no sale.
+        if (await TryBuildDragonLineAsync(dragonRepository, discordId) is { } dragonLine)
+        {
+            lines.Add(dragonLine);
+        }
+
         // /daily no usa la tabla cooldowns (tiene su propia columna last_daily_claim con
         // ventana de 24h/48h), así que lo evaluamos aparte con la misma lógica pura de /daily.
         var dailyCalculation = DailyRewardCalculator.Evaluate(player.LastDailyClaim, player.DailyStreak, DateTime.UtcNow);
@@ -102,6 +108,36 @@ public class CooldownModule(
             .WithColor(Color.Teal)
             .WithDescription(string.Join('\n', lines))
             .Build();
+    }
+
+    private static async Task<string?> TryBuildDragonLineAsync(IDragonRepository? dragonRepository, ulong discordId)
+    {
+        if (dragonRepository is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return DragonLine(await dragonRepository.GetAsync(discordId));
+        }
+        catch (Exception ex)
+        {
+            BotLog.Warn(ex);
+            return null;
+        }
+    }
+
+    // La línea del dragón (pura, para probarla sin base): «¡Listo!» si ya puede criar o lo que le falta. Null sin dragón o en el tier máximo.
+    public static string? DragonLine(PlayerDragon? dragon)
+    {
+        if (dragon is null || dragon.Tier >= DragonRules.MaxTier)
+        {
+            return null;
+        }
+
+        string status = dragon.CanBreed ? Loc.T("**¡Listo!** ✅") + " — **/dragon-breed**" : Loc.F($"{TimeFormat.Remaining(dragon.Wait)} restantes");
+        return $"{DragonRules.KindEmoji(dragon.Kind)} **{Loc.T("Dragón (criar)")}**: {status}";
     }
 
     private static async Task<string?> TryBuildPetLineAsync(IPetRepository? petRepository, ulong discordId, TimeSpan? feedCooldown)
