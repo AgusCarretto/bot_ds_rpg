@@ -11,8 +11,8 @@ Ya hay un juego provisorio en esta carpeta (se regenera con `node tools/ui-art/m
 | `pico_escoria` | Pico de Escoria Templada | 5 (×3) |
 
 **Cómo se conectan** (el mismo flujo de siempre): se suben al portal → se copia el código de cada uno (`<:hacha_hierro:123…>`) → se agregan los `UPDATE` por nombre de ítem en
-`Database/update_item_emojis.sql` → el dueño corre `Database/apply_emojis.sql` en Railway. Cuando estén conectados, hay que sacar la excepción de estas 4 herramientas en `tests/portraittest`
-y `tests/embedtest` (hoy se las exceptúa por no tener arte).
+`Database/update_item_emojis.sql` → el dueño corre `Database/apply_emojis.sql` en Railway. **Ya están conectados (2026-10-27, los provisorios de esta carpeta)**; para reemplazarlos por arte propio se borra
+el emoji del portal y se sube otro con el MISMO nombre (el código cambia de id: hay que actualizar el `UPDATE` de `update_item_emojis.sql` y volver a correr `apply_emojis.sql`).
 
 ## Prompts para el arte propio
 
