@@ -179,13 +179,13 @@ public static class DragonRules
 
     public static int PityCap(int tier) => tier is >= 1 and < MaxTier ? PityCaps[tier - 1] : 0;
 
-    // Criar SOLO, sin pareja (v0.31.0, el dueño: «que el dragón se pueda criar solo también y cuente como intento, pero sacale la mitad del % de subir de tier»): la chance es la mitad de la del tier. Cuenta como un intento
+    // Criar SOLO, sin pareja (v0.31.0, el dueño: «que el dragón se pueda criar solo también y cuente como intento, pero sacale la mitad del % de subir de tier»; después el dueño la bajó a UN TERCIO: «me gusta que sea un tercio, así promovés el breed con más gente»): la chance es un TERCIO de la del tier. Cuenta como un intento
     // de verdad: pone el descanso de 12 h y suma (o reinicia) los fallos seguidos, así que la piedad sigue funcionando igual (con el tope de fallos el siguiente intento sale seguro, también solo).
-    public const double SoloChanceFactor = 0.5;
+    public const double SoloChanceFactor = 1.0 / 3.0;
 
     public static double SoloBreedChance(int tier) => BreedChance(tier) * SoloChanceFactor;
 
-    // El tope de fallos seguidos criando SOLO: el de siempre pero de al menos 1. Con pareja el tier 1 es seguro (su tope es 0), pero solo tiene la mitad de chance: puede fallar una vez y recién después sale seguro.
+    // El tope de fallos seguidos criando SOLO: el de siempre pero de al menos 1. Con pareja el tier 1 es seguro (su tope es 0), pero solo tiene un tercio de la chance: puede fallar una vez y recién después sale seguro.
     public static int SoloPityCap(int tier) => tier is >= 1 and < MaxTier ? Math.Max(1, PityCaps[tier - 1]) : 0;
 
     // Un intento de criar: sale seguro si los fallos seguidos ya llegaron al tope; si no, se sortea con la chance del tier (por chanceFactor: 1 con pareja, SoloChanceFactor solo). En el tier máximo no hay nada que subir.

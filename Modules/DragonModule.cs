@@ -102,14 +102,14 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
         }
     }
 
-    [SlashCommand("dragon-breed", "Criá tu dragón con un amigo del mismo tier (suben los dos) o solo, con la mitad de chance.")]
-    public async Task HandleBreedAsync([Summary("amigo", "Con quién (si no ponés a nadie, lo criás solo, con la mitad de chance)")] IUser? amigo = null)
+    [SlashCommand("dragon-breed", "Criá tu dragón con un amigo del mismo tier (suben los dos) o solo, con un tercio de la chance.")]
+    public async Task HandleBreedAsync([Summary("amigo", "Con quién (si no ponés a nadie, lo criás solo, con un tercio de la chance)")] IUser? amigo = null)
     {
         await DeferAsync();
 
         try
         {
-            // Sin amigo: se cría SOLO (cuenta como intento, con la mitad de chance).
+            // Sin amigo: se cría SOLO (cuenta como intento, con un tercio de la chance).
             if (amigo is null)
             {
                 await FollowupAsync(embed: await ExecuteSoloBreedAsync(dragonRepository, Context.User.Id));
@@ -286,7 +286,7 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
                 "Criar",
                 $"Chance de subir de tier: **{DragonRules.Percent(Math.Round(DragonRules.BreedChance(dragon.Tier) * 100, 2))} %** por intento · en promedio, unos **{DragonRules.ExpectedAttempts(dragon.Tier):0.#}** intentos.\n{pity}\n" +
                 $"Se cría con un amigo que tenga tu mismo tier: **/dragon-breed @amigo** (cada intento los hace descansar {TimeFormat.Remaining(DragonRules.BreedCooldown)}; cuánto falta para el próximo lo ves en **/cd**).\n" +
-                $"También podés criarlo **solo**, sin amigo (**/dragon-breed** a secas): cuenta como intento, pero con la **mitad** de chance ({DragonRules.Percent(Math.Round(DragonRules.SoloBreedChance(dragon.Tier) * 100, 2))} %).",
+                $"También podés criarlo **solo**, sin amigo (**/dragon-breed** a secas): cuenta como intento, pero con **un tercio** de la chance ({DragonRules.Percent(Math.Round(DragonRules.SoloBreedChance(dragon.Tier) * 100, 2))} %).",
                 false);
         }
 
@@ -363,7 +363,7 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
         return normalized.Length == 0 || "dragon de cria".Contains(normalized, StringComparison.Ordinal);
     }
 
-    // Criar el dragón SOLO (v0.31.0): sin pareja, con la mitad de la chance del tier; cuenta como intento (descanso de 12 h y fallos seguidos, la piedad sigue igual). Devuelve lo que se le cuenta al jugador.
+    // Criar el dragón SOLO (v0.31.0): sin pareja, con un tercio de la chance del tier; cuenta como intento (descanso de 12 h y fallos seguidos, la piedad sigue igual). Devuelve lo que se le cuenta al jugador.
     public static async Task<Embed> ExecuteSoloBreedAsync(IDragonRepository dragonRepository, ulong discordId, Random? rng = null)
     {
         var result = await dragonRepository.BreedSoloAsync(discordId, rng);
@@ -386,7 +386,7 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
             {
                 int cap = DragonRules.SoloPityCap(result.Tier);
                 return embed.WithDescription(
-                    $"💨 No se dio esta vez: tu dragón se queda en el **Tier {result.Tier}**. Criándolo solo la chance es la **mitad** ({DragonRules.Percent(Math.Round(DragonRules.SoloBreedChance(result.Tier) * 100, 2))} %); con un amigo del mismo tier es del {DragonRules.Percent(Math.Round(DragonRules.BreedChance(result.Tier) * 100, 2))} %.\n" +
+                    $"💨 No se dio esta vez: tu dragón se queda en el **Tier {result.Tier}**. Criándolo solo la chance es **un tercio** de la normal ({DragonRules.Percent(Math.Round(DragonRules.SoloBreedChance(result.Tier) * 100, 2))} %); con un amigo del mismo tier es del {DragonRules.Percent(Math.Round(DragonRules.BreedChance(result.Tier) * 100, 2))} %.\n" +
                     $"Fallos seguidos: **{result.A!.FailStreak}/{cap}**; con {cap} fallos seguidos, el siguiente intento sale **seguro**.\n" +
                     $"Descansa {TimeFormat.Remaining(DragonRules.BreedCooldown)} antes de volver a intentar.").Build();
             }

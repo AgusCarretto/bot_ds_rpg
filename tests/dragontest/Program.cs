@@ -355,8 +355,8 @@ var slashName = interactions.SlashCommands.Single(c => c.Name == "dragon-name");
 Check(slashName.Parameters.Count == 1 && slashName.Parameters[0].Name == "nombre" && slashName.Description.Length <= 100 && texts.Search("dragon name Chispa Roja").Commands.Any(c => c.Command.Name == "dragon name") && !FightLock.IsAllowed("dragon-name"), "/dragon-name y «aa dragon name <nombre>» existen (bloqueados en plena pelea)");
 
 Console.WriteLine("\n== 15. Criar solo, /shop buy dragon y la pantalla ==");
-Check(DragonRules.SoloChanceFactor == 0.5 && DragonRules.SoloBreedChance(1) == 0.5 && DragonRules.SoloBreedChance(2) == 0.30 && DragonRules.SoloBreedChance(9) == DragonRules.BreedChance(9) / 2 && DragonRules.SoloPityCap(1) == 1 && DragonRules.SoloPityCap(5) == DragonRules.PityCap(5) && DragonRules.ExpectedAttempts(3, DragonRules.SoloChanceFactor) > DragonRules.ExpectedAttempts(3),
-    "criar solo: la chance de subir es la MITAD de la del tier (en el tier 1, 50 %) y en promedio lleva más intentos");
+Check(Math.Abs(DragonRules.SoloChanceFactor - 1.0 / 3.0) < 1e-12 && Math.Abs(DragonRules.SoloBreedChance(1) - 1.0 / 3.0) < 1e-12 && Math.Abs(DragonRules.SoloBreedChance(2) - 0.20) < 1e-12 && Math.Abs(DragonRules.SoloBreedChance(9) - DragonRules.BreedChance(9) / 3) < 1e-12 && DragonRules.SoloPityCap(1) == 1 && DragonRules.SoloPityCap(5) == DragonRules.PityCap(5) && DragonRules.ExpectedAttempts(3, DragonRules.SoloChanceFactor) > DragonRules.ExpectedAttempts(3),
+    "criar solo: la chance de subir es UN TERCIO de la del tier (en el tier 1, 33 %; en el 2, 20 %) y en promedio lleva más intentos");
 Check(!DragonRules.RollBreed(2, 0, new FixedRandom(0.5), DragonRules.SoloChanceFactor) && DragonRules.RollBreed(2, 0, new FixedRandom(0.5)) && !DragonRules.RollBreed(1, 0, new FixedRandom(0.7), DragonRules.SoloChanceFactor) && DragonRules.RollBreed(1, 0, new FixedRandom(0.7)) && DragonRules.RollBreed(1, 1, new FixedRandom(0.7), DragonRules.SoloChanceFactor) && DragonRules.RollBreed(2, DragonRules.PityCap(2), new FixedRandom(0.999), DragonRules.SoloChanceFactor),
     "con la misma suerte, con amigo sube y solo no; el tier 1 (seguro con pareja) solo puede fallar una vez; y con el tope de fallos seguidos sale seguro también solo");
 await Clean(); await Player(A, 100000); await Player(B, 1000); await Player(C, 1000);
@@ -366,7 +366,7 @@ Check(soloFail.Status == DragonBreedStatus.Bred && !soloFail.Success && soloFail
 Check((await dragons.BreedSoloAsync(A, new FixedRandom(0))).Status == DragonBreedStatus.OnCooldown, "y mientras descansa no puede criar solo");
 await db.ExecuteAsync("UPDATE player_dragons SET last_bred_at = NULL WHERE discord_id = @id", new { id = (long)A });
 var soloWin = await dragons.BreedSoloAsync(A, new FixedRandom(0.1));
-Check(soloWin.Success && soloWin.Tier == 2 && soloWin.A is { Tier: 3, FailStreak: 0 } && !soloWin.A.CanBreed, "con suerte (por debajo de la mitad de la chance) sube de tier, reinicia los fallos y descansa");
+Check(soloWin.Success && soloWin.Tier == 2 && soloWin.A is { Tier: 3, FailStreak: 0 } && !soloWin.A.CanBreed, "con suerte (por debajo del tercio de la chance) sube de tier, reinicia los fallos y descansa");
 await db.ExecuteAsync("UPDATE player_dragons SET last_bred_at = NULL, fail_streak = @cap WHERE discord_id = @id", new { id = (long)A, cap = DragonRules.PityCap(3) });
 Check((await dragons.BreedSoloAsync(A, new FixedRandom(0.999))).Success, "la piedad cuenta también solo: con el tope de fallos seguidos el intento sale seguro");
 Check((await dragons.BreedSoloAsync(GHOST)).Status == DragonBreedStatus.NoDragon && (await dragons.BreedSoloAsync(B)).Status == DragonBreedStatus.NoDragon, "sin dragón no se cría solo");
@@ -379,10 +379,10 @@ await db.ExecuteAsync("UPDATE player_dragons SET tier = 2, fail_streak = 0, last
 var winEmbed = await DragonModule.ExecuteSoloBreedAsync(dragons, A, new FixedRandom(0.1));
 await db.ExecuteAsync("UPDATE player_dragons SET fail_streak = 0, last_bred_at = NULL WHERE discord_id = @id", new { id = (long)A });
 var failEmbed = await DragonModule.ExecuteSoloBreedAsync(dragons, A, new FixedRandom(0.9));
-Check(winEmbed.Description.Contains("¡Lo lograste solo!") && winEmbed.Description.Contains("Tier 3") && failEmbed.Description.Contains("mitad") && failEmbed.Description.Contains("Fallos seguidos") && (await DragonModule.ExecuteSoloBreedAsync(dragons, GHOST)).Description.Contains("/taberna") && (await DragonModule.ExecuteSoloBreedAsync(dragons, A)).Description.Contains("descansando"),
-    "los mensajes de criar solo: éxito, fallo (dice que la chance es la mitad), sin dragón y descansando");
+Check(winEmbed.Description.Contains("¡Lo lograste solo!") && winEmbed.Description.Contains("Tier 3") && failEmbed.Description.Contains("un tercio") && failEmbed.Description.Contains("Fallos seguidos") && (await DragonModule.ExecuteSoloBreedAsync(dragons, GHOST)).Description.Contains("/taberna") && (await DragonModule.ExecuteSoloBreedAsync(dragons, A)).Description.Contains("descansando"),
+    "los mensajes de criar solo: éxito, fallo (dice que la chance es un tercio), sin dragón y descansando");
 var viewSolo = await DragonModule.BuildDragonViewAsync(dragons, A);
-Check(viewSolo.Embed.Fields.Single(f => f.Name == "Criar").Value.Contains("**solo**") && viewSolo.Embed.Fields.Single(f => f.Name == "Criar").Value.Contains("mitad"), "la pantalla del dragón avisa que se puede criar solo y con la mitad de chance");
+Check(viewSolo.Embed.Fields.Single(f => f.Name == "Criar").Value.Contains("**solo**") && viewSolo.Embed.Fields.Single(f => f.Name == "Criar").Value.Contains("un tercio"), "la pantalla del dragón avisa que se puede criar solo y con un tercio de la chance");
 var slashBreed2 = interactions.SlashCommands.Single(c => c.Name == "dragon-breed");
 Check(slashBreed2.Parameters.Count == 1 && !slashBreed2.Parameters[0].IsRequired && slashBreed2.Description.Length <= 100 && texts.Search("dragon breed").Commands.Any(c => c.Command.Name == "dragon breed"), "/dragon-breed y «aa dragon breed» sin amigo son criar solo (el parámetro es opcional)");
 

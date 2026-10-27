@@ -60,12 +60,12 @@ public partial class TextCommandModule
     // "aa dragon breed @amigo" — invitá a criar tu dragón con el de un amigo del mismo tier.
     [Command("dragon breed")]
     [Alias("dragon criar", "dragón criar")]
-    [Summary("Criá tu dragón con el de un amigo del mismo tier (\"aa dragon breed @amigo\") o solo, con la mitad de chance (\"aa dragon breed\").")]
+    [Summary("Criá tu dragón con el de un amigo del mismo tier (\"aa dragon breed @amigo\") o solo, con un tercio de la chance (\"aa dragon breed\").")]
     public async Task DragonBreedAsync(IUser? friend = null)
     {
         try
         {
-            // Sin amigo: se cría SOLO (cuenta como intento, con la mitad de chance).
+            // Sin amigo: se cría SOLO (cuenta como intento, con un tercio de la chance).
             if (friend is null)
             {
                 await ReplyAsync(embed: await DragonModule.ExecuteSoloBreedAsync(dragonRepository, Context.User.Id));
