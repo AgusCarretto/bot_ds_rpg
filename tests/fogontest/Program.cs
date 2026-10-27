@@ -56,13 +56,15 @@ Check(boss is { Name: "El Asador Eterno", MinHp: 2503, MaxHp: 3001, MinDamage: 2
 Check(await monstersRepo.GetTravelMonsterByZoneAsync(0) is null && (await monstersRepo.GetMonstersByZoneAsync(0)).Count == 0, "la puerta no tiene pool de /hunt ni monstruo de /travel");
 var recipes = await recipesRepo.GetAllAsync();
 var gateRecipes = recipes.Where(r => r.ZoneId == 0).ToList();
-Check(gateRecipes.Count == 2 && gateRecipes.All(r => !r.Affinity && r.GoldCost == 25000 && r.Ingredients.Count == 8) && gateRecipes.Select(r => r.ResultItem.Name).OrderBy(n => n).SequenceEqual([FogonRules.AmuletName, FogonRules.WeaponName]), "dos recetas del Fogón: el arma y el amuleto, 25.000 de oro y 8 ingredientes cada una");
+Check(gateRecipes.Count == 2 && gateRecipes.All(r => !r.Affinity && r.GoldCost == 25000 && r.Ingredients.Count == 9) && gateRecipes.Select(r => r.ResultItem.Name).OrderBy(n => n).SequenceEqual([FogonRules.AmuletName, FogonRules.WeaponName]), "dos recetas del Fogón: el arma y el amuleto, 25.000 de oro y 9 ingredientes cada una (v0.30.2: con 300 de madera o de piedra)");
 var wRec = gateRecipes.Single(r => r.ResultItem.Name == FogonRules.WeaponName); var aRec = gateRecipes.Single(r => r.ResultItem.Name == FogonRules.AmuletName);
 Check(wRec.ResultItem is { Type: "Weapon", StatValue: 128, WeaponFamily: null, ClassRequirement: null, Rarity: "Mítico" } && aRec.ResultItem is { Type: "Amulet", StatValue: 165, ClassRequirement: null }, "Trinche +128 ATQ sin familia ni clase; Brasa +165 DEF (v0.15.1); los dos Míticos");
 string[] huntDrops = ["Colmillo de Jabalí", "Garra de Puma Cenizo", "Yunque Fragmentado", "Núcleo de Magma", "Corazón de Titán", "Pluma de Ñandú", "Esencia Espectral", "Gema en Bruto", "Escama Ígnea", "Fragmento de Alma"];
 var allMonsters = await monstersRepo.GetAllAsync();
 Check(huntDrops.All(d => allMonsters.Any(m => m.Kind == MonsterKind.Hunt && m.Monster.DropItemNames.Contains(d))) && gateRecipes.SelectMany(r => r.Ingredients).Count(i => huntDrops.Contains(i.ItemName)) == 10 && gateRecipes.SelectMany(r => r.Ingredients).Where(i => huntDrops.Contains(i.ItemName)).All(i => i.Quantity == 5), "los 10 drops de CACERÍA de las 5 zonas, 5 de cada uno, repartidos entre el arma y el amuleto");
 Check(gateRecipes.SelectMany(r => r.Ingredients).Count(i => i.ItemName is "Corteza del Árbol de Vida" or "Fragmento de Meteorito") == 2 && wRec.Ingredients.Any(i => i.ItemName == "Corteza del Árbol de Vida" && i.Quantity == 1) && aRec.Ingredients.Any(i => i.ItemName == "Fragmento de Meteorito" && i.Quantity == 1), "un Mítico de recolección por pieza (v0.15.1): Corteza x1 en el Trinche y Meteorito x1 en la Brasa");
+Check(wRec.Ingredients.Any(i => i.ItemName == "Madera de Pino" && i.Quantity == 300) && aRec.Ingredients.Any(i => i.ItemName == "Piedra" && i.Quantity == 300) && !wRec.Ingredients.Any(i => i.ItemName == "Piedra") && !aRec.Ingredients.Any(i => i.ItemName == "Madera de Pino"),
+    "v0.30.2 (el dueño: «que pida mucha piedra y madera, tipo 300 y 300»): el Trinche pide 300 de Madera de Pino y la Brasa 300 de Piedra, materiales Comunes que solo se juntan con /chop y /mine");
 
 Console.WriteLine("\n== 2. Reglas puras ==");
 Item Gear(string name, string type) => new() { Name = name, Type = type };

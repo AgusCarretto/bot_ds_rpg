@@ -43,6 +43,9 @@ INSERT INTO recipes (result_item_id, gold_cost, zone_id, affinity)
 SELECT i.item_id, 25000, 0, false FROM items i WHERE i.name IN ('Trinche del Asador Eterno', 'Brasa del Fogón Eterno')
 ON CONFLICT (result_item_id) DO UPDATE SET gold_cost = EXCLUDED.gold_cost, zone_id = EXCLUDED.zone_id, affinity = EXCLUDED.affinity;
 
+-- v0.30.2: cada pieza suma 300 de un material de recolección COMÚN (300 de Madera de Pino el Trinche, 300 de Piedra la Brasa; el dueño: «necesito que pida mucha piedra y madera, tipo 300 y 300… una persona FN2 sacó 27 maderas
+-- recién»): con las herramientas de la Zona 5 (×3) y el Fuego Nuevo la recolección rinde mucho más y el camino al Fogón tenía que seguir pidiendo recolección. Sin herramienta son ~9 h de /chop o de /mine (en paralelo);
+-- con el hacha o el pico ×3, ~3 h.
 -- Los ingredientes se reescriben enteros (una receta cambiada nunca conserva filas viejas).
 DELETE FROM recipe_ingredients WHERE recipe_id IN (SELECT r.recipe_id FROM recipes r JOIN items i ON i.item_id = r.result_item_id WHERE i.name IN ('Trinche del Asador Eterno', 'Brasa del Fogón Eterno'));
 
@@ -57,6 +60,7 @@ INSERT INTO fogon_ingredients VALUES
     ('Trinche del Asador Eterno', 'Madera de Ébano', 4),
     ('Trinche del Asador Eterno', 'Hierro', 18),
     ('Trinche del Asador Eterno', 'Corteza del Árbol de Vida', 1),
+    ('Trinche del Asador Eterno', 'Madera de Pino', 300),
     ('Brasa del Fogón Eterno', 'Pluma de Ñandú', 5),
     ('Brasa del Fogón Eterno', 'Esencia Espectral', 5),
     ('Brasa del Fogón Eterno', 'Gema en Bruto', 5),
@@ -64,7 +68,8 @@ INSERT INTO fogon_ingredients VALUES
     ('Brasa del Fogón Eterno', 'Fragmento de Alma', 5),
     ('Brasa del Fogón Eterno', 'Gema de Zafiro', 4),
     ('Brasa del Fogón Eterno', 'Carbón', 18),
-    ('Brasa del Fogón Eterno', 'Fragmento de Meteorito', 1);
+    ('Brasa del Fogón Eterno', 'Fragmento de Meteorito', 1),
+    ('Brasa del Fogón Eterno', 'Piedra', 300);
 
 DO $$
 DECLARE
@@ -97,10 +102,10 @@ BEGIN
     SELECT count(*) INTO v_boss FROM monsters WHERE zone_id = 0 AND is_boss AND NOT is_travel;
     SELECT count(*) INTO v_drops FROM monster_drops md JOIN monsters m USING (monster_id) WHERE m.zone_id = 0;
     SELECT count(*) INTO v_recipes FROM recipes WHERE zone_id = 0 AND NOT affinity;
-    SELECT count(*) INTO v_bad FROM recipes r WHERE r.zone_id = 0 AND (SELECT count(*) FROM recipe_ingredients ri WHERE ri.recipe_id = r.recipe_id) <> 8;
+    SELECT count(*) INTO v_bad FROM recipes r WHERE r.zone_id = 0 AND (SELECT count(*) FROM recipe_ingredients ri WHERE ri.recipe_id = r.recipe_id) <> 9;
 
     IF v_zone <> 1 OR v_boss <> 1 OR v_drops <> 0 OR v_recipes <> 2 OR v_bad <> 0 THEN
-        RAISE EXCEPTION 'seed_fogon: estado final inesperado (zona 0 = %, jefes = %, drops del jefe = %, recetas = %, recetas sin 8 ingredientes = %)', v_zone, v_boss, v_drops, v_recipes, v_bad;
+        RAISE EXCEPTION 'seed_fogon: estado final inesperado (zona 0 = %, jefes = %, drops del jefe = %, recetas = %, recetas sin 9 ingredientes = %)', v_zone, v_boss, v_drops, v_recipes, v_bad;
     END IF;
 END $$;
 

@@ -82,9 +82,14 @@ Check(dialogueOk, "el Carpintero tiene al menos 2 frases distintas en cada situa
 
 Console.WriteLine("\n== 2. El catálogo de la base ==");
 var tools = (await recipesRepo.GetAllAsync()).Where(r => ToolRules.IsToolType(r.ResultItem.Type)).ToList();
-Check(tools.Count == 4 && new[] { AxeZ3, PickZ3, AxeZ5, PickZ5 }.All(n => tools.Any(t => t.ResultItem.Name == n)), "4 herramientas con receta: un hacha y un pico de la Zona 3 y de la Zona 5");
+int Q(string tool, string item) => tools.Single(t => t.ResultItem.Name == tool).Ingredients.Single(i => i.ItemName == item).Quantity;
+int AxeHierro = Q(AxeZ3, "Hierro");   // cuánto Hierro pide el hacha de la Zona 3 (las pruebas de abajo lo usan para no repetir el número)
+Check(tools.Count == 4&& new[] { AxeZ3, PickZ3, AxeZ5, PickZ5 }.All(n => tools.Any(t => t.ResultItem.Name == n)), "4 herramientas con receta: un hacha y un pico de la Zona 3 y de la Zona 5");
 var ingredientTypes = (await db.QueryAsync<string>("SELECT DISTINCT type FROM items WHERE item_id = ANY(@ids)", new { ids = tools.SelectMany(t => t.Ingredients).Select(i => i.ItemId).Distinct().ToArray() })).ToList();
 Check(tools.All(t => t.GoldCost == 0 && t.Ingredients.Count == 4 && t.Ingredients.All(i => i.Quantity > 0)) && ingredientTypes.Count > 0 && ingredientTypes.All(t => t is "Madera" or "Mineral"), "todas sin oro, con 4 materiales y SOLO de recolección (madera y mineral)");
+Check(Q(AxeZ3, "Madera de Roble") == 12 && Q(AxeZ3, "Madera de Nogal") == 3 && AxeHierro == 9 && Q(AxeZ3, "Piedra") == 18 && Q(PickZ3, "Hierro") == 6 && Q(PickZ3, "Carbón") == 6 && Q(PickZ3, "Madera de Roble") == 9 && Q(PickZ3, "Piedra") == 18
+    && Q(AxeZ5, "Madera de Ébano") == 3 && Q(AxeZ5, "Madera de Nogal") == 6 && Q(AxeZ5, "Hierro") == 9 && Q(AxeZ5, "Carbón") == 6 && Q(PickZ5, "Gema de Zafiro") == 3 && Q(PickZ5, "Oro Puro") == 3 && Q(PickZ5, "Hierro") == 9 && Q(PickZ5, "Madera de Roble") == 12,
+    "v0.30.2 («salen muy baratos para como multiplican las cosas, pedí más»): las 4 herramientas piden el TRIPLE de materiales (la Zona 3: unas 4 a 5 horas de recolección sin herramienta; la Zona 5: unas 6 a 13)");
 Check(tools.Where(t => t.ResultItem.Name.Contains("Hierro")).All(t => t.ResultItem.StatValue == 2 && t.ZoneId == zones[2].ZoneId) && tools.Where(t => t.ResultItem.Name.Contains("Escoria")).All(t => t.ResultItem.StatValue == 3 && t.ZoneId == zones[4].ZoneId),
     "las de la Zona 3 multiplican ×2 y se desbloquean en la 3; las de la Zona 5, ×3 y en la 5");
 var shown = RecipeCatalog.BookFor(await recipesRepo.GetAllAsync(), await zonesRepo.GetAllAsync(), "Guerrero", true).SelectMany(s => s.Recipes);
@@ -93,7 +98,7 @@ Check(!shown.Concat(viewed).Any(r => ToolRules.IsToolType(r.ResultItem.Type)), "
 await Player(U1, 30, Z4);
 await GiveRecipe(U1, AxeZ3);
 var viaForge = await ForgeModule.ExecuteMakeAsync(users, recipesRepo, crafting, events, U1, AxeZ3);
-Check(viaForge.PlainMessage!.Contains("Carpintero") && await Qty(U1, "Hierro") == 3 && (await toolRepo.GetAsync(U1)).Count == 0, "tampoco las forja el herrero escribiendo el nombre: lo manda al Carpintero y no gasta nada");
+Check(viaForge.PlainMessage!.Contains("Carpintero") && await Qty(U1, "Hierro") == AxeHierro && (await toolRepo.GetAsync(U1)).Count == 0, "tampoco las forja el herrero escribiendo el nombre: lo manda al Carpintero y no gasta nada");
 
 Console.WriteLine("\n== 3. La transacción de crafteo ==");
 var axe3 = (await recipesRepo.GetByResultItemNameAsync(AxeZ3))!; var axe5 = (await recipesRepo.GetByResultItemNameAsync(AxeZ5))!;
@@ -105,7 +110,7 @@ Check(raceResults.Count(r => r.Success) == 1 && raceResults.Where(r => r.Success
 Check(await Qty(U1, "Hierro") == 0 && await Qty(U1, "Piedra") == 0 && await Qty(U1, "Madera de Roble") == 0 && await db.ExecuteScalarAsync<int>("SELECT count(*) FROM inventory WHERE discord_id = @id", new { id = (long)U1 }) == 0, "gastó exactamente los materiales de la receta, y la herramienta no pasa por la mochila");
 await GiveRecipe(U1, AxeZ3);
 var again = await crafting.CraftAsync(U1, 0, ing3, axe3.ResultItem.ItemId);
-Check(!again.Success && again.SlotOccupied && await Qty(U1, "Hierro") == 3, "pedir la misma hacha de nuevo: se rechaza y NO gasta los materiales");
+Check(!again.Success && again.SlotOccupied && await Qty(U1, "Hierro") == AxeHierro, "pedir la misma hacha de nuevo: se rechaza y NO gasta los materiales");
 await GiveRecipe(U1, AxeZ5);
 var ing5 = axe5.Ingredients.Select(i => (i.ItemId, i.ItemName, i.Quantity)).ToList();
 var up = await crafting.CraftAsync(U1, 0, ing5, axe5.ResultItem.ItemId);
@@ -127,19 +132,19 @@ await Player(U3, 1, 0);
 await GiveRecipe(U3, AxeZ3);
 var unknown = await Make(U3, "Hacha Inventada"); var notTool = await Make(U3, "Hoja de Acero Puro");
 Check(unknown.PlainMessage!.StartsWith("🪚 **El Carpintero:**") && (await toolRepo.GetAsync(U3)).Count == 0, "un nombre que no existe: lo dice con la voz del Carpintero");
-Check(notTool.PlainMessage is not null && (await toolRepo.GetAsync(U3)).Count == 0 && await Qty(U3, "Hierro") == 3, "pedirle algo que no es una herramienta (la Hoja): no se la arma ni gasta nada");
+Check(notTool.PlainMessage is not null && (await toolRepo.GetAsync(U3)).Count == 0 && await Qty(U3, "Hierro") == AxeHierro, "pedirle algo que no es una herramienta (la Hoja): no se la arma ni gasta nada");
 var locked = await Make(U3, AxeZ3);
-Check(locked.PlainMessage!.Contains("🔒") && locked.PlainMessage.Contains("Zona 3") && (await toolRepo.GetAsync(U3)).Count == 0 && await Qty(U3, "Hierro") == 3, "con la Zona 3 sin desbloquear: avisa que se abre en la Zona 3 y no gasta nada");
+Check(locked.PlainMessage!.Contains("🔒") && locked.PlainMessage.Contains("Zona 3") && (await toolRepo.GetAsync(U3)).Count == 0 && await Qty(U3, "Hierro") == AxeHierro, "con la Zona 3 sin desbloquear: avisa que se abre en la Zona 3 y no gasta nada");
 await db.ExecuteAsync("UPDATE users SET level = 30, highest_zone_cleared = @h WHERE discord_id = @id", new { id = (long)U3, h = Z2 });
 await db.ExecuteAsync("DELETE FROM inventory WHERE discord_id = @id AND item_id = (SELECT item_id FROM items WHERE name = 'Piedra')", new { id = (long)U3 });
 var missing = await Make(U3, AxeZ3);
-Check(missing.Embed is not null && missing.Embed.Title == "🪚 El carpintero no pudo armarla" && missing.Embed.Description.Contains("Piedra") && (await toolRepo.GetAsync(U3)).Count == 0 && await Qty(U3, "Hierro") == 3, "zona abierta pero falta un material: «no pudo armarla», dice cuál y no gasta lo demás");
-await Give(U3, "Piedra", 6);
+Check(missing.Embed is not null && missing.Embed.Title == "🪚 El carpintero no pudo armarla" && missing.Embed.Description.Contains("Piedra") && (await toolRepo.GetAsync(U3)).Count == 0 && await Qty(U3, "Hierro") == AxeHierro, "zona abierta pero falta un material: «no pudo armarla», dice cuál y no gasta lo demás");
+await Give(U3, "Piedra", Q(AxeZ3, "Piedra"));
 var ok = await Make(U3, AxeZ3);
 Check(ok.Embed is not null && ok.Embed.Title == "🪚 ¡Herramienta lista!" && ok.Embed.Description.Contains("×2") && ok.Embed.Description.Contains("/chop") && (await toolRepo.GetAsync(U3)).Single().Name == AxeZ3 && await Qty(U3, "Hierro") == 0, "con todo: la arma, queda puesta, dice el ×2 en /chop y descuenta los materiales");
 await GiveRecipe(U3, AxeZ3);
 var have = await Make(U3, AxeZ3);
-Check(have.PlainMessage!.Contains("Tu hacha actual") && await Qty(U3, "Hierro") == 3, "pedirla otra vez: «ya tenés una igual o mejor» y no gasta nada");
+Check(have.PlainMessage!.Contains("Tu hacha actual") && await Qty(U3, "Hierro") == AxeHierro, "pedirla otra vez: «ya tenés una igual o mejor» y no gasta nada");
 var lockedZ5 = await Make(U3, AxeZ5);
 Check(lockedZ5.PlainMessage is not null && lockedZ5.PlainMessage.Contains("Zona 5") && lockedZ5.PlainMessage.Contains("🔒"), "la de la Zona 5 sigue cerrada hasta vencer al jefe de la Zona 4");
 
