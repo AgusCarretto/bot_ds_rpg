@@ -15,7 +15,7 @@
 --      bendición, dragón— multiplican esta chance (con tope en 100 %).
 --   2. Canje para quien tenía drops de viaje en la mochila: cada unidad vale 1 de CADA drop de cacería de su zona (2 unidades de ~33 minutos de farmeo cada una por una de ~75 minutos).
 --   3. Recetas de las 5 zonas que usaban un drop de viaje (las 20 armas de clase y los 5 amuletos): se les saca ese ingrediente (pasan de 4 tipos de ingrediente a 3) y los drops de CACERÍA
---      suben para que el tiempo total no cambie: armas de las zonas 2-5 ×4 → ×5 (~167 min de drops, antes ~150 con el viaje), amuletos de las zonas 2-5 ×4 → ×7 de cada drop de cacería
+--      suben para que el tiempo total no cambie: armas de las zonas 2-5 ×4 → ×5 (~167 min de drops, antes ~150 con el viaje; DESPUÉS el dueño pidió bajarlas 1 y rebalance_weapon_drops.sql las deja en ×4), amuletos de las zonas 2-5 ×4 → ×7 de cada drop de cacería
 --      (~233 min, antes 225), amuleto de la Zona 1 ×4 → ×5 (167, antes 150). Las armas de la Zona 1 solo pierden el cuero (eran lentas por la recolección, 95-100 min como antes).
 --   4. Se borran los 5 drops de viaje (Cuero Grueso, Ceniza Bendita, Escoria Metálica Densa, Aliento de Fuego Eterno, Ceniza del Abismo): los monstruos de viaje quedan SIN drop.
 --

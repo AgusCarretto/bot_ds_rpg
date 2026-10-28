@@ -61,8 +61,8 @@ var gear = recipes.Where(r => r.ResultItem.Type is "Weapon" or "Amulet" && r.Zon
 Check(gear.Count == 25 && gear.All(r => r.Ingredients.Count <= 3), $"las 25 armas de clase y amuletos de las zonas 1 a 5 piden 3 tipos de ingrediente como mucho ({gear.Count} recetas, máximo {gear.Max(r => r.Ingredients.Count)})");
 var huntNames = huntDrops.Select(h => h.Item).ToHashSet();
 int Q(string recipe, string ing) => recipes.First(r => r.ResultItem.Name == recipe).Ingredients.First(i => i.ItemName == ing).Quantity;
-Check(Q("Hacha de Hierro MK3", "Garra de Puma Cenizo") == 5 && Q("Colmillo Nocturno", "Garra de Puma Cenizo") == 5 && Q("Arco Élfico Ancestral", "Esencia Espectral") == 5 && Q("Espada del Abismo", "Corazón de Titán") == 5 && Q("Báculo del Árbol de Vida", "Fragmento de Alma") == 5,
-    "armas de las zonas 2-5: el drop de cacería de su ruta pasó de ×4 a ×5");
+Check(Q("Hacha de Hierro MK3", "Garra de Puma Cenizo") == 4 && Q("Colmillo Nocturno", "Garra de Puma Cenizo") == 4 && Q("Arco Élfico Ancestral", "Esencia Espectral") == 4 && Q("Espada del Abismo", "Corazón de Titán") == 4 && Q("Báculo del Árbol de Vida", "Fragmento de Alma") == 4,
+    "armas de las zonas 2-5: el drop de cacería de su ruta quedó en ×4 (remove_travel_drops.sql lo subió a ×5 y rebalance_weapon_drops.sql lo bajó 1, a pedido del dueño)");
 Check(Q("Talismán de Ceniza Bendita", "Esencia Espectral") == 7 && Q("Talismán de Ceniza Bendita", "Garra de Puma Cenizo") == 7 && Q("Peto de Escoria Templada", "Gema en Bruto") == 7 && Q("Peto de Escoria Templada", "Yunque Fragmentado") == 7
     && Q("Talismán del Volcán", "Escama Ígnea") == 7 && Q("Talismán del Volcán", "Núcleo de Magma") == 7 && Q("Corazón de Titán Engarzado", "Corazón de Titán") == 7 && Q("Corazón de Titán Engarzado", "Fragmento de Alma") == 7,
     "amuletos de las zonas 2-5: los dos drops de cacería pasaron de ×4 a ×7 cada uno");
@@ -75,7 +75,7 @@ Check(fogon.Count == 2 && fogonHunt.All(l => l.Count == 5 && l.All(i => i.Quanti
 // El ritmo (el modelo de Database/report_recipe_pacing.sql: 1 cacería por minuto, 6 % por pelea, 2 monstruos de cacería por zona → 0,03 por minuto de cada drop).
 double perMin = CombatRewardCalculator.HuntDropChancePercent / 100.0 / 2;
 double weaponMin = Q("Hacha de Hierro MK3", "Garra de Puma Cenizo") / perMin, amuletMin = Q("Talismán de Ceniza Bendita", "Esencia Espectral") / perMin;
-Check(weaponMin is > 140 and < 175 && amuletMin is > 210 and < 245, $"el ritmo no cambió de clase: arma ~{weaponMin:0} min de drops (eran ~150) y amuleto ~{amuletMin:0} min (eran ~225)");
+Check(weaponMin is > 125 and < 150 && amuletMin is > 210 and < 245, $"el ritmo no cambió de clase: arma ~{weaponMin:0} min de drops (con el drop de viaje eran ~150 y la recolección la frena en ~143) y amuleto ~{amuletMin:0} min (eran ~225)");
 
 Console.WriteLine("\n== 2. Las cajas del viaje en zone_boxes ==");
 var zoneBoxes = new ZoneBoxService(factory, zonesRepo);
