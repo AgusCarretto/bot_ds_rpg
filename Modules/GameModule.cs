@@ -228,13 +228,45 @@ public class GameModule(
                 return;
             }
 
-            var embed = await BuildInventoryEmbedAsync(inventoryRepository, target.Id, GetDisplayName(target));
-            await FollowupAsync(embed: embed);
+            var view = await BuildInventoryViewAsync(inventoryRepository, target.Id, GetDisplayName(target), Context.User.Id, tab: null);
+            await FollowupAsync(embed: view.Embed, components: view.Components);
         }
         catch (Exception ex)
         {
             BotLog.Error(ex);
             await FollowupAsync(Loc.T("No pude consultar ese inventario ahora mismo, intentá de nuevo en un momento."), ephemeral: true);
+        }
+    }
+
+    // El desplegable de pestañas del inventario ("inv_tab:{quien lo abrió}:{de quién es}"): solo quien abrió el mensaje lo puede usar (el inventario de otro jugador también se mira por pestañas, pero con
+    // el desplegable de quien lo consultó). El nombre del dueño del inventario sale del caché del server; si no está, se conserva el título que el mensaje ya traía.
+    [ComponentInteraction("inv_tab:*:*")]
+    public async Task HandleInventoryTabAsync(string viewerRaw, string targetRaw, string[] selected)
+    {
+        await DeferAsync();
+
+        try
+        {
+            if (!ulong.TryParse(viewerRaw, out ulong viewerId) || viewerId != Context.User.Id || !ulong.TryParse(targetRaw, out ulong targetId))
+            {
+                await FollowupAsync(Loc.T("Ese inventario lo abrió otra persona: usá **/inventory** para ver el tuyo."), ephemeral: true);
+                return;
+            }
+
+            IUser? target = targetId == Context.User.Id ? Context.User : Context.Guild?.GetUser(targetId) ?? Context.Client.GetUser(targetId);
+            string? oldTitle = (Context.Interaction as IComponentInteraction)?.Message?.Embeds.FirstOrDefault()?.Title;
+            var view = await BuildInventoryViewAsync(inventoryRepository, targetId, target is null ? string.Empty : GetDisplayName(target), viewerId, selected.FirstOrDefault());
+
+            await ModifyOriginalResponseAsync(p =>
+            {
+                p.Embed = target is null && oldTitle is not null ? view.Embed.ToEmbedBuilder().WithTitle(oldTitle).Build() : view.Embed;
+                p.Components = view.Components ?? new ComponentBuilder().Build();
+            });
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            await FollowupAsync(Loc.T("No pude cambiar de pestaña ahora mismo, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -256,10 +288,13 @@ public class GameModule(
     // ES, por diseño de todo el juego, exactamente lo que sueltan los monstruos (nunca madera ni piedra, ver Database/seed_class_gear_and_monster_drops.sql). La
     // rareza se ve con el emoji del ítem (o un círculo de color si todavía no tiene). Las armas y los amuletos no están acá: se forjan directo a equipamiento
     // (ver /profile). Los íconos no se pueden agrandar: dentro de un texto Discord los dibuja siempre de 22 px.
-    public static async Task<Embed> BuildInventoryEmbedAsync(IInventoryRepository inventoryRepository, ulong discordId, string username)
-    {
-        var entries = await inventoryRepository.GetByDiscordIdAsync(discordId);
+    //
+    // Desde la v0.35.0 esta pantalla completa es la pestaña «Todo» (ver BuildInventoryViewAsync): lo que se abre por defecto es UNA categoría, para que con muchos tipos de ítem la lista no sea una pared.
+    public static async Task<Embed> BuildInventoryEmbedAsync(IInventoryRepository inventoryRepository, ulong discordId, string username) =>
+        BuildFullInventoryEmbed(await inventoryRepository.GetByDiscordIdAsync(discordId), username);
 
+    private static Embed BuildFullInventoryEmbed(IReadOnlyList<InventoryEntry> entries, string username)
+    {
         var embed = new EmbedBuilder()
             .WithTitle(Loc.F($"🎒 Inventario de {username}"))
             .WithColor(Color.Orange)
@@ -339,6 +374,137 @@ public class GameModule(
         }
 
         return embed.Build();
+    }
+
+    // ---- Pestañas del inventario (v0.35.0) ----
+    // El dueño (2026-10-28): «son demasiados ítems para un inventario». Lo que se abre es UNA categoría y un desplegable cambia de pestaña:
+    //     🪵⛏️ Recolección (madera y minerales) · 🩸 Drops de monstruo · 🍖 Consumibles (con la comida de mascotas y de dragón) · 📦 Cajas y huevos · 📋 Todo (la pantalla completa de siempre)
+    // La descripción cuenta cuántas unidades hay de cada categoría (la pestaña abierta, en negrita), así se ve qué hay sin abrirlas. Sin nada no hay desplegable (el aviso de siempre) y con una sola categoría
+    // tampoco (no habría a dónde ir). Mirar el inventario de otro jugador también va por pestañas, con el desplegable de quien lo consultó.
+    public const string InvGather = "gather", InvDrops = "drops", InvFood = "food", InvBoxes = "boxes", InvAll = "all";
+
+    public static readonly string[] InventoryCategories = [InvGather, InvDrops, InvFood, InvBoxes];
+
+    public static bool BelongsToTab(string tab, InventoryEntry e) => tab switch
+    {
+        InvGather => e.Type is "Madera" or "Mineral",
+        InvDrops => e.Type == "Material",
+        InvFood => e.Type is "Consumable" or "PetFood" or "DragonFood",
+        InvBoxes => e.Type is "Caja" or "Huevo",
+        _ => false,
+    };
+
+    public static string TabIcon(string tab) => tab switch { InvGather => "🪵⛏️", InvDrops => "🩸", InvFood => "🍖", InvBoxes => "📦", _ => "📋" };
+
+    // Un solo emoji por opción del desplegable (el de la madera para la recolección).
+    private static string TabOptionEmoji(string tab) => tab == InvGather ? "🪵" : TabIcon(tab);
+
+    public static string TabLabel(string tab, bool hasEggs) => tab switch
+    {
+        InvGather => Loc.T("Recolección"),
+        InvDrops => Loc.T("Drops de monstruo"),
+        InvFood => Loc.T("Consumibles"),
+        InvBoxes => hasEggs ? Loc.T("Cajas y huevos") : Loc.T("Cajas"),
+        _ => Loc.T("Todo"),
+    };
+
+    public static async Task<(Embed Embed, MessageComponent? Components)> BuildInventoryViewAsync(
+        IInventoryRepository inventoryRepository, ulong targetId, string username, ulong viewerId, string? tab) =>
+        BuildInventoryView(await inventoryRepository.GetByDiscordIdAsync(targetId), username, viewerId, targetId, tab);
+
+    // Puro (sin base): arma el embed de la pestaña pedida y el desplegable. Una pestaña que no existe o que quedó vacía cae a la primera categoría con algo.
+    public static (Embed Embed, MessageComponent? Components) BuildInventoryView(
+        IReadOnlyList<InventoryEntry> entries, string username, ulong viewerId, ulong targetId, string? tab)
+    {
+        // Una fila con cantidad 0 (el juego borra las vacías, pero por si quedara alguna) no cuenta como que hay algo.
+        entries = entries.Where(e => e.Quantity > 0).ToList();
+        var present = InventoryCategories.Where(c => entries.Any(e => BelongsToTab(c, e))).ToList();
+        if (present.Count == 0)
+        {
+            return (BuildFullInventoryEmbed(entries, username), null);
+        }
+
+        bool hasEggs = entries.Any(e => e.Type == "Huevo" && e.Quantity > 0);
+        string current = tab == InvAll && present.Count > 1 ? InvAll : present.Contains(tab ?? string.Empty) ? tab! : present[0];
+
+        string summary = string.Join(" · ", present.Select(c =>
+        {
+            string part = $"{TabIcon(c)} {GameHistory.Number(entries.Where(e => BelongsToTab(c, e)).Sum(e => (long)e.Quantity))}";
+            return c == current ? $"**{part}**" : part;
+        }));
+
+        EmbedBuilder embed;
+        if (current == InvAll)
+        {
+            embed = BuildFullInventoryEmbed(entries, username).ToEmbedBuilder().WithDescription(summary);
+        }
+        else
+        {
+            embed = new EmbedBuilder()
+                .WithTitle(Loc.F($"🎒 Inventario de {username}"))
+                .WithColor(Color.Orange)
+                .WithDescription(summary)
+                .WithCurrentTimestamp();
+
+            var mine = entries.Where(e => BelongsToTab(current, e)).ToList();
+            switch (current)
+            {
+                case InvGather:
+                    AddFieldGrid(
+                        embed,
+                        Fields(Loc.T("🪵 Madera"), Lines(mine.Where(e => e.Type == "Madera"))),
+                        Fields(Loc.T("⛏️ Mineral"), Lines(mine.Where(e => e.Type == "Mineral"))));
+                    break;
+                case InvDrops:
+                    AddFieldGrid(embed, Fields(Loc.T("🩸 Drops de monstruo"), Lines(mine)));
+                    break;
+                case InvFood:
+                    AddFieldGrid(embed, Fields(Loc.T("🍖 Consumibles"), Lines(mine)));
+                    break;
+                default:
+                    AddFieldGrid(embed, Fields($"📦 {TabLabel(InvBoxes, hasEggs)}", Lines(mine)));
+                    embed.WithFooter(hasEggs ? Loc.T("📦 Abrí tus cajas y huevos con /open") : Loc.T("📦 Abrí tus cajas con /open"));
+                    break;
+            }
+        }
+
+        MessageComponent? components = null;
+        if (present.Count > 1)
+        {
+            var menu = new SelectMenuBuilder().WithCustomId($"inv_tab:{viewerId}:{targetId}").WithPlaceholder(Loc.T("Cambiar de pestaña"));
+            foreach (string c in present)
+            {
+                var own = entries.Where(e => BelongsToTab(c, e)).ToList();
+                menu.AddOption(
+                    TabLabel(c, hasEggs), c,
+                    Loc.F($"{own.Count} ítems · {GameHistory.Number(own.Sum(e => (long)e.Quantity))} en total"),
+                    new Emoji(TabOptionEmoji(c)), isDefault: c == current);
+            }
+
+            menu.AddOption(TabLabel(InvAll, hasEggs), InvAll, Loc.T("Todo junto, como antes"), new Emoji(TabIcon(InvAll)), isDefault: current == InvAll);
+            components = new ComponentBuilder().WithSelectMenu(menu).Build();
+        }
+
+        return (embed.Build(), components);
+    }
+
+    // Los campos de una pestaña: uno solo va a ancho completo; dos bloques de un campo cada uno van lado a lado (con el tercer campo vacío que cierra la fila, como en la pantalla completa); si algún bloque
+    // se parte en varios campos (muchos drops), todos van de a dos en el orden en que vienen, uno al lado del otro.
+    private static void AddFieldGrid(EmbedBuilder embed, params List<(string Name, string Value)>[] blocks)
+    {
+        var used = blocks.Where(b => b.Count > 0).ToList();
+        var flat = used.SelectMany(b => b).ToList();
+
+        if (flat.Count == 1)
+        {
+            embed.AddField(flat[0].Name, flat[0].Value, false);
+            return;
+        }
+
+        for (int j = 0; j < flat.Count; j += 2)
+        {
+            AddInventoryRow(embed, flat[j], j + 1 < flat.Count ? flat[j + 1] : (Blank, Blank));
+        }
     }
 
     // Espacio de ancho cero (U+200B): Discord no deja campos con el texto vacío y así se arma una columna sin título.
