@@ -1,6 +1,6 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-28 (v0.34.0: el comando de administrador `aa admingive`; antes, el tablón y el aviso de cría del dragón)_
+_Última revisión: 2026-10-28 (v0.35.0: el inventario por pestañas; antes, `aa admingive` y el tablón de crías del dragón)_
 
 ## Pendiente de un vistazo (puesto al día el 2026-10-28)
 
@@ -37,6 +37,13 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
   Términos y Privacidad públicos, y hay que confirmar si hay Premium Apps en Uruguay (Developer Portal, Monetization). Punto de enganche: `ReminderPolicy.IsEligible` y `CooldownCatalog`. El título especial entra como categoría «Especiales» del sistema de títulos.
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
+
+## El inventario por pestañas (v0.35.0, 2026-10-28)
+
+- El dueño: «son demasiados ítems para un inventario» (47 tipos en la mochila y la pesca/cocina en camino) → `/inventory` y `aa inventory` abren UNA categoría y un desplegable cambia: **Recolección** (madera y minerales), **Drops de monstruo**, **Consumibles** (con la comida de mascotas y de dragón), **Cajas y huevos** y **Todo** (la pantalla completa de siempre).
+- La descripción cuenta las unidades de cada categoría y marca la abierta en negrita; solo el que abrió el mensaje maneja el desplegable (también al mirar el inventario de otro jugador); sin nada o con una sola categoría no hay desplegable. Sin migración; todo traducido al inglés.
+- Una pestaña es más chica que la pantalla vieja, así que se aleja el límite de 6000 caracteres que preocupaba con tantos drops. **Un tipo nuevo de ítem de mochila hay que sumarlo a `BelongsToTab` / `InventoryCategories`** o no sale en ninguna pestaña.
+- Harness nuevo `v0350test` (el contenido de cada pestaña, el resumen, el desplegable, los casos borde, un inventario enorme, inglés sin fugas, la base real y el ruteo de `inv_tab`).
 
 ## El tablón de crías: sin anotarse en descanso y con vos en la lista (v0.34.1, 2026-10-28)
 

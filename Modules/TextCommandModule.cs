@@ -173,8 +173,8 @@ public partial class TextCommandModule(
                 return;
             }
 
-            var embed = await GameModule.BuildInventoryEmbedAsync(inventoryRepository, target.Id, GameModule.GetDisplayName(target));
-            await ReplyAsync(embed: embed);
+            var view = await GameModule.BuildInventoryViewAsync(inventoryRepository, target.Id, GameModule.GetDisplayName(target), Context.User.Id, tab: null);
+            await ReplyAsync(embed: view.Embed, components: view.Components);
         }
         catch (Exception ex)
         {
