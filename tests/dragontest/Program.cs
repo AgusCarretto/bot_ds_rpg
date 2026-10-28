@@ -570,6 +570,10 @@ string joined = await DragonModule.ExecuteBoardToggleAsync(dragons, board, A, GU
 var viewIn = await DragonModule.BuildBoardAsync(dragons, board, A, GUILD, NameOf);
 var btnIn = viewIn.Components!.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<ButtonComponent>().First();
 Check(joined.Contains("anotado") && board.Get(A) is { GuildId: GUILD } && viewIn.Embed.Description.Contains("Estás anotado") && btnIn.Label.StartsWith("Salir"), "«Anotarme» te anota y la pantalla pasa a «Salir del tablón»");
+var selfField = viewIn.Embed.Fields.Single(f => f.Name.StartsWith("Buscan pareja"));
+Check(selfField.Name.Contains("(2)") && selfField.Value.Contains($"<@{A}>") && selfField.Value.Contains("(vos)") && selfField.Value.Contains($"<@{B}>") && viewIn.Candidates.SequenceEqual([B]), "al anotarte (o al actualizar) salís vos en la lista, marcado «vos» y contado; la lista de invitar sigue llevando solo a los demás");
+var viewOfB = await DragonModule.BuildBoardAsync(dragons, board, B, GUILD, NameOf);
+Check(viewOfB.Candidates.SequenceEqual([A]) && viewOfB.Embed.Fields.Single(f => f.Name.StartsWith("Buscan pareja")).Value.Contains($"<@{A}>"), "y el otro, al actualizar su pantalla, te ve a vos y te puede invitar");
 string leftMsg = await DragonModule.ExecuteBoardToggleAsync(dragons, board, A, GUILD);
 Check(leftMsg.Contains("Saliste") && board.Get(A) is null, "tocarlo otra vez te saca");
 var ghostView = await DragonModule.BuildBoardAsync(dragons, board, GHOST, GUILD, NameOf);
@@ -577,7 +581,12 @@ Check((await DragonModule.ExecuteBoardToggleAsync(dragons, board, GHOST, GUILD))
 await Dragon(A, "oro", 2, rested: false);
 var restView = await DragonModule.BuildBoardAsync(dragons, board, A, GUILD, NameOf);
 var restRows = restView.Components!.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).ToList();
-Check(restView.Embed.Description.Contains("descansa") && !restRows.OfType<SelectMenuComponent>().Any() && restRows.OfType<ButtonComponent>().Count() == 2 && restView.Candidates.Count == 1, "si tu dragón descansa no se ofrece invitar a nadie (pero podés anotarte)");
+Check(restView.Embed.Description.Contains("descansa") && !restRows.OfType<SelectMenuComponent>().Any() && restRows.OfType<ButtonComponent>().Count() == 2 && restView.Candidates.Count == 1 && restView.Embed.Description.Contains("No podés anotarte"), "si tu dragón descansa no se ofrece invitar a nadie y la pantalla dice que no podés anotarte");
+var restToggle = await DragonModule.ExecuteBoardToggleAsync(dragons, board, A, GUILD);
+Check(restToggle.Contains("descansando") && restToggle.Contains("No podés anotarte") && board.Get(A) is null, "anotarte con el dragón descansando se rechaza: te avisa que descansa y cuánto falta, y no queda anotado");
+board.List(GUILD, A);
+var leaveResting = await DragonModule.ExecuteBoardToggleAsync(dragons, board, A, GUILD);
+Check(leaveResting.Contains("Saliste") && board.Get(A) is null, "salir del tablón siempre se puede, aunque el dragón esté descansando");
 await Dragon(A, "oro", 10);
 Check((await DragonModule.ExecuteBoardToggleAsync(dragons, board, A, GUILD)).Contains("tier máximo") && (await DragonModule.BuildBoardAsync(dragons, board, A, GUILD, NameOf)).Components is null, "en el tier 10 no hay nada que criar");
 await Dragon(A, "oro", 2);

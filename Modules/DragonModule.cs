@@ -405,29 +405,41 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
         string state = mine.CanBreed ? "puede criar ya" : $"descansa: puede criar en **{TimeFormat.Remaining(mine.Wait)}**";
         string listing = iAmListed
             ? $"📌 **Estás anotado** en el tablón (te quedan {TimeFormat.Remaining(board.Remaining(viewerId) ?? TimeSpan.Zero)})."
-            : "No estás anotado: tocá **Anotarme** para que los demás de tu tier sepan que buscás pareja.";
+            : mine.CanBreed
+                ? "No estás anotado: tocá **Anotarme** para que los demás de tu tier sepan que buscás pareja."
+                : $"⏳ No podés anotarte mientras tu dragón descansa: puede criar en **{TimeFormat.Remaining(mine.Wait)}**.";
         embed.WithDescription(
             $"{DragonRules.KindEmoji(mine.Kind)} **{mine.Name ?? DragonRules.TierName(mine.Tier)}** · Tier **{mine.Tier}** ({DragonRules.TierName(mine.Tier)}) — {state}.\n{listing}\n" +
             $"_Anotarte dura {(int)DragonBoardService.Lifetime.TotalHours} horas o hasta que críes. Solo aparecen los que pueden criar ahora._");
 
         var lines = new List<string>();
         int used = 0;
+        // Quien está anotado se ve a sí mismo en la lista (primero, marcado «vos»): así al anotarse o al actualizar se nota que quedó. No se puede invitar a uno mismo: la lista de invitar solo lleva a los demás.
+        if (iAmListed)
+        {
+            string self = $"• <@{viewerId}> — {DragonRules.KindEmoji(mine.Kind)} {DragonRules.KindName(mine.Kind)} · nivel {mine.Level} **(vos)**" + (mine.CanBreed ? string.Empty : " · descansando");
+            lines.Add(self);
+            used += self.Length + 1;
+        }
+
+        int shown = 0;
         foreach (var (id, dragon) in sameTier)
         {
             string line = $"• <@{id}> — {DragonRules.KindEmoji(dragon.Kind)} {DragonRules.KindName(dragon.Kind)} · nivel {dragon.Level}";
             if (used + line.Length + 1 > 900)
             {
-                lines.Add($"… y {sameTier.Count - lines.Count} más");
+                lines.Add($"… y {sameTier.Count - shown} más");
                 break;
             }
 
             lines.Add(line);
+            shown++;
             used += line.Length + 1;
         }
 
         embed.AddField(
-            $"Buscan pareja de tu tier ({sameTier.Count})",
-            sameTier.Count > 0 ? string.Join('\n', lines) : "Nadie de tu tier por ahora. Anotate y esperá, o invitá a un amigo con **/dragon-breed @amigo**.",
+            $"Buscan pareja de tu tier ({sameTier.Count + (iAmListed ? 1 : 0)})",
+            lines.Count > 0 ? string.Join('\n', lines) : "Nadie de tu tier por ahora. Anotate y esperá, o invitá a un amigo con **/dragon-breed @amigo**.",
             false);
         if (otherTiers.Count > 0)
         {
@@ -478,6 +490,12 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
         {
             board.Remove(userId);
             return "Saliste del tablón: ya no aparecés como que buscás pareja.";
+        }
+
+        // El tablón es de los que pueden criar AHORA: con el descanso corriendo no se entra (y se dice cuánto falta, no se queda uno anotado sin aparecer en la lista de nadie).
+        if (!dragon.CanBreed)
+        {
+            return $"⏳ Tu dragón está descansando: puede criar en **{TimeFormat.Remaining(dragon.Wait)}**. No podés anotarte en el tablón hasta que termine el descanso (solo aparecen los que pueden criar ahora).";
         }
 
         board.List(guildId, userId);
