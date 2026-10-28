@@ -87,26 +87,32 @@ Check(big.Fields.Length >= 6 && big.Fields.Length <= 25 && big.Length < 6000 && 
 string ZWl = ((char)0x200B).ToString();
 var leftCol = big.Fields.Where((f, i) => i % 3 == 0).ToList(); var rightCol = big.Fields.Where((f, i) => i % 3 == 1).ToList();
 Check(big.Fields.Length % 3 == 0 && big.Fields.All(f => f.Inline) && big.Fields.Where((f, i) => i % 3 == 2).All(f => f.Name == ZWl && f.Value == ZWl), "v0.9.3: DOS columnas, todo en línea de a tres por fila con el tercero vacío cerrando cada fila");
-// v0.26.3: con los ~15 drops (no entran en un campo) el reparto es Madera | Mineral, luego los drops EN DOS COLUMNAS parejas y debajo los Consumibles: así en el celu (que apila los campos en el orden en que
-// vienen) la segunda mitad de los drops queda pegada a la primera y no después de los Consumibles, como pasaba con «Fragmento de Alma» (2026-10-26).
-Check(leftCol[0].Name.Contains("Madera") && rightCol[0].Name.Contains("Mineral") && leftCol[1].Name.Contains("Drops") && rightCol[1].Name == ZWl && rightCol[1].Value != ZWl && leftCol[2].Name.Contains("Consumibles"), "filas: Madera | Mineral, Drops | (resto de los drops) y Consumibles: " + string.Join(" | ", big.Fields.Select(f => f.Name == ZWl ? "·" : f.Name)));
-var phoneOrder = big.Fields.Where(f => f.Value != ZWl).Select(f => f.Name == ZWl ? "·" : f.Name).ToList();   // el celu apila los campos con contenido en este orden (los vacíos no se ven)
+// v0.36.0: con los 10 drops que quedan (ya no hay drops de viaje) entran en UN campo: Madera | Mineral y debajo Drops | Consumibles.
+Check(leftCol[0].Name.Contains("Madera") && rightCol[0].Name.Contains("Mineral") && leftCol[1].Name.Contains("Drops") && rightCol[1].Name.Contains("Consumibles") && big.Fields.Length == 6, "filas: Madera | Mineral y Drops | Consumibles: " + string.Join(" | ", big.Fields.Select(f => f.Name == ZWl ? "·" : f.Name)));
+// El reparto cuando los drops NO entran en un campo (v0.26.3) sigue valiendo para cuando haya más: se prueba sumando 8 drops sintéticos a los reales. Madera | Mineral, luego los drops EN DOS COLUMNAS parejas y debajo
+// los Consumibles: así en el celu (que apila los campos en el orden en que vienen) la segunda mitad de los drops queda pegada a la primera y no después de los Consumibles, como pasaba con «Fragmento de Alma» (2026-10-26).
+var realEntries = await inventoryRepo.GetByDiscordIdAsync(U);
+var extraDrops = realEntries.Where(e => e.Type == "Material").Take(8).Select(e => new InventoryEntry { ItemName = e.ItemName + " (extra)", Type = "Material", Rarity = e.Rarity, Quantity = e.Quantity, Emoji = e.Emoji }).ToList();
+var bigFull = GameModule.BuildInventoryView(realEntries.Concat(extraDrops).ToList(), "prueba", U, U, GameModule.InvAll).Embed;
+var leftCol2 = bigFull.Fields.Where((f, i) => i % 3 == 0).ToList(); var rightCol2 = bigFull.Fields.Where((f, i) => i % 3 == 1).ToList();
+Check(leftCol2[0].Name.Contains("Madera") && rightCol2[0].Name.Contains("Mineral") && leftCol2[1].Name.Contains("Drops") && rightCol2[1].Name == ZWl && rightCol2[1].Value != ZWl && leftCol2[2].Name.Contains("Consumibles"), "con drops de más: Madera | Mineral, Drops | (resto de los drops) y Consumibles: " + string.Join(" | ", bigFull.Fields.Select(f => f.Name == ZWl ? "·" : f.Name)));
+var phoneOrder = bigFull.Fields.Where(f => f.Value != ZWl).Select(f => f.Name == ZWl ? "·" : f.Name).ToList();   // el celu apila los campos con contenido en este orden (los vacíos no se ven)
 int phoneDrops = phoneOrder.FindIndex(n => n.Contains("Drops"));
 Check(phoneOrder.Count >= 5 && phoneDrops == 2 && phoneOrder[phoneDrops + 1] == "·" && phoneOrder[phoneDrops + 2].Contains("Consumibles"), "en el celu: Madera, Mineral, los drops (con su segunda mitad pegada, sin título) y recién después los Consumibles: " + string.Join(" | ", phoneOrder));
-var dropHalves = new[] { big.Fields[3], big.Fields[4] }.Select(f => f.Value.Split('\n').Length).ToArray();
+var dropHalves = new[] { bigFull.Fields[3], bigFull.Fields[4] }.Select(f => f.Value.Split('\n').Length).ToArray();
 Check(Math.Abs(dropHalves[0] - dropHalves[1]) <= 1, $"los drops se reparten parejos entre las dos columnas ({dropHalves[0]} y {dropHalves[1]} renglones), no 14 y uno suelto");
 Check(big.Fields.Any(f => f.Name.Contains("Drops")) && big.Fields.Any(f => f.Name.Contains("Cajas") || f.Value.Contains("**Cajas**")), "los drops y las cajas también están");
 const char Nb = (char)0xA0;                       // espacio que no se parte: mantiene unido a cada ítem aunque la línea se corte
 string Sep = ((char)0x2003).ToString() + " ";     // lo que separa una ficha de la siguiente (puede cortarse la línea ahí)
 var lineRegex = new Regex(@"^(<a?:[A-Za-z0-9_]+:\d+>|[⚪🔵🟣🟡🔴]|📦|🥚|🔥) \*\*[^*]+\*\*: [\d.]+$");
 string ZWs = ((char)0x200B).ToString();
-var chips = big.Fields.SelectMany(f => f.Value.Split('\n')).Where(l => l.Length > 0 && l != "📦 **Cajas**" && l != ZWs).ToList();   // v0.9.1: los drops también son un renglón por ítem   // el encabezado de las cajas apiladas bajo la comida no es un ítem
+var chips = big.Fields.SelectMany(f => f.Value.Split('\n')).Where(l => l.Length > 0 && l != "**Cajas**" && l != ZWs).ToList();   // v0.9.1: los drops también son un renglón por ítem   // el encabezado de las cajas apiladas bajo la comida no es un ítem
 Check(chips.Count == expectedItems && chips.All(l => lineRegex.IsMatch(l.Replace(Nb, ' '))), $"{chips.Count} ítems, todos con el formato «emoji **Nombre**: cantidad» (el ejemplo: {chips.FirstOrDefault()}; el que no calza: {chips.FirstOrDefault(l => !lineRegex.IsMatch(l.Replace(Nb, (char)32)))})");
 Check(chips.Any(l => l.EndsWith(": 9.999") || l.EndsWith(Nb + "9.999")), "las cantidades llevan el separador de miles");
 var dropFields = big.Fields.SkipWhile(f => !f.Name.Contains("Drops")).TakeWhile((f, i) => i == 0 || f.Name == ZWs).Where(f => f.Value != ZWs).ToList();   // el campo de los drops y su continuación (sin título), hasta los Consumibles
 var dropChips = dropFields.SelectMany(f => f.Value.Split('\n')).ToList();
-Check(dropChips.Count == 15 && dropChips.All(c => lineRegex.IsMatch(c)) && dropFields.All(f => !f.Value.Contains(Nb) && !f.Value.Contains(((char)0x2003).ToString())), $"los {dropChips.Count} drops van UNO POR RENGLÓN (v0.9.1: las fichas dejaban el ícono huérfano al final de la línea anterior)");
-Check(dropFields.Count >= 2 && dropFields.Skip(1).All(f => f.Name == ((char)0x200B).ToString()) && !dropFields.Any(f => f.Name.Contains("(1/")), $"los drops caben en {dropFields.Count} campos: el primero con título y los demás sin título (nunca «(1/2)»)");
+Check(dropChips.Count == 10 && dropChips.All(c => lineRegex.IsMatch(c)) && dropFields.All(f => !f.Value.Contains(Nb) && !f.Value.Contains(((char)0x2003).ToString())), $"los {dropChips.Count} drops van UNO POR RENGLÓN (v0.9.1: las fichas dejaban el ícono huérfano al final de la línea anterior)");
+Check(dropFields.Count >= 1 && dropFields.Skip(1).All(f => f.Name == ((char)0x200B).ToString()) && !dropFields.Any(f => f.Name.Contains("(1/")), $"los drops caben en {dropFields.Count} campos: el primero con título y los demás sin título (nunca «(1/2)»)");
 Check(big.Footer?.Text?.Contains("/open") == true, "con cajas, el pie dice cómo abrirlas");
 
 await db.ExecuteAsync("DELETE FROM inventory WHERE discord_id = @id", new { id = (long)U });

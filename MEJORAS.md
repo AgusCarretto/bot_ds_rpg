@@ -1,6 +1,6 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-28 (v0.35.0: el inventario por pestañas; antes, `aa admingive` y el tablón de crías del dragón)_
+_Última revisión: 2026-10-28 (v0.36.0: el viaje ya no suelta material, da una caja con chance baja; antes, el inventario por pestañas y `aa admingive`)_
 
 ## Pendiente de un vistazo (puesto al día el 2026-10-28)
 
@@ -38,9 +38,20 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
 
+## El viaje ya no suelta material: da una caja con chance baja (v0.36.0, 2026-10-28)
+
+- El dueño: «si sacamos el drop solo del travel… que el travel sea esa suma de xp y gold con probabilidad de sacar una caja de la zona» y «sumale algún drop a cada uno». El `/travel` paga lo mismo en oro y EXP (una cacería ×30) y **puede dar la caja chica de la zona** (nuevo rol `travel` de `zone_boxes`): **20 % en cada zona** (Zonas 1 y 2 Cajón de Pino, Zona 3 Baúl de Roble, Zonas 4 y 5 Arcón de Hierro; mi primera propuesta era 8 / 15 / 6 / 2 / 3 % y al dueño le pareció poco: «ponele 20 % a cada zona. olvidate»). Cae una caja cada ~5 viajes: en las Zonas 4 y 5, donde la caja es un Arcón, suma por mi cuenta +40-65 % al oro de una sesión perfecta de 2 h (en las Zonas 1-3, +4-25 %); si resulta mucho, se baja con un `UPDATE` de esas filas.
+- **Las cajas dan drops de cualquier zona que tengas desbloqueada** (antes el tope era la zona de la caja): «¿te puede salir en un Cajón de Pino un Corazón de Titán en la Zona 5? porque no pasa nunca; acordate que los drops no tienen rareza». Ahora sí. El valor de la caja no cambia (cada drop de cacería vale ~33 minutos de farmeo en cualquier zona); cambia CUÁLES salen. Fuego Nuevo, mascotas, la bendición Brasa Vieja y el dragón multiplican ESTA chance (antes la del drop).
+- Los 5 drops de viaje se borraron. **Los jugadores no pierden nada**: cada unidad que tenían se convirtió en 1 de CADA drop de cacería de su zona. Las 25 recetas de armas de clase y amuletos pasan **de 4 a 3 tipos de ingrediente** y piden más drops de cacería para que el tiempo no cambie: armas de las zonas 2-5 ×4 → ×5, amuletos ×4 → ×7 de cada uno, amuleto de la Zona 1 ×5 (medido: armas ~167 min de drops, antes 150; amuletos ~233, antes 225). El equipo del Fogón no cambia. Quedan 10 drops (2 por zona) y el canje 3×1 sigue entre cada par.
+- Efecto lateral medido: las cajas valen ~7-8 % menos en minutos de farmeo (perdieron el drop de viaje de su botín); los precios no se tocaron (`report_box_economy.sql`: Pino 298 → 320 % de precio sobre valor, Roble 165 → 179, Arcón 94 → 102, Cofre de Oro 55 → 60).
+- **Migración `Database/remove_travel_drops.sql`: correrla en Railway ANTES de que arranque el binario v0.36.0** (re-ejecutable; hacé un backup antes). La instalación nueva la trae al final de `run_fresh_install.sql` y quedó idéntica a la base viva (233 filas comparadas).
+- Abierto: un solo drop por zona (perdería la ruta físico/arcano de las clases); los nombres de «Talismán de Ceniza Bendita» y «Hombreras de Cuero Grueso» nombran materiales que ya no existen (es solo sabor); `tools/balance2` todavía simula el drop de viaje.
+- Harness nuevo `v0360test` (el estado de los datos, la migración con un drop de viaje fabricado y correrla dos veces, la chance con y sin Fuego Nuevo, un viaje ganado de punta a punta en los dos idiomas, `/drops`).
+
 ## El inventario por pestañas (v0.35.0, 2026-10-28)
 
 - El dueño: «son demasiados ítems para un inventario» (47 tipos en la mochila y la pesca/cocina en camino) → `/inventory` y `aa inventory` abren UNA categoría y un desplegable cambia: **Recolección** (madera y minerales), **Drops de monstruo**, **Consumibles** (con la comida de mascotas y de dragón), **Cajas y huevos** y **Todo** (la pantalla completa de siempre).
+- Los títulos de las listas van sin emoji («Madera», «Mineral», «Drops de monstruo»…): la línea del resumen de arriba ya los muestra y cada ítem lleva el suyo (el dueño lo pidió viendo una captura).
 - La descripción cuenta las unidades de cada categoría y marca la abierta en negrita; solo el que abrió el mensaje maneja el desplegable (también al mirar el inventario de otro jugador); sin nada o con una sola categoría no hay desplegable. Sin migración; todo traducido al inglés.
 - Una pestaña es más chica que la pantalla vieja, así que se aleja el límite de 6000 caracteres que preocupaba con tantos drops. **Un tipo nuevo de ítem de mochila hay que sumarlo a `BelongsToTab` / `InventoryCategories`** o no sale en ninguna pestaña.
 - Harness nuevo `v0350test` (el contenido de cada pestaña, el resumen, el desplegable, los casos borde, un inventario enorme, inglés sin fugas, la base real y el ruteo de `inv_tab`).

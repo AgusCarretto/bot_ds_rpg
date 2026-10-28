@@ -7,7 +7,7 @@ namespace BotDsRpg.GameData;
 // Las excepciones son la EXP de las peleas (desde la v0.28.0, ver abajo: sube más con cada vuelta) y /travel, cuyo paso BAJA con cada vuelta (arranca en +10 % y pierde 0,5 puntos por Fuego Nuevo, con un mínimo de +2 %): su drop es el cuello de botella
 // de las armas de clase y los amuletos y, con una base de 40 %, un paso parejo lo toparía en 100 % antes de tiempo.
 //   · /hunt   la CHANCE de drop del monstruo   ×1,30 por FN     (6 % de base → 7,8 % en el FN 1, 24 % en el FN 10)
-//   · /travel la CHANCE de drop del monstruo   +10 % bajando    (40 % de base → 44 % en el FN 1, 71 % en el FN 10, 100 % en el FN 41)
+//   · /travel la CHANCE de la caja del viaje   +10 % bajando    (v0.36.0: antes era la del drop del monstruo, 40 % de base; ahora multiplica la chance de zone_boxes "travel": ×1,1 en el FN 1, ×1,78 en el FN 10)
 //   · /chop y /mine  la CANTIDAD por acción    ×1,20 por FN     (×3 en el FN 10)
 //   · EXP de las peleas                        (99 + x) × x / 2 % (v0.28.0, la fórmula de EPIC RPG): +50 % en el FN 1, +545 % en el FN 10, +1.550 % en el FN 25. NO es lineal: cada vuelta suma más que la anterior
 //                                              (hasta la v0.27.x era +10 % por FN), porque la curva de nivel ahora es cuadrática y cada vuelta tiene que volver a subir de nivel rápido.
@@ -62,7 +62,7 @@ public static class FuegoNuevoRules
     // Lo que da hoy ese Fuego Nuevo, un renglón por cosa (para el perfil y /fuegonuevo). Son los multiplicadores sobre la base; la chance real de /travel la topa el 100 %.
     public static string BonusLines(int fuegoNuevo) =>
         $"🏹 Chance de drop en /hunt: **{PercentText(HuntDropMultiplier(fuegoNuevo))}**\n" +
-        $"🗺️ Chance de drop en /travel: **{PercentText(TravelDropMultiplier(fuegoNuevo))}**\n" +
+        $"🗺️ Chance de caja en /travel: **{PercentText(TravelDropMultiplier(fuegoNuevo))}**\n" +
         $"🪓⛏️ Cantidad en /chop y /mine: **{PercentText(GatherMultiplier(fuegoNuevo))}**\n" +
         $"📊 EXP de las peleas: **{PercentText(XpMultiplier(fuegoNuevo))}**";
 

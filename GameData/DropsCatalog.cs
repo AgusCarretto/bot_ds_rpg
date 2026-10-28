@@ -20,14 +20,17 @@ public static class DropsCatalog
 
     // Los bloques de UNA zona, en orden Cazar / Viajar / Jefe; los tipos sin monstruos cargados no aparecen.
     // bossRepeat: la fila "repeat" de zone_boxes de la zona (la caja que cae al volver a vencer al jefe); null si no se conoce (el bloque del jefe solo dice qué pasa la primera vez).
+    // travelBox (v0.36.0): la fila "travel" (la caja que PUEDE caer al ganar un viaje: el viaje ya no suelta material); null si no se conoce.
     public static IReadOnlyList<DropsBlock> BuildZoneBlocks(
-        IEnumerable<ZoneMonster> zoneMonsters, IReadOnlyDictionary<string, DropItemInfo> items, ZoneBoxRow? bossRepeat = null)
+        IEnumerable<ZoneMonster> zoneMonsters, IReadOnlyDictionary<string, DropItemInfo> items, ZoneBoxRow? bossRepeat = null, ZoneBoxRow? travelBox = null)
     {
         var monsters = zoneMonsters.ToList();
         var blocks = new List<DropsBlock>();
 
         AddBlock(blocks, "🏹 Cazar", $"{CombatRewardCalculator.HuntDropChancePercent}% al ganar", monsters, MonsterKind.Hunt, items);
-        AddBlock(blocks, "🗺️ Viajar (élite)", $"{CombatRewardCalculator.TravelDropChancePercent}% al ganar", monsters, MonsterKind.Travel, items);
+        // El viaje no suelta material: paga oro y EXP (x30 una cacería) y puede dar la caja de la zona.
+        AddBlock(blocks, "🗺️ Viajar (élite)", travelBox is null ? "sin material" : $"{travelBox.ChancePercent}% de caja", monsters, MonsterKind.Travel, items,
+            travelBox is null ? string.Empty : $"\n\n📦 {DescribeItem(travelBox.BoxName, items)}", showDrops: false);
         string bossRepeatLine = bossRepeat is null
             ? string.Empty
             : $"\n\n🔁 Si ya lo vencías: {bossRepeat.ChancePercent}% de {DescribeItem(bossRepeat.BoxName, items)}";
@@ -38,7 +41,7 @@ public static class DropsCatalog
 
     private static void AddBlock(
         List<DropsBlock> blocks, string title, string chanceText, List<ZoneMonster> monsters, MonsterKind kind,
-        IReadOnlyDictionary<string, DropItemInfo> items, string extraLine = "")
+        IReadOnlyDictionary<string, DropItemInfo> items, string extraLine = "", bool showDrops = true)
     {
         var ofKind = monsters.Where(m => m.Kind == kind).ToList();
         if (ofKind.Count == 0)
@@ -49,6 +52,11 @@ public static class DropsCatalog
         var entries = ofKind.Select(zoneMonster =>
         {
             var monster = zoneMonster.Monster;
+            if (!showDrops)
+            {
+                return $"{monster.Emoji} **{monster.Name}**";
+            }
+
             string drops = monster.DropItemNames.Count == 0
                 ? "_nada_"
                 : string.Join(" / ", monster.DropItemNames.Select(name => DescribeItem(name, items)));

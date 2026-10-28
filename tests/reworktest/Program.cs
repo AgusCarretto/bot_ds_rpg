@@ -112,8 +112,8 @@ Console.WriteLine("\n== v0.8.0 · Tarea 1: cooldowns y recompensas ==");
 Check(CooldownCatalog.Travel.Duration == TimeSpan.FromMinutes(30), "travel: cooldown de 30 minutos");
 Check(CooldownCatalog.Boss.Duration == TimeSpan.FromHours(5) && CooldownCatalog.Raid.CommandName == CooldownCatalog.Boss.CommandName && CooldownCatalog.Raid.Duration == CooldownCatalog.Boss.Duration, "jefe y raid: UN cooldown de 5 horas");
 Check(CooldownCatalog.Boss.RetryAfterFailure == TimeSpan.FromMinutes(30) && CooldownCatalog.Travel.RetryAfterFailure is null && CooldownCatalog.Hunt.RetryAfterFailure is null, "perder o huir deja 30 minutos (solo el jefe tiene esa regla)");
-Check(CombatRewardCalculator.TravelRewardMultiplier == 30 && CombatRewardCalculator.TravelDropChancePercent == 40 && CombatRewardCalculator.BossRewardMultiplier == 15, "travel x30 y 40% de drop (60% hasta la v0.10.1); jefe x15");
-Check(CombatRewardCalculator.TravelRewardMultiplier / CooldownCatalog.Travel.Duration.TotalMinutes == 1.0 && Math.Abs(CombatRewardCalculator.TravelDropChancePercent / CooldownCatalog.Travel.Duration.TotalMinutes - 40.0 / 30.0) < 1e-9, "travel paga lo mismo POR MINUTO que con 10 minutos (1 cacería por minuto) y el drop cae 1,33% por minuto de cooldown (40% por viaje; era 2% con el 60% hasta la v0.10.1)");
+Check(CombatRewardCalculator.TravelRewardMultiplier == 30 && CombatRewardCalculator.BossRewardMultiplier == 15, "travel x30 (ya sin drop de material desde la v0.36.0: da una caja con su chance); jefe x15");
+Check(CombatRewardCalculator.TravelRewardMultiplier / CooldownCatalog.Travel.Duration.TotalMinutes == 1.0, "travel paga lo mismo POR MINUTO que con 10 minutos (1 cacería por minuto)");
 
 Console.WriteLine("\n== v0.8.0 · Tarea 1 (base): el cooldown del jefe ==");
 const ulong BossTester = 999000000000009002UL;
@@ -177,14 +177,15 @@ Console.WriteLine("\n== v0.8.0 · Tarea 2: el sorteo de las cajas (puro) ==");
     var real = RarityCatalog.GatheringChances.ToDictionary(c => c.Rarity, c => c.Percent);
     Check(BoxLootRoller.GatherWeights.Where(w => w.Rarity != "Mítico").All(w => Math.Abs(w.Weight / 10.0 - real[w.Rarity]) < 0.0001), "Común, Raro, Épico y Legendario: EXACTAMENTE las de RarityCatalog (solo cambia el Mítico)");
 
-    // 3) Zonas: nunca drops de una zona que el jugador no desbloqueó ni mayor que la de la caja
+    // 3) Zonas: nunca drops de una zona que el jugador no desbloqueó; desde la v0.36.0 la zona de la caja ya no los limita (los drops no tienen rareza)
     var soloZona = Box(1000, 1000, 5, Zone(1));
     int maxSeen = 0;
     for (int i = 0; i < 200; i++) foreach (var it in BoxLootRoller.Roll(soloZona, new BoxRollContext(1, gatherPool, zonePool), rng).Items.Where(x => x.Name.Contains(" z"))) maxSeen = Math.Max(maxSeen, int.Parse(it.Name[^1].ToString()));
-    Check(maxSeen == 1, $"jugador con la Zona 1 desbloqueada y una caja de Zona 5: solo salen drops de la Zona 1 (máxima vista: {maxSeen})");
+    Check(maxSeen == 1, $"jugador con la Zona 1 desbloqueada y una caja de Zona 5: solo salen drops de la Zona 1, los que ya desbloqueó (máxima vista: {maxSeen})");
     int cap = 0;
-    foreach (var it in BoxLootRoller.Roll(Box(5000, 5000, 2, Zone(1)), new BoxRollContext(5, gatherPool, zonePool), rng).Items.Where(x => x.Name.Contains(" z"))) cap = Math.Max(cap, int.Parse(it.Name[^1].ToString()));
-    Check(cap == 2, $"jugador de Zona 5 con una caja de Zona 2: solo drops hasta la Zona 2 (máxima vista: {cap})");
+    var zonesSeenInPino = new HashSet<int>();
+    foreach (var it in BoxLootRoller.Roll(Box(5000, 5000, 1, Zone(1)), new BoxRollContext(5, gatherPool, zonePool), rng).Items.Where(x => x.Name.Contains(" z"))) { cap = Math.Max(cap, int.Parse(it.Name[^1].ToString())); zonesSeenInPino.Add(int.Parse(it.Name[^1].ToString())); }
+    Check(cap == 5 && zonesSeenInPino.Count == 5, $"jugador de Zona 5 con una caja de Zona 1 (un Cajón de Pino): salen drops de las 5 zonas, también el de la Zona 5 (máxima vista: {cap}; los drops no tienen rareza)");
     var allZones = BoxLootRoller.Roll(Box(20000, 20000, 5, Zone(1)), new BoxRollContext(5, gatherPool, zonePool), rng);
     var zoneDrops = allZones.Items.Where(x => x.Name.Contains(" z")).ToList();
     double travelShare = zoneDrops.Where(x => x.Name.StartsWith("Travel")).Sum(x => x.Quantity) / (double)zoneDrops.Sum(x => x.Quantity);

@@ -273,8 +273,9 @@ public class GameModule(
     // Estático (sin dependencia de Context) para que Modules/TextCommandModule.cs arme el mismo embed en "aa inventory".
     //
     // El inventario va en DOS COLUMNAS (pedido del dueño, v0.9.3: "madera, minerales, drops, consumibles; los consumibles en una columna sola debajo de minerales"):
-    //     🪵 Madera                    ⛏️ Mineral
-    //     🩸 Drops de monstruo         🍖 Consumibles (con las 📦 Cajas debajo)
+    //     Madera                       Mineral
+    //     Drops de monstruo            Consumibles (con las Cajas debajo)
+    // (v0.35.0: los títulos van SIN emoji: la línea del resumen de arriba —🪵⛏️ · 🩸 · 🍖 · 📦— ya los muestra y los ítems llevan el suyo.)
     // Discord acomoda los campos en línea de a TRES por fila y cada uno ocupa un tercio del ancho, así que para que queden solo dos por fila cada fila lleva un
     // tercer campo en línea VACÍO (nombre y texto de ancho cero) que la cierra: al estar al costado no suma altura (lo que dejaba huecos enormes, v0.9.1, eran los
     // campos vacíos APILADOS, en su propia fila). Las dos columnas siguen siendo angostas (~19 caracteres): un nombre largo como "Cuero Curtido de Pradera"
@@ -317,20 +318,20 @@ public class GameModule(
 
         // Cuatro bloques (cada uno son sus campos, el primero con título): columna izquierda = Madera y, debajo, los drops; derecha = Mineral y, debajo, los consumibles.
         // Las Cajas van con la comida (en el mismo campo) si entran juntas.
-        var woodFields = Fields(Loc.T("🪵 Madera"), wood);
-        var mineralFields = Fields(Loc.T("⛏️ Mineral"), minerals);
-        var dropFields = Fields(Loc.T("🩸 Drops de monstruo"), drops);
+        var woodFields = Fields(Loc.T("Madera"), wood);
+        var mineralFields = Fields(Loc.T("Mineral"), minerals);
+        var dropFields = Fields(Loc.T("Drops de monstruo"), drops);
         var foodFields = new List<(string Name, string Value)>();
 
-        string stacked = food.Count > 0 && boxes.Count > 0 ? string.Join('\n', food) + $"\n\n📦 **{boxTitle}**\n" + string.Join('\n', boxes) : string.Empty;
+        string stacked = food.Count > 0 && boxes.Count > 0 ? string.Join('\n', food) + $"\n\n**{boxTitle}**\n" + string.Join('\n', boxes) : string.Empty;
         if (stacked.Length > 0 && stacked.Length <= FieldLimit)
         {
-            foodFields.Add((Loc.T("🍖 Consumibles"), stacked));
+            foodFields.Add((Loc.T("Consumibles"), stacked));
         }
         else
         {
-            foodFields.AddRange(Fields(Loc.T("🍖 Consumibles"), food));
-            foodFields.AddRange(Fields($"📦 {boxTitle}", boxes));
+            foodFields.AddRange(Fields(Loc.T("Consumibles"), food));
+            foodFields.AddRange(Fields(boxTitle, boxes));
         }
 
         var leftBlocks = new[] { woodFields, dropFields }.Where(b => b.Count > 0).ToList();
@@ -452,17 +453,17 @@ public class GameModule(
                 case InvGather:
                     AddFieldGrid(
                         embed,
-                        Fields(Loc.T("🪵 Madera"), Lines(mine.Where(e => e.Type == "Madera"))),
-                        Fields(Loc.T("⛏️ Mineral"), Lines(mine.Where(e => e.Type == "Mineral"))));
+                        Fields(Loc.T("Madera"), Lines(mine.Where(e => e.Type == "Madera"))),
+                        Fields(Loc.T("Mineral"), Lines(mine.Where(e => e.Type == "Mineral"))));
                     break;
                 case InvDrops:
-                    AddFieldGrid(embed, Fields(Loc.T("🩸 Drops de monstruo"), Lines(mine)));
+                    AddFieldGrid(embed, Fields(Loc.T("Drops de monstruo"), Lines(mine)));
                     break;
                 case InvFood:
-                    AddFieldGrid(embed, Fields(Loc.T("🍖 Consumibles"), Lines(mine)));
+                    AddFieldGrid(embed, Fields(Loc.T("Consumibles"), Lines(mine)));
                     break;
                 default:
-                    AddFieldGrid(embed, Fields($"📦 {TabLabel(InvBoxes, hasEggs)}", Lines(mine)));
+                    AddFieldGrid(embed, Fields(TabLabel(InvBoxes, hasEggs), Lines(mine)));
                     embed.WithFooter(hasEggs ? Loc.T("📦 Abrí tus cajas y huevos con /open") : Loc.T("📦 Abrí tus cajas con /open"));
                     break;
             }

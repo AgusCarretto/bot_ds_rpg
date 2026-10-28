@@ -178,7 +178,7 @@ public static class HelpTopics
             "Madera, minerales y drops de monstruos. **No** las cajas, la comida ni el equipo. Es de una sola mano: el Polvo no vuelve a convertirse en material."),
         ("✨ Cuánto Polvo da cada unidad",
             string.Join(" · ", new[] { "Común", "Raro", "Épico", "Legendario", "Mítico" }.Select(r => $"{r} {Num(Dismantling.DustPerUnit(r))}")) +
-            $"\nLos **drops de monstruos** no tienen rareza (caen igual en la Zona 1 que en la 5): dan **{Dismantling.HuntDropDust}** los de cacería y **{Dismantling.TravelDropDust}** los de viaje." +
+            $"\nLos **drops de monstruos** no tienen rareza (caen igual en la Zona 1 que en la 5): dan **{Dismantling.HuntDropDust}** cada uno." +
             "\nRinde parecido por minuto de farmeo en todas las rarezas, así que no hay una «mejor» para romper."),
         ("🎯 Para qué", "Cada intento de **/enchant** gasta Polvo y oro. Mirá cómo funciona con **/info tema:enchant**. Tu Polvo figura en **/profile**."));
 
@@ -224,7 +224,7 @@ public static class HelpTopics
         (Loc.T("🏹 /hunt"),
             Loc.F($"Cooldown de {Dur(CooldownCatalog.Hunt.Duration)}. Da oro y EXP (más cuanto más nivel y zona) y {CombatRewardCalculator.HuntDropChancePercent} % de chance de soltar el material de ese monstruo. Mirá qué suelta cada uno con **/drops**.")),
         (Loc.T("🗺️ /travel"),
-            Loc.F($"Un monstruo élite de tu zona, más duro. Cooldown de {Dur(CooldownCatalog.Travel.Duration)}. Paga {CombatRewardCalculator.TravelRewardMultiplier} cacerías juntas y suelta su material el {CombatRewardCalculator.TravelDropChancePercent} % de las veces.")),
+            Loc.F($"Un monstruo élite de tu zona, más duro. Cooldown de {Dur(CooldownCatalog.Travel.Duration)}. Paga {CombatRewardCalculator.TravelRewardMultiplier} cacerías juntas de oro y EXP y a veces suelta una caja de tu zona (la chance de cada zona está en **/drops**).")),
         (Loc.T("🤖 /autohunt (aa ah)"),
             Loc.F($"Resuelve una cacería de una sola vez: solo ataque básico, sin habilidad y sin poder huir. Comparte cooldown con /hunt y pide al menos **{AutoHuntRules.MinHpPercent} %** de vida.")),
         (Loc.T("⌨️ Si un botón se traba"),
@@ -377,10 +377,10 @@ public static class HelpTopics
             "No se puede en pleno combate o con un grupo armado, y cada vuelta pide volver a vencer al Asador (el equipo del Fogón se forja de nuevo)."),
         ("📈 Lo que ganás con cada uno",
             $"🏹 Chance de drop en **/hunt**: **{FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.HuntDropStep)}** sobre la base por cada Fuego Nuevo (lineal: el 10.º es {FuegoNuevoRules.PercentText(FuegoNuevoRules.HuntDropMultiplier(10))}, no se compone)\n" +
-            $"🗺️ Chance de drop en **/travel**: arranca en **{FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.TravelStep(1))}** y cada vuelta suma un poco menos (el 10.º acumula {FuegoNuevoRules.PercentText(FuegoNuevoRules.TravelDropMultiplier(10))}, con piso de {FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.TravelStep(1000))} por vuelta)\n" +
+            $"🗺️ Chance de caja en **/travel**: arranca en **{FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.TravelStep(1))}** y cada vuelta suma un poco menos (el 10.º acumula {FuegoNuevoRules.PercentText(FuegoNuevoRules.TravelDropMultiplier(10))}, con piso de {FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.TravelStep(1000))} por vuelta)\n" +
             $"🪓⛏️ Cantidad por **/chop** y **/mine**: **{FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.GatherStep)}** por Fuego Nuevo (el 10.º es ×{FuegoNuevoRules.GatherMultiplier(10).ToString("0.#", CultureInfo.InvariantCulture).Replace('.', ',')})\n" +
             $"📊 EXP de las peleas: **{FuegoNuevoRules.PercentText(FuegoNuevoRules.XpMultiplier(1))}** el primero y cada vuelta suma más que la anterior (el 5.º acumula {FuegoNuevoRules.PercentText(FuegoNuevoRules.XpMultiplier(5))}, el 10.º {FuegoNuevoRules.PercentText(FuegoNuevoRules.XpMultiplier(10))})\n" +
-            $"Con la chance base de /hunt ({CombatRewardCalculator.HuntDropChancePercent} %) y de /travel ({CombatRewardCalculator.TravelDropChancePercent} %). El oro y el cofre del jefe no cambian."),
+            $"Con la chance base de /hunt ({CombatRewardCalculator.HuntDropChancePercent} %); la de la caja de /travel sube en la misma proporción. El oro y el cofre del jefe no cambian."),
         ("💨 Lo que se va",
             "Nivel y EXP, la zona y los jefes vencidos, el arma y el amuleto (con sus encantamientos), todos los materiales, drops, cajas y consumibles, el Polvo, los banquetes y los enfriamientos. Sin reembolso."),
         ("🔒 Lo que se queda",

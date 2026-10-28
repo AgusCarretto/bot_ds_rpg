@@ -13,13 +13,11 @@ public static class Dismantling
 
     // El Polvo de un DROP DE MONSTRUO se paga por su ORIGEN, no por la rareza del catálogo (v0.15.1, el dueño: «el drop de monstruo no tiene rareza, el % de caída es el mismo en la Zona 1 y en la 5»).
     // Un drop de la Zona 5 figuraba como Mítico y daba 500 de Polvo (30 por cacería, 60 veces el ritmo calibrado de 0,5 por minuto) cuando cae igual que uno de la Zona 1. Se calibra con la misma
-    // vara que la tabla de abajo: ~0,5 Polvo por minuto de farmeo. Un drop de cacería sale cada 2 / 6 % = 33,3 min (hay 2 monstruos de cacería por zona y 1 cacería por minuto) → 17; uno de viaje, cada
-    // 30 min / 40 % = 75 min → 38. Es un dato de la base (items.dust_value, Database/rebalance_dust.sql): si cambian las chances de drop hay que volver a correrlo con los números nuevos.
+    // vara que la tabla de abajo: ~0,5 Polvo por minuto de farmeo. Un drop de cacería sale cada 2 / 6 % = 33,3 min (hay 2 monstruos de cacería por zona y 1 cacería por minuto) → 17. (Hasta la v0.35.0 había drops de viaje, 38 de Polvo cada uno:
+    // el /travel ya no suelta material, ver Database/remove_travel_drops.sql.) Es un dato de la base (items.dust_value, Database/rebalance_dust.sql): si cambian las chances de drop hay que volver a correrlo con los números nuevos.
     public const double DustPerFarmingMinute = 0.5;
 
     public static readonly int HuntDropDust = (int)Math.Round(DustPerFarmingMinute * 2 / (CombatRewardCalculator.HuntDropChancePercent / 100.0) * CooldownCatalog.Hunt.Duration.TotalMinutes, MidpointRounding.AwayFromZero);
-
-    public static readonly int TravelDropDust = (int)Math.Round(DustPerFarmingMinute * CooldownCatalog.Travel.Duration.TotalMinutes / (CombatRewardCalculator.TravelDropChancePercent / 100.0), MidpointRounding.AwayFromZero);
 
     // Polvo por unidad según la rareza. Está puesto para que rinda ~0,5 Polvo por minuto de farmeo en todas las rarezas (Común: 2,45 min → 1; Raro: 11,9 → 6;
     // Épico: 47,6 → 24; Legendario: 143 → 70; Mítico: 1.000 → 500, con los ritmos de Database/report_recipe_pacing.sql): así ninguna rareza es "la" forma de

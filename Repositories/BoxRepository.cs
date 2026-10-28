@@ -41,7 +41,7 @@ public sealed class BoxRepository(IDbConnectionFactory connectionFactory) : IBox
                 r.ItemId, r.ItemName, r.ItemRarity, r.ItemEmoji, r.Weight, r.MinQty, r.MaxQty))
             .ToList();
 
-        // La zona de la caja es su rareza (Común = 1 ... Mítico = 5): es el tope de las zonas de las que pueden salir drops de monstruo.
+        // La zona de la caja es su rareza (Común = 1 ... Mítico = 5): decide desde cuándo se compra; los drops de monstruo salen de cualquier zona desbloqueada (v0.36.0).
         return new BoxDefinition(header.BoxItemId, header.BoxName, header.MinItems, header.MaxItems, BoxCatalog.RequiredZoneRank(header.Rarity), entries);
     }
 

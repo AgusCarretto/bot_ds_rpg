@@ -166,6 +166,7 @@ public sealed class AdventureCombatStarter(
             MonsterGoldBonus: monster.GoldBonus,
             MonsterXpBonus: monster.XpBonus,
             BossZoneId: isBossFight ? (player.InGate ? FogonRules.GateZoneId : player.CurrentZoneId) : null,
+            TravelZoneId: definition.CommandName == "travel" ? player.CurrentZoneId : null,
             PlayerMaxHp: profile.CombatMaxHp,
             PlayerCurrentHp: profile.CombatCurrentHp,
             PlayerStartingHp: profile.CombatCurrentHp,

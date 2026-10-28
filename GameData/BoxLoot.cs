@@ -13,7 +13,7 @@ public sealed record BoxLootEntry(
     LootKind Kind, int? ItemId, string? ItemName, string? ItemRarity, string? ItemEmoji, int Weight, int MinQty, int MaxQty);
 
 // Una caja con todo su botín (boxes + box_loot). MinItems/MaxItems: cuántas tiradas (= ítems) trae, y es lo que se le muestra al jugador
-// ("entre 1 y 10 ítems"). TierRank: de qué zona es la caja (1 = Común ... 5 = Mítica), el tope de las zonas de las que pueden salir drops.
+// ("entre 1 y 10 ítems"). TierRank: de qué zona es la caja (1 = Común ... 5 = Mítica); solo decide desde cuándo se compra. Desde la v0.36.0 NO limita de qué zonas salen los drops.
 public sealed record BoxDefinition(int BoxItemId, string BoxName, int MinItems, int MaxItems, int TierRank, IReadOnlyList<BoxLootEntry> Entries);
 
 // Un material de recolección que puede salir (Madera o Mineral) y un drop de monstruo con la zona de la que sale: el sorteo los recibe ya
@@ -55,7 +55,7 @@ public static class BoxLootRoller
         ("Mítico", 2),
     ];
 
-    // La proporción real de los drops de una zona: dos monstruos de /hunt y uno de /travel (3 : 3 : 2 por minuto de farmeo).
+    // La proporción real de los drops de una zona: antes dos monstruos de /hunt y uno de /travel (3 : 3 : 2 por minuto de farmeo). Desde la v0.36.0 el viaje no suelta material y todos son de cacería.
     public const int HuntDropWeight = 3;
     public const int TravelDropWeight = 2;
 
@@ -73,7 +73,10 @@ public static class BoxLootRoller
         }
 
         int totalWeight = draws.Sum(e => e.Weight);
-        int zoneCap = Math.Min(box.TierRank, context.MaxZoneRank);
+        // Los drops de monstruo NO tienen rareza (caen igual en la Zona 1 que en la 5, v0.15.1), así que una caja chica también puede dar drops de zonas altas: el tope es la zona más alta que el jugador tiene
+        // DESBLOQUEADA, no la de la caja (el dueño, 2026-10-28: «si estás en zona 5, ¿te puede salir en un cajón de pino un corazón de titán? porque no pasa nunca»). Cada drop vale lo mismo en minutos de farmeo
+        // (~33), así que el valor de la caja no cambia; solo cambia CUÁLES salen.
+        int zoneCap = context.MaxZoneRank;
         int count = rng.Next(box.MinItems, box.MaxItems + 1);
         var items = new Dictionary<int, LootedItem>();
 
@@ -158,7 +161,7 @@ public static class BoxLootRoller
         return finalists[rng.Next(finalists.Count)];
     }
 
-    // Un drop de monstruo de una zona <= zoneCap, con el peso real de su tipo (hunt 3, travel 2). Null si no hay ninguno permitido.
+    // Un drop de monstruo de una zona <= zoneCap (la más alta desbloqueada), con el peso de su tipo. Null si no hay ninguno permitido.
     private static ZoneDropCandidate? PickZoneDrop(IReadOnlyList<ZoneDropCandidate> pool, int zoneCap, Random rng)
     {
         var eligible = pool.Where(z => z.ZoneRank <= zoneCap).ToList();

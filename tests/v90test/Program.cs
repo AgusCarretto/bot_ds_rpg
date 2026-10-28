@@ -438,7 +438,7 @@ int materialCount = await db.ExecuteScalarAsync<int>("SELECT count(*)::int FROM 
 var invBig = await GameModule.BuildInventoryEmbedAsync(inventoryRepo, U, "Tester");
 var bigLeft = invBig.Fields.Where((f, i) => i % 3 == 0).ToList(); var bigRight = invBig.Fields.Where((f, i) => i % 3 == 1).ToList();
 var bigDropFields = invBig.Fields.SkipWhile(f => !f.Name.Contains("Drops de monstruo")).TakeWhile((f, i) => i == 0 || f.Name == ZW).Where(f => f.Value != ZW).ToList();   // el campo de los drops y su continuación sin título
-Check(bigLeft[0].Name.Contains("Madera") && bigRight[0].Name.Contains("Mineral") && bigLeft[1].Name.Contains("Drops") && bigRight[1].Name == ZW && bigRight[1].Value != ZW && bigLeft[2].Name.Contains("Consumibles") && invBig.Fields.All(f => f.Inline), "con todo (v0.26.3): Madera | Mineral, los drops en dos columnas y debajo la Comida (con las Cajas)");
+Check(bigLeft[0].Name.Contains("Madera") && bigRight[0].Name.Contains("Mineral") && bigLeft[1].Name.Contains("Drops") && bigRight[1].Name.Contains("Consumibles") && invBig.Fields.All(f => f.Inline), "con todo (v0.36.0: los 10 drops que quedan entran en un campo): Madera | Mineral y debajo Drops | la Comida (con las Cajas)");
 int bigDropLines = bigDropFields.Sum(f => f.Value.Split('\n').Length);
 Check(invBig.Length <= 6000 && invBig.Fields.All(f => f.Value.Length <= 1024) && bigDropLines == materialCount && bigDropFields.Skip(1).All(f => f.Name == ZW), $"con todo el catálogo a 9.999 entra ({invBig.Length} de 6000 caracteres), los {materialCount} drops van uno por renglón repartidos en {bigDropFields.Count} campos, los de abajo sin título");
 await db.ExecuteAsync("DELETE FROM inventory WHERE discord_id = @id", new { id = (long)U });
@@ -621,7 +621,7 @@ Check(broken.Count == 0, $"todos los temas se arman, entran en los límites de D
 // el texto dice los números del juego
 string T(string key) => AllText(HelpTopics.Find(key)!.Build()) + " " + (HelpTopics.Find(key)!.Build().Footer?.Text ?? "");
 Check(T("death").Contains("5 %") && T("death").Contains("65 %") && T("death").Contains("20 de oro") && T("bank").Contains("1.000") && T("dismantle").Contains("sin tope") && T("dismantle").Contains("todo") && T("dismantle").Contains("Mítico 500"), "muerte: 5 % y 65 %; banco: 1.000; desmantelar: sin tope y 500 por Mítico");
-Check(T("play").Contains("×5") && T("play").Contains("×2") && T("play").Contains("10") && T("hunt").Contains("1 min") && T("hunt").Contains("30 min") && T("hunt").Contains("6 %") && T("hunt").Contains("40 %"), "casino: ×5 y ×2 y apuesta mínima 10; combate: cooldowns 1 y 30 min, drops 6 % y 40 %");
+Check(T("play").Contains("×5") && T("play").Contains("×2") && T("play").Contains("10") && T("hunt").Contains("1 min") && T("hunt").Contains("30 min") && T("hunt").Contains("6 %") && T("hunt").Contains("caja"), "casino: ×5 y ×2 y apuesta mínima 10; combate: cooldowns 1 y 30 min, drops 6 % y la caja del viaje");
 Check(T("boss").Contains("5 h") && T("boss").Contains("30 min") && T("boss").Contains("15 cacerías") && T("boss").Contains("2 a 6") && T("boxes").Contains("2 h") && T("boxes").Contains("1 a 10") && T("daily").Contains("24 h") && T("daily").Contains("20 cacerías de oro") && T("daily").Contains("48 h") && T("arena").Contains("32") && T("trade").Contains("2 minutos"), "jefes: 5 h / 30 min / ×15 / 2 a 6; cajas: 2 h y 1 a 10; diario: 24 h, 20 cacerías de oro, 48 h; arena: 32; intercambio: 2 min");
 Check(T("gather").Contains("Común 1 a 5") && T("gather").Contains("68 %") && T("gather").Contains("Mítico 0,5 %") && T("stats").Contains("15 de vida") && T("stats").Contains("40 × nivel²") && T("forge").Contains("Hoja de Acero Puro") && !T("forge").Contains("×1,5") && T("missions").Contains("23 logros") && T("missions").Contains("3 misiones por día"), "recolección 1 a 5 y 68 %; nivel: +15 de vida; herrería con la Hoja y sin el ×1,5; 23 logros y 3 misiones por día");
 var classesText = T("classes");
@@ -643,10 +643,10 @@ Console.WriteLine("\n== 13. El trueque con el tabernero: 3 drops por 1 de la mis
 var exRepo = new DropExchangeRepository(factory);
 var exDrops = await exRepo.GetExchangeableDropsAsync();
 var byZone = exDrops.GroupBy(d => d.ZoneId).OrderBy(g => g.First().MinLevel).ToList();
-Check(DropExchange.GiveAmount == 3 && DropExchange.GetAmount == 1 && DropExchange.MaxTimes == 50 && exDrops.Count == 15 && byZone.Count == 5 && byZone.All(g => g.Count() == 3) && exDrops.All(d => d.MinLevel > 0) && exDrops.Select(d => d.Name).Distinct().Count() == 15, "la regla es 3 por 1 (hasta 50 juntos) y la lista tiene los 15 drops de monstruos: 3 por cada una de las 5 zonas");
+Check(DropExchange.GiveAmount == 3 && DropExchange.GetAmount == 1 && DropExchange.MaxTimes == 50 && exDrops.Count == 10 && byZone.Count == 5 && byZone.All(g => g.Count() == 2) && exDrops.All(d => d.MinLevel > 0) && exDrops.Select(d => d.Name).Distinct().Count() == 10, "la regla es 3 por 1 (hasta 50 juntos) y la lista tiene los 10 drops de monstruos (v0.36.0: ya no hay drops de viaje): 2 por cada una de las 5 zonas");
 Check(!exDrops.Any(d => d.Name is "Cajón de Pino" or "Cofre de Oro" or "Collar de Cuero Viejo" or "Madera de Pino" or "Hierro"), "no están los cofres de los jefes, ni los trofeos de las cajas, ni la madera ni los minerales");
 var z2 = byZone[1].ToList(); var z3 = byZone[2].ToList();
-var A = z2[0]; var B = z2[1]; var Tz = z2[2]; var X = z3[0];
+var A = z2[0]; var B = z2[1]; var X = z3[0];   // v0.36.0: 2 drops por zona (ya no hay el de viaje)
 await Reset(gold: 10); await CleanEvents();
 await Give(A.Name, 7);
 var ex1 = await ExchangeModule.ExecuteExchangeAsync(users, items, exRepo, events, U, A.Name, B.Name, 1);
@@ -656,8 +656,8 @@ Check(ex2.Embed is not null && await Have(A.Name) == 1 && await Have(B.Name) == 
 var exNo = await ExchangeModule.ExecuteExchangeAsync(users, items, exRepo, events, U, A.Name, B.Name, 1);
 Check(exNo.PlainMessage is not null && exNo.PlainMessage.Contains("hacen falta **3**") && exNo.PlainMessage.Contains("tenés **1**") && await Have(A.Name) == 1 && await Have(B.Name) == 2 && await Stat("drop_exchange") == 2, "con menos de 3 no cambia nada y dice cuántos hacen falta y cuántos tenés");
 await Give(A.Name, 10);
-var ex3 = await ExchangeModule.ExecuteExchangeAsync(users, items, exRepo, events, U, A.Name, Tz.Name, 3);
-Check(ex3.Embed is not null && await Have(A.Name) == 1 && await Have(Tz.Name) == 3 && await Stat("drop_exchange") == 5, "3 cambios juntos: se entregan 9 y se reciben 3 (y el evento suma 3)");
+var ex3 = await ExchangeModule.ExecuteExchangeAsync(users, items, exRepo, events, U, A.Name, B.Name, 3);
+Check(ex3.Embed is not null && await Have(A.Name) == 1 && await Have(B.Name) == 5 && await Stat("drop_exchange") == 5, "3 cambios juntos: se entregan 9 y se reciben 3 (y el evento suma 3)");
 await Give(X.Name, 5);
 var exZone = await ExchangeModule.ExecuteExchangeAsync(users, items, exRepo, events, U, X.Name, A.Name, 1);
 var exSame = await ExchangeModule.ExecuteExchangeAsync(users, items, exRepo, events, U, A.Name, A.Name, 1);
@@ -687,7 +687,7 @@ var invFor = new List<InventoryEntry> { new() { ItemName = A.Name, Quantity = 4,
 var forGive = ExchangeChoices.ForGive(invFor, exDrops, "");
 Check(forGive.Select(r => r.Value.ToString()).SequenceEqual([A.Name, X.Name]) && forGive.All(r => r.Name.Length <= 100) && ExchangeChoices.ForGive(invFor, exDrops, A.Name[..4].ToLowerInvariant()).Count == 1, $"«dar» ofrece solo lo que tenés al menos 3 veces (no la madera ni lo que te falta), con su zona; y filtra por lo escrito");
 var forGet = ExchangeChoices.ForGet(invFor, exDrops, A.Name, "");
-Check(forGet.Select(r => r.Value.ToString()).OrderBy(n => n).SequenceEqual(new[] { B.Name, Tz.Name }.OrderBy(n => n)) && forGet.Any(r => r.Name.Contains("tenés 2")) && ExchangeChoices.ForGet(invFor, exDrops, null, "").Count == 15 && ExchangeChoices.ForGet(invFor, exDrops, "Madera de Pino", "").Count == 15, "«recibir» ofrece los OTROS dos drops de la zona de lo que das (y todos si todavía no elegiste qué das)");
+Check(forGet.Select(r => r.Value.ToString()).OrderBy(n => n).SequenceEqual(new[] { B.Name }) && forGet.Any(r => r.Name.Contains("tenés 2")) && ExchangeChoices.ForGet(invFor, exDrops, null, "").Count == 10 && ExchangeChoices.ForGet(invFor, exDrops, "Madera de Pino", "").Count == 10, "«recibir» ofrece el OTRO drop de la zona de lo que das (y todos si todavía no elegiste qué das)");
 // la taberna
 await Reset(gold: 10); await CleanEvents();
 var inventoryRepo13 = new InventoryRepository(factory);
@@ -702,7 +702,7 @@ var swapMenu = rows1.SelectMany(r => r.Components).OfType<SelectMenuComponent>()
 Check(swapMenu is not null && rows1.Count <= 5 && swapMenu.Options.Count == 1 && swapMenu.Options.Single().Value == A.Name && swapMenu.Options.Single().Label.Contains("×7") && swapMenu.Options.All(o => o.Emote is null && o.Label.Length <= 100 && o.Description.Length <= 100), "con 7 de un drop, la taberna ofrece «Cambiar drops» con ese drop (sin emojis personalizados, dentro de los límites, a lo sumo 5 filas)");
 var question = await TabernaModule.BuildSwapQuestionAsync(itemsRepo13, inventoryRepo13, exRepo, U, A.Name);
 var qMenu = question!.Value.Components.Components.OfType<ActionRowComponent>().Single().Components.OfType<SelectMenuComponent>().Single();
-Check(qMenu.CustomId == $"taberna_swapget:{U}:{A.ItemId}" && qMenu.Options.Select(o => o.Value).OrderBy(n => n).SequenceEqual(new[] { B.Name, Tz.Name }.OrderBy(n => n)) && AllText(question.Value.Embed).Contains(A.ZoneName) && await TabernaModule.BuildSwapQuestionAsync(itemsRepo13, inventoryRepo13, exRepo, U, B.Name) is null && await TabernaModule.BuildSwapQuestionAsync(itemsRepo13, inventoryRepo13, exRepo, U, "Madera de Pino") is null, "el paso 2 pregunta por los otros dos drops de esa zona (con el id de lo que das); con menos de 3, o algo que no es un drop, no hay pregunta");
+Check(qMenu.CustomId == $"taberna_swapget:{U}:{A.ItemId}" && qMenu.Options.Select(o => o.Value).OrderBy(n => n).SequenceEqual(new[] { B.Name }) && AllText(question.Value.Embed).Contains(A.ZoneName) && await TabernaModule.BuildSwapQuestionAsync(itemsRepo13, inventoryRepo13, exRepo, U, B.Name) is null && await TabernaModule.BuildSwapQuestionAsync(itemsRepo13, inventoryRepo13, exRepo, U, "Madera de Pino") is null, "el paso 2 pregunta por el otro drop de esa zona (con el id de lo que das); con menos de 3, o algo que no es un drop, no hay pregunta");
 string Route2(string id) { var r = isvc2.SearchComponentCommand(Click(id)); return r.IsSuccess ? r.Command.MethodName : "(ninguno)"; }
 Check(Route2($"taberna_swap:{U}") == "HandleSwapAsync" && Route2($"taberna_swapget:{U}:{A.ItemId}") == "HandleSwapGetAsync" && Route2($"taberna_sell:{U}") == "HandleSellAsync", "los ids de los dos pasos llegan a su método y no pisan a los de siempre");
 // comandos

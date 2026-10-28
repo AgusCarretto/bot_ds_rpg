@@ -304,9 +304,13 @@ public class AdventureModule(
                 var repeat = state.CommandName == "boss" && !firstBossClear && state.BossZoneId is int repeatZone
                     ? await BossChest.RepeatAsync(zoneBoxService, repeatZone)
                     : (ChancePercent: 0, BoxName: (string?)null);
+                // El viaje (v0.36.0) ya no suelta un material: puede caer la caja de la zona (zone_boxes, rol "travel") con su chance baja por los bonus de drop.
+                var travelBox = state.CommandName == "travel" && state.TravelZoneId is int travelZone
+                    ? await TravelBox.ChanceAsync(zoneBoxService, travelZone)
+                    : (ChancePercent: 0, BoxName: (string?)null);
                 var reward = state.CommandName switch
                 {
-                    "travel" => CombatRewardCalculator.RollTravelReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus, state.Bonuses),
+                    "travel" => CombatRewardCalculator.RollTravelReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus, state.Bonuses, travelBox.ChancePercent),
                     "boss" => CombatRewardCalculator.RollBossReward(
                         state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus, firstBossClear, state.Bonuses, repeat.ChancePercent),
                     _ => CombatRewardCalculator.RollHuntReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus, state.Bonuses),
@@ -314,7 +318,9 @@ public class AdventureModule(
 
                 Item? droppedItem = state.CommandName == "boss" && !firstBossClear
                     ? (reward.DroppedSomething && repeat.BoxName is not null ? await itemRepository.GetByNameAsync(repeat.BoxName) : null)
-                    : await ResolveDroppedItemAsync(itemRepository, state, reward);
+                    : state.CommandName == "travel"
+                        ? (reward.DroppedSomething && travelBox.BoxName is not null ? await itemRepository.GetByNameAsync(travelBox.BoxName) : null)
+                        : await ResolveDroppedItemAsync(itemRepository, state, reward);
 
                 if (!combatSessions.TryAdvance(discordId, session, null, null))
                 {
@@ -698,7 +704,15 @@ public class AdventureModule(
             // El jefe suelta un cofre (ver GameData/CombatRewardCalculator.BossChestFirstClearPercent); lo demás, un material.
             bool isChest = droppedItem.Type == "Caja";
             string droppedText = ItemDisplay.Format(droppedItem.Emoji, droppedItem.Name);
-            embed.AddField(isChest ? Loc.T("🎁 ¡Cofre del jefe!") : Loc.T("🎁 Material obtenido"), isChest ? Loc.F($"{droppedText} — abrilo con `/open`") : droppedText, false);
+            if (isChest && state.CommandName == "travel")
+            {
+                // v0.36.0: el viaje ya no suelta material; lo único que puede caer es la caja de la zona.
+                embed.AddField(Loc.T("🎁 ¡Cayó una caja!"), Loc.F($"{droppedText} — abrila con `/open`"), false);
+            }
+            else
+            {
+                embed.AddField(isChest ? Loc.T("🎁 ¡Cofre del jefe!") : Loc.T("🎁 Material obtenido"), isChest ? Loc.F($"{droppedText} — abrilo con `/open`") : droppedText, false);
+            }
         }
 
         // La subida de nivel NO va acá: sale como mensaje propio, apenas termina el combate (GameData/LevelUpCard.cs).
