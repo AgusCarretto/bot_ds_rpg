@@ -1,6 +1,6 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-28 (v0.32.1: la ayuda `/info` con el dragón y las herramientas, y esta lista puesta al día)_
+_Última revisión: 2026-10-28 (v0.34.0: el comando de administrador `aa admingive`; antes, el tablón y el aviso de cría del dragón)_
 
 ## Pendiente de un vistazo (puesto al día el 2026-10-28)
 
@@ -37,6 +37,16 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
   Términos y Privacidad públicos, y hay que confirmar si hay Premium Apps en Uruguay (Developer Portal, Monetization). Punto de enganche: `ReminderPolicy.IsEligible` y `CooldownCatalog`. El título especial entra como categoría «Especiales» del sistema de títulos.
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
+
+## El comando de administrador: `aa admingive` (v0.34.0, 2026-10-28)
+
+- **Para qué** (el dueño): probar cosas sin tenerlas y, además, **sorteos y giveaways** de cajas u oro. `aa admingive gold 1m`, `aa admingive item Cofre de Oro 3 @ganador`, `aa admingive dust 500`, `aa admingive xp 5000`. Sin mención se lo das a vos. Cantidades con `1.500`, `10k`, `1m`.
+- **Quién**: solo los IDs de la variable de entorno **`Admin__UserIds`** (separados por coma). Ningún ID está en el código ni en el repo; sin la variable el comando está apagado. A cualquier otro el bot **no le contesta nada** (no confirma ni que el comando existe) y el intento queda en el log.
+- **Qué da**: oro, Polvo, EXP (puede subir de nivel) y **cualquier ítem del catálogo**: cajas, materiales, comida, huevos, comida de mascotas y de dragón van a la mochila; un **arma o un amuleto se pone** (pisa lo que llevaba, sin encantar) y una **herramienta se pone** en su lugar. Si el nombre no existe, sugiere hasta 8 parecidos.
+- **Seguridad**: solo texto (sin versión de barra, así que no aparece en ninguna lista), no crea cuentas, cada entrega es una sola operación atómica (10 a la vez suman exacto), los totales se recortan en el tope de la columna en vez de romperse, y la respuesta solo menciona usuarios (el ganador de un sorteo se entera; nunca `@everyone`).
+- **Rastro para auditar sorteos**: línea `[ADMIN] actor -> destino: qué` en el log del servidor y un evento `admin_give` en `game_events`.
+- **Para activarlo**: `Admin__UserIds=<tu ID de Discord>` en el `.env` local y en las variables de Railway (y reiniciar). Sin migración.
+- **Ideas, sin hacer**: varios ganadores en un solo comando, una versión de barra, y poder dar un dragón de un tier o fijar un nivel.
 
 ## Aviso de cría y tablón de parejas del dragón (v0.33.0, 2026-10-28)
 

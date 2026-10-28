@@ -65,7 +65,9 @@ public partial class TextCommandModule(
     IToolRepository toolRepository,
     IDragonRepository dragonRepository,
     IDragonBreedOfferService dragonOffers,
-    IDragonBoardService dragonBoard) : ModuleBase<SocketCommandContext>
+    IDragonBoardService dragonBoard,
+    IAdminAccess adminAccess,
+    IAdminRepository adminRepository) : ModuleBase<SocketCommandContext>
 {
     // ---- Onboarding / clase ----
 

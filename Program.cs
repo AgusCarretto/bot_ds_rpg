@@ -97,6 +97,7 @@ class Program
 
         // 3. Inyectamos dependencias
         _services = ServiceProviderBuilder.BuildServiceProvider(_client, _commands, configuration);
+        BotLog.Info(_services.GetRequiredService<IAdminAccess>().HasAnyAdmin ? "[ADMIN] aa admingive activo." : "[ADMIN] aa admingive apagado: falta la variable Admin__UserIds.");
 
         // Los avisos de los comandos de barra y de los botones (¡SUBISTE DE NIVEL!, misiones, logros) salen cuando el comando TERMINA: ver
         // Services/NoticeDelivery.cs (entregarlos justo después de ExecuteCommandAsync llegaba antes de que el comando hubiera registrado nada).
@@ -567,6 +568,9 @@ public static class ServiceProviderBuilder
             .AddSingleton<IDragonRepository, DragonRepository>()
             .AddSingleton<IDragonBreedOfferService, DragonBreedOfferService>()
             .AddSingleton<IDragonBoardService>(_ => new DragonBoardService())
+            // El administrador (v0.34.0): los IDs salen SOLO de la variable Admin__UserIds; sin ella no hay administradores y «aa admingive» queda apagado.
+            .AddSingleton<IAdminAccess>(sp => new AdminAccess(sp.GetRequiredService<IConfiguration>()["Admin:UserIds"]))
+            .AddSingleton<IAdminRepository, AdminRepository>()
             .AddSingleton<IPlayerBonusService, PlayerBonusService>()
             .AddSingleton<ILanguageRepository, LanguageRepository>()
             .AddSingleton<IPlayerLanguageService, PlayerLanguageService>()
