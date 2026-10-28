@@ -112,6 +112,7 @@ Usan el mismo `Dockerfile` (servicio tipo *worker*, sin puerto ni healthcheck) y
 | Variable | Valor |
 |---|---|
 | `Discord__Token` | el token del bot |
+| `Admin__UserIds` | (opcional) los IDs de Discord de los administradores, separados por coma: los únicos que pueden usar `aa admingive` (dar oro, ítems, EXP sin tenerlos; sirve para probar y para sorteos). Sin la variable el comando está apagado para todos |
 | `Discord__TestGuildId` | el ID del servidor |
 | `Postgres__ConnectionString` | `Server=<host>;Port=<puerto>;Database=<base>;User Id=<usuario>;Password=<clave>` (formato clave=valor, no URL) |
 | `Raid__MinParticipants` | no la pongas (por defecto 2) |
