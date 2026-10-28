@@ -496,3 +496,34 @@ CREATE TABLE IF NOT EXISTS player_dragons (
     last_bred_at TIMESTAMPTZ,
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Los códigos canjeables (v0.37.0, Database/add_redeem_codes.sql): el código con sus reglas, lo que da y quién ya lo canjeó (una fila por código y jugador = «uno por persona»).
+CREATE TABLE IF NOT EXISTS redeem_codes (
+    code_id     SERIAL      PRIMARY KEY,
+    code        TEXT        NOT NULL UNIQUE,                                          -- normalizado: MAYÚSCULAS, sin acentos ni espacios (A-Z 0-9 _ -)
+    max_uses    INTEGER     CHECK (max_uses IS NULL OR max_uses > 0),                 -- cuántas personas lo pueden canjear en total; NULL = sin tope
+    uses        INTEGER     NOT NULL DEFAULT 0 CHECK (uses >= 0),
+    expires_at  TIMESTAMPTZ,                                                          -- NULL = no vence
+    active      BOOLEAN     NOT NULL DEFAULT TRUE,                                    -- apagarlo (aa admincode off) lo frena sin borrar nada
+    note        TEXT,
+    created_by  BIGINT      NOT NULL,                                                 -- el ID de Discord del administrador que lo creó
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS redeem_code_rewards (
+    reward_id   SERIAL      PRIMARY KEY,
+    code_id     INTEGER     NOT NULL REFERENCES redeem_codes (code_id) ON DELETE CASCADE,
+    kind        TEXT        NOT NULL CHECK (kind IN ('gold', 'dust', 'xp', 'item')),
+    item_id     INTEGER     REFERENCES items (item_id) ON DELETE CASCADE,            -- solo para kind = 'item' (si el ítem se borra del catálogo, el premio desaparece con él)
+    amount      INTEGER     NOT NULL CHECK (amount > 0),
+    CONSTRAINT redeem_reward_item_ck CHECK ((kind = 'item') = (item_id IS NOT NULL))
+);
+
+CREATE TABLE IF NOT EXISTS redeem_code_claims (
+    code_id     INTEGER     NOT NULL REFERENCES redeem_codes (code_id) ON DELETE CASCADE,
+    discord_id  BIGINT      NOT NULL REFERENCES users (discord_id) ON DELETE CASCADE,
+    claimed_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (code_id, discord_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_redeem_code_rewards_code ON redeem_code_rewards (code_id);

@@ -49,6 +49,8 @@ public static class GameEventKinds
     // PvP.
     public const string DuelWin = "duel_win";               // ganó un duelo amistoso; detail = el nombre del rival
     public const string DuelLoss = "duel_loss";             // perdió un duelo amistoso; detail = el nombre del rival
+    public const string CodeRedeem = "code_redeem";         // canjeó un código (v0.37.0, `aa code`); detail = el código
+    public const string AdminCode = "admin_code";           // el administrador creó, prendió o apagó un código con «aa admincode»; detail = qué hizo: es el rastro para auditar
     public const string AdminGive = "admin_give";           // el administrador le dio algo con «aa admingive» (v0.34.0); amount = la cantidad, detail = qué y quién lo dio: es el rastro para auditar sorteos y regalos
     public const string WorldBossJoin = "worldboss_join"; // se anotó en el jefe mundial del día (v0.24.0); detail = el día (yyyy-MM-dd)
     public const string WorldBossPaid = "worldboss_paid"; // cobró el premio del jefe mundial; amount = el oro, detail = el día

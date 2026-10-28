@@ -67,7 +67,9 @@ public partial class TextCommandModule(
     IDragonBreedOfferService dragonOffers,
     IDragonBoardService dragonBoard,
     IAdminAccess adminAccess,
-    IAdminRepository adminRepository) : ModuleBase<SocketCommandContext>
+    IAdminRepository adminRepository,
+    IRedeemCodeRepository redeemCodeRepository,
+    IRedeemAttemptLimiter redeemAttemptLimiter) : ModuleBase<SocketCommandContext>
 {
     // ---- Onboarding / clase ----
 

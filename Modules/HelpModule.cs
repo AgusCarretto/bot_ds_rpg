@@ -90,7 +90,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             .AddField(Loc.T("📋 Progreso"), "`/missions` · `/achievements` · `/titles` · `/pet` · `/dragon` · `/professions` · `/story` · `/leaderboard`", false)
             .AddField(Loc.T("👥 Con otros jugadores"), "`/fight` · `/arena` · `/boss @amigo` · `/dragon-breed @amigo` · `/dragon-board` · `/give` · `/trade` · `/exchange`", false)
             .AddField(Loc.T("🔥 Final del juego"), "`/forge-special` · `/zona 0` · `/fuegonuevo` · `/deepshop`", false)
-            .AddField(Loc.T("🛠️ Tu cuenta"), "`/start` · `/class` · `/profile` · `/inventory` · `/cd` · `/config` · `/reminders` · `/vote` · `/tutorial`", false)
+            .AddField(Loc.T("🛠️ Tu cuenta"), "`/start` · `/class` · `/profile` · `/inventory` · `/cd` · `/config` · `/reminders` · `/vote` · `/code` · `/tutorial`", false)
             .AddField(Loc.T("📚 Cómo funciona cada cosa"), Loc.F($"`/info tema:<tema>` o `aa info <tema>`. Temas: {HelpTopics.KeysLine()}."), false)
             .WithFooter($"Asado y Acero RPG v{BotVersion.Current}")
             .Build();

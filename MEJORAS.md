@@ -1,6 +1,6 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-28 (v0.36.0: el viaje ya no suelta material, da una caja con chance baja; antes, el inventario por pestañas y `aa admingive`)_
+_Última revisión: 2026-10-28 (v0.37.0: los códigos canjeables `aa code`; antes, el viaje sin drop de material y el inventario por pestañas)_
 
 ## Pendiente de un vistazo (puesto al día el 2026-10-28)
 
@@ -37,6 +37,14 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
   Términos y Privacidad públicos, y hay que confirmar si hay Premium Apps en Uruguay (Developer Portal, Monetization). Punto de enganche: `ReminderPolicy.IsEligible` y `CooldownCatalog`. El título especial entra como categoría «Especiales» del sistema de títulos.
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
+
+## Los códigos canjeables: `aa code` / `/code` y el panel `aa admincode` (v0.37.0, 2026-10-28, en develop)
+
+- El dueño: «vamos a ir trabajando en code, `aa code`: un comando nuevo que tenga códigos que se puedan canjear por cosas». Un código da una LISTA de premios (oro, Polvo, EXP —sube de nivel con su cartel— y cualquier ítem de la mochila: cajas, comida, materiales, huevos…; no equipo ni herramientas), con un tope opcional de personas y un vencimiento opcional. **Una vez por persona.** Todo en UNA transacción: 12 personas a la vez con un cupo de 5 canjean exactamente 5.
+- Jugadores: `/code codigo:` (la respuesta es PRIVADA) o `aa code CODIGO` (el bot intenta borrar el mensaje para que el código no quede a la vista). Quien prueba 5 códigos que no existen en 10 minutos queda 10 minutos sin poder probar.
+- Administrador (el mismo `Admin__UserIds` que `aa admingive`; a los demás no se les contesta): `aa admincode create CODIGO [100] [7d] | gold 5k | item Cofre de Oro 1`, `list`, `info CODIGO`, `off` / `on`. Queda el rastro `admin_code` y `code_redeem` en `game_events`.
+- **Migración `Database/add_redeem_codes.sql`** (tres tablas, re-ejecutable): correrla en Railway antes de usar el comando; sin ella solo fallan `aa code` y `aa admincode`.
+- Harness nuevo `codetest`. Abierto: códigos por clase o nivel, que den equipo o una mascota, y una lista de «mis códigos canjeados».
 
 ## El viaje ya no suelta material: da una caja con chance baja (v0.36.0, 2026-10-28)
 
