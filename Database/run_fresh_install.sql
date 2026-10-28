@@ -78,6 +78,8 @@
 \ir add_dragon_food.sql
 -- El /travel deja de soltar un material (v0.36.0): se borran los 5 drops de viaje, las 25 recetas de armas de clase y amuletos pasan a 3 tipos de ingrediente con más drops de cacería, y se cargan las cajas del viaje (zone_boxes, rol travel). Va DESPUÉS de las recetas, las cajas por zona y la Comida de Dragón.
 \ir remove_travel_drops.sql
+-- Las armas de clase de las Zonas 2 a 5 vuelven a ×4 de su drop de cacería (remove_travel_drops.sql las dejó en ×5; el dueño pidió bajarlas 1). Va justo DESPUÉS.
+\ir rebalance_weapon_drops.sql
 -- Los emojis de los ítems OTRA VEZ, ahora que existen TODOS: update_item_emojis.sql corre antes (arriba) y seed_pets / seed_fogon / seed_zone_boxes crean ítems DESPUÉS, así que sus UPDATE por nombre no encontraban el Trinche, la Brasa, los huevos ni las cajas nuevas y quedaban sin emoji (esa deriva ya pasó con otros ítems). Es re-ejecutable.
 \ir update_item_emojis.sql
 -- Y la cara de El Asador Eterno, que se crea en seed_fogon.sql (después del puesto en el que corre update_monster_portraits.sql arriba).

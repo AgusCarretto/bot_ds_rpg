@@ -571,6 +571,9 @@ public static class ServiceProviderBuilder
             // El administrador (v0.34.0): los IDs salen SOLO de la variable Admin__UserIds; sin ella no hay administradores y «aa admingive» queda apagado.
             .AddSingleton<IAdminAccess>(sp => new AdminAccess(sp.GetRequiredService<IConfiguration>()["Admin:UserIds"]))
             .AddSingleton<IAdminRepository, AdminRepository>()
+            // Los códigos canjeables (v0.37.0): `aa code` / `/code` y el panel `aa admincode` (Database/add_redeem_codes.sql). El freno de intentos vive en memoria.
+            .AddSingleton<IRedeemCodeRepository, RedeemCodeRepository>()
+            .AddSingleton<IRedeemAttemptLimiter>(_ => new RedeemAttemptLimiter())
             .AddSingleton<IPlayerBonusService, PlayerBonusService>()
             .AddSingleton<ILanguageRepository, LanguageRepository>()
             .AddSingleton<IPlayerLanguageService, PlayerLanguageService>()
