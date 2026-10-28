@@ -311,10 +311,11 @@ CREATE INDEX IF NOT EXISTS idx_box_loot_box ON box_loot (box_item_id);
 -- zone_boxes (v0.14.0): qué caja da cada zona en cada rol, y con qué chance. La fuente de verdad de las cajas GRATIS (el cofre de la primera vez por vuelta de cada jefe es su fila de monster_drops):
 --   repeat     lo que da cada victoria repetida sobre el jefe    daily / weekly   el premio por completar todas las misiones del día / de la semana
 --   prize      logros (tramo II) y campeón de la Arena           prize_top        logros (tramo III)
+--   travel     la caja que PUEDE caer al ganar un /travel (v0.36.0: el viaje ya no suelta material), con su chance baja
 -- Una zona nueva necesita sus filas (el arranque del bot avisa en el log si falta alguna). Las carga Database/seed_zone_boxes.sql.
 CREATE TABLE IF NOT EXISTS zone_boxes (
     zone_id        INTEGER NOT NULL REFERENCES zones (zone_id) ON DELETE CASCADE,
-    role           TEXT NOT NULL CHECK (role IN ('repeat', 'daily', 'weekly', 'prize', 'prize_top')),
+    role           TEXT NOT NULL CHECK (role IN ('repeat', 'daily', 'weekly', 'prize', 'prize_top', 'travel')),
     box_item_id    INTEGER NOT NULL REFERENCES boxes (box_item_id) ON DELETE CASCADE,
     chance_percent INTEGER NOT NULL DEFAULT 100 CHECK (chance_percent BETWEEN 1 AND 100),
     PRIMARY KEY (zone_id, role)

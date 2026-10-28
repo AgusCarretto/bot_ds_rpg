@@ -1,6 +1,6 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-28 (v0.35.0: el inventario por pestañas; antes, `aa admingive` y el tablón de crías del dragón)_
+_Última revisión: 2026-10-28 (v0.36.0: el viaje ya no suelta material, da una caja con chance baja; antes, el inventario por pestañas y `aa admingive`)_
 
 ## Pendiente de un vistazo (puesto al día el 2026-10-28)
 
@@ -37,6 +37,15 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
   Términos y Privacidad públicos, y hay que confirmar si hay Premium Apps en Uruguay (Developer Portal, Monetization). Punto de enganche: `ReminderPolicy.IsEligible` y `CooldownCatalog`. El título especial entra como categoría «Especiales» del sistema de títulos.
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
+
+## El viaje ya no suelta material: da una caja con chance baja (v0.36.0, 2026-10-28)
+
+- El dueño: «si sacamos el drop solo del travel… que el travel sea esa suma de xp y gold con probabilidad de sacar una caja de la zona» y «sumale algún drop a cada uno». El `/travel` paga lo mismo en oro y EXP (una cacería ×30) y **puede dar la caja chica de la zona** (nuevo rol `travel` de `zone_boxes`): Zona 1 Cajón de Pino 8 %, Zona 2 Pino 15 %, Zona 3 Baúl de Roble 6 %, Zona 4 Arcón de Hierro 2 %, Zona 5 Arcón 3 %. Las chances son BAJAS a propósito (se viaja cada 30 minutos; la caja suma ~10-15 % de lo que paga el viaje) y se retocan con un `UPDATE`. Fuego Nuevo, mascotas, la bendición Brasa Vieja y el dragón multiplican ESTA chance (antes la del drop).
+- Los 5 drops de viaje se borraron. **Los jugadores no pierden nada**: cada unidad que tenían se convirtió en 1 de CADA drop de cacería de su zona. Las 25 recetas de armas de clase y amuletos pasan **de 4 a 3 tipos de ingrediente** y piden más drops de cacería para que el tiempo no cambie: armas de las zonas 2-5 ×4 → ×5, amuletos ×4 → ×7 de cada uno, amuleto de la Zona 1 ×5 (medido: armas ~167 min de drops, antes 150; amuletos ~233, antes 225). El equipo del Fogón no cambia. Quedan 10 drops (2 por zona) y el canje 3×1 sigue entre cada par.
+- Efecto lateral medido: las cajas valen ~7-8 % menos en minutos de farmeo (perdieron el drop de viaje de su botín); los precios no se tocaron (`report_box_economy.sql`: Pino 298 → 320 % de precio sobre valor, Roble 165 → 179, Arcón 94 → 102, Cofre de Oro 55 → 60).
+- **Migración `Database/remove_travel_drops.sql`: correrla en Railway ANTES de que arranque el binario v0.36.0** (re-ejecutable; hacé un backup antes). La instalación nueva la trae al final de `run_fresh_install.sql` y quedó idéntica a la base viva (233 filas comparadas).
+- Abierto: un solo drop por zona (perdería la ruta físico/arcano de las clases); los nombres de «Talismán de Ceniza Bendita» y «Hombreras de Cuero Grueso» nombran materiales que ya no existen (es solo sabor); `tools/balance2` todavía simula el drop de viaje.
+- Harness nuevo `v0360test` (el estado de los datos, la migración con un drop de viaje fabricado y correrla dos veces, la chance con y sin Fuego Nuevo, un viaje ganado de punta a punta en los dos idiomas, `/drops`).
 
 ## El inventario por pestañas (v0.35.0, 2026-10-28)
 

@@ -476,7 +476,7 @@ public class DustModule(
         }));
 
         string dust = string.Join(" · ", new[] { "Común", "Raro", "Épico", "Legendario", "Mítico" }.Select(r => $"{r} {GameHistory.Number(Dismantling.DustPerUnit(r))}"))
-            + $"\nDrops de monstruos (no tienen rareza): **{Dismantling.HuntDropDust}** los de cacería y **{Dismantling.TravelDropDust}** los de viaje.";
+            + $"\nDrops de monstruos (no tienen rareza): **{Dismantling.HuntDropDust}** cada uno.";
 
         return new EmbedBuilder()
             .WithTitle("✨ Encantamientos: opciones")

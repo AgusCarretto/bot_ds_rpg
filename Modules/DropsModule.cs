@@ -84,7 +84,7 @@ public class DropsModule(
             }
 
             var blocks = DropsCatalog.BuildZoneBlocks(
-                monsters.Where(m => m.ZoneId == zone.ZoneId), dropItems, boxTable?.ForZone(zone.ZoneId, ZoneBoxRole.Repeat));
+                monsters.Where(m => m.ZoneId == zone.ZoneId), dropItems, boxTable?.ForZone(zone.ZoneId, ZoneBoxRole.Repeat), boxTable?.ForZone(zone.ZoneId, ZoneBoxRole.Travel));
             if (blocks.Count == 0)
             {
                 embed.AddField("Sin monstruos", "_Todavía no hay monstruos cargados en esta zona._", false);

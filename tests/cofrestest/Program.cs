@@ -47,7 +47,7 @@ Check(t.ForRank(0, ZoneBoxRole.Daily)!.BoxName == "A" && t.ForRank(-4, ZoneBoxRo
 Check(t.ForRank(1, ZoneBoxRole.Weekly) is null && ZoneBoxTable.Empty.ForRank(1, ZoneBoxRole.Daily) is null, "un rol que no está → null (y la tabla vacía no rompe)");
 Check(t.ForZone(10, ZoneBoxRole.Repeat)!.ChancePercent == 70 && t.ForZone(0, ZoneBoxRole.Repeat)!.BoxName == "G" && t.ForZone(99, ZoneBoxRole.Repeat) is null, "ForZone: por id de zona (la puerta es la 0)");
 var missing = t.Missing([(10, "Z1"), (20, "Z2")], [(0, "Fogón")]);
-Check(missing.Count == 3 * 2 && missing.Contains("Z1:weekly") && missing.Contains("Z2:prize_top") && !missing.Any(m => m.StartsWith("Fogón")), "Missing lista lo que falta (3 roles por zona normal; la puerta solo pide el de repetición)");
+Check(missing.Count == 4 * 2 && missing.Contains("Z1:weekly") && missing.Contains("Z2:prize_top") && missing.Contains("Z1:travel") && !missing.Any(m => m.StartsWith("Fogón")), "Missing lista lo que falta (4 roles por zona normal, el del viaje incluido; la puerta solo pide el de repetición)");
 Check(CombatRewardCalculator.BossChestChancePercent(true, 0) == 100 && CombatRewardCalculator.BossChestChancePercent(false, 60) == 60 && CombatRewardCalculator.BossChestChancePercent(false, 0) == 0
     && CombatRewardCalculator.BossChestChancePercent(false, 250) == 100 && CombatRewardCalculator.BossChestChancePercent(false, -5) == 0, "chance del cofre: 100 la primera vez; en repetición la de la tabla (acotada a 0..100)");
 var rnd = new Random(7);
@@ -59,14 +59,18 @@ Check(BossChest.IsFirstClear(new User { GateCleared = false, HighestZoneCleared 
 Console.WriteLine("\n== 2. La tabla zone_boxes de la base ==");
 ZoneBoxTable live;
 await using (var c = new NpgsqlConnection(conn)) { await c.OpenAsync(); live = await ZoneBoxQueries.LoadAsync(c, null); }
-Check(live.Rows.Count == 26 && live.MaxRank == 5, $"26 filas (5 zonas × 5 roles + el repeat del Fogón) y la posición máxima es 5 ({live.Rows.Count} / {live.MaxRank})");
+Check(live.Rows.Count == 31 && live.MaxRank == 5, $"31 filas (5 zonas × 6 roles + el repeat del Fogón) y la posición máxima es 5 ({live.Rows.Count} / {live.MaxRank})");
 var svc = new ZoneBoxService(factory, zonesRepo);
-Check((await svc.MissingAsync()).Count == 0, "el servicio no encuentra nada faltante (todas las zonas con sus cinco roles y la puerta con el de repetición)");
+Check((await svc.MissingAsync()).Count == 0, "el servicio no encuentra nada faltante (todas las zonas con sus seis roles y la puerta con el de repetición)");
 string B(int rank, string role) => live.ForRank(rank, role)!.BoxName;
 Check(B(1, "repeat") == "Cajón de Pino" && B(2, "daily") == "Baúl de Roble" && B(3, "prize") == "Arcón de Hierro" && B(3, "prize_top") == "Cofre de Oro" && B(4, "weekly") == "Cofre de Oro" && B(5, "daily") == "Arcón de Hierro",
     "algunas filas puntuales: Z1 repeat Pino, Z2 daily Roble, Z3 prize Arcón y prize_top Cofre de Oro, Z4 weekly Cofre de Oro, Z5 daily Arcón");
 Check(live.ForZone(ordered[3].ZoneId, ZoneBoxRole.Repeat)!.ChancePercent == 60 && live.ForZone(0, ZoneBoxRole.Repeat)!.BoxName == "Arcón de Hierro"
-    && live.Rows.Where(r => r.Role != ZoneBoxRole.Repeat || r.Rank != 4).All(r => r.ChancePercent == 100), "la única chance distinta de 100 es el repeat de la Zona 4 (60 %); el Fogón repite con Arcón de Hierro");
+    && live.Rows.Where(r => (r.Role != ZoneBoxRole.Repeat || r.Rank != 4) && r.Role != ZoneBoxRole.Travel).All(r => r.ChancePercent == 100), "las únicas chances distintas de 100 son el repeat de la Zona 4 (60 %) y las cajas del viaje; el Fogón repite con Arcón de Hierro");
+// v0.36.0: el viaje no suelta material; puede dar la caja chica de la zona con una chance BAJA (Database/remove_travel_drops.sql).
+var travelRows = Enumerable.Range(1, 5).Select(r => live.ForRank(r, ZoneBoxRole.Travel)).ToList();
+Check(travelRows.All(r => r is not null) && travelRows.Select(r => r!.BoxName).SequenceEqual(["Cajón de Pino", "Cajón de Pino", "Baúl de Roble", "Arcón de Hierro", "Arcón de Hierro"]) && travelRows.Select(r => r!.ChancePercent).SequenceEqual([8, 15, 6, 2, 3]) && live.ForZone(0, ZoneBoxRole.Travel) is null,
+    "las cajas del viaje: Pino 8 % / Pino 15 % / Roble 6 % / Arcón 2 % / Arcón 3 % (la puerta no viaja) y ninguna pasa del 15 %");
 // El Cofre de Oro YA NO sale en los premios de las zonas bajas: solo desde la Zona 3 (prize_top) en adelante.
 Check(live.Rows.Where(r => r.BoxName == "Cofre de Oro").All(r => r.Rank >= 3) && !live.Rows.Any(r => r.BoxName is "Arca del Soberano" or "Cofre de Escoria" or "Brasero del Fogón"), "el Cofre de Oro solo aparece desde la Zona 3, y el Arca / Escoria / Brasero no se regalan por tabla");
 

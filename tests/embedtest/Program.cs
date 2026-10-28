@@ -2,6 +2,7 @@ using System.Globalization;
 using BotDsRpg.Data;
 using BotDsRpg.GameData;
 using BotDsRpg.Repositories;
+using BotDsRpg.Services;
 using Discord;
 using Microsoft.Extensions.Configuration;
 
@@ -40,11 +41,12 @@ bool everyEmojiShown = sample.Fields.SelectMany(f => RecipeLines(f.Value)).All(l
 Check(emojiMissing.Count == 0 && everyEmojiShown, $"los emojis: el resultado y cada ingrediente de cada línea van con su emoji propio ({(emojiMissing.Count == 0 ? "todas las recetas tienen emoji en todo" : "sin emoji en: " + string.Join(", ", emojiMissing))})");
 
 Console.WriteLine("\n== /drops ==");
-var msg = await DropsModule.BuildDropsMessageAsync(new UserRepository(factory), zoneRepo, new MonsterRepository(factory), new ItemRepository(factory), 1UL);
+var msg = await DropsModule.BuildDropsMessageAsync(new UserRepository(factory), zoneRepo, new MonsterRepository(factory), new ItemRepository(factory), 1UL, new ZoneBoxService(factory, zoneRepo));
 int dropsTotal = msg.Text.Length + msg.Embeds.Sum(Total);
 Check(msg.Embeds.Length == 5 && msg.Embeds.All(e => e.Fields.All(f => f.Value.Length <= 1024 && f.Name.Length <= 256) && e.Fields.Length == 3), "5 tarjetas (una por zona), cada una con sus 3 bloques Cazar / Viajar / Jefe");
 Check(dropsTotal < 6000, $"el mensaje entero mide {dropsTotal} de 6000");
-Check(msg.Embeds.All(e => e.Fields.All(f => f.Value.Contains("\n└ "))), "cada monstruo en dos líneas: nombre y, abajo, lo que suelta");
+Check(msg.Embeds.All(e => e.Fields.Where(f => !f.Name.Contains("Viajar")).All(f => f.Value.Contains("\n└ "))), "cada monstruo de cacería y de jefe en dos líneas: nombre y, abajo, lo que suelta");
+Check(msg.Embeds.All(e => e.Fields.Single(f => f.Name.Contains("Viajar")).Name.Contains("% de caja") && e.Fields.Single(f => f.Name.Contains("Viajar")).Value.Contains("📦") && !e.Fields.Single(f => f.Name.Contains("Viajar")).Value.Contains("\n└ ")), "el viaje (v0.36.0) no suelta material: el bloque dice la chance de caja y qué caja");
 Check(msg.Embeds.Select(e => e.Color).Distinct().Count() == 5, "cada zona con su color");
 foreach (var e in msg.Embeds.Take(2)) { Console.WriteLine($"\n--- {e.Title} ({e.Description})"); foreach (var f in e.Fields) Console.WriteLine($"{f.Name}\n{f.Value}\n"); }
 

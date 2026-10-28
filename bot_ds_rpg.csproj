@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <UserSecretsId>d69ec704-0863-42b1-a8be-eb5f90b13a3c</UserSecretsId>
     <!-- Versión del bot: se muestra en /info y en el log de arranque (Services/BotVersion.cs). -->
-    <Version>0.35.0</Version>
+    <Version>0.36.0</Version>
   </PropertyGroup>
 
   <!-- Los arneses de pruebas (tests/) y las herramientas de calibración (tools/) son proyectos APARTE, cada uno con su csproj: sin esto el globbing del SDK compilaría sus .cs dentro del bot. -->

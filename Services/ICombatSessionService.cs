@@ -58,7 +58,9 @@ public sealed record CombatState(
     // (CombatRewardCalculator). Null = sin mascotas.
     PlayerBonuses? Bonuses = null,
     // La tablita del resumen al terminar la pelea (turnos, daño hecho y recibido...): el jugador la puede apagar en /config (GameData/PlayerSettings.cs). Se lee UNA vez al arrancar, como las bonificaciones.
-    bool ShowFightSummary = true)
+    bool ShowFightSummary = true,
+    // Solo para CommandName == "travel" (v0.36.0): la zona del viaje, capturada al arrancar. De ahí sale la caja que puede caer al ganar (zone_boxes, rol "travel"); null en hunt/boss.
+    int? TravelZoneId = null)
 {
     // Convierte un delta de HP en unidades de COMBATE (ya escaladas por Passives.MaxHpMultiplier)
     // a unidades reales de base de datos, para pasarlo a IUserRepository.ApplyCombatHpDeltaAsync /

@@ -671,7 +671,7 @@ public sealed class Journey
 }
 
 // ======================= PARTE D: escenarios de rebalanceo del crafteo =======================
-public static class Cfg { public static double Hunt = CombatRewardCalculator.HuntDropChancePercent; public static double Travel = CombatRewardCalculator.TravelDropChancePercent; }
+public static class Cfg { public static double Hunt = CombatRewardCalculator.HuntDropChancePercent; public static double Travel = 0; /* v0.36.0: el viaje ya no suelta material (da una caja); los escenarios t50/t60 quedaron sin sentido */ }
 
 public static class PartD
 {

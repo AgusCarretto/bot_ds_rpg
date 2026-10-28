@@ -8,8 +8,9 @@ public static class ZoneBoxRole
     public const string Weekly = "weekly";       // ídem, de la semana
     public const string Prize = "prize";         // logros (tramo II) y campeón de la Arena
     public const string PrizeTop = "prize_top";  // logros (tramo III)
+    public const string Travel = "travel";       // v0.36.0: la caja que PUEDE caer al ganar un /travel (el viaje ya no suelta ningún material), con su chance baja
 
-    public static readonly IReadOnlyList<string> All = [Repeat, Daily, Weekly, Prize, PrizeTop];
+    public static readonly IReadOnlyList<string> All = [Repeat, Daily, Weekly, Prize, PrizeTop, Travel];
 }
 
 // Una fila de zone_boxes ya resuelta: de qué zona (su id y su posición por dificultad, 1 = la primera; 0 = la puerta), el rol, el nombre de la caja y su chance en %.
@@ -45,7 +46,7 @@ public sealed class ZoneBoxTable(IEnumerable<ZoneBoxRow> rows)
     // La caja de ese rol para una zona puntual (por su id, incluida la puerta). Null si no tiene.
     public ZoneBoxRow? ForZone(int zoneId, string role) => _rows.FirstOrDefault(r => r.ZoneId == zoneId && r.Role == role);
 
-    // Qué falta para que TODAS las zonas normales tengan sus cinco roles (y la puerta, el de repetición): "Zona 6:daily", ... Vacío = está completo. El arranque del bot lo loguea.
+    // Qué falta para que TODAS las zonas normales tengan sus seis roles (y la puerta, el de repetición): "Zona 6:daily", ... Vacío = está completo. El arranque del bot lo loguea.
     public IReadOnlyList<string> Missing(IEnumerable<(int ZoneId, string Name)> normalZones, IEnumerable<(int ZoneId, string Name)> gateZones)
     {
         var missing = new List<string>();

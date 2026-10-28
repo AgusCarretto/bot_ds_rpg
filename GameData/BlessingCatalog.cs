@@ -35,7 +35,7 @@ public static class BlessingCatalog
     // Lo que da CADA NIVEL.
     public const double ChopPerLevel = 0.05;          // +5 % de cantidad en /chop
     public const double MinePerLevel = 0.05;          // +5 % de cantidad en /mine
-    public const double TravelDropPerLevel = 0.05;    // +5 % relativo a la chance de /travel
+    public const double TravelDropPerLevel = 0.05;    // +5 % relativo a la chance de la caja de /travel (antes, del drop)
     public const double HuntDropPerLevel = 0.05;      // +5 % relativo a la chance de /hunt
     public const double XpPerLevel = 0.04;            // +4 % de EXP en las peleas
     public const double AttackPerLevel = 0.01;        // +1 % del ataque total (solo contra monstruos)
@@ -52,7 +52,7 @@ public static class BlessingCatalog
     [
         new(ChopKey, "Mano de Leñador", "🪓", BlessingKind.Speed, $"+{Pct(ChopPerLevel)} de cantidad en /chop"),
         new(MineKey, "Pico Fino", "⛏️", BlessingKind.Speed, $"+{Pct(MinePerLevel)} de cantidad en /mine"),
-        new(TravelDropKey, "Brasa Vieja", "🗺️", BlessingKind.Speed, $"+{Pct(TravelDropPerLevel)} de chance de drop en /travel"),
+        new(TravelDropKey, "Brasa Vieja", "🗺️", BlessingKind.Speed, $"+{Pct(TravelDropPerLevel)} de chance de caja en /travel"),
         new(HuntDropKey, "Ojo de Halcón", "🏹", BlessingKind.Speed, $"+{Pct(HuntDropPerLevel)} de chance de drop en /hunt"),
         new(XpKey, "Aprendiz", "📊", BlessingKind.Speed, $"+{Pct(XpPerLevel)} de EXP en las peleas"),
         new(AttackKey, "Filo Antiguo", "⚔️", BlessingKind.Power, $"+{Pct(AttackPerLevel)} de ataque contra monstruos"),
@@ -95,7 +95,7 @@ public static class BlessingCatalog
         {
             ChopKey => $"+{Pct(ChopPerLevel * n)} de cantidad en /chop",
             MineKey => $"+{Pct(MinePerLevel * n)} de cantidad en /mine",
-            TravelDropKey => $"+{Pct(TravelDropPerLevel * n)} de chance de drop en /travel",
+            TravelDropKey => $"+{Pct(TravelDropPerLevel * n)} de chance de caja en /travel",
             HuntDropKey => $"+{Pct(HuntDropPerLevel * n)} de chance de drop en /hunt",
             XpKey => $"+{Pct(XpPerLevel * n)} de EXP en las peleas",
             AttackKey => $"+{Pct(AttackPerLevel * n)} de ataque contra monstruos",

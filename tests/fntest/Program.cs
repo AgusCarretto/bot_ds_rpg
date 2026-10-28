@@ -60,8 +60,10 @@ Check(Near(FuegoNuevoRules.HuntDropMultiplier(1), 1.3, 1e-9) && Near(FuegoNuevoR
 Check(Near(FuegoNuevoRules.GatherMultiplier(10), 3.0, 1e-9) && Near(FuegoNuevoRules.XpMultiplier(10), 6.45, 1e-9), "FN 10: ×3 de cantidad y ×6,45 de EXP (la fórmula de EPIC RPG, v0.28.0)");
 Check(Near(FuegoNuevoRules.TravelStep(1), 0.10, 1e-9) && Near(FuegoNuevoRules.TravelStep(2), 0.095, 1e-9) && Near(FuegoNuevoRules.TravelStep(17), 0.02, 1e-9) && Near(FuegoNuevoRules.TravelStep(500), 0.02, 1e-9) && FuegoNuevoRules.TravelStep(0) == 0, "el paso de /travel arranca en +10 %, baja 0,5 puntos por vuelta y se queda en +2 %");
 Check(Near(FuegoNuevoRules.TravelStepsTotal(1), 0.10, 1e-9) && Near(FuegoNuevoRules.TravelStepsTotal(2), 0.195, 1e-9) && FuegoNuevoRules.TravelStepsTotal(41) > 1.5 - 1e-9 && FuegoNuevoRules.TravelStepsTotal(0) == 0, "la suma de pasos de /travel (0,10 + 0,095 + ...) es exacta");
-double t10 = CombatRewardCalculator.TravelDropChancePercent * FuegoNuevoRules.TravelDropMultiplier(10);
-Check(CombatRewardCalculator.TravelDropChancePercent == 40 && Near(t10, 40 * (1 + FuegoNuevoRules.TravelStepsTotal(10)), 1e-9) && t10 > 70 && t10 < 72, $"/travel: 40 % de base y {t10:0.#} % en el FN 10 (el spec decía ~71 %)");
+double m10 = FuegoNuevoRules.TravelDropMultiplier(10);
+// v0.36.0: el multiplicador del FN ya no es sobre el drop del viaje sino sobre la chance de su CAJA (zone_boxes, rol "travel"); la cuenta es la misma.
+Check(Near(m10, 1 + FuegoNuevoRules.TravelStepsTotal(10), 1e-9) && m10 > 1.77 && m10 < 1.78 && Near(CombatRewardCalculator.TravelBoxChance(8, null), 8, 1e-9) && CombatRewardCalculator.TravelBoxChance(100, null) == 100 && CombatRewardCalculator.TravelBoxChance(0, null) == 0 && CombatRewardCalculator.TravelBoxChance(-5, null) == 0,
+    $"/travel: el FN 10 multiplica la chance de la caja ×{m10:0.##} (el spec decía 40 % → ~71 %, que es ×1,78); sin bonus la chance es la de la fila, con tope en 100 y piso en 0");
 Check(FuegoNuevoRules.PercentText(1.3) == "+30 %" && FuegoNuevoRules.PercentText(1.195) == "+19,5 %" && FuegoNuevoRules.PercentText(1.0) == "+0 %", "PercentText: coma decimal y sin ceros de más");
 Check(FuegoNuevoRules.CanChangeClass(1, 0) && !FuegoNuevoRules.CanChangeClass(1, 5) && !FuegoNuevoRules.CanChangeClass(2, 0), "/class solo con nivel 1 y 0 de EXP");
 Check(FuegoNuevoRules.KeptItemTypes.SequenceEqual(["Huevo", "PetFood", "DragonFood"]), "al reiniciar sobreviven los huevos, la comida de mascotas y la del dragón (v0.32.0)");
@@ -102,7 +104,7 @@ Console.WriteLine("\n== 4. Recompensas con bonus ==");
 var fn1 = new PlayerBonuses(PetBonuses.None, 1);
 var fn10 = new PlayerBonuses(PetBonuses.None, 10);
 Check(Near(CombatRewardCalculator.HuntDropChance(null), 6, 1e-9) && Near(CombatRewardCalculator.HuntDropChance(fn1), 7.8, 1e-9) && Near(CombatRewardCalculator.HuntDropChance(fn10), 24, 1e-9), "chance de drop de /hunt: 6 % → 7,8 % (FN 1) → 24 % (FN 10)");
-Check(Near(CombatRewardCalculator.TravelDropChance(null), 40, 1e-9) && Near(CombatRewardCalculator.TravelDropChance(fn1), 44, 1e-9) && CombatRewardCalculator.TravelDropChance(new PlayerBonuses(PetBonuses.None, 45)) == 100.0 && CombatRewardCalculator.HuntDropChance(new PlayerBonuses(PetBonuses.None, 400)) == 100.0, "/travel: 40 % → 44 % (FN 1), y las dos chances topan en 100 %");
+Check(Near(CombatRewardCalculator.TravelBoxChance(40, null), 40, 1e-9) && Near(CombatRewardCalculator.TravelBoxChance(40, fn1), 44, 1e-9) && CombatRewardCalculator.TravelBoxChance(40, new PlayerBonuses(PetBonuses.None, 45)) == 100.0 && CombatRewardCalculator.HuntDropChance(new PlayerBonuses(PetBonuses.None, 400)) == 100.0, "/travel: 40 % → 44 % (FN 1), y las dos chances topan en 100 %");
 int dropsHunt = 0, dropsNone = 0;
 for (int i = 0; i < 40000; i++) { if (CombatRewardCalculator.RollHuntReward(10, 0, 0, fn10).DroppedSomething) dropsHunt++; if (CombatRewardCalculator.RollHuntReward(10).DroppedSomething) dropsNone++; }
 Check(Near(dropsHunt / 40000.0, 0.24, 0.012) && Near(dropsNone / 40000.0, 0.06, 0.008), $"medido en 40.000 cacerías: FN 10 = {dropsHunt / 400.0:0.#} % (esperado 24) y sin Fuego Nuevo {dropsNone / 400.0:0.#} % (esperado 6)");
@@ -433,7 +435,7 @@ var topic = HelpTopics.Find("fuego");
 Check(topic?.Key == "fuego" && new[] { "fuegonuevo", "fuego nuevo", "fn", "reinicio", "renacer", "reset", "bendiciones", "blessings", "prestigio" }.All(a => HelpTopics.Find(a)?.Key == "fuego") && HelpTopics.Find("fogon")?.Key == "fogon" && HelpTopics.Find("asador")?.Key == "fogon", "«info fuego / fn / reinicio / renacer / bendiciones...» abren el tema nuevo y el del Fogón sigue en su lugar");
 var te = topic!.Build();
 string tt = AllText(te);
-Check(te.Length <= 6000 && te.Fields.All(f => f.Value.Length <= 1024) && tt.Contains("/fuegonuevo") && tt.Contains("/blessings") && tt.Contains("+30 %") && tt.Contains("+300 %") && tt.Contains("+20 %") && tt.Contains("+10 %") && tt.Contains("6 %") && tt.Contains("40 %") && tt.Contains("Sin reembolso") && tt.Contains("duelos y la Arena"), $"el tema explica el comando, los porcentajes (leídos de las constantes), lo que se va y los duelos, dentro de los límites ({te.Length})");
+Check(te.Length <= 6000 && te.Fields.All(f => f.Value.Length <= 1024) && tt.Contains("/fuegonuevo") && tt.Contains("/blessings") && tt.Contains("+30 %") && tt.Contains("+300 %") && tt.Contains("+20 %") && tt.Contains("+10 %") && tt.Contains("6 %") && tt.Contains("caja") && tt.Contains("Sin reembolso") && tt.Contains("duelos y la Arena"), $"el tema explica el comando, los porcentajes (leídos de las constantes), lo que se va y los duelos, dentro de los límites ({te.Length})");
 var slashNames = interactions.SlashCommands.Select(c => c.Name).Concat(interactions.SlashCommands.Select(c => c.Module.SlashGroupName)).Where(n => n is not null).ToHashSet();
 var mentioned = System.Text.RegularExpressions.Regex.Matches(tt, @"/([a-z]+)").Select(m => m.Groups[1].Value).Distinct().ToList();
 Check(mentioned.All(m => slashNames.Contains(m) || m == "info") , $"todo comando que el tema nombra existe ({string.Join(", ", mentioned.Where(m => !slashNames.Contains(m)))})");

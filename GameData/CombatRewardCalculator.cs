@@ -17,10 +17,10 @@ public static class CombatRewardCalculator
     // Era 10% hasta la v0.6.0: se bajó a 6% para que al llegar al nivel de una zona no sea tan fácil pasarla de largo, y haya que
     // quedarse un rato a farmear el equipo (las recetas que dependen de drops de /hunt tardan ~1,7 veces más).
     public const int HuntDropChancePercent = 6;
-    // 40% desde la v0.10.2 (el dueño: «60 es una banda», 2026-10-06). Era 60% hasta la v0.10.1 y 20% con el travel de 10 minutos: con el cooldown en 30 minutos, el 60% daba 2% de drop por minuto de
-    // cooldown, que es lo contra lo que se calibraron las recetas; con 40% son 1,33% por minuto, así que los materiales de viaje (los «escasos» de las armas de clase y los amuletos) tardan 1,5 veces más
-    // y el camino de recetas de las 5 zonas pasa de ~41 h a ~52 h de juego perfecto (medido con report_recipe_pacing.sql; las cantidades de las recetas NO se tocaron a propósito).
-    public const int TravelDropChancePercent = 40;
+    // v0.36.0: el /travel YA NO suelta un material (el dueño: «si sacamos el drop solo del travel… que el travel sea esa suma de xp y gold con probabilidad de sacar una caja de la zona»). Hasta la v0.35.0 el
+    // drop de viaje era el material «escaso» de las armas de clase y los amuletos (40 % por viaje, una unidad cada ~75 minutos); ahora esas recetas piden más drops de CACERÍA (Database/remove_travel_drops.sql)
+    // y lo que puede caer al ganar un viaje es la caja de la zona: la fila "travel" de zone_boxes con SU chance (baja, 2-15 %: se puede viajar cada 30 minutos). Los bonus de chance de drop (Fuego Nuevo, mascotas,
+    // bendición, dragón) multiplican esa chance, como antes multiplicaban la del drop. El tope sigue en 100 %.
     // El jefe de zona ya no suelta un material sino un COFRE (monster_drops del jefe apunta a la caja, ver Database/rework_drops_and_recipes.sql y seed_zone_boxes.sql): la primera vez
     // POR VUELTA que ESE jugador lo derrota siempre cae. Las repeticiones (v0.14.0) dan la caja de zone_boxes (rol "repeat") con SU chance, que sale de la base (GameData/ZoneBoxes.cs,
     // Services/BossChest.cs); era "40 % del cofre grande" para todas las zonas. Vale para el combate solitario y, por participante, para el raid.
@@ -40,10 +40,11 @@ public static class CombatRewardCalculator
     public static CombatReward RollHuntReward(int playerLevel, int monsterGoldBonus = 0, int monsterXpBonus = 0, PlayerBonuses? bonuses = null) =>
         Roll(playerLevel, monsterGoldBonus, monsterXpBonus, multiplier: 1, HuntDropChance(bonuses), bonuses);
 
-    // Las chances de drop CON todos los bonus (lo que de verdad se tira); sin nada son HuntDropChancePercent / TravelDropChancePercent. Con tope en 100 %.
+    // Las chances de drop CON todos los bonus (lo que de verdad se tira); sin nada son HuntDropChancePercent y la de la fila "travel" de zone_boxes. Con tope en 100 %.
     public static double HuntDropChance(PlayerBonuses? bonuses) => Math.Min(100.0, HuntDropChancePercent * (bonuses?.HuntDropMultiplier ?? 1.0));
 
-    public static double TravelDropChance(PlayerBonuses? bonuses) => Math.Min(100.0, TravelDropChancePercent * (bonuses?.TravelDropMultiplier ?? 1.0));
+    // La chance de que caiga la caja de un viaje: la de la zona (zone_boxes, rol "travel") por los bonus de drop del jugador. 0 si la zona no tiene la fila.
+    public static double TravelBoxChance(int boxChancePercent, PlayerBonuses? bonuses) => Math.Min(100.0, Math.Max(0, boxChancePercent) * (bonuses?.TravelDropMultiplier ?? 1.0));
 
     // Jefe de zona (/boss y /raid): la fórmula de /hunt (con el bono GRANDE del jefe, ver Database/seed_zone_bosses.sql) x6, y la chance del
     // cofre de la zona. Era x1 hasta la v0.6.0 y el jefe pagaba la MITAD que un /travel (en Zona 2: ~280 XP contra ~520): una pelea mucho más
@@ -77,8 +78,9 @@ public static class CombatRewardCalculator
     // En Zona 1 (bonus 0/0) queda casi igual que antes (~120 oro / ~150 XP a nivel 1).
     public const int TravelRewardMultiplier = 30;
 
-    public static CombatReward RollTravelReward(int playerLevel, int monsterGoldBonus = 0, int monsterXpBonus = 0, PlayerBonuses? bonuses = null) =>
-        Roll(playerLevel, monsterGoldBonus, monsterXpBonus, TravelRewardMultiplier, TravelDropChance(bonuses), bonuses);
+    // boxChancePercent: la chance base de la caja de viaje de ESA zona (ZoneBoxRole.Travel); DroppedSomething = "cayó la caja".
+    public static CombatReward RollTravelReward(int playerLevel, int monsterGoldBonus = 0, int monsterXpBonus = 0, PlayerBonuses? bonuses = null, int boxChancePercent = 0) =>
+        Roll(playerLevel, monsterGoldBonus, monsterXpBonus, TravelRewardMultiplier, TravelBoxChance(boxChancePercent, bonuses), bonuses);
 
     private static CombatReward Roll(
         int playerLevel, int monsterGoldBonus, int monsterXpBonus, int multiplier, double dropChancePercent, PlayerBonuses? bonuses)

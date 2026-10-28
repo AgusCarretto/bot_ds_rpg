@@ -177,7 +177,7 @@ var lost = (Embed)defeat.Invoke(null, [Boss("boss", "Capataz de Hierro"), loseTu
 Check(InTable(lost.Description, "Capataz de Hierro:Victory") && lost.Description.Contains("/heal") && InTable(((Embed)defeat.Invoke(null, [Boss("hunt", "Jabalí Rabioso"), loseTurn, null])!).Description, "Jabalí Rabioso:Victory"), "si el jefe te gana, se burla, y desde la v0.8.3 un monstruo común también");
 
 Console.WriteLine("\n== 7. Chance de drop de /hunt ==");
-Check(CombatRewardCalculator.HuntDropChancePercent == 6 && CombatRewardCalculator.TravelDropChancePercent == 40 && CombatRewardCalculator.BossChestFirstClearPercent == 100, "hunt 6% (antes 10%); travel 40% (60% hasta la v0.10.1; cooldown de 30 min); el cofre del jefe 100% la primera vez y 40% después");
+Check(CombatRewardCalculator.HuntDropChancePercent == 6 && CombatRewardCalculator.BossChestFirstClearPercent == 100, "hunt 6% (antes 10%); el cofre del jefe 100% la primera vez (el viaje ya no suelta material desde la v0.36.0, ver v0360test)");
 int hits = Enumerable.Range(0, 400000).Count(_ => CombatRewardCalculator.RollHuntReward(5).DroppedSomething);
 Check(Math.Abs(hits / 4000.0 - 6.0) < 0.25, $"400.000 cacerías simuladas: {hits / 4000.0:0.00}% sueltan material (esperado 6%)");
 

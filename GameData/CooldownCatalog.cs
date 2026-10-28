@@ -10,7 +10,7 @@ public static class CooldownCatalog
 {
     public static readonly CooldownDefinition Hunt = new("hunt", Loc.Mark("Cazar"), "🏹", TimeSpan.FromMinutes(1));
     // 30 minutos (hasta la v0.7.1 eran 10): una expedición contra un élite. La recompensa y la chance de drop se subieron para pagar LO MISMO por minuto
-    // (CombatRewardCalculator.TravelRewardMultiplier y TravelDropChancePercent): el ritmo de las recetas no cambia.
+    // (CombatRewardCalculator.TravelRewardMultiplier; la caja del viaje sale de zone_boxes, rol "travel").
     public static readonly CooldownDefinition Travel = new("travel", Loc.Mark("Viajar"), "🗺️", TimeSpan.FromMinutes(30));
     public static readonly CooldownDefinition Chop = new("chop", Loc.Mark("Talar"), "🪓", TimeSpan.FromMinutes(5));
     public static readonly CooldownDefinition Mine = new("mine", Loc.Mark("Minar"), "⛏️", TimeSpan.FromMinutes(5));

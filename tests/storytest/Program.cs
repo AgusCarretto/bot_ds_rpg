@@ -330,11 +330,11 @@ Console.WriteLine("\n== 16. Amuletos más fuertes contra monstruos, el PvP con l
 
 Console.WriteLine("\n== 17. El Polvo de los drops de monstruo por su origen (v0.15.1) ==");
 {
-    Check(Dismantling.HuntDropDust == 17 && Dismantling.TravelDropDust == 38, $"las constantes salen de las chances y los cooldowns reales: cacería {Dismantling.HuntDropDust}, viaje {Dismantling.TravelDropDust}");
+    Check(Dismantling.HuntDropDust == 17, $"la constante sale de la chance y el cooldown reales: cacería {Dismantling.HuntDropDust} (los drops de viaje se borraron en la v0.36.0)");
     var dropRows = (await db.QueryAsync<(string Name, string Rarity, int Dust, bool Travel)>(
         @"SELECT i.name, i.rarity, i.dust_value, EXISTS (SELECT 1 FROM monster_drops d JOIN monsters m ON m.monster_id = d.monster_id WHERE d.item_id = i.item_id AND m.is_travel) FROM items i WHERE i.dust_value IS NOT NULL")).ToList();
-    Check(dropRows.Count == 15 && dropRows.All(r => r.Dust == (r.Travel ? Dismantling.TravelDropDust : Dismantling.HuntDropDust)) && dropRows.Count(r => r.Travel) == 5,
-        "en la base: los 15 drops de monstruo traen su Polvo (10 de cacería, 5 de viaje) y coincide con las constantes del código");
+    Check(dropRows.Count == 10 && dropRows.All(r => r.Dust == Dismantling.HuntDropDust) && dropRows.Count(r => r.Travel) == 0,
+        "en la base: los 10 drops de monstruo (todos de cacería) traen su Polvo y coincide con la constante del código");
     Check(dropRows.Any(r => r.Rarity == "Mítico" && r.Dust == 17) && dropRows.Any(r => r.Rarity == "Común" && r.Dust == 17), "un drop «Mítico» de cacería da lo mismo que uno «Común» (la etiqueta ya no cuenta)");
     Check(Dismantling.DustFor("Mítico", 1) == 500 && Dismantling.DustFor("Raro", 3) == 18 && Dismantling.DustFor("Mítico", 2, 17) == 34 && Dismantling.DustPerUnit("Común", 38) == 38,
         "lo recolectado sigue pagando por rareza (Mítico 500) y el valor propio del ítem manda cuando existe");
@@ -350,16 +350,16 @@ Console.WriteLine("\n== 17. El Polvo de los drops de monstruo por su origen (v0.
     Check(sl.Any(d => d.Name.Contains("Corazón de Titán") && !d.Name.Contains("Mítico")) && sl.Any(d => d.Name.Contains("Madera de Pino") && d.Name.Contains("(Común)")), "y la de /shop sell: el drop sin rareza, la madera con ella");
 
     await Reset();
-    await db.ExecuteAsync("INSERT INTO inventory (discord_id, item_id, quantity) SELECT @id, item_id, 5 FROM items WHERE name IN ('Corazón de Titán', 'Madera de Pino', 'Ceniza del Abismo')", new { id = (long)U });
+    await db.ExecuteAsync("INSERT INTO inventory (discord_id, item_id, quantity) SELECT @id, item_id, 5 FROM items WHERE name IN ('Corazón de Titán', 'Madera de Pino', 'Fragmento de Alma')", new { id = (long)U });
     var dust = new DustRepository(factory);
     var d1 = await DustModule.ExecuteDismantleAsync(users, items, dust, new Rec(), U, "Corazón de Titán", 3);
-    var d2 = await DustModule.ExecuteDismantleAsync(users, items, dust, new Rec(), U, "Ceniza del Abismo", 2);
+    var d2 = await DustModule.ExecuteDismantleAsync(users, items, dust, new Rec(), U, "Fragmento de Alma", 2);
     var d3 = await DustModule.ExecuteDismantleAsync(users, items, dust, new Rec(), U, "Madera de Pino", 4);
-    Check(d1.Embed is not null && AllText(d1.Embed).Contains("+51") && d2.Embed is not null && AllText(d2.Embed).Contains("+76") && d3.Embed is not null && AllText(d3.Embed).Contains("+4"),
-        "desmantelar de verdad: 3 Corazón de Titán (Mítico, cacería) = 51, 2 Ceniza del Abismo (Mítico, viaje) = 76, 4 Pino = 4");
-    Check(await db.ExecuteScalarAsync<int>("SELECT dust FROM users WHERE discord_id = @id", new { id = (long)U }) == 51 + 76 + 4, "y el Polvo de la cuenta es la suma exacta");
+    Check(d1.Embed is not null && AllText(d1.Embed).Contains("+51") && d2.Embed is not null && AllText(d2.Embed).Contains("+34") && d3.Embed is not null && AllText(d3.Embed).Contains("+4"),
+        "desmantelar de verdad: 3 Corazón de Titán (Mítico, cacería) = 51, 2 Fragmento de Alma (Mítico, cacería) = 34, 4 Pino = 4");
+    Check(await db.ExecuteScalarAsync<int>("SELECT dust FROM users WHERE discord_id = @id", new { id = (long)U }) == 51 + 34 + 4, "y el Polvo de la cuenta es la suma exacta");
     var info = DustModule.BuildOptionsEmbed();
-    Check(AllText(info).Contains("17") && AllText(info).Contains("38") && AllText(info).Contains("no tienen rareza") && info.Length <= 6000, "/enchant info y el tema de ayuda explican el Polvo de los drops");
+    Check(AllText(info).Contains("17") && !AllText(info).Contains("38") && AllText(info).Contains("no tienen rareza") && info.Length <= 6000, "/enchant info y el tema de ayuda explican el Polvo de los drops");
 }
 
 await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)U });
