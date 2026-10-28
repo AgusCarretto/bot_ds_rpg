@@ -38,6 +38,12 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
 
+## El tablón de crías: sin anotarse en descanso y con vos en la lista (v0.34.1, 2026-10-28)
+
+- **No se puede anotar con el dragón descansando**: el botón contesta (solo para vos) que está descansando y cuánto falta, y la pantalla lo dice en lugar de «tocá Anotarme». Antes te dejaba anotar igual, pero como el tablón solo muestra a los que pueden criar ahora, quedabas «anotado» sin aparecer en la lista de nadie. **Salir** sigue valiendo siempre.
+- **Salís vos en la lista**: quien está anotado se ve a sí mismo primero, marcado **(vos)**, y el contador lo cuenta; así, al anotarte o al tocar Actualizar, se nota que quedaste. La lista para invitar sigue llevando solo a los demás (no te podés invitar a vos).
+- Sin migración. La ayuda `/info tema:dragon` también lo dice.
+
 ## El comando de administrador: `aa admingive` (v0.34.0, 2026-10-28)
 
 - **Para qué** (el dueño): probar cosas sin tenerlas y, además, **sorteos y giveaways** de cajas u oro. `aa admingive gold 1m`, `aa admingive item Cofre de Oro 3 @ganador`, `aa admingive dust 500`, `aa admingive xp 5000`. Sin mención se lo das a vos. Cantidades con `1.500`, `10k`, `1m`.
