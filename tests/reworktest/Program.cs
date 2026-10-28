@@ -177,14 +177,15 @@ Console.WriteLine("\n== v0.8.0 · Tarea 2: el sorteo de las cajas (puro) ==");
     var real = RarityCatalog.GatheringChances.ToDictionary(c => c.Rarity, c => c.Percent);
     Check(BoxLootRoller.GatherWeights.Where(w => w.Rarity != "Mítico").All(w => Math.Abs(w.Weight / 10.0 - real[w.Rarity]) < 0.0001), "Común, Raro, Épico y Legendario: EXACTAMENTE las de RarityCatalog (solo cambia el Mítico)");
 
-    // 3) Zonas: nunca drops de una zona que el jugador no desbloqueó ni mayor que la de la caja
+    // 3) Zonas: nunca drops de una zona que el jugador no desbloqueó; desde la v0.36.0 la zona de la caja ya no los limita (los drops no tienen rareza)
     var soloZona = Box(1000, 1000, 5, Zone(1));
     int maxSeen = 0;
     for (int i = 0; i < 200; i++) foreach (var it in BoxLootRoller.Roll(soloZona, new BoxRollContext(1, gatherPool, zonePool), rng).Items.Where(x => x.Name.Contains(" z"))) maxSeen = Math.Max(maxSeen, int.Parse(it.Name[^1].ToString()));
-    Check(maxSeen == 1, $"jugador con la Zona 1 desbloqueada y una caja de Zona 5: solo salen drops de la Zona 1 (máxima vista: {maxSeen})");
+    Check(maxSeen == 1, $"jugador con la Zona 1 desbloqueada y una caja de Zona 5: solo salen drops de la Zona 1, los que ya desbloqueó (máxima vista: {maxSeen})");
     int cap = 0;
-    foreach (var it in BoxLootRoller.Roll(Box(5000, 5000, 2, Zone(1)), new BoxRollContext(5, gatherPool, zonePool), rng).Items.Where(x => x.Name.Contains(" z"))) cap = Math.Max(cap, int.Parse(it.Name[^1].ToString()));
-    Check(cap == 2, $"jugador de Zona 5 con una caja de Zona 2: solo drops hasta la Zona 2 (máxima vista: {cap})");
+    var zonesSeenInPino = new HashSet<int>();
+    foreach (var it in BoxLootRoller.Roll(Box(5000, 5000, 1, Zone(1)), new BoxRollContext(5, gatherPool, zonePool), rng).Items.Where(x => x.Name.Contains(" z"))) { cap = Math.Max(cap, int.Parse(it.Name[^1].ToString())); zonesSeenInPino.Add(int.Parse(it.Name[^1].ToString())); }
+    Check(cap == 5 && zonesSeenInPino.Count == 5, $"jugador de Zona 5 con una caja de Zona 1 (un Cajón de Pino): salen drops de las 5 zonas, también el de la Zona 5 (máxima vista: {cap}; los drops no tienen rareza)");
     var allZones = BoxLootRoller.Roll(Box(20000, 20000, 5, Zone(1)), new BoxRollContext(5, gatherPool, zonePool), rng);
     var zoneDrops = allZones.Items.Where(x => x.Name.Contains(" z")).ToList();
     double travelShare = zoneDrops.Where(x => x.Name.StartsWith("Travel")).Sum(x => x.Quantity) / (double)zoneDrops.Sum(x => x.Quantity);

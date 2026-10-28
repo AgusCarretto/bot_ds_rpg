@@ -622,12 +622,12 @@ await db.ExecuteAsync("""
     """, new { id = (long)G10 });
 Embed invEs = await GameModule.BuildInventoryEmbedAsync(invRepo10, G10, "Pepe"); Embed invEn; using (Loc.Use("en")) { invEn = await GameModule.BuildInventoryEmbedAsync(invRepo10, G10, "Pepe"); }
 string invEsText = LeakCheck.AllText(invEs), invEnText = LeakCheck.AllText(invEn);
-Check(invEs.Title == "🎒 Inventario de Pepe" && invEsText.Contains("🪵 Madera") && invEsText.Contains("🩸 Drops de monstruo") && invEsText.Contains("🍖 Consumibles") && invEsText.Contains("1.234") && invEs.Footer!.Value.Text == "📦 Abrí tus cajas y huevos con /open", "el inventario en español es el de siempre");
-Check(invEn.Title == "🎒 Pepe's inventory" && invEnText.Contains("🪵 Wood") && invEnText.Contains("🩸 Monster drops") && invEnText.Contains("🍖 Consumables") && invEnText.Contains("1,234") && invEn.Footer!.Value.Text == "📦 Open your boxes and eggs with /open" && LeakCheck.NoSpanish(invEnText, allowedNames).Ok && LeakCheck.FitsDiscord(invEn),
+Check(invEs.Title == "🎒 Inventario de Pepe" && invEsText.Contains("Madera") && invEsText.Contains("Drops de monstruo") && invEsText.Contains("Consumibles") && invEsText.Contains("1.234") && invEs.Footer!.Value.Text == "📦 Abrí tus cajas y huevos con /open", "el inventario en español es el de siempre");
+Check(invEn.Title == "🎒 Pepe's inventory" && invEnText.Contains("Wood") && invEnText.Contains("Monster drops") && invEnText.Contains("Consumables") && invEnText.Contains("1,234") && invEn.Footer!.Value.Text == "📦 Open your boxes and eggs with /open" && LeakCheck.NoSpanish(invEnText, allowedNames).Ok && LeakCheck.FitsDiscord(invEn),
     $"y en inglés, con la coma de miles ({LeakCheck.NoSpanish(invEnText, allowedNames).Found})");
 await db.ExecuteAsync("DELETE FROM inventory WHERE discord_id = @id AND item_id IN (SELECT item_id FROM items WHERE type = 'Huevo')", new { id = (long)G10 });
 Embed invBoxesEn; using (Loc.Use("en")) { invBoxesEn = await GameModule.BuildInventoryEmbedAsync(invRepo10, G10, "Pepe"); }
-Check(invBoxesEn.Footer!.Value.Text == "📦 Open your boxes with /open" && LeakCheck.AllText(invBoxesEn).Contains("📦 **Boxes**") && !LeakCheck.AllText(invBoxesEn).Contains("eggs"),$"sin huevos el título y el pie dicen solo «cajas» ({invBoxesEn.Footer!.Value.Text})");
+Check(invBoxesEn.Footer!.Value.Text == "📦 Open your boxes with /open" && LeakCheck.AllText(invBoxesEn).Contains("**Boxes**") && !LeakCheck.AllText(invBoxesEn).Contains("eggs"),$"sin huevos el título y el pie dicen solo «cajas» ({invBoxesEn.Footer!.Value.Text})");
 await db.ExecuteAsync("DELETE FROM inventory WHERE discord_id = @id", new { id = (long)G10 });
 Embed invEmptyEn; using (Loc.Use("en")) { invEmptyEn = await GameModule.BuildInventoryEmbedAsync(invRepo10, G10, "Pepe"); }
 Check(invEmptyEn.Description == "You don't have any materials yet. Try /hunt, /chop or /mine!", $"el inventario vacío en inglés ({invEmptyEn.Description})");

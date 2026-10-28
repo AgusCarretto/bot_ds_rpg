@@ -221,7 +221,7 @@ var forBoxes = ItemChoices.ForOwnedBoxes(owned, "");
 Check(forBoxes.Count == 2 && forBoxes[0].Value?.ToString() == "Arca del Soberano" && forBoxes[0].Name.Contains("tenés 1") && forBoxes[0].Name.Contains("entre 60 y 100 ítems"), $"/abrir ofrece solo las cajas que tenés, la más rara primero: {string.Join(" | ", forBoxes.Select(c => c.Name))}");
 var inv = await GameModule.BuildInventoryEmbedAsync(inventory, U, "prueba");
 string invText = string.Join("\n", inv.Fields.Select(f => f.Name + "\n" + f.Value));
-Check(inv.Fields.Any(f => f.Name.Contains("Cajas") || f.Value.Contains("📦 **Cajas**")) && invText.Contains("**Cajón de Pino**: 2"), "el inventario tiene la columna 📦 Cajas con lo que tenés");
+Check(inv.Fields.Any(f => f.Name.Contains("Cajas") || f.Value.Contains("**Cajas**")) && invText.Contains("**Cajón de Pino**: 2"), "el inventario tiene la columna 📦 Cajas con lo que tenés");
 
 await Cleanup();
 Console.WriteLine($"\nLimpieza: usuarios de prueba restantes = {await db.ExecuteScalarAsync<long>("SELECT COUNT(*) FROM users WHERE discord_id = @id", new { id = (long)U })}");

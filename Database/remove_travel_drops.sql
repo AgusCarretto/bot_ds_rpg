@@ -9,9 +9,10 @@
 -- toca recetas ni mochilas, y las filas de zone_boxes que ya existen no se pisan (la chance se retoca con un UPDATE).
 --
 -- Qué hace, todo en UNA transacción:
---   1. zone_boxes admite el rol 'travel' y se cargan las cajas del viaje de las 5 zonas: Cajón de Pino 8 % / Cajón de Pino 15 % / Baúl de Roble 6 % / Arcón de Hierro 2 % / Arcón de Hierro 3 %
---      (la misma caja chica que da repetir el jefe; las chances son BAJAS a propósito: se puede viajar cada 30 minutos y cada caja vale muchos minutos de farmeo. Valen ~10-15 % de lo que
---      paga el viaje en oro. Se retocan con UPDATE, sin redeploy más allá del caché de 5 minutos. Los bonus de chance de drop —Fuego Nuevo, mascotas, bendición, dragón— multiplican esta chance.)
+--   1. zone_boxes admite el rol 'travel' y se cargan las cajas del viaje de las 5 zonas, todas con 20 % (el dueño: «ponele 20 % a cada zona»; mi primera propuesta era 8 / 15 / 6 / 2 / 3 % y le pareció poco):
+--      Cajón de Pino (Zonas 1 y 2), Baúl de Roble (Zona 3) y Arcón de Hierro (Zonas 4 y 5), la misma caja chica que da repetir el jefe. Con 20 % cae una caja cada ~5 viajes: en las zonas altas (Arcón)
+--      pesa bastante (un Arcón vale ~43 mil de oro-equivalente); si resulta mucho se baja con un UPDATE, sin redeploy más allá del caché de 5 minutos. Los bonus de chance de drop —Fuego Nuevo, mascotas,
+--      bendición, dragón— multiplican esta chance (con tope en 100 %).
 --   2. Canje para quien tenía drops de viaje en la mochila: cada unidad vale 1 de CADA drop de cacería de su zona (2 unidades de ~33 minutos de farmeo cada una por una de ~75 minutos).
 --   3. Recetas de las 5 zonas que usaban un drop de viaje (las 20 armas de clase y los 5 amuletos): se les saca ese ingrediente (pasan de 4 tipos de ingrediente a 3) y los drops de CACERÍA
 --      suben para que el tiempo total no cambie: armas de las zonas 2-5 ×4 → ×5 (~167 min de drops, antes ~150 con el viaje), amuletos de las zonas 2-5 ×4 → ×7 de cada drop de cacería
@@ -42,11 +43,11 @@ END $$;
 INSERT INTO zone_boxes (zone_id, role, box_item_id, chance_percent)
 SELECT t.zone_id, 'travel', i.item_id, t.chance
 FROM (VALUES
-    (1, 'Cajón de Pino',   8),
-    (2, 'Cajón de Pino',  15),
-    (3, 'Baúl de Roble',   6),
-    (4, 'Arcón de Hierro', 2),
-    (5, 'Arcón de Hierro', 3)
+    (1, 'Cajón de Pino',   20),
+    (2, 'Cajón de Pino',   20),
+    (3, 'Baúl de Roble',   20),
+    (4, 'Arcón de Hierro', 20),
+    (5, 'Arcón de Hierro', 20)
 ) AS t (zone_id, box_name, chance)
 JOIN zones z ON z.zone_id = t.zone_id
 JOIN items i ON i.name = t.box_name AND i.type = 'Caja'

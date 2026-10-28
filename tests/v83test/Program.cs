@@ -106,7 +106,7 @@ const char Nb = (char)0xA0;                       // espacio que no se parte: ma
 string Sep = ((char)0x2003).ToString() + " ";     // lo que separa una ficha de la siguiente (puede cortarse la línea ahí)
 var lineRegex = new Regex(@"^(<a?:[A-Za-z0-9_]+:\d+>|[⚪🔵🟣🟡🔴]|📦|🥚|🔥) \*\*[^*]+\*\*: [\d.]+$");
 string ZWs = ((char)0x200B).ToString();
-var chips = big.Fields.SelectMany(f => f.Value.Split('\n')).Where(l => l.Length > 0 && l != "📦 **Cajas**" && l != ZWs).ToList();   // v0.9.1: los drops también son un renglón por ítem   // el encabezado de las cajas apiladas bajo la comida no es un ítem
+var chips = big.Fields.SelectMany(f => f.Value.Split('\n')).Where(l => l.Length > 0 && l != "**Cajas**" && l != ZWs).ToList();   // v0.9.1: los drops también son un renglón por ítem   // el encabezado de las cajas apiladas bajo la comida no es un ítem
 Check(chips.Count == expectedItems && chips.All(l => lineRegex.IsMatch(l.Replace(Nb, ' '))), $"{chips.Count} ítems, todos con el formato «emoji **Nombre**: cantidad» (el ejemplo: {chips.FirstOrDefault()}; el que no calza: {chips.FirstOrDefault(l => !lineRegex.IsMatch(l.Replace(Nb, (char)32)))})");
 Check(chips.Any(l => l.EndsWith(": 9.999") || l.EndsWith(Nb + "9.999")), "las cantidades llevan el separador de miles");
 var dropFields = big.Fields.SkipWhile(f => !f.Name.Contains("Drops")).TakeWhile((f, i) => i == 0 || f.Name == ZWs).Where(f => f.Value != ZWs).ToList();   // el campo de los drops y su continuación (sin título), hasta los Consumibles

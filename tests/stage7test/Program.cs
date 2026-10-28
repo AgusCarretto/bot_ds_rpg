@@ -35,7 +35,7 @@ int At(string s) => d1.IndexOf(s, StringComparison.Ordinal);
 int Col(Embed e, string nameContains) => Array.FindIndex(e.Fields.ToArray(), f => f.Name.Contains(nameContains));
 string ZW = ((char)0x200B).ToString();
 Check(string.IsNullOrEmpty(e1.Description) && e1.Fields.Length % 3 == 0 && e1.Fields.All(f => f.Inline) && e1.Fields.Where((f, i) => i % 3 == 2).All(f => f.Name == ZW && f.Value == ZW), "DOS COLUMNAS (v0.9.3): todo en línea, de a tres por fila con el tercero vacío cerrando la fila, sin descripción");
-Check(Col(e1, "Madera") == 0 && Col(e1, "Mineral") == 1 && Col(e1, "Drops de monstruo") == 3 && Col(e1, "Consumibles") == 4 && e1.Fields[4].Value.Contains("📦 **Cajas**"), "fila 1: Madera | Mineral; fila 2: Drops | Consumibles (con las Cajas debajo): " + string.Join(" | ", e1.Fields.Select(f => f.Name == ZW ? "·" : f.Name)));
+Check(Col(e1, "Madera") == 0 && Col(e1, "Mineral") == 1 && Col(e1, "Drops de monstruo") == 3 && Col(e1, "Consumibles") == 4 && e1.Fields[4].Value.Contains("**Cajas**"), "fila 1: Madera | Mineral; fila 2: Drops | Consumibles (con las Cajas debajo): " + string.Join(" | ", e1.Fields.Select(f => f.Name == ZW ? "·" : f.Name)));
 Check(At("Madera de Pino") < At("Madera de Roble") && At("Madera de Roble") < At("Mineral") && At("Piedra") < At("Hierro") && At("Hierro") < At("Oro Puro"), "dentro de cada columna, de lo más común a lo más raro (la madera y los minerales no se mezclan)");
 Check(e1.Fields[3].Value.Contains("Pluma de Ñandú") && e1.Fields[3].Value.Contains("Colmillo de Jabalí") && !e1.Fields[0].Value.Contains("Pluma") && !e1.Fields[1].Value.Contains("Pluma"), "los drops de monstruo están en SU campo (debajo de la madera), separados de los materiales de recolección");
 Check(d1.Contains("**Piedra**: 12") && d1.Contains("**Cajón de Pino**: 2") && !d1.Contains("(Común)") && !d1.Contains("_(") && !d1.Contains(" ×"), "cada renglón es «ícono **Nombre**: cantidad», sin la rareza escrita");
@@ -45,7 +45,7 @@ Console.WriteLine("\n== Solo drops (una columna) ==");
 await db.ExecuteAsync("DELETE FROM inventory WHERE discord_id = @id", new { id = (long)U });
 await Give("Pluma de Ñandú", 1);
 var e2 = await BotDsRpg_GameModule.Build(inventory, U);
-Check(e2.Fields.Length == 1 && e2.Fields[0].Name == "🩸 Drops de monstruo" && T(e2).Contains("**Pluma de Ñandú**: 1"), "con una sola categoría: solo ese campo, sin huecos");
+Check(e2.Fields.Length == 1 && e2.Fields[0].Name == "Drops de monstruo" && T(e2).Contains("**Pluma de Ñandú**: 1"), "con una sola categoría: solo ese campo, sin huecos");
 
 Console.WriteLine("\n== Peor caso: todos los ítems del juego ==");
 await db.ExecuteAsync("INSERT INTO inventory (discord_id, item_id, quantity) SELECT @id, item_id, 9999 FROM items ON CONFLICT (discord_id, item_id) DO UPDATE SET quantity = 9999", new { id = (long)U });

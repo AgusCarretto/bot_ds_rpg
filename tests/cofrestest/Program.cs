@@ -69,8 +69,8 @@ Check(live.ForZone(ordered[3].ZoneId, ZoneBoxRole.Repeat)!.ChancePercent == 60 &
     && live.Rows.Where(r => (r.Role != ZoneBoxRole.Repeat || r.Rank != 4) && r.Role != ZoneBoxRole.Travel).All(r => r.ChancePercent == 100), "las únicas chances distintas de 100 son el repeat de la Zona 4 (60 %) y las cajas del viaje; el Fogón repite con Arcón de Hierro");
 // v0.36.0: el viaje no suelta material; puede dar la caja chica de la zona con una chance BAJA (Database/remove_travel_drops.sql).
 var travelRows = Enumerable.Range(1, 5).Select(r => live.ForRank(r, ZoneBoxRole.Travel)).ToList();
-Check(travelRows.All(r => r is not null) && travelRows.Select(r => r!.BoxName).SequenceEqual(["Cajón de Pino", "Cajón de Pino", "Baúl de Roble", "Arcón de Hierro", "Arcón de Hierro"]) && travelRows.Select(r => r!.ChancePercent).SequenceEqual([8, 15, 6, 2, 3]) && live.ForZone(0, ZoneBoxRole.Travel) is null,
-    "las cajas del viaje: Pino 8 % / Pino 15 % / Roble 6 % / Arcón 2 % / Arcón 3 % (la puerta no viaja) y ninguna pasa del 15 %");
+Check(travelRows.All(r => r is not null) && travelRows.Select(r => r!.BoxName).SequenceEqual(["Cajón de Pino", "Cajón de Pino", "Baúl de Roble", "Arcón de Hierro", "Arcón de Hierro"]) && travelRows.Select(r => r!.ChancePercent).SequenceEqual([20, 20, 20, 20, 20]) && live.ForZone(0, ZoneBoxRole.Travel) is null,
+    "las cajas del viaje: Pino / Pino / Roble / Arcón / Arcón, todas con 20 % (la puerta no viaja)");
 // El Cofre de Oro YA NO sale en los premios de las zonas bajas: solo desde la Zona 3 (prize_top) en adelante.
 Check(live.Rows.Where(r => r.BoxName == "Cofre de Oro").All(r => r.Rank >= 3) && !live.Rows.Any(r => r.BoxName is "Arca del Soberano" or "Cofre de Escoria" or "Brasero del Fogón"), "el Cofre de Oro solo aparece desde la Zona 3, y el Arca / Escoria / Brasero no se regalan por tabla");
 

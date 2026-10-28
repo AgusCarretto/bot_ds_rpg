@@ -81,20 +81,20 @@ Console.WriteLine("\n== 2. Las cajas del viaje en zone_boxes ==");
 var zoneBoxes = new ZoneBoxService(factory, zonesRepo);
 var table = await zoneBoxes.GetAsync();
 var rows = Enumerable.Range(1, 5).Select(r => table.ForRank(r, ZoneBoxRole.Travel)).ToList();
-Check(rows.All(r => r is not null) && rows.Select(r => (r!.BoxName, r.ChancePercent)).SequenceEqual([("Cajón de Pino", 8), ("Cajón de Pino", 15), ("Baúl de Roble", 6), ("Arcón de Hierro", 2), ("Arcón de Hierro", 3)]),
-    "Zona 1 Pino 8 % · Zona 2 Pino 15 % · Zona 3 Roble 6 % · Zona 4 Arcón 2 % · Zona 5 Arcón 3 %");
-Check(rows.All(r => r!.ChancePercent <= 15) && (await zoneBoxes.MissingAsync()).Count == 0 && ZoneBoxRole.All.Contains(ZoneBoxRole.Travel), "ninguna pasa del 15 % (se puede viajar cada 30 minutos) y no falta ninguna fila");
-Check((await TravelBox.ChanceAsync(zoneBoxes, 1)) is (8, "Cajón de Pino") && (await TravelBox.ChanceAsync(zoneBoxes, 5)) is (3, "Arcón de Hierro") && (await TravelBox.ChanceAsync(zoneBoxes, 0)) is (0, null) && (await TravelBox.ChanceAsync(zoneBoxes, 99)) is (0, null),
+Check(rows.All(r => r is not null) && rows.Select(r => (r!.BoxName, r.ChancePercent)).SequenceEqual([("Cajón de Pino", 20), ("Cajón de Pino", 20), ("Baúl de Roble", 20), ("Arcón de Hierro", 20), ("Arcón de Hierro", 20)]),
+    "20 % en cada zona (el dueño: «ponele 20 % a cada zona»): Zona 1 y 2 Cajón de Pino, Zona 3 Baúl de Roble, Zona 4 y 5 Arcón de Hierro");
+Check(rows.All(r => r!.ChancePercent == 20) && (await zoneBoxes.MissingAsync()).Count == 0 && ZoneBoxRole.All.Contains(ZoneBoxRole.Travel), "todas valen 20 % y no falta ninguna fila");
+Check((await TravelBox.ChanceAsync(zoneBoxes, 1)) is (20, "Cajón de Pino") && (await TravelBox.ChanceAsync(zoneBoxes, 5)) is (20, "Arcón de Hierro") && (await TravelBox.ChanceAsync(zoneBoxes, 0)) is (0, null) && (await TravelBox.ChanceAsync(zoneBoxes, 99)) is (0, null),
     "TravelBox.ChanceAsync: la fila de la zona; la puerta y una zona que no existe → (0, nada)");
 Check((await TravelBox.ChanceAsync(new ThrowingZoneBoxes(), 1)) is (0, null), "si la lectura falla, la victoria sigue (chance 0) y no tira");
 
 Console.WriteLine("\n== 3. La recompensa del viaje ==");
 int N = 200_000;
 double rate(int basePct, PlayerBonuses? b) => Enumerable.Range(0, N).Count(_ => CombatRewardCalculator.RollTravelReward(5, 0, 0, b, basePct).DroppedSomething) * 100.0 / N;
-double r8 = rate(8, null), r0 = rate(0, null), r15 = rate(15, null);
+double r8 = rate(8, null), r0 = rate(0, null), r15 = rate(15, null), r20 = rate(20, null);
 var fn10 = new PlayerBonuses(PetBonuses.None, 10);
 double r8fn = rate(8, fn10);
-Check(Math.Abs(r8 - 8) < 0.3 && r0 == 0 && Math.Abs(r15 - 15) < 0.4, $"la caja cae con la chance de la fila: 8 % → {r8:0.0} %, 0 % → {r0:0.0} %, 15 % → {r15:0.0} %");
+Check(Math.Abs(r8 - 8) < 0.3 && r0 == 0 && Math.Abs(r15 - 15) < 0.4 && Math.Abs(r20 - 20) < 0.4, $"la caja cae con la chance de la fila: 8 % → {r8:0.0} %, 0 % → {r0:0.0} %, 15 % → {r15:0.0} %, 20 % → {r20:0.0} %");
 Check(Math.Abs(r8fn - 8 * FuegoNuevoRules.TravelDropMultiplier(10)) < 0.4 && r8fn > r8 * 1.5, $"el Fuego Nuevo 10 multiplica la chance de la caja (×{FuegoNuevoRules.TravelDropMultiplier(10):0.00}): 8 % → {r8fn:0.0} %");
 var rw = Enumerable.Range(0, 2000).Select(_ => CombatRewardCalculator.RollTravelReward(5)).ToList();
 Check(rw.All(x => x.Gold is >= (5 + 10) * 30 and <= (15 + 10) * 30) && rw.All(x => x.Xp > 0) && CombatRewardCalculator.TravelRewardMultiplier == 30, "el oro y la EXP siguen siendo una cacería ×30 (nivel 5: 450 a 750 de oro)");
@@ -143,8 +143,8 @@ try
 }
 finally
 {
-    // Se deja la tabla como estaba: la fila del viaje de la Zona 1 (Pino, 8 %).
-    await db.ExecuteAsync("INSERT INTO zone_boxes (zone_id, role, box_item_id, chance_percent) SELECT 1, 'travel', item_id, 8 FROM items WHERE name = 'Cajón de Pino' ON CONFLICT (zone_id, role) DO UPDATE SET chance_percent = 8");
+    // Se deja la tabla como estaba: la fila del viaje de la Zona 1 (Pino, 20 %).
+    await db.ExecuteAsync("INSERT INTO zone_boxes (zone_id, role, box_item_id, chance_percent) SELECT 1, 'travel', item_id, 20 FROM items WHERE name = 'Cajón de Pino' ON CONFLICT (zone_id, role) DO UPDATE SET chance_percent = 20");
 }
 
 async Task<(Embed? Embed, int Boxes)> WinTravelEnglish(IZoneBoxService svc)
@@ -156,11 +156,11 @@ async Task<(Embed? Embed, int Boxes)> WinTravelEnglish(IZoneBoxService svc)
 }
 
 Console.WriteLine("\n== 5. /drops y la ayuda ==");
-var z1 = new ZoneBoxRow(1, 1, ZoneBoxRole.Travel, "Cajón de Pino", 8);
+var z1 = new ZoneBoxRow(1, 1, ZoneBoxRole.Travel, "Cajón de Pino", 20);
 var travelItems = new Dictionary<string, DropItemInfo> { ["Cajón de Pino"] = new("Cajón de Pino", "Común", null) };
 var zoneMonsters = new[] { new ZoneMonster(1, MonsterKind.Travel, new MonsterTemplate("Toro Bravo", "🐂", 1, 1, 1, 1, [], 0, 0)) };
 var blocks = DropsCatalog.BuildZoneBlocks(zoneMonsters, travelItems, null, z1);
-Check(blocks.Count == 1 && blocks[0].Title == "🗺️ Viajar (élite) · 8% de caja" && blocks[0].Text.Contains("Toro Bravo") && blocks[0].Text.Contains("Cajón de Pino") && !blocks[0].Text.Contains("└"),
+Check(blocks.Count == 1 && blocks[0].Title == "🗺️ Viajar (élite) · 20% de caja" && blocks[0].Text.Contains("Toro Bravo") && blocks[0].Text.Contains("Cajón de Pino") && !blocks[0].Text.Contains("└"),
     $"/drops: el bloque del viaje dice la chance de caja y qué caja, sin lista de drops ({blocks.FirstOrDefault()?.Title})");
 var blocksNoRow = DropsCatalog.BuildZoneBlocks(zoneMonsters, travelItems);
 Check(blocksNoRow.Count == 1 && blocksNoRow[0].Title.Contains("sin material"), "sin la fila el bloque dice «sin material» y no inventa una chance");
