@@ -1,6 +1,6 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-29 (v0.38.0: orden de ingredientes, «vender todo» que respeta lo del Fuego Nuevo, sin Míticos de recolección en las cajas y amuletos ×4; antes, v0.37.1 «Huir» pregunta)_
+_Última revisión: 2026-10-29 (v0.38.1: los oficios siguen subiendo después del 100, costo exponencial; antes, v0.38.0 orden de ingredientes, «vender todo» que respeta lo del Fuego Nuevo, sin Míticos de recolección en las cajas y amuletos ×4)_
 
 ## Pendiente de un vistazo (puesto al día el 2026-10-28)
 
@@ -38,6 +38,14 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
 
+## Los oficios siguen subiendo después del 100 (v0.38.1, 2026-10-29)
+
+- **Pedido del dueño** (estaba en el 100 de talar y encantar): que el nivel siga subiendo, exponencial desde el 100, para poder darle una pasiva más adelante.
+- **Costo**: igual hasta el 100; después cada nivel cuesta un **5 % más** que el anterior (el 101 pide 98 de XP, el 150 ~1.070, el 200 ~12.200; del 100 al 150 son ~20.000 de XP y al 200 ~255.000). Tope duro en el 300 (inalcanzable) solo para que la cuenta no se desborde. Sin migración: el nivel sale de los contadores, que siguieron sumando después del 100, así que quien ya tenía de sobra ve un nivel más alto.
+- **Los efectos NO crecen** después del 100 (cantidad +20 %, rareza +10 %, Polvo −25 %, tier +10 %) y la versión avanzada sigue abierta. **Todavía no hay efecto nuevo**: es solo nivel, a propósito, hasta que se decida la pasiva.
+- **Pantallas**: `/professions` muestra «nivel 137» (sin «/100») y «Tope de lo que da… el nivel sigue subiendo» con la barra hacia el próximo; el pie de `/chop`, `/mine` y `/enchant` ya no dice «nivel 100 (máximo)» sino el avance de siempre. Perillas: `ProfessionRules.PostCapGrowth` (1,07 duplica el costo del 100 al 150: ~40.000 de XP) y `HardCap`.
+- **Sigue en el aire**: la pasiva de nivel alto, la pesca como oficio nuevo (pausada), logros más difíciles, bajar la chance de materiales raros y las mascotas (aventuras, huevo por vuelta, tiers).
+
 ## Orden de ingredientes, «vender todo», Míticos fuera de las cajas y amuletos ×4 (v0.38.0, 2026-10-29)
 
 - **Orden de los ingredientes** (el dueño): primero los drops de la zona 5 a la 1 y después los materiales de recolección del Mítico al Común. Vale en el herrero, el recetario, `/forge-special`, `/tips` y el Carpintero (se ordena al cargar las recetas).
@@ -45,7 +53,7 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - **La Corteza y el Meteorito (los Míticos de recolección) ya no salen de las cajas, salvo el Brasero del Fogón.** El Arca del Soberano pierde sus dos entradas fijas. **Lo leí literal; ojo con esto**: el Brasero es el cofre del Asador (una vez por vuelta) y el Fuego Nuevo vacía la mochila, así que no puede darle a nadie el equipo de ESA vuelta; si lo que quiere es que no salgan de NINGUNA caja, es una constante.
 - **Amuletos: sus dos drops ×4 (8 en total)**, el arma ×4. Él pidió «3 y 5», pero el amuleto es uno solo para las cuatro clases y cada clase tiene SU drop en el arma, así que 3/5 le daba 7 y 5 a una ruta y 9 y 3 a la otra; 4/4 es igual para todos y suma lo mismo. El tiempo de los drops baja de ~233 a ~133 min y lo frena la recolección (143-190 min); si se lo quiere más largo, se sube la recolección (él prefiere «pedir más materiales»).
 - **Migraciones (solo datos, re-ejecutables, antes o después del binario)**: `Database/remove_mythic_from_boxes.sql` y `Database/rebalance_amulet_drops.sql`; una instalación nueva las trae al final de `run_fresh_install.sql`. Harness nuevo `v0380test`.
-- **Propuestas que quedaron en el aire (sin construir, esperan al dueño)**: bajar un poco la chance de los materiales raros (Épico 7 → 6 %, Legendario 3,5 → 3 %), logros bastante más difíciles, profesiones que sigan subiendo después del nivel 100 (con la pesca como profesión nueva) y las mascotas (el dueño dijo que le importan más que la pesca).
+- **Propuestas que quedaron en el aire (sin construir, esperan al dueño)**: bajar un poco la chance de los materiales raros (Épico 7 → 6 %, Legendario 3,5 → 3 %), logros bastante más difíciles, la pesca como profesión nueva (las profesiones que siguen subiendo después del 100 se hicieron en la v0.38.1) y las mascotas (el dueño dijo que le importan más que la pesca).
 
 ## «Huir» pregunta antes de huir (v0.37.1, 2026-10-29)
 

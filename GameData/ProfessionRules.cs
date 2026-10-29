@@ -36,10 +36,15 @@ public static class ProfessionCatalog
     public static ProfessionDefinition Get(string key) => All.First(p => p.Key == key);
 }
 
-// El nivel de un oficio: de 0 (sin XP) a ProfessionRules.MaxLevel. IntoLevel = XP juntada dentro del nivel actual; ToNext = XP que pide el próximo nivel (0 si ya está al máximo).
+// El nivel de un oficio: de 0 (sin XP) hacia arriba. IntoLevel = XP juntada dentro del nivel actual; ToNext = XP que pide el próximo nivel (0 solo en el tope duro, ProfessionRules.HardCap).
+// Desde la v0.38.1 el 100 ya NO es el final: AtEffectCap dice que los efectos llegaron al máximo (y la versión avanzada está abierta) y el nivel sigue subiendo, cada vez más caro.
 public readonly record struct ProfessionProgress(int Level, long TotalXp, long IntoLevel, long ToNext)
 {
-    public bool IsMax => Level >= ProfessionRules.MaxLevel;
+    // Pasó el nivel donde los efectos dejan de crecer (ProfessionRules.MaxLevel).
+    public bool AtEffectCap => Level >= ProfessionRules.MaxLevel;
+
+    // Llegó al tope duro de la tabla (ProfessionRules.HardCap): inalcanzable jugando, existe para que la cuenta no se desborde.
+    public bool IsMax => Level >= ProfessionRules.HardCap;
 }
 
 // Las reglas de los oficios, puras y con nombre (todo se retoca acá). Lo que da cada nivel es LINEAL y siempre igual (como Fuego Nuevo): el nivel 100 se nota muchísimo contra el 10.
@@ -49,7 +54,14 @@ public readonly record struct ProfessionProgress(int Level, long TotalXp, long I
 // Medido con report_recipe_pacing.sql: con los tres oficios al 100 el camino de recetas de las 5 zonas baja solo ~12 % (lo traban los drops de monstruos, no la recolección).
 public static class ProfessionRules
 {
+    // El nivel donde los EFECTOS dejan de crecer y se abre la versión avanzada. Desde la v0.38.1 el nivel del oficio sigue subiendo después (ver PostCapGrowth), pero lo que da el oficio se queda en el del 100.
     public const int MaxLevel = 100;
+
+    // Más allá del 100 (v0.38.1, el dueño: «que siga subiendo… así luego ponemos una pasiva»): pasar de un nivel al siguiente cuesta el del nivel anterior × PostCapGrowth, o sea EXPONENCIAL (+5 % por nivel:
+    // del 100 al 150 son ~19.000 de XP, al 200 ~240.000). Por ahora ese avance no da ningún efecto nuevo. HardCap es el último nivel de la tabla (con 5 % cada nivel pide 1,6 millones de XP ahí): nadie lo toca
+    // jugando, existe para que la cuenta acumulada no se desborde.
+    public const double PostCapGrowth = 1.05;
+    public const int HardCap = 300;
 
     // La curva: pasar del nivel L-1 al L pide XpUnit × (1 + CurveGrowth × L^1,5) de XP. XpUnit era 10 hasta la v0.19.x, cuando cada /chop o /mine daba 10 de XP fijos; desde la v0.20.0 la XP
     // depende de la rareza del material (GatherXp, promedio ~5,4 por tirada), así que la unidad bajó a 5 para que el RITMO siga igual: llegar al 100 son ~750 tiradas (eran ~810) y, con 25 de XP
@@ -75,8 +87,8 @@ public static class ProfessionRules
 
     private static long[] BuildCumulative()
     {
-        var table = new long[MaxLevel + 1];
-        for (int level = 1; level <= MaxLevel; level++)
+        var table = new long[HardCap + 1];
+        for (int level = 1; level <= HardCap; level++)
         {
             table[level] = table[level - 1] + XpForLevel(level);
         }
@@ -84,9 +96,17 @@ public static class ProfessionRules
         return table;
     }
 
-    // XP que pide pasar del nivel anterior a ESTE nivel (1..MaxLevel).
-    public static long XpForLevel(int level) =>
-        (long)Math.Round(XpUnit * (1 + (CurveGrowth * Math.Pow(Math.Clamp(level, 1, MaxLevel), 1.5))), MidpointRounding.AwayFromZero);
+    // XP que pide pasar del nivel anterior a ESTE nivel (1..HardCap). Hasta el 100 es la curva de siempre; después, el costo del 100 × PostCapGrowth^(niveles pasados del 100).
+    public static long XpForLevel(int level)
+    {
+        int clamped = Math.Clamp(level, 1, HardCap);
+        if (clamped <= MaxLevel)
+        {
+            return (long)Math.Round(XpUnit * (1 + (CurveGrowth * Math.Pow(clamped, 1.5))), MidpointRounding.AwayFromZero);
+        }
+
+        return (long)Math.Round(XpForLevel(MaxLevel) * Math.Pow(PostCapGrowth, clamped - MaxLevel), MidpointRounding.AwayFromZero);
+    }
 
     // La XP de UNA tirada de /chop o /mine según la rareza del material que salió (v0.20.0, el dueño: «normal 2, raro 7, épico 15, legendario 30, mítico 100»). Es por TIRADA y no por unidad:
     // si no, los bonus de cantidad (Fuego Nuevo, bendiciones, mascotas) harían subir más rápido el oficio. La rareza que cuenta es la que SALIÓ, ya con la mejora del propio oficio.
@@ -108,24 +128,24 @@ public static class ProfessionRules
         _ => $"según lo que te salga, por tirada: {DescribeGatherXp()} XP",
     };
 
-    // XP total para llegar al nivel máximo.
+    // XP total para llegar al nivel donde los efectos topan (MaxLevel, el 100).
     public static long TotalXpToMax => CumulativeXp[MaxLevel];
 
-    // XP acumulada con la que se llega a ESTE nivel (0..MaxLevel). La usan los títulos de maestro de oficio (GameData/TitleCatalog.cs) para expresar la meta en el contador de XP.
-    public static long XpToReach(int level) => CumulativeXp[Math.Clamp(level, 0, MaxLevel)];
+    // XP acumulada con la que se llega a ESTE nivel (0..HardCap). La usan los títulos de maestro de oficio (GameData/TitleCatalog.cs) para expresar la meta en el contador de XP.
+    public static long XpToReach(int level) => CumulativeXp[Math.Clamp(level, 0, HardCap)];
 
     public static ProfessionProgress ProgressFor(long totalXp)
     {
         long xp = Math.Max(0, totalXp);
         int level = 0;
-        while (level < MaxLevel && xp >= CumulativeXp[level + 1])
+        while (level < HardCap && xp >= CumulativeXp[level + 1])
         {
             level++;
         }
 
-        if (level >= MaxLevel)
+        if (level >= HardCap)
         {
-            return new ProfessionProgress(MaxLevel, xp, 0, 0);
+            return new ProfessionProgress(HardCap, xp, 0, 0);
         }
 
         return new ProfessionProgress(level, xp, xp - CumulativeXp[level], XpForLevel(level + 1));
@@ -176,12 +196,19 @@ public static class ProfessionRules
         return ((int)Math.Round(gold, MidpointRounding.AwayFromZero), Math.Max(1, (int)Math.Round(dust, MidpointRounding.AwayFromZero)));
     }
 
-    // Lo que da el oficio en ese nivel, en palabras (para /professions y la ayuda).
-    public static string DescribeEffect(ProfessionDefinition profession, int level) => profession.Key switch
+    // Lo que da el oficio en ese nivel, en palabras (para /professions y la ayuda). Pasado el 100 los efectos no crecen: se cuentan con el nivel del tope.
+    public static string DescribeEffect(ProfessionDefinition profession, int level)
     {
-        ProfessionCatalog.EnchanterKey => $"−{Pct(DustDiscountPerLevel * level)} de Polvo por intento y +{Pct(TierUpgradePerLevel * level)} de chance de mejorar el tier",
-        _ => $"+{Pct(QuantityPerLevel * level)} de cantidad y +{Pct(RarityUpgradePerLevel * level)} de chance de mejorar la rareza",
-    };
+        int effective = Math.Clamp(level, 0, MaxLevel);
+        return profession.Key switch
+        {
+            ProfessionCatalog.EnchanterKey => $"−{Pct(DustDiscountPerLevel * effective)} de Polvo por intento y +{Pct(TierUpgradePerLevel * effective)} de chance de mejorar el tier",
+            _ => $"+{Pct(QuantityPerLevel * effective)} de cantidad y +{Pct(RarityUpgradePerLevel * effective)} de chance de mejorar la rareza",
+        };
+    }
+
+    // «5 %»: cuánto más cuesta cada nivel después del 100 que el anterior (para /professions y la ayuda).
+    public static string DescribePostCapGrowth() => Pct(PostCapGrowth - 1);
 
     // Lo que da CADA nivel, en palabras.
     public static string DescribePerLevel(ProfessionDefinition profession) => profession.Key switch

@@ -353,7 +353,7 @@ public static class HelpTopics
         long total = ProfessionRules.TotalXpToMax;
 
         return Topic(Self("professions"),
-            "Los **oficios** suben solos cuando usás su comando: cuanto más talás, minás o encantás, mejor te sale. Cada uno va del nivel 0 al " + ProfessionRules.MaxLevel + ".",
+            "Los **oficios** suben solos cuando usás su comando: cuanto más talás, minás o encantás, mejor te sale. Cada uno empieza en el nivel 0 y lo que da llega al tope en el " + ProfessionRules.MaxLevel + ", pero el nivel **sigue subiendo** después.",
             ("📈 Cómo suben",
                 $"{woodcutter.Emoji} **{woodcutter.Name}** con **{woodcutter.Command}** y {miner.Emoji} **{miner.Name}** con **{miner.Command}**: cada tirada da XP según la rareza del material que te sale ({ProfessionRules.DescribeGatherXp()}; una por tirada, no por unidad).\n" +
                 $"{enchanter.Emoji} **{enchanter.Name}** con cada intento de **{enchanter.Command}** ({enchanter.XpPerAction} XP).\n" +
@@ -365,6 +365,8 @@ public static class HelpTopics
                 "Todo suma a lo de Fuego Nuevo y las bendiciones."),
             ($"⭐ Al nivel {ProfessionRules.MaxLevel}",
                 $"{ProfessionRules.DescribeAdvanced(woodcutter)}.\n{ProfessionRules.DescribeAdvanced(miner)}.\n{ProfessionRules.DescribeAdvanced(enchanter)}."),
+            ($"📈 Después del {ProfessionRules.MaxLevel}",
+                $"Los efectos ya no crecen, pero el nivel sí: cada uno cuesta un **{ProfessionRules.DescribePostCapGrowth()}** más que el anterior (el {ProfessionRules.MaxLevel + 1} pide {GameHistory.Number(ProfessionRules.XpForLevel(ProfessionRules.MaxLevel + 1))} de XP, el {ProfessionRules.MaxLevel + 50} pide {GameHistory.Number(ProfessionRules.XpForLevel(ProfessionRules.MaxLevel + 50))}). Por ahora ese avance no da ningún efecto nuevo."),
             ("🔄 Y el Fuego Nuevo", "Los oficios **se quedan** cuando hacés un Fuego Nuevo: tu nivel no se pierde."),
             ("📍 Comandos", "**/professions** (en texto `aa professions` o `aa oficios`) muestra tu nivel, tu XP y lo que ya te dan. También figuran en **/profile** y el avance sale al pie de cada **/chop**, **/mine** y **/enchant**."));
     }

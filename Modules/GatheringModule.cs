@@ -151,20 +151,21 @@ public class GatheringModule(
         return new GatherResult(null, embed, false);
     }
 
-    // El pie de la pantalla de un comando que sube un oficio: dónde está («🪓 Leñador nivel 12 · 340/412 XP»), si subió de nivel o si llegó al máximo. Público para que /enchant use el mismo.
+    // El pie de la pantalla de un comando que sube un oficio: dónde está («🪓 Leñador nivel 12 · 340/412 XP»), si subió de nivel o si abrió la versión avanzada (al cruzar el 100). Desde la v0.38.1 el nivel
+    // sigue después del 100, así que el pie sigue mostrando el avance; solo el tope duro de la tabla dice «máximo». Público para que /enchant use el mismo.
     public static string ProfessionFooter(ProfessionDefinition profession, ProfessionProgress before, ProfessionProgress after, long? gained = null)
     {
-        if (after.IsMax && !before.IsMax)
+        if (after.AtEffectCap && !before.AtEffectCap)
         {
             return Loc.F($"🏆 ¡{profession.DisplayName} al nivel {ProfessionRules.MaxLevel}! Desbloqueaste la {profession.DisplayAdvancedName.ToLowerInvariant()}");
         }
 
         if (after.IsMax)
         {
-            return Loc.F($"{profession.Emoji} {profession.DisplayName} nivel {ProfessionRules.MaxLevel} (máximo)");
+            return Loc.F($"{profession.Emoji} {profession.DisplayName} nivel {after.Level} (máximo)");
         }
 
-        string progress = $"{after.IntoLevel}/{after.ToNext} XP" + (gained is > 0 ? $" (+{gained})" : string.Empty);   // igual en los dos idiomas
+        string progress = $"{GameHistory.Number(after.IntoLevel)}/{GameHistory.Number(after.ToNext)} XP" + (gained is > 0 ? $" (+{GameHistory.Number(gained.Value)})" : string.Empty);   // los números siguen el idioma; el resto del texto, igual
         return after.Level > before.Level
             ? Loc.F($"🎉 ¡{profession.DisplayName} subió al nivel {after.Level}! · {progress}")
             : Loc.F($"{profession.Emoji} {profession.DisplayName} nivel {after.Level} · {progress}");

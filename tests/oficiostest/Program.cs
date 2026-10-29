@@ -11,7 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Npgsql;
 
 // v0.13.0: Oficios (Leñador, Minero, Encantador). Reglas puras, XP sacada de los contadores (con la base real y un usuario descartable), efectos en /chop, /mine y /enchant, las versiones
-// avanzadas (nivel 100) con su cooldown propio y la concurrencia, pantallas, comandos con el InteractionService real y la ayuda.
+// avanzadas (nivel 100) con su cooldown propio y la concurrencia, pantallas, comandos con el InteractionService real y la ayuda. v0.38.1: el nivel sigue subiendo pasado el 100 (costo exponencial, efectos al tope).
 int fails = 0;
 void Check(bool ok, string what) { Console.WriteLine($"  [{(ok ? "OK" : "FALLA")}] {what}"); if (!ok) fails++; }
 string AllText(Embed e) => (e.Title + "\n" + e.Description + "\n" + string.Join("\n", e.Fields.Select(f => f.Name + " " + f.Value)) + "\n" + (e.Footer?.Text ?? ""));
@@ -62,11 +62,11 @@ Check(ProfessionRules.MaxLevel == 100 && ProfessionRules.XpForLevel(1) == 5 && P
 Check(Enumerable.Range(2, 99).All(l => ProfessionRules.XpForLevel(l) >= ProfessionRules.XpForLevel(l - 1)), "cada nivel pide lo mismo o más que el anterior");
 long total = ProfessionRules.TotalXpToMax;
 Check(total is > 3900 and < 4200 && Enumerable.Range(1, 100).Sum(l => ProfessionRules.XpForLevel(l)) == total, $"llegar al 100 son {total} de XP (≈ {total / ProfessionRules.AverageGatherXp():0} tiradas de /chop o /mine con la XP por rareza, ≈ {total / 25} intentos de encantar)");
-Check(ProfessionRules.LevelFor(0) == 0 && ProfessionRules.LevelFor(4) == 0 && ProfessionRules.LevelFor(5) == 1 && ProfessionRules.LevelFor(-5) == 0 && ProfessionRules.LevelFor(total) == 100 && ProfessionRules.LevelFor(total - 1) == 99 && ProfessionRules.LevelFor(total * 50) == 100, "nivel 0 sin XP, nivel 1 a los 5, 99 a uno del tope y 100 de ahí en adelante (sin pasarse)");
+Check(ProfessionRules.LevelFor(0) == 0 && ProfessionRules.LevelFor(4) == 0 && ProfessionRules.LevelFor(5) == 1 && ProfessionRules.LevelFor(-5) == 0 && ProfessionRules.LevelFor(total) == 100 && ProfessionRules.LevelFor(total - 1) == 99 && ProfessionRules.LevelFor(total + 97) == 100 && ProfessionRules.LevelFor(total + 98) == 101, "nivel 0 sin XP, nivel 1 a los 5, 99 a uno del 100 y el 100 dura hasta juntar los 98 del siguiente (v0.38.1: el 100 ya no es el tope)");
 var pr = ProfessionRules.ProgressFor(CumXp(2) + 2);
 Check(pr.Level == 2 && pr.TotalXp == CumXp(2) + 2 && pr.IntoLevel == 2 && pr.ToNext == ProfessionRules.XpForLevel(3) && !pr.IsMax, $"el progreso dentro del nivel: nivel {pr.Level}, {pr.IntoLevel}/{pr.ToNext}");
 var prMax = ProfessionRules.ProgressFor(total + 77);
-Check(prMax.IsMax && prMax.Level == 100 && prMax.ToNext == 0, "al máximo ya no hay «próximo nivel»");
+Check(prMax.AtEffectCap && !prMax.IsMax && prMax.Level == 100 && prMax.IntoLevel == 77 && prMax.ToNext == 98, "en el 100 los efectos están al tope pero SIGUE habiendo próximo nivel (77/98 XP)");
 Check(ProfessionCatalog.All.Count == 3 && ProfessionCatalog.All.Select(p => p.Key).Distinct().Count() == 3 && ProfessionCatalog.All.Select(p => p.StatKind).Distinct().Count() == 3, "tres oficios con claves y contadores distintos");
 Check(ProfessionCatalog.Get(ProfessionCatalog.WoodcutterKey) is { StatKind: "chop_xp", XpPerAction: 1 } && ProfessionCatalog.Get(ProfessionCatalog.MinerKey) is { StatKind: "mine_xp", XpPerAction: 1 } && ProfessionCatalog.Get(ProfessionCatalog.EnchanterKey) is { StatKind: "enchant", XpPerAction: 25 }, "Leñador = chop_xp y Minero = mine_xp (el contador ya es XP: la suma cada tirada según la rareza), Encantador = /enchant (25 XP por intento)");
 Check(new[] { "Leñador", "lenador", "LEÑADOR", "woodcutter", "talar", "chop" }.All(t => ProfessionCatalog.Find(t)?.Key == ProfessionCatalog.WoodcutterKey) && ProfessionCatalog.Find("minero")?.Key == ProfessionCatalog.MinerKey && ProfessionCatalog.Find("Encantador")?.Key == ProfessionCatalog.EnchanterKey && ProfessionCatalog.Find("nada") is null && ProfessionCatalog.Find(" ") is null, "se encuentran por nombre, sin importar tildes ni mayúsculas, y por alias");
@@ -157,7 +157,8 @@ bool r_allUpgraded() => true;
 Check(quantities.All(q => q == 2), $"y con el azar al mínimo la cantidad es 1 × 1,2 redondeada hacia arriba = 2 ({string.Join(",", quantities.Distinct())})");
 await ClearCooldowns();
 var capped = await Chop();
-Check(Foot(capped.Embed).Contains("(máximo)") || Foot(capped.Embed).Contains("nivel 100"), $"al 100 el pie dice que está al máximo («{Foot(capped.Embed)}»)");
+int footLevel = int.Parse(System.Text.RegularExpressions.Regex.Match(Foot(capped.Embed), @"nivel (\d+)").Groups[1].Value);
+Check(footLevel >= 100 && !Foot(capped.Embed).Contains("(máximo)") && Foot(capped.Embed).Contains("XP"), $"pasado el 100 el pie sigue mostrando el avance, ya no dice «máximo» («{Foot(capped.Embed)}»)");
 
 Console.WriteLine("\n== 7. La versión avanzada ==");
 await ClearCooldowns();
@@ -221,7 +222,7 @@ Check(Enchantments.RollWithBonus(new Random(1), 1.0).Upgraded && Enchantments.Ro
 double single = Enumerable.Range(0, 20000).Average(_ => Enchantments.Roll()); double best2 = Enumerable.Range(0, 20000).Average(_ => Math.Max(Enchantments.Roll(), Enchantments.Roll()));
 Check(best2 > single + 0.3, $"quedarse con la mejor de dos sube el tier promedio ({single:0.00} → {best2:0.00})");
 var info = await DustModule.ExecuteEnchantAsync(users, itemsRepo, dustRepo, events, U, null, bonusService: bonusSvc);
-Check(info.Embed is not null && info.Embed.Fields.Any(f => f.Name.Contains("Encantador · nivel 100")) && AllText(info.Embed).Contains($"{disc.Dust} Polvo") && info.Embed.Length <= 6000, "/enchant sin pieza muestra el oficio y ya el Polvo con el descuento");
+Check(info.Embed is not null && info.Embed.Fields.Any(f => f.Name.Contains("Encantador · nivel ") && int.Parse(f.Name.Split("nivel ")[1].Split(' ')[0]) >= 100) && AllText(info.Embed).Contains($"{disc.Dust} Polvo") && info.Embed.Length <= 6000, "/enchant sin pieza muestra el oficio y ya el Polvo con el descuento");
 Check(AllText(DustModule.BuildOptionsEmbed()).Contains("El oficio Encantador") && DustModule.BuildOptionsEmbed().Length <= 6000, "/enchant info explica el oficio y entra en los límites");
 
 Console.WriteLine("\n== 9. Fuego Nuevo no toca los oficios ==");
@@ -240,7 +241,7 @@ Check(pe0.Fields.Length == 3 && pe0.Fields.All(f => f.Name.Contains("nivel 0/100
 await SetStat("chop_xp", 100); await SetStat("mine_xp", total); await SetStat("enchant", 5);
 var pe1 = (await ProfessionModule.ExecuteProfessionsAsync(users, bonusSvc, U)).Embed!;
 string chopField = pe1.Fields.Single(f => f.Name.Contains("Leñador")).Value, mineField = pe1.Fields.Single(f => f.Name.Contains("Minero")).Value;
-Check(chopField.Contains("█") && chopField.Contains("XP") && chopField.Contains("Hoy da +") && chopField.Contains("🔒") && mineField.Contains("¡Nivel máximo!") && mineField.Contains("🔓") && pe1.Fields.Single(f => f.Name.Contains("Minero")).Name.Contains("nivel 100/100"), "con progreso: barra y XP del Leñador, lo que da hoy, y el Minero al máximo con la avanzada desbloqueada");
+Check(chopField.Contains("█") && chopField.Contains("XP") && chopField.Contains("Hoy da +") && chopField.Contains("🔒") && mineField.Contains("Tope de lo que da") && mineField.Contains("0/98 XP") && !mineField.Contains("Nivel máximo") && mineField.Contains("🔓") && pe1.Fields.Single(f => f.Name.Contains("Minero")).Name.EndsWith("nivel 100", StringComparison.Ordinal), "con progreso: barra y XP del Leñador, lo que da hoy, y el Minero en el 100 (tope de lo que da, con barra hacia el 101 y la avanzada desbloqueada)");
 Check(AllText(pe1).Contains("/chop") && AllText(pe1).Contains("/enchant") && AllText(pe1).Contains("Fuego Nuevo") && Foot(pe1).Contains("también cuenta"), "explica con qué comando sube cada uno, que se quedan con el Fuego Nuevo y que lo anterior cuenta");
 var prof = await GameModule.BuildProfileEmbedAsync(users, itemsRepo, zonesRepo, buffRepo, U, "T", "https://example.com/a.png", pets, bonusSvc);
 var profPlain = await GameModule.BuildProfileEmbedAsync(users, itemsRepo, zonesRepo, buffRepo, U, "T", "https://example.com/a.png", pets);
@@ -289,6 +290,45 @@ var mentioned = System.Text.RegularExpressions.Regex.Matches(tt, @"/([a-z]+)").S
 Check(mentioned.All(m => slashNames.Contains(m)), $"todo comando que el tema nombra existe ({string.Join(", ", mentioned.Where(m => !slashNames.Contains(m)))})");
 var infoE = HelpModule.BuildInfoEmbed();
 Check(AllText(infoE).Contains("/professions") && AllText(infoE).Contains("professions") && infoE.Length <= 6000 && infoE.Fields.All(f => f.Value.Length <= 1024), $"/info lista /professions y el tema, dentro de los límites ({infoE.Length})");
+
+Console.WriteLine("\n== 13. Más allá del 100 (v0.38.1) ==");
+Check(ProfessionRules.XpForLevel(101) == 98 && ProfessionRules.XpForLevel(110) == (long)Math.Round(93 * Math.Pow(1.05, 10), MidpointRounding.AwayFromZero) && ProfessionRules.XpForLevel(200) is > 12_000 and < 12_500 && ProfessionRules.XpForLevel(100) == 93, $"el 101 pide 98 de XP y de ahí cada nivel cuesta 5 % más (110: {ProfessionRules.XpForLevel(110)}, 200: {ProfessionRules.XpForLevel(200)})");
+Check(Enumerable.Range(2, ProfessionRules.HardCap - 1).All(l => ProfessionRules.XpForLevel(l) >= ProfessionRules.XpForLevel(l - 1)) && Enumerable.Range(101, 199).All(l => ProfessionRules.XpForLevel(l) > ProfessionRules.XpForLevel(l - 1)), "la curva nunca baja y después del 100 sube en cada nivel (exponencial)");
+Check(Enumerable.Range(101, 150).All(l => Near((double)ProfessionRules.XpForLevel(l) / ProfessionRules.XpForLevel(l - 1), 1.05, 0.01)), "cada nivel pasado el 100 cuesta ~5 % más que el anterior");
+Check(ProfessionRules.XpToReach(150) - ProfessionRules.XpToReach(100) is > 15_000 and < 25_000 && ProfessionRules.XpToReach(200) - ProfessionRules.XpToReach(100) is > 200_000 and < 300_000, $"del 100 al 150 son {ProfessionRules.XpToReach(150) - ProfessionRules.XpToReach(100):N0} de XP y al 200 {ProfessionRules.XpToReach(200) - ProfessionRules.XpToReach(100):N0}");
+Check(ProfessionRules.ProgressFor(ProfessionRules.XpToReach(150)).Level == 150 && ProfessionRules.ProgressFor(ProfessionRules.XpToReach(150) - 1).Level == 149 && ProfessionRules.LevelFor(ProfessionRules.XpToReach(237) + 5) == 237, "el nivel se saca de la XP también pasado el 100 (150 justo, 149 a uno, 237)");
+var topProgress = ProfessionRules.ProgressFor(long.MaxValue / 4);
+Check(topProgress.Level == ProfessionRules.HardCap && topProgress.IsMax && topProgress.ToNext == 0 && ProfessionRules.XpToReach(int.MaxValue) == ProfessionRules.XpToReach(ProfessionRules.HardCap) && ProfessionRules.XpToReach(ProfessionRules.HardCap) < 100_000_000, $"el tope duro ({ProfessionRules.HardCap}) no se desborda: {ProfessionRules.XpToReach(ProfessionRules.HardCap):N0} de XP en total");
+// Los efectos NO crecen pasado el 100: todo se mide con el nivel del tope.
+Check(Near(ProfessionRules.QuantityMultiplier(100), ProfessionRules.QuantityMultiplier(250), 1e-12) && Near(ProfessionRules.RarityUpgradeChance(100), ProfessionRules.RarityUpgradeChance(250), 1e-12)
+    && Near(ProfessionRules.DustMultiplier(100), ProfessionRules.DustMultiplier(250), 1e-12) && Near(ProfessionRules.TierUpgradeChance(100), ProfessionRules.TierUpgradeChance(250), 1e-12) && ProfessionRules.AdvancedUnlocked(101) && ProfessionRules.AdvancedUnlocked(250),
+    "los efectos del 250 son los del 100 y la versión avanzada sigue abierta");
+var woodE = ProfessionCatalog.Get(ProfessionCatalog.WoodcutterKey);
+Check(ProfessionRules.DescribeEffect(woodE, 180) == ProfessionRules.DescribeEffect(woodE, 100) && ProfessionRules.DescribeEffect(woodE, 100).Contains("+20 %") && ProfessionRules.DescribePostCapGrowth() == "5 %", "la descripción del nivel 180 dice lo del 100 (+20 % de cantidad)");
+// El pie: cruzar el 100 avisa de la versión avanzada; después ya solo muestra el avance.
+var before99 = ProfessionRules.ProgressFor(ProfessionRules.XpToReach(100) - 3);
+var after100 = ProfessionRules.ProgressFor(ProfessionRules.XpToReach(100) + 4);
+var before105 = ProfessionRules.ProgressFor(ProfessionRules.XpToReach(105) + 10);
+var after105 = ProfessionRules.ProgressFor(ProfessionRules.XpToReach(105) + 17);
+var afterLevelUp = ProfessionRules.ProgressFor(ProfessionRules.XpToReach(106) + 2);
+string footCross = GatheringModule.ProfessionFooter(woodE, before99, after100, 7), footPlain = GatheringModule.ProfessionFooter(woodE, before105, after105, 7), footUp = GatheringModule.ProfessionFooter(woodE, before105, afterLevelUp, 7);
+Check(footCross.Contains("🏆") && footCross.Contains("al nivel 100") && !footPlain.Contains("🏆") && footPlain.Contains("nivel 105") && footPlain.Contains("(+7)") && !footPlain.Contains("máximo") && footUp.Contains("subió al nivel 106"), $"al cruzar el 100 avisa de la avanzada; en el 105 muestra el avance («{footPlain}») y al subir dice que subió («{footUp}»)");
+string footMaxHard = GatheringModule.ProfessionFooter(woodE, topProgress, topProgress);
+Check(footMaxHard.Contains("(máximo)") && footMaxHard.Contains($"nivel {ProfessionRules.HardCap}"), "solo el tope duro de la tabla dice «máximo»");
+// Un jugador con XP de sobra (como quien llegó al 100 antes de la v0.38.1): conserva el nivel y /professions lo muestra sin «/100».
+await Reset();
+await SetStat("chop_xp", ProfessionRules.XpToReach(130) + 6); await SetStat("mine_xp", 10); await SetStat("enchant", 0);
+var peHi = (await ProfessionModule.ExecuteProfessionsAsync(users, bonusSvc, U)).Embed!;
+var chopHi = peHi.Fields.Single(f => f.Name.Contains("Leñador"));
+Check(chopHi.Name.EndsWith("nivel 130", StringComparison.Ordinal) && !chopHi.Name.Contains("/100") && chopHi.Value.Contains("Tope de lo que da") && chopHi.Value.Contains("+20 % de cantidad") && chopHi.Value.Contains("6/") && chopHi.Value.Contains("🔓")
+    && AllText(peHi).Contains("5 %") && peHi.Length <= 6000 && peHi.Fields.All(f => f.Value.Length <= 1024), $"un Leñador del 130 se ve en «nivel 130» (sin /100), con el tope de lo que da y la barra hacia el 131 («{chopHi.Name}»)");
+var bonusesHi = await bonusSvc.GetAsync(U, 0);
+Check(bonusesHi.ProfessionLevel("woodcutter") == 130 && Near(bonusesHi.ChopMultiplier, 1.2, 1e-9) && Near(bonusesHi.ChopRarityUpgrade, 0.1, 1e-9), "y en las tiradas el nivel 130 rinde lo del 100 (×1,2 de cantidad, +10 % de mejorar la rareza)");
+await ClearCooldowns();
+long bagHi = await Bag();
+var advHi = await Chop(advanced: true);
+Check(advHi.Embed is not null && !advHi.Ephemeral && await Bag() > bagHi && Foot(advHi.Embed).Contains("nivel 130") && !Foot(advHi.Embed).Contains("🏆"), $"la tala avanzada funciona en el 130 y su pie muestra el avance, sin avisar de nuevo la avanzada («{Foot(advHi.Embed)}»)");
+Check(await Stat("chop_xp") > ProfessionRules.XpToReach(130) + 6, "y esa tala sumó XP al contador (sigue subiendo después del 100)");
 
 await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)U });
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
