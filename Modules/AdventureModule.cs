@@ -199,8 +199,99 @@ public class AdventureModule(
     [ComponentInteraction("btn_ability")]
     public Task HandleAbilityAsync() => ResolveTurnAsync(fled: false, useAbility: true);
 
+    // «Huir» PREGUNTA antes de huir (v0.37.1, el dueño: «cada vez que se huya de una batalla necesito que se pregunte: ¿estás seguro?, cobarde o algo así»): en el celu, al editarse el mensaje de la pelea,
+    // el botón de Huir cae donde estaba el de Atacar y, atacando rápido, se toca sin querer. La pregunta va en un mensaje PRIVADO aparte (el de la pelea no cambia, así los botones no se mueven) y el
+    // «Sí, huir» lleva el id de ESTA pelea: si esa ya terminó y empezó otra, no huye de la nueva. Escribir «aa flee» NO pregunta: escribirlo ya es a propósito.
     [ComponentInteraction("btn_flee")]
-    public Task HandleFleeAsync() => ResolveTurnAsync(fled: true, useAbility: false);
+    public async Task HandleFleeAsync()
+    {
+        try
+        {
+            var session = combatSessions.Peek(Context.User.Id);
+            if (session is null)
+            {
+                await RespondAsync(NoActiveFightMessage(combatSessions, Context.User.Id), ephemeral: true);
+                return;
+            }
+
+            await RespondAsync(Loc.T("🐔 ¿Estás seguro? Huir es de cobardes: si te vas no ganás nada de esta pelea."), components: BuildFleeConfirmButtons(session.State.FightId), ephemeral: true);
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+        }
+    }
+
+    [ComponentInteraction("btn_flee_yes:*")]
+    public async Task HandleFleeYesAsync(string fightIdRaw)
+    {
+        await DeferAsync();
+
+        try
+        {
+            var check = ResolveFleeConfirm(combatSessions, Context.User.Id, fightIdRaw);
+            if (check != FleeConfirmStatus.Ok)
+            {
+                string why = check == FleeConfirmStatus.NoFight
+                    ? NoActiveFightMessage(combatSessions, Context.User.Id)
+                    : Loc.T("Esa pelea ya terminó; la que está en curso es otra y no huiste de nada.");
+                await ModifyOriginalResponseAsync(p =>
+                {
+                    p.Content = why;
+                    p.Components = new ComponentBuilder().Build();
+                });
+                return;
+            }
+
+            // La pelea se edita por el destino que ya tiene la sesión (SessionTargetCombatTurnOutput); este mensaje privado solo se cierra.
+            var output = new SessionTargetCombatTurnOutput(Context.Interaction);
+            await ResolveTurnCoreAsync(
+                combatSessions, userRepository, itemRepository, adventureRepository, inventoryRepository, buffRepository, gameEvents, zoneBoxService,
+                Context.User.Id, fled: true, useAbility: false, output);
+
+            await ModifyOriginalResponseAsync(p =>
+            {
+                p.Content = output.Completed ? Loc.T("🏃 Huiste de la pelea.") : Loc.T("No se pudo huir: mirá el aviso.");
+                p.Components = new ComponentBuilder().Build();
+            });
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+        }
+    }
+
+    [ComponentInteraction("btn_flee_no:*")]
+    public async Task HandleFleeNoAsync(string fightIdRaw)
+    {
+        await DeferAsync();
+        await ModifyOriginalResponseAsync(p =>
+        {
+            p.Content = Loc.T("💪 ¡Seguís en la pelea!");
+            p.Components = new ComponentBuilder().Build();
+        });
+    }
+
+    public enum FleeConfirmStatus { Ok, NoFight, OtherFight }
+
+    // ¿El «Sí, huir» sigue valiendo? Ok si el jugador tiene una pelea y es LA misma que se quiso dejar; NoFight si ya no tiene ninguna; OtherFight si la que tiene es otra (la anterior terminó).
+    public static FleeConfirmStatus ResolveFleeConfirm(ICombatSessionService combatSessions, ulong discordId, string fightIdRaw)
+    {
+        var session = combatSessions.Peek(discordId);
+        if (session is null)
+        {
+            return FleeConfirmStatus.NoFight;
+        }
+
+        return Guid.TryParse(fightIdRaw, out var fightId) && fightId == session.State.FightId ? FleeConfirmStatus.Ok : FleeConfirmStatus.OtherFight;
+    }
+
+    // Los dos botones de la pregunta: «No, a pelear» primero y «Sí, huir» (rojo) segundo. Los ids llevan el id de la pelea.
+    public static MessageComponent BuildFleeConfirmButtons(Guid fightId) =>
+        new ComponentBuilder()
+            .WithButton(Loc.T("No, a pelear"), $"btn_flee_no:{fightId:N}", ButtonStyle.Success, new Emoji("💪"))
+            .WithButton(Loc.T("Sí, huir"), $"btn_flee_yes:{fightId:N}", ButtonStyle.Danger, new Emoji("🏃"))
+            .Build();
 
     private async Task ResolveTurnAsync(bool fled, bool useAbility)
     {

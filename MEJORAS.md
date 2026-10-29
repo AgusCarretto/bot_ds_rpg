@@ -1,6 +1,6 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-28 (v0.37.0: los códigos canjeables `aa code`; antes, el viaje sin drop de material y el inventario por pestañas)_
+_Última revisión: 2026-10-29 (v0.37.1: «Huir» pregunta antes de huir; antes, los códigos canjeables `aa code`, el viaje sin drop de material y el inventario por pestañas)_
 
 ## Pendiente de un vistazo (puesto al día el 2026-10-28)
 
@@ -38,7 +38,13 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
 
-## Los códigos canjeables: `aa code` / `/code` y el panel `aa admincode` (v0.37.0, 2026-10-28, en develop)
+## «Huir» pregunta antes de huir (v0.37.1, 2026-10-29)
+
+- El dueño: «cada vez que se huya de una batalla necesito que se pregunte, ¿estás seguro?, cobarde o algo así… el guerrero al editar el mensaje en el celu me tira el huir donde está el atacar: si vas atacando rápido tocás sin querer». El botón **Huir** (solo y en equipo) ya no huye: abre una pregunta PRIVADA («🐔 ¿Estás seguro? Huir es de cobardes…») con «No, a pelear» (verde) y «Sí, huir» (rojo). El mensaje de la pelea NO se toca, así los botones no se mueven (cambiar los botones en el mismo mensaje habría puesto el «Sí» justo donde estaba «Atacar»).
+- El «Sí» lleva el id de ESA pelea: si ya terminó y empezó otra, no huye de la nueva. **«aa flee» escrito no pregunta** (escribirlo ya es a propósito; es lo que se usa cuando el botón se traba). El «Rendirse» de los duelos no se tocó.
+- Sin migración. Harness nuevo `v0371test`.
+
+## Los códigos canjeables: `aa code` / `/code` y el panel `aa admincode` (v0.37.0, 2026-10-28, en main)
 
 - El dueño: «vamos a ir trabajando en code, `aa code`: un comando nuevo que tenga códigos que se puedan canjear por cosas». Un código da una LISTA de premios (oro, Polvo, EXP —sube de nivel con su cartel— y cualquier ítem de la mochila: cajas, comida, materiales, huevos…; no equipo ni herramientas), con un tope opcional de personas y un vencimiento opcional. **Una vez por persona.** Todo en UNA transacción: 12 personas a la vez con un cupo de 5 canjean exactamente 5.
 - Jugadores: `/code codigo:` (la respuesta es PRIVADA) o `aa code CODIGO` (el bot intenta borrar el mensaje para que el código no quede a la vista). Quien prueba 5 códigos que no existen en 10 minutos queda 10 minutos sin poder probar.

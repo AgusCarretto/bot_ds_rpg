@@ -40,6 +40,27 @@ public sealed class InteractionRaidTurnOutput(IDiscordInteraction interaction) :
     }
 }
 
+// El «Sí, retirarme» de la confirmación (v0.37.1): el clic llega desde un mensaje PRIVADO aparte, así que el combate en equipo se edita por el mensaje compartido que ya tiene la sesión (session.ReplyTarget).
+public sealed class SessionTargetRaidTurnOutput(IDiscordInteraction interaction) : IRaidTurnOutput
+{
+    public bool Completed { get; private set; }
+
+    public Task NoteAsync(string text) => interaction.FollowupAsync(text, ephemeral: true);
+
+    public async Task ShowAsync(RaidSession session, Embed embed, MessageComponent components)
+    {
+        await session.ReplyTarget.UpdateAsync(embed, components);
+        Completed = true;
+    }
+
+    // El final también se edita en el mensaje compartido: no hay nada que reapuntar.
+    public Task PrepareFinalAsync(RaidSession session)
+    {
+        Completed = true;
+        return Task.CompletedTask;
+    }
+}
+
 public sealed class MessageRaidTurnOutput(IMessageChannel channel) : IRaidTurnOutput
 {
     public Task NoteAsync(string text) => channel.SendMessageAsync(text);

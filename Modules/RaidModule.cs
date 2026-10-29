@@ -422,12 +422,35 @@ public class RaidModule(
         }
     }
 
+    // «Huir» pregunta antes de retirarte (v0.37.1, como en el combate solitario: en el celu el botón de Huir cae donde estaba el de Atacar y se toca sin querer). La pregunta es PRIVADA y el combate compartido no cambia.
+    // El id del raid es único de cada combate, así que un «Sí» viejo nunca retira de otro. Escribir «aa flee» no pregunta.
     [ComponentInteraction("raid_flee:*")]
     public async Task HandleFleeAsync(string raidIdRaw)
     {
+        try
+        {
+            if (!Guid.TryParse(raidIdRaw, out var raidId) || raidSessions.Peek(raidId) is null)
+            {
+                await RespondAsync("Ese combate ya no existe.", ephemeral: true);
+                return;
+            }
+
+            await RespondAsync(
+                "🐔 ¿Estás seguro? Huir es de cobardes: si te retirás no cobrás la recompensa del jefe y tu equipo sigue sin vos.",
+                components: BuildFleeConfirmButtons(raidId), ephemeral: true);
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+        }
+    }
+
+    [ComponentInteraction("raid_flee_yes:*")]
+    public async Task HandleFleeYesAsync(string raidIdRaw)
+    {
         await DeferAsync();
 
-        var output = new InteractionRaidTurnOutput(Context.Interaction);
+        var output = new SessionTargetRaidTurnOutput(Context.Interaction);
         if (!Guid.TryParse(raidIdRaw, out var parsedRaidId))
         {
             await output.NoteAsync("Ese combate ya no existe.");
@@ -435,7 +458,32 @@ public class RaidModule(
         }
 
         await ResolveFleeCoreAsync(raidSessions, userRepository, parsedRaidId, Context.User.Id, output, gameEvents);
+
+        // Este mensaje privado solo se cierra: el combate compartido ya se editó por su propio mensaje.
+        await ModifyOriginalResponseAsync(p =>
+        {
+            p.Content = output.Completed ? "🏃 Te retiraste del combate." : "No se pudo retirar: mirá el aviso.";
+            p.Components = new ComponentBuilder().Build();
+        });
     }
+
+    [ComponentInteraction("raid_flee_no:*")]
+    public async Task HandleFleeNoAsync(string raidIdRaw)
+    {
+        await DeferAsync();
+        await ModifyOriginalResponseAsync(p =>
+        {
+            p.Content = "💪 ¡Seguís en el combate!";
+            p.Components = new ComponentBuilder().Build();
+        });
+    }
+
+    // Los dos botones de la pregunta («No, a pelear» y «Sí, retirarme», en rojo); los ids llevan el id del raid.
+    public static MessageComponent BuildFleeConfirmButtons(Guid raidId) =>
+        new ComponentBuilder()
+            .WithButton("No, a pelear", $"raid_flee_no:{raidId}", ButtonStyle.Success, new Emoji("💪"))
+            .WithButton("Sí, retirarme", $"raid_flee_yes:{raidId}", ButtonStyle.Danger, new Emoji("🏃"))
+            .Build();
 
     // Retirarse del combate en equipo (el botón "Huir" o "aa flee"), SIN dependencia de Context. Se puede huir en cualquier momento, también fuera de turno. gameEvents es opcional (solo para
     // anotar la derrota de un caído si al irse este jugador termina el combate, ver SettleKnockedOutAsync).
