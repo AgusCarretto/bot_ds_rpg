@@ -343,7 +343,7 @@ var sp = (IServiceProvider)typeof(BoxModule).Assembly.GetType("ServiceProviderBu
 await interactions.AddModulesAsync(typeof(BoxModule).Assembly, sp);
 bool validName(string n) => n.Length is >= 1 and <= 32 && n == n.ToLowerInvariant() && n.All(c => char.IsLetterOrDigit(c) || c is '-' or '_');
 var petCmds = interactions.SlashCommands.Where(c => c.Module.SlashGroupName == "pet").ToList();
-Check(petCmds.Select(c => c.Name).OrderBy(n => n).SequenceEqual(["feed", "view"]) && petCmds.All(c => validName(c.Name) && c.Description.Length is >= 1 and <= 100 && c.Parameters.All(p => validName(p.Name) && p.Description.Length is >= 1 and <= 100)) && interactions.Modules.Single(m => m.SlashGroupName == "pet").Description!.Length <= 100, "/pet view y /pet feed cumplen los límites de Discord");
+Check(petCmds.Select(c => c.Name).OrderBy(n => n).SequenceEqual(["expedition", "feed", "view"]) && petCmds.All(c => validName(c.Name) && c.Description.Length is >= 1 and <= 100 && c.Parameters.All(p => validName(p.Name) && p.Description.Length is >= 1 and <= 100)) && interactions.Modules.Single(m => m.SlashGroupName == "pet").Description!.Length <= 100, "/pet view, /pet feed y /pet expedition (v0.39.0) cumplen los límites de Discord");
 Check(petCmds.Single(c => c.Name == "feed").Parameters.Single() is { Name: "mascota", IsRequired: false, AutocompleteHandler: not null }, "y /pet feed tiene su parámetro «mascota» opcional con lista");
 var openCmd = interactions.SlashCommands.Single(c => c.Name == "open" && c.Module.SlashGroupName is null);
 Check(openCmd.Description.Length <= 100 && openCmd.Parameters.All(p => p.Description.Length <= 100), "/open sigue entrando en los límites (descripciones de 100)");

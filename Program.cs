@@ -562,6 +562,7 @@ public static class ServiceProviderBuilder
             .AddSingleton<IDustRepository, DustRepository>()
             .AddSingleton<IDropExchangeRepository, DropExchangeRepository>()
             .AddSingleton<IPetRepository, PetRepository>()
+            .AddSingleton<IPetExpeditionRepository, PetExpeditionRepository>()
             .AddSingleton<IBlessingRepository, BlessingRepository>()
             .AddSingleton<IFuegoNuevoRepository, FuegoNuevoRepository>()
             .AddSingleton<IToolRepository, ToolRepository>()

@@ -74,6 +74,8 @@ public static class GameEventKinds
     // v0.10.0: mascotas (GameData/PetRules.cs).
     public const string PetHatched = "pet_hatched";         // abrió un huevo y nació una mascota; detail = el nombre de la especie
     public const string PetFed = "pet_fed";                 // le dio de comer a una mascota (una por hora cada una); detail = el nombre de la especie
+    public const string PetExpeditionStart = "pet_expedition_start";   // mandó una mascota de expedición (v0.39.0); amount = horas; detail = el nombre de la especie
+    public const string PetExpeditionClaim = "pet_expedition_claim";   // recogió el premio de una expedición; amount = horas; detail = el nombre de la especie (y ":hallazgo" si trajo algo especial)
 
     // v0.11.0: El Fogón Eterno.
     public const string GateWin = "gate_win";               // venció al Asador Eterno (se habilita el Fuego Nuevo)

@@ -133,10 +133,11 @@ public class ReminderModule(IUserRepository userRepository, IReminderRepository 
 
         var lines = ReminderCatalog.All.Select(k =>
         {
-            string wait = ReminderCatalog.WaitOf(k.Key) is { } w ? ReminderCatalog.WaitLabel(w) : "?";
+            // La expedición de la mascota no tiene una espera fija (1, 4 u 8 horas según lo que se elija): se avisa cuando vuelve.
+            string wait = ReminderCatalog.WaitOf(k.Key) is { } w ? $"cada {ReminderCatalog.WaitLabel(w)}" : "cuando vuelve";
             return off.Contains(k.Key)
-                ? $"🔕 {k.Emoji} ~~{k.Name}~~ · cada {wait}"
-                : $"✅ {k.Emoji} **{k.Name}** · cada {wait}";
+                ? $"🔕 {k.Emoji} ~~{k.Name}~~ · {wait}"
+                : $"✅ {k.Emoji} **{k.Name}** · {wait}";
         });
 
         var embed = new EmbedBuilder()

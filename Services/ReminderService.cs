@@ -26,7 +26,8 @@ public sealed class ReminderService(
     IUserRepository users,
     IPetRepository pets,
     IPlayerBonusService bonuses,
-    IDragonRepository? dragons = null) : IReminderService
+    IDragonRepository? dragons = null,
+    IPetExpeditionRepository? expeditions = null) : IReminderService
 {
     private readonly ConcurrentDictionary<ulong, DateTime> _lastActivity = new();
 
@@ -57,6 +58,7 @@ public sealed class ReminderService(
             bool pet = ReminderCatalog.MayChangePet(commandHint);
             bool daily = ReminderCatalog.MayChangeDaily(commandHint);
             bool dragon = ReminderCatalog.MayChangeDragon(commandHint);
+            bool expedition = ReminderCatalog.MayChangeExpedition(commandHint);
             if (pet || daily)
             {
                 var user = await users.GetByDiscordIdAsync(discordId, cancellationToken);
@@ -84,6 +86,12 @@ public sealed class ReminderService(
                 && ReminderCatalog.DragonDue(dragonOwned.Wait, dragonOwned.Tier, now) is { } dragonDue)
             {
                 candidates.Add(dragonDue);
+            }
+
+            // La expedición de la mascota (v0.39.0) vive en pet_expeditions, con el reloj de la base.
+            if (expedition && expeditions is not null && ReminderCatalog.ExpeditionDue((await expeditions.GetAsync(discordId, cancellationToken))?.Remaining, now) is { } expeditionDue)
+            {
+                candidates.Add(expeditionDue);
             }
 
             if (candidates.Count > 0)

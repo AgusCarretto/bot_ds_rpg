@@ -415,7 +415,10 @@ public static class HelpTopics
         ("🍖 Cómo crecen",
             $"Comen **{PetRules.FoodItemName}** (se compra en la **/taberna**). Cada mascota puede comer **una vez por hora**; **/pet feed** alimenta a todas las que estén listas o elegís una. " +
             $"Tienen nivel de 1 a {PetRules.MaxLevel} y el bonus crece con el nivel (nivel 1 = el 10 % de su tope, nivel {PetRules.MaxLevel} = el tope entero). Llegar al máximo lleva {PetRules.TotalFeedsToMax} comidas por mascota."),
-        ("📍 Comandos", "**/pet view** las muestra, **/pet feed** las alimenta y **/open** abre el huevo. En texto: `aa pet` y `aa pet feed`. También figuran en **/profile**."));
+        ("🧭 Expediciones",
+            $"Una mascota en el **nivel {PetExpeditions.RequiredLevel}** puede salir de expedición por **{string.Join(", ", PetExpeditions.Options.Select(o => o.Hours))} horas** mientras hacés otra cosa (**/pet expedition**). Gasta **{string.Join(" / ", PetExpeditions.Options.Select(o => o.FoodCost))}** {PetRules.FoodItemName} según la duración, y sale de a **una por vez**. " +
+            $"Cuando vuelve, el mismo comando recoge el premio, **igual para todos sin importar tu zona**: un **oro** del rango de esa duración ({string.Join(" / ", PetExpeditions.Options.Select(o => $"{GameHistory.Number(o.GoldMin)}–{GameHistory.Number(o.GoldMax)}"))}) y **EXP** ({string.Join(" / ", PetExpeditions.Options.Select(o => o.XpPercent + " %"))} de tu nivel), y, con chance ({string.Join(" / ", PetExpeditions.Options.Select(o => o.FindChancePercent + " %"))}), un **hallazgo** que depende de la especie: +{PetExpeditions.FindBonusPercent} % de oro, +{PetExpeditions.FindBonusPercent} % de EXP, Polvo, drops de cacería de tu zona o madera y mineral. Te avisa cuando vuelve si tenés los avisos prendidos (**/reminders**)."),
+        ("📍 Comandos", "**/pet view** las muestra, **/pet feed** las alimenta, **/pet expedition** las manda de expedición y **/open** abre el huevo. En texto: `aa pet`, `aa pet feed` y `aa pet expedition`. También figuran en **/profile**."));
 
     private static Embed Dragon()
     {
@@ -448,7 +451,7 @@ public static class HelpTopics
 
     private static Embed Reminders()
     {
-        var waits = ReminderCatalog.All.Select(k => $"{k.Emoji} **{k.Name}** — cada {ReminderCatalog.WaitLabel(ReminderCatalog.WaitOf(k.Key)!.Value)}");
+        var waits = ReminderCatalog.All.Select(k => $"{k.Emoji} **{k.Name}** — {(ReminderCatalog.WaitOf(k.Key) is { } w ? "cada " + ReminderCatalog.WaitLabel(w) : "cuando vuelve (1, 4 u 8 h)")}");
         int shortMinutes = (int)ReminderCatalog.ShortLived.TotalMinutes;
 
         return Topic(Self("reminders"),
