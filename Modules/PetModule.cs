@@ -196,7 +196,7 @@ public partial class PetModule(
         string requirements = $"{(pet.ExpeditionHours >= hoursNeed ? "✅" : "⏱️")} Expediciones: {Math.Min(pet.ExpeditionHours, hoursNeed)}/{hoursNeed} h · {(eggs >= eggsNeed ? "✅" : "🥚")} Huevos sobrantes: {Math.Min(eggs, eggsNeed)}/{eggsNeed}";
         return ready
             ? $"🧬 ¡Lista para evolucionar al tier {PetRules.TierName(toTier)}! Usá **/pet evolve**.\n{requirements}"
-            : $"🧬 Puede evolucionar al tier {PetRules.TierName(toTier)}\n{requirements}";
+            : $"🧬 Para evolucionar al tier {PetRules.TierName(toTier)}:\n{requirements}";
     }
 
     // El botón "Alimentar" de la pantalla: deshabilitado si no hay mascotas listas o no tenés comida (el rechazo real lo decide la base, esto es solo ayuda visual).
