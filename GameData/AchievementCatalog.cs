@@ -33,6 +33,11 @@ public static class AchievementCatalog
     private static IReadOnlyList<AchievementTier> Plain(long one, long two, long three) =>
         [new(one, new RewardSpec(4, 3)), new(two, new RewardSpec(12, 5)), new(three, new RewardSpec(30, 8))];
 
+    // Las HAZAÑAS (v0.41.0, el dueño: «agregar logros más difíciles, pero bastante más difíciles… siento que se consiguen muy rápido»): metas de 10 a 30 veces las de los logros comunes (el tramo III de
+    // «Cazador» son 600 cacerías y el de su hazaña 20.000), con un premio más grande que el Plain pero igual SOLO de oro y EXP, nunca cajas (sus contadores son los mismos de los logros comunes y se podrían farmear).
+    private static IReadOnlyList<AchievementTier> Feat(long one, long two, long three) =>
+        [new(one, new RewardSpec(40, 10)), new(two, new RewardSpec(120, 25)), new(three, new RewardSpec(400, 60))];
+
     public static readonly IReadOnlyList<AchievementDefinition> All =
     [
         new("cazador",       "Cazador",       "🏹", GameEventKinds.HuntWin,       "Ganá cacerías con /hunt",                          Standard(25, 150, 600)),
@@ -71,6 +76,16 @@ public static class AchievementCatalog
         // adelante: caen en vueltas donde el fuego cuenta algo nuevo del Asador. El último tramo de "El que volvió" es el Fuego Nuevo 100, el final de la historia.
         new("companero",     "Compañero del Asador", "🫂", GameEventKinds.FuegoNuevo, "Seguí volviendo al Fogón: cada vuelta le saca pesar al Asador", Plain(10, 25, 50)),
         new("volvio",        "El que volvió", "🪑", GameEventKinds.FuegoNuevo,    "Llegá hasta el final de la historia del Fogón",   Plain(75, 90, Lore.FinalFuegoNuevo)),
+
+        // v0.41.0 — HAZAÑAS (página propia; premio solo de oro y EXP, ver Feat).
+        new("hz_cazador",    "Cazador de Leyenda", "🏹", GameEventKinds.HuntWin,    "Ganá miles de cacerías con /hunt",                 Feat(2_500, 7_500, 20_000)),
+        new("hz_viajero",    "Trotamundos",        "🧭", GameEventKinds.TravelWin,  "Ganá cientos de viajes contra élites con /travel",  Feat(400, 1_200, 3_000)),
+        new("hz_jefes",      "Verdugo de Gigantes", "🗡️", GameEventKinds.BossWin,   "Vencé a decenas de jefes con /boss",               Feat(40, 120, 300)),
+        new("hz_recolector", "Titán del Monte",    "⛰️", GameEventKinds.GatheredUnits, "Juntá decenas de miles de materiales con /chop y /mine", Feat(10_000, 30_000, 100_000)),
+        new("hz_herrero",    "Yunque Eterno",      "⚒️", GameEventKinds.Craft,      "Forjá cientos de piezas en la herrería con /forge", Feat(60, 150, 400)),
+        new("hz_magnate",    "Magnate",            "💎", GameEventKinds.ShopGoldSpent, "Gastá millones de oro en la tienda (/shop)",    Feat(1_000_000, 10_000_000, 100_000_000)),
+        new("hz_encantador", "Archimago",          "🪄", GameEventKinds.Enchant,    "Intentá cientos de encantamientos",                Feat(150, 500, 2_000)),
+        new("hz_explorador", "Gran Explorador",    "🏕️", GameEventKinds.PetExpeditionClaim, "Sumá horas de expedición con tus mascotas (/pet expedition)", Feat(300, 1_500, 5_000)),
     ];
 
     // Los logros se muestran en páginas por tema (/achievements): cada logro está en exactamente una (lo chequea la prueba).
@@ -82,6 +97,7 @@ public static class AchievementCatalog
         new("Oficios", "🔨", ["recolector", "herrero", "desmantelador", "encantador"]),
         new("Economía", "💰", ["comerciante", "generoso", "abridor", "afortunado"]),
         new("Constancia", "📅", ["constante", "racha", "comandante", "misionero", "domador", "criador", "renacido", "companero", "volvio"]),
+        new("Hazañas", "🏆", ["hz_cazador", "hz_viajero", "hz_jefes", "hz_recolector", "hz_herrero", "hz_magnate", "hz_encantador", "hz_explorador"]),
     ];
 
     // Los logros de una página (0..Categories.Count-1); una página fuera de rango se acota a la más cercana.

@@ -203,7 +203,7 @@ Check(AllText(cdEmbed).Contains("🎁 **Diario**:") && AllText(cdEmbed).Contains
 Console.WriteLine("\n== 7. El logro Racha (la racha más larga del /daily) ==");
 var racha = AchievementCatalog.Find("racha")!;
 Check(racha.StatKind == GameEventKinds.DailyStreakBest && racha.Tiers.Select(t => t.Threshold).SequenceEqual([7L, 30L, 100L]) && AchievementCatalog.Categories.Single(c => c.Name == "Constancia").Keys.Contains("racha")
-      && AchievementCatalog.All.Count == 23, "el logro «Racha» existe: cuenta la racha más larga, con tramos en 7, 30 y 100 días, en la página Constancia");
+      && AchievementCatalog.All.Count == 31, "el logro «Racha» existe: cuenta la racha más larga, con tramos en 7, 30 y 100 días, en la página Constancia");
 Check(AchievementCatalog.Categories.SelectMany(c => c.Keys).Count() == AchievementCatalog.All.Count && AchievementCatalog.Categories.SelectMany(c => c.Keys).Distinct().Count() == AchievementCatalog.All.Count, "todos los logros siguen estando en exactamente una página");
 Check(DailyRewardCalculator.StreakBestDelta(0, 5) == 5 && DailyRewardCalculator.StreakBestDelta(5, 6) == 1 && DailyRewardCalculator.StreakBestDelta(9, 1) == 0 && DailyRewardCalculator.StreakBestDelta(9, 9) == 0 && DailyRewardCalculator.StreakBestDelta(-3, 4) == 4,
     "la diferencia con el récord: suma lo que falta, nada si no lo superó");
