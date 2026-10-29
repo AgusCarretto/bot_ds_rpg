@@ -1,6 +1,6 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-29 (v0.38.1: los oficios siguen subiendo después del 100, costo exponencial; antes, v0.38.0 orden de ingredientes, «vender todo» que respeta lo del Fuego Nuevo, sin Míticos de recolección en las cajas y amuletos ×4)_
+_Última revisión: 2026-10-29 (v0.38.2: Corteza y Meteorito a 5.000 de oro; antes, v0.38.1: los oficios siguen subiendo después del 100, costo exponencial; antes, v0.38.0 orden de ingredientes, «vender todo» que respeta lo del Fuego Nuevo, sin Míticos de recolección en las cajas y amuletos ×4)_
 
 ## Pendiente de un vistazo (puesto al día el 2026-10-28)
 
@@ -37,6 +37,13 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
   Términos y Privacidad públicos, y hay que confirmar si hay Premium Apps en Uruguay (Developer Portal, Monetization). Punto de enganche: `ReminderPolicy.IsEligible` y `CooldownCatalog`. El título especial entra como categoría «Especiales» del sistema de títulos.
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
+
+## Corteza y Meteorito a 5.000 de oro, amuletos 4/4 confirmados (v0.38.2, 2026-10-29)
+
+- **Amuletos**: el dueño confirmó que quedan en ×4 de cada drop («que todas las clases pidan la misma cantidad de drops es lo importante»). Se cierra la duda 3/5 contra 4/4.
+- **Brasero**: sigue siendo la única caja con la tirada de recolección que puede dar los Míticos, y ahora el Mítico que cae vale. **Corteza del Árbol de Vida y Fragmento de Meteorito se venden a 5.000** (eran 500; compra 6.500). Aporte máximo de `/chop` + `/mine`: ~600 de oro por hora de juego (pesa en las primeras zonas, casi nada en la 5). El Polvo al desmantelarlos (500) y el precio del Tabernero del Inframundo (3.000 Polvo) no se tocaron: no hay circuito de comprar y vender.
+- **Migración (solo datos, re-ejecutable, antes o después del binario)**: `Database/raise_mythic_gather_price.sql`; una instalación nueva la trae en `run_fresh_install.sql`. La instalación nueva en una base de prueba dio igual que la viva. Prueba: `v0380test`, sección 6.
+- **Perilla**: el número del script (es absoluto). Si 5.000 resulta mucho en la Zona 1-2, bajarlo a 3.000.
 
 ## Los oficios siguen subiendo después del 100 (v0.38.1, 2026-10-29)
 

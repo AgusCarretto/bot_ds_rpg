@@ -84,6 +84,8 @@
 \ir rebalance_amulet_drops.sql
 -- La Corteza y el Meteorito (Míticos de recolección) dejan de salir de las cajas fijas del Arca del Soberano (v0.38.0); el resto de la regla está en el sorteo (GameData/BoxLoot.cs).
 \ir remove_mythic_from_boxes.sql
+-- Y esos dos Míticos de recolección pasan a venderse a 5.000 de oro (v0.38.2: el dueño quiere que lo que cae del Brasero valga). Solo precios; no depende del resto.
+\ir raise_mythic_gather_price.sql
 -- Los emojis de los ítems OTRA VEZ, ahora que existen TODOS: update_item_emojis.sql corre antes (arriba) y seed_pets / seed_fogon / seed_zone_boxes crean ítems DESPUÉS, así que sus UPDATE por nombre no encontraban el Trinche, la Brasa, los huevos ni las cajas nuevas y quedaban sin emoji (esa deriva ya pasó con otros ítems). Es re-ejecutable.
 \ir update_item_emojis.sql
 -- Y la cara de El Asador Eterno, que se crea en seed_fogon.sql (después del puesto en el que corre update_monster_portraits.sql arriba).
