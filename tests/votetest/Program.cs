@@ -259,7 +259,7 @@ var nowR = DateTime.UtcNow;
 var dueList = ReminderCatalog.FromCooldowns([("vote", nowR.AddHours(-1))], nowR);
 Check(dueList.Count == 1 && dueList[0].Kind == "vote" && Math.Abs((dueList[0].DueUtc - nowR.AddHours(11)).TotalSeconds) < 2, "el recordatorio 'vote' vence 12 h después del voto cobrado");
 Check(ReminderCatalog.FromCooldowns([("vote", nowR.AddHours(-13))], nowR).Count == 0, "pasadas las 12 h ya no hay nada que avisar");
-Check(ReminderCatalog.Find("vote") is { } rk && rk.Command == "/vote" && rk.AutoDelete is null && ReminderCatalog.WaitOf("vote") == TimeSpan.FromHours(12) && ReminderCatalog.Compose(U, ["vote"]).Contains("/vote") && ReminderCatalog.All.Count == 12, "el aviso existe (largo: no se borra solo), dura 12 h y nombra /vote");
+Check(ReminderCatalog.Find("vote") is { } rk && rk.Command == "/vote" && rk.AutoDelete is null && ReminderCatalog.WaitOf("vote") == TimeSpan.FromHours(12) && ReminderCatalog.Compose(U, ["vote"]).Contains("/vote") && ReminderCatalog.All.Count == 13, "el aviso existe (largo: no se borra solo), dura 12 h y nombra /vote");
 
 Console.WriteLine("\n== 7. Comandos, ayuda y DI con el InteractionService real ==");
 var client = new Discord.WebSocket.DiscordSocketClient();

@@ -10,9 +10,11 @@ using static AutocompleteText;
 // /pet: las mascotas (v0.10.0, reglas en GameData/PetRules.cs). Cada zona tiene la suya: llega como HUEVO la primera vez que vencés a su jefe y nace al abrirlo con /open.
 // Todas las que tengas valen A LA VEZ (oro, EXP, defensa, drop de monstruos). Suben de nivel comiendo "Comida para Mascotas", y cada una puede comer UNA vez por hora.
 // Las reglas viven en los métodos estáticos de abajo (sin Context) para que "aa pet" haga exactamente lo mismo; alimentar es una transacción guardada en IPetRepository.
+// Las expediciones (v0.39.0) están en PetModule.Expeditions.cs.
 [Group("pet", "Tus mascotas: mirá sus bonus y alimentalas (una vez por hora cada una).")]
-public class PetModule(
-    IUserRepository userRepository, IPetRepository petRepository, IInventoryRepository inventoryRepository, IGameEvents gameEvents, IPlayerBonusService bonusService)
+public partial class PetModule(
+    IUserRepository userRepository, IPetRepository petRepository, IInventoryRepository inventoryRepository, IGameEvents gameEvents, IPlayerBonusService bonusService,
+    IPetExpeditionRepository expeditionRepository)
     : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("view", "Mirá tus mascotas, el bonus que da cada una y cuándo pueden comer.")]

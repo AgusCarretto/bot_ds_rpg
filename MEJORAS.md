@@ -1,6 +1,6 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-29 (v0.38.3: Épico 6 % y Legendario 3 % en la recolección; antes, v0.38.2: Corteza y Meteorito a 5.000 de oro; antes, v0.38.1: los oficios siguen subiendo después del 100, costo exponencial; antes, v0.38.0 orden de ingredientes, «vender todo» que respeta lo del Fuego Nuevo, sin Míticos de recolección en las cajas y amuletos ×4)_
+_Última revisión: 2026-10-29 (v0.39.0: expediciones de mascotas; antes, v0.38.3: Épico 6 % y Legendario 3 % en la recolección; antes, v0.38.2: Corteza y Meteorito a 5.000 de oro; antes, v0.38.1: los oficios siguen subiendo después del 100, costo exponencial; antes, v0.38.0 orden de ingredientes, «vender todo» que respeta lo del Fuego Nuevo, sin Míticos de recolección en las cajas y amuletos ×4)_
 
 ## Pendiente de un vistazo (puesto al día el 2026-10-28)
 
@@ -37,6 +37,14 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
   Términos y Privacidad públicos, y hay que confirmar si hay Premium Apps en Uruguay (Developer Portal, Monetization). Punto de enganche: `ReminderPolicy.IsEligible` y `CooldownCatalog`. El título especial entra como categoría «Especiales» del sistema de títulos.
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
+
+## Expediciones de mascotas (v0.39.0, 2026-10-29)
+
+- **Pedido del dueño**: una mascota de **nivel 10** sale de expedición por **1, 4 u 8 horas**, de a **una mascota por vez**; mientras más dura, más oro, más EXP y más chance de que traiga algo. Comandos: `/pet expedition` y `aa pet expedition [mascota] [horas]`; el mismo comando recoge el premio cuando vuelve. **Comida**: 2 / 10 / 25 Comidas para Mascotas (lo corrigió él al ver los números).
+- **Premio igual para todos, sin zona ni especie** (él: «que no dependa de la zona, es un premio para todo el que llegue a ese punto… siempre pensá en zona 5»): **oro en rango** 2.000–4.000 / 10.000–20.000 / 30.000–60.000 y **EXP 5 / 20 / 50 % del nivel**. **Hallazgo** con 10 / 35 / 70 % que depende de la especie: Ñandusito +50 % de oro, Puma y Quimerita +50 % de EXP, Gólem Polvo (30 / 120 / 240), Salamandrita drops de cacería de tu zona (1 / 1 / 2) y Chispa madera y mineral (sin Míticos).
+- **Cuenta que le conté**: en la Zona 5 una sesión activa de 2 h son ~90.000, así que la de 8 h (45.000 de media) es la mitad; la comida es el 6-7 % de lo que paga. **Ojo, lo aceptó**: como el oro no mira la zona, en las zonas bajas es un premio enorme (la de 8 h paga más que la sesión de 2 h de la Zona 2) y una mascota nivel 10 existe desde la Zona 2. La perilla es `PetExpeditions.Options` (una tabla).
+- **Aviso y /cd**: recordatorio nuevo `expedition` (🧭) y una línea en `/cd` mientras hay una en curso. **Migración**: `Database/add_pet_expeditions.sql` (solo la tabla; re-ejecutable; antes o después del binario, solo `/pet expedition` la necesita). Harness nuevo `v0390test` (92 chequeos).
+- **Falta (el dueño ya aprobó el plan)**: (2) un huevo por vuelta aunque ya tengas la especie y (3) los tiers de mascota (tope 10 → 20 → 30 con horas de expedición + huevo sobrante + Fuego Nuevo mínimo, niveles 11-20 con MUCHA más comida, arte nuevo por tier).
 
 ## Los materiales raros salen un poco menos (v0.38.3, 2026-10-29)
 

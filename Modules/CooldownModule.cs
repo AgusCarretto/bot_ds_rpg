@@ -6,7 +6,7 @@ using Discord.Interactions;
 using BotDsRpg.Services;
 
 public class CooldownModule(
-    ICooldownRepository cooldownRepository, IUserRepository userRepository, IArenaService arenaService, IPlayerBonusService bonusService, ITopGgVoteClient voteClient, IPetRepository petRepository, IDragonRepository dragonRepository)
+    ICooldownRepository cooldownRepository, IUserRepository userRepository, IArenaService arenaService, IPlayerBonusService bonusService, ITopGgVoteClient voteClient, IPetRepository petRepository, IDragonRepository dragonRepository, IPetExpeditionRepository expeditionRepository)
     : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("cd", "Mirá tus cooldowns: cazar, viajar, talar, minar, jefe, cajas, mascotas, diario y la Arena de hoy.")]
@@ -16,7 +16,7 @@ public class CooldownModule(
 
         try
         {
-            var embed = await BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id, arenaService, bonusService, voteClient.Enabled, petRepository, dragonRepository);
+            var embed = await BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id, arenaService, bonusService, voteClient.Enabled, petRepository, dragonRepository, expeditionRepository);
             await FollowupAsync(embed: embed, ephemeral: true);
         }
         catch (Exception ex)
@@ -37,7 +37,7 @@ public class CooldownModule(
     // sin mascotas que puedan subir de nivel la línea no sale, y si falla leerlas tampoco: /cd nunca se rompe por esto.
     public static async Task<Embed> BuildStatusEmbedAsync(
         ICooldownRepository cooldownRepository, IUserRepository userRepository, ulong discordId, IArenaService? arenaService = null, IPlayerBonusService? bonusService = null, bool voteEnabled = false,
-        IPetRepository? petRepository = null, IDragonRepository? dragonRepository = null)
+        IPetRepository? petRepository = null, IDragonRepository? dragonRepository = null, IPetExpeditionRepository? expeditionRepository = null)
     {
         var lines = new List<string>();
         var player = await userRepository.GetOrCreateUserAsync(discordId);
@@ -90,6 +90,12 @@ public class CooldownModule(
             lines.Add(dragonLine);
         }
 
+        // La expedición de la mascota (v0.39.0): vive en pet_expeditions. Sin expedición en curso la línea no sale; si falla leerla, tampoco.
+        if (await TryBuildExpeditionLineAsync(expeditionRepository, discordId) is { } expeditionLine)
+        {
+            lines.Add(expeditionLine);
+        }
+
         // /daily no usa la tabla cooldowns (tiene su propia columna last_daily_claim con
         // ventana de 24h/48h), así que lo evaluamos aparte con la misma lógica pura de /daily.
         var dailyCalculation = DailyRewardCalculator.Evaluate(player.LastDailyClaim, player.DailyStreak, DateTime.UtcNow);
@@ -108,6 +114,36 @@ public class CooldownModule(
             .WithColor(Color.Teal)
             .WithDescription(string.Join('\n', lines))
             .Build();
+    }
+
+    private static async Task<string?> TryBuildExpeditionLineAsync(IPetExpeditionRepository? expeditionRepository, ulong discordId)
+    {
+        if (expeditionRepository is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return ExpeditionLine(await expeditionRepository.GetAsync(discordId));
+        }
+        catch (Exception ex)
+        {
+            BotLog.Warn(ex);
+            return null;
+        }
+    }
+
+    // La línea de la expedición (pura, para probarla sin base): «¡Listo!» si ya volvió o lo que falta. Null si no hay ninguna en curso.
+    public static string? ExpeditionLine(ActiveExpedition? expedition)
+    {
+        if (expedition is null)
+        {
+            return null;
+        }
+
+        string status = expedition.IsReady ? Loc.T("**¡Listo!** ✅") + " — **/pet expedition**" : Loc.F($"{TimeFormat.Remaining(expedition.Remaining)} restantes");
+        return $"🧭 **{Loc.T("Expedición")}** ({expedition.Species.Name}): {status}";
     }
 
     private static async Task<string?> TryBuildDragonLineAsync(IDragonRepository? dragonRepository, ulong discordId)

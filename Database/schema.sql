@@ -527,3 +527,12 @@ CREATE TABLE IF NOT EXISTS redeem_code_claims (
 );
 
 CREATE INDEX IF NOT EXISTS idx_redeem_code_rewards_code ON redeem_code_rewards (code_id);
+
+-- Las expediciones de las mascotas (v0.39.0, Database/add_pet_expeditions.sql): una fila por jugador con la mascota que salió, por cuántas horas y cuándo vuelve (se borra al recoger el premio).
+CREATE TABLE IF NOT EXISTS pet_expeditions (
+    discord_id  BIGINT      PRIMARY KEY REFERENCES users (discord_id) ON DELETE CASCADE,
+    species_id  INTEGER     NOT NULL REFERENCES pet_species (species_id) ON DELETE CASCADE,
+    hours       INTEGER     NOT NULL CHECK (hours > 0),
+    started_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    ends_at     TIMESTAMPTZ NOT NULL
+);

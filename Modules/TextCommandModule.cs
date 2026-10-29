@@ -48,6 +48,7 @@ public partial class TextCommandModule(
     IDuelService duelService,
     IArenaService arenaService,
     IPetRepository petRepository,
+    IPetExpeditionRepository petExpeditionRepository,
     IPlayerBonusService bonusService,
     IPlayerLanguageService languageService,
     IPlayerSettingsService settingsService,
@@ -192,7 +193,7 @@ public partial class TextCommandModule(
     {
         try
         {
-            var embed = await CooldownModule.BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id, arenaService, bonusService, voteClient.Enabled, petRepository, dragonRepository);
+            var embed = await CooldownModule.BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id, arenaService, bonusService, voteClient.Enabled, petRepository, dragonRepository, petExpeditionRepository);
             await ReplyAsync(embed: embed);
         }
         catch (Exception ex)

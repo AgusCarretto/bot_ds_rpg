@@ -33,6 +33,7 @@ public static class ReminderCatalog
         new("daily", "🎁", Loc.Mark("Diario"), "/daily", Loc.Mark("¡Tu recompensa diaria está lista! Reclamala con `/daily`."), null),
         new("vote", "🗳️", Loc.Mark("Votar"), "/vote", Loc.Mark("¡Ya podés votar de nuevo! Votá en top.gg y cobrá con `/vote`: un Baúl de Roble y el jefe reseteado."), null),
         new("dragon", "🐲", Loc.Mark("Dragón"), "/dragon-breed", Loc.Mark("¡Tu dragón puede criar de nuevo! Criá con `/dragon-breed` (con un amigo o solo)."), null),
+        new("expedition", "🧭", Loc.Mark("Expedición"), "/pet expedition", Loc.Mark("¡Tu mascota volvió de la expedición! Recogé el premio con `/pet expedition`."), null),
     ];
 
     public static ReminderKind? Find(string? key) => All.FirstOrDefault(k => k.Key == key);
@@ -72,6 +73,7 @@ public static class ReminderCatalog
         "pet" => PetRules.FeedCooldown,
         "daily" => DailyRewardCalculator.MinInterval,
         "dragon" => DragonRules.BreedCooldown,
+        "expedition" => null,   // depende de la duración que se elija (1, 4 u 8 horas): no hay una espera fija para mostrar
         _ => StoredCooldowns.FirstOrDefault(d => d.CommandName == key)?.Duration,
     };
 
@@ -119,6 +121,10 @@ public static class ReminderCatalog
     public static ReminderDue? DragonDue(TimeSpan wait, int tier, DateTime nowUtc) =>
         wait > TimeSpan.Zero && tier < DragonRules.MaxTier ? new ReminderDue("dragon", nowUtc + wait) : null;
 
+    // La expedición de la mascota (v0.39.0): cuando termina, según el reloj de la base (ActiveExpedition.Remaining). Sin expedición, o si ya volvió, no hay aviso (ya se puede recoger).
+    public static ReminderDue? ExpeditionDue(TimeSpan? remaining, DateTime nowUtc) =>
+        remaining is { } wait && wait > TimeSpan.Zero ? new ReminderDue("expedition", nowUtc + wait) : null;
+
     // El mensaje de uno o varios avisos que vencieron juntos, para un jugador. Una sola cosa: una línea. Varias: un encabezado y una línea por cosa.
     public static string Compose(ulong discordId, IReadOnlyList<string> kinds)
     {
@@ -157,6 +163,9 @@ public static class ReminderCatalog
 
     // Criar (el slash /dragon-breed, los botones dragon_*, «aa dragon breed») cambia el descanso del dragón.
     public static bool MayChangeDragon(string commandHint) => ContainsAny(commandHint, "dragon", "dragón");
+
+    // Mandar o recoger una expedición (el slash /pet expedition, los componentes pet_exp_* y «aa pet expedition») cambia el aviso de que la mascota volvió.
+    public static bool MayChangeExpedition(string commandHint) => ContainsAny(commandHint, "expedition", "expedicion", "expedición", "pet_exp");
 
     private static bool ContainsAny(string text, params string[] needles) =>
         needles.Any(n => text.Contains(n, StringComparison.OrdinalIgnoreCase));
