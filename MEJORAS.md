@@ -1,6 +1,6 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-29 (v0.39.0: expediciones de mascotas; antes, v0.38.3: Épico 6 % y Legendario 3 % en la recolección; antes, v0.38.2: Corteza y Meteorito a 5.000 de oro; antes, v0.38.1: los oficios siguen subiendo después del 100, costo exponencial; antes, v0.38.0 orden de ingredientes, «vender todo» que respeta lo del Fuego Nuevo, sin Míticos de recolección en las cajas y amuletos ×4)_
+_Última revisión: 2026-10-29 (v0.39.1: las pantallas de las expediciones ya no cuentan el premio; antes, v0.39.0: expediciones de mascotas; antes, v0.38.3: Épico 6 % y Legendario 3 % en la recolección; antes, v0.38.2: Corteza y Meteorito a 5.000 de oro; antes, v0.38.1: los oficios siguen subiendo después del 100, costo exponencial; antes, v0.38.0 orden de ingredientes, «vender todo» que respeta lo del Fuego Nuevo, sin Míticos de recolección en las cajas y amuletos ×4)_
 
 ## Pendiente de un vistazo (puesto al día el 2026-10-28)
 
@@ -37,6 +37,10 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
   Términos y Privacidad públicos, y hay que confirmar si hay Premium Apps en Uruguay (Developer Portal, Monetization). Punto de enganche: `ReminderPolicy.IsEligible` y `CooldownCatalog`. El título especial entra como categoría «Especiales» del sistema de títulos.
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
+
+## Las expediciones no muestran el premio (v0.39.1, 2026-10-29)
+
+- **Pedido del dueño** (justo después de liberar la v0.39.0): «sacá rápido de pet expedition los premios y lo que da cada mascota… quiero que lo descubran de a poco». El menú de `/pet expedition`, sus opciones, la pantalla de salida y el tema `pets` de `/info` muestran solo **cuánto dura, cuánta comida cuesta y qué mascotas pueden ir**. Lo que trajo se cuenta únicamente al volver. Los números siguen en `PetExpeditions.Options` y en estos documentos, no en ningún texto de jugador.
 
 ## Expediciones de mascotas (v0.39.0, 2026-10-29)
 

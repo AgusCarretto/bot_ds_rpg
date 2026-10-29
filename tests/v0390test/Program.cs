@@ -101,7 +101,7 @@ for (int i = 0; i < 20000; i++)
 Check(!mythic && onlyKnown && drawn > 20000, $"el hallazgo de la Chispa: 20.000 veces 8 tiradas, nunca un Mítico (la Corteza y el Meteorito siguen siendo de /chop, /mine y el Brasero) y nunca más de 5 unidades por tirada ({drawn} stacks)");
 var scripted = PetExpeditions.RollGather(poolList, 8, new ScriptedRandom(0));
 Check(scripted.Count == 2 && scripted.Single(s => s.Item.Name == "Madera de Pino").Quantity == 4 && scripted.Single(s => s.Item.Name == "Piedra").Quantity == 4, "las tiradas alternan madera y mineral (8 tiradas = 4 y 4) y juntan los repetidos");
-Check(PetExpeditions.HoursText(1) == "1 hora" && PetExpeditions.HoursText(8) == "8 horas" && PetExpeditions.PrizeText(o8).Contains("30.000–60.000") && PetExpeditions.PrizeText(o8).Contains("50 %"), "«1 hora» / «8 horas» y el texto del premio («30.000–60.000 de oro · 50 % de un nivel»)");
+Check(PetExpeditions.HoursText(1) == "1 hora" && PetExpeditions.HoursText(8) == "8 horas", "«1 hora» / «8 horas»");
 var (n1, h1) = PetModule.ParseExpeditionRequest("Cachorro de Puma 4h"); var (n2, h2) = PetModule.ParseExpeditionRequest("8 Ñandusito"); var (n3, h3) = PetModule.ParseExpeditionRequest("Ñandusito"); var (n4, h4) = PetModule.ParseExpeditionRequest("  ");
 var (n5, h5) = PetModule.ParseExpeditionRequest("Quimerita 8 horas"); var (n6, h6) = PetModule.ParseExpeditionRequest("8");
 Check(n1 == "Cachorro de Puma" && h1 == 4 && n2 == "Ñandusito" && h2 == 8 && n3 == "Ñandusito" && h3 is null && n4 is null && h4 is null && n5 == "Quimerita" && h5 == 8 && n6 is null && h6 == 8,
@@ -278,9 +278,10 @@ var select = ((ActionRowComponent)menu.Components!.Components.First()).Component
 string text = AllText(menu.Embed!);
 Check(!select.IsDisabled && select.Options.Count == 6 && select.Options.All(o => o.Value.Split(':').Length == 2 && o.Label.Length <= 100 && o.Description.Length <= 100) && select.Options.Select(o => o.Value).Distinct().Count() == 6
     && select.Options.Any(o => o.Value == $"{gold}:8"), "con comida y dos mascotas al máximo: menú activo con 6 opciones (mascota × duración) con valores «especie:horas»");
-Check(menu.Embed!.Length <= 6000 && menu.Embed.Fields.All(f => f.Value.Length <= 1024) && text.Contains("1 hora") && text.Contains("8 horas") && text.Contains("30.000–60.000") && text.Contains("2.000–4.000") && text.Contains("50 %") && text.Contains("5 %") && text.Contains("70 %")
-    && text.Contains("25 comidas") && text.Contains("2 comidas") && text.Contains("vivas en la zona que vivas"),
-    $"la pantalla muestra lo que da cada duración (igual para todos, en la zona que sea) con el oro en rango, la EXP, el hallazgo y la comida, y entra en los límites de Discord ({menu.Embed.Length})");
+Check(menu.Embed!.Length <= 6000 && menu.Embed.Fields.All(f => f.Value.Length <= 1024) && text.Contains("1 hora") && text.Contains("4 horas") && text.Contains("8 horas") && text.Contains("2 comidas") && text.Contains("10 comidas") && text.Contains("25 comidas") && text.Contains("Descubrilo"),
+    $"la pantalla muestra cuánto dura y cuánta comida cuesta cada salida y qué mascotas pueden ir, dentro de los límites de Discord ({menu.Embed.Length})");
+Check(!text.Contains("oro") && !text.Contains("EXP") && !text.Contains("%") && !text.Contains("hallazgo") && !text.Contains("Polvo") && !text.Contains("2.000") && !text.Contains("60.000") && select.Options.All(o => !o.Description.Contains("oro") && !o.Description.Contains("%") && o.Description.Contains("comidas")),
+    "y NO muestra el premio, los porcentajes, el hallazgo ni qué trae cada mascota (el dueño quiere que lo descubran jugando), ni en la pantalla ni en las opciones del menú");
 Check((await Run("Fantasma", 8)).PlainMessage!.Contains("No tenés una mascota"), "una mascota que no existe: se dice");
 var wrongHours = await Run(await SpeciesName(PetBonusKind.Gold), 3);
 Check(wrongHours.PlainMessage!.Contains("1, 4, 8") && await Food() == 60, "una duración inválida se explica y no gasta");
@@ -289,8 +290,8 @@ var noFood8 = await Run(await SpeciesName(PetBonusKind.Gold), 8);
 Check(noFood8.PlainMessage!.Contains("25") && noFood8.PlainMessage.Contains("24") && await Food() == 24 && await Rows() == 0, "con 24 comidas la de 8 horas dice «cuesta 25 y tenés 24» y no gasta");
 await SetFood(60);
 var started = await Run(await SpeciesName(PetBonusKind.Gold), 8);
-Check(started.Embed is not null && started.Embed.Title.Contains("salió de expedición") && AllText(started.Embed).Contains("<t:") && AllText(started.Embed).Contains("30.000–60.000") && AllText(started.Embed).Contains("35") && await Food() == 35 && await Rows() == 1,
-    "con mascota y horas: sale (embed «salió de expedición» con la hora de vuelta y lo que va a traer) y gasta 25 comidas (60 → 35)");
+Check(started.Embed is not null && started.Embed.Title.Contains("salió de expedición") && AllText(started.Embed).Contains("<t:") && !AllText(started.Embed).Contains("oro") && !AllText(started.Embed).Contains("%") && !AllText(started.Embed).Contains("30.000") && AllText(started.Embed).Contains("35") && await Food() == 35 && await Rows() == 1,
+    "con mascota y horas: sale (embed «salió de expedición» con la hora de vuelta y SIN decir qué va a traer) y gasta 25 comidas (60 → 35)");
 var whileOut = await Run(null, null);
 Check(whileOut.Embed!.Title.Contains("está de expedición") && AllText(whileOut.Embed).Contains("<t:") && whileOut.Components is null && await Food() == 35, "mientras está afuera, el comando dice cuándo vuelve (sin menú) y no gasta");
 var tryOther = await Run(await SpeciesName(PetBonusKind.Xp), 4);
@@ -374,9 +375,9 @@ var topic = HelpTopics.Find("pets");
 var helpEmbed = topic!.Build(); string helpText = AllText(helpEmbed);
 var slashNames = interactions.SlashCommands.Select(c => c.Name).Concat(interactions.SlashCommands.Select(c => c.Module.SlashGroupName)).Where(n => n is not null).ToHashSet();
 var mentioned = System.Text.RegularExpressions.Regex.Matches(helpText, @"/([a-z]+)").Select(m => m.Groups[1].Value).Distinct().ToList();
-Check(helpEmbed.Length <= 6000 && helpEmbed.Fields.All(f => f.Value.Length <= 1024) && helpText.Contains("Expediciones") && helpText.Contains("/pet expedition") && helpText.Contains("1, 4, 8") && helpText.Contains("2 / 10 / 25") && helpText.Contains("5 % / 20 % / 50 %")
-    && helpText.Contains("sin importar tu zona") && helpText.Contains("2.000–4.000 / 10.000–20.000 / 30.000–60.000") && mentioned.All(slashNames.Contains),
-    $"el tema de ayuda «pets» explica las expediciones con los números reales, nombra comandos que existen y entra en los límites ({helpEmbed.Length}; faltan: {string.Join(", ", mentioned.Where(m => !slashNames.Contains(m)))})");
+Check(helpEmbed.Length <= 6000 && helpEmbed.Fields.All(f => f.Value.Length <= 1024) && helpText.Contains("Expediciones") && helpText.Contains("/pet expedition") && helpText.Contains("1, 4, 8") && helpText.Contains("2 / 10 / 25") && !helpText.Contains("30.000") && !helpText.Contains("50 %")
+    && !helpText.Contains("hallazgo") && helpText.Contains("descubrilo") && mentioned.All(slashNames.Contains),
+    $"el tema de ayuda «pets» explica las expediciones (duración y comida) SIN el premio, nombra comandos que existen y entra en los límites ({helpEmbed.Length}; faltan: {string.Join(", ", mentioned.Where(m => !slashNames.Contains(m)))})");
 var remHelp = HelpTopics.Find("reminders")!.Build();
 Check(AllText(remHelp).Contains("cuando vuelve") && remHelp.Length <= 6000 && remHelp.Fields.All(f => f.Value.Length <= 1024), "y la ayuda de los avisos nombra el nuevo («cuando vuelve») sin romperse");
 var remScreen = ReminderModule.Compose([], U).Embed!;

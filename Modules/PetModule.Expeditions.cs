@@ -109,11 +109,11 @@ public partial class PetModule
         var embed = new EmbedBuilder()
             .WithTitle($"🧭 {started.Species.Emoji} {started.Species.Name} salió de expedición")
             .WithColor(Color.Teal)
+            // A propósito NO dice qué va a traer (ni el oro, ni la EXP, ni el hallazgo de la especie): el dueño quiere que se descubra jugando.
             .WithDescription(
                 $"Va por **{PetExpeditions.HoursText(hours)}** y vuelve {FormatWhen(started.EndsUtc)}.\n" +
                 $"Gastó **{option.FoodCost}** {PetRules.FoodItemName} (te quedan **{outcome.FoodHave}**).\n\n" +
-                $"Cuando vuelva, recogé el premio con **/pet expedition**: {PetExpeditions.PrizeText(option)}.\n" +
-                $"Y con un poco de suerte trae algo especial ({option.FindChancePercent} %): {PetExpeditions.FindText(PetExpeditions.FindKindOf(started.Species.BonusKind), option)}.")
+                "Cuando vuelva, recogé lo que trajo con **/pet expedition**.")
             .WithFooter("Te aviso cuando vuelva si tenés los avisos prendidos (/reminders).")
             .Build();
         return new PetResult(null, embed);
@@ -158,7 +158,7 @@ public partial class PetModule
         }
         else
         {
-            lines.Add("No encontró nada especial esta vez: probá con una expedición más larga (más chance).");
+            lines.Add("No encontró nada especial esta vez.");
         }
 
         var embed = new EmbedBuilder()
@@ -205,21 +205,21 @@ public partial class PetModule
         return $"Las expediciones son para las mascotas en el **nivel {PetExpeditions.RequiredLevel}** y todavía ninguna llegó ({levels}). Alimentalas con **/pet feed**.";
     }
 
-    // El menú: qué da cada duración (igual para todos), qué mascotas pueden salir y qué hallazgo trae cada una.
+    // El menú: cuánto dura y cuánta comida cuesta cada salida, y qué mascotas pueden salir. A propósito NO muestra el premio (oro, EXP, chance de hallazgo) ni qué trae cada especie: el dueño
+    // (2026-10-29) quiere que lo descubran de a poco, y el costo sí hay que decirlo porque se paga al salir.
     public static Embed BuildExpeditionMenuEmbed(ExpeditionMenuData data)
     {
         var durations = PetExpeditions.Options.Select(o =>
-            $"**{PetExpeditions.HoursText(o.Hours)}** — {PetExpeditions.PrizeText(o)} · 🎲 {o.FindChancePercent} % de hallazgo · {ItemEmojiRegistry.IconOf(PetRules.FoodItemName, "🦴")} {o.FoodCost} comidas");
+            $"**{PetExpeditions.HoursText(o.Hours)}** — {ItemEmojiRegistry.IconOf(PetRules.FoodItemName, "🦴")} {o.FoodCost} comidas");
 
         var embed = new EmbedBuilder()
             .WithTitle("🧭 Expediciones")
             .WithColor(Color.Teal)
             .WithDescription(
-                $"Mandá a una mascota **nivel {PetExpeditions.RequiredLevel}** a explorar mientras hacés otra cosa. Sale de a una por vez, gasta {PetRules.FoodItemName} (tenés **{data.Food}**) " +
-                "y el premio es el mismo para todos, vivas en la zona que vivas. Mientras más tiempo, más oro, más EXP y más chance de que traiga algo especial.")
-            .AddField("⏱️ Lo que trae", string.Join("\n", durations), false)
-            .AddField("🐾 Pueden salir", string.Join("\n", data.Eligible.Select(p =>
-                $"{p.Species.Emoji} **{p.Species.Name}** — hallazgo: {Special(p.Species)}")), false);
+                $"Mandá a una mascota **nivel {PetExpeditions.RequiredLevel}** a explorar mientras hacés otra cosa. Sale de a una por vez y gasta {PetRules.FoodItemName} (tenés **{data.Food}**). " +
+                "Cuando vuelve, recogés lo que trajo. ¿Qué encontrará? Descubrilo.")
+            .AddField("⏱️ Cuánto dura y cuánto cuesta", string.Join("\n", durations), false)
+            .AddField("🐾 Pueden salir", string.Join("\n", data.Eligible.Select(p => $"{p.Species.Emoji} **{p.Species.Name}**")), false);
 
         if (data.TooLow.Count > 0)
         {
@@ -228,17 +228,6 @@ public partial class PetModule
 
         return embed.WithFooter("Elegí mascota y horas abajo, o escribilo: /pet expedition mascota:Ñandusito duracion:8 horas").Build();
     }
-
-    // Qué hallazgo trae cada especie.
-    private static string Special(PetSpecies species) => PetExpeditions.FindKindOf(species.BonusKind) switch
-    {
-        ExpeditionFindKind.GoldBag => $"+{PetExpeditions.FindBonusPercent} % de oro",
-        ExpeditionFindKind.XpBoost => $"+{PetExpeditions.FindBonusPercent} % de EXP",
-        ExpeditionFindKind.Dust => "Polvo",
-        ExpeditionFindKind.HuntDrops => "drops de cacería de tu zona",
-        ExpeditionFindKind.Gather => "madera y mineral",
-        _ => string.Empty,
-    };
 
     // Un solo desplegable con mascota × duración (6 mascotas × 3 = 18 opciones, entra en las 25 de Discord). Va desactivado si no alcanza ni para la más barata. El valor es «especie:horas».
     public static MessageComponent BuildExpeditionMenu(ulong owner, ExpeditionMenuData data)
@@ -258,7 +247,7 @@ public partial class PetModule
                 menu.AddOption(
                     $"{pet.Species.Name} · {PetExpeditions.HoursText(option.Hours)}",
                     $"{pet.Species.SpeciesId}:{option.Hours}",
-                    $"💰 {GameHistory.Number(option.GoldMin)}–{GameHistory.Number(option.GoldMax)} · ⭐ {option.XpPercent} % · 🎲 {option.FindChancePercent} % · 🍖 {option.FoodCost}");
+                    $"🍖 Cuesta {option.FoodCost} comidas");
             }
         }
 
