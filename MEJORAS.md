@@ -1,6 +1,6 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-29 (v0.41.0: las hazañas, logros mucho más difíciles; antes, v0.40.0: tiers de mascotas y huevos de repuesto; antes, v0.39.1: las pantallas de las expediciones ya no cuentan el premio; antes, v0.39.0: expediciones de mascotas; antes, v0.38.3: Épico 6 % y Legendario 3 % en la recolección; antes, v0.38.2: Corteza y Meteorito a 5.000 de oro; antes, v0.38.1: los oficios siguen subiendo después del 100, costo exponencial; antes, v0.38.0 orden de ingredientes, «vender todo» que respeta lo del Fuego Nuevo, sin Míticos de recolección en las cajas y amuletos ×4)_
+_Última revisión: 2026-10-29 (v0.41.1: corrección del regalo retroactivo de huevos; antes, v0.41.0: las hazañas, logros mucho más difíciles; antes, v0.40.0: tiers de mascotas y huevos de repuesto; antes, v0.39.1: las pantallas de las expediciones ya no cuentan el premio; antes, v0.39.0: expediciones de mascotas; antes, v0.38.3: Épico 6 % y Legendario 3 % en la recolección; antes, v0.38.2: Corteza y Meteorito a 5.000 de oro; antes, v0.38.1: los oficios siguen subiendo después del 100, costo exponencial; antes, v0.38.0 orden de ingredientes, «vender todo» que respeta lo del Fuego Nuevo, sin Míticos de recolección en las cajas y amuletos ×4)_
 
 ## Pendiente de un vistazo (puesto al día el 2026-10-28)
 
@@ -38,6 +38,12 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
 
+## Corrección del regalo retroactivo de huevos (v0.41.1, 2026-10-29)
+
+- **Reclamo del dueño** (FN 5, parado en la Zona 2, con 5 / 6 / 5 / 5 / 5 / 5 huevos): el regalo daba un huevo por Fuego Nuevo de cada mascota y sobraban: el primer huevo es la mascota ya abierta y, en la vuelta en curso, solo corresponde el de los jefes que ya venciste.
+- **Cuenta correcta**: **Fuegos Nuevos − 1 por mascota + 1 por cada jefe ya vencido en la vuelta en curso**. Con 0 FN no se regala nada.
+- **Para quien ya recibió el regalo viejo**: `Database/fix_retroactive_spare_eggs.sql` (una sola vez, solo datos, sin binario) le descuenta la diferencia sin dejarlo en negativo y sin tocar los huevos reales que ganó después. `grant_retroactive_spare_eggs.sql` ya trae la cuenta correcta.
+
 ## Hazañas: logros mucho más difíciles (v0.41.0, 2026-10-29)
 
 - **Pedido del dueño** (varias veces): logros «bastante más difíciles», porque los de hoy se consiguen muy rápido. Una **5.ª página de `/achievements`, «Hazañas»**, con 8 logros de 3 tramos (31 en total) y **24 títulos nuevos**.
@@ -52,7 +58,7 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - **Huevos**: cada primera victoria de la vuelta sobre un jefe da su huevo **aunque ya tengas la mascota**; el de repuesto se guarda sin abrir (sobrevive al Fuego Nuevo; «vender todo» no lo vende). Regalo retroactivo, **una sola vez**: 1 huevo sobrante por cada FN ya hecho y por especie que se tiene (`Database/grant_retroactive_spare_eggs.sql`).
 - **Evolución**: `/pet evolve`. Tier II = nivel 10 + **100 h de expedición de ESA mascota** + **5 huevos** (FN 6); tier III = nivel 20 + **250 h en total** + **10 huevos más** (FN 16). Las horas suman al recoger cada expedición y no se reinician.
 - **Tiers**: tope 10 / 20 / 30; **bono ×1 al 10, ×2 al 20, ×4 al 30** (por nivel, lineal); las **expediciones rinden ×1 / ×2 / ×4** (oro, EXP y hallazgo). Del 10 al 20 son 80 alimentadas de **3 comidas** (240 comidas = 24.000 de oro) y del 20 al 30, 130 de **6 comidas** (780); cada una espera su hora, o sea ≥ 80 h y ≥ 130 h. Una Quimerita tier III da +40 % de EXP; con la Cachorro de Puma son +60 %: es la «locura» que pidió, pero hay que mirarlo al llegar al FN 16.
-- **Pantallas**: `/pet view` muestra qué falta para evolucionar **solo al llegar al tope del tier**; el nombre lleva el romano («Ñandusito II»); el arte por tier **no está** (mismo emoji). **Migraciones**: `add_pet_tiers.sql` (ANTES del binario) y `grant_retroactive_spare_eggs.sql` (una vez). Harness nuevo `v0400test` (73 chequeos).
+- **Pantallas**: `/pet view` muestra qué falta para evolucionar **solo al llegar al tope del tier**; el nombre lleva el romano («Ñandusito II»); el arte por tier **no está** (mismo emoji). **Migraciones**: `add_pet_tiers.sql` (ANTES del binario) y `grant_retroactive_spare_eggs.sql` (una vez). Harness nuevo `v0400test` (81 chequeos).
 
 ## Las expediciones no muestran el premio (v0.39.1, 2026-10-29)
 
