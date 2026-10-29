@@ -221,23 +221,86 @@ if (gateSpecies is not null)
     Check(g1.EggGranted is not null && !g1.EggIsSpare && g2.EggGranted is not null && g2.EggIsSpare && await Have(gateSpecies.EggName) == 1, "El Fogón: el Asador da el huevo de la Chispa la primera vez y de repuesto en cada vuelta siguiente");
 }
 
-// El regalo retroactivo: un huevo sobrante por cada Fuego Nuevo y por especie que ya tiene el jugador, una sola vez.
+// El regalo retroactivo (v0.41.1, corregido por el dueño): Fuegos Nuevos − 1 por especie (el primer huevo es la mascota ya nacida) + 1 por cada jefe que ya venció en la vuelta EN CURSO, una sola vez.
+int zone2 = ladder[1].ZoneId;
+string eggXp = await EggName(PetBonusKind.Xp), eggDef = await EggName(PetBonusKind.Defense);
+string RunScript(string file) => File.ReadAllText(Path.Combine(TestEnv.RepoRoot, "Database", file)).Replace("\r\n", "\n").Replace("\nBEGIN;\n", "\n").Replace("\nCOMMIT;\n", "\n");
+string grantScript = RunScript("grant_retroactive_spare_eggs.sql"), fixScript = RunScript("fix_retroactive_spare_eggs.sql");
+int EggsIn(Npgsql.NpgsqlTransaction t, string name) => db.ExecuteScalar<int>("SELECT COALESCE(SUM(inv.quantity), 0)::int FROM inventory inv JOIN items i ON i.item_id = inv.item_id WHERE inv.discord_id = @u AND i.name = @n", new { u = (long)U, n = name }, t);
 await Reset();
-await SetPet(PetBonusKind.Gold, 10); await SetPet(PetBonusKind.Xp, 5);
-await db.ExecuteAsync("UPDATE users SET fuego_nuevo = 3 WHERE discord_id = @u", new { u = (long)U });
-string eggXp = await EggName(PetBonusKind.Xp);
-string scriptText = File.ReadAllText(Path.Combine(TestEnv.RepoRoot, "Database", "grant_retroactive_spare_eggs.sql")).Replace("\r\n", "\n").Replace("\nBEGIN;\n", "\n").Replace("\nCOMMIT;\n", "\n");
+await SetPet(PetBonusKind.Gold, 10); await SetPet(PetBonusKind.Xp, 10); await SetPet(PetBonusKind.Defense, 10);
+await db.ExecuteAsync("UPDATE users SET fuego_nuevo = 5, highest_zone_cleared = @z, gate_cleared = false WHERE discord_id = @u", new { u = (long)U, z = zone2 });
 await using (var tx = await db.BeginTransactionAsync())
 {
-    await db.ExecuteAsync(scriptText, transaction: tx);
-    int Eggs(string name) => db.ExecuteScalar<int>("SELECT COALESCE(SUM(inv.quantity), 0)::int FROM inventory inv JOIN items i ON i.item_id = inv.item_id WHERE inv.discord_id = @u AND i.name = @n", new { u = (long)U, n = name }, tx);
-    int other = db.ExecuteScalar<int>("SELECT COALESCE(SUM(inv.quantity), 0)::int FROM inventory inv JOIN items i ON i.item_id = inv.item_id WHERE inv.discord_id = @u AND i.type = 'Huevo' AND i.name NOT IN (@a, @b)", new { u = (long)U, a = eggGold, b = eggXp }, tx);
-    Check(Eggs(eggGold) == 3 && Eggs(eggXp) == 3 && other == 0, "el regalo retroactivo da 3 huevos sobrantes (el jugador hizo 3 Fuegos Nuevos) de CADA mascota que tiene, y de las que no, ninguno");
-    await db.ExecuteAsync(scriptText, transaction: tx);
-    Check(Eggs(eggGold) == 3 && Eggs(eggXp) == 3, "y correrlo de nuevo NO regala otra tanda (la marca de data_migrations lo frena)");
+    await db.ExecuteAsync(grantScript, transaction: tx);
+    Check(EggsIn(tx, eggGold) == 5 && EggsIn(tx, eggXp) == 5 && EggsIn(tx, eggDef) == 4, "FN 5 en la Zona 2: 5 huevos de la Zona 1 y de la 2 (4 de las vueltas hechas + 1 del jefe ya vencido en esta) y solo 4 de la Zona 3 (todavía no la venció en esta vuelta)");
+    await db.ExecuteAsync(grantScript, transaction: tx);
+    Check(EggsIn(tx, eggGold) == 5 && EggsIn(tx, eggXp) == 5 && EggsIn(tx, eggDef) == 4, "y correrlo de nuevo NO regala otra tanda (la marca de data_migrations lo frena)");
     await tx.RollbackAsync();
 }
-Check(await Have(eggGold) == 0, "(la prueba se deshizo: no quedó ningún huevo regalado ni la marca en la base local)");
+await db.ExecuteAsync("UPDATE users SET fuego_nuevo = 0, highest_zone_cleared = @z WHERE discord_id = @u", new { u = (long)U, z = zone2 });
+await using (var tx = await db.BeginTransactionAsync())
+{
+    await db.ExecuteAsync(grantScript, transaction: tx);
+    Check(EggsIn(tx, eggGold) == 0 && EggsIn(tx, eggXp) == 0 && EggsIn(tx, eggDef) == 0, "con 0 Fuegos Nuevos no se regala nada (el primer huevo es la mascota ya nacida)");
+    await tx.RollbackAsync();
+}
+await db.ExecuteAsync("UPDATE users SET fuego_nuevo = 1, highest_zone_cleared = 0 WHERE discord_id = @u", new { u = (long)U });
+await using (var tx = await db.BeginTransactionAsync())
+{
+    await db.ExecuteAsync(grantScript, transaction: tx);
+    Check(EggsIn(tx, eggGold) == 0 && EggsIn(tx, eggXp) == 0 && EggsIn(tx, eggDef) == 0, "con 1 Fuego Nuevo y ningún jefe vencido en la vuelta en curso tampoco (esa vuelta terminada dio el huevo que ya abrió)");
+    await tx.RollbackAsync();
+}
+await db.ExecuteAsync("UPDATE users SET fuego_nuevo = 1, highest_zone_cleared = @z WHERE discord_id = @u", new { u = (long)U, z = zone1 });
+await using (var tx = await db.BeginTransactionAsync())
+{
+    await db.ExecuteAsync(grantScript, transaction: tx);
+    Check(EggsIn(tx, eggGold) == 1 && EggsIn(tx, eggXp) == 0, "con 1 Fuego Nuevo y el jefe de la Zona 1 ya vencido en esta vuelta: 1 huevo de esa mascota y ninguno de las otras");
+    await tx.RollbackAsync();
+}
+Check(await Have(eggGold) == 0, "(las pruebas se deshicieron: no quedó ningún huevo regalado ni la marca en la base local)");
+
+// La corrección para quien YA recibió el regalo de la v0.40.0 (un huevo por Fuego Nuevo de cada especie): el caso del dueño (FN 5, en la Zona 2).
+await Reset();
+await SetPet(PetBonusKind.Gold, 10); await SetPet(PetBonusKind.Xp, 10); await SetPet(PetBonusKind.Defense, 10);
+await db.ExecuteAsync("UPDATE users SET fuego_nuevo = 5, highest_zone_cleared = @z WHERE discord_id = @u", new { u = (long)U, z = zone2 });
+await using (var tx = await db.BeginTransactionAsync())
+{
+    await db.ExecuteAsync("CREATE TABLE IF NOT EXISTS data_migrations (name TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT now())", transaction: tx);
+    await db.ExecuteAsync("UPDATE player_pets SET hatched_at = now() - interval '30 days' WHERE discord_id = @u", new { u = (long)U }, tx);
+    await db.ExecuteAsync("INSERT INTO data_migrations (name, applied_at) VALUES ('grant_retroactive_spare_eggs', now() - interval '1 hour') ON CONFLICT (name) DO UPDATE SET applied_at = now() - interval '1 hour'", transaction: tx);
+    for (int n = 1; n <= 5; n++)
+    {
+        await db.ExecuteAsync("INSERT INTO fuego_nuevo_history (discord_id, number, class_before, class_after, level_before, started_at, finished_at) VALUES (@u, @n, 'Guerrero', 'Guerrero', 30, now() - interval '20 days', now() - make_interval(days => @d))", new { u = (long)U, n, d = 10 - n }, tx);
+    }
+    // El jefe de la Zona 1 lo venció ANTES del regalo, en esta vuelta; el de la Zona 2 DESPUÉS (con el sistema nuevo: huevo real).
+    await db.ExecuteAsync("INSERT INTO game_events (occurred_at, discord_id, kind, zone_id, amount) VALUES (now() - interval '2 hours', @u, 'boss_win', @z, 1)", new { u = (long)U, z = zone1 }, tx);
+    await db.ExecuteAsync("INSERT INTO game_events (occurred_at, discord_id, kind, zone_id, amount) VALUES (now() - interval '10 minutes', @u, 'boss_win', @z, 1)", new { u = (long)U, z = zone2 }, tx);
+    foreach (var (egg, qty) in new[] { (eggGold, 5), (eggXp, 6), (eggDef, 5) })   // lo que dejó el regalo viejo (5 de cada una) y el huevo real de la Zona 2
+    {
+        await db.ExecuteAsync("INSERT INTO inventory (discord_id, item_id, quantity) SELECT @u, item_id, @q FROM items WHERE name = @n ON CONFLICT (discord_id, item_id) DO UPDATE SET quantity = @q", new { u = (long)U, q = qty, n = egg }, tx);
+    }
+
+    await db.ExecuteAsync(fixScript, transaction: tx);
+    Check(EggsIn(tx, eggGold) == 5 && EggsIn(tx, eggXp) == 5 && EggsIn(tx, eggDef) == 4, "la corrección deja 5 de la Zona 1 (4 + el jefe vencido antes del regalo), 5 de la Zona 2 (4 + el huevo REAL que ganó después: se descuenta solo el regalo que sobró) y 4 de la Zona 3");
+    await db.ExecuteAsync(fixScript, transaction: tx);
+    Check(EggsIn(tx, eggGold) == 5 && EggsIn(tx, eggXp) == 5 && EggsIn(tx, eggDef) == 4, "y correrla de nuevo no descuenta otra vez (la marca «fix_retroactive_spare_eggs» la frena)");
+    await db.ExecuteAsync("DELETE FROM data_migrations WHERE name = 'fix_retroactive_spare_eggs'", transaction: tx);
+    await db.ExecuteAsync("UPDATE inventory SET quantity = 0 WHERE discord_id = @u AND item_id = (SELECT item_id FROM items WHERE name = @n)", new { u = (long)U, n = eggDef }, tx);
+    await db.ExecuteAsync(fixScript, transaction: tx);
+    Check(EggsIn(tx, eggDef) == 0 && EggsIn(tx, eggGold) == 5, "si el jugador ya gastó huevos (evolucionó) la corrección nunca lo deja en negativo ni toca las demás");
+    await tx.RollbackAsync();
+}
+await using (var tx = await db.BeginTransactionAsync())
+{
+    await db.ExecuteAsync("CREATE TABLE IF NOT EXISTS data_migrations (name TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT now())", transaction: tx);
+    await db.ExecuteAsync("DELETE FROM data_migrations WHERE name IN ('grant_retroactive_spare_eggs', 'fix_retroactive_spare_eggs')", transaction: tx);
+    await db.ExecuteAsync(fixScript, transaction: tx);
+    Check(db.ExecuteScalar<int>("SELECT count(*)::int FROM data_migrations WHERE name = 'fix_retroactive_spare_eggs'", transaction: tx) == 0, "si el regalo original nunca se corrió, la corrección no hace nada ni deja marca");
+    await tx.RollbackAsync();
+}
+Check(await Have(eggGold) == 0, "(la prueba se deshizo: nada quedó en la base local)");
 
 Console.WriteLine("\n== 6. Las pantallas y los comandos ==");
 await Reset();
@@ -252,6 +315,12 @@ var vT2 = AllText(PetModule.BuildViewEmbed(View(P(gSpecies, 14, 2, 120), 0)));
 Check(vT2.Contains($"{gSpecies.Name} II") && vT2.Contains("nivel 14/20") && vT2.Contains("cada una gasta 3 comidas") && !vT2.Contains("Para evolucionar") && vT2.Contains("alimentadas"), "un tier II en el 14 se llama «… II», muestra 14/20 y que cada alimentada gasta 3 comidas, sin hablar de evolución todavía");
 var vT3 = AllText(PetModule.BuildViewEmbed(View(P(gSpecies, 30, 3, 400), 0)));
 Check(vT3.Contains($"{gSpecies.Name} III") && vT3.Contains("nivel 30/30") && vT3.Contains("🏆 Nivel máximo") && !vT3.Contains("evolucionar"), "el tier III en el 30 es «Nivel máximo»");
+// Con las piezas de barra de emoji de verdad cargadas (cada una es un código de ~35 caracteres) la pantalla de las 6 mascotas en el tope de su tier, con dos barras cada una, sigue entrando en Discord.
+UiEmojis.Set(new[] { "l_f", "l_e", "m_f", "m_e", "r_f", "r_e" }.Select(p => ($"bar_xp_{p}", $"<:bar_xp_{p}:123456789012345678>")));
+var sixPets = species.Take(6).Select(sp => P(sp, 10, 1, 40)).ToList();
+var bigView = PetModule.BuildViewEmbed(new PetModule.PetViewData(species, sixPets, 100, new HashSet<string>(), DateTime.UtcNow, null, 1.0, species.ToDictionary(sp => sp.EggName, _ => 3)));
+Check(bigView.Length <= 6000 && bigView.Fields.All(f => f.Value.Length <= 1024) && bigView.Fields.Any(f => f.Value.Contains("<:bar_xp_m_f:")), $"con las barras de emoji de verdad, las 6 mascotas en el tope de su tier (2 barras cada una) entran en Discord ({bigView.Length} de 6000)");
+UiEmojis.Set([]);
 Check(AllText(PetModule.BuildViewEmbed(View(P(gSpecies, 10, 1, 0), 0))).Length < 6000 && PetModule.EvolutionText(P(gSpecies, 10, 1, 0), null).Contains("0/5"), "sin información de huevos (null) la pantalla no se rompe");
 
 Task<PetModule.PetResult> Evolve(string? name) => PetModule.ExecuteEvolveAsync(users, petRepo, events, U, name);
