@@ -1,6 +1,6 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-28 (v0.37.0: los códigos canjeables `aa code`; antes, el viaje sin drop de material y el inventario por pestañas)_
+_Última revisión: 2026-10-29 (v0.38.0: orden de ingredientes, «vender todo» que respeta lo del Fuego Nuevo, sin Míticos de recolección en las cajas y amuletos ×4; antes, v0.37.1 «Huir» pregunta)_
 
 ## Pendiente de un vistazo (puesto al día el 2026-10-28)
 
@@ -38,7 +38,22 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
 
-## Los códigos canjeables: `aa code` / `/code` y el panel `aa admincode` (v0.37.0, 2026-10-28, en develop)
+## Orden de ingredientes, «vender todo», Míticos fuera de las cajas y amuletos ×4 (v0.38.0, 2026-10-29)
+
+- **Orden de los ingredientes** (el dueño): primero los drops de la zona 5 a la 1 y después los materiales de recolección del Mítico al Común. Vale en el herrero, el recetario, `/forge-special`, `/tips` y el Carpintero (se ordena al cargar las recetas).
+- **«Vender todo» no vende lo que sobrevive al Fuego Nuevo** (huevos, comida de mascotas y de dragón) y avisa cuántas unidades se quedaron; venderlas a propósito, una por una, sigue andando.
+- **La Corteza y el Meteorito (los Míticos de recolección) ya no salen de las cajas, salvo el Brasero del Fogón.** El Arca del Soberano pierde sus dos entradas fijas. **Lo leí literal; ojo con esto**: el Brasero es el cofre del Asador (una vez por vuelta) y el Fuego Nuevo vacía la mochila, así que no puede darle a nadie el equipo de ESA vuelta; si lo que quiere es que no salgan de NINGUNA caja, es una constante.
+- **Amuletos: sus dos drops ×4 (8 en total)**, el arma ×4. Él pidió «3 y 5», pero el amuleto es uno solo para las cuatro clases y cada clase tiene SU drop en el arma, así que 3/5 le daba 7 y 5 a una ruta y 9 y 3 a la otra; 4/4 es igual para todos y suma lo mismo. El tiempo de los drops baja de ~233 a ~133 min y lo frena la recolección (143-190 min); si se lo quiere más largo, se sube la recolección (él prefiere «pedir más materiales»).
+- **Migraciones (solo datos, re-ejecutables, antes o después del binario)**: `Database/remove_mythic_from_boxes.sql` y `Database/rebalance_amulet_drops.sql`; una instalación nueva las trae al final de `run_fresh_install.sql`. Harness nuevo `v0380test`.
+- **Propuestas que quedaron en el aire (sin construir, esperan al dueño)**: bajar un poco la chance de los materiales raros (Épico 7 → 6 %, Legendario 3,5 → 3 %), logros bastante más difíciles, profesiones que sigan subiendo después del nivel 100 (con la pesca como profesión nueva) y las mascotas (el dueño dijo que le importan más que la pesca).
+
+## «Huir» pregunta antes de huir (v0.37.1, 2026-10-29)
+
+- El dueño: «cada vez que se huya de una batalla necesito que se pregunte, ¿estás seguro?, cobarde o algo así… el guerrero al editar el mensaje en el celu me tira el huir donde está el atacar: si vas atacando rápido tocás sin querer». El botón **Huir** (solo y en equipo) ya no huye: abre una pregunta PRIVADA («🐔 ¿Estás seguro? Huir es de cobardes…») con «No, a pelear» (verde) y «Sí, huir» (rojo). El mensaje de la pelea NO se toca, así los botones no se mueven (cambiar los botones en el mismo mensaje habría puesto el «Sí» justo donde estaba «Atacar»).
+- El «Sí» lleva el id de ESA pelea: si ya terminó y empezó otra, no huye de la nueva. **«aa flee» escrito no pregunta** (escribirlo ya es a propósito; es lo que se usa cuando el botón se traba). El «Rendirse» de los duelos no se tocó.
+- Sin migración. Harness nuevo `v0371test`.
+
+## Los códigos canjeables: `aa code` / `/code` y el panel `aa admincode` (v0.37.0, 2026-10-28, en main)
 
 - El dueño: «vamos a ir trabajando en code, `aa code`: un comando nuevo que tenga códigos que se puedan canjear por cosas». Un código da una LISTA de premios (oro, Polvo, EXP —sube de nivel con su cartel— y cualquier ítem de la mochila: cajas, comida, materiales, huevos…; no equipo ni herramientas), con un tope opcional de personas y un vencimiento opcional. **Una vez por persona.** Todo en UNA transacción: 12 personas a la vez con un cupo de 5 canjean exactamente 5.
 - Jugadores: `/code codigo:` (la respuesta es PRIVADA) o `aa code CODIGO` (el bot intenta borrar el mensaje para que el código no quede a la vista). Quien prueba 5 códigos que no existen en 10 minutos queda 10 minutos sin poder probar.

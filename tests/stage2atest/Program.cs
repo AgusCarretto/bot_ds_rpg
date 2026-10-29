@@ -88,8 +88,9 @@ var zoneDrops = (await db.QueryAsync<string>("SELECT i.name FROM monster_drops d
 var leaking = defs.SelectMany(kv => kv.Value.Entries.Where(e => e.Kind == LootKind.Item && zoneDrops.Contains(e.ItemName!)).Select(e => $"{kv.Key} -> {e.ItemName}")).ToList();
 Check(leaking.Count == 0, $"ninguna entrada fija de las cajas es un drop de zona ({(leaking.Count == 0 ? "ninguna" : string.Join(", ", leaking))})");
 Check(defs.Values.All(d => d.Entries.Count(e => e.Kind == LootKind.Gather) == 1 && d.Entries.Count(e => e.Kind == LootKind.ZoneDrop) == 1 && d.Entries.Where(e => e.Kind != LootKind.Gold).Sum(e => e.Weight) == 1000), "cada caja tiene UNA tirada de recolección y UNA de drops de zona, y sus pesos suman 1000");
-var mythicOnly = defs.Where(kv => kv.Key != "Arca del Soberano").SelectMany(kv => kv.Value.Entries).Where(e => e.ItemName is "Corteza del Árbol de Vida" or "Fragmento de Meteorito").ToList();
-Check(mythicOnly.Count == 0 && defs["Arca del Soberano"].Entries.Any(e => e.ItemName == "Corteza del Árbol de Vida"), "Corteza / Meteorito (objetivos de largo plazo) solo como entrada fija de la caja Mítica (en las demás, solo por la recolección al 0,1%)");
+// v0.38.0: la Corteza y el Meteorito no salen de ninguna caja salvo el Brasero del Fogón: ya no hay entradas fijas en ninguna (el Arca las perdió) y la tirada de recolección los saltea fuera del Brasero (BoxLootRoller).
+var mythicFixed = defs.SelectMany(kv => kv.Value.Entries).Where(e => e.ItemName is "Corteza del Árbol de Vida" or "Fragmento de Meteorito").ToList();
+Check(mythicFixed.Count == 0, "Corteza / Meteorito (Míticos de recolección): ninguna caja los tiene como entrada fija (v0.38.0; solo caen por la recolección del Brasero del Fogón)");
 
 Console.WriteLine("\n== 2. El sorteo (20.000 aperturas por caja, con el contexto real de un jugador de Zona 5) ==");
 await Cleanup();

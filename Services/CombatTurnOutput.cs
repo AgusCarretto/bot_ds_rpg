@@ -33,6 +33,23 @@ public sealed class InteractionCombatTurnOutput(IDiscordInteraction interaction)
         });
 }
 
+// El «Sí, huir» de la confirmación (v0.37.1): el clic llega desde un mensaje PRIVADO aparte, así que la pantalla de la pelea se edita por el destino que YA tiene la sesión (su mensaje), no por
+// la interacción del clic. Completed dice si la pantalla del final llegó a mostrarse (si no, hubo un aviso: «ya terminó», «justo se resolvió»...).
+public sealed class SessionTargetCombatTurnOutput(IDiscordInteraction interaction) : ICombatTurnOutput
+{
+    public bool Completed { get; private set; }
+
+    public Task NoteAsync(string text) => interaction.FollowupAsync(text, ephemeral: true);
+
+    public ICombatReplyTarget NextReplyTarget(ICombatReplyTarget previous) => previous;
+
+    public async Task ShowAsync(Embed embed, MessageComponent components, ICombatReplyTarget? next, ICombatReplyTarget previous)
+    {
+        await previous.UpdateAsync(embed, components);
+        Completed = true;
+    }
+}
+
 // El turno por texto: un mensaje nuevo en el canal donde escribió, con sus botones; el combate sigue editando ESE mensaje (timeout incluido) y el viejo queda sin botones.
 public sealed class MessageCombatTurnOutput(IMessageChannel channel) : ICombatTurnOutput
 {

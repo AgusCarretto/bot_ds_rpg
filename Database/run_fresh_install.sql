@@ -80,6 +80,10 @@
 \ir remove_travel_drops.sql
 -- Las armas de clase de las Zonas 2 a 5 vuelven a ×4 de su drop de cacería (remove_travel_drops.sql las dejó en ×5; el dueño pidió bajarlas 1). Va justo DESPUÉS.
 \ir rebalance_weapon_drops.sql
+-- Los amuletos piden sus dos drops de cacería ×4 (8 en total), v0.38.0: remove_travel_drops.sql los había dejado en ×7 (Zonas 2-5) y ×5 (Zona 1). Va DESPUÉS de los dos de arriba.
+\ir rebalance_amulet_drops.sql
+-- La Corteza y el Meteorito (Míticos de recolección) dejan de salir de las cajas fijas del Arca del Soberano (v0.38.0); el resto de la regla está en el sorteo (GameData/BoxLoot.cs).
+\ir remove_mythic_from_boxes.sql
 -- Los emojis de los ítems OTRA VEZ, ahora que existen TODOS: update_item_emojis.sql corre antes (arriba) y seed_pets / seed_fogon / seed_zone_boxes crean ítems DESPUÉS, así que sus UPDATE por nombre no encontraban el Trinche, la Brasa, los huevos ni las cajas nuevas y quedaban sin emoji (esa deriva ya pasó con otros ítems). Es re-ejecutable.
 \ir update_item_emojis.sql
 -- Y la cara de El Asador Eterno, que se crea en seed_fogon.sql (después del puesto en el que corre update_monster_portraits.sql arriba).

@@ -28,7 +28,8 @@ public sealed class RecipeRepository(IDbConnectionFactory connectionFactory) : I
             splitOn: "ItemId")).AsList();
 
         const string ingredientsSql = """
-            SELECT ri.recipe_id AS "RecipeId", i.item_id AS "ItemId", i.name AS "ItemName", ri.quantity AS "Quantity", i.emoji AS "Emoji"
+            SELECT ri.recipe_id AS "RecipeId", i.item_id AS "ItemId", i.name AS "ItemName", ri.quantity AS "Quantity", i.emoji AS "Emoji", i.type AS "Type", i.rarity AS "Rarity",
+                   (SELECT MAX(m.zone_id) FROM monster_drops md JOIN monsters m ON m.monster_id = md.monster_id WHERE md.item_id = i.item_id AND NOT m.is_boss) AS "DropZone"
             FROM recipe_ingredients ri
             JOIN items i ON i.item_id = ri.item_id
             ORDER BY ri.recipe_id;
@@ -43,7 +44,8 @@ public sealed class RecipeRepository(IDbConnectionFactory connectionFactory) : I
                 header.RecipeId,
                 header.ResultItem!,
                 header.GoldCost,
-                ingredientsByRecipe[header.RecipeId]
+                // Los drops primero (de la zona 5 a la 1) y después la recolección del más raro al más común (GameData/IngredientOrder.cs).
+                IngredientOrder.Sort(ingredientsByRecipe[header.RecipeId], i => new IngredientSortKey(i.Type, i.Rarity, i.DropZone, i.ItemName))
                     .Select(i => new RecipeIngredientDetails(i.ItemId, i.ItemName, i.Quantity, i.Emoji))
                     .ToList(),
                 header.ZoneId,
@@ -68,5 +70,5 @@ public sealed class RecipeRepository(IDbConnectionFactory connectionFactory) : I
         public Item? ResultItem { get; init; }
     }
 
-    private sealed record IngredientRow(int RecipeId, int ItemId, string ItemName, int Quantity, string? Emoji);
+    private sealed record IngredientRow(int RecipeId, int ItemId, string ItemName, int Quantity, string? Emoji, string Type, string Rarity, int? DropZone);
 }
