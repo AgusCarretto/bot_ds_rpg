@@ -51,7 +51,7 @@ public partial class PetModule(
     // FeedCooldown: la espera entre comidas de ESTE jugador (null = la hora de siempre; la bendición Buen Pienso la baja). PackMultiplier: lo que multiplica la bendición Manada a los bonus (1 = nada).
     public sealed record PetViewData(
         IReadOnlyList<PetSpecies> Species, IReadOnlyList<OwnedPet> Owned, int Food, IReadOnlySet<string> EggNamesHeld, DateTime NowUtc,
-        TimeSpan? FeedCooldown = null, double PackMultiplier = 1.0);
+        TimeSpan? FeedCooldown = null, double PackMultiplier = 1.0, IReadOnlyDictionary<string, int>? EggCounts = null);
 
     public static async Task<PetResult> ExecuteViewAsync(
         IUserRepository userRepository, IPetRepository petRepository, IInventoryRepository inventoryRepository, ulong discordId, string? headline = null,
@@ -70,8 +70,10 @@ public partial class PetModule(
         int food = inventory.Where(e => e.ItemName == PetRules.FoodItemName).Sum(e => e.Quantity);
         var eggNames = inventory.Where(e => e.Quantity > 0 && e.Type == "Huevo").Select(e => e.ItemName).ToHashSet();
 
+        var eggCounts = inventory.Where(e => e.Quantity > 0 && e.Type == "Huevo").GroupBy(e => e.ItemName).ToDictionary(g => g.Key, g => g.Sum(e => e.Quantity));
+
         var bonuses = bonusService is null ? null : await bonusService.GetAsync(discordId, player.FuegoNuevo);
-        var data = new PetViewData(species, owned, food, eggNames, DateTime.UtcNow, bonuses?.PetFeedCooldown, bonuses?.PetsBlessingMultiplier ?? 1.0);
+        var data = new PetViewData(species, owned, food, eggNames, DateTime.UtcNow, bonuses?.PetFeedCooldown, bonuses?.PetsBlessingMultiplier ?? 1.0, eggCounts);
         return new PetResult(null, BuildViewEmbed(data, headline), BuildViewButtons(discordId, data));
     }
 
@@ -89,7 +91,7 @@ public partial class PetModule(
             case HatchStatus.NoEgg:
                 return new PetResult($"No tenés **{eggText}** en tu inventario.", null);
             case HatchStatus.AlreadyOwned:
-                return new PetResult($"Ya tenés a **{outcome.Species!.Name}**: no puede haber dos de la misma. El huevo se queda en tu mochila (no se gastó).", null);
+                return new PetResult($"Ya tenés a **{outcome.Species!.Name}**: no puede haber dos de la misma, así que este huevo no se abre. Guardalo en la mochila (no se gastó): es de repuesto y le va a servir a tu mascota más adelante.", null);
             case HatchStatus.NotAnEgg:
                 return new PetResult($"**{eggText}** no se puede abrir.", null);
             default:
@@ -144,23 +146,25 @@ public partial class PetModule(
         foreach (var pet in data.Owned)
         {
             int level = PetRules.LevelFor(pet.FeedPoints);
+            int cap = PetRules.LevelCap(pet.Tier);
             var species = pet.Species;
             string bonus = $"{PetRules.PercentText(PetRules.BonusPercent(pet))} de {PetRules.KindName(species.BonusKind)}" +
-                (level >= PetRules.MaxLevel ? " — ¡al máximo!" : $" (tope {PetRules.PercentText(species.MaxBonusPercent)})");
+                (level >= cap ? " — ¡al máximo de su tier!" : $" (tope {PetRules.PercentText(PetRules.BonusPercent(species, cap))})");
 
             string state;
-            if (PetRules.ProgressToNextLevel(pet.FeedPoints) is { } progress)
+            if (PetRules.ProgressToNextLevel(pet.FeedPoints, pet.Tier) is { } progress)
             {
                 var remaining = PetRules.RemainingCooldown(pet, data.NowUtc, data.FeedCooldown);
-                state = $"🍖 Comida para el próximo nivel: {progress.Have}/{progress.Need}\n" +
+                int cost = PetRules.FoodPerFeed(level);
+                state = $"🍖 Para el próximo nivel: {progress.Have}/{progress.Need} alimentadas" + (cost > 1 ? $" (cada una gasta {cost} comidas)" : string.Empty) + "\n" +
                     (remaining == TimeSpan.Zero ? "✅ Lista para comer" : $"⏳ Vuelve a comer en {TimeFormat.Remaining(remaining)}");
             }
             else
             {
-                state = "🏆 Nivel máximo";
+                state = EvolutionText(pet, data.EggCounts);
             }
 
-            embed.AddField($"{species.Emoji} {species.Name} · nivel {level}/{PetRules.MaxLevel}", $"{bonus}\n{state}", false);
+            embed.AddField($"{species.Emoji} {PetRules.DisplayName(pet)} · nivel {level}/{cap}", $"{bonus}\n{state}", false);
         }
 
         // Las mascotas que todavía no tenés NO se listan (el dueño no quiere spoilers: cuántas hay, cómo se llaman y qué dan se descubre jugando). Solo se avisa de un huevo
@@ -175,6 +179,24 @@ public partial class PetModule(
         }
 
         return embed.WithFooter($"🦴 {PetRules.FoodItemName} en tu mochila: {data.Food} · se compra en la taberna").Build();
+    }
+
+    // En el tope de su tier: si todavía puede evolucionar dice qué le falta (horas de expedición de ESA mascota y huevos sobrantes de su especie) o que ya está lista; en el tier III es el máximo.
+    public static string EvolutionText(OwnedPet pet, IReadOnlyDictionary<string, int>? eggCounts)
+    {
+        if (pet.Tier >= PetRules.MaxTier)
+        {
+            return "🏆 Nivel máximo";
+        }
+
+        int toTier = pet.Tier + 1;
+        int hoursNeed = PetRules.EvolveHours(toTier), eggsNeed = PetRules.EvolveEggs(toTier);
+        int eggs = eggCounts is not null && eggCounts.TryGetValue(pet.Species.EggName, out int held) ? held : 0;
+        bool ready = pet.ExpeditionHours >= hoursNeed && eggs >= eggsNeed;
+        string requirements = $"{(pet.ExpeditionHours >= hoursNeed ? "✅" : "⏱️")} Expediciones: {Math.Min(pet.ExpeditionHours, hoursNeed)}/{hoursNeed} h · {(eggs >= eggsNeed ? "✅" : "🥚")} Huevos sobrantes: {Math.Min(eggs, eggsNeed)}/{eggsNeed}";
+        return ready
+            ? $"🧬 ¡Lista para evolucionar al tier {PetRules.TierName(toTier)}! Usá **/pet evolve**.\n{requirements}"
+            : $"🧬 Puede evolucionar al tier {PetRules.TierName(toTier)}\n{requirements}";
     }
 
     // El botón "Alimentar" de la pantalla: deshabilitado si no hay mascotas listas o no tenés comida (el rechazo real lo decide la base, esto es solo ayuda visual).
@@ -261,7 +283,9 @@ public partial class PetModule(
                     blocks.Add($"⏳ **{species.Name}** todavía no tiene hambre: vuelve a comer en **{TimeFormat.Remaining(outcome.Remaining)}**.");
                     break;
                 case FeedStatus.MaxLevel when chosen:
-                    blocks.Add($"🏆 **{species.Name}** ya está en el nivel máximo: no necesita más comida.");
+                    blocks.Add(target.Tier < PetRules.MaxTier
+                        ? $"🏆 **{PetRules.DisplayName(target)}** está en el nivel máximo de su tier: ya no come hasta que evolucione (mirá **/pet view**)."
+                        : $"🏆 **{species.Name}** ya está en el nivel máximo: no necesita más comida.");
                     break;
                 case FeedStatus.NotOwned or FeedStatus.NoAccount:
                     return new PetResult(NoPets, null);
@@ -270,7 +294,7 @@ public partial class PetModule(
 
         if (outOfFood)
         {
-            blocks.Add($"{ItemEmojiRegistry.IconOf(PetRules.FoodItemName, "🦴")} Te quedaste sin **{PetRules.FoodItemName}**: se compra en la **/taberna**.");
+            blocks.Add($"{ItemEmojiRegistry.IconOf(PetRules.FoodItemName, "🦴")} Te falta **{PetRules.FoodItemName}** para esa alimentada: se compra en la **/taberna**.");
         }
 
         if (blocks.Count == 0)
@@ -301,17 +325,23 @@ public partial class PetModule(
         var pet = outcome.Pet!;
         var species = pet.Species;
         int level = PetRules.LevelFor(pet.FeedPoints);
-        string text = $"{species.Emoji} **{species.Name}** — nivel {level} · {PetRules.PercentText(PetRules.BonusPercent(pet))} de {PetRules.KindName(species.BonusKind)}";
+        int cap = PetRules.LevelCap(pet.Tier);
+        string text = $"{species.Emoji} **{PetRules.DisplayName(pet)}** — nivel {level} · {PetRules.PercentText(PetRules.BonusPercent(pet))} de {PetRules.KindName(species.BonusKind)}";
 
         if (level > outcome.LevelBefore)
         {
-            text += level >= PetRules.MaxLevel
-                ? "\n🎉 ¡Llegó al **nivel máximo**!"
+            text += level >= cap
+                ? (pet.Tier < PetRules.MaxTier ? "\n🎉 ¡Llegó al **nivel máximo de su tier**! Mirá **/pet view**." : "\n🎉 ¡Llegó al **nivel máximo**!")
                 : $"\n🎉 ¡Subió al **nivel {level}**!";
         }
-        else if (PetRules.ProgressToNextLevel(pet.FeedPoints) is { } progress)
+        else if (PetRules.ProgressToNextLevel(pet.FeedPoints, pet.Tier) is { } progress)
         {
             text += $"\n🍖 Para el próximo nivel: {progress.Have}/{progress.Need}";
+        }
+
+        if (outcome.FoodCost > 1)
+        {
+            text += $"\n🥣 Gastó {outcome.FoodCost} comidas.";
         }
 
         return text;
@@ -323,7 +353,7 @@ public partial class PetModule(
         var waiting = owned.Where(p => !PetRules.IsMaxLevel(p)).Select(p => (Pet: p, Remaining: PetRules.RemainingCooldown(p, nowUtc, cooldown))).ToList();
         if (waiting.Count == 0)
         {
-            return "🏆 Todas tus mascotas están en el **nivel máximo**: no necesitan más comida.";
+            return "🏆 Todas tus mascotas están en el **nivel máximo de su tier**: no necesitan más comida por ahora.";
         }
 
         var next = waiting.MinBy(w => w.Remaining);

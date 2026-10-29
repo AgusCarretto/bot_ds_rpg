@@ -63,23 +63,30 @@ public static class PetExpeditions
         _ => ExpeditionFindKind.GoldBag,
     };
 
-    // El oro de ESTA expedición: un valor al azar del rango, redondo a 100. Con el hallazgo de oro, +50 %. rng se inyecta para probarlo.
-    public static int RollGold(ExpeditionOption option, bool goldFind, Random rng)
+    // El oro de ESTA expedición: un valor al azar del rango, redondo a 100, ×1 / ×2 / ×4 según el tier de la mascota (PetRules.ExpeditionRewardMultiplier). Con el hallazgo de oro, +50 %. rng se inyecta para probarlo.
+    public static int RollGold(ExpeditionOption option, bool goldFind, Random rng, int tier = 1)
     {
         int steps = ((option.GoldMax - option.GoldMin) / 100) + 1;
-        int gold = option.GoldMin + (rng.Next(steps) * 100);
+        int gold = (option.GoldMin + (rng.Next(steps) * 100)) * PetRules.ExpeditionRewardMultiplier(tier);
         return goldFind ? gold + (gold * FindBonusPercent / 100) : gold;
     }
 
-    // El % de nivel de EXP de ESTA expedición; con el hallazgo de EXP, +50 % (redondeado hacia arriba: 5 % → 8 %).
-    public static int XpPercentFor(ExpeditionOption option, bool xpFind) =>
-        xpFind ? (int)Math.Round(option.XpPercent * (1 + (FindBonusPercent / 100.0)), MidpointRounding.AwayFromZero) : option.XpPercent;
+    // El % de nivel de EXP de ESTA expedición, ×1 / ×2 / ×4 según el tier; con el hallazgo de EXP, +50 % (redondeado hacia arriba: 5 % → 8 %).
+    public static int XpPercentFor(ExpeditionOption option, bool xpFind, int tier = 1)
+    {
+        int percent = option.XpPercent * PetRules.ExpeditionRewardMultiplier(tier);
+        return xpFind ? (int)Math.Round(percent * (1 + (FindBonusPercent / 100.0)), MidpointRounding.AwayFromZero) : percent;
+    }
 
     // ¿Salió el hallazgo? rng se inyecta para probarlo.
     public static bool RollFind(ExpeditionOption option, Random rng) => rng.Next(100) < option.FindChancePercent;
 
-    // La cantidad de Polvo del hallazgo del Gólem.
-    public static int DustFor(ExpeditionOption option) => option.DustFind;
+    // Lo que trae el hallazgo según el tier (×1 / ×2 / ×4): el Polvo del Gólem, los drops de la Salamandrita y las tiradas de la Chispa.
+    public static int DustFor(ExpeditionOption option, int tier = 1) => option.DustFind * PetRules.ExpeditionRewardMultiplier(tier);
+
+    public static int DropQuantityFor(ExpeditionOption option, int tier = 1) => option.DropQuantity * PetRules.ExpeditionRewardMultiplier(tier);
+
+    public static int GatherRollsFor(ExpeditionOption option, int tier = 1) => option.GatherRolls * PetRules.ExpeditionRewardMultiplier(tier);
 
     // El hallazgo de la Chispa: tiradas alternadas de madera y mineral con las chances de /chop y /mine (RarityCatalog) y sus unidades (GatheringYield), SIN el Mítico (la Corteza y el Meteorito siguen siendo de
     // /chop, /mine, el Brasero del Fogón y el Tabernero del Inframundo): si sale Mítico cuenta como Legendario. Devuelve lo que se suma a la mochila, juntando repetidos.

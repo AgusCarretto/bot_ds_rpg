@@ -150,20 +150,23 @@ public sealed class AdventureRepository(IDbConnectionFactory connectionFactory) 
 
             // El huevo de la zona (v0.10.0): la PRIMERA vez que este jugador vence a su jefe (current es la fila bloqueada, con el highest_zone_cleared / gate_cleared de ANTES de esta
             // victoria), en la misma transacción que el cofre. En el Fogón (v0.14.0) la primera vez es de cada vuelta (gate_cleared vuelve a false con el Fuego Nuevo), pero la mascota
-            // se queda: si ya tiene esa mascota, o ya guarda su huevo sin abrir, no se le da otro.
+            // se queda. Desde la v0.40.0 el huevo se da SIEMPRE en la primera victoria de la vuelta, aunque el jugador ya tenga esa mascota (o guarde otro huevo): el sobrante no se abre, se queda en la mochila
+            // (sobrevive al Fuego Nuevo) y se gasta para evolucionar a la mascota (GameData/PetRules.cs: EvolveEggs).
             PetSpecies? eggGranted = null;
+            bool eggIsSpare = false;
             if (clearedZoneId is { } clearedZone && (isGateFight ? !current.GateCleared : current.HighestZoneCleared < clearedZone))
             {
                 var species = await PetSql.FindByZoneAsync(connection, transaction, clearedZone, cancellationToken);
-                bool alreadyOwned = species is not null && await connection.ExecuteScalarAsync<bool>(new CommandDefinition(
-                    """
-                    SELECT EXISTS (SELECT 1 FROM player_pets WHERE discord_id = @DiscordId AND species_id = @SpeciesId)
-                        OR EXISTS (SELECT 1 FROM inventory WHERE discord_id = @DiscordId AND item_id = @EggItemId AND quantity > 0);
-                    """,
-                    new { DiscordId = (long)discordId, SpeciesId = species.SpeciesId, EggItemId = species.EggItemId }, transaction: transaction, cancellationToken: cancellationToken));
-
-                if (species is not null && !alreadyOwned)
+                if (species is not null)
                 {
+                    // ¿Ya la tiene (nacida o con su huevo guardado)? Entonces este huevo es de repuesto: solo cambia el aviso.
+                    eggIsSpare = await connection.ExecuteScalarAsync<bool>(new CommandDefinition(
+                        """
+                        SELECT EXISTS (SELECT 1 FROM player_pets WHERE discord_id = @DiscordId AND species_id = @SpeciesId)
+                            OR EXISTS (SELECT 1 FROM inventory WHERE discord_id = @DiscordId AND item_id = @EggItemId AND quantity > 0);
+                        """,
+                        new { DiscordId = (long)discordId, SpeciesId = species.SpeciesId, EggItemId = species.EggItemId }, transaction: transaction, cancellationToken: cancellationToken));
+
                     await InventoryUpsert.AddItemAsync(connection, transaction, discordId, species.EggItemId, 1, cancellationToken);
                     eggGranted = species;
                 }
@@ -197,7 +200,7 @@ public sealed class AdventureRepository(IDbConnectionFactory connectionFactory) 
             }
 
             await transaction.CommitAsync(cancellationToken);
-            return new LevelUpOutcome(finalUser, leveled.LevelsGained, eggGranted, gate);
+            return new LevelUpOutcome(finalUser, leveled.LevelsGained, eggGranted, gate, eggIsSpare);
         }
         catch
         {

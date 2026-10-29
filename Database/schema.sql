@@ -237,11 +237,14 @@ CREATE TABLE IF NOT EXISTS pet_species (
 );
 
 CREATE TABLE IF NOT EXISTS player_pets (
+    -- tier (v0.40.0): 1, 2 o 3 — el tope de nivel (10, 20, 30); expedition_hours: horas de expedición ya hechas por esta mascota (suman al recoger el premio). Database/add_pet_tiers.sql las agrega a una base viva.
     discord_id   BIGINT NOT NULL REFERENCES users (discord_id) ON DELETE CASCADE,
     species_id   INTEGER NOT NULL REFERENCES pet_species (species_id) ON DELETE CASCADE,
     feed_points  INTEGER NOT NULL DEFAULT 0 CHECK (feed_points >= 0),
     last_fed_at  TIMESTAMPTZ,
     hatched_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    tier             SMALLINT NOT NULL DEFAULT 1 CHECK (tier BETWEEN 1 AND 3),
+    expedition_hours INTEGER  NOT NULL DEFAULT 0 CHECK (expedition_hours >= 0),
     PRIMARY KEY (discord_id, species_id)
 );
 

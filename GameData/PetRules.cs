@@ -29,9 +29,36 @@ public sealed record PetBonuses(double GoldPercent, double XpPercent, double Def
 //   · Crece COMIÉNDOSE la "Comida para Mascotas" (un consumible que se compra en la tienda), y cada mascota se puede alimentar UNA vez por hora: el cooldown es lo
 //     que manda el ritmo (con el oro no alcanzaría para frenarlo y se rompería rápido). Comidas para subir de nivel: 1, 1, 2, 2, 3, 3, 4, 4, 5 = 25 en total = 25 horas.
 //   · Todas las que tengas suman a la vez. Se conservan en la segunda vuelta; más adelante (reset 3 o 5) puede haber un bonus de fusión.
+//   · TIERS (v0.40.0): al nivel máximo de su tier una mascota puede EVOLUCIONAR (EvolveAsync) y el tope sube de 10 a 20 (tier II) y a 30 (tier III). Pide horas de expedición de ESA mascota y huevos sobrantes
+//     de su especie (nada de reglas de Fuego Nuevo: con un huevo sobrante por vuelta, 5 huevos son el FN 6 y 10 más el FN 16). Cada tier bonifica el doble del anterior (como mínimo) y el III es "una locura".
 public static class PetRules
 {
+    // El tope del TIER I y el nivel que pide una expedición. Los topes de los otros tiers salen de LevelCap.
     public const int MaxLevel = 10;
+
+    public const int MaxTier = 3;
+    public const int LevelsPerTier = 10;
+
+    // El tope de nivel de un tier: 10, 20, 30.
+    public static int LevelCap(int tier) => Math.Clamp(tier, 1, MaxTier) * LevelsPerTier;
+
+    // Horas de expedición ACUMULADAS de la mascota y huevos sobrantes de su especie que pide evolucionar AL tier dado (el II: 100 h y 5 huevos; el III: 250 h en total y 10 huevos más). El dueño (2026-10-29):
+    // sin condición de FN, solo huevos (5 huevos = el FN 6, 15 = el FN 16), y solo al nivel máximo del tier.
+    public static int EvolveHours(int toTier) => toTier switch { 2 => 100, 3 => 250, _ => int.MaxValue };
+
+    public static int EvolveEggs(int toTier) => toTier switch { 2 => 5, 3 => 10, _ => int.MaxValue };
+
+    // Cuánto multiplica cada tier el premio de las expediciones (oro, EXP, hallazgo): el II el doble, el III el CUÁDRUPLE (el dueño: "cada tier tiene que duplicar… el tier 3 tendría que ser una locura").
+    public static int ExpeditionRewardMultiplier(int tier) => Math.Clamp(tier, 1, MaxTier) switch { 1 => 1, 2 => 2, _ => 4 };
+
+    // Comidas que gasta CADA alimentada según el nivel que tiene la mascota: 1 hasta el 10, 3 del 10 al 20 y 6 del 20 al 30 (el oro pesa: "que cueste las mascotas", como el dragón).
+    public static int FoodPerFeed(int level) => level < LevelsPerTier ? 1 : level < LevelsPerTier * 2 ? 3 : 6;
+
+    // «I», «II», «III».
+    public static string TierName(int tier) => Math.Clamp(tier, 1, MaxTier) switch { 1 => "I", 2 => "II", _ => "III" };
+
+    // El nombre para mostrar: el de la especie y, desde el tier II, el número romano («Ñandusito II»). Lo que se busca y se guarda sigue siendo Species.Name.
+    public static string DisplayName(OwnedPet pet) => pet.Tier <= 1 ? pet.Species.Name : $"{pet.Species.Name} {TierName(pet.Tier)}";
 
     // El nombre del ítem de la comida (Database/seed_pets.sql): es el único lugar que lo nombra en el código.
     public const string FoodItemName = "Comida para Mascotas";
@@ -39,10 +66,12 @@ public static class PetRules
     // Cuánto hay que esperar para volver a alimentar a la MISMA mascota.
     public static readonly TimeSpan FeedCooldown = TimeSpan.FromHours(1);
 
-    // Comidas que hacen falta para pasar del nivel N al N+1 (índice 0 = del 1 al 2).
-    private static readonly int[] FeedsToNextLevel = [1, 1, 2, 2, 3, 3, 4, 4, 5];
+    // Alimentadas que hacen falta para pasar del nivel N al N+1 (índice 0 = del 1 al 2). Los primeros 9 pasos son el tier I (1, 1, 2, 2, 3, 3, 4, 4, 5 = 25 en total = 25 horas, como siempre); del 10 al 20 son 80
+    // (6, 6, 7, 7, 8, 8, 9, 9, 10, 10) a 3 comidas cada una = 240 comidas, y del 20 al 30 son 130 (11…15 dos veces cada una) a 6 comidas = 780. Cada una sigue esperando su hora, así que el tier II son ≥ 80 horas y el III ≥ 130.
+    private static readonly int[] FeedsToNextLevel = [1, 1, 2, 2, 3, 3, 4, 4, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15];
 
-    public static int TotalFeedsToMax => FeedsToNextLevel.Sum();
+    // Las alimentadas del tier I (25): lo que usan los logros y la ayuda para "llegar al máximo".
+    public static int TotalFeedsToMax => FeedsToNextLevel.Take(LevelsPerTier - 1).Sum();
 
     // El nivel (1..MaxLevel) de una mascota con esas comidas dadas.
     public static int LevelFor(int feedPoints)
@@ -63,14 +92,14 @@ public static class PetRules
         return level;
     }
 
-    // Cuántas comidas hay que haber dado en total para LLEGAR a ese nivel (nivel 1 = 0).
-    public static int PointsToReach(int level) => FeedsToNextLevel.Take(Math.Clamp(level, 1, MaxLevel) - 1).Sum();
+    // Cuántas alimentadas hay que haber dado en total para LLEGAR a ese nivel (nivel 1 = 0).
+    public static int PointsToReach(int level) => FeedsToNextLevel.Take(Math.Clamp(level, 1, LevelCap(MaxTier)) - 1).Sum();
 
-    // (comidas dadas dentro del nivel actual, comidas que pide el nivel actual para pasar al siguiente); null si ya está al máximo.
-    public static (int Have, int Need)? ProgressToNextLevel(int feedPoints)
+    // (alimentadas dadas dentro del nivel actual, alimentadas que pide el nivel actual para pasar al siguiente); null si ya está en el tope de su tier (tier = 1 si no se dice).
+    public static (int Have, int Need)? ProgressToNextLevel(int feedPoints, int tier = 1)
     {
         int level = LevelFor(feedPoints);
-        return level >= MaxLevel ? null : (feedPoints - PointsToReach(level), FeedsToNextLevel[level - 1]);
+        return level >= LevelCap(tier) ? null : (feedPoints - PointsToReach(level), FeedsToNextLevel[level - 1]);
     }
 
     // Lo que falta para que esa mascota pueda comer otra vez (cero = ya puede). cooldown: la espera del jugador (PlayerBonuses.PetFeedCooldown: la hora menos lo de Buen Pienso); null = la hora de siempre. nowUtc se pasa de afuera para probarlo; la regla de verdad la hace la base de datos
@@ -85,13 +114,27 @@ public static class PetRules
         return value == FeedCooldown ? "1 hora" : $"{(int)Math.Round(value.TotalMinutes)} min";
     }
 
-    public static bool IsMaxLevel(OwnedPet pet) => LevelFor(pet.FeedPoints) >= MaxLevel;
+    // En el tope de SU tier (10, 20 o 30): ya no come hasta que evolucione.
+    public static bool IsMaxLevel(OwnedPet pet) => LevelFor(pet.FeedPoints) >= LevelCap(pet.Tier);
 
-    // Puede comer ahora: no está al máximo y pasó la hora desde la última comida.
+    // Puede comer ahora: no está en el tope de su tier y pasó la hora desde la última comida.
     public static bool CanEat(OwnedPet pet, DateTime nowUtc, TimeSpan? cooldown = null) => !IsMaxLevel(pet) && RemainingCooldown(pet, nowUtc, cooldown) == TimeSpan.Zero;
 
-    // Lo que da esa especie al nivel dado: su tope × nivel / 10.
-    public static double BonusPercent(PetSpecies species, int level) => species.MaxBonusPercent * Math.Clamp(level, 1, MaxLevel) / MaxLevel;
+    // Cuántas veces su tope da una mascota a ese nivel: hasta el 10 es nivel/10 (a nivel 1 el 10 %, al 10 el tope entero); del 10 al 20 sigue subiendo hasta el DOBLE del tope (tier II) y del 20 al 30 hasta el
+    // CUÁDRUPLE (tier III), siempre lineal por nivel (11 = ×1,1 … 20 = ×2 … 30 = ×4). El dueño: "cada tier tiene que duplicar… el tier 3 tendría que ser una locura en premios".
+    public static double BonusMultiplier(int level)
+    {
+        int l = Math.Clamp(level, 1, LevelCap(MaxTier));
+        if (l <= LevelsPerTier)
+        {
+            return l / (double)LevelsPerTier;
+        }
+
+        return l <= LevelsPerTier * 2 ? 1.0 + ((l - LevelsPerTier) / (double)LevelsPerTier) : 2.0 + (2.0 * (l - (LevelsPerTier * 2)) / LevelsPerTier);
+    }
+
+    // Lo que da esa especie al nivel dado: su tope × BonusMultiplier(nivel).
+    public static double BonusPercent(PetSpecies species, int level) => species.MaxBonusPercent * BonusMultiplier(level);
 
     public static double BonusPercent(OwnedPet pet) => BonusPercent(pet.Species, LevelFor(pet.FeedPoints));
 

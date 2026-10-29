@@ -825,6 +825,8 @@
   "Comprar una caja (una cada 2 horas) o un dragón": "Buy a box (one every 2 hours) or a dragon",
   "\n🐉 ¡Aliento final! Tu dragón te mantuvo en pie con 1 de vida.": "\n🐉 Last breath! Your dragon kept you standing at 1 HP.",
   "Dragón (criar)": "Dragon (breed)",
+  "🥚 ¡Un huevo de repuesto!": "🥚 A spare egg!",
+  "{0} — guardalo en la mochila: ya tenés esa mascota, así que no se abre.": "{0} — keep it in your bag: you already have that pet, so it won't be opened.",
   "Expedición": "Expedition",
   "¡Tu mascota volvió de la expedición! Recogé el premio con `/pet expedition`.": "Your pet is back from its expedition! Collect the prize with `/pet expedition`."
 }
