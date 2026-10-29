@@ -6,6 +6,22 @@ solo. El más nuevo va arriba. Cada anuncio tiene un título y un texto.
 
 ---
 
+## 2026-11-03 — La pesca (v0.48.0)
+
+**Título:** ¡Llegó la pesca! Un oficio nuevo para recolectar
+
+**Texto:**
+
+🎣 Con `/fish` pescás en el río, igual que talás con `/chop` y minás con `/mine`. Salen **tres peces** de distinta rareza y la pesca sube un oficio nuevo: **Pescador**, con su versión avanzada al llegar al nivel máximo.
+
+🪚 El carpintero (`/tools`) ahora también arma **cañas** para pescar más.
+
+🐟 Los peces ya se pueden vender o desmantelar, y más adelante van a servir para cocinar.
+
+¿Te gusta el juego? Dejá tu reseña acá en top.gg.
+
+---
+
 ## 2026-11-03 — Las zonas que abre el Fuego Nuevo (v0.47.0)
 
 **Título:** Más allá del Fogón: cinco zonas nuevas y sus mazmorras

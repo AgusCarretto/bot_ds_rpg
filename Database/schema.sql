@@ -482,10 +482,10 @@ CREATE TABLE IF NOT EXISTS player_settings (
     updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Las herramientas de cada jugador (v0.29.0, Database/add_tools.sql): una por tipo ('axe' = hacha para /chop, 'pickaxe' = pico para /mine); la nueva reemplaza a la vieja y el Fuego Nuevo las borra.
+-- Las herramientas de cada jugador (v0.29.0, Database/add_tools.sql): una por tipo ('axe' = hacha para /chop, 'pickaxe' = pico para /mine, 'rod' = caña para /fish, v0.48.0); la nueva reemplaza a la vieja y el Fuego Nuevo las borra.
 CREATE TABLE IF NOT EXISTS player_tools (
     discord_id BIGINT  NOT NULL REFERENCES users(discord_id) ON DELETE CASCADE,
-    kind       TEXT    NOT NULL CHECK (kind IN ('axe', 'pickaxe')),
+    kind       TEXT    NOT NULL CHECK (kind IN ('axe', 'pickaxe', 'rod')),
     item_id    INTEGER NOT NULL REFERENCES items(item_id) ON DELETE CASCADE,
     PRIMARY KEY (discord_id, kind)
 );

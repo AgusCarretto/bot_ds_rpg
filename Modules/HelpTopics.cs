@@ -39,11 +39,11 @@ public static class HelpTopics
         new("fogon", "🔥", Loc.Mark("El Fogón Eterno"), Loc.Mark("la puerta del final del mundo y su equipo"), ["fogón", "asador", "puerta", "zona0", "zona 0", "gate"], Fogon, InEnglish: true),
         new("fuego", "♻️", Loc.Mark("Fuego Nuevo"), Loc.Mark("volver a empezar con bonus permanentes y bendiciones"), ["fuegonuevo", "fuego nuevo", "fn", "reinicio", "reiniciar", "renacer", "reset", "vuelta", "bendicion", "bendiciones", "blessing", "blessings", "prestigio"], Fuego, InEnglish: true),
         new("story", "📖", Loc.Mark("Las Crónicas del Fogón"), Loc.Mark("la historia del juego: capítulos, escenas y cómo se abren"), ["historia", "cronicas", "crónicas", "lore", "cuento"], Story, InEnglish: true),
-        new("professions", "🛠️", Loc.Mark("Oficios"), Loc.Mark("Leñador, Minero y Encantador: nivel, XP y la versión avanzada"), ["oficios", "oficio", "profesion", "profesiones", "prof", "lenador", "leñador", "woodcutter"], Professions, InEnglish: true),
+        new("professions", "🛠️", Loc.Mark("Oficios"), Loc.Mark("Leñador, Minero, Pescador y Encantador: nivel, XP y la versión avanzada"), ["oficios", "oficio", "profesion", "profesiones", "prof", "lenador", "leñador", "woodcutter", "pescador"], Professions, InEnglish: true),
         new("pets", "🐾", Loc.Mark("Mascotas"), Loc.Mark("huevos, bonus pasivos y cómo alimentarlas"), ["mascota", "mascotas", "pet", "huevo", "huevos", "egg", "eggs"], Pets, InEnglish: true),
         new("dragon", "🐲", Loc.Mark("Dragón"), Loc.Mark("comprarlo, entrenarlo y criarlo: tipo, tiers y comida"), ["dragones", "dragons", "criar", "cria", "cría", "breed", "horse", "caballo", "comida de dragon", "comida de dragón"], Dragon, InEnglish: true),
         new("classes", "🎭", Loc.Mark("Clases y habilidades"), Loc.Mark("qué hace cada clase"), ["clase", "clases", "class", "habilidad", "habilidades"], Classes, InEnglish: true),
-        new("gather", "🪓", Loc.Mark("Recolección"), Loc.Mark("talar y minar: unidades y rarezas"), ["chop", "mine", "talar", "minar", "recolectar", "recoleccion", "madera", "mineral"], Gather, InEnglish: true),
+        new("gather", "🪓", Loc.Mark("Recolección"), Loc.Mark("talar y minar: unidades y rarezas"), ["chop", "mine", "fish", "talar", "minar", "pescar", "pesca", "recolectar", "recoleccion", "madera", "mineral"], Gather, InEnglish: true),
         new("daily", "🎁", Loc.Mark("Diario y regalos"), Loc.Mark("la recompensa diaria, la racha y regalar oro"), ["diario", "racha", "give", "dar", "regalo", "regalar"], Daily, InEnglish: true),
         new("stats", "📊", Loc.Mark("Nivel y estadísticas"), Loc.Mark("EXP, vida, ataque y defensa"), ["nivel", "exp", "xp", "ataque", "defensa", "vida", "hp", "perfil", "level"], Stats, InEnglish: true),
         new("reminders", "⏰", Loc.Mark("Recordatorios"), Loc.Mark("los avisos del bot cuando termina una espera"), ["recordatorio", "recordatorios", "reminder", "reminders", "aviso", "avisos", "alarma", "alarmas"], Reminders, InEnglish: true),
@@ -273,8 +273,8 @@ public static class HelpTopics
             Loc.T("Cada clase tiene su arma en cada zona (espada, daga, arco o grimorio) con un ataque FIJO que sube de zona en zona: lo que dice la receta es lo que pega, sin multiplicadores. Además hay una sola arma general, la **Hoja de Acero Puro**, sin zona y hecha solo con materiales de recolección: sirve para empezar.")),
         (Loc.T("🎽 Se equipa sola"),
             Loc.T("Lo forjado queda **puesto**: no va a la mochila ni hace falta equiparlo. Para cambiarlo, vendés la pieza que llevás (en la **/taberna** o con **/shop sell**) y forjás la siguiente. Ojo: al venderla pierde su encantamiento.")),
-        (Loc.T("🪓 El Carpintero (hacha y pico)"),
-            Loc.T("**/tools** (en texto `aa herramientas`): el Carpintero te arma el **hacha** (multiplica lo que sacás con **/chop**) y el **pico** (con **/mine**) **solo con materiales** de recolección, sin oro. ") +
+        (Loc.T("🪓 El Carpintero (hacha, pico y caña)"),
+            Loc.T("**/tools** (en texto `aa herramientas`): el Carpintero te arma el **hacha** (multiplica lo que sacás con **/chop**), el **pico** (con **/mine**) y la **caña** (con **/fish**) **solo con materiales** de recolección, sin oro. ") +
             Loc.T("Hay dos de cada uno, el de la **Zona 3** y el de la **Zona 5**: se arma cuando tenés esa zona desbloqueada y reemplaza al anterior (sin herramienta rendís ×1). La lista de **/tools** muestra qué pide cada una y cuánto te falta. ") +
             Loc.T("Multiplican lo Común, Raro y Épico; los Legendarios y Míticos quedan en 1. Es equipo: se vuelve a armar después de cada **Fuego Nuevo**.")),
         (Loc.T("🧱 Los materiales"), Loc.T("Madera y minerales con **/chop** y **/mine**; los drops, de los monstruos (**/drops**). **/tips** te dice qué te falta para tu próxima forja.")));
@@ -369,26 +369,28 @@ public static class HelpTopics
     {
         var woodcutter = ProfessionCatalog.Get(ProfessionCatalog.WoodcutterKey);
         var miner = ProfessionCatalog.Get(ProfessionCatalog.MinerKey);
+        var fisher = ProfessionCatalog.Get(ProfessionCatalog.FisherKey);
         var enchanter = ProfessionCatalog.Get(ProfessionCatalog.EnchanterKey);
         long total = ProfessionRules.TotalXpToMax;
 
         return Topic(Self("professions"),
-            Loc.T("Los **oficios** suben solos cuando usás su comando: cuanto más talás, minás o encantás, mejor te sale. Cada uno empieza en el nivel 0 y lo que da llega al tope en el ") + ProfessionRules.MaxLevel + Loc.T(", pero el nivel **sigue subiendo** después."),
+            Loc.T("Los **oficios** suben solos cuando usás su comando: cuanto más talás, minás, pescás o encantás, mejor te sale. Cada uno empieza en el nivel 0 y lo que da llega al tope en el ") + ProfessionRules.MaxLevel + Loc.T(", pero el nivel **sigue subiendo** después."),
             (Loc.T("📈 Cómo suben"),
                 Loc.F($"{woodcutter.Emoji} **{woodcutter.DisplayName}** con **{woodcutter.Command}** y {miner.Emoji} **{miner.DisplayName}** con **{miner.Command}**: cada tirada da XP según la rareza del material que te sale ({ProfessionRules.DescribeGatherXp()}; una por tirada, no por unidad).\n") +
+                Loc.F($"{fisher.Emoji} **{fisher.DisplayName}** con **{fisher.Command}**: lo mismo, pero con los tres peces ({ProfessionRules.DescribeFishXp()}).\n") +
                 Loc.F($"{enchanter.Emoji} **{enchanter.DisplayName}** con cada intento de **{enchanter.Command}** ({enchanter.XpPerAction} XP).\n") +
                 Loc.F($"Llegar al {ProfessionRules.MaxLevel} son ~{GameHistory.Number(total)} de XP: unas {GameHistory.Number((long)Math.Round(total / ProfessionRules.AverageGatherXp()))} tiradas de tala o minería (en promedio), o {GameHistory.Number(total / enchanter.XpPerAction)} intentos de encantamiento. ") +
                 Loc.T("Lo que hiciste antes de que existieran los oficios también cuenta.")),
             (Loc.T("🎁 Lo que da cada nivel"),
-                Loc.F($"{woodcutter.Emoji} {miner.Emoji} **{woodcutter.DisplayName} y {miner.DisplayName}**: {ProfessionRules.DescribePerLevel(woodcutter)}. Lo de la rareza sube un escalón (Común → Raro → Épico → Legendario); el Mítico nunca se mejora.\n") +
+                Loc.F($"{woodcutter.Emoji} {miner.Emoji} {fisher.Emoji} **{woodcutter.DisplayName}, {miner.DisplayName} y {fisher.DisplayName}**: {ProfessionRules.DescribePerLevel(woodcutter)}. Lo de la rareza sube un escalón (Común → Raro → Épico → Legendario); el Mítico nunca se mejora.\n") +
                 Loc.F($"{enchanter.Emoji} **{enchanter.DisplayName}**: {ProfessionRules.DescribePerLevel(enchanter)}.\n") +
                 Loc.T("Todo suma a lo de Fuego Nuevo y las bendiciones.")),
             (Loc.F($"⭐ Al nivel {ProfessionRules.MaxLevel}"),
-                $"{ProfessionRules.DescribeAdvanced(woodcutter)}.\n{ProfessionRules.DescribeAdvanced(miner)}.\n{ProfessionRules.DescribeAdvanced(enchanter)}."),
+                $"{ProfessionRules.DescribeAdvanced(woodcutter)}.\n{ProfessionRules.DescribeAdvanced(miner)}.\n{ProfessionRules.DescribeAdvanced(fisher)}.\n{ProfessionRules.DescribeAdvanced(enchanter)}."),
             (Loc.F($"📈 Después del {ProfessionRules.MaxLevel}"),
                 Loc.F($"Los efectos ya no crecen, pero el nivel sí: cada uno cuesta un **{ProfessionRules.DescribePostCapGrowth()}** más que el anterior (el {ProfessionRules.MaxLevel + 1} pide {GameHistory.Number(ProfessionRules.XpForLevel(ProfessionRules.MaxLevel + 1))} de XP, el {ProfessionRules.MaxLevel + 50} pide {GameHistory.Number(ProfessionRules.XpForLevel(ProfessionRules.MaxLevel + 50))}). Por ahora ese avance no da ningún efecto nuevo.")),
             (Loc.T("🔄 Y el Fuego Nuevo"), Loc.T("Los oficios **se quedan** cuando hacés un Fuego Nuevo: tu nivel no se pierde.")),
-            (Loc.T("📍 Comandos"), Loc.T("**/professions** (en texto `aa professions` o `aa oficios`) muestra tu nivel, tu XP y lo que ya te dan. También figuran en **/profile** y el avance sale al pie de cada **/chop**, **/mine** y **/enchant**.")));
+            (Loc.T("📍 Comandos"), Loc.T("**/professions** (en texto `aa professions` o `aa oficios`) muestra tu nivel, tu XP y lo que ya te dan. También figuran en **/profile** y el avance sale al pie de cada **/chop**, **/mine**, **/fish** y **/enchant**.")));
     }
 
     private static Embed Fuego() => Topic(Self("fuego"),
@@ -542,6 +544,11 @@ public static class HelpTopics
                 string rarityName = RarityCatalog.DisplayName(r);
                 return min == max ? $"{rarityName} {min}" : Loc.F($"{rarityName} {min} a {max}");
             }))),
+        (Loc.T("🎣 Pesca"),
+            Loc.F($"**/fish** pesca cada {Dur(CooldownCatalog.Fish.Duration)} y sube el oficio **Pescador**.") + "\n" +
+            Loc.T("Solo hay tres peces; la rareza sale así: ") +
+            string.Join(" · ", RarityCatalog.FishChances.Select(c => Loc.F($"{RarityCatalog.DisplayName(c.Rarity)} {LDec(c.Percent)} %"))) + "\n" +
+            Loc.T("La caña del Carpintero (**/tools**) multiplica lo que sacás. Los peces se venden o se desmantelan para sacar Polvo.")),
         (Loc.T("🔁 Después"), Loc.T("Lo que juntás sirve para forjar (**/info tema:forge**), para cambiar con otros jugadores (**/info tema:trade**) o para desmantelar y sacar Polvo (**/info tema:dismantle**).")));
 
     private static Embed Daily() => Topic(Self("daily"),

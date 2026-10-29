@@ -453,6 +453,31 @@
   },
   {
     "type": 1,
+    "name": "fish",
+    "description": "Pescá en el río (cooldown de 5 minutos).",
+    "options": [
+      {
+        "type": 3,
+        "name": "modo",
+        "description": "Normal, o Avanzada (4 sorteos juntos; pide el oficio Pescador al nivel 100).",
+        "required": false,
+        "choices": [
+          {
+            "name": "Normal",
+            "value": "normal"
+          },
+          {
+            "name": "Avanzada",
+            "value": "avanzada"
+          }
+        ],
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      }
+    ]
+  },
+  {
+    "type": 1,
     "name": "forge",
     "description": "Pasá por la herrería: elegí de la lista qué querés que te forje, o mirá las recetas de cada zona."
   },
@@ -800,7 +825,7 @@
   {
     "type": 1,
     "name": "professions",
-    "description": "Tus oficios (Leñador, Minero, Encantador): nivel, XP y lo que dan."
+    "description": "Tus oficios (Leñador, Minero, Pescador, Encantador): nivel, XP y lo que dan."
   },
   {
     "type": 1,
@@ -915,7 +940,7 @@
   {
     "type": 1,
     "name": "tools",
-    "description": "Pasá por el Carpintero: mirá tu hacha y tu pico y armá uno mejor para recolectar más."
+    "description": "Pasá por el Carpintero: mirá tu hacha, tu pico y tu caña y armá una mejor para recolectar más."
   },
   {
     "type": 1,

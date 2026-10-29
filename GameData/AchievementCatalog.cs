@@ -44,6 +44,8 @@ public static class AchievementCatalog
         new("viajero",       "Viajero",       "🗺️", GameEventKinds.TravelWin,     Loc.Mark("Ganá viajes contra élites con /travel"),            Standard(10, 50, 200)),
         new("matajefes",     "Matajefes",     "👑", GameEventKinds.BossWin,       Loc.Mark("Vencé a los jefes de zona con /boss"),              Standard(1, 5, 20, mythicTop: true)),
         new("recolector",    "Recolector",    "🪓", GameEventKinds.GatheredUnits, Loc.Mark("Juntá materiales con /chop y /mine"),               Standard(100, 600, 3000)),
+        // v0.48.0: la pesca. Cuenta usos de /fish (cada uno sube con el cooldown de 5 minutos; la avanzada cuenta 4), así que paga solo oro y EXP como los demás logros de contadores inflables.
+        new("pescador",      "Pescador",      "🎣", GameEventKinds.Fish,          Loc.Mark("Pescá con /fish"),                                  Plain(25, 150, 600)),
         new("herrero",       "Herrero",       "🔨", GameEventKinds.Craft,         Loc.Mark("Forjá equipo en la herrería con /forge"),           Standard(1, 10, 40)),
         new("comerciante",   "Comerciante",   "🛒", GameEventKinds.ShopGoldSpent, Loc.Mark("Gastá oro en la tienda (/shop)"),                   Standard(1000, 25000, 250000)),
         new("generoso",      "Generoso",      "🤝", GameEventKinds.GoldGiven,     Loc.Mark("Regalá monedas a otros jugadores con /give"),       Standard(500, 5000, 50000)),
@@ -94,7 +96,7 @@ public static class AchievementCatalog
     public static readonly IReadOnlyList<AchievementCategory> Categories =
     [
         new("Combate", "⚔️", ["cazador", "viajero", "matajefes", "exterminador", "gladiador", "asador"]),
-        new("Oficios", "🔨", ["recolector", "herrero", "desmantelador", "encantador"]),
+        new("Oficios", "🔨", ["recolector", "pescador", "herrero", "desmantelador", "encantador"]),
         new("Economía", "💰", ["comerciante", "generoso", "abridor", "afortunado"]),
         new("Constancia", "📅", ["constante", "racha", "comandante", "misionero", "domador", "criador", "renacido", "companero", "volvio"]),
         new("Hazañas", "🏆", ["hz_cazador", "hz_viajero", "hz_jefes", "hz_recolector", "hz_herrero", "hz_magnate", "hz_encantador", "hz_explorador"]),

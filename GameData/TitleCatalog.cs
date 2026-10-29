@@ -73,6 +73,7 @@ public static class TitleCatalog
         ("asador", "combate", Loc.Mark("Veces que venciste al Asador"), ["Rompe Brasas", "Guardián del Fogón", "Señor del Fogón"]),
 
         ("recolector", "oficios", Loc.Mark("Materiales juntados"), ["Juntador", "Manos de Obrero", "Dueño del Monte"]),
+        ("pescador", "oficios", Loc.Mark("Pescas hechas"), ["Cañero", "Lobo de Río", "Señor del Surubí"]),
         ("herrero", "oficios", Loc.Mark("Piezas forjadas"), ["Aprendiz de Fragua", "Forjador", "Maestro del Yunque"]),
         ("desmantelador", "oficios", Loc.Mark("Materiales desmantelados"), ["Desarmador", "Chatarrero", "Señor del Polvo"]),
         ("encantador", "oficios", Loc.Mark("Intentos de encantar"), ["Aprendiz de Brasas", "Encantador de Hierros", "Maestro del Encanto"]),
@@ -156,6 +157,7 @@ public static class TitleCatalog
         {
             (ProfessionCatalog.WoodcutterKey, new[] { "Hachero", "Leñador Mayor", "Gran Talador" }),
             (ProfessionCatalog.MinerKey, new[] { "Picapedrero", "Minero de Ley", "Rey del Socavón" }),
+            (ProfessionCatalog.FisherKey, new[] { "Pescador de Orilla", "Capitán del Río", "Rey del Dorado" }),
             (ProfessionCatalog.EnchanterKey, new[] { "Chispero", "Maestro de Brasas", "Gran Encantador" }),
         })
         {

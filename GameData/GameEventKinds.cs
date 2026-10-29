@@ -27,6 +27,11 @@ public static class GameEventKinds
     // amount = XP, detail = las rarezas. El nivel del Leñador y del Minero sale de estos contadores (el de /chop y /mine sigue contando usos para misiones y logros).
     public const string ChopXp = "chop_xp";
     public const string MineXp = "mine_xp";
+    // v0.48.0: la pesca (/fish). "fish" cuenta usos (tiradas, para logros y misiones), "fish_xp" la XP de la rareza que salió (amount = XP: de ahí sale el nivel del Pescador) y "fish_caught" las UNIDADES pescadas.
+    // Las unidades NO suman a gathered_units: ese contador (y el logro Recolector, y la misión de juntar materiales) es de /chop y /mine.
+    public const string Fish = "fish";
+    public const string FishXp = "fish_xp";
+    public const string FishCaught = "fish_caught";
     public const string GatheredUnits = "gathered_units";   // unidades que dio la recolección; amount = cantidad
     public const string Craft = "craft";                    // forjó un ítem; detail = nombre del ítem
 

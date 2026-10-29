@@ -68,7 +68,7 @@ public static class GameEventExtensions
     }
 }
 
-// Lo que se registra al recolectar (/chop y /mine, por slash y por texto): el éxito y las unidades que dio.
+// Lo que se registra al recolectar (/chop, /mine y /fish, por slash y por texto): el éxito y las unidades que dio.
 public static class GatheringEvents
 {
     public static Task RecordAsync(IGameEvents events, ulong discordId, CooldownDefinition definition, Item item, int quantity) =>
@@ -79,12 +79,12 @@ public static class GatheringEvents
     public static async Task RecordAsync(IGameEvents events, ulong discordId, CooldownDefinition definition, IReadOnlyList<(Item Item, int Quantity)> drops, int rolls)
     {
         string names = string.Join(", ", drops.Select(d => d.Item.Name).Distinct());
-        bool isChop = definition.CommandName == "chop" || definition.CommandName == "chop_adv";
-        await events.RecordAsync(discordId, isChop ? GameEventKinds.Chop : GameEventKinds.Mine, amount: rolls, detail: names);
-        await events.RecordAsync(discordId, GameEventKinds.GatheredUnits, amount: drops.Sum(d => d.Quantity), detail: names);
+        string kind = GatherKinds.Of(definition);
+        await events.RecordAsync(discordId, GatherKinds.UseEvent(kind), amount: rolls, detail: names);
+        await events.RecordAsync(discordId, GatherKinds.UnitsEvent(kind), amount: drops.Sum(d => d.Quantity), detail: names);
 
         // La XP del oficio (v0.20.0): la de la rareza de cada tirada. De este contador sale el nivel del Leñador / Minero.
-        await events.RecordAsync(discordId, isChop ? GameEventKinds.ChopXp : GameEventKinds.MineXp, amount: XpOf(drops), detail: string.Join(",", drops.Select(d => d.Item.Rarity)));
+        await events.RecordAsync(discordId, GatherKinds.XpEvent(kind), amount: XpOf(drops), detail: string.Join(",", drops.Select(d => d.Item.Rarity)));
     }
 
     // La XP de oficio de una recolección: la suma de la XP de la rareza de cada tirada (ProfessionRules.GatherXp).

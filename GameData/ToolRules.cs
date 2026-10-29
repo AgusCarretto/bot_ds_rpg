@@ -1,6 +1,6 @@
 namespace BotDsRpg.GameData;
 
-// Las HERRAMIENTAS (v0.29.0, /tools, aa herramientas|equipamiento; las arma el Carpintero, Modules/ToolsModule.cs). Hay una hacha (para /chop) y un pico (para /mine); sin ninguna se recolecta ×1, lo de siempre.
+// Las HERRAMIENTAS (v0.29.0, /tools, aa herramientas|equipamiento; las arma el Carpintero, Modules/ToolsModule.cs). Hay una hacha (para /chop), un pico (para /mine) y, desde la v0.48.0, una caña (para /fish); sin ninguna se recolecta ×1, lo de siempre.
 // Cada una tiene dos tiers que se desbloquean con la zona: el de la Zona 3 (×2) y el de la Zona 5 (×3). Los datos viven en la base (items.type 'Hacha' / 'Pico', items.stat_value = el multiplicador, la receta en
 // recipes con la zona que la desbloquea, Database/add_tools.sql) y lo que tiene cada jugador en player_tools; acá solo están las reglas puras.
 public static class ToolRules
@@ -9,23 +9,29 @@ public static class ToolRules
     public const string PickaxeKind = "pickaxe";
     public const string AxeType = "Hacha";
     public const string PickaxeType = "Pico";
+    public const string RodKind = "rod";
+    public const string RodType = "Caña";
+
+    // Los tipos de herramienta, en el orden en que se muestran.
+    public static readonly string[] Kinds = [AxeKind, PickaxeKind, RodKind];
 
     // El tipo de herramienta que es un ítem según su items.type (null si no es una herramienta).
     public static string? KindOfItemType(string? itemType) => itemType switch
     {
         AxeType => AxeKind,
         PickaxeType => PickaxeKind,
+        RodType => RodKind,
         _ => null,
     };
 
     public static bool IsToolType(string? itemType) => KindOfItemType(itemType) is not null;
 
-    public static string KindLabel(string kind) => kind == AxeKind ? "Hacha" : "Pico";
+    public static string KindLabel(string kind) => kind switch { AxeKind => "Hacha", RodKind => "Caña", _ => "Pico" };
 
-    public static string KindEmoji(string kind) => kind == AxeKind ? "🪓" : "⛏️";
+    public static string KindEmoji(string kind) => kind switch { AxeKind => "🪓", RodKind => "🎣", _ => "⛏️" };
 
     // El comando que usa cada herramienta.
-    public static string KindCommand(string kind) => kind == AxeKind ? "/chop" : "/mine";
+    public static string KindCommand(string kind) => kind switch { AxeKind => "/chop", RodKind => "/fish", _ => "/mine" };
 
     // Cuánto multiplica la herramienta la cantidad de ESTA rareza: Común, Raro y Épico por el multiplicador de la herramienta; lo Legendario y lo Mítico siguen dando 1 (nunca sale mucho de algo raro, como en
     // GatheringYield). Con factor 1 (o menos) no cambia nada.

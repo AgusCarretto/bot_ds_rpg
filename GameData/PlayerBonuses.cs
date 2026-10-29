@@ -7,7 +7,7 @@ namespace BotDsRpg.GameData;
 // multiplicadores" del spec. Las cuentas están acá y no repartidas: si una fuente cambia, cambia en un solo lugar.
 public sealed record PlayerBonuses(
     PetBonuses Pets, int FuegoNuevo = 0, IReadOnlyDictionary<string, int>? BlessingLevels = null, IReadOnlyDictionary<string, long>? ProfessionXp = null, double BankGoldPercent = 0,
-    double ChopToolFactor = 1, double MineToolFactor = 1, DragonBonuses? Dragon = null)
+    double ChopToolFactor = 1, double MineToolFactor = 1, DragonBonuses? Dragon = null, double FishToolFactor = 1)
 {
     public static readonly PlayerBonuses None = new(PetBonuses.None);
 
@@ -68,6 +68,13 @@ public sealed record PlayerBonuses(
 
     public double MineRarityUpgrade => ProfessionRules.RarityUpgradeChance(ProfessionLevel(ProfessionCatalog.MinerKey));
 
+    // La pesca (v0.48.0, /fish): cuántas unidades da cada tirada (Fuego Nuevo × oficio Pescador × la mascota del Fogón × el dragón; no hay bendición de pesca) y la chance de que el pez suba de rareza.
+    // La caña (FishToolFactor) va aparte, como el hacha y el pico: se aplica por rareza con ToolRules.QuantityFactor.
+    public double FishMultiplier =>
+        FuegoNuevoRules.GatherMultiplier(FuegoNuevo) * ProfessionRules.QuantityMultiplier(ProfessionLevel(ProfessionCatalog.FisherKey)) * PetGather * DragonFactor(d => d.GatherPercent);
+
+    public double FishRarityUpgrade => ProfessionRules.RarityUpgradeChance(ProfessionLevel(ProfessionCatalog.FisherKey));
+
     // Cuánto Polvo cuesta un intento de encantamiento (1,0 = lo de siempre).
     public double EnchantDustMultiplier => ProfessionRules.DustMultiplier(ProfessionLevel(ProfessionCatalog.EnchanterKey));
 
@@ -80,7 +87,7 @@ public sealed record PlayerBonuses(
 
     public bool IsNone =>
         Pets.IsNone && FuegoNuevo == 0 && (BlessingLevels is null || BlessingLevels.Count == 0)
-        && ProfessionCatalog.All.All(p => ProfessionLevel(p.Key) == 0) && BankGoldPercent <= 0 && ChopToolFactor <= 1 && MineToolFactor <= 1 && (Dragon is null || Dragon.IsNone);
+        && ProfessionCatalog.All.All(p => ProfessionLevel(p.Key) == 0) && BankGoldPercent <= 0 && ChopToolFactor <= 1 && MineToolFactor <= 1 && FishToolFactor <= 1 && (Dragon is null || Dragon.IsNone);
 
     // Aplica un multiplicador a una cantidad entera (oro, EXP, ataque, defensa), redondeando al más cercano. Con 1,0 o menos no toca nada.
     public static int Scale(int amount, double multiplier) =>

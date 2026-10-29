@@ -536,13 +536,14 @@ public class FuegoNuevoModule(
     {
         "Madera" => Loc.T("🪵 Madera"),
         "Mineral" => Loc.T("⛏️ Minerales"),
+        "Pescado" => Loc.T("🐟 Pescado"),
         "Material" => Loc.T("🩸 Drops de monstruo"),
         "Consumable" => Loc.T("🍖 Consumibles"),
         "Caja" => Loc.T("📦 Cajas"),
         _ => $"📦 {type}",
     };
 
-    private static int TypeOrder(string type) => type switch { "Madera" => 0, "Mineral" => 1, "Material" => 2, "Consumable" => 3, "Caja" => 4, _ => 5 };
+    private static int TypeOrder(string type) => type switch { "Madera" => 0, "Mineral" => 1, "Pescado" => 2, "Material" => 3, "Consumable" => 4, "Caja" => 5, _ => 6 };
 
     // Un campo de embed admite 1024 caracteres: lo que se pase se corta con "..." en vez de hacer que Discord rechace el mensaje entero.
     private static string Cut(string text) => text.Length <= 1024 ? text : text[..1021] + "...";

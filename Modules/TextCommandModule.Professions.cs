@@ -8,7 +8,7 @@ public partial class TextCommandModule
     // "aa professions" (alias "aa oficios", "aa profesiones", "aa prof") — misma lógica que /professions.
     [Command("professions")]
     [Alias("oficios", "oficio", "profesiones", "profesion", "prof")]
-    [Summary("Tus oficios (Leñador, Minero, Encantador): nivel, XP, lo que dan y la versión avanzada del nivel 100.")]
+    [Summary("Tus oficios (Leñador, Minero, Pescador, Encantador): nivel, XP, lo que dan y la versión avanzada del nivel 100.")]
     public async Task ProfessionsAsync()
     {
         try

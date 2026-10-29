@@ -8,8 +8,8 @@ public static class Dismantling
     // SIN tope por comando desde la v0.16.2 (eran 5 hasta la v0.9.4, 100 hasta la v0.16.1; el dueño: «que se pueda desmantelar sin máximo»): un número cualquiera o "todo". No cambia el
     // ritmo del Polvo (se paga por unidad y las unidades se gastan de verdad), solo cuántos comandos hacen falta. El único límite real es lo que hay en la mochila (la resta es guardada).
 
-    // Qué tipos de ítem se pueden desmantelar: lo que se recolecta y lo que sueltan los monstruos. Las cajas se abren, la comida se come y el equipo se forja o se vende.
-    public static bool CanDismantle(string itemType) => itemType is "Madera" or "Mineral" or "Material";
+    // Qué tipos de ítem se pueden desmantelar: lo que se recolecta (madera, minerales y, desde la v0.48.0, pescado) y lo que sueltan los monstruos. Las cajas se abren, la comida se come y el equipo se forja o se vende.
+    public static bool CanDismantle(string itemType) => itemType is "Madera" or "Mineral" or "Material" or "Pescado";
 
     // El Polvo de un DROP DE MONSTRUO se paga por su ORIGEN, no por la rareza del catálogo (v0.15.1, el dueño: «el drop de monstruo no tiene rareza, el % de caída es el mismo en la Zona 1 y en la 5»).
     // Un drop de la Zona 5 figuraba como Mítico y daba 500 de Polvo (30 por cacería, 60 veces el ritmo calibrado de 0,5 por minuto) cuando cae igual que uno de la Zona 1. Se calibra con la misma

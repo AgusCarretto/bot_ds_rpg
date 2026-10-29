@@ -18,6 +18,7 @@ public static class ProfessionCatalog
 {
     public const string WoodcutterKey = "woodcutter";
     public const string MinerKey = "miner";
+    public const string FisherKey = "fisher";   // v0.48.0: el oficio de /fish
     public const string EnchanterKey = "enchanter";
 
     // Sumar un oficio es una fila acá (y su efecto en ProfessionRules / PlayerBonuses): el resto del juego lo recorre.
@@ -25,6 +26,7 @@ public static class ProfessionCatalog
     [
         new(WoodcutterKey, Loc.Mark("Leñador"), "🪓", GameEventKinds.ChopXp, 1, "/chop", Loc.Mark("Tala avanzada"), ["lenador", "leñador", "woodcutter", "chop", "talar", "tala", "madera"]),
         new(MinerKey, Loc.Mark("Minero"), "⛏️", GameEventKinds.MineXp, 1, "/mine", Loc.Mark("Minería avanzada"), ["minero", "miner", "mine", "minar", "mineria", "mineral"]),
+        new(FisherKey, Loc.Mark("Pescador"), "🎣", GameEventKinds.FishXp, 1, "/fish", Loc.Mark("Pesca avanzada"), ["pescador", "fisher", "fish", "pescar", "pesca", "pescado"]),
         new(EnchanterKey, Loc.Mark("Encantador"), "✨", GameEventKinds.Enchant, 25, "/enchant", Loc.Mark("Encantamiento avanzado"), ["encantador", "enchanter", "enchant", "encantar", "encantamiento"]),
     ];
 
@@ -118,6 +120,9 @@ public static class ProfessionRules
     // «Común 2 · Raro 7 · Épico 15 · Legendario 30 · Mítico 100» (para /professions y la ayuda).
     public static string DescribeGatherXp() => string.Join(" · ", GatherXpTable.Select(e => $"{RarityCatalog.DisplayName(e.Rarity)} {e.Xp}"));
 
+    // Lo mismo para la pesca, que solo tiene tres rarezas: «Común 2 · Raro 7 · Épico 15».
+    public static string DescribeFishXp() => string.Join(" · ", RarityCatalog.FishChances.Select(c => $"{RarityCatalog.DisplayName(c.Rarity)} {GatherXp(c.Rarity)}"));
+
     // La XP promedio por tirada con las chances reales de /chop y /mine (RarityCatalog.GatheringChances), sin la mejora del oficio: con ella se calcula cuántas tiradas son llegar al máximo.
     public static double AverageGatherXp() => RarityCatalog.GatheringChances.Sum(c => c.Percent / 100.0 * GatherXp(c.Rarity));
 
@@ -125,6 +130,7 @@ public static class ProfessionRules
     public static string DescribeXpSource(ProfessionDefinition profession) => profession.Key switch
     {
         ProfessionCatalog.EnchanterKey => Loc.F($"{profession.XpPerAction} XP por intento"),
+        ProfessionCatalog.FisherKey => Loc.F($"según lo que pesques, por tirada: {DescribeFishXp()} XP"),
         _ => Loc.F($"según lo que te salga, por tirada: {DescribeGatherXp()} XP"),
     };
 

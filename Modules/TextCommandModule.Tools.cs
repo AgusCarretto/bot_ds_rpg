@@ -8,7 +8,7 @@ public partial class TextCommandModule
     // "aa herramientas" / "aa equipamiento" / "aa tools" — misma escena que /tools (con la lista para armar).
     [Command("tools")]
     [Alias("tool", "herramientas", "herramienta", "equipamiento", "equipment", "carpintero")]
-    [Summary("Hablá con el Carpintero: mirá tu hacha y tu pico y armá uno mejor para recolectar más: \"aa herramientas\".")]
+    [Summary("Hablá con el Carpintero: mirá tu hacha, tu pico y tu caña y armá una mejor para recolectar más: \"aa herramientas\".")]
     public async Task ToolsAsync()
     {
         try

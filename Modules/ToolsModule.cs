@@ -8,7 +8,7 @@ using Discord.Interactions;
 // AttachmentPath: el archivo de la foto del Carpintero que hay que adjuntar al mensaje (null si no hay foto o es una URL).
 public sealed record ToolsScene(Embed Embed, MessageComponent? Components, string? AttachmentPath = null);
 
-// /tools (aa tools | herramientas | equipamiento): el Carpintero arma tu HACHA (para /chop) y tu PICO (para /mine) (v0.29.0, el dueño: «un carpintero o constructor, que sea el de las herramientas, que solo con materiales se
+// /tools (aa tools | herramientas | equipamiento): el Carpintero arma tu HACHA (para /chop), tu PICO (para /mine) y, desde la v0.48.0, tu CAÑA (para /fish) (v0.29.0, el dueño: «un carpintero o constructor, que sea el de las herramientas, que solo con materiales se
 // haga la herramienta… zona 3 y zona 5 por ahora; de base está la zona 1, que es lo actual ×1… y que no esté en el perfil sino en aa equipamiento o aa herramientas»). Sin herramienta se recolecta ×1; la de la Zona 3 da ×2
 // y la de la Zona 5 ×3 de lo Común, Raro y Épico (lo Legendario y lo Mítico siguen dando 1, GameData/ToolRules.cs). Se arman solo con materiales de /chop y /mine (sin oro), se ponen solas y la nueva reemplaza a la vieja.
 // Los datos viven en la base (Database/add_tools.sql: ítems 'Hacha' y 'Pico' con su receta y la zona que la desbloquea; lo que tiene cada jugador, en player_tools).
@@ -23,7 +23,7 @@ public class ToolsModule(
 {
     private const string MenuPrefix = "tools_pick";
 
-    [SlashCommand("tools", "Pasá por el Carpintero: mirá tu hacha y tu pico y armá uno mejor para recolectar más.")]
+    [SlashCommand("tools", "Pasá por el Carpintero: mirá tu hacha, tu pico y tu caña y armá una mejor para recolectar más.")]
     public async Task HandleToolsAsync()
     {
         await DeferAsync();
@@ -124,7 +124,7 @@ public class ToolsModule(
             .WithMaxValues(1);
         int options = 0;
 
-        foreach (string kind in new[] { ToolRules.AxeKind, ToolRules.PickaxeKind })
+        foreach (string kind in ToolRules.Kinds)
         {
             int currentMultiplier = worn.FirstOrDefault(t => t.Kind == kind)?.Multiplier ?? 1;
             var upgrades = toolRecipes
@@ -153,9 +153,10 @@ public class ToolsModule(
             .WithDescription(
                 $"{NpcDialogue.Carpenter(CarpenterLine.Greeting, rng)}\n\n" +
                 $"{WornLine(ToolRules.AxeKind, worn.FirstOrDefault(t => t.Kind == ToolRules.AxeKind))}\n" +
-                $"{WornLine(ToolRules.PickaxeKind, worn.FirstOrDefault(t => t.Kind == ToolRules.PickaxeKind))}\n\n" +
+                $"{WornLine(ToolRules.PickaxeKind, worn.FirstOrDefault(t => t.Kind == ToolRules.PickaxeKind))}\n" +
+                $"{WornLine(ToolRules.RodKind, worn.FirstOrDefault(t => t.Kind == ToolRules.RodKind))}\n\n" +
                 (options > 0
-                    ? Loc.T("_Se arman solo con materiales de **/chop** y **/mine**, multiplican lo Común, Raro y Épico, y se ponen solas. ✅ = ya tenés todo · ❌ = te falta · 🔒 = zona cerrada._")
+                    ? Loc.T("_Se arman solo con materiales de **/chop** y **/mine** y multiplican lo Común, Raro y Épico de su comando (el hacha **/chop**, el pico **/mine**, la caña **/fish**); se ponen solas. ✅ = ya tenés todo · ❌ = te falta · 🔒 = zona cerrada._")
                     : Loc.T("_Ya tenés lo mejor que arma el Carpintero por ahora._")));
 
         if (options > 0)

@@ -315,7 +315,7 @@ await PetModule.ClaimExpeditionAsync(expRepo, events, (await users.GetByDiscordI
 Check(await db.ExecuteScalarAsync<int>("SELECT count(*)::int FROM game_events WHERE discord_id = @u AND kind = 'level_up'", new { u = (long)U }) == 1, "y si la EXP sube de nivel se registra «level_up» (sale el cartel de nivel)");
 
 Console.WriteLine("\n== 7. El aviso de que volvió y la línea de /cd ==");
-Check(ReminderCatalog.All.Count == 13 && ReminderCatalog.Find("expedition") is { Command: "/pet expedition", AutoDelete: null } && ReminderCatalog.Keys.Distinct().Count() == 13 && ReminderCatalog.WaitOf("expedition") is null, "hay 13 avisos y el nuevo («expedition») no tiene una espera fija");
+Check(ReminderCatalog.All.Count == 15 && ReminderCatalog.Find("expedition") is { Command: "/pet expedition", AutoDelete: null } && ReminderCatalog.Keys.Distinct().Count() == 15 && ReminderCatalog.WaitOf("expedition") is null, "hay 15 avisos y el nuevo («expedition») no tiene una espera fija");
 Check(ReminderCatalog.MayChangeExpedition("pet expedition") && ReminderCatalog.MayChangeExpedition("pet_exp_go") && ReminderCatalog.MayChangeExpedition("aa pet expedición") && !ReminderCatalog.MayChangeExpedition("hunt") && !ReminderCatalog.MayChangeExpedition("pet feed"), "el aviso se recalcula con /pet expedition y el menú, y no con el resto");
 var nowU = DateTime.UtcNow;
 Check(ReminderCatalog.ExpeditionDue(null, nowU) is null && ReminderCatalog.ExpeditionDue(TimeSpan.Zero, nowU) is null && ReminderCatalog.ExpeditionDue(TimeSpan.FromHours(3), nowU) is { Kind: "expedition" } d3 && Near((d3.DueUtc - nowU).TotalHours, 3, 0.001), "sin expedición o ya vuelta no hay aviso; en curso, avisa al terminar");

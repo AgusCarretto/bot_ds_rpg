@@ -101,8 +101,11 @@ await rawDb.OpenAsync();
 var allItems = (await Dapper.SqlMapper.QueryAsync<(string Name, string? Emoji)>(rawDb, "SELECT name, emoji FROM items")).ToList();
 // v0.47.0: lo de las zonas 6 a 10 (sus drops, su equipo y sus Reliquias) todavía no tiene arte.
 var pendingArt = (await Dapper.SqlMapper.QueryAsync<string>(rawDb, "SELECT i.name FROM items i WHERE i.item_id IN (SELECT result_item_id FROM recipes WHERE zone_id BETWEEN 6 AND 10) OR i.item_id IN (SELECT d.item_id FROM monster_drops d JOIN monsters m ON m.monster_id = d.monster_id WHERE m.zone_id BETWEEN 6 AND 10)")).ToHashSet();
-var noArt = allItems.Where(i => !legacy.Contains(i.Name) && !pendingArt.Contains(i.Name) && !System.Text.RegularExpressions.Regex.IsMatch(i.Emoji ?? string.Empty, @"^<a?:[A-Za-z0-9_]+:[0-9]+>$")).Select(i => i.Name).ToList();
+// v0.48.0: los peces y las cañas salieron con emojis PROVISORIOS (unicode); el dueño sube el arte propio después. Cuando llegue, sacar el ítem de esta lista.
+var provisional = new[] { "Mojarra", "Dorado", "Surubí", "Caña de Hierro Forjado", "Caña de Escoria Templada" };
+var noArt = allItems.Where(i => !legacy.Contains(i.Name) && !pendingArt.Contains(i.Name) && !provisional.Contains(i.Name) && !System.Text.RegularExpressions.Regex.IsMatch(i.Emoji ?? string.Empty, @"^<a?:[A-Za-z0-9_]+:[0-9]+>$")).Select(i => i.Name).ToList();
 Check(noArt.Count == 0, $"todo ítem que se puede conseguir tiene arte propio (sin arte: {string.Join(", ", noArt)})");
+Check(provisional.All(n => allItems.Any(i => i.Name == n && !string.IsNullOrWhiteSpace(i.Emoji))), "y los peces y las cañas, que esperan su arte, al menos tienen un emoji provisorio (nunca salen sin ícono)");
 var nine = new Dictionary<string, string>
 {
     ["Cofre de Escoria"] = "cofre_escoria:1561758887038820615", ["Brasero del Fogón"] = "brasero:1561758888951418940", ["Huevo de la Pradera"] = "huevo_1:1561758588609888376",
