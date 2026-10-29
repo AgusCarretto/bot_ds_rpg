@@ -56,6 +56,10 @@ public static class BoxLootRoller
     ];
 
     // La proporción real de los drops de una zona: antes dos monstruos de /hunt y uno de /travel (3 : 3 : 2 por minuto de farmeo). Desde la v0.36.0 el viaje no suelta material y todos son de cacería.
+    // Los materiales MÍTICOS de recolección (Corteza del Árbol de Vida y Fragmento de Meteorito) NO salen de las cajas, con una sola excepción: el Brasero del Fogón (el cofre del Asador). El dueño (2026-10-29):
+    // «pasa mucho que la gente saca en cajas el mítico… solo hablo de la madera y del meteorito, que solo puedan con el cofre del brasero». La regla es del sorteo (así no depende de que el botín de cada caja esté bien cargado).
+    public const string MythicGatherBoxName = "Brasero del Fogón";
+
     public const int HuntDropWeight = 3;
     public const int TravelDropWeight = 2;
 
@@ -73,6 +77,7 @@ public static class BoxLootRoller
         }
 
         int totalWeight = draws.Sum(e => e.Weight);
+        var gatherPool = box.BoxName == MythicGatherBoxName ? context.GatherPool : context.GatherPool.Where(c => c.Rarity != "Mítico").ToList();
         // Los drops de monstruo NO tienen rareza (caen igual en la Zona 1 que en la 5, v0.15.1), así que una caja chica también puede dar drops de zonas altas: el tope es la zona más alta que el jugador tiene
         // DESBLOQUEADA, no la de la caja (el dueño, 2026-10-28: «si estás en zona 5, ¿te puede salir en un cajón de pino un corazón de titán? porque no pasa nunca»). Cada drop vale lo mismo en minutos de farmeo
         // (~33), así que el valor de la caja no cambia; solo cambia CUÁLES salen.
@@ -101,12 +106,12 @@ public static class BoxLootRoller
 
                     // Sin drops cargados para las zonas permitidas: la tirada no se pierde, cae en recolección (el jugador tiene que recibir
                     // los ítems que la caja promete).
-                    var fallback = PickGather(context.GatherPool, rng);
+                    var fallback = PickGather(gatherPool, rng);
                     Add(items, fallback.ItemId, fallback.Name, fallback.Rarity, fallback.Emoji, quantity);
                     break;
 
                 default: // Gather
-                    var picked = PickGather(context.GatherPool, rng);
+                    var picked = PickGather(gatherPool, rng);
                     Add(items, picked.ItemId, picked.Name, picked.Rarity, picked.Emoji, quantity);
                     break;
             }

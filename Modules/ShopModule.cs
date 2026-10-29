@@ -242,7 +242,7 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
 
         if (outcome is null)
         {
-            return new ShopActionResult(NpcDialogue.Shopkeeper(ShopkeeperLine.NothingToSell) + Loc.T("\nNo tenés nada en tu inventario para vender (las cajas y los premios no se venden)."), null);
+            return new ShopActionResult(NpcDialogue.Shopkeeper(ShopkeeperLine.NothingToSell) + Loc.T("\nNo tenés nada en tu inventario para vender (las cajas y los premios no se venden, ni lo que se queda en el Fuego Nuevo: huevos y comida de mascotas y de dragón)."), null);
         }
 
         await gameEvents.RecordAsync(discordId, GameEventKinds.ShopGoldEarned, amount: outcome.GoldEarned, detail: "sellall");
@@ -251,6 +251,8 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
             .WithTitle(Loc.T("💰 ¡Inventario liquidado!"))
             .WithDescription(Loc.F($"{NpcDialogue.Shopkeeper(ShopkeeperLine.SellAll)}\n\nVendiste {outcome.ItemsSoldCount} ítems por **{outcome.GoldEarned}** de oro.\nOro total: **{outcome.Player.Gold}**."))
             .WithColor(Color.Green)
+            // v0.38.0: lo que se conserva en el Fuego Nuevo no se vende con «todo»; si el jugador tiene de eso, se le avisa dónde quedó.
+            .WithFooter(outcome.KeptCount > 0 ? Loc.F($"🐾 No se vendieron {outcome.KeptCount} unidades que se conservan en el Fuego Nuevo (huevos y comida de mascotas y de dragón). Para venderlas, una por una: /shop sell.") : null)
             .Build());
     }
 }

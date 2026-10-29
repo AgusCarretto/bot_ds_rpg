@@ -166,14 +166,17 @@ Console.WriteLine("\n== v0.8.0 · Tarea 2: el sorteo de las cajas (puro) ==");
     Check(BoxCatalog.RangeText(1, 10) == "entre 1 y 10 ítems" && BoxCatalog.RangeText(null, null) == string.Empty, "el texto del rango: «" + BoxCatalog.RangeText(1, 10) + "»");
 
     // 2) La recolección dentro de una caja tiene las chances de /chop y /mine (Mítico, 0,1% por ítem)
-    var soloRecolecta = Box(200000, 200000, 1, Gather(1));
+    // Desde la v0.38.0 solo el Brasero del Fogón puede dar la Corteza y el Meteorito (los Míticos de recolección): esta caja hace de Brasero para medir el 0,1 % por ítem.
+    var soloRecolecta = new BoxDefinition(1, BoxLootRoller.MythicGatherBoxName, 200000, 200000, 1, [Gather(1)]);
     var res = BoxLootRoller.Roll(soloRecolecta, ctx, rng);
     double Share(string name) => res.Items.Where(i => i.Name == name).Sum(i => i.Quantity) / 200000.0;
     double commonTotal = Share("Madera de Pino") + Share("Piedra"), rareTotal = Share("Madera de Roble") + Share("Carbón") + Share("Hierro");
     Check(Math.Abs(commonTotal - 0.682) < 0.006 && Math.Abs(rareTotal - 0.2106) < 0.005, $"Común {commonTotal:P1} y Raro {rareTotal:P1} (las chances reales de /chop y /mine: 68% y 21%, sobre el total sin el Mítico de /chop)");
     Check(Share("Madera de Pino") > 0.33 && Share("Madera de Pino") < 0.35 && Share("Hierro") > 0.050 && Share("Hierro") < 0.055, $"Pino {Share("Madera de Pino"):P1} (la mitad del Común) y Hierro {Share("Hierro"):P2} (el Raro de mineral se reparte entre Carbón e Hierro)");
     double corteza = Share("Corteza del Árbol de Vida"), meteorito = Share("Fragmento de Meteorito");
-    Check(corteza is > 0.0006 and < 0.0014 && meteorito is > 0.0006 and < 0.0014, $"Mítico: Corteza {corteza:P3} y Meteorito {meteorito:P3} por ítem (0,1%)");
+    Check(corteza is > 0.0006 and < 0.0014 && meteorito is > 0.0006 and < 0.0014, $"Mítico en el Brasero: Corteza {corteza:P3} y Meteorito {meteorito:P3} por ítem (0,1%)");
+    var otraCaja = BoxLootRoller.Roll(Box(200000, 200000, 5, Gather(1)), ctx, rng);
+    Check(!otraCaja.Items.Any(i => i.Name is "Corteza del Árbol de Vida" or "Fragmento de Meteorito") && otraCaja.Items.Sum(i => i.Quantity) == 200000, "cualquier OTRA caja (aunque sea de la Zona 5): ni la Corteza ni el Meteorito (v0.38.0), y no se pierde ninguna de las tiradas");
     var real = RarityCatalog.GatheringChances.ToDictionary(c => c.Rarity, c => c.Percent);
     Check(BoxLootRoller.GatherWeights.Where(w => w.Rarity != "Mítico").All(w => Math.Abs(w.Weight / 10.0 - real[w.Rarity]) < 0.0001), "Común, Raro, Épico y Legendario: EXACTAMENTE las de RarityCatalog (solo cambia el Mítico)");
 

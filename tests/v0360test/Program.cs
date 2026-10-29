@@ -63,11 +63,11 @@ var huntNames = huntDrops.Select(h => h.Item).ToHashSet();
 int Q(string recipe, string ing) => recipes.First(r => r.ResultItem.Name == recipe).Ingredients.First(i => i.ItemName == ing).Quantity;
 Check(Q("Hacha de Hierro MK3", "Garra de Puma Cenizo") == 4 && Q("Colmillo Nocturno", "Garra de Puma Cenizo") == 4 && Q("Arco Élfico Ancestral", "Esencia Espectral") == 4 && Q("Espada del Abismo", "Corazón de Titán") == 4 && Q("Báculo del Árbol de Vida", "Fragmento de Alma") == 4,
     "armas de las zonas 2-5: el drop de cacería de su ruta quedó en ×4 (remove_travel_drops.sql lo subió a ×5 y rebalance_weapon_drops.sql lo bajó 1, a pedido del dueño)");
-Check(Q("Talismán de Ceniza Bendita", "Esencia Espectral") == 7 && Q("Talismán de Ceniza Bendita", "Garra de Puma Cenizo") == 7 && Q("Peto de Escoria Templada", "Gema en Bruto") == 7 && Q("Peto de Escoria Templada", "Yunque Fragmentado") == 7
-    && Q("Talismán del Volcán", "Escama Ígnea") == 7 && Q("Talismán del Volcán", "Núcleo de Magma") == 7 && Q("Corazón de Titán Engarzado", "Corazón de Titán") == 7 && Q("Corazón de Titán Engarzado", "Fragmento de Alma") == 7,
-    "amuletos de las zonas 2-5: los dos drops de cacería pasaron de ×4 a ×7 cada uno");
-Check(Q("Hombreras de Cuero Grueso", "Colmillo de Jabalí") == 5 && Q("Hombreras de Cuero Grueso", "Pluma de Ñandú") == 5 && Q("Espada de Madera", "Colmillo de Jabalí") == 2 && Q("Arco Corto de Sauce", "Pluma de Ñandú") == 3,
-    "Zona 1: el amuleto sube a ×5 y ×5; las armas solo pierden el cuero (las frena la recolección)");
+Check(Q("Talismán de Ceniza Bendita", "Esencia Espectral") == 4 && Q("Talismán de Ceniza Bendita", "Garra de Puma Cenizo") == 4 && Q("Peto de Escoria Templada", "Gema en Bruto") == 4 && Q("Peto de Escoria Templada", "Yunque Fragmentado") == 4
+    && Q("Talismán del Volcán", "Escama Ígnea") == 4 && Q("Talismán del Volcán", "Núcleo de Magma") == 4 && Q("Corazón de Titán Engarzado", "Corazón de Titán") == 4 && Q("Corazón de Titán Engarzado", "Fragmento de Alma") == 4,
+    "amuletos de las zonas 2-5: los dos drops de cacería ×4 cada uno (remove_travel_drops.sql los subió a ×7 y rebalance_amulet_drops.sql los dejó en ×4: 8 en el amuleto y 4 en el arma)");
+Check(Q("Hombreras de Cuero Grueso", "Colmillo de Jabalí") == 4 && Q("Hombreras de Cuero Grueso", "Pluma de Ñandú") == 4 && Q("Espada de Madera", "Colmillo de Jabalí") == 2 && Q("Arco Corto de Sauce", "Pluma de Ñandú") == 3,
+    "Zona 1: el amuleto también ×4 y ×4; las armas solo perdieron el cuero (las frena la recolección)");
 var fogon = recipes.Where(r => r.ZoneId == 0).ToList();
 var fogonHunt = fogon.Select(r => r.Ingredients.Where(i => i.ItemName != "x" && huntNames.Contains(i.ItemName)).ToList()).ToList();
 Check(fogon.Count == 2 && fogonHunt.All(l => l.Count == 5 && l.All(i => i.Quantity == 5)) && fogonHunt.SelectMany(l => l.Select(i => i.ItemName)).Distinct().Count() == 10,
@@ -75,7 +75,7 @@ Check(fogon.Count == 2 && fogonHunt.All(l => l.Count == 5 && l.All(i => i.Quanti
 // El ritmo (el modelo de Database/report_recipe_pacing.sql: 1 cacería por minuto, 6 % por pelea, 2 monstruos de cacería por zona → 0,03 por minuto de cada drop).
 double perMin = CombatRewardCalculator.HuntDropChancePercent / 100.0 / 2;
 double weaponMin = Q("Hacha de Hierro MK3", "Garra de Puma Cenizo") / perMin, amuletMin = Q("Talismán de Ceniza Bendita", "Esencia Espectral") / perMin;
-Check(weaponMin is > 125 and < 150 && amuletMin is > 210 and < 245, $"el ritmo no cambió de clase: arma ~{weaponMin:0} min de drops (con el drop de viaje eran ~150 y la recolección la frena en ~143) y amuleto ~{amuletMin:0} min (eran ~225)");
+Check(weaponMin is > 125 and < 150 && amuletMin is > 120 and < 150, $"el ritmo: arma ~{weaponMin:0} min de drops (con el drop de viaje eran ~150 y la recolección la frena en ~143) y amuleto ~{amuletMin:0} min de drops (la recolección lo frena en 143-190)");
 
 Console.WriteLine("\n== 2. Las cajas del viaje en zone_boxes ==");
 var zoneBoxes = new ZoneBoxService(factory, zonesRepo);
@@ -174,6 +174,8 @@ Console.WriteLine("\n== 6. La migración Database/remove_travel_drops.sql con un
     await db.ExecuteAsync("INSERT INTO monster_drops (monster_id, item_id) VALUES (@m, @i)", new { m = zone1Travel, i = fakeId });
     int amuletRecipe = await db.ExecuteScalarAsync<int>("SELECT r.recipe_id FROM recipes r JOIN items i ON i.item_id = r.result_item_id WHERE i.name = 'Hombreras de Cuero Grueso'");
     int swordRecipe = await db.ExecuteScalarAsync<int>("SELECT r.recipe_id FROM recipes r JOIN items i ON i.item_id = r.result_item_id WHERE i.name = 'Espada de Madera'");
+    // La migración pone el amuleto de la Zona 1 en ×5 y ×5 (su valor de entonces): se anotan las cantidades de AHORA para dejarlas como estaban al terminar.
+    var origAmulet = (await db.QueryAsync<(int ItemId, int Quantity)>("SELECT item_id, quantity FROM recipe_ingredients WHERE recipe_id = @r", new { r = amuletRecipe })).ToList();
     await db.ExecuteAsync("UPDATE recipe_ingredients SET quantity = 4 WHERE recipe_id = @r AND item_id IN (SELECT item_id FROM items WHERE name IN ('Colmillo de Jabalí', 'Pluma de Ñandú'))", new { r = amuletRecipe });
     await db.ExecuteAsync("INSERT INTO recipe_ingredients (recipe_id, item_id, quantity) VALUES (@r, @i, 2), (@s, @i, 1)", new { r = amuletRecipe, s = swordRecipe, i = fakeId });
     await ResetPlayer(U);
@@ -203,6 +205,10 @@ Console.WriteLine("\n== 6. La migración Database/remove_travel_drops.sql con un
     int unitsBefore = Have(colmillo);
     await db.ExecuteAsync(sql);
     Check(before == await db.ExecuteScalarAsync<string>(snapshotSql) && Have(colmillo) == unitsBefore, "correrla otra vez no toca recetas, cajas, ítems ni mochilas (re-ejecutable)");
+    foreach (var (itemId, quantity) in origAmulet)
+    {
+        await db.ExecuteAsync("UPDATE recipe_ingredients SET quantity = @q WHERE recipe_id = @r AND item_id = @i", new { q = quantity, r = amuletRecipe, i = itemId });
+    }
 }
 
 await Clean();

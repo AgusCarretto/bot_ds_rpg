@@ -205,18 +205,21 @@ public sealed class ShopRepository(IDbConnectionFactory connectionFactory) : ISh
         {
             // FOR UPDATE OF inv: solo bloqueamos las filas de inventory (que vamos a borrar),
             // no las de items (tabla de referencia compartida por todos los jugadores).
+            // v0.38.0: tampoco se vende lo que SOBREVIVE al Fuego Nuevo (FuegoNuevoRules.KeptItemTypes: huevos y comida de mascotas y de dragón): el dueño quiere poder «venderlo todo» antes de renacer sin
+            // cuidarse de lo que sí le sirve. Vender uno de esos a propósito sigue andando (/shop sell, aa sell <ítem>).
             // sell_price > 0: lo que la tienda no compra (las cajas valen 0 desde la v0.8.0, y los premios como el Arca del Soberano) se queda en la
             // mochila: antes se borraba "a cambio de 0" y un /shop sellall se llevaba las cajas gratis.
             const string selectInventorySql = """
                 SELECT inv.quantity AS "Quantity", i.sell_price AS "SellPrice"
                 FROM inventory inv
                 JOIN items i ON i.item_id = inv.item_id
-                WHERE inv.discord_id = @DiscordId AND i.sell_price > 0
+                WHERE inv.discord_id = @DiscordId AND i.sell_price > 0 AND i.type <> ALL(@KeptTypes)
                 FOR UPDATE OF inv;
                 """;
 
+            string[] keptTypes = BotDsRpg.GameData.FuegoNuevoRules.KeptItemTypes.ToArray();
             var rows = (await connection.QueryAsync<InventoryValueRow>(new CommandDefinition(
-                selectInventorySql, new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken))).AsList();
+                selectInventorySql, new { DiscordId = (long)discordId, KeptTypes = keptTypes }, transaction: transaction, cancellationToken: cancellationToken))).AsList();
 
             if (rows.Count == 0)
             {
@@ -231,10 +234,18 @@ public sealed class ShopRepository(IDbConnectionFactory connectionFactory) : ISh
             const string clearInventorySql = """
                 DELETE FROM inventory inv
                 USING items i
-                WHERE inv.discord_id = @DiscordId AND i.item_id = inv.item_id AND i.sell_price > 0;
+                WHERE inv.discord_id = @DiscordId AND i.item_id = inv.item_id AND i.sell_price > 0 AND i.type <> ALL(@KeptTypes);
                 """;
             await connection.ExecuteAsync(new CommandDefinition(
-                clearInventorySql, new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
+                clearInventorySql, new { DiscordId = (long)discordId, KeptTypes = keptTypes }, transaction: transaction, cancellationToken: cancellationToken));
+
+            // Cuántas unidades vendibles se quedaron por eso (para decirlo en la pantalla).
+            int keptCount = await connection.ExecuteScalarAsync<int>(new CommandDefinition(
+                """
+                SELECT COALESCE(SUM(inv.quantity), 0)::int FROM inventory inv JOIN items i ON i.item_id = inv.item_id
+                WHERE inv.discord_id = @DiscordId AND i.sell_price > 0 AND i.type = ANY(@KeptTypes);
+                """,
+                new { DiscordId = (long)discordId, KeptTypes = keptTypes }, transaction: transaction, cancellationToken: cancellationToken));
 
             string creditGoldSql = $"""
                 UPDATE users
@@ -247,7 +258,7 @@ public sealed class ShopRepository(IDbConnectionFactory connectionFactory) : ISh
                 creditGoldSql, new { DiscordId = (long)discordId, Refund = totalRefund }, transaction: transaction, cancellationToken: cancellationToken));
 
             await transaction.CommitAsync(cancellationToken);
-            return new SellAllOutcome(seller, itemsSoldCount, totalRefund);
+            return new SellAllOutcome(seller, itemsSoldCount, totalRefund, keptCount);
         }
         catch
         {
