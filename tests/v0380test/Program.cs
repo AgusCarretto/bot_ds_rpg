@@ -9,7 +9,7 @@ using Npgsql;
 
 // v0.38.0 (tres pedidos del dueño, 2026-10-29): (1) el orden de los ingredientes de las recetas: los drops primero por zona (5, 4, 3, 2, 1) y después los materiales de recolección del Mítico al Común;
 // (2) «vender todo» no vende lo que se conserva en el Fuego Nuevo (huevos y comida de mascotas y de dragón) y avisa; (3) la Corteza y el Meteorito (los Míticos de recolección) no salen de las cajas, salvo el
-// Brasero del Fogón. Además los amuletos piden sus dos drops ×4. Contra la base LOCAL (usuario descartable).
+// Brasero del Fogón. Además los amuletos piden sus dos drops ×4. v0.38.2: esos dos Míticos se venden a 5.000. Contra la base LOCAL (usuario descartable).
 int fails = 0;
 void Check(bool ok, string what) { Console.WriteLine($"  [{(ok ? "OK" : "FALLA")}] {what}"); if (!ok) fails++; }
 
@@ -134,6 +134,19 @@ string snapshotSql = "SELECT md5(string_agg(box_item_id || kind || COALESCE(item
 string before = await db.ExecuteScalarAsync<string>(snapshotSql) ?? "";
 await db.ExecuteAsync(File.ReadAllText(Path.Combine(TestEnv.RepoRoot, "Database", "remove_mythic_from_boxes.sql")).Replace("\r\n", "\n").Replace("\nBEGIN;\n", "\n").Replace("\nCOMMIT;\n", "\n"));
 Check(before == await db.ExecuteScalarAsync<string>(snapshotSql), "la migración remove_mythic_from_boxes.sql se puede correr otra vez sin cambiar nada");
+
+// v0.38.2: los dos Míticos de recolección se venden a 5.000 (el dueño: «que se venda más caro cada material mítico, entonces le da utilidad a que salga en el brasero»).
+Console.WriteLine("\n== 6. El precio de los Míticos de recolección (v0.38.2) ==");
+var mythicPrices = (await db.QueryAsync<(string Name, int Sell, int Buy, int? Dust)>("SELECT name, sell_price, buy_price, dust_value FROM items WHERE type IN ('Madera', 'Mineral') AND rarity = 'Mítico' ORDER BY name")).ToList();
+Check(mythicPrices.Count == 2 && mythicPrices.All(m => m.Sell == 5000 && m.Buy >= m.Sell && m.Dust is null), $"Corteza y Meteorito valen 5.000 de venta (compra {string.Join("/", mythicPrices.Select(m => m.Buy))}) y su Polvo sigue por rareza");
+Check(await db.ExecuteScalarAsync<int>("SELECT sell_price FROM items WHERE name = 'Madera de Ébano'") == 100 && await db.ExecuteScalarAsync<int>("SELECT sell_price FROM items WHERE name = 'Gema de Zafiro'") == 100, "y el resto de la escala (Legendario 100) no se tocó");
+string pricesBefore = await db.ExecuteScalarAsync<string>("SELECT md5(string_agg(name || sell_price || buy_price, ',' ORDER BY name)) FROM items") ?? "";
+await db.ExecuteAsync(File.ReadAllText(Path.Combine(TestEnv.RepoRoot, "Database", "raise_mythic_gather_price.sql")).Replace("\r\n", "\n").Replace("\nBEGIN;\n", "\n").Replace("\nCOMMIT;\n", "\n"));
+Check(pricesBefore == await db.ExecuteScalarAsync<string>("SELECT md5(string_agg(name || sell_price || buy_price, ',' ORDER BY name)) FROM items"), "la migración raise_mythic_gather_price.sql se puede correr otra vez sin cambiar nada");
+await db.ExecuteAsync("UPDATE users SET gold = 0 WHERE discord_id = @id", new { id = (long)U });
+await Give("Corteza del Árbol de Vida", 2); await Give("Fragmento de Meteorito", 1);
+var soldMythic = await ShopModule.ExecuteSellAllAsync(shop, events, U);
+Check(soldMythic.Embed is not null && await Have("Corteza del Árbol de Vida") == 0 && await Have("Fragmento de Meteorito") == 0 && await db.ExecuteScalarAsync<int>("SELECT gold FROM users WHERE discord_id = @id", new { id = (long)U }) == 15000, "«vender todo» paga 5.000 por cada Mítico (2 Cortezas y 1 Meteorito = 15.000)");
 
 await Clean();
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");

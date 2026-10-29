@@ -889,7 +889,7 @@ Embed ShopTopic(string lang) { using (Loc.Use(lang)) { return HelpTopics.Resolve
 Check(HuntTopic("es").Title == "🏹 Combate" && HuntTopic("en").Title == "🏹 Combat" && GatherTopic("en").Title == "🪓 Gathering" && ShopTopic("en").Title == "🍺 Shop, tavern and healing" && DailyTopic("en").Title == "🎁 Daily and gifts" && MissionsTopic("en").Title == "📋 Missions and achievements",
     $"los títulos de los 5 temas ({HuntTopic("en").Title} | {GatherTopic("en").Title} | {ShopTopic("en").Title} | {DailyTopic("en").Title} | {MissionsTopic("en").Title})");
 string gatherTopicEs = LeakCheck.AllText(GatherTopic("es")), gatherTopicEn = LeakCheck.AllText(GatherTopic("en"));
-Check(gatherTopicEs.Contains("Común 68 %") && gatherTopicEs.Contains("Mítico 0,5 %") && gatherTopicEn.Contains("Common 68%") && gatherTopicEn.Contains("Mythic 0.5%") && gatherTopicEn.Contains("Common 1 to 5"), $"recolectar: las rarezas y los decimales de cada idioma ({gatherTopicEn.Replace("\n", " | ")})");
+Check(gatherTopicEs.Contains("Común 69,5 %") && gatherTopicEs.Contains("Mítico 0,5 %") && gatherTopicEn.Contains("Common 69.5%") && gatherTopicEn.Contains("Mythic 0.5%") && gatherTopicEn.Contains("Common 1 to 5"), $"recolectar: las rarezas y los decimales de cada idioma ({gatherTopicEn.Replace("\n", " | ")})");
 string dailyTopicEs = LeakCheck.AllText(DailyTopic("es")), dailyTopicEn = LeakCheck.AllText(DailyTopic("en"));
 Check(dailyTopicEs.Contains("Día 6") && dailyTopicEn.Contains("Day 6") && dailyTopicEn.Contains("daily box") && dailyTopicEn.Contains("**Racha**"), "el /daily: los hitos de la racha, y el logro «Racha» se nombra como se llama");
 Check(MissionsTopic("en").Footer!.Value.Text.StartsWith("More topics: /info"), "el pie de un tema traducido está en inglés");

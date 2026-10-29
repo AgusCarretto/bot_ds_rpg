@@ -50,7 +50,8 @@ public class ProfessionModule(IUserRepository userRepository, IPlayerBonusServic
             .WithColor(Color.Teal)
             .WithDescription(
                 "Cada vez que usás el comando de un oficio, ese oficio sube de nivel. Cada nivel da un poco más, " +
-                $"y al **nivel {ProfessionRules.MaxLevel}** se desbloquea la versión avanzada del comando. Los oficios **se quedan con cada Fuego Nuevo**.");
+                $"y al **nivel {ProfessionRules.MaxLevel}** se desbloquea la versión avanzada del comando. Los oficios **se quedan con cada Fuego Nuevo**.\n" +
+                $"El {ProfessionRules.MaxLevel} es el tope de lo que dan, pero el nivel **sigue subiendo**: cada uno cuesta un {ProfessionRules.DescribePostCapGrowth()} más que el anterior.");
 
         foreach (var profession in ProfessionCatalog.All)
         {
@@ -65,19 +66,25 @@ public class ProfessionModule(IUserRepository userRepository, IPlayerBonusServic
     private static string FieldTitle(ProfessionDefinition profession, PlayerBonuses bonuses)
     {
         var progress = ProfessionRules.ProgressFor(bonuses.ProfessionXpOf(profession.Key));
-        return $"{profession.Emoji} {profession.Name} · nivel {progress.Level}/{ProfessionRules.MaxLevel}";
+        // Antes del 100 se ve cuánto falta («nivel 40/100»); del 100 en adelante el nivel ya no tiene techo que mostrar.
+        return progress.AtEffectCap
+            ? $"{profession.Emoji} {profession.Name} · nivel {progress.Level}"
+            : $"{profession.Emoji} {profession.Name} · nivel {progress.Level}/{ProfessionRules.MaxLevel}";
     }
 
     private static string FieldText(ProfessionDefinition profession, PlayerBonuses bonuses)
     {
         var progress = ProfessionRules.ProgressFor(bonuses.ProfessionXpOf(profession.Key));
+        // Pasado el 100 el costo de cada nivel crece (1,6 millones de XP en el último de la tabla): entra en un int, pero se muestra con separador de miles.
         string bar = progress.IsMax
             ? "🏆 **¡Nivel máximo!**"
-            : $"{ProgressBar.Render((int)progress.IntoLevel, (int)progress.ToNext)} {progress.IntoLevel}/{progress.ToNext} XP";
+            : $"{ProgressBar.Render((int)progress.IntoLevel, (int)progress.ToNext)} {GameHistory.Number(progress.IntoLevel)}/{GameHistory.Number(progress.ToNext)} XP";
 
         string now = progress.Level == 0
             ? $"Cada nivel da {ProfessionRules.DescribePerLevel(profession)}."
-            : $"Hoy da {ProfessionRules.DescribeEffect(profession, progress.Level)}.";
+            : progress.AtEffectCap
+                ? $"🏆 Tope de lo que da: {ProfessionRules.DescribeEffect(profession, progress.Level)}. El nivel sigue subiendo."
+                : $"Hoy da {ProfessionRules.DescribeEffect(profession, progress.Level)}.";
 
         string advanced = ProfessionRules.AdvancedUnlocked(progress.Level)
             ? $"🔓 {ProfessionRules.DescribeAdvanced(profession)}"

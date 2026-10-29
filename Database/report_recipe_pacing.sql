@@ -4,7 +4,7 @@
 --   psql -U postgres -d asado-y-acero -P pager=off -v ph=0.06 -v pt=0.20 -v pb=0.15 -f report_recipe_pacing.sql
 --
 -- wc / wr / we / wl / wm (opcionales) son las chances de rareza de /chop y /mine (Común, Raro, Épico, Legendario, Mítico) en
--- fracción: por defecto las de GameData/RarityCatalog (hoy 0.680 / 0.210 / 0.070 / 0.035 / 0.005). Sirven para probar "qué pasa si
+-- fracción: por defecto las de GameData/RarityCatalog (hoy 0.695 / 0.210 / 0.060 / 0.030 / 0.005; hasta la v0.38.2 eran 0.680 / 0.210 / 0.070 / 0.035 / 0.005). Sirven para probar "qué pasa si
 -- cambio las probabilidades" antes de tocarlas: -v wc=0.60 -v wr=0.25 -v we=0.10 -v wl=0.045 -v wm=0.005 (las de hasta la v0.6.0).
 --
 -- ph / pt / pb son las chances de drop de /hunt, /travel y del jefe: tienen que ser las de
@@ -30,7 +30,7 @@
 \endif
 \if :{?wc}
 \else
-    \set wc 0.680
+    \set wc 0.695
 \endif
 \if :{?wr}
 \else
@@ -38,11 +38,11 @@
 \endif
 \if :{?we}
 \else
-    \set we 0.070
+    \set we 0.060
 \endif
 \if :{?wl}
 \else
-    \set wl 0.035
+    \set wl 0.030
 \endif
 \if :{?wm}
 \else
