@@ -1,6 +1,6 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-29 (v0.41.1: corrección del regalo retroactivo de huevos; antes, v0.41.0: las hazañas, logros mucho más difíciles; antes, v0.40.0: tiers de mascotas y huevos de repuesto; antes, v0.39.1: las pantallas de las expediciones ya no cuentan el premio; antes, v0.39.0: expediciones de mascotas; antes, v0.38.3: Épico 6 % y Legendario 3 % en la recolección; antes, v0.38.2: Corteza y Meteorito a 5.000 de oro; antes, v0.38.1: los oficios siguen subiendo después del 100, costo exponencial; antes, v0.38.0 orden de ingredientes, «vender todo» que respeta lo del Fuego Nuevo, sin Míticos de recolección en las cajas y amuletos ×4)_
+_Última revisión: 2026-10-29 (v0.41.2: la lista de `/pet view` con íconos y barras; antes, v0.41.1: corrección del regalo retroactivo de huevos; antes, v0.41.0: las hazañas, logros mucho más difíciles; antes, v0.40.0: tiers de mascotas y huevos de repuesto; antes, v0.39.1: las pantallas de las expediciones ya no cuentan el premio; antes, v0.39.0: expediciones de mascotas; antes, v0.38.3: Épico 6 % y Legendario 3 % en la recolección; antes, v0.38.2: Corteza y Meteorito a 5.000 de oro; antes, v0.38.1: los oficios siguen subiendo después del 100, costo exponencial; antes, v0.38.0 orden de ingredientes, «vender todo» que respeta lo del Fuego Nuevo, sin Míticos de recolección en las cajas y amuletos ×4)_
 
 ## Pendiente de un vistazo (puesto al día el 2026-10-28)
 
@@ -37,6 +37,11 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
   Términos y Privacidad públicos, y hay que confirmar si hay Premium Apps en Uruguay (Developer Portal, Monetization). Punto de enganche: `ReminderPolicy.IsEligible` y `CooldownCatalog`. El título especial entra como categoría «Especiales» del sistema de títulos.
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
+
+## La lista de mascotas con íconos y barras (v0.41.2, 2026-10-29)
+
+- **Pedido del dueño**: «lo de la lista de pets ta pelao». Cada mascota de `/pet view` muestra su bonus con el ícono del tipo (💰 📊 🛡️ 🎲 🪓), una **barra de progreso** de las alimentadas al próximo nivel y, en el tope de su tier, dos barras: horas de expedición y huevos sobrantes para evolucionar.
+- Las barras son de 6 piezas (con 8 y dos barras por mascota la pantalla se acercaba al tope de 6000 caracteres): con los códigos de emoji reales las seis mascotas miden 3.576 de 6.000.
 
 ## Corrección del regalo retroactivo de huevos (v0.41.1, 2026-10-29)
 

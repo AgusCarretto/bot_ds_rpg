@@ -315,6 +315,12 @@ var vT2 = AllText(PetModule.BuildViewEmbed(View(P(gSpecies, 14, 2, 120), 0)));
 Check(vT2.Contains($"{gSpecies.Name} II") && vT2.Contains("nivel 14/20") && vT2.Contains("cada una gasta 3 comidas") && !vT2.Contains("Para evolucionar") && vT2.Contains("alimentadas"), "un tier II en el 14 se llama «… II», muestra 14/20 y que cada alimentada gasta 3 comidas, sin hablar de evolución todavía");
 var vT3 = AllText(PetModule.BuildViewEmbed(View(P(gSpecies, 30, 3, 400), 0)));
 Check(vT3.Contains($"{gSpecies.Name} III") && vT3.Contains("nivel 30/30") && vT3.Contains("🏆 Nivel máximo") && !vT3.Contains("evolucionar"), "el tier III en el 30 es «Nivel máximo»");
+// Con las piezas de barra de emoji de verdad cargadas (cada una es un código de ~35 caracteres) la pantalla de las 6 mascotas en el tope de su tier, con dos barras cada una, sigue entrando en Discord.
+UiEmojis.Set(new[] { "l_f", "l_e", "m_f", "m_e", "r_f", "r_e" }.Select(p => ($"bar_xp_{p}", $"<:bar_xp_{p}:123456789012345678>")));
+var sixPets = species.Take(6).Select(sp => P(sp, 10, 1, 40)).ToList();
+var bigView = PetModule.BuildViewEmbed(new PetModule.PetViewData(species, sixPets, 100, new HashSet<string>(), DateTime.UtcNow, null, 1.0, species.ToDictionary(sp => sp.EggName, _ => 3)));
+Check(bigView.Length <= 6000 && bigView.Fields.All(f => f.Value.Length <= 1024) && bigView.Fields.Any(f => f.Value.Contains("<:bar_xp_m_f:")), $"con las barras de emoji de verdad, las 6 mascotas en el tope de su tier (2 barras cada una) entran en Discord ({bigView.Length} de 6000)");
+UiEmojis.Set([]);
 Check(AllText(PetModule.BuildViewEmbed(View(P(gSpecies, 10, 1, 0), 0))).Length < 6000 && PetModule.EvolutionText(P(gSpecies, 10, 1, 0), null).Contains("0/5"), "sin información de huevos (null) la pantalla no se rompe");
 
 Task<PetModule.PetResult> Evolve(string? name) => PetModule.ExecuteEvolveAsync(users, petRepo, events, U, name);

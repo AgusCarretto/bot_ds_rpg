@@ -148,15 +148,15 @@ public partial class PetModule(
             int level = PetRules.LevelFor(pet.FeedPoints);
             int cap = PetRules.LevelCap(pet.Tier);
             var species = pet.Species;
-            string bonus = $"{PetRules.PercentText(PetRules.BonusPercent(pet))} de {PetRules.KindName(species.BonusKind)}" +
-                (level >= cap ? " — ¡al máximo de su tier!" : $" (tope {PetRules.PercentText(PetRules.BonusPercent(species, cap))})");
+            string bonus = $"{KindIcon(species.BonusKind)} **{PetRules.PercentText(PetRules.BonusPercent(pet))} de {PetRules.KindName(species.BonusKind)}**" +
+                (level >= cap ? " · ¡al máximo de su tier!" : $" · tope {PetRules.PercentText(PetRules.BonusPercent(species, cap))}");
 
             string state;
             if (PetRules.ProgressToNextLevel(pet.FeedPoints, pet.Tier) is { } progress)
             {
                 var remaining = PetRules.RemainingCooldown(pet, data.NowUtc, data.FeedCooldown);
                 int cost = PetRules.FoodPerFeed(level);
-                state = $"🍖 Para el próximo nivel: {progress.Have}/{progress.Need} alimentadas" + (cost > 1 ? $" (cada una gasta {cost} comidas)" : string.Empty) + "\n" +
+                state = $"🍖 {ProgressBar.Render(progress.Have, progress.Need, ViewBarSegments, "xp")} {progress.Have}/{progress.Need} alimentadas" + (cost > 1 ? $" · cada una gasta {cost} comidas" : string.Empty) + "\n" +
                     (remaining == TimeSpan.Zero ? "✅ Lista para comer" : $"⏳ Vuelve a comer en {TimeFormat.Remaining(remaining)}");
             }
             else
@@ -181,6 +181,21 @@ public partial class PetModule(
         return embed.WithFooter($"🦴 {PetRules.FoodItemName} en tu mochila: {data.Food} · se compra en la taberna").Build();
     }
 
+    // El largo de las barras de /pet view (campos de ancho completo, una mascota por campo). Con las piezas de emoji de verdad cada una es un código de ~35 caracteres: 6 piezas por barra y hasta 2 barras por mascota
+    // dejan las 6 mascotas muy por debajo de los 6000 caracteres del mensaje (v0400test lo mide).
+    private const int ViewBarSegments = 6;
+
+    // El ícono de cada tipo de bonus (los mismos de BonusSummary).
+    public static string KindIcon(string bonusKind) => bonusKind switch
+    {
+        PetBonusKind.Gold => "💰",
+        PetBonusKind.Xp => "📊",
+        PetBonusKind.Defense => "🛡️",
+        PetBonusKind.Drop => "🎲",
+        PetBonusKind.Gather => "🪓",
+        _ => "✨",
+    };
+
     // En el tope de su tier: si todavía puede evolucionar dice qué le falta (horas de expedición de ESA mascota y huevos sobrantes de su especie) o que ya está lista; en el tier III es el máximo.
     public static string EvolutionText(OwnedPet pet, IReadOnlyDictionary<string, int>? eggCounts)
     {
@@ -193,7 +208,10 @@ public partial class PetModule(
         int hoursNeed = PetRules.EvolveHours(toTier), eggsNeed = PetRules.EvolveEggs(toTier);
         int eggs = eggCounts is not null && eggCounts.TryGetValue(pet.Species.EggName, out int held) ? held : 0;
         bool ready = pet.ExpeditionHours >= hoursNeed && eggs >= eggsNeed;
-        string requirements = $"{(pet.ExpeditionHours >= hoursNeed ? "✅" : "⏱️")} Expediciones: {Math.Min(pet.ExpeditionHours, hoursNeed)}/{hoursNeed} h · {(eggs >= eggsNeed ? "✅" : "🥚")} Huevos sobrantes: {Math.Min(eggs, eggsNeed)}/{eggsNeed}";
+        int hoursShown = Math.Min(pet.ExpeditionHours, hoursNeed), eggsShown = Math.Min(eggs, eggsNeed);
+        string requirements =
+            $"{(pet.ExpeditionHours >= hoursNeed ? "✅" : "⏱️")} {ProgressBar.Render(hoursShown, hoursNeed, ViewBarSegments, "xp")} {hoursShown}/{hoursNeed} h de expedición\n" +
+            $"{(eggs >= eggsNeed ? "✅" : "🥚")} {ProgressBar.Render(eggsShown, eggsNeed, ViewBarSegments, "xp")} {eggsShown}/{eggsNeed} huevos sobrantes";
         return ready
             ? $"🧬 ¡Lista para evolucionar al tier {PetRules.TierName(toTier)}! Usá **/pet evolve**.\n{requirements}"
             : $"🧬 Para evolucionar al tier {PetRules.TierName(toTier)}:\n{requirements}";
