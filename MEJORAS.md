@@ -1,6 +1,6 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-29 (v0.40.0: tiers de mascotas y huevos de repuesto; antes, v0.39.1: las pantallas de las expediciones ya no cuentan el premio; antes, v0.39.0: expediciones de mascotas; antes, v0.38.3: Épico 6 % y Legendario 3 % en la recolección; antes, v0.38.2: Corteza y Meteorito a 5.000 de oro; antes, v0.38.1: los oficios siguen subiendo después del 100, costo exponencial; antes, v0.38.0 orden de ingredientes, «vender todo» que respeta lo del Fuego Nuevo, sin Míticos de recolección en las cajas y amuletos ×4)_
+_Última revisión: 2026-10-29 (v0.41.0: las hazañas, logros mucho más difíciles; antes, v0.40.0: tiers de mascotas y huevos de repuesto; antes, v0.39.1: las pantallas de las expediciones ya no cuentan el premio; antes, v0.39.0: expediciones de mascotas; antes, v0.38.3: Épico 6 % y Legendario 3 % en la recolección; antes, v0.38.2: Corteza y Meteorito a 5.000 de oro; antes, v0.38.1: los oficios siguen subiendo después del 100, costo exponencial; antes, v0.38.0 orden de ingredientes, «vender todo» que respeta lo del Fuego Nuevo, sin Míticos de recolección en las cajas y amuletos ×4)_
 
 ## Pendiente de un vistazo (puesto al día el 2026-10-28)
 
@@ -37,6 +37,14 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
   Términos y Privacidad públicos, y hay que confirmar si hay Premium Apps en Uruguay (Developer Portal, Monetization). Punto de enganche: `ReminderPolicy.IsEligible` y `CooldownCatalog`. El título especial entra como categoría «Especiales» del sistema de títulos.
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
+
+## Hazañas: logros mucho más difíciles (v0.41.0, 2026-10-29)
+
+- **Pedido del dueño** (varias veces): logros «bastante más difíciles», porque los de hoy se consiguen muy rápido. Una **5.ª página de `/achievements`, «Hazañas»**, con 8 logros de 3 tramos (31 en total) y **24 títulos nuevos**.
+- **Metas**: Cazador de Leyenda 2.500 / 7.500 / 20.000 cacerías; Trotamundos 400 / 1.200 / 3.000 viajes; Verdugo de Gigantes 40 / 120 / 300 jefes; Titán del Monte 10 mil / 30 mil / 100 mil materiales; Yunque Eterno 60 / 150 / 400 piezas; Magnate 1 / 10 / 100 millones de oro gastado; Archimago 150 / 500 / 2.000 encantamientos; Gran Explorador 300 / 1.500 / 5.000 horas de expedición. El primer tramo ya pide más que el último del logro común y el último pide 10 veces o más.
+- **Premio**: solo oro y EXP, sin cajas (los contadores se podrían farmear): 40 / 120 / 400 cacerías de oro y 10 / 25 / 60 % de un nivel (unos 150.000 de oro el último tramo en la Zona 5).
+- **Sin migración** (usan los mismos contadores). Perillas: `Feat` y las metas en `AchievementCatalog`. Harness nuevo `v0410test` (25 chequeos); se ajustaron cinco arneses que contaban logros, títulos y páginas.
+- **Sigue en el aire**: arte por tier de las mascotas, mirar la suma de EXP de las mascotas tier III al llegar al FN 16.
 
 ## Tiers de mascotas y huevos de repuesto (v0.40.0, 2026-10-29)
 

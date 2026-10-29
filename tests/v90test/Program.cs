@@ -307,7 +307,7 @@ Check(AllText(tut).Contains("/bank") && tut.Fields.All(f => f.Value.Length <= 10
 
 Console.WriteLine("\n== 6. Logros nuevos, páginas y conteo de comandos y enemigos ==");
 var allAch = AchievementCatalog.All;
-Check(allAch.Count == 23 && allAch.Select(a => a.Key).Distinct().Count() == 23, $"hay 23 logros (17 + Domador y Criador de las mascotas + Asador del Fogón + Renacido del Fuego Nuevo - Coleccionista, retirado con los trofeos + Compañero del Asador y El que volvió de la historia + Racha, la racha más larga del /daily) con claves distintas ({allAch.Count})");
+Check(allAch.Count == 31 && allAch.Select(a => a.Key).Distinct().Count() == 31, $"hay 31 logros (8 hazañas de la v0.41.0 + 23: 17 + Domador y Criador de las mascotas + Asador del Fogón + Renacido del Fuego Nuevo - Coleccionista, retirado con los trofeos + Compañero del Asador y El que volvió de la historia + Racha, la racha más larga del /daily) con claves distintas ({allAch.Count})");
 var pagedKeys = AchievementCatalog.Categories.SelectMany(c => c.Keys).ToList();
 Check(pagedKeys.Count == allAch.Count && pagedKeys.OrderBy(k => k).SequenceEqual(allAch.Select(a => a.Key).OrderBy(k => k)), "cada logro está en exactamente una página, y las páginas no nombran logros que no existen");
 Check(allAch.All(a => a.Tiers.Count == 3 && a.Tiers[0].Threshold < a.Tiers[1].Threshold && a.Tiers[1].Threshold < a.Tiers[2].Threshold), "todos tienen tres tramos crecientes");
@@ -358,16 +358,16 @@ Check(notifying.TakeNotices(U).Count == 0, "el 101 no repite el aviso");
 var achRepo = new AchievementRepository(factory);
 await Reset(gold: 0); await CleanEvents();
 var ach0 = await AchievementsModule.BuildViewAsync(eventsRepo, achRepo, U);
-Check(AllText(ach0.Embed).Contains("Combate") && AllText(ach0.Embed).Contains("Cazador") && AllText(ach0.Embed).Contains("Exterminador") && !AllText(ach0.Embed).Contains("Recolector") && ach0.Embed.Footer!.Value.Text.Contains("Página 1/4"), "la primera página es Combate: sus 5 logros y ninguno de otra página");
+Check(AllText(ach0.Embed).Contains("Combate") && AllText(ach0.Embed).Contains("Cazador") && AllText(ach0.Embed).Contains("Exterminador") && !AllText(ach0.Embed).Contains("Recolector") && ach0.Embed.Footer!.Value.Text.Contains("Página 1/5"), "la primera página es Combate: sus 5 logros y ninguno de otra página");
 var v2 = await AchievementsModule.BuildViewAsync(eventsRepo, achRepo, U, 2);
 Check(AllText(v2.Embed).Contains("Economía") && AllText(v2.Embed).Contains("Afortunado") && AllText(v2.Embed).Contains("Abridor") && !AllText(v2.Embed).Contains("Cazador"), "la página 3 es Economía");
 var vBig = await AchievementsModule.BuildViewAsync(eventsRepo, achRepo, U, 99);
-Check(AllText(vBig.Embed).Contains("Constancia") && vBig.Embed.Footer!.Value.Text.Contains("Página 4/4"), "una página fuera de rango se acota a la última");
+Check(AllText(vBig.Embed).Contains("Hazañas") && vBig.Embed.Footer!.Value.Text.Contains("Página 5/5"), "una página fuera de rango se acota a la última");
 bool within = true; for (int pg = 0; pg < 4; pg++) { var vv = await AchievementsModule.BuildViewAsync(eventsRepo, achRepo, U, pg); within &= vv.Embed.Length <= 6000 && vv.Embed.Fields.All(f => f.Value.Length <= 1024); }
 Check(within, "ninguna página pasa los límites de Discord (6000 en total, 1024 por campo)");
 var comps0 = ach0.Components!.Components.OfType<ActionRowComponent>().ToList();
 var menu0 = comps0[0].Components.OfType<SelectMenuComponent>().Single();
-Check(comps0.Count == 1 && menu0.CustomId == $"ach_page:{U}" && menu0.Options.Count == 4 && menu0.Options.Single(o => o.IsDefault == true).Value == "0", "sin nada para reclamar: solo el desplegable de páginas, con la actual marcada");
+Check(comps0.Count == 1 && menu0.CustomId == $"ach_page:{U}" && menu0.Options.Count == 5 && menu0.Options.Single(o => o.IsDefault == true).Value == "0", "sin nada para reclamar: solo el desplegable de páginas, con la actual marcada");
 // con 100 comandos hay un tramo listo: aparece el botón de reclamar, que vuelve a la misma página
 await db.ExecuteAsync("INSERT INTO player_stats (discord_id, stat_key, value) VALUES (@id, 'command_used', 100) ON CONFLICT (discord_id, stat_key) DO UPDATE SET value = 100", new { id = (long)U });
 var v3 = await AchievementsModule.BuildViewAsync(eventsRepo, achRepo, U, 3);
@@ -623,7 +623,7 @@ string T(string key) => AllText(HelpTopics.Find(key)!.Build()) + " " + (HelpTopi
 Check(T("death").Contains("5 %") && T("death").Contains("65 %") && T("death").Contains("20 de oro") && T("bank").Contains("1.000") && T("dismantle").Contains("sin tope") && T("dismantle").Contains("todo") && T("dismantle").Contains("Mítico 500"), "muerte: 5 % y 65 %; banco: 1.000; desmantelar: sin tope y 500 por Mítico");
 Check(T("play").Contains("×5") && T("play").Contains("×2") && T("play").Contains("10") && T("hunt").Contains("1 min") && T("hunt").Contains("30 min") && T("hunt").Contains("6 %") && T("hunt").Contains("caja"), "casino: ×5 y ×2 y apuesta mínima 10; combate: cooldowns 1 y 30 min, drops 6 % y la caja del viaje");
 Check(T("boss").Contains("5 h") && T("boss").Contains("30 min") && T("boss").Contains("15 cacerías") && T("boss").Contains("2 a 6") && T("boxes").Contains("2 h") && T("boxes").Contains("1 a 10") && T("daily").Contains("24 h") && T("daily").Contains("20 cacerías de oro") && T("daily").Contains("48 h") && T("arena").Contains("32") && T("trade").Contains("2 minutos"), "jefes: 5 h / 30 min / ×15 / 2 a 6; cajas: 2 h y 1 a 10; diario: 24 h, 20 cacerías de oro, 48 h; arena: 32; intercambio: 2 min");
-Check(T("gather").Contains("Común 1 a 5") && T("gather").Contains("69,5 %") && T("gather").Contains("Mítico 0,5 %") && T("stats").Contains("15 de vida") && T("stats").Contains("40 × nivel²") && T("forge").Contains("Hoja de Acero Puro") && !T("forge").Contains("×1,5") && T("missions").Contains("23 logros") && T("missions").Contains("3 misiones por día"), "recolección 1 a 5 y 68 %; nivel: +15 de vida; herrería con la Hoja y sin el ×1,5; 23 logros y 3 misiones por día");
+Check(T("gather").Contains("Común 1 a 5") && T("gather").Contains("69,5 %") && T("gather").Contains("Mítico 0,5 %") && T("stats").Contains("15 de vida") && T("stats").Contains("40 × nivel²") && T("forge").Contains("Hoja de Acero Puro") && !T("forge").Contains("×1,5") && T("missions").Contains("31 logros") && T("missions").Contains("3 misiones por día"), "recolección 1 a 5 y 68 %; nivel: +15 de vida; herrería con la Hoja y sin el ×1,5; 23 logros y 3 misiones por día");
 var classesText = T("classes");
 Check(new[] { "Guerrero", "Ninja", "Arquero", "Hechicero", "Aguante", "Sombra", "Lluvia de Flechas", "Bola de Fuego", "Sifón de Almas" }.All(classesText.Contains), "clases: las cuatro con su pasiva y su habilidad");
 // resolver: sin tema → comandos, tema → su ayuda, desconocido → la lista de temas avisando
