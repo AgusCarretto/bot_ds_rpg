@@ -38,7 +38,7 @@ internal sealed record PetSpeciesRow(
 
 internal sealed record OwnedPetRow(
     int SpeciesId, int ZoneId, string ZoneName, string Name, string? Emoji, string BonusKind, double MaxBonusPercent, int EggItemId, string EggName,
-    int FeedPoints, DateTime? LastFedAt)
+    int FeedPoints, DateTime? LastFedAt, int Tier = 1, int ExpeditionHours = 0)
 {
     public PetSpecies ToSpecies() => new(SpeciesId, ZoneId, ZoneName, Name, Emoji, BonusKind, MaxBonusPercent, EggItemId, EggName);
 }

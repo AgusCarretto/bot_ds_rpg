@@ -6,4 +6,5 @@ public sealed record PetSpecies(
     int SpeciesId, int ZoneId, string ZoneName, string Name, string? Emoji, string BonusKind, double MaxBonusPercent, int EggItemId, string EggName);
 
 // Una mascota que un jugador YA tiene. El nivel no se guarda: sale de FeedPoints (GameData/PetRules.LevelFor). LastFedAtUtc manda el cooldown de una hora para alimentarla.
-public sealed record OwnedPet(PetSpecies Species, int FeedPoints, DateTime? LastFedAtUtc);
+// Tier (v0.40.0): 1, 2 o 3 — define hasta qué nivel puede crecer (10, 20, 30) y se sube evolucionándola. ExpeditionHours: las horas de expedición que ya hizo ESTA mascota (suman al recoger el premio) y que cuentan para evolucionar.
+public sealed record OwnedPet(PetSpecies Species, int FeedPoints, DateTime? LastFedAtUtc, int Tier = 1, int ExpeditionHours = 0);

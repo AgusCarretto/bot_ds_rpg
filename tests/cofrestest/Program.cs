@@ -143,12 +143,12 @@ Check(g2.EggGranted is null && await Have("Huevo del Fogón") == 1, "la segunda 
 // Un Fuego Nuevo deja gate_cleared en false pero conserva el huevo sin abrir (Huevo es un tipo que se queda): tampoco duplica.
 await db.ExecuteAsync("UPDATE users SET gate_cleared = false, in_gate = true WHERE discord_id = @id", new { id = (long)U });
 var g3 = await adventure.ApplyBossVictoryAsync(U, 1, 1, 0, null, 1, FogonRules.GateZoneId);
-Check(g3.EggGranted is null && await Have("Huevo del Fogón") == 1, "en la vuelta siguiente, con el huevo todavía sin abrir, no le da un segundo");
+Check(g3.EggGranted is not null && g3.EggIsSpare && await Have("Huevo del Fogón") == 2, "en la vuelta siguiente, con el huevo todavía sin abrir, le da otro de REPUESTO (v0.40.0: sirve para evolucionar)");
 var hatch = await pets.HatchAsync(U, huevoFogon!.ItemId);
-Check(hatch.Status == HatchStatus.Ok && hatch.Species?.Name == "Chispa del Asador" && hatch.Species.BonusKind == "gather" && hatch.Species.ZoneId == 0 && await Have("Huevo del Fogón") == 0, "el huevo se abre y nace la Chispa del Asador (zona 0, bono de recolección)");
+Check(hatch.Status == HatchStatus.Ok && hatch.Species?.Name == "Chispa del Asador" && hatch.Species.BonusKind == "gather" && hatch.Species.ZoneId == 0 && await Have("Huevo del Fogón") == 1, "el huevo se abre y nace la Chispa del Asador (zona 0, bono de recolección); el otro sigue en la mochila");
 await db.ExecuteAsync("UPDATE users SET gate_cleared = false, in_gate = true WHERE discord_id = @id", new { id = (long)U });
 var g4 = await adventure.ApplyBossVictoryAsync(U, 1, 1, 0, null, 1, FogonRules.GateZoneId);
-Check(g4.EggGranted is null && await Have("Huevo del Fogón") == 0, "con la mascota ya nacida, otra vuelta tampoco da huevo");
+Check(g4.EggGranted is not null && g4.EggIsSpare && await Have("Huevo del Fogón") == 2, "con la mascota ya nacida, otra vuelta da un huevo de repuesto más");
 // Una carrera: 6 victorias del Asador a la vez de alguien que nunca lo venció → exactamente UN huevo.
 await Reset(level: 30, highest: lastZoneId);
 await users.SetInGateAsync(U, true);

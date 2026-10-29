@@ -44,7 +44,7 @@ public sealed class PetExpeditionRepository(IDbConnectionFactory connectionFacto
 
             var pet = await connection.QuerySingleOrDefaultAsync<OwnedPetRow>(new CommandDefinition(
                 $"""
-                SELECT {PetSql.SpeciesColumns}, p.feed_points AS "FeedPoints", p.last_fed_at AS "LastFedAt"
+                SELECT {PetSql.SpeciesColumns}, p.feed_points AS "FeedPoints", p.last_fed_at AS "LastFedAt", p.tier::int AS "Tier", p.expedition_hours AS "ExpeditionHours"
                 FROM player_pets p
                 JOIN {PetSql.SpeciesFrom} ON s.species_id = p.species_id
                 WHERE p.discord_id = @DiscordId AND p.species_id = @SpeciesId
@@ -162,11 +162,19 @@ public sealed class PetExpeditionRepository(IDbConnectionFactory connectionFacto
             var kind = PetExpeditions.FindKindOf(species.BonusKind);
             bool found = PetExpeditions.RollFind(option, rng);
 
+            // El tier de la mascota (I, II, III) multiplica el premio ×1 / ×2 / ×4, y las horas de esta expedición suman a las que la mascota lleva acumuladas (cuentan para evolucionarla).
+            int tier = await connection.ExecuteScalarAsync<int?>(new CommandDefinition(
+                "SELECT tier FROM player_pets WHERE discord_id = @DiscordId AND species_id = @SpeciesId;",
+                new { DiscordId = (long)discordId, SpeciesId = species.SpeciesId }, transaction: transaction, cancellationToken: cancellationToken)) ?? 1;
+            await connection.ExecuteAsync(new CommandDefinition(
+                "UPDATE player_pets SET expedition_hours = expedition_hours + @Hours WHERE discord_id = @DiscordId AND species_id = @SpeciesId;",
+                new { Hours = active.Hours, DiscordId = (long)discordId, SpeciesId = species.SpeciesId }, transaction: transaction, cancellationToken: cancellationToken));
+
             // El premio NO depende de la zona ni de la especie: el oro es un valor del rango de esa duración y la EXP un % del nivel del jugador (con subida de nivel), todo en la misma transacción.
             // Solo el hallazgo de oro o de EXP suma un 50 % a su parte. La EXP va por RewardPayer (sin oro: el oro de una expedición no son "cacerías de la zona") y el oro se suma acá, frenado en int.MaxValue.
-            int gold = PetExpeditions.RollGold(option, found && kind == ExpeditionFindKind.GoldBag, rng);
+            int gold = PetExpeditions.RollGold(option, found && kind == ExpeditionFindKind.GoldBag, rng, tier);
             var xpReceipt = await RewardPayer.PayAsync(
-                connection, transaction, player, new RewardSpec(0, PetExpeditions.XpPercentFor(option, found && kind == ExpeditionFindKind.XpBoost)), 1, cancellationToken);
+                connection, transaction, player, new RewardSpec(0, PetExpeditions.XpPercentFor(option, found && kind == ExpeditionFindKind.XpBoost, tier)), 1, cancellationToken);
             int goldAfter = await connection.ExecuteScalarAsync<int>(new CommandDefinition(
                 "UPDATE users SET gold = LEAST(gold::bigint + @Gold, 2147483647) WHERE discord_id = @DiscordId RETURNING gold;",
                 new { Gold = gold, DiscordId = player.DiscordId }, transaction: transaction, cancellationToken: cancellationToken));
@@ -175,7 +183,7 @@ public sealed class PetExpeditionRepository(IDbConnectionFactory connectionFacto
             ExpeditionFindResult? find = null;
             if (found)
             {
-                find = await ApplyFindAsync(connection, transaction, player, kind, option, rng, cancellationToken);
+                find = await ApplyFindAsync(connection, transaction, player, kind, option, rng, tier, cancellationToken);
             }
 
             await transaction.CommitAsync(cancellationToken);
@@ -190,7 +198,7 @@ public sealed class PetExpeditionRepository(IDbConnectionFactory connectionFacto
 
     // El hallazgo que no es oro ni EXP. Si no hay nada que dar (una zona sin drops cargados) devuelve un resultado vacío: la expedición igual se cobró y no se rompe nada.
     private static async Task<ExpeditionFindResult> ApplyFindAsync(
-        DbConnection connection, DbTransaction transaction, User player, ExpeditionFindKind kind, ExpeditionOption option, Random rng, CancellationToken cancellationToken)
+        DbConnection connection, DbTransaction transaction, User player, ExpeditionFindKind kind, ExpeditionOption option, Random rng, int tier, CancellationToken cancellationToken)
     {
         switch (kind)
         {
@@ -201,8 +209,8 @@ public sealed class PetExpeditionRepository(IDbConnectionFactory connectionFacto
                 // El Polvo no se desborda: se frena en int.MaxValue como el resto del juego.
                 await connection.ExecuteAsync(new CommandDefinition(
                     "UPDATE users SET dust = LEAST(dust::bigint + @Dust, 2147483647) WHERE discord_id = @DiscordId;",
-                    new { Dust = PetExpeditions.DustFor(option), DiscordId = player.DiscordId }, transaction: transaction, cancellationToken: cancellationToken));
-                return new ExpeditionFindResult(kind, PetExpeditions.DustFor(option), []);
+                    new { Dust = PetExpeditions.DustFor(option, tier), DiscordId = player.DiscordId }, transaction: transaction, cancellationToken: cancellationToken));
+                return new ExpeditionFindResult(kind, PetExpeditions.DustFor(option, tier), []);
 
             case ExpeditionFindKind.HuntDrops:
             {
@@ -224,8 +232,9 @@ public sealed class PetExpeditionRepository(IDbConnectionFactory connectionFacto
                 }
 
                 var chosen = drops[rng.Next(drops.Count)];
-                await InventoryUpsert.AddItemAsync(connection, transaction, (ulong)player.DiscordId, chosen.ItemId, option.DropQuantity, cancellationToken);
-                return new ExpeditionFindResult(kind, option.DropQuantity, [(chosen.Name, option.DropQuantity)]);
+                int dropQuantity = PetExpeditions.DropQuantityFor(option, tier);
+                await InventoryUpsert.AddItemAsync(connection, transaction, (ulong)player.DiscordId, chosen.ItemId, dropQuantity, cancellationToken);
+                return new ExpeditionFindResult(kind, dropQuantity, [(chosen.Name, dropQuantity)]);
             }
 
             case ExpeditionFindKind.Gather:
@@ -238,7 +247,7 @@ public sealed class PetExpeditionRepository(IDbConnectionFactory connectionFacto
                     """,
                     transaction: transaction, cancellationToken: cancellationToken))).ToList();
 
-                var rolled = PetExpeditions.RollGather(pool, option.GatherRolls, rng);
+                var rolled = PetExpeditions.RollGather(pool, PetExpeditions.GatherRollsFor(option, tier), rng);
                 foreach (var (item, quantity) in rolled)
                 {
                     await InventoryUpsert.AddItemAsync(connection, transaction, (ulong)player.DiscordId, item.ItemId, quantity, cancellationToken);

@@ -133,7 +133,7 @@ public sealed class PetRepository(IDbConnectionFactory connectionFactory) : IPet
             }
 
             int levelBefore = PetRules.LevelFor(pet.FeedPoints);
-            if (levelBefore >= PetRules.MaxLevel)
+            if (levelBefore >= PetRules.LevelCap(pet.Tier))
             {
                 await transaction.RollbackAsync(cancellationToken);
                 return new FeedOutcome(FeedStatus.MaxLevel, pet, levelBefore, 0, TimeSpan.Zero);
@@ -153,19 +153,20 @@ public sealed class PetRepository(IDbConnectionFactory connectionFactory) : IPet
                 return new FeedOutcome(FeedStatus.OnCooldown, pet, levelBefore, 0, TimeSpan.FromSeconds(secondsLeft));
             }
 
-            // Guarda de la comida: sin fila = no tenía (o la gastó otro comando un instante antes).
+            // Guarda de la comida: sin fila = no tenía las que gasta esta alimentada (o las gastó otro comando un instante antes). Desde la v0.40.0 gasta 1, 3 o 6 según el nivel (PetRules.FoodPerFeed).
+            int foodCost = PetRules.FoodPerFeed(levelBefore);
             int? foodLeft = await connection.QuerySingleOrDefaultAsync<int?>(new CommandDefinition(
                 """
-                UPDATE inventory SET quantity = quantity - 1
-                WHERE discord_id = @DiscordId AND quantity >= 1 AND item_id = (SELECT item_id FROM items WHERE name = @FoodName)
+                UPDATE inventory SET quantity = quantity - @Cost
+                WHERE discord_id = @DiscordId AND quantity >= @Cost AND item_id = (SELECT item_id FROM items WHERE name = @FoodName)
                 RETURNING quantity;
                 """,
-                new { DiscordId = (long)discordId, FoodName = PetRules.FoodItemName }, transaction: transaction, cancellationToken: cancellationToken));
+                new { DiscordId = (long)discordId, FoodName = PetRules.FoodItemName, Cost = foodCost }, transaction: transaction, cancellationToken: cancellationToken));
 
             if (foodLeft is null)
             {
                 await transaction.RollbackAsync(cancellationToken);
-                return new FeedOutcome(FeedStatus.NoFood, pet, levelBefore, 0, TimeSpan.Zero);
+                return new FeedOutcome(FeedStatus.NoFood, pet, levelBefore, 0, TimeSpan.Zero, foodCost);
             }
 
             await connection.ExecuteAsync(new CommandDefinition(
@@ -181,8 +182,91 @@ public sealed class PetRepository(IDbConnectionFactory connectionFactory) : IPet
                 new { DiscordId = (long)discordId, SpeciesId = speciesId }, transaction: transaction, cancellationToken: cancellationToken));
 
             await transaction.CommitAsync(cancellationToken);
-            var after = new OwnedPet(pet.Species, fed.FeedPoints, DateTime.SpecifyKind(fed.LastFedAt, DateTimeKind.Utc));
-            return new FeedOutcome(FeedStatus.Ok, after, levelBefore, foodLeft.Value, cooldown ?? PetRules.FeedCooldown);
+            var after = new OwnedPet(pet.Species, fed.FeedPoints, DateTime.SpecifyKind(fed.LastFedAt, DateTimeKind.Utc), pet.Tier, pet.ExpeditionHours);
+            return new FeedOutcome(FeedStatus.Ok, after, levelBefore, foodLeft.Value, cooldown ?? PetRules.FeedCooldown, foodCost);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
+
+    public async Task<EvolveOutcome> EvolveAsync(ulong discordId, int speciesId, CancellationToken cancellationToken = default)
+    {
+        using DbConnection connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        using DbTransaction transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            // La fila del jugador y la de ESA mascota quedan tomadas hasta el final: dos evoluciones a la vez se hacen una detrás de la otra y la segunda ve el tier nuevo.
+            long? lockedPlayer = await connection.QuerySingleOrDefaultAsync<long?>(new CommandDefinition(
+                "SELECT discord_id FROM users WHERE discord_id = @DiscordId FOR UPDATE;",
+                new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
+            if (lockedPlayer is null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new EvolveOutcome(EvolveStatus.NoAccount, null, 0, 0);
+            }
+
+            var pet = (await QueryOwnedAsync(connection, transaction, discordId, speciesId, lockRows: true, cancellationToken)).FirstOrDefault();
+            if (pet is null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new EvolveOutcome(EvolveStatus.NotOwned, null, 0, 0);
+            }
+
+            if (pet.Tier >= PetRules.MaxTier)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new EvolveOutcome(EvolveStatus.MaxTier, pet, 0, 0);
+            }
+
+            int level = PetRules.LevelFor(pet.FeedPoints);
+            int cap = PetRules.LevelCap(pet.Tier);
+            if (level < cap)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new EvolveOutcome(EvolveStatus.NotAtCap, pet, level, cap);
+            }
+
+            int toTier = pet.Tier + 1;
+            if (pet.ExpeditionHours < PetRules.EvolveHours(toTier))
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new EvolveOutcome(EvolveStatus.NotEnoughHours, pet, pet.ExpeditionHours, PetRules.EvolveHours(toTier));
+            }
+
+            // Guarda de los huevos sobrantes: sin fila = no alcanzaban (o los gastó otro comando un instante antes) y no se toca nada.
+            int eggsNeeded = PetRules.EvolveEggs(toTier);
+            int? eggsLeft = await connection.QuerySingleOrDefaultAsync<int?>(new CommandDefinition(
+                """
+                UPDATE inventory SET quantity = quantity - @Needed
+                WHERE discord_id = @DiscordId AND item_id = @EggItemId AND quantity >= @Needed
+                RETURNING quantity;
+                """,
+                new { DiscordId = (long)discordId, EggItemId = pet.Species.EggItemId, Needed = eggsNeeded }, transaction: transaction, cancellationToken: cancellationToken));
+
+            if (eggsLeft is null)
+            {
+                int have = await connection.ExecuteScalarAsync<int>(new CommandDefinition(
+                    "SELECT COALESCE(SUM(quantity), 0)::int FROM inventory WHERE discord_id = @DiscordId AND item_id = @EggItemId;",
+                    new { DiscordId = (long)discordId, EggItemId = pet.Species.EggItemId }, transaction: transaction, cancellationToken: cancellationToken));
+                await transaction.RollbackAsync(cancellationToken);
+                return new EvolveOutcome(EvolveStatus.NotEnoughEggs, pet, have, eggsNeeded);
+            }
+
+            await connection.ExecuteAsync(new CommandDefinition(
+                "DELETE FROM inventory WHERE discord_id = @DiscordId AND item_id = @EggItemId AND quantity <= 0;",
+                new { DiscordId = (long)discordId, EggItemId = pet.Species.EggItemId }, transaction: transaction, cancellationToken: cancellationToken));
+
+            await connection.ExecuteAsync(new CommandDefinition(
+                "UPDATE player_pets SET tier = tier + 1 WHERE discord_id = @DiscordId AND species_id = @SpeciesId;",
+                new { DiscordId = (long)discordId, SpeciesId = speciesId }, transaction: transaction, cancellationToken: cancellationToken));
+
+            await transaction.CommitAsync(cancellationToken);
+            return new EvolveOutcome(EvolveStatus.Ok, pet with { Tier = toTier }, pet.ExpeditionHours, PetRules.EvolveHours(toTier));
         }
         catch
         {
@@ -197,7 +281,7 @@ public sealed class PetRepository(IDbConnectionFactory connectionFactory) : IPet
     {
         // FOR UPDATE OF p: bloquea solo la fila de la mascota (las otras tablas del JOIN son catálogo y no hace falta).
         string sql = $"""
-            SELECT {PetSql.SpeciesColumns}, p.feed_points AS "FeedPoints", p.last_fed_at AS "LastFedAt"
+            SELECT {PetSql.SpeciesColumns}, p.feed_points AS "FeedPoints", p.last_fed_at AS "LastFedAt", p.tier::int AS "Tier", p.expedition_hours AS "ExpeditionHours"
             FROM player_pets p
             JOIN {PetSql.SpeciesFrom} ON s.species_id = p.species_id
             WHERE p.discord_id = @DiscordId AND (CAST(@SpeciesId AS integer) IS NULL OR p.species_id = CAST(@SpeciesId AS integer))
@@ -210,7 +294,7 @@ public sealed class PetRepository(IDbConnectionFactory connectionFactory) : IPet
 
         return rows
             .Select(row => new OwnedPet(
-                row.ToSpecies(), row.FeedPoints, row.LastFedAt is { } fedAt ? DateTime.SpecifyKind(fedAt, DateTimeKind.Utc) : null))
+                row.ToSpecies(), row.FeedPoints, row.LastFedAt is { } fedAt ? DateTime.SpecifyKind(fedAt, DateTimeKind.Utc) : null, row.Tier, row.ExpeditionHours))
             .ToList();
     }
 

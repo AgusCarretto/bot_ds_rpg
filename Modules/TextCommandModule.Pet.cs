@@ -18,7 +18,8 @@ public partial class TextCommandModule
                 "" or "view" or "ver" => await PetModule.ExecuteViewAsync(userRepository, petRepository, inventoryRepository, Context.User.Id, bonusService: bonusService),
                 "feed" or "alimentar" or "comer" => await PetModule.ExecuteFeedAsync(userRepository, petRepository, gameEvents, Context.User.Id, mascota, bonusService),
                 "expedition" or "expedicion" or "expedición" or "exp" or "aventura" => await ExpeditionAsync(mascota),
-                _ => new PetModule.PetResult("No entendí: probá **aa pet**, **aa pet feed** (o **aa pet feed Ñandusito** para una sola) o **aa pet expedition**.", null),
+                "evolve" or "evolucionar" or "evolucion" or "evolución" or "evo" => await PetModule.ExecuteEvolveAsync(userRepository, petRepository, gameEvents, Context.User.Id, mascota),
+                _ => new PetModule.PetResult("No entendí: probá **aa pet**, **aa pet feed** (o **aa pet feed Ñandusito** para una sola), **aa pet expedition** o **aa pet evolve**.", null),
             };
 
             await ReplyAsync(result.PlainMessage, embed: result.Embed, components: result.Components);

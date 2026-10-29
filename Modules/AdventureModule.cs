@@ -811,7 +811,14 @@ public class AdventureModule(
         // La primera vez que se vence al jefe de la zona llega, junto con el cofre, el HUEVO de la mascota de esa zona (en la misma transacción que el premio).
         if (outcome.EggGranted is { } egg)
         {
-            embed.AddField(Loc.T("🥚 ¡Un huevo para vos!"), Loc.F($"{ItemEmojiRegistry.Label(egg.EggName, "🥚")} — abrilo con `/open` y nace tu mascota."), false);
+            if (outcome.EggIsSpare)
+            {
+                embed.AddField(Loc.T("🥚 ¡Un huevo de repuesto!"), Loc.F($"{ItemEmojiRegistry.Label(egg.EggName, "🥚")} — guardalo en la mochila: ya tenés esa mascota, así que no se abre."), false);
+            }
+            else
+            {
+                embed.AddField(Loc.T("🥚 ¡Un huevo para vos!"), Loc.F($"{ItemEmojiRegistry.Label(egg.EggName, "🥚")} — abrilo con `/open` y nace tu mascota."), false);
+            }
         }
 
         if (state.CommandName == "boss")

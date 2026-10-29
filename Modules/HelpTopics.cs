@@ -414,7 +414,8 @@ public static class HelpTopics
             "Mirá cuál da cada una (y cuánto) con **/pet view**."),
         ("🍖 Cómo crecen",
             $"Comen **{PetRules.FoodItemName}** (se compra en la **/taberna**). Cada mascota puede comer **una vez por hora**; **/pet feed** alimenta a todas las que estén listas o elegís una. " +
-            $"Tienen nivel de 1 a {PetRules.MaxLevel} y el bonus crece con el nivel (nivel 1 = el 10 % de su tope, nivel {PetRules.MaxLevel} = el tope entero). Llegar al máximo lleva {PetRules.TotalFeedsToMax} comidas por mascota."),
+            $"Tienen nivel de 1 a {PetRules.MaxLevel} y el bonus crece con el nivel (nivel 1 = el 10 % de su tope, nivel {PetRules.MaxLevel} = el tope entero). Llegar al máximo lleva {PetRules.TotalFeedsToMax} comidas por mascota. " +
+            "Y en el máximo todavía hay más: una mascota puede **evolucionar** (**/pet evolve**) y seguir creciendo. Descubrí qué hace falta cuando llegue el momento."),
         ("🧭 Expediciones",
             $"Una mascota en el **nivel {PetExpeditions.RequiredLevel}** puede salir de expedición por **{string.Join(", ", PetExpeditions.Options.Select(o => o.Hours))} horas** mientras hacés otra cosa (**/pet expedition**). Gasta **{string.Join(" / ", PetExpeditions.Options.Select(o => o.FoodCost))}** {PetRules.FoodItemName} según la duración, y sale de a **una por vez**. " +
             "Cuando vuelve, el mismo comando recoge lo que trajo: cuanto más tiempo está afuera, más trae. Qué trae exactamente, descubrilo vos. Te avisa cuando vuelve si tenés los avisos prendidos (**/reminders**)."),
