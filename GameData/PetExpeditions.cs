@@ -26,6 +26,7 @@ public sealed record ExpeditionFindResult(ExpeditionFindKind Kind, int Amount, I
 // Reglas (el dueño, 2026-10-29): solo mascotas de NIVEL 10, de a UNA por jugador, y cada duración gasta sus Comidas para Mascotas (2 / 10 / 25). El premio es el MISMO para todos los que llegan a ese punto
 // (el dueño: «que no dependa de la zona, es un premio para todo el que llegue a ese punto»): el oro es un rango fijo pensado para la Zona 5 y la EXP un % del nivel (5 / 20 / 50 %), sin importar la zona ni la especie.
 // La especie solo decide el HALLAZGO. Todo lo que se retoca está en Options y en las constantes de acá.
+// Desde la v0.39.1 NINGUNA pantalla (el menú, la salida, la ayuda) muestra el premio ni el hallazgo de cada especie: el dueño quiere que los jugadores lo descubran de a poco. Solo la pantalla de la vuelta cuenta lo que trajo.
 public static class PetExpeditions
 {
     // Nivel mínimo de la mascota: el máximo de hoy (PetRules.MaxLevel).
@@ -118,21 +119,6 @@ public static class PetExpeditions
 
         return "Común";
     }
-
-    // El texto corto de cada hallazgo (para el menú y la pantalla de salida).
-    public static string FindText(ExpeditionFindKind kind, ExpeditionOption option) => kind switch
-    {
-        ExpeditionFindKind.GoldBag => $"💰 una bolsa extra: +{FindBonusPercent} % de oro",
-        ExpeditionFindKind.XpBoost => $"⭐ una inspiración: +{FindBonusPercent} % de EXP",
-        ExpeditionFindKind.Dust => $"✨ {option.DustFind} de Polvo",
-        ExpeditionFindKind.HuntDrops => option.DropQuantity == 1 ? "🩸 un drop de cacería de tu zona" : $"🩸 {option.DropQuantity} drops de cacería de tu zona",
-        ExpeditionFindKind.Gather => $"🪵⛏️ {option.GatherRolls} tiradas de madera y mineral, como si hubieras talado y minado",
-        _ => string.Empty,
-    };
-
-    // «30.000–60.000 de oro · 50 % de un nivel»: lo que paga la duración, igual para todos (el oro es un rango).
-    public static string PrizeText(ExpeditionOption option) =>
-        $"💰 {GameHistory.Number(option.GoldMin)}–{GameHistory.Number(option.GoldMax)} de oro · ⭐ {option.XpPercent} % de un nivel";
 
     // «1 hora» / «4 horas» / «8 horas».
     public static string HoursText(int hours) => hours == 1 ? "1 hora" : $"{hours} horas";
