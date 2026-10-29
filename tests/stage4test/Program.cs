@@ -69,7 +69,7 @@ Check(!Enumerable.Range(0, 200000).Select(i => TimeSpan.FromMilliseconds(i * 997
 Console.WriteLine("\n== 2. Probabilidades de /chop y /mine ==");
 var chances = RarityCatalog.GatheringChances;
 Check(Math.Abs(chances.Sum(c => c.Percent) - 100.0) < 1e-9, $"las chances suman 100%: {string.Join(" / ", chances.Select(c => $"{c.Rarity} {c.Percent:0.#}%"))}");
-Check(chances[0].Percent == 68 && chances[1].Percent == 21 && chances[2].Percent == 7 && chances[3].Percent == 3.5 && chances[4].Percent == 0.5, "Común 68 / Raro 21 / Épico 7 / Legendario 3,5 / Mítico 0,5");
+Check(chances[0].Percent == 69.5 && chances[1].Percent == 21 && chances[2].Percent == 6 && chances[3].Percent == 3 && chances[4].Percent == 0.5, "Común 69,5 / Raro 21 / Épico 6 / Legendario 3 / Mítico 0,5 (v0.38.3; hasta la v0.38.2 eran 68 / 21 / 7 / 3,5 / 0,5)");
 Check(chances.Zip(chances.Skip(1), (a, b) => a.Percent > b.Percent).All(x => x), "cada rareza es más rara que la anterior");
 var counts = new Dictionary<string, int>();
 const int N = 2_000_000;

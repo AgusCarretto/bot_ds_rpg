@@ -1,6 +1,6 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-10-29 (v0.38.2: Corteza y Meteorito a 5.000 de oro; antes, v0.38.1: los oficios siguen subiendo después del 100, costo exponencial; antes, v0.38.0 orden de ingredientes, «vender todo» que respeta lo del Fuego Nuevo, sin Míticos de recolección en las cajas y amuletos ×4)_
+_Última revisión: 2026-10-29 (v0.38.3: Épico 6 % y Legendario 3 % en la recolección; antes, v0.38.2: Corteza y Meteorito a 5.000 de oro; antes, v0.38.1: los oficios siguen subiendo después del 100, costo exponencial; antes, v0.38.0 orden de ingredientes, «vender todo» que respeta lo del Fuego Nuevo, sin Míticos de recolección en las cajas y amuletos ×4)_
 
 ## Pendiente de un vistazo (puesto al día el 2026-10-28)
 
@@ -38,6 +38,12 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
 
+## Los materiales raros salen un poco menos (v0.38.3, 2026-10-29)
+
+- **Pedido del dueño** («bajarle un poquito a lo que es el % de sacar mats más raros»; aceptó mi propuesta): `/chop`, `/mine` y la recolección de las cajas pasan de Común 68 / Raro 21 / Épico 7 / Legendario 3,5 / Mítico 0,5 a **69,5 / 21 / 6 / 3 / 0,5**.
+- **Efecto medido** (`report_recipe_pacing.sql`): lo que pide Épico o Legendario (Nogal, Oro Puro, Ébano, Zafiro) tarda ~17 % más. Armas de las Zonas 3-5: 143 → 167 min; amuletos de las Zonas 2-3: 190 → 222; herramientas de la Zona 5: 429 → 500. Lo que depende de Hierro o Carbón (Raro) y las recetas de la Zona 1 no se mueven. La XP promedio por tirada de los oficios baja de 5,43 a 5,16 (~5 % más tiradas para subir).
+- **Sin migración**: es la tabla de `RarityCatalog`; las cajas leen la misma. Perilla: esa tabla y los valores por defecto de `report_recipe_pacing.sql`.
+
 ## Corteza y Meteorito a 5.000 de oro, amuletos 4/4 confirmados (v0.38.2, 2026-10-29)
 
 - **Amuletos**: el dueño confirmó que quedan en ×4 de cada drop («que todas las clases pidan la misma cantidad de drops es lo importante»). Se cierra la duda 3/5 contra 4/4.
@@ -60,7 +66,7 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - **La Corteza y el Meteorito (los Míticos de recolección) ya no salen de las cajas, salvo el Brasero del Fogón.** El Arca del Soberano pierde sus dos entradas fijas. **Lo leí literal; ojo con esto**: el Brasero es el cofre del Asador (una vez por vuelta) y el Fuego Nuevo vacía la mochila, así que no puede darle a nadie el equipo de ESA vuelta; si lo que quiere es que no salgan de NINGUNA caja, es una constante.
 - **Amuletos: sus dos drops ×4 (8 en total)**, el arma ×4. Él pidió «3 y 5», pero el amuleto es uno solo para las cuatro clases y cada clase tiene SU drop en el arma, así que 3/5 le daba 7 y 5 a una ruta y 9 y 3 a la otra; 4/4 es igual para todos y suma lo mismo. El tiempo de los drops baja de ~233 a ~133 min y lo frena la recolección (143-190 min); si se lo quiere más largo, se sube la recolección (él prefiere «pedir más materiales»).
 - **Migraciones (solo datos, re-ejecutables, antes o después del binario)**: `Database/remove_mythic_from_boxes.sql` y `Database/rebalance_amulet_drops.sql`; una instalación nueva las trae al final de `run_fresh_install.sql`. Harness nuevo `v0380test`.
-- **Propuestas que quedaron en el aire (sin construir, esperan al dueño)**: bajar un poco la chance de los materiales raros (Épico 7 → 6 %, Legendario 3,5 → 3 %), logros bastante más difíciles, la pesca como profesión nueva (las profesiones que siguen subiendo después del 100 se hicieron en la v0.38.1) y las mascotas (el dueño dijo que le importan más que la pesca).
+- **Propuestas que quedaron en el aire (sin construir, esperan al dueño)**: bajar un poco la chance de los materiales raros (hecho en la v0.38.3), logros bastante más difíciles, la pesca como profesión nueva (las profesiones que siguen subiendo después del 100 se hicieron en la v0.38.1) y las mascotas (el dueño dijo que le importan más que la pesca).
 
 ## «Huir» pregunta antes de huir (v0.37.1, 2026-10-29)
 

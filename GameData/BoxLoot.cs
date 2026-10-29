@@ -45,13 +45,13 @@ public static class BoxLootRoller
 {
     // Las chances de rareza de la recolección dentro de una caja: LAS MISMAS que /chop y /mine (RarityCatalog.GatheringChances, en milésimos), con
     // UNA excepción pedida por el dueño: el Mítico baja de 0,5% a 0,2% en total, o sea 0,1% por ítem (Corteza y Meteorito): en una caja es mucho más
-    // raro que farmeándolo. Un test compara las otras cuatro contra RarityCatalog para que no se desincronicen.
+    // raro que farmeándolo. Es una COPIA de esa tabla (no se deriva): un test (reworktest) compara las otras cuatro contra RarityCatalog para que no se desincronicen. v0.38.3: ambas pasaron a 695 / 210 / 60 / 30.
     public static readonly (string Rarity, int Weight)[] GatherWeights =
     [
-        ("Común", 680),
+        ("Común", 695),
         ("Raro", 210),
-        ("Épico", 70),
-        ("Legendario", 35),
+        ("Épico", 60),
+        ("Legendario", 30),
         ("Mítico", 2),
     ];
 

@@ -12,12 +12,15 @@ public static class RarityCatalog
     // Database/report_recipe_pacing.sql (acepta -v wc= wr= we= wl= wm= para probar un escenario antes de aplicarlo) y mirar cuánto cambia.
     // Historial: hasta la v0.6.0 era 600 / 250 / 100 / 45 / 5 (Común 60%); subió el Común para que lo básico salga más seguido y lo valioso
     // cueste más (las recetas que dependen de Hierro, Nogal, Oro Puro, Ébano o Zafiro tardan ~15% más en promedio).
+    // v0.38.3 (el dueño, «bajarle un poquito el % de sacar los mats más raros»): 680 / 210 / 70 / 35 / 5 → 695 / 210 / 60 / 30 / 5. El Raro (Hierro, Carbón) y el Mítico no se tocan; el Épico y el Legendario
+    // salen un 14 % menos seguido (esperar ~17 % más por Nogal, Oro Puro, Ébano o Zafiro) y el Común lo compensa. Medido con report_recipe_pacing.sql: las armas de las Zonas 3-5 pasan de 143 a 167 min, los
+    // amuletos de las Zonas 2-3 de 190 a 222 y las herramientas de la Zona 5 de 429 a 500.
     private static readonly (string Rarity, int Weight)[] GatheringWeights =
     [
-        ("Común", 680),
+        ("Común", 695),
         ("Raro", 210),
-        ("Épico", 70),
-        ("Legendario", 35),
+        ("Épico", 60),
+        ("Legendario", 30),
         ("Mítico", 5),
     ];
 
@@ -37,7 +40,7 @@ public static class RarityCatalog
         _ => rarity,
     };
 
-    // Usado por /chop y /mine: Común 68% / Raro 21% / Épico 7% / Legendario 3.5% / Mítico 0.5%.
+    // Usado por /chop y /mine: Común 69.5% / Raro 21% / Épico 6% / Legendario 3% / Mítico 0.5%.
     public static string RollGatheringRarity() => Roll(GatheringWeights);
 
     // Las chances de rareza de /chop y /mine en porcentaje (para listarlas y para probar que suman 100).
