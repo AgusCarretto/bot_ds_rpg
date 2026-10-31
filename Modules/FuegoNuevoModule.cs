@@ -35,7 +35,7 @@ public class FuegoNuevoModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude abrir la pantalla del Fuego Nuevo, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude abrir la pantalla del Fuego Nuevo, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -60,7 +60,7 @@ public class FuegoNuevoModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude seguir con el Fuego Nuevo, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude seguir con el Fuego Nuevo, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -84,7 +84,7 @@ public class FuegoNuevoModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude completar el Fuego Nuevo. Mirá **/fuegonuevo** para ver si se hizo antes de intentar otra vez.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude completar el Fuego Nuevo. Mirá **/fuegonuevo** para ver si se hizo antes de intentar otra vez."), ephemeral: true);
         }
     }
 
@@ -99,7 +99,7 @@ public class FuegoNuevoModule(
         await DeferAsync();
         await ModifyOriginalResponseAsync(props =>
         {
-            props.Content = "Lo pensaste mejor: no pasó nada. Cuando quieras, **/fuegonuevo**.";
+            props.Content = Loc.T("Lo pensaste mejor: no pasó nada. Cuando quieras, **/fuegonuevo**.");
             props.Embed = null;
             props.Components = new ComponentBuilder().Build();
         });
@@ -124,7 +124,7 @@ public class FuegoNuevoModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude guardar tu bendición. Mirá **/blessings** para ver si quedó antes de intentar otra vez.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude guardar tu bendición. Mirá **/blessings** para ver si quedó antes de intentar otra vez."), ephemeral: true);
         }
     }
 
@@ -135,7 +135,7 @@ public class FuegoNuevoModule(
             return true;
         }
 
-        await RespondAsync("Esa pantalla es de otro jugador: abrí la tuya con **/fuegonuevo**.", ephemeral: true);
+        await RespondAsync(Loc.T("Esa pantalla es de otro jugador: abrí la tuya con **/fuegonuevo**."), ephemeral: true);
         return false;
     }
 
@@ -164,8 +164,8 @@ public class FuegoNuevoModule(
     // PlainMessage solo (rechazo o aviso) o Embed (pantalla) con sus botones.
     public sealed record FnResult(string? PlainMessage, Embed? Embed, MessageComponent? Components = null);
 
-    public const string NoAccount = "Todavía no tenés cuenta: empezá con **/start**.";
-    public const string BusyMessage = "No podés hacer esto en medio de un combate o de un jefe en equipo. Terminalo (atacando o huyendo) primero.";
+    public static string NoAccount => Loc.T("Todavía no tenés cuenta: empezá con **/start**.");
+    public static string BusyMessage => Loc.T("No podés hacer esto en medio de un combate o de un jefe en equipo. Terminalo (atacando o huyendo) primero.");
 
     // /fuegonuevo: el estado. Con el Asador vencido, el resumen de lo que se va y lo que se queda con el botón; sin él, qué falta y lo que ya tenés. Si hay una bendición por elegir, sus botones van abajo.
     public static async Task<FnResult> ExecuteStatusAsync(IFuegoNuevoRepository fuegoNuevoRepository, IBlessingRepository blessingRepository, ulong discordId)
@@ -212,7 +212,7 @@ public class FuegoNuevoModule(
         return new FnResult(null, BuildClassPickEmbed(preview), BuildClassPickButtons(discordId, preview));
     }
 
-    public const string StaleMessage = "Esa pantalla ya no vale (¿ya hiciste el Fuego Nuevo, o todavía no vencés al Asador?). Mirá **/fuegonuevo**.";
+    public static string StaleMessage => Loc.T("Esa pantalla ya no vale (¿ya hiciste el Fuego Nuevo, o todavía no vencés al Asador?). Mirá **/fuegonuevo**.");
 
     // Paso 2 → hecho. Todo el reinicio es la transacción del repositorio; acá solo se traduce el resultado.
     public static async Task<FnResult> ExecuteRenewAsync(
@@ -233,7 +233,7 @@ public class FuegoNuevoModule(
             case RenewStatus.NotCleared or RenewStatus.StaleCount:
                 return new FnResult(StaleMessage, null);
             case RenewStatus.InvalidClass:
-                return new FnResult("Esa clase no existe: elegí una de las cuatro de **/fuegonuevo**.", null);
+                return new FnResult(Loc.T("Esa clase no existe: elegí una de las cuatro de **/fuegonuevo**."), null);
             default:
                 return new FnResult(NoAccount, null);
         }
@@ -253,27 +253,27 @@ public class FuegoNuevoModule(
             case ChooseStatus.Ok:
                 break;
             case ChooseStatus.AlreadyChosen:
-                return new FnResult("Esa bendición ya está elegida: cada Fuego Nuevo da una sola. Mirá las tuyas con **/blessings**.", null);
+                return new FnResult(Loc.T("Esa bendición ya está elegida: cada Fuego Nuevo da una sola. Mirá las tuyas con **/blessings**."), null);
             case ChooseStatus.MaxLevel:
-                return new FnResult("Esa bendición ya está al nivel máximo.", null);
+                return new FnResult(Loc.T("Esa bendición ya está al nivel máximo."), null);
             case ChooseStatus.NoAccount:
                 return new FnResult(NoAccount, null);
             default:
-                return new FnResult("Esa bendición no estaba en tu oferta: mirá la tuya con **/blessings**.", null);
+                return new FnResult(Loc.T("Esa bendición no estaba en tu oferta: mirá la tuya con **/blessings**."), null);
         }
 
         await gameEvents.RecordAsync(discordId, GameEventKinds.BlessingChosen, amount: 1, detail: key);
 
         var definition = BlessingCatalog.Find(key)!;
         var embed = new EmbedBuilder()
-            .WithTitle("🙏 ¡Bendición elegida!")
+            .WithTitle(Loc.T("🙏 ¡Bendición elegida!"))
             .WithColor(Color.Gold)
             .WithDescription(
                 $"**{BlessingCatalog.Label(definition, outcome.NewLevel)}**\n{BlessingCatalog.Describe(definition, outcome.NewLevel)}" +
                 (outcome.PetFoodGranted > 0 || outcome.BoxesGranted > 0
-                    ? $"\n\n🎒 La Alforja te dejó **{outcome.PetFoodGranted}× {ItemEmojiRegistry.Label(PetRules.FoodItemName, string.Empty)}** y **{outcome.BoxesGranted}× {ItemEmojiRegistry.Label(BlessingCatalog.SatchelBoxName, string.Empty)}** en la mochila."
+                    ? Loc.F($"\n\n🎒 La Alforja te dejó **{outcome.PetFoodGranted}× {ItemEmojiRegistry.Label(PetRules.FoodItemName, string.Empty)}** y **{outcome.BoxesGranted}× {ItemEmojiRegistry.Label(BlessingCatalog.SatchelBoxName, string.Empty)}** en la mochila.")
                     : string.Empty) +
-                "\n\nMirá todas las tuyas con **/blessings**.")
+                Loc.T("\n\nMirá todas las tuyas con **/blessings**."))
             .Build();
 
         return new FnResult(null, embed);
@@ -285,55 +285,55 @@ public class FuegoNuevoModule(
     {
         int next = preview.FuegoNuevo + 1;
         var embed = new EmbedBuilder()
-            .WithTitle(preview.FuegoNuevo > 0 ? $"🔥 Fuego Nuevo — llevás {preview.FuegoNuevo}" : "🔥 Fuego Nuevo")
+            .WithTitle(preview.FuegoNuevo > 0 ? Loc.F($"🔥 Fuego Nuevo — llevás {preview.FuegoNuevo}") : Loc.T("🔥 Fuego Nuevo"))
             .WithColor(Color.Orange);
 
         if (preview.GateCleared)
         {
             embed
                 .WithDescription(
-                    "Venciste al **Asador Eterno**: podés **volver a empezar**. Arrancás de nivel 1 (con la clase que quieras) y sin equipo ni materiales, pero ganás porcentajes " +
-                    "**permanentes** y una **bendición** nueva. Es voluntario: si preferís, quedate en la última zona con tu mejor equipo.")
-                .AddField($"🔥 Lo que ganás (Fuego Nuevo ×{next})", FuegoNuevoRules.BonusLines(next) + "\n🙏 Una bendición a elegir entre 3", false)
-                .AddField("💨 Lo que se va", Cut(LostText(preview)), false)
-                .AddField("🔒 Lo que se queda", Cut(KeptText(preview)), false)
-                .WithFooter("No se puede deshacer, y lo que se va no se reembolsa.");
+                    Loc.T("Venciste al **Asador Eterno**: podés **volver a empezar**. Arrancás de nivel 1 (con la clase que quieras) y sin equipo ni materiales, pero ganás porcentajes ") +
+                    Loc.T("**permanentes** y una **bendición** nueva. Es voluntario: si preferís, quedate en la última zona con tu mejor equipo."))
+                .AddField(Loc.F($"🔥 Lo que ganás (Fuego Nuevo ×{next})"), FuegoNuevoRules.BonusLines(next) + Loc.T("\n🙏 Una bendición a elegir entre 3"), false)
+                .AddField(Loc.T("💨 Lo que se va"), Cut(LostText(preview)), false)
+                .AddField(Loc.T("🔒 Lo que se queda"), Cut(KeptText(preview)), false)
+                .WithFooter(Loc.T("No se puede deshacer, y lo que se va no se reembolsa."));
 
             // Lo que ya te da hoy (desde la v0.14.3 el perfil no lo muestra: se mira acá).
             if (preview.FuegoNuevo > 0)
             {
-                embed.AddField($"🔥 Lo que te da hoy (Fuego Nuevo ×{preview.FuegoNuevo})", FuegoNuevoRules.BonusLines(preview.FuegoNuevo), false);
+                embed.AddField(Loc.F($"🔥 Lo que te da hoy (Fuego Nuevo ×{preview.FuegoNuevo})"), FuegoNuevoRules.BonusLines(preview.FuegoNuevo), false);
             }
         }
         else
         {
             embed.WithDescription(preview.FuegoNuevo == 0
-                ? "El **Fuego Nuevo** es volver a empezar con porcentajes **permanentes** y una **bendición** por cada vuelta. Se habilita al vencer al **Asador Eterno** en **El Fogón Eterno** " +
-                  "(la Zona 0, se abre al vencer al jefe de la última zona): mirá **/zonas** y **/info tema:fuego**."
-                : "Para el próximo Fuego Nuevo hay que volver a vencer al **Asador Eterno** en **El Fogón Eterno** (el equipo del Fogón se forja de nuevo en cada vuelta).");
+                ? Loc.T("El **Fuego Nuevo** es volver a empezar con porcentajes **permanentes** y una **bendición** por cada vuelta. Se habilita al vencer al **Asador Eterno** en **El Fogón Eterno** ") +
+                  Loc.T("(la Zona 0, se abre al vencer al jefe de la última zona): mirá **/zonas** y **/info tema:fuego**.")
+                : Loc.T("Para el próximo Fuego Nuevo hay que volver a vencer al **Asador Eterno** en **El Fogón Eterno** (el equipo del Fogón se forja de nuevo en cada vuelta)."));
 
             if (preview.FuegoNuevo > 0)
             {
-                embed.AddField($"🔥 Lo que te da hoy (Fuego Nuevo ×{preview.FuegoNuevo})", FuegoNuevoRules.BonusLines(preview.FuegoNuevo), false);
+                embed.AddField(Loc.F($"🔥 Lo que te da hoy (Fuego Nuevo ×{preview.FuegoNuevo})"), FuegoNuevoRules.BonusLines(preview.FuegoNuevo), false);
             }
         }
 
         // La historia (GameData/Lore.cs): cuánto pesar le queda al Asador. Una línea; el relato completo está en /story.
         if (preview.FuegoNuevo > 0)
         {
-            embed.AddField("📖 El Asador", $"{StoryModule.PesarLine(preview.FuegoNuevo)}\n{ProgressBar.Render(Lore.Pesar(preview.FuegoNuevo), 100, 20, UiEmojis.BarPesar)}\nLeé lo que el fuego recuerda con `/story`.", false);
+            embed.AddField(Loc.T("📖 El Asador"), Loc.F($"{StoryModule.PesarLine(preview.FuegoNuevo)}\n{ProgressBar.Render(Lore.Pesar(preview.FuegoNuevo), 100, 20, UiEmojis.BarPesar)}\nLeé lo que el fuego recuerda con `/story`."), false);
         }
 
         // Las bendiciones que ya juntó (desde la v0.14.3 el perfil no las lista: los bufs del Fuego Nuevo se miran acá; el detalle de cada una y las que existen están en /blessings).
         var ownedBlessings = BlessingCatalog.OwnedLines(levels);
         if (ownedBlessings.Count > 0)
         {
-            embed.AddField("🙏 Tus bendiciones", Cut(string.Join('\n', ownedBlessings)), false);
+            embed.AddField(Loc.T("🙏 Tus bendiciones"), Cut(string.Join('\n', ownedBlessings)), false);
         }
 
         if (offer is not null)
         {
-            embed.AddField("🙏 Elegí tu bendición", Cut(OfferText(offer, levels)), false);
+            embed.AddField(Loc.T("🙏 Elegí tu bendición"), Cut(OfferText(offer, levels)), false);
         }
 
         return embed.Build();
@@ -354,15 +354,15 @@ public class FuegoNuevoModule(
     public static Embed BuildClassPickEmbed(RenewPreview preview)
     {
         var embed = new EmbedBuilder()
-            .WithTitle($"🔥 ¿Con qué clase arrancás la vuelta {preview.FuegoNuevo + 2}?")
+            .WithTitle(Loc.F($"🔥 ¿Con qué clase arrancás la vuelta {preview.FuegoNuevo + 2}?"))
             .WithColor(Color.Red)
             .WithDescription(
-                "Tocar una clase es **confirmar**: se borra el nivel, el equipo y los materiales, y empezás de nuevo en la Zona 1. **No se puede deshacer.**\n" +
-                $"Hoy sos **{preview.Class}**: podés repetir o probar otra.");
+                Loc.T("Tocar una clase es **confirmar**: se borra el nivel, el equipo y los materiales, y empezás de nuevo en la Zona 1. **No se puede deshacer.**\n") +
+                Loc.F($"Hoy sos **{preview.Class}**: podés repetir o probar otra."));
 
         foreach (var classDef in ClassCatalog.All)
         {
-            embed.AddField($"{classDef.Emoji} {classDef.Name} — {classDef.WeaponType}", classDef.Description, false);
+            embed.AddField($"{classDef.Emoji} {classDef.Name} — {classDef.WeaponType}", Loc.Tr(classDef.Description), false);
         }
 
         return embed.Build();
@@ -374,7 +374,7 @@ public class FuegoNuevoModule(
         foreach (var classDef in ClassCatalog.All)
         {
             components.WithButton(
-                classDef.Name == preview.Class ? $"{classDef.Name} (la tuya)" : classDef.Name,
+                classDef.Name == preview.Class ? Loc.F($"{classDef.Name} (la tuya)") : classDef.Name,
                 $"fn_go:{owner}:{preview.FuegoNuevo}:{classDef.Name}", ButtonStyle.Primary, new Emoji(classDef.Emoji), row: 0);
         }
 
@@ -386,27 +386,27 @@ public class FuegoNuevoModule(
     {
         var classDef = ClassCatalog.All.First(c => c.Name == newClass);
         var embed = new EmbedBuilder()
-            .WithTitle($"🔥 ¡FUEGO NUEVO ×{outcome.NewNumber}! 🔥")
+            .WithTitle(Loc.F($"🔥 ¡FUEGO NUEVO ×{outcome.NewNumber}! 🔥"))
             .WithColor(Color.Gold)
             .WithDescription(
-                $"Volviste a empezar como **{classDef.Emoji} {classDef.Name}** en la Zona 1. Esto es lo que ganás ahora, para siempre:\n\n{FuegoNuevoRules.BonusLines(outcome.NewNumber)}");
+                Loc.F($"Volviste a empezar como **{classDef.Emoji} {classDef.Name}** en la Zona 1. Esto es lo que ganás ahora, para siempre:\n\n{FuegoNuevoRules.BonusLines(outcome.NewNumber)}"));
 
         if (outcome.SatchelPetFood > 0 || outcome.SatchelBoxes > 0)
         {
-            embed.AddField("🎒 Alforja del Fogonero", $"Te dejó **{outcome.SatchelPetFood}× {ItemEmojiRegistry.Label(PetRules.FoodItemName, string.Empty)}** y **{outcome.SatchelBoxes}× {ItemEmojiRegistry.Label(BlessingCatalog.SatchelBoxName, string.Empty)}** en la mochila.", false);
+            embed.AddField(Loc.T("🎒 Alforja del Fogonero"), Loc.F($"Te dejó **{outcome.SatchelPetFood}× {ItemEmojiRegistry.Label(PetRules.FoodItemName, string.Empty)}** y **{outcome.SatchelBoxes}× {ItemEmojiRegistry.Label(BlessingCatalog.SatchelBoxName, string.Empty)}** en la mochila."), false);
         }
 
         if (outcome.Offer is not null)
         {
-            embed.AddField("🙏 Elegí tu bendición", Cut(OfferText(outcome.Offer, new Dictionary<string, int>())), false);
+            embed.AddField(Loc.T("🙏 Elegí tu bendición"), Cut(OfferText(outcome.Offer, new Dictionary<string, int>())), false);
         }
         else
         {
-            embed.AddField("🙏 Bendiciones", "Ya tenés todas las bendiciones al nivel máximo: no queda ninguna por elegir.", false);
+            embed.AddField(Loc.T("🙏 Bendiciones"), Loc.T("Ya tenés todas las bendiciones al nivel máximo: no queda ninguna por elegir."), false);
         }
 
         // La historia: cada vuelta le saca un poco de pesar al Asador (las escenas nuevas llegan como aviso aparte, al terminar el comando).
-        embed.WithFooter($"El Asador carga ahora con el {Lore.Pesar(outcome.NewNumber)} % de su pesar · /story");
+        embed.WithFooter(Loc.F($"El Asador carga ahora con el {Lore.Pesar(outcome.NewNumber)} % de su pesar · /story"));
 
         return embed.Build();
     }
@@ -415,21 +415,21 @@ public class FuegoNuevoModule(
     {
         var owned = BlessingCatalog.OwnedLines(levels);
         var embed = new EmbedBuilder()
-            .WithTitle("🙏 Tus bendiciones")
+            .WithTitle(Loc.T("🙏 Tus bendiciones"))
             .WithColor(Color.Gold)
             .WithDescription(owned.Count == 0
-                ? "Todavía no tenés ninguna. Llega **una por cada Fuego Nuevo** (**/fuegonuevo**), elegida entre 3. Si repetís una, sube de nivel (hasta el " + BlessingCatalog.RomanLevel(BlessingCatalog.MaxLevel) + ")."
+                ? Loc.T("Todavía no tenés ninguna. Llega **una por cada Fuego Nuevo** (**/fuegonuevo**), elegida entre 3. Si repetís una, sube de nivel (hasta el ") + BlessingCatalog.RomanLevel(BlessingCatalog.MaxLevel) + ")."
                 : string.Join('\n', owned));
 
         if (offer is not null)
         {
-            embed.AddField("🎁 Elegí una", Cut(OfferText(offer, levels)), false);
+            embed.AddField(Loc.T("🎁 Elegí una"), Cut(OfferText(offer, levels)), false);
         }
 
         // Todas las que existen, con lo que da cada NIVEL (para decidir qué conviene). Las del poder son chicas a propósito y no cuentan en duelos ni en la Arena.
-        string pool = string.Join('\n', BlessingCatalog.All.Select(b => $"{b.Emoji} **{b.Name}** — {b.PerLevel}"));
-        embed.AddField("📖 Las que existen (por nivel)", Cut(pool), false);
-        return embed.WithFooter("Las bendiciones son permanentes: se quedan con cada Fuego Nuevo. Lo de ataque, defensa y vida solo vale contra monstruos.").Build();
+        string pool = string.Join('\n', BlessingCatalog.All.Select(b => $"{b.Emoji} **{b.Name}** — {BlessingCatalog.Describe(b, 1)}"));
+        embed.AddField(Loc.T("📖 Las que existen (por nivel)"), Cut(pool), false);
+        return embed.WithFooter(Loc.T("Las bendiciones son permanentes: se quedan con cada Fuego Nuevo. Lo de ataque, defensa y vida solo vale contra monstruos.")).Build();
     }
 
     // Los botones de la oferta (uno por bendición), en la fila 0 de su mensaje. Sin oferta pendiente no hay botones.
@@ -487,15 +487,15 @@ public class FuegoNuevoModule(
     {
         var lines = new List<string>
         {
-            $"📈 Tu nivel {preview.Level} y toda tu EXP (volvés al nivel 1)",
-            "🗺️ Tu zona y los jefes que ya venciste (volvés a la Zona 1)",
-            $"⚔️ Tu arma: {GearText(preview.WeaponName, preview.WeaponEnchantKind, preview.WeaponEnchant)}",
-            $"🛡️ Tu amuleto: {GearText(preview.AmuletName, preview.AmuletEnchantKind, preview.AmuletEnchant)}",
+            Loc.F($"📈 Tu nivel {preview.Level} y toda tu EXP (volvés al nivel 1)"),
+            Loc.T("🗺️ Tu zona y los jefes que ya venciste (volvés a la Zona 1)"),
+            Loc.F($"⚔️ Tu arma: {GearText(preview.WeaponName, preview.WeaponEnchantKind, preview.WeaponEnchant)}"),
+            Loc.F($"🛡️ Tu amuleto: {GearText(preview.AmuletName, preview.AmuletEnchantKind, preview.AmuletEnchant)}"),
         };
 
         if (preview.Dust > 0)
         {
-            lines.Add($"✨ {GameHistory.Number(preview.Dust)} de Polvo");
+            lines.Add(Loc.F($"✨ {GameHistory.Number(preview.Dust)} de Polvo"));
         }
 
         foreach (var (type, units) in preview.LostByType.OrderBy(pair => TypeOrder(pair.Key)).ThenBy(pair => pair.Key, StringComparer.Ordinal))
@@ -503,7 +503,7 @@ public class FuegoNuevoModule(
             lines.Add($"{TypeLabel(type)}: {GameHistory.Number(units)}");
         }
 
-        lines.Add("🍖 Los banquetes activos y los enfriamientos de la vuelta");
+        lines.Add(Loc.T("🍖 Los banquetes activos y los enfriamientos de la vuelta"));
         return string.Join('\n', lines);
     }
 
@@ -511,17 +511,17 @@ public class FuegoNuevoModule(
     {
         var lines = new List<string>
         {
-            "💰 Tu oro" + (preview.HasBank ? $" y el del banco ({GameHistory.Number(preview.Gold)} + {GameHistory.Number(preview.BankGold)})" : $" ({GameHistory.Number(preview.Gold)})"),
-            "🐾 Tus mascotas" + (preview.Pets > 0 ? $" ({preview.Pets})" : string.Empty)
-                + (preview.KeptEggs > 0 ? $", tus huevos ({GameHistory.Number(preview.KeptEggs)})" : string.Empty)
-                + (preview.KeptPetFood > 0 ? $" y su comida ({GameHistory.Number(preview.KeptPetFood)})" : string.Empty),
-            "🏆 Tus logros y las misiones ya cobradas",
-            "🎁 Tu racha diaria",
+            Loc.T("💰 Tu oro") + (preview.HasBank ? Loc.F($" y el del banco ({GameHistory.Number(preview.Gold)} + {GameHistory.Number(preview.BankGold)})") : $" ({GameHistory.Number(preview.Gold)})"),
+            Loc.T("🐾 Tus mascotas") + (preview.Pets > 0 ? $" ({preview.Pets})" : string.Empty)
+                + (preview.KeptEggs > 0 ? Loc.F($", tus huevos ({GameHistory.Number(preview.KeptEggs)})") : string.Empty)
+                + (preview.KeptPetFood > 0 ? Loc.F($" y su comida ({GameHistory.Number(preview.KeptPetFood)})") : string.Empty),
+            Loc.T("🏆 Tus logros y las misiones ya cobradas"),
+            Loc.T("🎁 Tu racha diaria"),
         };
 
         if (preview.Blessings > 0)
         {
-            lines.Add($"🙏 Tus bendiciones ({preview.Blessings}) y tus Fuegos Nuevos");
+            lines.Add(Loc.F($"🙏 Tus bendiciones ({preview.Blessings}) y tus Fuegos Nuevos"));
         }
 
         return string.Join('\n', lines);
@@ -532,11 +532,11 @@ public class FuegoNuevoModule(
 
     private static string TypeLabel(string type) => type switch
     {
-        "Madera" => "🪵 Madera",
-        "Mineral" => "⛏️ Minerales",
-        "Material" => "🩸 Drops de monstruo",
-        "Consumable" => "🍖 Consumibles",
-        "Caja" => "📦 Cajas",
+        "Madera" => Loc.T("🪵 Madera"),
+        "Mineral" => Loc.T("⛏️ Minerales"),
+        "Material" => Loc.T("🩸 Drops de monstruo"),
+        "Consumable" => Loc.T("🍖 Consumibles"),
+        "Caja" => Loc.T("📦 Cajas"),
         _ => $"📦 {type}",
     };
 

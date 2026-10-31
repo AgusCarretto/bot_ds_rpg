@@ -62,7 +62,7 @@ public static class BlessingCatalog
         new(PetFeedKey, "Buen Pienso", "🍖", BlessingKind.Pets, $"-{(int)PetFeedReductionPerLevel.TotalMinutes} min de espera para alimentar a cada mascota"),
         new(GoldKey, "Bolsillo Hondo", "💰", BlessingKind.Economy, $"+{Pct(GoldPerLevel)} de oro en las peleas"),
         new(SatchelKey, "Alforja del Fogonero", "🎒", BlessingKind.Items, $"{SatchelPetFoodPerLevel} Comidas para Mascotas y {SatchelBoxesPerLevel} {SatchelBoxName} al elegirla y cada vez que renacés"),
-        new(ColorKey, "Brasa de Color", "🌈", BlessingKind.Cosmetic, "un título y un color nuevo para tu perfil"),
+        new(ColorKey, "Brasa de Color", "🌈", BlessingKind.Cosmetic, Loc.Mark("un título y un color nuevo para tu perfil")),
     ];
 
     public static BlessingDefinition? Find(string? key) => All.FirstOrDefault(b => string.Equals(b.Key, key, StringComparison.Ordinal));
@@ -93,19 +93,19 @@ public static class BlessingCatalog
         int n = Math.Clamp(level, 1, MaxLevel);
         return blessing.Key switch
         {
-            ChopKey => $"+{Pct(ChopPerLevel * n)} de cantidad en /chop",
-            MineKey => $"+{Pct(MinePerLevel * n)} de cantidad en /mine",
-            TravelDropKey => $"+{Pct(TravelDropPerLevel * n)} de chance de caja en /travel",
-            HuntDropKey => $"+{Pct(HuntDropPerLevel * n)} de chance de drop en /hunt",
-            XpKey => $"+{Pct(XpPerLevel * n)} de EXP en las peleas",
-            AttackKey => $"+{Pct(AttackPerLevel * n)} de ataque contra monstruos",
-            DefenseKey => $"+{Pct(DefensePerLevel * n)} de defensa contra monstruos",
-            HpKey => $"+{Pct(HpPerLevel * n)} de vida máxima contra monstruos",
-            PetsKey => $"+{Pct(PetsPerLevel * n)} al bonus de todas tus mascotas",
-            PetFeedKey => $"-{(int)(PetFeedReductionPerLevel.TotalMinutes * n)} min de espera para alimentar a cada mascota",
-            GoldKey => $"+{Pct(GoldPerLevel * n)} de oro en las peleas",
-            SatchelKey => $"{SatchelPetFoodPerLevel * n} Comidas para Mascotas y {SatchelBoxesPerLevel * n} {SatchelBoxName} al renacer",
-            _ => blessing.PerLevel,
+            ChopKey => Loc.F($"+{Pct(ChopPerLevel * n)} de cantidad en /chop"),
+            MineKey => Loc.F($"+{Pct(MinePerLevel * n)} de cantidad en /mine"),
+            TravelDropKey => Loc.F($"+{Pct(TravelDropPerLevel * n)} de chance de caja en /travel"),
+            HuntDropKey => Loc.F($"+{Pct(HuntDropPerLevel * n)} de chance de drop en /hunt"),
+            XpKey => Loc.F($"+{Pct(XpPerLevel * n)} de EXP en las peleas"),
+            AttackKey => Loc.F($"+{Pct(AttackPerLevel * n)} de ataque contra monstruos"),
+            DefenseKey => Loc.F($"+{Pct(DefensePerLevel * n)} de defensa contra monstruos"),
+            HpKey => Loc.F($"+{Pct(HpPerLevel * n)} de vida máxima contra monstruos"),
+            PetsKey => Loc.F($"+{Pct(PetsPerLevel * n)} al bonus de todas tus mascotas"),
+            PetFeedKey => Loc.F($"-{(int)(PetFeedReductionPerLevel.TotalMinutes * n)} min de espera para alimentar a cada mascota"),
+            GoldKey => Loc.F($"+{Pct(GoldPerLevel * n)} de oro en las peleas"),
+            SatchelKey => Loc.F($"{SatchelPetFoodPerLevel * n} Comidas para Mascotas y {SatchelBoxesPerLevel * n} {SatchelBoxName} al renacer"),
+            _ => Loc.Tr(blessing.PerLevel),
         };
     }
 
@@ -139,5 +139,5 @@ public static class BlessingCatalog
     public static int ColorValue(int level) => ColorValues[Math.Clamp(level, 1, MaxLevel) - 1];
 
     // 0,05 → "5 %" (con coma decimal y sin ceros de más).
-    private static string Pct(double fraction) => $"{(fraction * 100).ToString("0.#", CultureInfo.InvariantCulture).Replace('.', ',')} %";
+    private static string Pct(double fraction) => Loc.Current == Loc.English ? $"{(fraction * 100).ToString("0.#", CultureInfo.InvariantCulture)}%" : $"{(fraction * 100).ToString("0.#", CultureInfo.InvariantCulture).Replace('.', ',')} %";
 }
