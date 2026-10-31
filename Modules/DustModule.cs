@@ -28,7 +28,7 @@ public class DustModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude desmantelar, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude desmantelar, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -52,7 +52,7 @@ public class DustModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude encantar, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude encantar, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -63,7 +63,7 @@ public class DustModule(
     {
         if (!ulong.TryParse(ownerId, out ulong owner) || owner != Context.User.Id)
         {
-            await RespondAsync("Esa confirmación no es tuya.", ephemeral: true);
+            await RespondAsync(Loc.T("Esa confirmación no es tuya."), ephemeral: true);
             return;
         }
 
@@ -83,7 +83,7 @@ public class DustModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude encantar, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude encantar, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -92,14 +92,14 @@ public class DustModule(
     {
         if (!ulong.TryParse(ownerId, out ulong owner) || owner != Context.User.Id)
         {
-            await RespondAsync("Esa confirmación no es tuya.", ephemeral: true);
+            await RespondAsync(Loc.T("Esa confirmación no es tuya."), ephemeral: true);
             return;
         }
 
         await DeferAsync();
         await ModifyOriginalResponseAsync(m =>
         {
-            m.Content = "Listo: no cambiaste nada y no se gastó nada.";
+            m.Content = Loc.T("Listo: no cambiaste nada y no se gastó nada.");
             m.Embed = null;
             m.Components = new ComponentBuilder().Build();
         });
@@ -109,7 +109,7 @@ public class DustModule(
     // Components (v0.22.0): los botones de la confirmación de cambiar de efecto.
     public sealed record DustResult(string? PlainMessage, Embed? Embed, MessageComponent? Components = null);
 
-    private const string NoAccount = "Todavía no tenés cuenta: empezá con **/start**.";
+    private static string NoAccount => Loc.T("Todavía no tenés cuenta: empezá con **/start**.");
 
     // La cantidad como la escribe el jugador (v0.16.2): un número ("30", "1.000") o "todo" (también all/max: TODAS las unidades que tiene de ese ítem). Sin tope por comando:
     // el único límite es lo que hay en la mochila, y la resta sigue siendo guardada (si en el medio cambió, se rechaza y no se toca nada).
@@ -119,7 +119,7 @@ public class DustModule(
     {
         if (string.IsNullOrWhiteSpace(itemName))
         {
-            return new DustResult("¿Qué querés desmantelar? Por ejemplo `aa desmantelar 30 Piedra` o `aa desmantelar todo Piedra`.", null);
+            return new DustResult(Loc.T("¿Qué querés desmantelar? Por ejemplo `aa desmantelar 30 Piedra` o `aa desmantelar todo Piedra`."), null);
         }
 
         if (AmountParser.IsAllWord(quantityText))
@@ -133,7 +133,7 @@ public class DustModule(
             int held = wanted is null ? 0 : await dustRepository.GetQuantityAsync(discordId, wanted.ItemId);
             if (wanted is not null && Dismantling.CanDismantle(wanted.Type) && held < 1)
             {
-                return new DustResult($"No tenés **{ItemDisplay.Format(wanted.Emoji, wanted.Name)}** para desmantelar: mirá qué tenés en **/inventory**.", null);
+                return new DustResult(Loc.F($"No tenés **{ItemDisplay.Format(wanted.Emoji, wanted.Name)}** para desmantelar: mirá qué tenés en **/inventory**."), null);
             }
 
             // Un ítem que no existe o que no se desmantela (held = 0) cae al camino de siempre, que lo explica.
@@ -145,7 +145,7 @@ public class DustModule(
         {
             bool numeric = !string.IsNullOrWhiteSpace(quantityText) && quantityText.Trim().All(c => char.IsDigit(c) || c is '.' or ',' or ' ' or '_');
             return new DustResult(
-                numeric ? parsed.Error! : $"No entendí la cantidad **{quantityText.Trim()}**: escribí un número (por ejemplo 30) o **todo**.", null);
+                numeric ? parsed.Error! : Loc.F($"No entendí la cantidad **{quantityText.Trim()}**: escribí un número (por ejemplo 30) o **todo**."), null);
         }
 
         return await ExecuteDismantleAsync(userRepository, itemRepository, dustRepository, gameEvents, discordId, itemName, parsed.Amount);
@@ -162,21 +162,21 @@ public class DustModule(
 
         if (quantity < 1)
         {
-            return new DustResult("La cantidad tiene que ser al menos 1.", null);
+            return new DustResult(Loc.T("La cantidad tiene que ser al menos 1."), null);
         }
 
         var item = await itemRepository.GetByNameAsync(itemName);
         int dustPerUnit = item is null ? 0 : Dismantling.DustPerUnit(item.Rarity, item.DustValue);
         if (item is null || !Dismantling.CanDismantle(item.Type) || dustPerUnit <= 0)
         {
-            return new DustResult($"**{itemName.Trim()}** no se puede desmantelar: solo se desmantelan materiales (madera, minerales y drops de monstruos).", null);
+            return new DustResult(Loc.F($"**{itemName.Trim()}** no se puede desmantelar: solo se desmantelan materiales (madera, minerales y drops de monstruos)."), null);
         }
 
         // Sin tope por comando, la cuenta se hace en long: una cantidad absurda no puede desbordar el Polvo ni salir negativa.
         long dustLong = (long)dustPerUnit * quantity;
         if (dustLong > int.MaxValue)
         {
-            return new DustResult("Esa cantidad es demasiado grande.", null);
+            return new DustResult(Loc.T("Esa cantidad es demasiado grande."), null);
         }
 
         int dustGained = (int)dustLong;
@@ -184,19 +184,19 @@ public class DustModule(
         var outcome = await dustRepository.DismantleAsync(discordId, item.ItemId, quantity, dustGained);
         if (outcome is null)
         {
-            return new DustResult($"No tenés **{quantity}** de **{ItemDisplay.Format(item.Emoji, item.Name)}** para desmantelar: mirá cuántos tenés en **/inventory**.", null);
+            return new DustResult(Loc.F($"No tenés **{quantity}** de **{ItemDisplay.Format(item.Emoji, item.Name)}** para desmantelar: mirá cuántos tenés en **/inventory**."), null);
         }
 
         await gameEvents.RecordAsync(discordId, GameEventKinds.Dismantle, amount: quantity, detail: item.Name);
 
         var embed = new EmbedBuilder()
-            .WithTitle("🔨 ¡Desmantelado!")
+            .WithTitle(Loc.T("🔨 ¡Desmantelado!"))
             .WithColor(Color.Teal)
             .WithItemThumbnail(item.Emoji)
-            .WithDescription($"Rompiste **{quantity}×** {ItemDisplay.Format(item.Emoji, item.Name)}.\n\n✨ Juntaste **+{GameHistory.Number(dustGained)}** de Polvo.")
-            .AddField("✨ Tu Polvo", $"**{GameHistory.Number(outcome.DustAfter)}**", false)
-            .AddField("🎒 Te quedan", $"**{GameHistory.Number(outcome.QuantityLeft)}**", false)
-            .WithFooter("El Polvo sirve para encantar tu arma y tu amuleto: /enchant");
+            .WithDescription(Loc.F($"Rompiste **{quantity}×** {ItemDisplay.Format(item.Emoji, item.Name)}.\n\n✨ Juntaste **+{GameHistory.Number(dustGained)}** de Polvo."))
+            .AddField(Loc.T("✨ Tu Polvo"), $"**{GameHistory.Number(outcome.DustAfter)}**", false)
+            .AddField(Loc.T("🎒 Te quedan"), $"**{GameHistory.Number(outcome.QuantityLeft)}**", false)
+            .WithFooter(Loc.T("El Polvo sirve para encantar tu arma y tu amuleto: /enchant"));
         return new DustResult(null, embed.Build());
     }
 
@@ -233,14 +233,14 @@ public class DustModule(
 
         if (slotKey is null)
         {
-            return new DustResult("Elegí qué encantar: **arma** o **amuleto**.", null);
+            return new DustResult(Loc.T("Elegí qué encantar: **arma** o **amuleto**."), null);
         }
 
         bool isWeapon = slotKey == "weapon";
         var gear = isWeapon ? weapon : amulet;
         if (gear is null)
         {
-            return new DustResult($"No tenés {(isWeapon ? "un arma" : "un amuleto")} puesto para encantar: forjá uno con **/forge**.", null);
+            return new DustResult(isWeapon ? Loc.T("No tenés un arma puesta para encantar: forjá una con **/forge**.") : Loc.T("No tenés un amuleto puesto para encantar: forjá uno con **/forge**."), null);
         }
 
         // El efecto (v0.22.0): el jugador lo ELIGE (el tier lo sortea la suerte); sin elegir queda el que ya tiene la pieza. Uno que no es de esa pieza se rechaza explicando cuáles hay.
@@ -252,7 +252,7 @@ public class DustModule(
             chosen = Enchantments.ParseKind(slotKey, effect);
             if (chosen is null)
             {
-                return new DustResult($"**{effect.Trim()}** no es un efecto {(isWeapon ? "del arma" : "del amuleto")}. Elegí entre: {EffectNames(slotKey)}.", null);
+                return new DustResult((isWeapon ? Loc.F($"**{effect.Trim()}** no es un efecto del arma. Elegí entre: {EffectNames(slotKey)}.") : Loc.F($"**{effect.Trim()}** no es un efecto del amuleto. Elegí entre: {EffectNames(slotKey)}.")), null);
             }
         }
 
@@ -261,19 +261,19 @@ public class DustModule(
         if (advanced && !ProfessionRules.AdvancedUnlocked(progressBefore.Level))
         {
             return new DustResult(
-                $"El **{enchanter.AdvancedName.ToLowerInvariant()}** se desbloquea con el oficio **{enchanter.Name}** al nivel **{ProfessionRules.MaxLevel}** y el tuyo está en el **{progressBefore.Level}**. Mirá tu avance con **/professions**.", null);
+                Loc.F($"El **{enchanter.DisplayAdvancedName.ToLowerInvariant()}** se desbloquea con el oficio **{enchanter.DisplayName}** al nivel **{ProfessionRules.MaxLevel}** y el tuyo está en el **{progressBefore.Level}**. Mirá tu avance con **/professions**."), null);
         }
 
         // El Polvo de cada intento baja con el nivel del oficio; el avanzado cuesta 1,5 veces (oro y Polvo).
         var cost = ProfessionRules.EnchantCost(Enchantments.Cost(Enchantments.GearRank(gear.Rarity)), progressBefore.Level, advanced);
         if (player.Gold < cost.Gold)
         {
-            return new DustResult($"No te alcanza el oro: cada intento{(advanced ? " avanzado" : string.Empty)} sobre **{gear.Name}** cuesta **{GameHistory.Number(cost.Gold)}** de oro y **{cost.Dust}** de Polvo.", null);
+            return new DustResult((advanced ? Loc.F($"No te alcanza el oro: cada intento avanzado sobre **{gear.Name}** cuesta **{GameHistory.Number(cost.Gold)}** de oro y **{cost.Dust}** de Polvo.") : Loc.F($"No te alcanza el oro: cada intento sobre **{gear.Name}** cuesta **{GameHistory.Number(cost.Gold)}** de oro y **{cost.Dust}** de Polvo.")), null);
         }
 
         if (player.Dust < cost.Dust)
         {
-            return new DustResult($"Te falta Polvo: cada intento{(advanced ? " avanzado" : string.Empty)} sobre **{gear.Name}** cuesta **{cost.Dust}** (tenés **{player.Dust}**). Juntalo desmantelando materiales con **/dismantle**.", null);
+            return new DustResult((advanced ? Loc.F($"Te falta Polvo: cada intento avanzado sobre **{gear.Name}** cuesta **{cost.Dust}** (tenés **{player.Dust}**). Juntalo desmantelando materiales con **/dismantle**.") : Loc.F($"Te falta Polvo: cada intento sobre **{gear.Name}** cuesta **{cost.Dust}** (tenés **{player.Dust}**). Juntalo desmantelando materiales con **/dismantle**.")), null);
         }
 
         // Cambiar de efecto REEMPLAZA el encantamiento que ya tiene la pieza (con el tier que salga): se pregunta antes de cobrar nada.
@@ -294,10 +294,10 @@ public class DustModule(
         {
             return new DustResult(outcome.Status switch
             {
-                EnchantStatus.NoGear => $"No tenés {(isWeapon ? "un arma" : "un amuleto")} puesto para encantar.",
-                EnchantStatus.NotEnoughGold => "No te alcanza el oro para este intento.",
-                EnchantStatus.NotEnoughDust => "Te falta Polvo para este intento.",
-                EnchantStatus.NeedsConfirm => "Cambiar de efecto reemplaza el que tiene la pieza: volvé a pedirlo y confirmá.",
+                EnchantStatus.NoGear => isWeapon ? Loc.T("No tenés un arma puesta para encantar.") : Loc.T("No tenés un amuleto puesto para encantar."),
+                EnchantStatus.NotEnoughGold => Loc.T("No te alcanza el oro para este intento."),
+                EnchantStatus.NotEnoughDust => Loc.T("Te falta Polvo para este intento."),
+                EnchantStatus.NeedsConfirm => Loc.T("Cambiar de efecto reemplaza el que tiene la pieza: volvé a pedirlo y confirmá."),
                 _ => NoAccount,
             }, null);
         }
@@ -306,7 +306,7 @@ public class DustModule(
         await gameEvents.RecordAsync(discordId, GameEventKinds.Enchant, amount: rolls.Length, detail: $"{slotKey}:{rolled}:{kindKey}");
 
         var progressAfter = ProfessionRules.ProgressFor(progressBefore.TotalXp + ((long)rolls.Length * enchanter.XpPerAction));
-        string footer = GatheringModule.ProfessionFooter(enchanter, progressBefore, progressAfter) + (upgradedByProfession ? " · ⬆️ ¡tu oficio mejoró el tier!" : string.Empty);
+        string footer = GatheringModule.ProfessionFooter(enchanter, progressBefore, progressAfter) + (upgradedByProfession ? Loc.T(" · ⬆️ ¡tu oficio mejoró el tier!") : string.Empty);
         return new DustResult(null, BuildResultEmbed(player, gear, slotKey, outcome, cost, footer, advanced ? rolls : null));
     }
 
@@ -314,7 +314,7 @@ public class DustModule(
     public static string EffectNames(string slotKey)
     {
         var names = Enchantments.KindsFor(slotKey).Select(k => $"**{k.Name}**").ToList();
-        return names.Count <= 1 ? string.Concat(names) : $"{string.Join(", ", names.Take(names.Count - 1))} o {names[^1]}";
+        return names.Count <= 1 ? string.Concat(names) : Loc.F($"{string.Join(", ", names.Take(names.Count - 1))} o {names[^1]}");
     }
 
     // Público y puro: la pregunta de «¿seguro?» cuando se pide OTRO efecto sobre una pieza que ya tiene tier. No se cobró nada.
@@ -323,21 +323,21 @@ public class DustModule(
         string now = $"{Enchantments.KindLabel(currentKind, currentTier)} ({Enchantments.ValueText(currentKind, currentTier)})";
         string target = Enchantments.FindKind(newKind)?.Name ?? newKind;
         return new EmbedBuilder()
-            .WithTitle("🔄 ¿Cambiar de efecto?")
+            .WithTitle(Loc.T("🔄 ¿Cambiar de efecto?"))
             .WithColor(Color.Orange)
             .WithItemThumbnail(gear.Emoji)
             .WithDescription(
-                $"{ItemDisplay.Format(gear.Emoji, gear.Name)} tiene **{now}**.\n\n" +
-                $"Si seguís, ese encantamiento se **reemplaza** por **{target}** con el tier que salga (puede ser más bajo) y el intento cuesta **{GameHistory.Number(cost.Gold)}** oro y **{cost.Dust}** de Polvo.")
-            .WithFooter("Si solo querías subir el tier que ya tenés, volvé a pedirlo sin elegir efecto.")
+                Loc.F($"{ItemDisplay.Format(gear.Emoji, gear.Name)} tiene **{now}**.\n\n") +
+                Loc.F($"Si seguís, ese encantamiento se **reemplaza** por **{target}** con el tier que salga (puede ser más bajo) y el intento cuesta **{GameHistory.Number(cost.Gold)}** oro y **{cost.Dust}** de Polvo."))
+            .WithFooter(Loc.T("Si solo querías subir el tier que ya tenés, volvé a pedirlo sin elegir efecto."))
             .Build();
     }
 
     // Los botones de esa pregunta; el id lleva el dueño (solo él puede apretarlos), la pieza, el efecto y si era avanzado.
     public static MessageComponent BuildSwitchButtons(ulong owner, string slotKey, string newKind, bool advanced) =>
         new ComponentBuilder()
-            .WithButton("Sí, cambiar", $"enchant_switch:{owner}:{slotKey}:{newKind}:{(advanced ? 1 : 0)}", ButtonStyle.Danger)
-            .WithButton("No, dejarlo como está", $"enchant_cancel:{owner}", ButtonStyle.Secondary)
+            .WithButton(Loc.T("Sí, cambiar"), $"enchant_switch:{owner}:{slotKey}:{newKind}:{(advanced ? 1 : 0)}", ButtonStyle.Danger)
+            .WithButton(Loc.T("No, dejarlo como está"), $"enchant_cancel:{owner}", ButtonStyle.Secondary)
             .Build();
 
     // "info", "opciones"/"options", "ayuda"/"help", "chances" o "tiers": lo que pide quien quiere ver cómo funciona el encantamiento.
@@ -363,35 +363,35 @@ public class DustModule(
         bool switched = prevKind != newKind;
         string rolledText = $"{Enchantments.KindLabel(newKind, rolled)} ({Enchantments.ValueText(newKind, rolled)})";
         string rollsText = allRolls is { Length: > 1 }
-            ? $"Tiraste {allRolls.Length} veces ({string.Join(" y ", allRolls.Select(r => Enchantments.TierName(r)))}) y te quedás con la mejor: **{rolledText}**."
-            : $"Sobre {ItemDisplay.Format(gear.Emoji, gear.Name)} salió **{rolledText}**.";
+            ? Loc.F($"Tiraste {allRolls.Length} veces ({string.Join(" y ", allRolls.Select(r => Enchantments.TierName(r)))}) y te quedás con la mejor: **{rolledText}**.")
+            : Loc.F($"Sobre {ItemDisplay.Format(gear.Emoji, gear.Name)} salió **{rolledText}**.");
 
         string verdict = switched && previous > 0
-            ? $"🔄 **¡Cambiaste de efecto!** {Enchantments.KindLabel(prevKind, previous)} ➜ **{Enchantments.KindLabel(newKind, now)}**"
+            ? Loc.F($"🔄 **¡Cambiaste de efecto!** {Enchantments.KindLabel(prevKind, previous)} ➜ **{Enchantments.KindLabel(newKind, now)}**")
             : now > previous
-                ? $"🔥 **¡Mejoró!** {Enchantments.KindLabel(newKind, previous)} ➜ **{Enchantments.KindLabel(newKind, now)}**"
+                ? Loc.F($"🔥 **¡Mejoró!** {Enchantments.KindLabel(newKind, previous)} ➜ **{Enchantments.KindLabel(newKind, now)}**")
                 : rolled == previous
-                    ? $"Era justo el que ya tenías: seguís con **{Enchantments.KindLabel(newKind, previous)}**."
-                    : $"Ya tenías **{Enchantments.KindLabel(newKind, previous)}**, que es mejor: te quedás con ese.";
+                    ? Loc.F($"Era justo el que ya tenías: seguís con **{Enchantments.KindLabel(newKind, previous)}**.")
+                    : Loc.F($"Ya tenías **{Enchantments.KindLabel(newKind, previous)}**, que es mejor: te quedás con ese.");
 
         // Lo que rinde la pieza antes y después (el arma de clase ya trae el ×1,5 de la vieja sinergia en su stat, v0.27.0).
         int baseStat = gear.StatValue;
         int before = Enchantments.Apply(baseStat, prevKind, Enchantments.StatTier(prevKind, previous)), after = Enchantments.Apply(baseStat, newKind, Enchantments.StatTier(newKind, now));
 
         var embed = new EmbedBuilder()
-            .WithTitle($"✨ Encantamiento: {(isWeapon ? "arma" : "amuleto")}")
+            .WithTitle(isWeapon ? Loc.T("✨ Encantamiento: arma") : Loc.T("✨ Encantamiento: amuleto"))
             .WithColor(now > previous ? Color.Gold : Color.DarkGrey)
             .WithItemThumbnail(gear.Emoji)
-            .WithDescription($"{(allRolls is { Length: > 1 } ? $"Sobre {ItemDisplay.Format(gear.Emoji, gear.Name)}: " : string.Empty)}{rollsText}\n\n{verdict}")
-            .AddField(isWeapon ? "⚔️ ATQ del arma" : "🛡️ DEF del amuleto", before == after ? $"**{after}**" : $"{before} ➜ **{after}**", false)
-            .AddField("💸 Costó", $"{GameHistory.Number(cost.Gold)} oro · {cost.Dust} Polvo", false)
-            .AddField("🎒 Te quedan", $"{GameHistory.Number(outcome.User!.Gold)} oro · {GameHistory.Number(outcome.User.Dust)} Polvo", false)
-            .WithFooter(string.IsNullOrWhiteSpace(professionFooter) ? "Cada intento se paga igual: el tier sale al azar y nunca baja." : professionFooter);
+            .WithDescription((allRolls is { Length: > 1 } ? Loc.F($"Sobre {ItemDisplay.Format(gear.Emoji, gear.Name)}: ") : string.Empty) + $"{rollsText}\n\n{verdict}")
+            .AddField(isWeapon ? Loc.T("⚔️ ATQ del arma") : Loc.T("🛡️ DEF del amuleto"), before == after ? $"**{after}**" : $"{before} ➜ **{after}**", false)
+            .AddField(Loc.T("💸 Costó"), Loc.F($"{GameHistory.Number(cost.Gold)} oro · {cost.Dust} Polvo"), false)
+            .AddField(Loc.T("🎒 Te quedan"), Loc.F($"{GameHistory.Number(outcome.User!.Gold)} oro · {GameHistory.Number(outcome.User.Dust)} Polvo"), false)
+            .WithFooter(string.IsNullOrWhiteSpace(professionFooter) ? Loc.T("Cada intento se paga igual: el tier sale al azar y nunca baja.") : professionFooter);
 
         // Un efecto de combate no cambia el stat de la pieza: se dice qué hace y que solo vale contra monstruos.
         if (!Enchantments.IsStatKind(newKind))
         {
-            embed.AddField("🎯 Efecto", $"**{Enchantments.ValueText(newKind, now)}** · {Enchantments.FindKind(newKind)?.Summary}. Solo cuenta contra monstruos.", false);
+            embed.AddField(Loc.T("🎯 Efecto"), Loc.F($"**{Enchantments.ValueText(newKind, now)}** · {Loc.Tr(Enchantments.FindKind(newKind)?.Summary ?? string.Empty)}. Solo cuenta contra monstruos."), false);
         }
 
         return embed.Build();
@@ -405,30 +405,30 @@ public class DustModule(
         {
             if (gear is null)
             {
-                return $"_Sin {(slotKey == "weapon" ? "arma" : "amuleto")} puesto_";
+                return slotKey == "weapon" ? Loc.T("_Sin arma puesta_") : Loc.T("_Sin amuleto puesto_");
             }
 
             // El Polvo ya con el descuento del oficio Encantador.
             var cost = ProfessionRules.EnchantCost(Enchantments.Cost(Enchantments.GearRank(gear.Rarity)), enchanterLevel, advanced: false);
-            string current = tier > 0 ? $"{Enchantments.KindLabel(kind, tier)} ({Enchantments.ValueText(kind, tier)})" : "Sin encantar";
-            return $"{ItemDisplay.Format(gear.Emoji, gear.Name)}\n**{current}**\nPróximo intento: {GameHistory.Number(cost.Gold)} oro + {cost.Dust} Polvo";
+            string current = tier > 0 ? $"{Enchantments.KindLabel(kind, tier)} ({Enchantments.ValueText(kind, tier)})" : Loc.T("Sin encantar");
+            return Loc.F($"{ItemDisplay.Format(gear.Emoji, gear.Name)}\n**{current}**\nPróximo intento: {GameHistory.Number(cost.Gold)} oro + {cost.Dust} Polvo");
         }
 
         // Los tiers, en dos renglones cortos (en uno solo se apretaban y se partían a mitad de nombre).
         // Solo el nombre: cuánto da cada tier depende del EFECTO (el Filo y la Guarda ya no suman lo mismo desde la v0.25.1), y eso lo dice «/enchant info».
-        string Tier(int t) => $"{Enchantments.TierName(t)} **({Enchantments.ChancePercent(t).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',')} %)**";
+        string Tier(int t) => $"{Enchantments.TierName(t)} **({ShortPercent(Enchantments.ChancePercent(t))})**";
         string tiers = $"{string.Join("  ·  ", Enumerable.Range(1, 3).Select(Tier))}\n{string.Join("  ·  ", Enumerable.Range(4, Enchantments.MaxTier - 3).Select(Tier))}";
         var embed = new EmbedBuilder()
-            .WithTitle("✨ Encantamientos")
+            .WithTitle(Loc.T("✨ Encantamientos"))
             .WithColor(Color.Purple)
             .WithDescription(
-                "Mejorá tu arma o tu amuleto con **Polvo** y oro: **/enchant arma** o **/enchant amuleto**.\n\n" +
-                "El Polvo lo juntás desmantelando materiales con **/dismantle**.\n\n" +
-                "Cada intento sortea un tier al azar y **nunca baja** el que ya tenés: te quedás con el mejor.\n\n" +
-                "Elegís el **efecto** con **/enchant arma efecto:Crítico** (mirá cuáles hay en **/enchant info**).")
-            .AddField("⚔️ Arma", Line("weapon", weapon, player.WeaponEnchant, player.WeaponEnchantKind), false)
-            .AddField("🛡️ Amuleto", Line("amulet", amulet, player.AmuletEnchant, player.AmuletEnchantKind), false)
-            .AddField("✨ Tu Polvo", $"**{GameHistory.Number(player.Dust)}**", false);
+                Loc.T("Mejorá tu arma o tu amuleto con **Polvo** y oro: **/enchant arma** o **/enchant amuleto**.\n\n") +
+                Loc.T("El Polvo lo juntás desmantelando materiales con **/dismantle**.\n\n") +
+                Loc.T("Cada intento sortea un tier al azar y **nunca baja** el que ya tenés: te quedás con el mejor.\n\n") +
+                Loc.T("Elegís el **efecto** con **/enchant arma efecto:Crítico** (mirá cuáles hay en **/enchant info**)."))
+            .AddField(Loc.T("⚔️ Arma"), Line("weapon", weapon, player.WeaponEnchant, player.WeaponEnchantKind), false)
+            .AddField(Loc.T("🛡️ Amuleto"), Line("amulet", amulet, player.AmuletEnchant, player.AmuletEnchantKind), false)
+            .AddField(Loc.T("✨ Tu Polvo"), $"**{GameHistory.Number(player.Dust)}**", false);
 
         // El oficio Encantador (solo si el llamador lo pasó): su nivel y lo que ya te ahorra.
         if (bonuses is not null)
@@ -436,14 +436,14 @@ public class DustModule(
             var enchanter = ProfessionCatalog.Get(ProfessionCatalog.EnchanterKey);
             var progress = ProfessionRules.ProgressFor(bonuses.ProfessionXpOf(enchanter.Key));
             embed.AddField(
-                $"{enchanter.Emoji} {enchanter.Name} · nivel {progress.Level}",
-                progress.Level == 0 ? "Cada intento suma XP y baja el Polvo que cuesta el siguiente: **/professions**." : $"{ProfessionRules.DescribeEffect(enchanter, progress.Level)}.",
+                Loc.F($"{enchanter.Emoji} {enchanter.DisplayName} · nivel {progress.Level}"),
+                progress.Level == 0 ? Loc.T("Cada intento suma XP y baja el Polvo que cuesta el siguiente: **/professions**.") : $"{ProfessionRules.DescribeEffect(enchanter, progress.Level)}.",
                 false);
         }
 
         return embed
-            .AddField("🎲 Tiers posibles", tiers, false)
-            .WithFooter("Para ver el detalle de cada tier (chance y bonus) y lo que cuesta cada intento: /enchant info")
+            .AddField(Loc.T("🎲 Tiers posibles"), tiers, false)
+            .WithFooter(Loc.T("Para ver el detalle de cada tier (chance y bonus) y lo que cuesta cada intento: /enchant info"))
             .Build();
     }
 
@@ -455,47 +455,54 @@ public class DustModule(
         string Attempts(int tier)
         {
             double attempts = Enchantments.AttemptsToReach(tier);
-            return attempts <= 1.05 ? string.Empty : $" · ~{attempts.ToString(attempts < 10 ? "0.0" : "0", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',')} intentos para llegar";
+            return attempts <= 1.05 ? string.Empty : Loc.F($" · ~{Loc.Decimal(attempts, attempts < 10 ? 1 : 0)} intentos para llegar");
         }
 
         string tiers = string.Join('\n', Enumerable.Range(1, Enchantments.MaxTier).Select(t =>
-            $"**{Enchantments.TierName(t)}** — sale el **{Enchantments.ChancePercent(t).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',')} %**{Attempts(t)}"));
+            Loc.F($"**{Enchantments.TierName(t)}** — sale el **{ShortPercent(Enchantments.ChancePercent(t))}**{Attempts(t)}")));
 
         // Los efectos de cada pieza con sus cinco valores (del tier I al V), leídos de la tabla: no se puede desactualizar.
         string EffectBlock(string slotKey, string title) =>
             $"**{title}**\n" + string.Join('\n', Enchantments.KindsFor(slotKey).Select(k => $"• **{k.Name}**: {Enchantments.DescribeValues(k)}"));
         string effects =
             EffectBlock("weapon", "Arma") + "\n" + EffectBlock("amulet", "Amuleto") + "\n" +
-            "Elegís el efecto y el **tier se sortea**. **Cambiar de efecto reemplaza el que tenés** (se pregunta antes). " +
-            "Filo y Guarda cuentan en todos lados; **Crítico, Sangre, Vida y Esquive solo contra monstruos**.";
+            Loc.T("Elegís el efecto y el **tier se sortea**. **Cambiar de efecto reemplaza el que tenés** (se pregunta antes). ") +
+            Loc.T("Filo y Guarda cuentan en todos lados; **Crítico, Sangre, Vida y Esquive solo contra monstruos**.");
 
         string costs = string.Join('\n', Enumerable.Range(1, 5).Select(rank =>
         {
             var cost = Enchantments.Cost(rank);
-            return $"Pieza de **Zona {rank}**: {GameHistory.Number(cost.Gold)} oro + {cost.Dust} Polvo";
+            return Loc.F($"Pieza de **Zona {rank}**: {GameHistory.Number(cost.Gold)} oro + {cost.Dust} Polvo");
         }));
 
-        string dust = string.Join(" · ", new[] { "Común", "Raro", "Épico", "Legendario", "Mítico" }.Select(r => $"{r} {GameHistory.Number(Dismantling.DustPerUnit(r))}"))
-            + $"\nDrops de monstruos (no tienen rareza): **{Dismantling.HuntDropDust}** cada uno.";
+        string dust = string.Join(" · ", new[] { "Común", "Raro", "Épico", "Legendario", "Mítico" }.Select(r => $"{RarityCatalog.DisplayName(r)} {GameHistory.Number(Dismantling.DustPerUnit(r))}"))
+            + Loc.F($"\nDrops de monstruos (no tienen rareza): **{Dismantling.HuntDropDust}** cada uno.");
 
         return new EmbedBuilder()
-            .WithTitle("✨ Encantamientos: opciones")
+            .WithTitle(Loc.T("✨ Encantamientos: opciones"))
             .WithColor(Color.Purple)
             .WithDescription(
-                "Mejorá tu **arma** o tu **amuleto** gastando **Polvo** y oro: **/enchant arma** o **/enchant amuleto**.\n\n" +
-                "Cada intento sortea un tier **al azar**. El tier **nunca baja**: si sale uno peor que el que tenés, te quedás con el que tenés (pero el intento se paga igual).\n\n" +
-                "Si vendés o cambiás la pieza, **pierde su encantamiento**.")
-            .AddField("🎯 Los efectos (elegís uno por pieza)", effects, false)
-            .AddField("🎲 Tiers: bonus y chance por intento", tiers, false)
-            .AddField("💸 Lo que cuesta cada intento", costs + "\n_La zona de la pieza sale de su rareza (Común = Zona 1 … Mítico = Zona 5)._", false)
-            .AddField("✨ De dónde sale el Polvo", $"Desmantelando materiales con **/dismantle** (la cantidad que quieras, o `todo`). Polvo por unidad:\n{dust}", false)
+                Loc.T("Mejorá tu **arma** o tu **amuleto** gastando **Polvo** y oro: **/enchant arma** o **/enchant amuleto**.\n\n") +
+                Loc.T("Cada intento sortea un tier **al azar**. El tier **nunca baja**: si sale uno peor que el que tenés, te quedás con el que tenés (pero el intento se paga igual).\n\n") +
+                Loc.T("Si vendés o cambiás la pieza, **pierde su encantamiento**."))
+            .AddField(Loc.T("🎯 Los efectos (elegís uno por pieza)"), effects, false)
+            .AddField(Loc.T("🎲 Tiers: bonus y chance por intento"), tiers, false)
+            .AddField(Loc.T("💸 Lo que cuesta cada intento"), costs + Loc.T("\n_La zona de la pieza sale de su rareza (Común = Zona 1 … Mítico = Zona 5)._"), false)
+            .AddField(Loc.T("✨ De dónde sale el Polvo"), Loc.F($"Desmantelando materiales con **/dismantle** (la cantidad que quieras, o `todo`). Polvo por unidad:\n{dust}"), false)
             .AddField(
-                $"{ProfessionCatalog.Get(ProfessionCatalog.EnchanterKey).Emoji} El oficio Encantador",
-                $"Cada intento sube tu oficio: por nivel, {ProfessionRules.DescribePerLevel(ProfessionCatalog.Get(ProfessionCatalog.EnchanterKey))}. Al nivel {ProfessionRules.MaxLevel}: " +
-                $"{ProfessionRules.DescribeAdvanced(ProfessionCatalog.Get(ProfessionCatalog.EnchanterKey))}. Tu avance: **/professions**.",
+                Loc.F($"{ProfessionCatalog.Get(ProfessionCatalog.EnchanterKey).Emoji} El oficio Encantador"),
+                Loc.F($"Cada intento sube tu oficio: por nivel, {ProfessionRules.DescribePerLevel(ProfessionCatalog.Get(ProfessionCatalog.EnchanterKey))}. Al nivel {ProfessionRules.MaxLevel}: ") +
+                Loc.F($"{ProfessionRules.DescribeAdvanced(ProfessionCatalog.Get(ProfessionCatalog.EnchanterKey))}. Tu avance: **/professions**."),
                 false)
-            .WithFooter("Mirá cómo estás vos con /enchant (sin elegir pieza).")
+            .WithFooter(Loc.T("Mirá cómo estás vos con /enchant (sin elegir pieza)."))
             .Build();
+    }
+
+    // «4,2 %» en español, «4.2%» en inglés, sin el decimal cuando es redondo («1 %»).
+    private static string ShortPercent(double value)
+    {
+        string text = value.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+        return Loc.Current == Loc.English ? text + "%" : text.Replace('.', ',') + " %";
     }
 }
 

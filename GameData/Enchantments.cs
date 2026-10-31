@@ -46,13 +46,13 @@ public static class Enchantments
 
     private static readonly EnchantKind[] KindTable =
     [
-        new(Filo, "weapon", "Filo", "% de ATQ de la pieza", Tiers.Select(t => t.BonusPercent).ToArray(), false, "sube el ATQ del arma"),
-        new(Critico, "weapon", "Crítico", "puntos de chance de crítico", new[] { 3, 6, 10, 15, 20 }, true, "más chance de golpe crítico (el de base es 10 %)"),
-        new(Sangre, "weapon", "Sangre", "% del daño en vida", new[] { 1, 2, 3, 4, 5 }, true, "curás un % del daño de cada golpe"),
+        new(Filo, "weapon", "Filo", Loc.Mark("% de ATQ de la pieza"), Tiers.Select(t => t.BonusPercent).ToArray(), false, Loc.Mark("sube el ATQ del arma")),
+        new(Critico, "weapon", "Crítico", Loc.Mark("puntos de chance de crítico"), new[] { 3, 6, 10, 15, 20 }, true, Loc.Mark("más chance de golpe crítico (el de base es 10 %)")),
+        new(Sangre, "weapon", "Sangre", Loc.Mark("% del daño en vida"), new[] { 1, 2, 3, 4, 5 }, true, Loc.Mark("curás un % del daño de cada golpe")),
         // La Guarda tiene SU tabla desde la v0.25.1 (antes copiaba la del Filo: 4/8/13/19/26). Ver el comentario de arriba.
-        new(Guarda, "amulet", "Guarda", "% de DEF de la pieza", new[] { 3, 6, 9, 13, 18 }, false, "sube la DEF del amuleto"),
-        new(Vida, "amulet", "Vida", "% de vida máxima", new[] { 4, 8, 13, 18, 24 }, true, "más vida máxima en combate"),
-        new(Esquive, "amulet", "Esquive", "puntos de chance de esquivar", new[] { 3, 6, 9, 12, 15 }, true, "más chance de esquivar (la de base es 5 %)"),
+        new(Guarda, "amulet", "Guarda", Loc.Mark("% de DEF de la pieza"), new[] { 3, 6, 9, 13, 18 }, false, Loc.Mark("sube la DEF del amuleto")),
+        new(Vida, "amulet", "Vida", Loc.Mark("% de vida máxima"), new[] { 4, 8, 13, 18, 24 }, true, Loc.Mark("más vida máxima en combate")),
+        new(Esquive, "amulet", "Esquive", Loc.Mark("puntos de chance de esquivar"), new[] { 3, 6, 9, 12, 15 }, true, Loc.Mark("más chance de esquivar (la de base es 5 %)")),
     ];
 
     public static IReadOnlyList<EnchantKind> Kinds => KindTable;
@@ -99,7 +99,7 @@ public static class Enchantments
 
     // «Crítico Ardiente», «Filo Soberano»...: el nombre del efecto con su tier.
     public static string KindLabel(string? kindKey, int tier) =>
-        FindKind(kindKey) is { } kind && IsValidTier(tier) ? $"{kind.Name} {Tiers[tier - 1].Name}" : "Sin encantar";
+        FindKind(kindKey) is { } kind && IsValidTier(tier) ? $"{kind.Name} {Tiers[tier - 1].Name}" : Loc.T("Sin encantar");
 
     // «+13 %», «+6 puntos de crítico»...: lo que da ese efecto en ese tier, completo.
     public static string ValueText(string? kindKey, int tier)
@@ -114,10 +114,10 @@ public static class Enchantments
         return kind.Key switch
         {
             Filo or Guarda => $"+{value} %",
-            Critico => $"+{value} puntos de crítico",
-            Sangre => $"{value} % del daño en vida",
-            Vida => $"+{value} % de vida",
-            Esquive => $"+{value} puntos de esquive",
+            Critico => Loc.F($"+{value} puntos de crítico"),
+            Sangre => Loc.F($"{value} % del daño en vida"),
+            Vida => Loc.F($"+{value} % de vida"),
+            Esquive => Loc.F($"+{value} puntos de esquive"),
             _ => string.Empty,
         };
     }
@@ -129,10 +129,10 @@ public static class Enchantments
         return kindKey switch
         {
             Filo or Guarda => $"+{value} %",
-            Critico => $"Crít +{value}",
+            Critico => Loc.F($"Crít +{value}"),
             Sangre => $"Sangre {value} %",
             Vida => $"Vida +{value} %",
-            Esquive => $"Esq +{value}",
+            Esquive => Loc.F($"Esq +{value}"),
             _ => string.Empty,
         };
     }
@@ -143,12 +143,12 @@ public static class Enchantments
         string values = string.Join("/", kind.ValuesByTier);
         return kind.Key switch
         {
-            Filo => $"+{values} % de ATQ de la pieza",
-            Guarda => $"+{values} % de DEF de la pieza",
-            Critico => $"+{values} puntos de chance de crítico",
-            Sangre => $"cura el {values} % del daño de cada golpe",
-            Vida => $"+{values} % de vida máxima",
-            Esquive => $"+{values} puntos de chance de esquivar",
+            Filo => Loc.F($"+{values} % de ATQ de la pieza"),
+            Guarda => Loc.F($"+{values} % de DEF de la pieza"),
+            Critico => Loc.F($"+{values} puntos de chance de crítico"),
+            Sangre => Loc.F($"cura el {values} % del daño de cada golpe"),
+            Vida => Loc.F($"+{values} % de vida máxima"),
+            Esquive => Loc.F($"+{values} puntos de chance de esquivar"),
             _ => values,
         };
     }
@@ -185,7 +185,7 @@ public static class Enchantments
     private static readonly int[] DustPerAttempt = [10, 15, 25, 40, 60];
     private const int GoldUnitsPerAttempt = 8;
 
-    public static string TierName(int tier) => IsValidTier(tier) ? Tiers[tier - 1].Name : "Sin encantar";
+    public static string TierName(int tier) => IsValidTier(tier) ? Tiers[tier - 1].Name : Loc.T("Sin encantar");
 
     // El % del FILO en ese tier (la tabla de arriba). Desde la v0.25.1 la Guarda tiene su PROPIA tabla (ver StatBonusPercent): este número ya no vale para el amuleto.
     public static int BonusPercent(int tier) => IsValidTier(tier) ? Tiers[tier - 1].BonusPercent : 0;
@@ -228,7 +228,7 @@ public static class Enchantments
 
     // "Filo Ardiente" / "Guarda Ardiente": cómo se llama el encantamiento de cada pieza. slot: "weapon" o "amulet".
     public static string Label(string slot, int tier) =>
-        IsValidTier(tier) ? $"{(slot == "weapon" ? "Filo" : "Guarda")} {Tiers[tier - 1].Name}" : "Sin encantar";
+        IsValidTier(tier) ? $"{(slot == "weapon" ? "Filo" : "Guarda")} {Tiers[tier - 1].Name}" : Loc.T("Sin encantar");
 
     // El tier de un intento (1..5) con los pesos 42 / 30 / 18 / 9 / 1 %.
     public static int Roll(Random? rng = null) => RollWithBonus(rng, 0).Tier;

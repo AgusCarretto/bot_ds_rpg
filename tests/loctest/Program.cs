@@ -1005,6 +1005,12 @@ Check(boxEn43.Count > 0 && boxEn43.All(c => System.Text.RegularExpressions.Regex
     $"la lista de /shop buy dice el precio de cada caja UNA vez, en los dos idiomas ({boxEn43.FirstOrDefault()?.Name})");
 Check(buyEn43.All(c => !c.Name.Contains("cura ") && !c.Name.Contains("te falta") && !c.Name.Contains("para tu")), "y en inglés no queda «cura», «te falta oro» ni «para tus mascotas»");
 
+// v0.44.0: /enchant y /dismantle en inglés (los nombres de los efectos y de los tiers se quedan en español).
+string[] enchantNames44 = ["Filo", "Guarda", "Crítico", "Sangre", "Vida", "Esquive", "Tibio", "Al Rojo", "Ardiente", "Incandescente", "Soberano", "Piedra"];
+Embed enchantInfoEn44; using (Loc.Use("en")) { enchantInfoEn44 = DustModule.BuildOptionsEmbed(); }
+var enchantLeak44 = LeakCheck.NoSpanish(LeakCheck.AllText(enchantInfoEn44), enchantNames44);
+Check(enchantLeak44.Ok && LeakCheck.FitsDiscord(enchantInfoEn44) && DustModule.BuildOptionsEmbed().Title == "✨ Encantamientos: opciones", $"/enchant info en inglés, sin español colado, y en español igual que antes ({enchantLeak44.Found})");
+
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;
 
