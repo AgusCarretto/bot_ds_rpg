@@ -63,7 +63,7 @@ public sealed class BlackjackService(
     private readonly ConcurrentDictionary<ulong, Session> _active = new();
     private readonly ConcurrentDictionary<Guid, (BlackjackView View, DateTime At)> _finished = new();
 
-    private const string AlreadyPlaying = "Ya tenés una mano en juego: terminala con los botones o con **aa bj hit** / **aa bj stand** / **aa bj double**.";
+    private static string AlreadyPlaying => Loc.T("Ya tenés una mano en juego: terminala con los botones o con **aa bj hit** / **aa bj stand** / **aa bj double**.");
 
     public async Task<BlackjackResult> StartAsync(ulong discordId, string betText)
     {
@@ -83,17 +83,17 @@ public sealed class BlackjackService(
         int bet = parsed.Amount;
         if (bet < CasinoModule.MinBet)
         {
-            return new BlackjackResult($"La apuesta mínima es **{CasinoModule.MinBet}** de oro.", null);
+            return new BlackjackResult(Loc.F($"La apuesta mínima es **{CasinoModule.MinBet}** de oro."), null);
         }
 
         if (bet > MaxBet)
         {
-            return new BlackjackResult($"La apuesta máxima en el blackjack es **{MaxBet:N0}** de oro.".Replace(',', '.'), null);
+            return new BlackjackResult(Loc.F($"La apuesta máxima en el blackjack es **{MaxBet:N0}** de oro.").Replace(',', '.'), null);
         }
 
         if (player.Gold < bet)
         {
-            return new BlackjackResult($"No tenés suficiente oro: la apuesta es **{bet}** y tenés **{player.Gold}**.", null);
+            return new BlackjackResult(Loc.F($"No tenés suficiente oro: la apuesta es **{bet}** y tenés **{player.Gold}**."), null);
         }
 
         // Se reserva el lugar ANTES de cobrar: dos «aa bj 100» a la vez cobran una sola vez.
@@ -117,7 +117,7 @@ public sealed class BlackjackService(
         if (charged is null)
         {
             _active.TryRemove(discordId, out _);
-            return new BlackjackResult($"No te alcanza el oro: la apuesta es **{bet}** y ya no tenés suficiente.", null);
+            return new BlackjackResult(Loc.F($"No te alcanza el oro: la apuesta es **{bet}** y ya no tenés suficiente."), null);
         }
 
         var state = Blackjack.Start(bet, _draw);
@@ -147,10 +147,10 @@ public sealed class BlackjackService(
         {
             if (gameId is { } old && _finished.TryGetValue(old, out var done))
             {
-                return new BlackjackResult(null, done.View with { Note = "Esa mano ya había terminado." });
+                return new BlackjackResult(null, done.View with { Note = Loc.T("Esa mano ya había terminado.") });
             }
 
-            return new BlackjackResult(session is null ? "No tenés una mano en juego: empezá una con **aa bj <apuesta>** (por ejemplo `aa bj 10k`)." : "Esa no es tu mano actual.", null);
+            return new BlackjackResult(session is null ? Loc.T("No tenés una mano en juego: empezá una con **aa bj <apuesta>** (por ejemplo `aa bj 10k`).") : Loc.T("Esa no es tu mano actual."), null);
         }
 
         if (action == BlackjackAction.Double)
@@ -164,12 +164,12 @@ public sealed class BlackjackService(
         {
             if (!ReferenceEquals(_active.GetValueOrDefault(discordId), session) || session.State.Finished)
             {
-                return new BlackjackResult("Esa mano ya terminó.", null);
+                return new BlackjackResult(Loc.T("Esa mano ya terminó."), null);
             }
 
             if (session.Busy)
             {
-                return new BlackjackResult("Estoy repartiendo la carta de doblar: esperá un segundo.", null);
+                return new BlackjackResult(Loc.T("Estoy repartiendo la carta de doblar: esperá un segundo."), null);
             }
 
             state = action == BlackjackAction.Hit ? Blackjack.Hit(session.State, _draw) : Blackjack.Stand(session.State, _draw);
@@ -210,22 +210,22 @@ public sealed class BlackjackService(
         {
             if (!ReferenceEquals(_active.GetValueOrDefault(discordId), session) || session.State.Finished)
             {
-                return new BlackjackResult("Esa mano ya terminó.", null);
+                return new BlackjackResult(Loc.T("Esa mano ya terminó."), null);
             }
 
             if (session.Busy)
             {
-                return new BlackjackResult("Estoy repartiendo la carta de doblar: esperá un segundo.", null);
+                return new BlackjackResult(Loc.T("Estoy repartiendo la carta de doblar: esperá un segundo."), null);
             }
 
             if (!session.State.CanDouble)
             {
-                return new BlackjackResult("Solo se puede doblar con tus **dos primeras cartas**.", null);
+                return new BlackjackResult(Loc.T("Solo se puede doblar con tus **dos primeras cartas**."), null);
             }
 
             if (session.Gold < session.State.Stake)
             {
-                return new BlackjackResult($"No te alcanza el oro para doblar: necesitás **{session.State.Stake}** más y tenés **{session.Gold}**.", null);
+                return new BlackjackResult(Loc.F($"No te alcanza el oro para doblar: necesitás **{session.State.Stake}** más y tenés **{session.Gold}**."), null);
             }
 
             session.Busy = true;
@@ -247,7 +247,7 @@ public sealed class BlackjackService(
         if (charged is null)
         {
             lock (session.Lock) { session.Busy = false; ArmTimer(discordId, session); }
-            return new BlackjackResult($"No te alcanza el oro para doblar: necesitás **{stake}** más.", null);
+            return new BlackjackResult(Loc.F($"No te alcanza el oro para doblar: necesitás **{stake}** más."), null);
         }
 
         lock (session.Lock)
@@ -364,7 +364,7 @@ public sealed class BlackjackService(
 
         try
         {
-            await SettleAsync(discordId, session, "⏰ Pasó mucho tiempo sin jugar: la banca te plantó.");
+            await SettleAsync(discordId, session, Loc.T("⏰ Pasó mucho tiempo sin jugar: la banca te plantó."));
         }
         catch (Exception ex)
         {

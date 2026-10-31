@@ -194,7 +194,7 @@ Check(ItemChoices.ForDismantle(inv, "ROBLE").Count == 1 && ItemChoices.ForDisman
 var swordRarity = (await items.GetByNameAsync("Espada de Madera"))!.Rarity;
 var swordCost = Enchantments.Cost(Enchantments.GearRank(swordRarity));
 await Reset(gold: 100000, dust: 1000); await CleanEvents();
-Check((await DustModule.ExecuteEnchantAsync(users, items, dustRepo, events, U, null)).Embed!.Fields.Any(f => f.Name.Contains("Arma") && f.Value.Contains("Sin arma puesto")), "/enchant sin elegir y sin arma: muestra el estado");
+Check((await DustModule.ExecuteEnchantAsync(users, items, dustRepo, events, U, null)).Embed!.Fields.Any(f => f.Name.Contains("Arma") && f.Value.Contains("Sin arma puesta")), "/enchant sin elegir y sin arma: muestra el estado");
 Check((await DustModule.ExecuteEnchantAsync(users, items, dustRepo, events, U, "weapon")).PlainMessage!.Contains("/forge"), "encantar sin arma puesta: manda a forjar y no cobra");
 await db.ExecuteAsync("UPDATE users SET weapon_id = @w, amulet_id = @a WHERE discord_id = @id", new { id = (long)U, w = sword.ItemId, a = talisman.ItemId });
 var info = await DustModule.ExecuteEnchantAsync(users, items, dustRepo, events, U, "");

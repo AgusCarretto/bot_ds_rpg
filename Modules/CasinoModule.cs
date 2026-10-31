@@ -44,7 +44,7 @@ public class CasinoModule(
         {
             BotLog.Error(ex);
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
-            await FollowupAsync("¡Upa! Algo falló en el casino, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! Algo falló en el casino, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -78,24 +78,24 @@ public class CasinoModule(
 
         if (game is not ("coinflip" or "slots"))
         {
-            return new PlayResult("El juego tiene que ser **coinflip** o **slots**.", null);
+            return new PlayResult(Loc.T("El juego tiene que ser **coinflip** o **slots**."), null);
         }
 
         if (bet < MinBet)
         {
-            return new PlayResult($"La apuesta mínima es **{MinBet}** de oro.", null);
+            return new PlayResult(Loc.F($"La apuesta mínima es **{MinBet}** de oro."), null);
         }
 
         if (game == "coinflip" && lado is not ("heads" or "tails"))
         {
-            return new PlayResult("Para jugar al Coinflip tenés que elegir un lado: `heads` o `tails`.", null);
+            return new PlayResult(Loc.T("Para jugar al Coinflip tenés que elegir un lado: `heads` o `tails`."), null);
         }
 
         // Si es la primera vez que este usuario ejecuta un comando, se crea acá con los valores por defecto.
         var player = await userRepository.GetOrCreateUserAsync(discordId);
         if (player.Gold < bet)
         {
-            return new PlayResult($"No tenés suficiente oro: la apuesta es **{bet}** y tenés **{player.Gold}**.", null);
+            return new PlayResult(Loc.F($"No tenés suficiente oro: la apuesta es **{bet}** y tenés **{player.Gold}**."), null);
         }
 
         var result = game switch
@@ -111,7 +111,7 @@ public class CasinoModule(
 
         if (updatedPlayer is null)
         {
-            return new PlayResult($"No te alcanza el oro: la apuesta es **{bet}** y ya no tenés suficiente.", null);
+            return new PlayResult(Loc.F($"No te alcanza el oro: la apuesta es **{bet}** y ya no tenés suficiente."), null);
         }
 
         // Para el historial (/history): cada jugada deja su evento DESPUÉS de que la apuesta quedó guardada. Ganar = el premio menos lo apostado (siempre
@@ -133,7 +133,7 @@ public class CasinoModule(
 
     private static Embed BuildResultEmbed(string game, int bet, string? predictedSide, CasinoResult result, int goldBalance)
     {
-        string title = game == "coinflip" ? "🪙 Coinflip" : "🎰 Slots";
+        string title = game == "coinflip" ? Loc.T("🪙 Coinflip") : Loc.T("🎰 Slots");
 
         var embed = new EmbedBuilder()
             .WithTitle(title)
@@ -142,17 +142,17 @@ public class CasinoModule(
         if (game == "coinflip")
         {
             string prediction = predictedSide == "heads" ? "Heads" : "Tails";
-            embed.WithDescription($"Elegiste **{prediction}** — salió **{result.Reveal[0]}** 🪙");
+            embed.WithDescription(Loc.F($"Elegiste **{prediction}** — salió **{result.Reveal[0]}** 🪙"));
         }
         else
         {
             embed.WithDescription($"**[ {string.Join(" | ", result.Reveal)} ]**");
         }
 
-        embed.AddField(result.Won ? "🎉 ¡Ganaste!" : "😢 Perdiste", result.Won ? "¡Buena jugada!" : "La casa gana esta vez.", false)
-            .AddField("💵 Apuesta", bet.ToString(), true)
-            .AddField("🏆 Premio", result.Payout.ToString(), true)
-            .AddField("💰 Oro actual", goldBalance.ToString(), true);
+        embed.AddField(result.Won ? Loc.T("🎉 ¡Ganaste!") : Loc.T("😢 Perdiste"), result.Won ? Loc.T("¡Buena jugada!") : Loc.T("La casa gana esta vez."), false)
+            .AddField(Loc.T("💵 Apuesta"), bet.ToString(), true)
+            .AddField(Loc.T("🏆 Premio"), result.Payout.ToString(), true)
+            .AddField(Loc.T("💰 Oro actual"), goldBalance.ToString(), true);
 
         return embed.Build();
     }
