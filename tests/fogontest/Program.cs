@@ -131,7 +131,7 @@ Check(win.Gate == GateEvent.Cleared && after is { GateCleared: true, InGate: fal
 Check(after.Gold == 22000 && win.EggGranted is { Name: "Chispa del Asador" } && await db.ExecuteScalarAsync<int>("SELECT count(*)::int FROM inventory WHERE discord_id = @id", new { id = (long)U }) == 1, "cobra el premio de siempre y, desde la v0.14.0, el huevo de la Chispa del Asador (sin drop: el Brasero lo pone el módulo)");
 await users.SetInGateAsync(U, true);
 var win2 = await adventure.ApplyBossVictoryAsync(U, 10, 10, 0, null, 1, FogonRules.GateZoneId);
-Check(win2.Gate == GateEvent.Cleared && (await Me()).GateCleared, "ganarle otra vez sigue siendo válido (cooldown de 5 h aparte)");
+Check(win2.Gate == GateEvent.Cleared && (await Me()).GateCleared, "ganarle otra vez sigue siendo válido (cooldown de 10 h aparte)");
 var raceUser = await Task.WhenAll(Enumerable.Range(0, 6).Select(_ => adventure.ApplyBossVictoryAsync(U, 1, 1, 0, null, 1, FogonRules.GateZoneId)));
 Check(raceUser.All(r => r.Gate == GateEvent.Cleared) && (await Me()).Gold == 22000 + 10 + 6 && (await Me()).CurrentZoneId == lastZoneId, "6 victorias a la vez: cada una cobra una vez y el jugador queda coherente");
 
@@ -183,7 +183,7 @@ Check(AllText(vCleared).Contains("El Asador Eterno cayó") && AllText(vCleared).
 var topic = HelpTopics.Find("fogon");
 Check(topic?.Key == "fogon" && HelpTopics.Find("asador")?.Key == "fogon" && HelpTopics.Find("zona 0")?.Key == "fogon" && HelpTopics.Find("puerta")?.Key == "fogon", "«info fogon / asador / zona 0 / puerta» abren el tema");
 var te = topic!.Build();
-Check(te.Length <= 6000 && te.Fields.All(f => f.Value.Length <= 1024) && AllText(te).Contains("/zona 0") && AllText(te).Contains("/boss") && AllText(te).Contains(FogonRules.WeaponName) && AllText(te).Contains("5 h"), $"el tema explica cómo entrar, el equipo y el jefe, dentro de los límites ({te.Length})");
+Check(te.Length <= 6000 && te.Fields.All(f => f.Value.Length <= 1024) && AllText(te).Contains("/zona 0") && AllText(te).Contains("/boss") && AllText(te).Contains(FogonRules.WeaponName) && AllText(te).Contains("10 h"), $"el tema explica cómo entrar, el equipo y el jefe, dentro de los límites ({te.Length})");
 var info = HelpModule.BuildInfoEmbed();
 Check(AllText(info).Contains("/zona 0") && info.Length <= 6000 && info.Fields.All(f => f.Value.Length <= 1024), $"/info lista /zona 0 dentro de los límites ({info.Length})");
 await db.ExecuteAsync("UPDATE users SET in_gate = true, gate_cleared = true WHERE discord_id = @id", new { id = (long)U });

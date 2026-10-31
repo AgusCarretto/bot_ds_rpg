@@ -14,7 +14,7 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 
 **Esperando una decisión del dueño**
 - **La Guarda ya se bajó (v0.25.1, ver abajo)**: el dueño dijo «bajala un poquito si te parece muy OP». Si se la quiere a la par del Filo, son +2/4/6/9/13 % (una línea en `KindTable`).
-- **El jefe mundial ya está hecho (v0.24.0, ver abajo)**; lo que queda abierto es si se quiere una línea en `/cd` («anotado ✅ — se pelea en 3h»), un jefe por servidor cuando haya mucha gente, o premios que no sean solo oro.
+- **El jefe mundial se va a retocar** (el dueño, 2026-10-31: «el jefe mundial vamos a retocarlo, pero después lo vemos»). Sin definir qué. Para tener en cuenta: anotarse gasta el cooldown del jefe, que ahora es de **10 horas** (antes 5), así que anotarse cuesta el doble que cuando se diseñó; además siguen abiertos una línea en `/cd` («anotado ✅ — se pelea en 3h»), un jefe por servidor cuando haya mucha gente y premios que no sean solo oro (v0.24.0, ver abajo).
 - **Blackjack: ya está (v0.25.0, ver abajo).** Lo que queda abierto: dividir (split) y el seguro, que no se hicieron a propósito para mantenerlo simple.
 - **Habilidades de clase** (pedido de los jugadores, ver «Sugerencias»): aprender, mejorar o evolucionar la habilidad, y «nerfear las iniciales». Necesita diseño antes de tocar nada: están calibradas con `PveTuning`, `PvpTuning` y los jefes, no debe contar en duelos
   ni en la Arena, y habría que preguntar CUÁL clase les parece pasada (en PvE la débil es el Arquero).

@@ -109,8 +109,8 @@ Check(info1 is { Status: "open", ChannelId: 555 } && (await repo.GetEntriesAsync
 await Make(2);
 await db.ExecuteAsync("INSERT INTO cooldowns (discord_id, command_name, last_executed_at) VALUES (@id, 'boss', now() - interval '1 hour')", new { id = Base + 2 });
 var busy = await repo.JoinAsync(day1, Id(2), "Dos", 555);
-Check(busy.Status == WorldBossJoinStatus.OnCooldown && busy.CooldownLeft.TotalHours is > 3.9 and < 4.1 && (await repo.GetEntriesAsync(day1)).Count == 1, $"con el cooldown del jefe corriendo (1 h de 5) no se anota y dice cuánto falta ({busy.CooldownLeft.TotalHours:F2} h)");
-await db.ExecuteAsync("UPDATE cooldowns SET last_executed_at = now() - interval '6 hours' WHERE discord_id = @id AND command_name = 'boss'", new { id = Base + 2 });
+Check(busy.Status == WorldBossJoinStatus.OnCooldown && busy.CooldownLeft.TotalHours is > 8.9 and < 9.1 && (await repo.GetEntriesAsync(day1)).Count == 1, $"con el cooldown del jefe corriendo (1 h de 10) no se anota y dice cuánto falta ({busy.CooldownLeft.TotalHours:F2} h)");
+await db.ExecuteAsync("UPDATE cooldowns SET last_executed_at = now() - interval '11 hours' WHERE discord_id = @id AND command_name = 'boss'", new { id = Base + 2 });
 Check((await repo.JoinAsync(day1, Id(2), "Dos", 555)).Status == WorldBossJoinStatus.Joined, "con el cooldown vencido sí se anota");
 
 // Carreras: 10 clicks del mismo jugador y 8 jugadores distintos a la vez.

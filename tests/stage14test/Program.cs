@@ -200,7 +200,7 @@ var onlyBanquet = await TabernaModule.BuildSceneAsync(users, items, inventory, b
 Check(!onlyBanquet.Components!.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<SelectMenuComponent>().Single(m => m.CustomId.StartsWith("taberna_eat")).Options.Any(o => o.Value == "__heal_full__"), "si solo tenés banquetes tampoco se ofrece (no se gastan para curarse)");
 
 Console.WriteLine("\n== 5. El cooldown del raid ==");
-Check(CooldownCatalog.Raid.CommandName == CooldownCatalog.Boss.CommandName && CooldownCatalog.Raid.Duration == CooldownCatalog.Boss.Duration && CooldownCatalog.All.Count(d => d.CommandName == "boss") == 1 && CooldownCatalog.Boss.Duration == TimeSpan.FromHours(5) && CooldownCatalog.Boss.RetryAfterFailure == TimeSpan.FromMinutes(30), "el raid usa el MISMO cooldown que el jefe (mismo nombre y duración), de 5 HORAS (30 min si perdés o escapás), y /cd lo lista UNA sola vez");
+Check(CooldownCatalog.Raid.CommandName == CooldownCatalog.Boss.CommandName && CooldownCatalog.Raid.Duration == CooldownCatalog.Boss.Duration && CooldownCatalog.All.Count(d => d.CommandName == "boss") == 1 && CooldownCatalog.Boss.Duration == TimeSpan.FromHours(10) && CooldownCatalog.Boss.RetryAfterFailure == TimeSpan.FromMinutes(30), "el raid usa el MISMO cooldown que el jefe (mismo nombre y duración), de 10 HORAS (30 min si perdés o escapás), y /cd lo lista UNA sola vez");
 await Make(U, level: 10);
 var cd0 = await CooldownModule.BuildStatusEmbedAsync(cooldowns, users, U);
 Check(cd0.Description.Contains("👑 **Jefe**: **¡Listo!** ✅") && !cd0.Description.Contains("🛡️") && cd0.Description.Split('\n').Count(l => l.Contains("Jefe")) == 1, "/cd muestra UNA sola línea 'Jefe' (lista)");
@@ -209,7 +209,7 @@ bool startNoCd = await RaidModule.ValidateStartAsync(users, items, monsters, zon
 Check(startNoCd, "sin cooldown ocupado, arrancar un raid se permite");
 await adventure.TryClaimCooldownAsync(U, "boss", CooldownCatalog.Boss.Duration);
 var cd1 = await CooldownModule.BuildStatusEmbedAsync(cooldowns, users, U); Console.WriteLine("   CD1: " + cd1.Description.Replace("\n", " | "));
-Check(cd1.Description.Contains("👑 **Jefe**:") && !cd1.Description.Contains("👑 **Jefe**: **¡Listo!**") && cd1.Description.Split('\n').Count(l => l.Contains("restantes")) == 1 && (cd1.Description.Contains("4h 59m") || cd1.Description.Contains("5h 0m")), "después de pelear al jefe, la línea 'Jefe' figura en cooldown (5 horas, un solo cooldown para los dos)");
+Check(cd1.Description.Contains("👑 **Jefe**:") && !cd1.Description.Contains("👑 **Jefe**: **¡Listo!**") && cd1.Description.Split('\n').Count(l => l.Contains("restantes")) == 1 && (cd1.Description.Contains("9h 59m") || cd1.Description.Contains("10h 0m")), "después de pelear al jefe, la línea 'Jefe' figura en cooldown (10 horas, un solo cooldown para los dos)");
 var rejStart = await RaidModule.ValidateStartAsync(users, items, monsters, zones, combat, raids, U, cooldowns);
 Check(rejStart is { PlainMessage: null, Embed: not null } && rejStart.Embed.Title.Contains("Jefe: todavía no podés") && rejStart.Embed.Description.Contains("Te falta **"), $"con el cooldown ocupado NO se puede arrancar un raid: «{rejStart?.Embed?.Title}» / {rejStart?.Embed?.Description}");
 Check(rejStart!.Embed!.Description.Contains("/boss") && rejStart.Embed.Description.Contains("mismo cooldown"), "el aviso explica que en equipo o solo es el mismo cooldown del jefe");

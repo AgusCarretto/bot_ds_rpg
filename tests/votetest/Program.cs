@@ -172,9 +172,9 @@ Check(r2.Status == VoteClaimStatus.Claimed && r2.BossReset && await Have(Box) ==
 var t2 = Ms(DateTime.UtcNow.AddSeconds(1));
 var r3 = await voteRepo.ClaimAsync(U, t2);
 Check(r3.Status == VoteClaimStatus.Claimed && !r3.BossReset && await Have(Box) == 3, "con el jefe ya listo igual paga la caja, y avisa que no había nada que resetear (BossReset = false)");
-await SetBoss(TimeSpan.FromHours(6));
+await SetBoss(TimeSpan.FromHours(11));
 var r4 = await voteRepo.ClaimAsync(U, Ms(DateTime.UtcNow.AddSeconds(2)));
-Check(r4.Status == VoteClaimStatus.Claimed && !r4.BossReset && !await HasRow("boss") && await Have(Box) == 4, "un cooldown de jefe que ya había vencido (6 h) no cuenta como reseteo, pero la fila vieja se limpia");
+Check(r4.Status == VoteClaimStatus.Claimed && !r4.BossReset && !await HasRow("boss") && await Have(Box) == 4, "un cooldown de jefe que ya había vencido (11 h) no cuenta como reseteo, pero la fila vieja se limpia");
 await SetBoss(TimeSpan.FromHours(4) + TimeSpan.FromMinutes(30));
 var r5 = await voteRepo.ClaimAsync(U, Ms(DateTime.UtcNow.AddSeconds(3)));
 Check(r5.Status == VoteClaimStatus.Claimed && r5.BossReset, "el reintento corto de un jefe perdido (30 min restantes) también se resetea");
@@ -286,7 +286,7 @@ Check(interactions.SlashCommands.Select(c => c.Module.SlashGroupName ?? c.Name).
 var topic = HelpTopics.Find("votar")!;
 Check(new[] { "vote", "votar", "voto", "votos", "top.gg", "topgg", "Votar en top.gg" }.All(w => HelpTopics.Find(w)?.Key == "vote") && topic.Key == "vote", "el tema de ayuda se encuentra por vote, votar, voto, votos, top.gg y topgg");
 var topicE = topic.Build(); string tt = AllText(topicE);
-Check(tt.Contains("Baúl de Roble") && tt.Contains("12 h") && tt.Contains("5 h") && tt.Contains("/vote") && tt.Contains("/cd") && topicE.Length <= 6000 && topicE.Fields.All(f => f.Value.Length <= 1024), $"el tema explica el premio y los números reales (12 h, el jefe de 5 h) ({topicE.Length})");
+Check(tt.Contains("Baúl de Roble") && tt.Contains("12 h") && tt.Contains("10 h") && tt.Contains("/vote") && tt.Contains("/cd") && topicE.Length <= 6000 && topicE.Fields.All(f => f.Value.Length <= 1024), $"el tema explica el premio y los números reales (12 h, el jefe de 10 h) ({topicE.Length})");
 var slashNames = interactions.SlashCommands.Select(c => c.Name).Concat(interactions.SlashCommands.Select(c => c.Module.SlashGroupName)).Where(n => n is not null).ToHashSet();
 var mentioned = System.Text.RegularExpressions.Regex.Matches(tt, @"/([a-z]+)").Select(m => m.Groups[1].Value).Distinct().ToList();
 Check(mentioned.All(m => slashNames.Contains(m)), $"todo comando que el tema nombra existe ({string.Join(", ", mentioned.Where(m => !slashNames.Contains(m)))})");

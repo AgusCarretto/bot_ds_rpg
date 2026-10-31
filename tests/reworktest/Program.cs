@@ -110,7 +110,7 @@ await using (var c = new Npgsql.NpgsqlConnection(conn)) { await c.OpenAsync(); a
 
 Console.WriteLine("\n== v0.8.0 · Tarea 1: cooldowns y recompensas ==");
 Check(CooldownCatalog.Travel.Duration == TimeSpan.FromMinutes(30), "travel: cooldown de 30 minutos");
-Check(CooldownCatalog.Boss.Duration == TimeSpan.FromHours(5) && CooldownCatalog.Raid.CommandName == CooldownCatalog.Boss.CommandName && CooldownCatalog.Raid.Duration == CooldownCatalog.Boss.Duration, "jefe y raid: UN cooldown de 5 horas");
+Check(CooldownCatalog.Boss.Duration == TimeSpan.FromHours(10) && CooldownCatalog.Raid.CommandName == CooldownCatalog.Boss.CommandName && CooldownCatalog.Raid.Duration == CooldownCatalog.Boss.Duration, "jefe y raid: UN cooldown de 10 horas");
 Check(CooldownCatalog.Boss.RetryAfterFailure == TimeSpan.FromMinutes(30) && CooldownCatalog.Travel.RetryAfterFailure is null && CooldownCatalog.Hunt.RetryAfterFailure is null, "perder o huir deja 30 minutos (solo el jefe tiene esa regla)");
 Check(CombatRewardCalculator.TravelRewardMultiplier == 30 && CombatRewardCalculator.BossRewardMultiplier == 15, "travel x30 (ya sin drop de material desde la v0.36.0: da una caja con su chance); jefe x15");
 Check(CombatRewardCalculator.TravelRewardMultiplier / CooldownCatalog.Travel.Duration.TotalMinutes == 1.0, "travel paga lo mismo POR MINUTO que con 10 minutos (1 cacería por minuto)");
