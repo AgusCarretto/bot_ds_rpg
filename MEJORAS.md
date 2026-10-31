@@ -38,6 +38,12 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
 
+## El jefe cada 10 horas (v0.42.0, 2026-10-31)
+
+- **Pedido del dueño**: «cada 5 es muy poco y al tener nivel alto el FN se puede hacer muy rápido; y el vote tiene más gracia». `CooldownCatalog.Boss` pasa de 5 h a **10 h** después de una victoria (30 min si perdés o huís, igual). Sin migración.
+- **Lo que mueve**: el piso para llegar al jefe de la Zona 5 pasa de ~21 h a ~41 h sin votar (el equipo de una vuelta tarda ~31 h, así que para el que juega mucho ahora manda el jefe); el voto, que borra este cooldown, vale casi un jefe extra cada 12 h; salen la mitad de cofres de jefe gratis; anotarse al jefe mundial cuesta 10 h. Los premios del jefe NO se tocaron (×15), así que paga la mitad por hora de espera: si se siente poco, la palanca es `BossRewardMultiplier`.
+- **Para mirar**: si los jugadores nuevos se frenan entre la Zona 1 y la 2, y si los que no votan se quedan muy atrás.
+
 ## La lista de mascotas con íconos y barras (v0.41.2, 2026-10-29)
 
 - **Pedido del dueño**: «lo de la lista de pets ta pelao». Cada mascota de `/pet view` muestra su bonus con el ícono del tipo (💰 📊 🛡️ 🎲 🪓), una **barra de progreso** de las alimentadas al próximo nivel y, en el tope de su tier, dos barras: horas de expedición y huevos sobrantes para evolucionar.
