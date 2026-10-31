@@ -194,6 +194,26 @@ Check((await Panel(ADMIN, "off TESTV37ADM"))!.Contains("apagado") && (await Code
     && (await Panel(ADMIN, "on TESTV37ADM"))!.Contains("activo") && (await Panel(ADMIN, "off NOEXISTE9"))!.Contains("No encontré"), "off lo frena para todos, on lo vuelve a abrir, y uno que no existe lo dice");
 Check(evA.Kinds.Count(k => k == GameEventKinds.AdminCode) == 3 && (await Panel(ADMIN, "algo raro"))!.Contains("Uso:"), "queda el rastro admin_code de crear, apagar y prender; un subcomando desconocido muestra el uso");
 
+Console.WriteLine("\n== 8b. Editar y borrar (v0.43.2) ==");
+var edited = await Panel(ADMIN, "edit TESTV37ADM 5 1d | gold 25k | item comida para mascotas 50");
+var afterEdit = await Panel(ADMIN, "info TESTV37ADM");
+Check(edited!.Contains("editado") && afterEdit!.Contains("25.000 de oro") && afterEdit.Contains("50× Comida para Mascotas") && !afterEdit.Contains("Cajón de Pino") && afterEdit.Contains("1/5 canjes"),
+    "edit reemplaza el tope, la duración y TODOS los premios, y conserva los canjes hechos");
+Check((await CodeHandler.RedeemAsync(codes, events, P1, "TESTV37ADM")).PlainMessage == "Ya canjeaste ese código.", "el que ya lo canjeó no lo puede canjear de nuevo después de editarlo");
+await Player(P2, gold: 0);
+var newPrize = await CodeHandler.RedeemAsync(codes, events, P2, "TESTV37ADM");
+Check(newPrize.Embed is not null && (await Stats(P2)).Gold == 25_000 && await Have(P2, "Comida para Mascotas") == 50, "otro jugador cobra los premios nuevos");
+Check((await Panel(ADMIN, "edit NOEXISTE9 | gold 1"))!.Contains("No encontré") && (await Panel(ADMIN, "edit TESTV37ADM | item Cosa Rara"))!.Contains("No encontré")
+    && (await Panel(ADMIN, "edit"))!.Contains("REEMPLAZA") && (await Panel(ADMIN, "info TESTV37ADM"))!.Contains("25.000 de oro"), "edit de un código que no existe, con un ítem que no existe o sin nada: no toca nada y explica");
+Check((await Panel(ADMIN, "delete TESTV37ADM"))!.Contains("no lo borro") && (await codes.GetAsync("TESTV37ADM")) is not null, "un código ya canjeado NO se borra: dice que lo apagues");
+await Panel(ADMIN, "create TESTV37BORRAR | gold 1");
+var gone = await Panel(ADMIN, "borrar testv37borrar");
+Check(gone!.Contains("se borró") && await codes.GetAsync("TESTV37BORRAR") is null && (await Panel(ADMIN, "create TESTV37BORRAR | gold 2"))!.Contains("creado"),
+    "uno que nadie canjeó se borra y su nombre queda libre para crearlo de nuevo");
+Check((await Panel(ADMIN, "delete NOEXISTE9"))!.Contains("No encontré") && (await Panel(P1, "delete TESTV37BORRAR")) is null && await codes.GetAsync("TESTV37BORRAR") is not null,
+    "borrar uno que no existe lo dice, y quien no es administrador no recibe respuesta ni borra nada");
+Check(evA.Kinds.Count(k => k == GameEventKinds.AdminCode) == 7, "queda el rastro admin_code de editar y borrar");
+
 Console.WriteLine("\n== 9. Ruteo con Discord.Net de verdad ==");
 var client = new DiscordSocketClient();
 var interactions = new InteractionService(client);

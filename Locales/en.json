@@ -855,5 +855,11 @@
   "¿Te invitó un amigo? Escribí `aa invitedby @amigo` (o `/invitedby`): vos cobrás **{0}** de oro y tu amigo también cobra.": "Did a friend invite you? Type `aa invitedby @friend` (or `/invitedby`): you get **{0}** gold and your friend gets paid too.",
   "🎁 ¡Tu invitado llegó al nivel 5!": "🎁 Your invited friend reached level 5!",
   "<@{0}> llegó al nivel {1}: cobraste **{2}** {3} de oro por haberlo invitado.": "<@{0}> reached level {1}: you got **{2}** {3} gold for inviting them.",
-  "🤝 Llegaste al nivel {0}: <@{1}>, que te invitó, cobró **{2}** {3} de oro. ¡Gracias por jugar!": "🤝 You reached level {0}: <@{1}>, who invited you, got **{2}** {3} gold. Thanks for playing!"
+  "🤝 Llegaste al nivel {0}: <@{1}>, que te invitó, cobró **{2}** {3} de oro. ¡Gracias por jugar!": "🤝 You reached level {0}: <@{1}>, who invited you, got **{2}** {3} gold. Thanks for playing!",
+  "te falta oro": "not enough gold",
+  "para tus mascotas": "for your pets",
+  "para tu dragón": "for your dragon",
+  "cura {0} HP y +{1}% ATQ": "heals {0} HP and +{1}% ATK",
+  "cura {0} HP": "heals {0} HP",
+  "🔒 Zona {0}": "🔒 Zone {0}"
 }

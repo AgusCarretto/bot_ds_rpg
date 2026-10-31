@@ -32,7 +32,11 @@ public static class RedeemCodeRules
     public const string CreateUsage =
         "Uso: `aa admincode create CODIGO [100] [7d] | gold 5k | item Cofre de Oro 1 | dust 200 | xp 500` — después del código van, en cualquier orden y opcionales, **cuántas personas** lo pueden canjear (un número, ej. `100`) " +
         "y **cuánto dura** (`12h`, `7d`...); cada `|` agrega un premio con la misma sintaxis que `aa admingive` (oro, Polvo, EXP o un ítem de la mochila: cajas, comida, materiales, huevos...). " +
-        "Hasta 6 premios. Cada persona lo canjea una sola vez. Otros: `aa admincode list` · `info CODIGO` · `off CODIGO` · `on CODIGO`.";
+        "Hasta 6 premios. Cada persona lo canjea una sola vez. Otros: `aa admincode list` · `info CODIGO` · `off CODIGO` · `on CODIGO` · `edit CODIGO ...` (cambia todo, misma forma que create) · `delete CODIGO` (solo si nadie lo canjeó).";
+
+    public const string EditUsage =
+        "Uso: `aa admincode edit CODIGO [100] [7d] | gold 25k | item Comida para Mascotas 50` — misma forma que `create`, y REEMPLAZA todo: el tope de personas, la duración (contada desde ahora; sin duración no vence) " +
+        "y la lista entera de premios. Los que ya lo canjearon no lo pueden canjear de nuevo.";
 
     // Mayúsculas, sin acentos y sin espacios alrededor; solo A-Z, 0-9, «_» y «-», entre 3 y 32 caracteres. Null si lo escrito no puede ser un código.
     public static string? Normalize(string? typed)

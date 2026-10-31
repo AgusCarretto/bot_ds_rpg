@@ -30,14 +30,15 @@ public static class ItemChoices
             .Take(MaxChoices)
             .Select(item =>
             {
-                string missingGold = playerGold is int gold && gold < item.BuyPrice ? " (te falta oro)" : string.Empty;
+                string missingGold = playerGold is int gold && gold < item.BuyPrice ? " (" + Loc.T("te falta oro") + ")" : string.Empty;
                 string what = item.Type == "Caja"
-                    ? ShopModule.BoxLine(item, unlockedZoneRank).Replace(" · " + GameHistory.Number(item.BuyPrice) + " oro", string.Empty)
-                    : item.Type == ShopCatalog.PetFoodType ? "para tus mascotas"
-                    : item.Type == ShopCatalog.DragonFoodType ? "para tu dragón"
-                    : buffs is not null && buffs.TryGetValue(item.ItemId, out var buff) ? $"cura {item.StatValue} HP y +{buff.AttackPercent}% ATQ" : $"cura {item.StatValue} HP";
+                    ? ShopModule.BoxDescription(item, unlockedZoneRank)
+                    : item.Type == ShopCatalog.PetFoodType ? Loc.T("para tus mascotas")
+                    : item.Type == ShopCatalog.DragonFoodType ? Loc.T("para tu dragón")
+                    : buffs is not null && buffs.TryGetValue(item.ItemId, out var buff) ? Loc.F($"cura {item.StatValue} HP y +{buff.AttackPercent}% ATQ") : Loc.F($"cura {item.StatValue} HP");
+                string price = Loc.F($"{GameHistory.Number(item.BuyPrice)} oro");
                 return new AutocompleteResult(
-                    Truncate($"{item.Name} — {what} · {GameHistory.Number(item.BuyPrice)} oro{missingGold}"), item.Name);
+                    Truncate(what.Length > 0 ? $"{item.Name} — {what} · {price}{missingGold}" : $"{item.Name} — {price}{missingGold}"), item.Name);
             })
             .ToList();
     }
