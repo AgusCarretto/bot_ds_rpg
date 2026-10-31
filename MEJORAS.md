@@ -33,6 +33,7 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - Confirmar que `apply_emojis.sql` corrió en Railway: sin eso no se ven los emojis de los ítems (ni los de los desplegables), ni desde la v0.32.0 el de la Comida de Dragón (`comida_dragon`).
 
 **Hoja de ruta, no es para ahora**
+- **Evento de Navidad** (el dueño, 2026-10-31): un evento de varias semanas con **drops propios del evento** y una **tienda del evento**. Para Halloween solo hubo un código (`aa admincode`). Hay que diseñarlo con tiempo: qué se farmea, en qué moneda se compra, qué pasa con lo del evento cuando termina y si sobrevive al Fuego Nuevo.
 - Clase Monje (necesita una 5.ª familia de arma o una regla de «sin arma»; el dueño ya le contestó al foro que es para más adelante).
 - **Membresía de pocos pesos** (el dueño, 2026-10-22): lo único que da es **bajar un % de los cooldowns** y **algún título especial**; nada de poder, drops, oro ni XP (el PvP, la Arena y el ranking no pueden verse afectados). Para cobrar con Premium Apps de Discord la app tiene que estar verificada, en un equipo con 2FA y con
   Términos y Privacidad públicos, y hay que confirmar si hay Premium Apps en Uruguay (Developer Portal, Monetization). Punto de enganche: `ReminderPolicy.IsEligible` y `CooldownCatalog`. El título especial entra como categoría «Especiales» del sistema de títulos.
