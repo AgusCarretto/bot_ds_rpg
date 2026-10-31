@@ -39,7 +39,7 @@ public partial class PetModule
             var match = owned.FirstOrDefault(p => SameName(p.Species.Name, petName!));
             if (match is null)
             {
-                return new PetResult($"No tenés una mascota que se llame **{petName!.Trim()}**. Mirá las tuyas con **/pet view**.", null);
+                return new PetResult(Loc.F($"No tenés una mascota que se llame **{petName!.Trim()}**. Mirá las tuyas con **/pet view**."), null);
             }
 
             target = match;
@@ -49,12 +49,12 @@ public partial class PetModule
             var atCap = owned.Where(p => PetRules.IsMaxLevel(p) && p.Tier < PetRules.MaxTier).ToList();
             if (atCap.Count == 0)
             {
-                return new PetResult("Ninguna de tus mascotas está en el **nivel máximo de su tier** todavía: solo ahí pueden evolucionar. Mirá cómo van con **/pet view**.", null);
+                return new PetResult(Loc.T("Ninguna de tus mascotas está en el **nivel máximo de su tier** todavía: solo ahí pueden evolucionar. Mirá cómo van con **/pet view**."), null);
             }
 
             if (atCap.Count > 1)
             {
-                return new PetResult($"Hay más de una lista para intentarlo ({string.Join(", ", atCap.Select(p => $"**{PetRules.DisplayName(p)}**"))}): elegí cuál con **/pet evolve mascota:<nombre>**.", null);
+                return new PetResult(Loc.F($"Hay más de una lista para intentarlo ({string.Join(", ", atCap.Select(p => $"**{PetRules.DisplayName(p)}**"))}): elegí cuál con **/pet evolve mascota:<nombre>**."), null);
             }
 
             target = atCap[0];
@@ -68,13 +68,13 @@ public partial class PetModule
             case EvolveStatus.Ok:
                 break;
             case EvolveStatus.MaxTier:
-                return new PetResult($"🏆 **{name}** ya es tier {PetRules.TierName(PetRules.MaxTier)}: no puede evolucionar más.", null);
+                return new PetResult(Loc.F($"🏆 **{name}** ya es tier {PetRules.TierName(PetRules.MaxTier)}: no puede evolucionar más."), null);
             case EvolveStatus.NotAtCap:
-                return new PetResult($"**{name}** va por el nivel {outcome.Have} de {outcome.Need}: solo evolucionan las mascotas en el **nivel máximo de su tier**. Seguí con **/pet feed**.", null);
+                return new PetResult(Loc.F($"**{name}** va por el nivel {outcome.Have} de {outcome.Need}: solo evolucionan las mascotas en el **nivel máximo de su tier**. Seguí con **/pet feed**."), null);
             case EvolveStatus.NotEnoughHours:
-                return new PetResult($"⏱️ A **{name}** le faltan horas de expedición para evolucionar: lleva **{outcome.Have}** de **{outcome.Need}**. Mandala con **/pet expedition**.", null);
+                return new PetResult(Loc.F($"⏱️ A **{name}** le faltan horas de expedición para evolucionar: lleva **{outcome.Have}** de **{outcome.Need}**. Mandala con **/pet expedition**."), null);
             case EvolveStatus.NotEnoughEggs:
-                return new PetResult($"🥚 A **{name}** le faltan huevos sobrantes de su especie para evolucionar: tenés **{outcome.Have}** de **{outcome.Need}**. Cada vuelta, al vencer por primera vez al jefe de su zona, te llega uno.", null);
+                return new PetResult(Loc.F($"🥚 A **{name}** le faltan huevos sobrantes de su especie para evolucionar: tenés **{outcome.Have}** de **{outcome.Need}**. Cada vuelta, al vencer por primera vez al jefe de su zona, te llega uno."), null);
             case EvolveStatus.NotOwned:
                 return new PetResult(NoPets, null);
             default:
@@ -87,13 +87,13 @@ public partial class PetModule
         await gameEvents.RecordAsync(discordId, GameEventKinds.PetEvolved, species.ZoneId, evolved.Tier, species.Name);
 
         var embed = new EmbedBuilder()
-            .WithTitle($"🧬 ¡{species.Emoji} {species.Name} evolucionó!")
+            .WithTitle(Loc.F($"🧬 ¡{species.Emoji} {species.Name} evolucionó!"))
             .WithColor(Color.Gold)
             .WithDescription(
-                $"**{species.Name}** pasó al **tier {PetRules.TierName(evolved.Tier)}**. Gastó **{PetRules.EvolveEggs(evolved.Tier)}** huevos sobrantes.\n\n" +
-                $"Ahora puede crecer hasta el **nivel {cap}** y su bonus llega a **{PetRules.PercentText(PetRules.BonusPercent(species, cap))} de {PetRules.KindName(species.BonusKind)}**. " +
-                $"Se nota también en las expediciones.\n" +
-                $"Cada alimentada del nivel {PetRules.LevelCap(evolved.Tier - 1)} en adelante gasta **{PetRules.FoodPerFeed(PetRules.LevelCap(evolved.Tier - 1))}** {PetRules.FoodItemName}: seguí con **/pet feed**.")
+                Loc.F($"**{species.Name}** pasó al **tier {PetRules.TierName(evolved.Tier)}**. Gastó **{PetRules.EvolveEggs(evolved.Tier)}** huevos sobrantes.\n\n") +
+                Loc.F($"Ahora puede crecer hasta el **nivel {cap}** y su bonus llega a **{PetRules.PercentText(PetRules.BonusPercent(species, cap))} de {PetRules.KindName(species.BonusKind)}**. ") +
+                Loc.F($"Se nota también en las expediciones.\n") +
+                Loc.F($"Cada alimentada del nivel {PetRules.LevelCap(evolved.Tier - 1)} en adelante gasta **{PetRules.FoodPerFeed(PetRules.LevelCap(evolved.Tier - 1))}** {PetRules.FoodItemName}: seguí con **/pet feed**."))
             .Build();
         return new PetResult(null, embed);
     }
@@ -108,7 +108,7 @@ public static class EvolveChoices
             .OrderBy(p => Relevance(p.Species.Name, typed))
             .ThenBy(p => p.Species.ZoneId == FogonRules.GateZoneId ? int.MaxValue : p.Species.ZoneId)
             .Take(MaxChoices)
-            .Select(p => new AutocompleteResult(Truncate($"{p.Species.Emoji} {PetRules.DisplayName(p)} — nivel {PetRules.LevelFor(p.FeedPoints)}"), p.Species.Name))
+            .Select(p => new AutocompleteResult(Truncate(Loc.F($"{p.Species.Emoji} {PetRules.DisplayName(p)} — nivel {PetRules.LevelFor(p.FeedPoints)}")), p.Species.Name))
             .ToList();
 }
 

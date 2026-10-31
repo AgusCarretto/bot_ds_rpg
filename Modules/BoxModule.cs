@@ -34,7 +34,7 @@ public class BoxModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude abrir la caja, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude abrir la caja, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -50,12 +50,12 @@ public class BoxModule(
         // Misma regla que la tienda: en plena pelea no se puede parar a abrir cajas.
         if (combatSessions.Peek(discordId) is not null)
         {
-            return new BoxActionResult("No podés abrir cajas en medio de un combate. Terminalo (atacando o huyendo) primero.", null);
+            return new BoxActionResult(Loc.T("No podés abrir cajas en medio de un combate. Terminalo (atacando o huyendo) primero."), null);
         }
 
         if (quantity < 1 || quantity > MaxOpenAtOnce)
         {
-            return new BoxActionResult($"Podés abrir de 1 a {MaxOpenAtOnce} cajas por vez.", null);
+            return new BoxActionResult(Loc.F($"Podés abrir de 1 a {MaxOpenAtOnce} cajas por vez."), null);
         }
 
         var item = await itemRepository.GetByNameAsync(boxName);
@@ -69,13 +69,13 @@ public class BoxModule(
 
         if (item is null || item.Type != "Caja")
         {
-            return new BoxActionResult($"**{boxName}** no es una caja. Mirá las que tenés con **/inventory** o comprá en **/shop view**.", null);
+            return new BoxActionResult(Loc.F($"**{boxName}** no es una caja. Mirá las que tenés con **/inventory** o comprá en **/shop view**."), null);
         }
 
         var box = await boxRepository.GetDefinitionAsync(item.ItemId);
         if (box is null)
         {
-            return new BoxActionResult($"**{ItemDisplay.Format(item.Emoji, item.Name)}** todavía no tiene botín cargado, avisale al staff.", null);
+            return new BoxActionResult(Loc.F($"**{ItemDisplay.Format(item.Emoji, item.Name)}** todavía no tiene botín cargado, avisale al staff."), null);
         }
 
         // Qué se puede sortear y hasta qué zona llegó el jugador (UNA vez para todas las cajas que abre: es el mismo jugador).
@@ -113,7 +113,7 @@ public class BoxModule(
 
         if (opened == 0)
         {
-            return new BoxActionResult($"No tenés **{ItemDisplay.Format(item.Emoji, item.Name)}** en tu inventario.", null);
+            return new BoxActionResult(Loc.F($"No tenés **{ItemDisplay.Format(item.Emoji, item.Name)}** en tu inventario."), null);
         }
 
         await gameEvents.RecordAsync(discordId, GameEventKinds.BoxOpened, amount: opened, detail: item.Name);
@@ -137,7 +137,7 @@ public class BoxModule(
 
         if (gold > 0)
         {
-            lines.Add($"💰 **+{gold}** monedas");
+            lines.Add(Loc.F($"💰 **+{gold}** monedas"));
         }
 
         foreach (var looted in items.OrderByDescending(i => RarityCatalog.RankOf(i.Rarity)).ThenBy(i => i.Name))
@@ -148,30 +148,30 @@ public class BoxModule(
 
         if (lines.Count == 0)
         {
-            lines.Add("_La caja estaba vacía._");
+            lines.Add(Loc.T("_La caja estaba vacía._"));
         }
 
         string title = opened == 1
-            ? $"📦 ¡Abriste {ItemDisplay.Format(box.Emoji, box.Name)}!"
-            : $"📦 ¡Abriste {opened}× {ItemDisplay.Format(box.Emoji, box.Name)}!";
+            ? Loc.F($"📦 ¡Abriste {ItemDisplay.Format(box.Emoji, box.Name)}!")
+            : Loc.F($"📦 ¡Abriste {opened}× {ItemDisplay.Format(box.Emoji, box.Name)}!");
 
         var embed = new EmbedBuilder()
             .WithTitle(title)
             .WithColor(GatheringModule.RarityColor(box.Rarity))
             .WithDescription(string.Join('\n', lines))
             .WithItemThumbnail(box.Emoji)
-            .AddField("💰 Tu oro ahora", goldAfter.ToString(), true);
+            .AddField(Loc.T("💰 Tu oro ahora"), goldAfter.ToString(), true);
 
         if (newTrophies is { Count: > 0 })
         {
-            embed.AddField("🏺 ¡Nuevo en tu colección!", string.Join(", ", newTrophies));
+            embed.AddField(Loc.T("🏺 ¡Nuevo en tu colección!"), string.Join(", ", newTrophies));
         }
 
         string range = BoxCatalog.RangeText(box.BoxMinItems, box.BoxMaxItems);
-        string rangeFooter = range.Length > 0 ? $"Cada {box.Name} trae {range}." : string.Empty;
+        string rangeFooter = range.Length > 0 ? Loc.F($"Cada {box.Name} trae {range}.") : string.Empty;
         if (opened < requested)
         {
-            embed.WithFooter($"Pediste {requested} pero solo tenías {opened}.{(rangeFooter.Length > 0 ? " " + rangeFooter : string.Empty)}");
+            embed.WithFooter(Loc.F($"Pediste {requested} pero solo tenías {opened}.{(rangeFooter.Length > 0 ? " " + rangeFooter : string.Empty)}"));
         }
         else if (rangeFooter.Length > 0)
         {
