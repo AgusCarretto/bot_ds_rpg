@@ -1,3 +1,4 @@
+using BotDsRpg.GameData;
 using BotDsRpg.Services;
 using Discord;
 using Discord.Commands;
@@ -19,7 +20,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude armar el desafío, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! No pude armar el desafío, intentá de nuevo en un momento."));
         }
     }
 
@@ -35,7 +36,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude anotarte en la Arena, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! No pude anotarte en la Arena, intentá de nuevo en un momento."));
         }
     }
 
@@ -52,7 +53,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude armar la lista de la Arena, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! No pude armar la lista de la Arena, intentá de nuevo en un momento."));
         }
     }
 
@@ -69,7 +70,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude traer los resultados de la Arena, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! No pude traer los resultados de la Arena, intentá de nuevo en un momento."));
         }
     }
 }

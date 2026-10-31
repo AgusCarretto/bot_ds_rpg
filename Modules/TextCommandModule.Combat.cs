@@ -37,7 +37,7 @@ public partial class TextCommandModule
         {
             if (companions.Any(c => c.IsBot))
             {
-                await ReplyAsync("Los bots no pelean jefes 🤖. Mencioná a otros jugadores.");
+                await ReplyAsync(Loc.T("Los bots no pelean jefes 🤖. Mencioná a otros jugadores."));
                 return;
             }
 
@@ -59,13 +59,13 @@ public partial class TextCommandModule
             if (!partyBoss.TryOpen(session, Context.Channel.Id))
             {
                 await session.ReplyTarget.ClearComponentsAsync();
-                await ReplyAsync("Justo se te adelantó otra acción, probá de nuevo en un toque.");
+                await ReplyAsync(Loc.T("Justo se te adelantó otra acción, probá de nuevo en un toque."));
             }
         }
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude armar el grupo ahora mismo, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! No pude armar el grupo ahora mismo, intentá de nuevo en un momento."));
         }
     }
 
@@ -73,7 +73,7 @@ public partial class TextCommandModule
     [Command("raid")]
     [Summary("Ya no existe: para pelear el jefe con amigos usá \"aa boss @amigo\".")]
     public Task RaidAsync() =>
-        ReplyAsync("El raid ahora es el jefe en equipo: escribí **aa boss @amigo** (o **/boss** nombrando a tus compañeros). Pegan por turnos y tienen que tener la misma zona máxima.");
+        ReplyAsync(Loc.T("El raid ahora es el jefe en equipo: escribí **aa boss @amigo** (o **/boss** nombrando a tus compañeros). Pegan por turnos y tienen que tener la misma zona máxima."));
 
     // "aa autohunt" / "aa ah" — misma lógica que AutoHuntModule.HandleAutoHuntAsync. Sin botones:
     // resuelve toda la pelea de una y comparte el cooldown de /hunt (no de "aa hunt" en particular,
@@ -91,7 +91,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! Algo falló en la auto-cacería, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! Algo falló en la auto-cacería, intentá de nuevo en un momento."));
         }
     }
 
@@ -128,7 +128,7 @@ public partial class TextCommandModule
                     await ReplyAsync(embed: AdventureModule.BuildGateGearMissingEmbed());
                     return;
                 case CombatStartStatus.RaceLost:
-                    await ReplyAsync("Justo se te adelantó otra ejecución de este comando, probá de nuevo en un toque.");
+                    await ReplyAsync(Loc.T("Justo se te adelantó otra ejecución de este comando, probá de nuevo en un toque."));
                     return;
             }
 
@@ -151,7 +151,7 @@ public partial class TextCommandModule
         {
             BotLog.Error(ex);
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
-            await ReplyAsync("¡Upa! Algo falló iniciando tu aventura, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! Algo falló iniciando tu aventura, intentá de nuevo en un momento."));
         }
     }
 

@@ -19,7 +19,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! El carpintero no está en el taller ahora, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! El carpintero no está en el taller ahora, intentá de nuevo en un momento."));
         }
     }
 }

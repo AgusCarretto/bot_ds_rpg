@@ -94,7 +94,7 @@ public partial class TextCommandModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude iniciar tu registro ahora mismo, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! No pude iniciar tu registro ahora mismo, intentá de nuevo en un momento."));
         }
     }
 
@@ -155,7 +155,7 @@ public partial class TextCommandModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude acceder a ese perfil ahora mismo, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! No pude acceder a ese perfil ahora mismo, intentá de nuevo en un momento."));
         }
     }
 
@@ -182,7 +182,7 @@ public partial class TextCommandModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("No pude consultar ese inventario ahora mismo, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("No pude consultar ese inventario ahora mismo, intentá de nuevo en un momento."));
         }
     }
 
@@ -199,7 +199,7 @@ public partial class TextCommandModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("No pude consultar tus cooldowns ahora mismo, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("No pude consultar tus cooldowns ahora mismo, intentá de nuevo en un momento."));
         }
     }
 
@@ -217,7 +217,7 @@ public partial class TextCommandModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("No pude cargar el ranking ahora mismo, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("No pude cargar el ranking ahora mismo, intentá de nuevo en un momento."));
         }
     }
 }

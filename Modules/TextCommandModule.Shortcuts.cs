@@ -1,3 +1,4 @@
+using BotDsRpg.GameData;
 using BotDsRpg.Services;
 using Discord.Commands;
 
@@ -19,7 +20,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude procesar la venta, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! No pude procesar la venta, intentá de nuevo en un momento."));
         }
     }
 
@@ -37,7 +38,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude hacer el depósito, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! No pude hacer el depósito, intentá de nuevo en un momento."));
         }
     }
 
@@ -55,7 +56,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude hacer el retiro, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! No pude hacer el retiro, intentá de nuevo en un momento."));
         }
     }
 
@@ -79,7 +80,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! Algo falló en el casino, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! Algo falló en el casino, intentá de nuevo en un momento."));
         }
     }
 
@@ -97,7 +98,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! Algo falló en el casino, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! Algo falló en el casino, intentá de nuevo en un momento."));
         }
     }
 }

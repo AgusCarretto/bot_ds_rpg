@@ -20,7 +20,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! El herrero no está en la fragua ahora, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! El herrero no está en la fragua ahora, intentá de nuevo en un momento."));
         }
     }
 }

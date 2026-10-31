@@ -1,3 +1,4 @@
+using BotDsRpg.GameData;
 using BotDsRpg.Services;
 using Discord;
 using Discord.Commands;
@@ -26,7 +27,7 @@ public partial class TextCommandModule
             BotLog.Error(ex);
             if (adminAccess.IsAdmin(Context.User.Id))
             {
-                await ReplyAsync("¡Upa! Falló admingive; mirá el registro del servidor.");
+                await ReplyAsync(Loc.T("¡Upa! Falló admingive; mirá el registro del servidor."));
             }
         }
     }

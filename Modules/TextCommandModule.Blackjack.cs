@@ -1,3 +1,4 @@
+using BotDsRpg.GameData;
 using BotDsRpg.Services;
 using Discord.Commands;
 
@@ -18,7 +19,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! Algo falló en la mesa, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! Algo falló en la mesa, intentá de nuevo en un momento."));
         }
     }
 
@@ -44,7 +45,7 @@ public partial class TextCommandModule
         {
             return blackjackService.Peek(id) is { } view
                 ? new BlackjackReply(null, BlackjackModule.BuildEmbed(view), BlackjackModule.BuildComponents(view, id))
-                : new BlackjackReply("Blackjack: empezá con **aa bj <apuesta>** (por ejemplo `aa bj 10k`, `aa bj 1m` o `aa bj all`). Después **pedís**, **te plantás** o **doblás** con los botones, o con `aa bj hit` / `aa bj stand` / `aa bj double`.", null, null);
+                : new BlackjackReply(Loc.T("Blackjack: empezá con **aa bj <apuesta>** (por ejemplo `aa bj 10k`, `aa bj 1m` o `aa bj all`). Después **pedís**, **te plantás** o **doblás** con los botones, o con `aa bj hit` / `aa bj stand` / `aa bj double`."), null, null);
         }
 
         return await BlackjackModule.ExecuteStartAsync(blackjackService, id, accion);

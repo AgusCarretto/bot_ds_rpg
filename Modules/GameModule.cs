@@ -149,7 +149,7 @@ public class GameModule(
             {
                 if (await dragonRepository.GetAsync(discordId) is { } dragon)
                 {
-                    wealthLines.Add($"{DragonRules.KindEmoji(dragon.Kind)} **{dragon.Name ?? DragonRules.TierName(dragon.Tier)}** ({DragonRules.TierNumeral(dragon.Tier)}) lvl {dragon.Level}");
+                    wealthLines.Add(Loc.F($"{DragonRules.KindEmoji(dragon.Kind)} **{dragon.Name ?? DragonRules.TierName(dragon.Tier)}** ({DragonRules.TierNumeral(dragon.Tier)}) lvl {dragon.Level}"));
                 }
             }
             catch (Exception ex)
@@ -196,7 +196,7 @@ public class GameModule(
             .WithColor(colorLevel > 0 ? new Color((uint)BlessingCatalog.ColorValue(colorLevel)) : Color.Orange) // Color cálido acorde al asado
             .WithThumbnailUrl(avatarUrl)
             // Los nombres de campo van en texto plano («XP», «Vida») y el ícono al final de la línea de números: un emoji propio no se garantiza en el nombre de un campo.
-            .AddField("XP", $"{ProgressBar.Render(player.Xp, requiredXp, ProfileBarSegments, UiEmojis.BarXp)}\n{player.Xp} / {requiredXp} {UiEmojis.Xp}", false)
+            .AddField("XP", Loc.F($"{ProgressBar.Render(player.Xp, requiredXp, ProfileBarSegments, UiEmojis.BarXp)}\n{player.Xp} / {requiredXp} {UiEmojis.Xp}"), false)
             // La vida con el factor de clase (la misma de la pelea, v0.25.3): un Ninja de 340 de vida base se ve de 323 acá y peleando, no 340 en una pantalla y 323 en la otra.
             .AddField(Loc.T("Vida"), $"{ProgressBar.Render(combat.CombatCurrentHp, combat.CombatMaxHp, ProfileBarSegments, UiEmojis.BarHp)}\n{combat.CombatCurrentHp} / {combat.CombatMaxHp} HP ❤️", false)
             .AddField(ProfileStatsFieldName, string.Join("\n\n", statGroups), false);

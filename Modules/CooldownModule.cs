@@ -208,7 +208,7 @@ public class CooldownModule(
         if (ready > 0)
         {
             string who = ready == 1 ? Loc.T("1 puede comer") : Loc.F($"{ready} pueden comer");
-            return $"🐾 **{Loc.T("Mascotas")}**: " + Loc.T("**¡Listo!** ✅") + $" — {who} (**/pet feed**)";
+            return $"🐾 **{Loc.T("Mascotas")}**: " + Loc.T("**¡Listo!** ✅") + Loc.F($" — {who} (**/pet feed**)");
         }
 
         var next = growing.Min(p => PetRules.RemainingCooldown(p, nowUtc, feedCooldown));

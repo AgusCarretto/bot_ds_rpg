@@ -1,3 +1,4 @@
+using BotDsRpg.GameData;
 using BotDsRpg.Services;
 using Discord;
 using Discord.Interactions;
@@ -16,18 +17,18 @@ public class MiniEventModule(IMiniEventService miniEvents) : InteractionModuleBa
         {
             if (!Guid.TryParse(eventIdRaw, out var eventId))
             {
-                await FollowupAsync("Ese aviso ya terminó.", ephemeral: true);
+                await FollowupAsync(Loc.T("Ese aviso ya terminó."), ephemeral: true);
                 return;
             }
 
             var outcome = await miniEvents.JoinAsync(eventId, Context.User.Id);
             string message = outcome.Status switch
             {
-                JoinStatus.Joined => $"✅ ¡Te sumaste! Ya son **{outcome.Participants}**. Esperá el resultado: cuanta más gente, más se lleva cada uno.",
-                JoinStatus.AlreadyJoined => $"Ya estás sumado (son **{outcome.Participants}**). Esperá el resultado.",
-                JoinStatus.NoAccount => "Primero tenés que empezar tu aventura con **/start**.",
-                JoinStatus.Finished => "Llegaste tarde: ya se cerró.",
-                _ => "Ese aviso ya terminó.",
+                JoinStatus.Joined => Loc.F($"✅ ¡Te sumaste! Ya son **{outcome.Participants}**. Esperá el resultado: cuanta más gente, más se lleva cada uno."),
+                JoinStatus.AlreadyJoined => Loc.F($"Ya estás sumado (son **{outcome.Participants}**). Esperá el resultado."),
+                JoinStatus.NoAccount => Loc.T("Primero tenés que empezar tu aventura con **/start**."),
+                JoinStatus.Finished => Loc.T("Llegaste tarde: ya se cerró."),
+                _ => Loc.T("Ese aviso ya terminó."),
             };
 
             await FollowupAsync(message, ephemeral: true);
@@ -35,7 +36,7 @@ public class MiniEventModule(IMiniEventService miniEvents) : InteractionModuleBa
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude sumarte, intentá de nuevo.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude sumarte, intentá de nuevo."), ephemeral: true);
         }
     }
 }

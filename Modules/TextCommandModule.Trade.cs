@@ -1,3 +1,4 @@
+using BotDsRpg.GameData;
 using BotDsRpg.Services;
 using Discord;
 using Discord.Commands;
@@ -20,7 +21,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude armar el cambio, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! No pude armar el cambio, intentá de nuevo en un momento."));
         }
     }
 }

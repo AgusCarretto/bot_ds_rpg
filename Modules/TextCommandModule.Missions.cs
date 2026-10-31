@@ -28,7 +28,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude mostrar tus misiones, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! No pude mostrar tus misiones, intentá de nuevo en un momento."));
         }
     }
 
@@ -56,7 +56,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude mostrar tus logros, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! No pude mostrar tus logros, intentá de nuevo en un momento."));
         }
     }
 
