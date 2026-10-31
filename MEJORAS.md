@@ -9,7 +9,6 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 **Lo último que se hizo (v0.28 a v0.32) y lo que dejó abierto**
 - **Dragón** (v0.30 a v0.32, ver abajo): comprarlo, 10 tiers con una mejora cada uno, entrenarlo con oro, criar en pareja (cada dragón con su suerte y su contador) o solo, y el tipo se sortea en cada cría salvo que gastes una Comida de Dragón (5.000). Hecho en v0.33.0: el **recordatorio de cría** y el **tablón de parejas** (ver abajo). Abierto: logros y títulos del dragón, mirar el balance del tipo Oro en el tier 10 (≈ ×1,65 de oro con mascotas, bendición y banco; `report_economy.sql`) y cuánta comida compra la gente.
 - **Herramientas** (v0.29 a v0.31): abiertas las de la Zona 2 y la 4, un **tercer tipo** bajo `/tools` (caña de pescar, cocina o granja) y **medir el Polvo** (el hacha ×3 triplica el Polvo por unidad desmantelada).
-- **Bug chico visto en una captura (2026-10-28):** en la lista de `/shop buy` en inglés las cajas repiten el precio («between 1 and 5 items · 2,300 gold · 2,300 oro»): `ItemAutocomplete` le saca el precio en español con un `Replace` y en inglés no coincide.
 - **Ayuda `/info`** (v0.32.1): tema `dragon` nuevo y las herramientas dentro de `forge`; los dos salen enteros en español para quien juega en inglés (falta traducirlos, igual que el resto de los temas).
 
 **Esperando una decisión del dueño**
@@ -29,7 +28,6 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - `Database/report_live_health.sql`: el logro «Racha» tiene que desbloquear el tramo I (7 días) cuando reclamen los dos jugadores con racha de 8 a 13; si no pasa, es un bug.
 - `Database/report_gold_chest_origin.sql` (nuevo): de dónde salen los Cofres de Oro (29 abiertos en 7 días en el informe del 2026-10-20). Reconstruye por tienda, jefe, `/daily`, misiones, logros, Arena y cajas, y cuadra contra lo visto.
 - `/vote` con el bot público: hoy duplica los cofres gratis; con 3 votantes no preocupa. Palancas: cobrar el reseteo del jefe una vez por día, o cambiar el cofre.
-- Confirmar que `apply_emojis.sql` corrió en Railway: sin eso no se ven los emojis de los ítems (ni los de los desplegables), ni desde la v0.32.0 el de la Comida de Dragón (`comida_dragon`).
 
 **Hoja de ruta, no es para ahora**
 - **Evento de Navidad** (el dueño, 2026-10-31): un evento de varias semanas con **drops propios del evento** y una **tienda del evento**. Para Halloween solo hubo un código (`aa admincode`). Hay que diseñarlo con tiempo: qué se farmea, en qué moneda se compra, qué pasa con lo del evento cuando termina y si sobrevive al Fuego Nuevo.
@@ -38,6 +36,12 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
   Términos y Privacidad públicos, y hay que confirmar si hay Premium Apps en Uruguay (Developer Portal, Monetization). Punto de enganche: `ReminderPolicy.IsEligible` y `CooldownCatalog`. El título especial entra como categoría «Especiales» del sistema de títulos.
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
+
+## Editar y borrar códigos, el precio repetido en inglés y los emojis de Railway (v0.43.2, 2026-10-31)
+
+- **`aa admincode edit` y `delete`** (el dueño, después de crear sin querer HALLOWEEN y CALABAZA): `edit CODIGO [personas] [duración] | premios…` tiene la misma forma que `create` y REEMPLAZA todo (el tope, la duración contada desde ahora y la lista entera de premios); los que ya lo canjearon no lo pueden canjear de nuevo y, si estaba apagado, sigue apagado. `delete CODIGO` solo borra un código que nadie canjeó (así su nombre queda libre); uno ya canjeado se apaga con `off`, porque borrarlo perdería quién lo canjeó. Los dos dejan el evento `admin_code`.
+- **Bug: en inglés la lista de `/shop buy` repetía el precio de las cajas** («between 1 and 5 items · 2,300 gold · 2,300 oro»): el autocompletado le sacaba el precio a la línea con un `Replace` en español. Ahora usa `ShopModule.BoxDescription` (la línea sin el precio) y toda la lista está traducida (cura, te falta oro, para tus mascotas...).
+- **Emojis en Railway, revisado**: 80 de 87 ítems tienen su emoji propio y los 7 que no son las armas y amuletos viejos que nadie puede conseguir; los 21 monstruos tienen su retrato. No hacía falta correr nada.
 
 ## Los códigos sin límite de intentos (v0.43.1, 2026-10-31)
 

@@ -994,6 +994,17 @@ var typed = System.Text.RegularExpressions.Regex.Matches(string.Join("\n", catal
 var unknownCommands = typed.Where(word => !textCommands.Search(word).IsSuccess).ToList();
 Check(unknownCommands.Count == 0, $"todo «`aa <comando>`» que nombra un texto en inglés existe de verdad ({typed.Count} comandos; faltan: {string.Join(", ", unknownCommands)})");
 
+// v0.43.2: en inglés la lista de /shop buy repetía el precio de las cajas («between 1 and 5 items · 2,300 gold · 2,300 oro»): le sacaba el precio a la línea con un Replace en español.
+var shopItems43 = new List<BotDsRpg.Models.Item>();
+foreach (var type in new[] { "Consumable", "Caja", ShopCatalog.PetFoodType, ShopCatalog.DragonFoodType }) shopItems43.AddRange(await itemRepo8.GetAllByTypeAsync(type));
+IReadOnlyList<AutocompleteResult> buyEs43 = ItemChoices.ForBuy(shopItems43, 100, "", null, 1), buyEn43;
+using (Loc.Use("en")) { buyEn43 = ItemChoices.ForBuy(shopItems43, 100, "", null, 1); }
+var boxEn43 = buyEn43.Where(c => shopItems43.Any(i => i.Type == "Caja" && i.Name == (string)c.Value)).ToList();
+Check(boxEn43.Count > 0 && boxEn43.All(c => System.Text.RegularExpressions.Regex.Matches(c.Name, @"\d gold").Count == 1 && !c.Name.Contains(" oro"))
+    && buyEs43.Where(c => shopItems43.Any(i => i.Type == "Caja" && i.Name == (string)c.Value)).All(c => System.Text.RegularExpressions.Regex.Matches(c.Name, @"\d oro").Count == 1),
+    $"la lista de /shop buy dice el precio de cada caja UNA vez, en los dos idiomas ({boxEn43.FirstOrDefault()?.Name})");
+Check(buyEn43.All(c => !c.Name.Contains("cura ") && !c.Name.Contains("te falta") && !c.Name.Contains("para tu")), "y en inglés no queda «cura», «te falta oro» ni «para tus mascotas»");
+
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;
 

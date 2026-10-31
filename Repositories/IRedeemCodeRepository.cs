@@ -10,7 +10,12 @@ public sealed record RedeemedReward(RedeemRewardKind Kind, int Amount, string? I
 // Lo que pasó al canjear: el estado y, si salió bien, los premios pagados y cuántos niveles subió con la EXP (NewLevel = el nivel con el que quedó). Capped = algún total llegó al tope de la columna y se recortó.
 public sealed record RedeemResult(RedeemStatus Status, IReadOnlyList<RedeemedReward> Rewards, int LevelsGained = 0, int NewLevel = 0, bool Capped = false);
 
-public enum CreateCodeStatus { Created, Duplicate, ItemMissing }
+public enum CreateCodeStatus { Created, Duplicate, ItemMissing, Edited, NotFound }
+
+public enum DeleteCodeStatus { Deleted, NotFound, AlreadyUsed }
+
+// Uses = cuántas veces se canjeó (cuando no se pudo borrar porque alguien ya lo canjeó).
+public sealed record DeleteCodeResult(DeleteCodeStatus Status, int Uses);
 
 public sealed record CreateCodeResult(CreateCodeStatus Status, string? Detail = null);
 
@@ -24,6 +29,12 @@ public interface IRedeemCodeRepository
 {
     // Crea el código con sus premios en una transacción. Los nombres de los ítems tienen que ser los del catálogo (el módulo los resuelve antes).
     Task<CreateCodeResult> CreateAsync(RedeemCodeSpec spec, ulong createdBy, CancellationToken cancellationToken = default);
+
+    // Cambia el tope, la duración (contada desde ahora) y TODOS los premios de un código que ya existe (v0.43.2). Los canjes hechos quedan como estaban. Edited, NotFound o ItemMissing.
+    Task<CreateCodeResult> EditAsync(RedeemCodeSpec spec, CancellationToken cancellationToken = default);
+
+    // Borra un código que nadie canjeó (v0.43.2), y así su nombre queda libre. Uno ya canjeado no se borra: se apaga.
+    Task<DeleteCodeResult> DeleteAsync(string code, CancellationToken cancellationToken = default);
 
     // Canjea el código (ya normalizado) para ese jugador. Nunca crea cuentas.
     Task<RedeemResult> RedeemAsync(ulong discordId, string code, CancellationToken cancellationToken = default);

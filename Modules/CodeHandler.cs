@@ -118,6 +118,10 @@ public static class CodeHandler
                 return await SetActiveAsync(codes, events, actorId, rest, false);
             case "on" or "prender":
                 return await SetActiveAsync(codes, events, actorId, rest, true);
+            case "edit" or "editar":
+                return await EditAsync(codes, items, adminRepository, events, actorId, rest);
+            case "delete" or "borrar" or "del":
+                return await DeleteAsync(codes, events, actorId, rest);
             default:
                 return RedeemCodeRules.CreateUsage;
         }
@@ -132,31 +136,10 @@ public static class CodeHandler
             return parse.Error!;
         }
 
-        // Los ítems se resuelven acá con el nombre del catálogo (sin importar mayúsculas ni acentos) y solo valen los de la mochila: un código no da equipo ni herramientas.
-        var resolved = new List<RedeemReward>();
-        foreach (var reward in spec.Rewards)
+        var (resolved, error) = await ResolveRewardsAsync(items, adminRepository, spec);
+        if (error is not null)
         {
-            if (reward.Kind != RedeemRewardKind.Item)
-            {
-                resolved.Add(reward);
-                continue;
-            }
-
-            var item = await items.GetByNameAsync(reward.ItemName!);
-            if (item is null)
-            {
-                var near = await adminRepository.SearchItemNamesAsync(reward.ItemName!, 8);
-                return near.Count == 0
-                    ? $"No encontré ningún ítem llamado **{reward.ItemName}**."
-                    : $"No encontré **{reward.ItemName}**. ¿Quisiste decir: {string.Join(", ", near.Select(n => $"**{n}**"))}?";
-            }
-
-            if (item.Type is "Weapon" or "Amulet" || ToolRules.KindOfItemType(item.Type) is not null)
-            {
-                return $"**{item.Name}** es equipo o una herramienta: los códigos solo dan ítems de la mochila (cajas, comida, materiales, huevos...).";
-            }
-
-            resolved.Add(reward with { ItemName = item.Name });
+            return error;
         }
 
         var created = await codes.CreateAsync(spec with { Rewards = resolved }, actorId);
@@ -176,6 +159,94 @@ public static class CodeHandler
 
         return $"🎟️ Código **{spec.Code}** creado ({Limits(spec.MaxUses, spec.Duration)}).\nPremios: {string.Join(" · ", resolved.Select(Describe))}.\n" +
                $"Los jugadores lo canjean con `/code` (privado) o `aa code {spec.Code}`.";
+    }
+
+    // «edit CODIGO [personas] [duración] | premios»: misma sintaxis que create, y REEMPLAZA todo (el tope, la duración contada desde ahora y la lista de premios entera). Los que ya
+    // lo canjearon no lo pueden canjear de nuevo, y si estaba apagado sigue apagado.
+    private static async Task<string> EditAsync(
+        IRedeemCodeRepository codes, IItemRepository items, IAdminRepository adminRepository, IGameEvents events, ulong actorId, string args)
+    {
+        var parse = RedeemCodeRules.ParseCreate(args);
+        if (parse.Spec is not { } spec)
+        {
+            return parse.Error == RedeemCodeRules.CreateUsage ? RedeemCodeRules.EditUsage : parse.Error!;
+        }
+
+        var (resolved, error) = await ResolveRewardsAsync(items, adminRepository, spec);
+        if (error is not null)
+        {
+            return error;
+        }
+
+        var edited = await codes.EditAsync(spec with { Rewards = resolved });
+        if (edited.Status == CreateCodeStatus.NotFound)
+        {
+            return $"No encontré el código **{spec.Code}**. Mirá los que hay con `aa admincode list`.";
+        }
+
+        if (edited.Status == CreateCodeStatus.ItemMissing)
+        {
+            return $"No pude editar el código: el ítem **{edited.Detail}** no está en el catálogo.";
+        }
+
+        string detail = $"editó {spec.Code} ({Limits(spec.MaxUses, spec.Duration)}): {string.Join(", ", resolved.Select(Describe))}";
+        BotLog.Info($"[ADMIN] {actorId} {detail}");
+        await events.RecordAsync(actorId, GameEventKinds.AdminCode, null, 1, detail);
+
+        var info = await codes.GetAsync(spec.Code);
+        return $"✏️ Código **{spec.Code}** editado ({Limits(spec.MaxUses, spec.Duration)}).\nPremios: {string.Join(" · ", resolved.Select(Describe))}.\n" +
+               (info is null ? string.Empty : $"Estado: {StateLine(info)}. Los que ya lo canjearon no lo pueden canjear de nuevo.");
+    }
+
+    private static async Task<string> DeleteAsync(IRedeemCodeRepository codes, IGameEvents events, ulong actorId, string rest)
+    {
+        string? code = RedeemCodeRules.Normalize(rest);
+        var result = code is null ? new DeleteCodeResult(DeleteCodeStatus.NotFound, 0) : await codes.DeleteAsync(code);
+        switch (result.Status)
+        {
+            case DeleteCodeStatus.NotFound:
+                return "No encontré ese código. Mirá los que hay con `aa admincode list`.";
+            case DeleteCodeStatus.AlreadyUsed:
+                return $"**{code}** ya se canjeó {result.Uses} {(result.Uses == 1 ? "vez" : "veces")}: no lo borro, porque se perdería quién lo canjeó. Apagalo con `aa admincode off {code}`.";
+        }
+
+        string detail = $"borró {code}";
+        BotLog.Info($"[ADMIN] {actorId} {detail}");
+        await events.RecordAsync(actorId, GameEventKinds.AdminCode, null, 1, detail);
+        return $"🗑️ El código **{code}** se borró. El nombre quedó libre para crearlo de nuevo.";
+    }
+
+    // Los ítems se resuelven con el nombre del catálogo (sin importar mayúsculas ni acentos) y solo valen los de la mochila: un código no da equipo ni herramientas.
+    // Error = el mensaje para el administrador si algún premio no sirve (y entonces no se crea ni se edita nada).
+    private static async Task<(List<RedeemReward> Rewards, string? Error)> ResolveRewardsAsync(IItemRepository items, IAdminRepository adminRepository, RedeemCodeSpec spec)
+    {
+        var resolved = new List<RedeemReward>();
+        foreach (var reward in spec.Rewards)
+        {
+            if (reward.Kind != RedeemRewardKind.Item)
+            {
+                resolved.Add(reward);
+                continue;
+            }
+
+            var item = await items.GetByNameAsync(reward.ItemName!);
+            if (item is null)
+            {
+                var near = await adminRepository.SearchItemNamesAsync(reward.ItemName!, 8);
+                return (resolved, near.Count == 0
+                    ? $"No encontré ningún ítem llamado **{reward.ItemName}**."
+                    : $"No encontré **{reward.ItemName}**. ¿Quisiste decir: {string.Join(", ", near.Select(n => $"**{n}**"))}?");
+            }
+
+            if (item.Type is "Weapon" or "Amulet" || ToolRules.KindOfItemType(item.Type) is not null)
+            {
+                return (resolved, $"**{item.Name}** es equipo o una herramienta: los códigos solo dan ítems de la mochila (cajas, comida, materiales, huevos...).");
+            }
+
+            resolved.Add(reward with { ItemName = item.Name });
+        }
+
+        return (resolved, null);
     }
 
     private static async Task<string> ListAsync(IRedeemCodeRepository codes)

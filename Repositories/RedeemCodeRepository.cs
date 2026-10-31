@@ -54,18 +54,11 @@ public sealed class RedeemCodeRepository(IDbConnectionFactory connectionFactory)
         try
         {
             // Todos los ítems tienen que existir (por el nombre exacto del catálogo) antes de crear nada.
-            var itemIds = new Dictionary<string, int>(StringComparer.Ordinal);
-            foreach (string name in spec.Rewards.Where(r => r.Kind == RedeemRewardKind.Item).Select(r => r.ItemName!).Distinct())
+            var (itemIds, missing) = await ResolveItemsAsync(connection, transaction, spec, cancellationToken);
+            if (missing is not null)
             {
-                int? id = await connection.ExecuteScalarAsync<int?>(new CommandDefinition(
-                    "SELECT item_id FROM items WHERE name = @Name;", new { Name = name }, transaction: transaction, cancellationToken: cancellationToken));
-                if (id is null)
-                {
-                    await transaction.RollbackAsync(cancellationToken);
-                    return new CreateCodeResult(CreateCodeStatus.ItemMissing, name);
-                }
-
-                itemIds[name] = id.Value;
+                await transaction.RollbackAsync(cancellationToken);
+                return new CreateCodeResult(CreateCodeStatus.ItemMissing, missing);
             }
 
             int? codeId = await connection.ExecuteScalarAsync<int?>(new CommandDefinition(
@@ -75,7 +68,7 @@ public sealed class RedeemCodeRepository(IDbConnectionFactory connectionFactory)
                 ON CONFLICT (code) DO NOTHING
                 RETURNING code_id;
                 """,
-                new { Code = spec.Code, MaxUses = spec.MaxUses, Minutes = spec.Duration is { } d ? (double?)d.TotalMinutes : null, CreatedBy = (long)createdBy },
+                new { Code = spec.Code, MaxUses = spec.MaxUses, Minutes = Minutes(spec), CreatedBy = (long)createdBy },
                 transaction: transaction, cancellationToken: cancellationToken));
             if (codeId is null)
             {
@@ -83,20 +76,7 @@ public sealed class RedeemCodeRepository(IDbConnectionFactory connectionFactory)
                 return new CreateCodeResult(CreateCodeStatus.Duplicate, spec.Code);
             }
 
-            foreach (var reward in spec.Rewards)
-            {
-                await connection.ExecuteAsync(new CommandDefinition(
-                    "INSERT INTO redeem_code_rewards (code_id, kind, item_id, amount) VALUES (@CodeId, @Kind, @ItemId, @Amount);",
-                    new
-                    {
-                        CodeId = codeId.Value,
-                        Kind = KindName(reward.Kind),
-                        ItemId = reward.Kind == RedeemRewardKind.Item ? (int?)itemIds[reward.ItemName!] : null,
-                        Amount = reward.Amount,
-                    },
-                    transaction: transaction, cancellationToken: cancellationToken));
-            }
-
+            await InsertRewardsAsync(connection, transaction, codeId.Value, spec, itemIds, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             return new CreateCodeResult(CreateCodeStatus.Created, spec.Code);
         }
@@ -104,6 +84,110 @@ public sealed class RedeemCodeRepository(IDbConnectionFactory connectionFactory)
         {
             await transaction.RollbackAsync(cancellationToken);
             throw;
+        }
+    }
+
+    public async Task<CreateCodeResult> EditAsync(RedeemCodeSpec spec, CancellationToken cancellationToken = default)
+    {
+        using DbConnection connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        using DbTransaction transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            var (itemIds, missing) = await ResolveItemsAsync(connection, transaction, spec, cancellationToken);
+            if (missing is not null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new CreateCodeResult(CreateCodeStatus.ItemMissing, missing);
+            }
+
+            // Las reglas nuevas (el tope y la duración, que se cuenta DESDE AHORA) y los premios nuevos en lugar de los viejos. Quién ya lo canjeó y cuántos usos lleva no se tocan:
+            // el que ya lo canjeó no lo puede volver a canjear, y un tope menor a los usos que ya tiene lo deja agotado.
+            int? codeId = await connection.ExecuteScalarAsync<int?>(new CommandDefinition(
+                """
+                UPDATE redeem_codes
+                SET max_uses = @MaxUses,
+                    expires_at = CASE WHEN @Minutes IS NULL THEN NULL ELSE now() + (@Minutes * interval '1 minute') END
+                WHERE code = @Code
+                RETURNING code_id;
+                """,
+                new { Code = spec.Code, MaxUses = spec.MaxUses, Minutes = Minutes(spec) }, transaction: transaction, cancellationToken: cancellationToken));
+            if (codeId is null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new CreateCodeResult(CreateCodeStatus.NotFound, spec.Code);
+            }
+
+            await connection.ExecuteAsync(new CommandDefinition(
+                "DELETE FROM redeem_code_rewards WHERE code_id = @CodeId;", new { CodeId = codeId.Value }, transaction: transaction, cancellationToken: cancellationToken));
+            await InsertRewardsAsync(connection, transaction, codeId.Value, spec, itemIds, cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return new CreateCodeResult(CreateCodeStatus.Edited, spec.Code);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
+
+    public async Task<DeleteCodeResult> DeleteAsync(string code, CancellationToken cancellationToken = default)
+    {
+        using DbConnection connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+
+        // Solo un código que NADIE canjeó (la guarda va en el DELETE: un canje al mismo tiempo lo deja en pie). Uno ya canjeado se apaga: borrarlo perdería quién lo canjeó y,
+        // si se lo vuelve a crear con el mismo nombre, esa gente lo podría canjear de nuevo.
+        bool deleted = await connection.ExecuteScalarAsync<int?>(new CommandDefinition(
+            "DELETE FROM redeem_codes WHERE code = @Code AND uses = 0 RETURNING code_id;", new { Code = code }, cancellationToken: cancellationToken)) is not null;
+        if (deleted)
+        {
+            return new DeleteCodeResult(DeleteCodeStatus.Deleted, 0);
+        }
+
+        int? uses = await connection.ExecuteScalarAsync<int?>(new CommandDefinition(
+            "SELECT uses FROM redeem_codes WHERE code = @Code;", new { Code = code }, cancellationToken: cancellationToken));
+        return uses is null ? new DeleteCodeResult(DeleteCodeStatus.NotFound, 0) : new DeleteCodeResult(DeleteCodeStatus.AlreadyUsed, uses.Value);
+    }
+
+    private static double? Minutes(RedeemCodeSpec spec) => spec.Duration is { } d ? d.TotalMinutes : null;
+
+    // El ID de cada ítem de los premios, por el nombre exacto del catálogo. Missing = el primero que no existe (y entonces no se crea ni se edita nada).
+    private static async Task<(Dictionary<string, int> Ids, string? Missing)> ResolveItemsAsync(
+        DbConnection connection, DbTransaction transaction, RedeemCodeSpec spec, CancellationToken cancellationToken)
+    {
+        var itemIds = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (string name in spec.Rewards.Where(r => r.Kind == RedeemRewardKind.Item).Select(r => r.ItemName!).Distinct())
+        {
+            int? id = await connection.ExecuteScalarAsync<int?>(new CommandDefinition(
+                "SELECT item_id FROM items WHERE name = @Name;", new { Name = name }, transaction: transaction, cancellationToken: cancellationToken));
+            if (id is null)
+            {
+                return (itemIds, name);
+            }
+
+            itemIds[name] = id.Value;
+        }
+
+        return (itemIds, null);
+    }
+
+    private static async Task InsertRewardsAsync(
+        DbConnection connection, DbTransaction transaction, int codeId, RedeemCodeSpec spec, Dictionary<string, int> itemIds, CancellationToken cancellationToken)
+    {
+        foreach (var reward in spec.Rewards)
+        {
+            await connection.ExecuteAsync(new CommandDefinition(
+                "INSERT INTO redeem_code_rewards (code_id, kind, item_id, amount) VALUES (@CodeId, @Kind, @ItemId, @Amount);",
+                new
+                {
+                    CodeId = codeId,
+                    Kind = KindName(reward.Kind),
+                    ItemId = reward.Kind == RedeemRewardKind.Item ? (int?)itemIds[reward.ItemName!] : null,
+                    Amount = reward.Amount,
+                },
+                transaction: transaction, cancellationToken: cancellationToken));
         }
     }
 

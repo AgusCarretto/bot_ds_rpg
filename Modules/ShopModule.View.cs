@@ -90,6 +90,16 @@ public partial class ShopModule
         return unlockedZoneRank is int unlocked && required > unlocked ? Loc.F($"🔒 Zona {required} · {detail}") : detail;
     }
 
+    // Lo mismo sin el precio ("🔒 Zona 2 · entre 1 y 10 ítems"), para el autocompletado de /shop buy, que pone el precio a su manera. Antes le sacaba el precio
+    // a BoxLine con un Replace en español, que en inglés no encontraba nada y el precio salía dos veces.
+    public static string BoxDescription(Item box, int? unlockedZoneRank)
+    {
+        string range = BoxCatalog.RangeText(box.BoxMinItems, box.BoxMaxItems);
+        int required = BoxCatalog.RequiredZoneRank(box.Rarity);
+        string locked = unlockedZoneRank is int unlocked && required > unlocked ? Loc.F($"🔒 Zona {required}") : string.Empty;
+        return string.Join(" · ", new[] { locked, range }.Where(part => part.Length > 0));
+    }
+
     // " · +15% ATQ 30 min" para los banquetes, nada para el resto de la comida.
     private static string BuffText(Item item, IReadOnlyDictionary<int, ItemBuff>? buffs) =>
         buffs is not null && buffs.TryGetValue(item.ItemId, out var buff) ? Loc.F($" · +{buff.AttackPercent}% ATQ {buff.Minutes} min") : string.Empty;
