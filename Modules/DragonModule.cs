@@ -467,7 +467,7 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
         }
 
         components.WithButton(iAmListed ? Loc.T("Salir del tablón") : Loc.T("Anotarme en el tablón"), $"{BoardTogglePrefix}:{viewerId}", iAmListed ? ButtonStyle.Secondary : ButtonStyle.Success, new Emoji(iAmListed ? "❌" : "📌"), row: row);
-        components.WithButton("Actualizar", $"{BoardRefreshPrefix}:{viewerId}", ButtonStyle.Secondary, new Emoji("🔄"), row: row);
+        components.WithButton(Loc.T("Actualizar"), $"{BoardRefreshPrefix}:{viewerId}", ButtonStyle.Secondary, new Emoji("🔄"), row: row);
 
         return new DragonBoardView(embed.Build(), components.Build(), sameTier.Select(c => c.Id).ToList());
     }
@@ -818,8 +818,8 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
                 Loc.F($"Cada dragón **cambia de tipo al azar** en este intento (salga bien o mal), salvo que su dueño tenga {ItemEmojiRegistry.Label(DragonRules.FoodItemName, "🍖")} en la mochila (se gasta una). El {ItemEmojiRegistry.IconOf(DragonRules.FoodItemName, "🍖")} al lado del nombre dice quién la tiene.\n\n<@{toId}>, ¿aceptás? Tenés 2 minutos."))
             .Build();
         var buttons = new ComponentBuilder()
-            .WithButton("Aceptar", $"{AcceptPrefix}:{offer.Id}", ButtonStyle.Success, new Emoji("🥚"))
-            .WithButton("Rechazar", $"{DeclinePrefix}:{offer.Id}", ButtonStyle.Danger, new Emoji("❌"))
+            .WithButton(Loc.T("Aceptar"), $"{AcceptPrefix}:{offer.Id}", ButtonStyle.Success, new Emoji("🥚"))
+            .WithButton(Loc.T("Rechazar"), $"{DeclinePrefix}:{offer.Id}", ButtonStyle.Danger, new Emoji("❌"))
             .Build();
 
         return new BreedInvite(null, $"<@{toId}>", embed, buttons);

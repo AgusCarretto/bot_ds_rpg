@@ -281,8 +281,8 @@ public class DuelModule(IUserRepository userRepository, IDuelService duels, IDue
             .Build();
 
         var buttons = new ComponentBuilder()
-            .WithButton("Aceptar", $"duel_accept:{challenge.Id}", ButtonStyle.Success, new Emoji("⚔️"))
-            .WithButton("Rechazar", $"duel_decline:{challenge.Id}", ButtonStyle.Secondary, new Emoji("✖️"))
+            .WithButton(Loc.T("Aceptar"), $"duel_accept:{challenge.Id}", ButtonStyle.Success, new Emoji("⚔️"))
+            .WithButton(Loc.T("Rechazar"), $"duel_decline:{challenge.Id}", ButtonStyle.Secondary, new Emoji("✖️"))
             .Build();
 
         return new DuelChallengeResult(null, MentionUtils.MentionUser(target.Id), embed, buttons);
@@ -355,7 +355,7 @@ public class DuelModule(IUserRepository userRepository, IDuelService duels, IDue
     private static MessageComponent ActiveButtons(Guid id, DuelSide actor)
     {
         var builder = new ComponentBuilder()
-            .WithButton("Atacar", $"duel_attack:{id}", ButtonStyle.Primary, new Emoji("⚔️"));
+            .WithButton(Loc.T("Atacar"), $"duel_attack:{id}", ButtonStyle.Primary, new Emoji("⚔️"));
 
         var ability = ClassAbilities.For(actor.Fighter.PlayerClass);
         if (ability is not null)
@@ -366,6 +366,6 @@ public class DuelModule(IUserRepository userRepository, IDuelService duels, IDue
                 new Emoji(ability.Emoji), disabled: cooldown > 0);
         }
 
-        return builder.WithButton("Rendirse", $"duel_forfeit:{id}", ButtonStyle.Danger, new Emoji("🏳️")).Build();
+        return builder.WithButton(Loc.T("Rendirse"), $"duel_forfeit:{id}", ButtonStyle.Danger, new Emoji("🏳️")).Build();
     }
 }

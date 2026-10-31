@@ -53,7 +53,7 @@ public class RaidModule(
         {
             if (!Guid.TryParse(raidIdRaw, out var raidId) || raidSessions.Peek(raidId) is not { } session)
             {
-                await FollowupAsync("Esa invitación ya no existe.", ephemeral: true);
+                await FollowupAsync(Loc.T("Esa invitación ya no existe."), ephemeral: true);
                 return;
             }
 
@@ -65,7 +65,7 @@ public class RaidModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No te pude sumar al grupo, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No te pude sumar al grupo, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -78,7 +78,7 @@ public class RaidModule(
         {
             if (!Guid.TryParse(raidIdRaw, out var raidId) || raidSessions.Peek(raidId) is not { } session)
             {
-                await FollowupAsync("Esa invitación ya no existe.", ephemeral: true);
+                await FollowupAsync(Loc.T("Esa invitación ya no existe."), ephemeral: true);
                 return;
             }
 
@@ -87,7 +87,7 @@ public class RaidModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude registrar tu respuesta, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude registrar tu respuesta, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -100,7 +100,7 @@ public class RaidModule(
         {
             if (!Guid.TryParse(raidIdRaw, out var raidId) || raidSessions.Peek(raidId) is not { } session)
             {
-                await FollowupAsync("Ese grupo ya no existe.", ephemeral: true);
+                await FollowupAsync(Loc.T("Ese grupo ya no existe."), ephemeral: true);
                 return;
             }
 
@@ -113,7 +113,7 @@ public class RaidModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! Algo falló arrancando el combate, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! Algo falló arrancando el combate, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -126,7 +126,7 @@ public class RaidModule(
         {
             if (!Guid.TryParse(raidIdRaw, out var raidId) || raidSessions.Peek(raidId) is not { } session)
             {
-                await FollowupAsync("Ese grupo ya no existe.", ephemeral: true);
+                await FollowupAsync(Loc.T("Ese grupo ya no existe."), ephemeral: true);
                 return;
             }
 
@@ -135,7 +135,7 @@ public class RaidModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude cancelar el grupo, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude cancelar el grupo, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -160,24 +160,24 @@ public class RaidModule(
         // Va antes del resto: quien ya está adentro (ej. quien armó el grupo) figura como "ocupado" y recibiría el mensaje engañoso de "ya estás en medio de un combate".
         if (alreadyIn)
         {
-            return "Ya estás adentro del grupo.";
+            return Loc.T("Ya estás adentro del grupo.");
         }
 
         if (!invited)
         {
-            return "Esta invitación no es para vos. Para pelear el jefe con amigos usá **/boss** nombrándolos.";
+            return Loc.T("Esta invitación no es para vos. Para pelear el jefe con amigos usá **/boss** nombrándolos.");
         }
 
         if (phase != RaidPhase.Lobby)
         {
-            return "La invitación ya venció o el combate ya arrancó.";
+            return Loc.T("La invitación ya venció o el combate ya arrancó.");
         }
 
         string? problem = await CompanionProblemAsync(userRepository, zoneRepository, combatSessions, raidSessions, cooldownRepository, discordId, session.ZoneId, session.MaxZoneRank);
         if (problem is not null)
         {
             await DeclineAsync(session, discordId, raidSessions, adventureRepository);
-            return $"No podés sumarte: {problem}";
+            return Loc.F($"No podés sumarte: {problem}");
         }
 
         var participant = await BuildParticipantAsync(userRepository, itemRepository, buffRepository, discordId, displayName, bonusService);
@@ -197,7 +197,7 @@ public class RaidModule(
 
         if (!joined)
         {
-            return "No te pudiste sumar (el combate ya arrancó, el grupo está lleno, o ya estabas adentro).";
+            return Loc.T("No te pudiste sumar (el combate ya arrancó, el grupo está lleno, o ya estabas adentro).");
         }
 
         if (!raidSessions.TryRegisterParticipant(discordId, session.RaidId))
@@ -214,7 +214,7 @@ public class RaidModule(
 
         // Si ya contestaron todos los invitados no hace falta esperar el tiempo que queda.
         await StartIfEveryoneAnsweredAsync(session, raidSessions, adventureRepository);
-        return $"Aceptaste: vas a pelear contra **{session.BossName}** {session.BossEmoji}.";
+        return Loc.F($"Aceptaste: vas a pelear contra **{session.BossName}** {session.BossEmoji}.");
     }
 
     public static async Task<string> DeclineInviteCoreAsync(RaidSession session, ulong discordId, IRaidSessionService raidSessions, IAdventureRepository adventureRepository)
@@ -228,16 +228,16 @@ public class RaidModule(
 
         if (alreadyIn)
         {
-            return "Ya aceptaste: si te querés ir, usá **Huir** cuando arranque.";
+            return Loc.T("Ya aceptaste: si te querés ir, usá **Huir** cuando arranque.");
         }
 
         if (!invited)
         {
-            return "Esta invitación no es para vos.";
+            return Loc.T("Esta invitación no es para vos.");
         }
 
         await DeclineAsync(session, discordId, raidSessions, adventureRepository);
-        return "Rechazaste la invitación.";
+        return Loc.T("Rechazaste la invitación.");
     }
 
     // Empezar ya: solo quien armó el grupo, y arranca con quienes ya aceptaron (hace falta el mínimo). Devuelve null si arrancó, o el motivo si no.
@@ -245,7 +245,7 @@ public class RaidModule(
     {
         if (discordId != session.StarterId)
         {
-            return "Solo quien armó el grupo puede empezar antes de tiempo.";
+            return Loc.T("Solo quien armó el grupo puede empezar antes de tiempo.");
         }
 
         int count;
@@ -256,7 +256,7 @@ public class RaidModule(
 
         if (count < MinParticipantsToStart)
         {
-            return $"Hace falta un mínimo de {MinParticipantsToStart} jugadores para arrancar — por ahora hay {count}.";
+            return Loc.F($"Hace falta un mínimo de {MinParticipantsToStart} jugadores para arrancar — por ahora hay {count}.");
         }
 
         await TryActivateAsync(session, raidSessions, adventureRepository);
@@ -268,7 +268,7 @@ public class RaidModule(
     {
         if (discordId != session.StarterId)
         {
-            return "Solo quien armó el grupo puede cancelarlo.";
+            return Loc.T("Solo quien armó el grupo puede cancelarlo.");
         }
 
         bool cancelled;
@@ -283,13 +283,13 @@ public class RaidModule(
 
         if (!cancelled)
         {
-            return "El combate ya arrancó: si te querés ir, usá **Huir**.";
+            return Loc.T("El combate ya arrancó: si te querés ir, usá **Huir**.");
         }
 
         session.TimeoutCts?.Cancel();
         raidSessions.Remove(session.RaidId);
         await session.ReplyTarget.UpdateAsync(BuildCancelledByStarterEmbed(session), new ComponentBuilder().Build());
-        return "Cancelaste el grupo.";
+        return Loc.T("Cancelaste el grupo.");
     }
 
     [ComponentInteraction("raid_attack:*")]
@@ -308,7 +308,7 @@ public class RaidModule(
         var output = new InteractionRaidTurnOutput(Context.Interaction);
         if (!Guid.TryParse(raidIdRaw, out var parsedRaidId))
         {
-            await output.NoteAsync("Ese combate ya no existe.");
+            await output.NoteAsync(Loc.T("Ese combate ya no existe."));
             return;
         }
 
@@ -325,7 +325,7 @@ public class RaidModule(
         {
             if (raidSessions.Peek(raidId) is not { } session)
             {
-                await output.NoteAsync("Ese combate ya no existe.");
+                await output.NoteAsync(Loc.T("Ese combate ya no existe."));
                 return;
             }
 
@@ -379,19 +379,19 @@ public class RaidModule(
             switch (outcome.Kind)
             {
                 case AttackOutcomeKind.NotActive:
-                    await output.NoteAsync("Este combate todavía no arrancó (o ya terminó).");
+                    await output.NoteAsync(Loc.T("Este combate todavía no arrancó (o ya terminó)."));
                     return;
                 case AttackOutcomeKind.NotAParticipant:
-                    await output.NoteAsync("No sos parte de este combate: el grupo se arma con invitaciones (**/boss** nombrando a tus amigos).");
+                    await output.NoteAsync(Loc.T("No sos parte de este combate: el grupo se arma con invitaciones (**/boss** nombrando a tus amigos)."));
                     return;
                 case AttackOutcomeKind.ParticipantInactive:
-                    await output.NoteAsync("Ya no podés seguir peleando en este combate (te derribaron o te retiraste).");
+                    await output.NoteAsync(Loc.T("Ya no podés seguir peleando en este combate (te derribaron o te retiraste)."));
                     return;
                 case AttackOutcomeKind.Busy:
-                    await output.NoteAsync("🍖 Estás comiendo: esperá a que termine tu turno.");
+                    await output.NoteAsync(Loc.T("🍖 Estás comiendo: esperá a que termine tu turno."));
                     return;
                 case AttackOutcomeKind.NotYourTurn:
-                    await output.NoteAsync($"⏳ Todavía no es tu turno: le toca a **{outcome.LogLine}**.");
+                    await output.NoteAsync(Loc.F($"⏳ Todavía no es tu turno: le toca a **{outcome.LogLine}**."));
                     return;
                 case AttackOutcomeKind.AbilityUnavailable:
                     await output.NoteAsync(outcome.LogLine!);
@@ -418,7 +418,7 @@ public class RaidModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await output.NoteAsync("¡Upa! Algo falló procesando tu ataque, intentá de nuevo en un momento.");
+            await output.NoteAsync(Loc.T("¡Upa! Algo falló procesando tu ataque, intentá de nuevo en un momento."));
         }
     }
 
@@ -431,12 +431,12 @@ public class RaidModule(
         {
             if (!Guid.TryParse(raidIdRaw, out var raidId) || raidSessions.Peek(raidId) is null)
             {
-                await RespondAsync("Ese combate ya no existe.", ephemeral: true);
+                await RespondAsync(Loc.T("Ese combate ya no existe."), ephemeral: true);
                 return;
             }
 
             await RespondAsync(
-                "🐔 ¿Estás seguro? Huir es de cobardes: si te retirás no cobrás la recompensa del jefe y tu equipo sigue sin vos.",
+                Loc.T("🐔 ¿Estás seguro? Huir es de cobardes: si te retirás no cobrás la recompensa del jefe y tu equipo sigue sin vos."),
                 components: BuildFleeConfirmButtons(raidId), ephemeral: true);
         }
         catch (Exception ex)
@@ -453,7 +453,7 @@ public class RaidModule(
         var output = new SessionTargetRaidTurnOutput(Context.Interaction);
         if (!Guid.TryParse(raidIdRaw, out var parsedRaidId))
         {
-            await output.NoteAsync("Ese combate ya no existe.");
+            await output.NoteAsync(Loc.T("Ese combate ya no existe."));
             return;
         }
 
@@ -462,7 +462,7 @@ public class RaidModule(
         // Este mensaje privado solo se cierra: el combate compartido ya se editó por su propio mensaje.
         await ModifyOriginalResponseAsync(p =>
         {
-            p.Content = output.Completed ? "🏃 Te retiraste del combate." : "No se pudo retirar: mirá el aviso.";
+            p.Content = output.Completed ? Loc.T("🏃 Te retiraste del combate.") : Loc.T("No se pudo retirar: mirá el aviso.");
             p.Components = new ComponentBuilder().Build();
         });
     }
@@ -473,7 +473,7 @@ public class RaidModule(
         await DeferAsync();
         await ModifyOriginalResponseAsync(p =>
         {
-            p.Content = "💪 ¡Seguís en el combate!";
+            p.Content = Loc.T("💪 ¡Seguís en el combate!");
             p.Components = new ComponentBuilder().Build();
         });
     }
@@ -481,8 +481,8 @@ public class RaidModule(
     // Los dos botones de la pregunta («No, a pelear» y «Sí, retirarme», en rojo); los ids llevan el id del raid.
     public static MessageComponent BuildFleeConfirmButtons(Guid raidId) =>
         new ComponentBuilder()
-            .WithButton("No, a pelear", $"raid_flee_no:{raidId}", ButtonStyle.Success, new Emoji("💪"))
-            .WithButton("Sí, retirarme", $"raid_flee_yes:{raidId}", ButtonStyle.Danger, new Emoji("🏃"))
+            .WithButton(Loc.T("No, a pelear"), $"raid_flee_no:{raidId}", ButtonStyle.Success, new Emoji("💪"))
+            .WithButton(Loc.T("Sí, retirarme"), $"raid_flee_yes:{raidId}", ButtonStyle.Danger, new Emoji("🏃"))
             .Build();
 
     // Retirarse del combate en equipo (el botón "Huir" o "aa flee"), SIN dependencia de Context. Se puede huir en cualquier momento, también fuera de turno. gameEvents es opcional (solo para
@@ -494,14 +494,14 @@ public class RaidModule(
         {
             if (raidSessions.Peek(raidId) is not { } session)
             {
-                await output.NoteAsync("Ese combate ya no existe.");
+                await output.NoteAsync(Loc.T("Ese combate ya no existe."));
                 return;
             }
 
             var retired = await RetireAsync(session, discordId, userRepository, raidSessions);
             if (retired.Participant is null)
             {
-                await output.NoteAsync("No podés retirarte de este combate ahora mismo.");
+                await output.NoteAsync(Loc.T("No podés retirarte de este combate ahora mismo."));
                 return;
             }
 
@@ -521,7 +521,7 @@ public class RaidModule(
                 StartTurnTimer(session);
             }
 
-            await output.ShowAsync(session, BuildCombatEmbed(session, $"🏃 **{retired.Participant.DisplayName}** se retiró del combate."), BuildCombatButtons(raidId));
+            await output.ShowAsync(session, BuildCombatEmbed(session, Loc.F($"🏃 **{retired.Participant.DisplayName}** se retiró del combate.")), BuildCombatButtons(raidId));
 
             if (retired.TurnPassed)
             {
@@ -531,7 +531,7 @@ public class RaidModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await output.NoteAsync("¡Upa! No te pude retirar del combate, intentá de nuevo en un momento.");
+            await output.NoteAsync(Loc.T("¡Upa! No te pude retirar del combate, intentá de nuevo en un momento."));
         }
     }
 
@@ -551,7 +551,7 @@ public class RaidModule(
         {
             if (!Guid.TryParse(raidIdRaw, out var raidId) || raidSessions.Peek(raidId) is not { } session)
             {
-                await FollowupAsync("Ese combate ya no existe.", ephemeral: true);
+                await FollowupAsync(Loc.T("Ese combate ya no existe."), ephemeral: true);
                 return;
             }
 
@@ -583,25 +583,25 @@ public class RaidModule(
             if (options.Count == 0)
             {
                 await FollowupAsync(
-                    atFullHp ? "Ya estás al máximo de HP: solo un banquete tendría sentido ahora (por el +% de ataque) y no tenés." : "No tenés comida para curarte en la pelea.", ephemeral: true);
+                    atFullHp ? Loc.T("Ya estás al máximo de HP: solo un banquete tendría sentido ahora (por el +% de ataque) y no tenés.") : Loc.T("No tenés comida para curarte en la pelea."), ephemeral: true);
                 return;
             }
 
             // El emoji del ítem va en la opción solo si la aplicación lo tiene de verdad (ItemMenuExtensions: uno desconocido haría que Discord rechace el mensaje ENTERO).
-            var menu = new SelectMenuBuilder().WithCustomId($"raid_eatpick:{raidId}").WithPlaceholder("🍖 Elegí qué comer (gasta tu turno)").WithMinValues(1).WithMaxValues(1);
+            var menu = new SelectMenuBuilder().WithCustomId($"raid_eatpick:{raidId}").WithPlaceholder(Loc.T("🍖 Elegí qué comer (gasta tu turno)")).WithMinValues(1).WithMaxValues(1);
             foreach (var option in options)
             {
                 menu.AddItemOption(option.Name, option.Name, option.Name, CombatHeal.Describe(option));
             }
 
             await FollowupAsync(
-                $"🍖 Comer te cura pero **gasta tu turno** (el jefe te pega igual) y es **{RaidSettings.MealsPerFight} vez por pelea**.",
+                Loc.F($"🍖 Comer te cura pero **gasta tu turno** (el jefe te pega igual) y es **{RaidSettings.MealsPerFight} vez por pelea**."),
                 components: new ComponentBuilder().WithSelectMenu(menu).Build(), ephemeral: true);
         }
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude armar la lista de comida, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude armar la lista de comida, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -616,11 +616,11 @@ public class RaidModule(
             string reply;
             if (selected.Length == 0)
             {
-                reply = "No elegiste ninguna comida.";
+                reply = Loc.T("No elegiste ninguna comida.");
             }
             else if (!Guid.TryParse(raidIdRaw, out var raidId) || raidSessions.RaidIdOf(Context.User.Id) != raidId)
             {
-                reply = "Ese combate ya no existe.";
+                reply = Loc.T("Ese combate ya no existe.");
             }
             else
             {
@@ -636,7 +636,7 @@ public class RaidModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude usar esa comida, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude usar esa comida, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -648,33 +648,33 @@ public class RaidModule(
         {
             if (session.Phase != RaidPhase.Active)
             {
-                return ("Este combate todavía no arrancó (o ya terminó).", null, 0);
+                return (Loc.T("Este combate todavía no arrancó (o ya terminó)."), null, 0);
             }
 
             var participant = session.Participants.FirstOrDefault(p => p.DiscordId == discordId);
             if (participant is null)
             {
-                return ("No sos parte de este combate.", null, 0);
+                return (Loc.T("No sos parte de este combate."), null, 0);
             }
 
             if (!participant.IsActive)
             {
-                return ("Ya no podés seguir peleando en este combate (te derribaron o te retiraste).", null, 0);
+                return (Loc.T("Ya no podés seguir peleando en este combate (te derribaron o te retiraste)."), null, 0);
             }
 
             if (!IsTurnOf(session, participant))
             {
-                return ($"⏳ Todavía no es tu turno: le toca a **{session.Participants[session.TurnIndex].DisplayName}**. Comer gasta tu turno.", null, 0);
+                return (Loc.F($"⏳ Todavía no es tu turno: le toca a **{session.Participants[session.TurnIndex].DisplayName}**. Comer gasta tu turno."), null, 0);
             }
 
             if (participant.MealsEaten >= RaidSettings.MealsPerFight)
             {
-                return ("🍖 Ya comiste en esta pelea: solo se puede **una vez** por combate.", null, 0);
+                return (Loc.T("🍖 Ya comiste en esta pelea: solo se puede **una vez** por combate."), null, 0);
             }
 
             if (session.EatingTurnNumber == session.TurnNumber)
             {
-                return ("🍖 Ya estás comiendo, esperá un toque.", null, 0);
+                return (Loc.T("🍖 Ya estás comiendo, esperá un toque."), null, 0);
             }
 
             if (claim)
@@ -710,18 +710,18 @@ public class RaidModule(
         {
             if (raidSessions.RaidIdOf(discordId) is not { } raidId || raidSessions.Peek(raidId) is not { } session)
             {
-                return "No estás en ningún combate en equipo.";
+                return Loc.T("No estás en ningún combate en equipo.");
             }
 
             var item = await itemRepository.GetByNameAsync(foodName);
             if (item is null)
             {
-                return $"No encontré ningún ítem llamado **{foodName}**.";
+                return Loc.F($"No encontré ningún ítem llamado **{foodName}**.");
             }
 
             if (item.Type != "Consumable" || item.StatValue <= 0)
             {
-                return $"**{ItemDisplay.Format(item.Emoji, item.Name)}** no sirve para curarte en la pelea.";
+                return Loc.F($"**{ItemDisplay.Format(item.Emoji, item.Name)}** no sirve para curarte en la pelea.");
             }
 
             // Un banquete (comida Mítica) además de curar da un buff de ataque (item_buffs): se come igual que en el jefe solo, vale aunque estés al máximo de HP (lo que importa es el buff) y ocupa la comida de la pelea.
@@ -736,7 +736,7 @@ public class RaidModule(
             if (buff is null && participant!.CurrentHp >= participant.MaxHp)
             {
                 ReleaseEatClaim(session, turn);
-                return $"Ya estás al máximo de HP ({participant.CurrentHp}/{participant.MaxHp}), no hace falta comer ahora.";
+                return Loc.F($"Ya estás al máximo de HP ({participant.CurrentHp}/{participant.MaxHp}), no hace falta comer ahora.");
             }
 
             bool consumed;
@@ -753,7 +753,7 @@ public class RaidModule(
             if (!consumed)
             {
                 ReleaseEatClaim(session, turn);
-                return $"No tenés **{ItemDisplay.Format(item.Emoji, item.Name)}** en tu inventario.";
+                return Loc.F($"No tenés **{ItemDisplay.Format(item.Emoji, item.Name)}** en tu inventario.");
             }
 
             int healed;
@@ -768,7 +768,7 @@ public class RaidModule(
                 // Se fue (o el combate terminó) JUSTO mientras comía: la comida ya se gastó, la misma ventana angosta que documenta /use en combate solitario (UseModule).
                 if (session.Phase != RaidPhase.Active || !participant!.IsActive)
                 {
-                    return "El combate cambió justo mientras comías, revisá el mensaje.";
+                    return Loc.T("El combate cambió justo mientras comías, revisá el mensaje.");
                 }
 
                 int before = participant.CurrentHp;
@@ -816,10 +816,10 @@ public class RaidModule(
 
                 string who = $"**{participant.DisplayName}**";
                 string monsterLine = dodged
-                    ? $"💨 {who} esquivó el contraataque."
-                    : $"El jefe le devolvió **{hit}** a {who}." + (knockedOut ? $" 💀 {who} quedó derribado." : string.Empty);
-                string buffText = buff is null ? string.Empty : $" ⚔️ +{buff.AttackPercent} % de ataque.";
-                line = $"🍖 {who} comió {ItemDisplay.Format(item.Emoji, item.Name)} y recuperó **{healed}** HP.{buffText} {monsterLine}";
+                    ? Loc.F($"💨 {who} esquivó el contraataque.")
+                    : Loc.F($"El jefe le devolvió **{hit}** a {who}.") + (knockedOut ? Loc.F($" 💀 {who} quedó derribado.") : string.Empty);
+                string buffText = buff is null ? string.Empty : Loc.F($" ⚔️ +{buff.AttackPercent} % de ataque.");
+                line = Loc.F($"🍖 {who} comió {ItemDisplay.Format(item.Emoji, item.Name)} y recuperó **{healed}** HP.{buffText} {monsterLine}");
             }
 
             if (buff is not null)
@@ -848,12 +848,12 @@ public class RaidModule(
                 await PingTurnAsync(session, justPlayed: discordId);
             }
 
-            return $"🍖 Comiste {ItemDisplay.Format(item.Emoji, item.Name)} y recuperaste **{healed}** HP." + (buff is null ? string.Empty : $" ⚔️ +{buff.AttackPercent} % de ataque durante {buff.Minutes} minutos.") + (knockedOut ? " Pero el jefe te derribó." : dodged ? " Esquivaste el golpe del jefe." : $" El jefe te pegó **{hit}**.");
+            return Loc.F($"🍖 Comiste {ItemDisplay.Format(item.Emoji, item.Name)} y recuperaste **{healed}** HP.") + (buff is null ? string.Empty : Loc.F($" ⚔️ +{buff.AttackPercent} % de ataque durante {buff.Minutes} minutos.")) + (knockedOut ? Loc.T(" Pero el jefe te derribó.") : dodged ? Loc.T(" Esquivaste el golpe del jefe.") : Loc.F($" El jefe te pegó **{hit}**."));
         }
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            return "¡Upa! No pude usar esa comida, intentá de nuevo en un momento.";
+            return Loc.T("¡Upa! No pude usar esa comida, intentá de nuevo en un momento.");
         }
     }
 
@@ -1039,7 +1039,7 @@ public class RaidModule(
 
         try
         {
-            var deleter = await target.SendPingAsync($"🎯 <@{who}> ¡es tu turno!");
+            var deleter = await target.SendPingAsync(Loc.F($"🎯 <@{who}> ¡es tu turno!"));
             lock (session.Lock)
             {
                 session.TurnPingDeleter = deleter;
@@ -1122,11 +1122,11 @@ public class RaidModule(
                 return;
             }
 
-            line = $"💤 **{slow.DisplayName}** no jugó dos turnos seguidos y se retiró del combate.";
+            line = Loc.F($"💤 **{slow.DisplayName}** no jugó dos turnos seguidos y se retiró del combate.");
         }
         else
         {
-            line = $"⏰ **{slow.DisplayName}** tardó demasiado y pierde el turno. (Si pasa de nuevo, se retira del combate.)";
+            line = Loc.F($"⏰ **{slow.DisplayName}** tardó demasiado y pierde el turno. (Si pasa de nuevo, se retira del combate.)");
         }
 
         StartTurnTimer(session);
@@ -1254,23 +1254,23 @@ public class RaidModule(
         var invited = companions.GroupBy(c => c.Id).Select(group => group.First()).ToList();
         if (invited.Count == 0)
         {
-            return Reject("Para pelear con amigos nombrá al menos a uno: **/boss companero:@amigo** (o \"aa boss @amigo\"). Solo, alcanza con **/boss**.");
+            return Reject(Loc.T("Para pelear con amigos nombrá al menos a uno: **/boss companero:@amigo** (o \"aa boss @amigo\"). Solo, alcanza con **/boss**."));
         }
 
         if (invited.Any(c => c.Id == starterId))
         {
-            return Reject("No podés invitarte a vos mismo 😅. Nombrá a tus compañeros.");
+            return Reject(Loc.T("No podés invitarte a vos mismo 😅. Nombrá a tus compañeros."));
         }
 
         if (invited.Count + 1 > MaxParticipants)
         {
-            return Reject($"El grupo puede ser de hasta {MaxParticipants} jugadores (vos y {MaxParticipants - 1} más).");
+            return Reject(Loc.F($"El grupo puede ser de hasta {MaxParticipants} jugadores (vos y {MaxParticipants - 1} más)."));
         }
 
         // En El Fogón Eterno (zona 0) el jefe es el Asador y se pelea solo.
         if ((await userRepository.GetByDiscordIdAsync(starterId))?.InGate == true)
         {
-            return Reject($"En El Fogón Eterno el jefe se enfrenta solo: usá **/boss** sin nombrar a nadie, o salí del Fogón con **/zona**.");
+            return Reject(Loc.F($"En El Fogón Eterno el jefe se enfrenta solo: usá **/boss** sin nombrar a nadie, o salí del Fogón con **/zona**."));
         }
 
         if (await ValidateStartAsync(userRepository, itemRepository, monsterRepository, zoneRepository, combatSessions, raidSessions, starterId, cooldownRepository) is { } rejection)
@@ -1294,7 +1294,7 @@ public class RaidModule(
 
         if (problems.Count > 0)
         {
-            return Reject("No se puede armar el grupo para pelear el jefe:\n" + string.Join('\n', problems));
+            return Reject(Loc.T("No se puede armar el grupo para pelear el jefe:\n") + string.Join('\n', problems));
         }
 
         var session = await BuildSessionAsync(userRepository, itemRepository, monsterRepository, zoneRepository, buffRepository, starterId, starterName, bonusService);
@@ -1340,7 +1340,7 @@ public class RaidModule(
         var player = await userRepository.GetByDiscordIdAsync(discordId);
         if (player is null)
         {
-            return new CompanionProblem("todavía no creó su personaje (que use **/start**)", "todavía no creaste tu personaje: usá **/start**");
+            return new CompanionProblem(Loc.T("todavía no creó su personaje (que use **/start**)"), Loc.T("todavía no creaste tu personaje: usá **/start**"));
         }
 
         var orderedZones = ZoneRanking.OrderByDifficulty(await zoneRepository.GetAllAsync());
@@ -1354,37 +1354,37 @@ public class RaidModule(
                 string theirs = ZoneLabel(orderedZones, rank);
                 string group = ZoneLabel(orderedZones, expectedMaxRank);
                 return new CompanionProblem(
-                    $"su zona máxima es la {theirs} y la de quien armó el grupo es la {group}: para ir juntos tienen que tener la misma zona máxima",
-                    $"tu zona máxima es la {theirs} y la del grupo es la {group}: para ir juntos tienen que tener la misma zona máxima");
+                    Loc.F($"su zona máxima es la {theirs} y la de quien armó el grupo es la {group}: para ir juntos tienen que tener la misma zona máxima"),
+                    Loc.F($"tu zona máxima es la {theirs} y la del grupo es la {group}: para ir juntos tienen que tener la misma zona máxima"));
             }
         }
 
         if (combatSessions.Peek(discordId) is not null || raidSessions.IsInAnyRaid(discordId))
         {
-            return new CompanionProblem("ya está en medio de otro combate", "ya estás en medio de otro combate");
+            return new CompanionProblem(Loc.T("ya está en medio de otro combate"), Loc.T("ya estás en medio de otro combate"));
         }
 
         var remaining = await cooldownRepository.GetRemainingAsync(discordId, CooldownCatalog.Boss.CommandName, CooldownCatalog.Boss.Duration);
         if (remaining is not null)
         {
             string left = TimeFormat.Remaining(remaining.Value);
-            return new CompanionProblem($"todavía tiene el cooldown del jefe (le faltan {left})", $"todavía tenés el cooldown del jefe (te faltan {left})");
+            return new CompanionProblem(Loc.F($"todavía tiene el cooldown del jefe (le faltan {left})"), Loc.F($"todavía tenés el cooldown del jefe (te faltan {left})"));
         }
 
         if (player.InGate)
         {
-            return new CompanionProblem("está en El Fogón Eterno, donde el jefe se pelea solo", "estás en El Fogón Eterno, donde el jefe se pelea solo");
+            return new CompanionProblem(Loc.T("está en El Fogón Eterno, donde el jefe se pelea solo"), Loc.T("estás en El Fogón Eterno, donde el jefe se pelea solo"));
         }
 
         if (player.CurrentHp <= 0)
         {
-            return new CompanionProblem("no tiene vida (que se cure con **/heal**)", "no tenés vida: curate con **/heal**");
+            return new CompanionProblem(Loc.T("no tiene vida (que se cure con **/heal**)"), Loc.T("no tenés vida: curate con **/heal**"));
         }
 
         int? requiredLevel = ZoneRanking.RequiredLevelForBoss(orderedZones, bossZoneId);
         if (requiredLevel is not null && player.Level < requiredLevel)
         {
-            return new CompanionProblem($"no llegó al nivel {requiredLevel} que pide este jefe", $"no llegaste al nivel {requiredLevel} que pide este jefe");
+            return new CompanionProblem(Loc.F($"no llegó al nivel {requiredLevel} que pide este jefe"), Loc.F($"no llegaste al nivel {requiredLevel} que pide este jefe"));
         }
 
         return null;
@@ -1398,7 +1398,7 @@ public class RaidModule(
 
     // "Zona 3" para una posición por dificultad (las zonas se numeran 1..N en orden de dificultad, ver CLAUDE.md "Zones"); si no se encuentra, el número crudo.
     private static string ZoneLabel(IReadOnlyList<Zone> orderedZones, int rank) =>
-        rank >= 1 && rank <= orderedZones.Count ? $"Zona {orderedZones[rank - 1].ZoneId}" : $"Zona {rank}";
+        rank >= 1 && rank <= orderedZones.Count ? Loc.F($"Zona {orderedZones[rank - 1].ZoneId}") : Loc.F($"Zona {rank}");
 
     // Un invitado dijo que no (o no pudo). Si con eso ya contestaron todos, el grupo arranca con quienes aceptaron — o se cancela si no llegan al mínimo.
     private static async Task DeclineAsync(RaidSession session, ulong discordId, IRaidSessionService raidSessions, IAdventureRepository adventureRepository)
@@ -1448,8 +1448,8 @@ public class RaidModule(
 
     public static Embed BuildRaidCooldownEmbed(TimeSpan remaining) =>
         new EmbedBuilder()
-            .WithTitle($"⏳ {CooldownCatalog.Boss.Emoji} Jefe: todavía no podés")
-            .WithDescription($"Te falta **{TimeFormat.Remaining(remaining)}** para volver a pelear al jefe, solo o en equipo (es el mismo cooldown de **/boss**).")
+            .WithTitle(Loc.F($"⏳ {CooldownCatalog.Boss.Emoji} Jefe: todavía no podés"))
+            .WithDescription(Loc.F($"Te falta **{TimeFormat.Remaining(remaining)}** para volver a pelear al jefe, solo o en equipo (es el mismo cooldown de **/boss**)."))
             .WithColor(Color.DarkGrey)
             .Build();
 
@@ -1574,8 +1574,8 @@ public class RaidModule(
             }
 
             string startLine = dropped.Count > 0
-                ? $"¡El jefe entra en combate! ({dropped.Count} jugador(es) no pudo(pudieron) sumarse por tener el cooldown de Jefe ocupado.)"
-                : "¡El jefe entra en combate!";
+                ? Loc.F($"¡El jefe entra en combate! ({dropped.Count} jugador(es) no pudo(pudieron) sumarse por tener el cooldown de Jefe ocupado.)")
+                : Loc.T("¡El jefe entra en combate!");
 
             await session.ReplyTarget.UpdateAsync(BuildCombatEmbed(session, startLine), BuildCombatButtons(session.RaidId));
             StartTurnTimer(session);
@@ -1680,7 +1680,7 @@ public class RaidModule(
             int wait = participant.Ability.CooldownRemaining;
             return new AttackOutcome(
                 AttackOutcomeKind.AbilityUnavailable,
-                wait > 0 ? $"Tu habilidad está en enfriamiento ({wait} turno(s))." : "Tu clase no tiene habilidad.");
+                wait > 0 ? Loc.F($"Tu habilidad está en enfriamiento ({wait} turno(s)).") : Loc.T("Tu clase no tiene habilidad."));
         }
 
         // Golpe, Sifón de Almas y contraataque los resuelve el mismo código que el combate solitario
@@ -1707,15 +1707,15 @@ public class RaidModule(
 
         string who = $"**{participant.DisplayName}**";
         string actionText = turn.AbilityUsed is { } ability
-            ? $"{ability.Emoji} {who} usó **{ability.Name}**. "
-            : turn.Ambush ? $"🥷 {who} emboscó desde las sombras. " : string.Empty;
+            ? Loc.F($"{ability.Emoji} {who} usó **{ability.Name}**. ")
+            : turn.Ambush ? Loc.F($"🥷 {who} emboscó desde las sombras. ") : string.Empty;
         string critText = turn.CritCount switch
         {
             <= 0 => string.Empty,
-            1 => "💥 ¡GOLPE CRÍTICO! ",
-            _ => $"💥 ¡{turn.CritCount} GOLPES CRÍTICOS! ",
+            1 => Loc.T("💥 ¡GOLPE CRÍTICO! "),
+            _ => Loc.F($"💥 ¡{turn.CritCount} GOLPES CRÍTICOS! "),
         };
-        string healText = (turn.LifestealHeal - turn.LeechHeal > 0 ? $" 🔮 Sifón de Almas curó {turn.LifestealHeal - turn.LeechHeal} HP." : string.Empty) + (turn.LeechHeal > 0 ? $" 🩸 Sangre curó {turn.LeechHeal} HP." : string.Empty);
+        string healText = (turn.LifestealHeal - turn.LeechHeal > 0 ? Loc.F($" 🔮 Sifón de Almas curó {turn.LifestealHeal - turn.LeechHeal} HP.") : string.Empty) + (turn.LeechHeal > 0 ? Loc.F($" 🩸 Sangre curó {turn.LeechHeal} HP.") : string.Empty);
 
         if (turn.MonsterDefeated)
         {
@@ -1724,7 +1724,7 @@ public class RaidModule(
             // simultáneo vería la fase todavía Active y dispararía una segunda victoria
             // (recompensas duplicadas).
             session.Phase = RaidPhase.Resolved;
-            return new AttackOutcome(AttackOutcomeKind.Victory, $"{actionText}{critText}{who} le dio el golpe final a **{session.BossName}**.{healText}");
+            return new AttackOutcome(AttackOutcomeKind.Victory, Loc.F($"{actionText}{critText}{who} le dio el golpe final a **{session.BossName}**.{healText}"));
         }
 
         var monsterHit = turn.MonsterHit!; // el jefe sigue vivo => contraatacó
@@ -1733,20 +1733,20 @@ public class RaidModule(
         if (monsterHit.Dodged)
         {
             participant.DodgeCount++;
-            monsterLine = $"💨 {who} esquivó el contraataque.";
+            monsterLine = Loc.F($"💨 {who} esquivó el contraataque.");
         }
         else
         {
             participant.TotalDamageTaken += monsterHit.Damage;
-            monsterLine = $"El jefe le devolvió **{monsterHit.Damage}** a {who}.";
+            monsterLine = Loc.F($"El jefe le devolvió **{monsterHit.Damage}** a {who}.");
             if (participant.IsKnockedOut)
             {
-                monsterLine += $" 💀 {who} quedó derribado.";
+                monsterLine += Loc.F($" 💀 {who} quedó derribado.");
             }
         }
 
         string strikeText = turn.DamageDealt > 0
-            ? $"{critText}{who} le hizo **{turn.DamageDealt}** de daño al jefe.{healText} "
+            ? Loc.F($"{critText}{who} le hizo **{turn.DamageDealt}** de daño al jefe.{healText} ")
             : string.Empty;
         string logLine = $"{actionText}{strikeText}{monsterLine}";
 
@@ -1870,39 +1870,39 @@ public class RaidModule(
         }
 
         var lines = participants
-            .Select(p => $"✅ **{p.DisplayName}**{(p.DiscordId == session.StarterId ? " · armó el grupo" : string.Empty)}")
+            .Select(p => $"✅ **{p.DisplayName}**{(p.DiscordId == session.StarterId ? Loc.T(" · armó el grupo") : string.Empty)}")
             .ToList();
 
         foreach (var invite in invited.Where(i => participants.All(p => p.DiscordId != i.DiscordId)))
         {
             lines.Add(declined.Contains(invite.DiscordId)
-                ? $"❌ ~~{invite.DisplayName}~~ · no se suma"
-                : $"⏳ <@{invite.DiscordId}> · falta que acepte");
+                ? Loc.F($"❌ ~~{invite.DisplayName}~~ · no se suma")
+                : Loc.F($"⏳ <@{invite.DiscordId}> · falta que acepte"));
         }
 
         string starterName = participants.FirstOrDefault(p => p.DiscordId == session.StarterId)?.DisplayName ?? "Alguien";
 
         return new EmbedBuilder()
-            .WithTitle($"👥 Jefe en equipo: {session.BossName} {session.BossEmoji}")
+            .WithTitle(Loc.F($"👥 Jefe en equipo: {session.BossName} {session.BossEmoji}"))
             .WithColor(Color.Purple)
             .WithMonsterPortrait(session.BossPortrait) // la cara del jefe en todos los mensajes del grupo
             .WithDescription(
-                $"**{starterName}** arma un grupo para enfrentar al jefe de **{session.ZoneName}**.\n\n" +
-                "Pegan **por turnos**: pega uno, el jefe le responde a ese jugador y después le toca al siguiente. Cada uno que le pegue cobra su recompensa completa. " +
-                "La vida del jefe crece con cada jugador.\n\n" +
-                $"Los invitados aceptan con los botones. Arranca cuando contestan todos, a los {(int)LobbyDuration.TotalSeconds} s, " +
-                $"o cuando {starterName} toque **Empezar ya** (mínimo {MinParticipantsToStart} jugadores).")
-            .AddField($"👥 Grupo ({participants.Count}/{MaxParticipants})", string.Join('\n', lines), false)
+                Loc.F($"**{starterName}** arma un grupo para enfrentar al jefe de **{session.ZoneName}**.\n\n") +
+                Loc.T("Pegan **por turnos**: pega uno, el jefe le responde a ese jugador y después le toca al siguiente. Cada uno que le pegue cobra su recompensa completa. ") +
+                Loc.T("La vida del jefe crece con cada jugador.\n\n") +
+                Loc.F($"Los invitados aceptan con los botones. Arranca cuando contestan todos, a los {(int)LobbyDuration.TotalSeconds} s, ") +
+                Loc.F($"o cuando {starterName} toque **Empezar ya** (mínimo {MinParticipantsToStart} jugadores)."))
+            .AddField(Loc.F($"👥 Grupo ({participants.Count}/{MaxParticipants})"), string.Join('\n', lines), false)
             .Build();
     }
 
     public static MessageComponent BuildLobbyButtons(Guid raidId)
     {
         return new ComponentBuilder()
-            .WithButton("Aceptar", $"raid_join:{raidId}", ButtonStyle.Success, new Emoji("✅"))
-            .WithButton("Rechazar", $"raid_decline:{raidId}", ButtonStyle.Secondary, new Emoji("✖️"))
-            .WithButton("Empezar ya", $"raid_start:{raidId}", ButtonStyle.Primary, new Emoji("▶️"))
-            .WithButton("Cancelar", $"raid_cancel:{raidId}", ButtonStyle.Danger, new Emoji("🚫"))
+            .WithButton(Loc.T("Aceptar"), $"raid_join:{raidId}", ButtonStyle.Success, new Emoji("✅"))
+            .WithButton(Loc.T("Rechazar"), $"raid_decline:{raidId}", ButtonStyle.Secondary, new Emoji("✖️"))
+            .WithButton(Loc.T("Empezar ya"), $"raid_start:{raidId}", ButtonStyle.Primary, new Emoji("▶️"))
+            .WithButton(Loc.T("Cancelar"), $"raid_cancel:{raidId}", ButtonStyle.Danger, new Emoji("🚫"))
             .Build();
     }
 
@@ -1911,7 +1911,7 @@ public class RaidModule(
     {
         lock (session.Lock)
         {
-            return string.Join(' ', session.Invited.Select(i => $"<@{i.DiscordId}>")) + " ¡los invitaron a pelear un jefe en equipo!";
+            return string.Join(' ', session.Invited.Select(i => $"<@{i.DiscordId}>")) + Loc.T(" ¡los invitaron a pelear un jefe en equipo!");
         }
     }
 
@@ -1937,31 +1937,31 @@ public class RaidModule(
             string status = p.DiscordId == turnOf ? "▶️" : p.HasFled ? "🏃" : p.IsKnockedOut ? "💀" : "✅";
             // Estado de la habilidad de cada uno (el botón "Habilidad" es compartido y genérico).
             string abilityLine = p.IsActive
-                ? "\n" + string.Join(" · ", new[] { AdventureModule.BuildAbilityStatusLine(p.PlayerClass, p.Ability), p.MealsEaten >= RaidSettings.MealsPerFight ? "🍖 comida usada" : "🍖 comida lista" }.Where(x => x.Length > 0))
+                ? "\n" + string.Join(" · ", new[] { AdventureModule.BuildAbilityStatusLine(p.PlayerClass, p.Ability), p.MealsEaten >= RaidSettings.MealsPerFight ? Loc.T("🍖 comida usada") : Loc.T("🍖 comida lista") }.Where(x => x.Length > 0))
                 : string.Empty;
             return $"{status} **{p.DisplayName}** — {HpLine(p.CurrentHp, p.MaxHp)}{abilityLine}";
         }));
 
-        string turnLine = turnOf is { } id ? $"\n\n🎯 Le toca a <@{id}>" : string.Empty;
+        string turnLine = turnOf is { } id ? Loc.F($"\n\n🎯 Le toca a <@{id}>") : string.Empty;
 
         return new EmbedBuilder()
-            .WithTitle($"⚔️ {session.BossName} {session.BossEmoji} · jefe en equipo")
+            .WithTitle(Loc.F($"⚔️ {session.BossName} {session.BossEmoji} · jefe en equipo"))
             .WithColor(Color.Gold)
             .WithMonsterPortrait(session.BossPortrait)
             .WithDescription(logLine + turnLine)
-            .AddField($"{session.BossEmoji} HP de {session.BossName}", HpLine(bossHp, session.BossMaxHp, UiEmojis.BarHp), false)
-            .AddField("👥 Participantes", roster, false)
-            .WithFooter($"Pegan por turnos · {(int)RaidSettings.TurnTimeout.TotalSeconds} s para jugar el tuyo · {RaidSettings.MealsPerFight} comida por jugador (gasta el turno)")
+            .AddField(Loc.F($"{session.BossEmoji} HP de {session.BossName}"), HpLine(bossHp, session.BossMaxHp, UiEmojis.BarHp), false)
+            .AddField(Loc.T("👥 Participantes"), roster, false)
+            .WithFooter(Loc.F($"Pegan por turnos · {(int)RaidSettings.TurnTimeout.TotalSeconds} s para jugar el tuyo · {RaidSettings.MealsPerFight} comida por jugador (gasta el turno)"))
             .Build();
     }
 
     public static MessageComponent BuildCombatButtons(Guid raidId)
     {
         return new ComponentBuilder()
-            .WithButton("Atacar", $"raid_attack:{raidId}", ButtonStyle.Primary, new Emoji("⚔️"))
-            .WithButton("Habilidad", $"raid_ability:{raidId}", ButtonStyle.Success, new Emoji("✨"))
-            .WithButton("Comer", $"raid_eat:{raidId}", ButtonStyle.Secondary, new Emoji("🍖"))
-            .WithButton("Huir", $"raid_flee:{raidId}", ButtonStyle.Danger, new Emoji("🏃"))
+            .WithButton(Loc.T("Atacar"), $"raid_attack:{raidId}", ButtonStyle.Primary, new Emoji("⚔️"))
+            .WithButton(Loc.T("Habilidad"), $"raid_ability:{raidId}", ButtonStyle.Success, new Emoji("✨"))
+            .WithButton(Loc.T("Comer"), $"raid_eat:{raidId}", ButtonStyle.Secondary, new Emoji("🍖"))
+            .WithButton(Loc.T("Huir"), $"raid_flee:{raidId}", ButtonStyle.Danger, new Emoji("🏃"))
             .Build();
     }
 
@@ -1969,26 +1969,26 @@ public class RaidModule(
         RaidSession session, string logLine, IReadOnlyList<(RaidParticipant Participant, CombatReward Reward, Item? Drop, LevelUpOutcome Outcome)> results)
     {
         var embed = new EmbedBuilder()
-            .WithTitle($"🏆 ¡{session.BossName} {session.BossEmoji} derrotado!")
+            .WithTitle(Loc.F($"🏆 ¡{session.BossName} {session.BossEmoji} derrotado!"))
             .WithColor(Color.Green)
             .WithMonsterPortrait(session.BossPortrait)
             .WithDescription($"{logLine}\n\n{NpcDialogue.Boss(session.BossName, session.BossEmoji, NpcDialogue.BossLine.Defeated)}");
 
         if (results.Count == 0)
         {
-            embed.AddField("Botín", "_Nadie llegó a pegarle un golpe — sin recompensa esta vez._", false);
+            embed.AddField(Loc.T("Botín"), Loc.T("_Nadie llegó a pegarle un golpe — sin recompensa esta vez._"), false);
         }
 
         foreach (var (participant, reward, drop, outcome) in results)
         {
-            string dropLine = drop is not null ? $"\n🎁 {ItemDisplay.Format(drop.Emoji, drop.Name)}{(drop.Type == "Caja" ? " — abrilo con /open" : string.Empty)}" : string.Empty;
-            string levelLine = outcome.LevelsGained > 0 ? $"\n🎉 ¡Subió a nivel {outcome.Player.Level}!" : string.Empty;
+            string dropLine = drop is not null ? Loc.F($"\n🎁 {ItemDisplay.Format(drop.Emoji, drop.Name)}{(drop.Type == "Caja" ? Loc.T(" — abrilo con /open") : string.Empty)}") : string.Empty;
+            string levelLine = outcome.LevelsGained > 0 ? Loc.F($"\n🎉 ¡Subió a nivel {outcome.Player.Level}!") : string.Empty;
             // La primera vez que ESE jugador vence al jefe de la zona, además del cofre recibe el huevo de su mascota (en la misma transacción que el premio).
-            string eggLine = outcome.EggGranted is { } egg ? $"\n{ItemEmojiRegistry.Label(egg.EggName, "🥚")} — {(outcome.EggIsSpare ? "guardalo, es de repuesto" : "abrilo con /open")}" : string.Empty;
+            string eggLine = outcome.EggGranted is { } egg ? Loc.F($"\n{ItemEmojiRegistry.Label(egg.EggName, "🥚")} — {(outcome.EggIsSpare ? Loc.T("guardalo, es de repuesto") : Loc.T("abrilo con /open"))}") : string.Empty;
 
             embed.AddField(
                 participant.DisplayName,
-                $"💰 {reward.Gold} oro · 📊 {reward.Xp} XP{dropLine}{eggLine}{levelLine}",
+                Loc.F($"💰 {reward.Gold} oro · 📊 {reward.Xp} XP{dropLine}{eggLine}{levelLine}"),
                 true);
         }
 
@@ -1998,47 +1998,47 @@ public class RaidModule(
     private static Embed BuildWipeEmbed(RaidSession session, string logLine)
     {
         return new EmbedBuilder()
-            .WithTitle($"💀 El grupo cayó ante {session.BossName} {session.BossEmoji}")
+            .WithTitle(Loc.F($"💀 El grupo cayó ante {session.BossName} {session.BossEmoji}"))
             .WithColor(Color.DarkRed)
             .WithMonsterPortrait(session.BossPortrait)
-            .WithDescription($"{logLine}\n\n{NpcDialogue.Boss(session.BossName, session.BossEmoji, NpcDialogue.BossLine.Victory)}\n\nSin recompensa esta vez. Usá **/heal** para recuperarte.")
-            .AddField("☠️ Penalidad", $"Quien cayó perdió la EXP de su nivel y el {DeathPenalty.GoldPercent} % del oro de su billetera. Lo que hay en el banco no se toca.", false)
+            .WithDescription(Loc.F($"{logLine}\n\n{NpcDialogue.Boss(session.BossName, session.BossEmoji, NpcDialogue.BossLine.Victory)}\n\nSin recompensa esta vez. Usá **/heal** para recuperarte."))
+            .AddField(Loc.T("☠️ Penalidad"), Loc.F($"Quien cayó perdió la EXP de su nivel y el {DeathPenalty.GoldPercent} % del oro de su billetera. Lo que hay en el banco no se toca."), false)
             .Build();
     }
 
     private static Embed BuildAbandonedEmbed(RaidSession session)
     {
         return new EmbedBuilder()
-            .WithTitle($"🏃 {session.BossName} {session.BossEmoji}: combate en equipo abandonado")
+            .WithTitle(Loc.F($"🏃 {session.BossName} {session.BossEmoji}: combate en equipo abandonado"))
             .WithColor(Color.DarkGrey)
-            .WithDescription("Todos los participantes se retiraron antes de derrotarlo.")
+            .WithDescription(Loc.T("Todos los participantes se retiraron antes de derrotarlo."))
             .Build();
     }
 
     private static Embed BuildCancelledEmbed(RaidSession session, int confirmedCount)
     {
         return new EmbedBuilder()
-            .WithTitle($"👥 {session.BossName} {session.BossEmoji}: grupo cancelado")
+            .WithTitle(Loc.F($"👥 {session.BossName} {session.BossEmoji}: grupo cancelado"))
             .WithColor(Color.DarkGrey)
-            .WithDescription($"No se juntaron los {MinParticipantsToStart} jugadores mínimos ({confirmedCount} confirmado(s)).\n\nNo se gastó el cooldown de Jefe de nadie.")
+            .WithDescription(Loc.F($"No se juntaron los {MinParticipantsToStart} jugadores mínimos ({confirmedCount} confirmado(s)).\n\nNo se gastó el cooldown de Jefe de nadie."))
             .Build();
     }
 
     private static Embed BuildCancelledByStarterEmbed(RaidSession session)
     {
         return new EmbedBuilder()
-            .WithTitle($"👥 {session.BossName} {session.BossEmoji}: grupo cancelado")
+            .WithTitle(Loc.F($"👥 {session.BossName} {session.BossEmoji}: grupo cancelado"))
             .WithColor(Color.DarkGrey)
-            .WithDescription("Quien lo armó lo canceló antes de empezar.\n\nNo se gastó el cooldown de Jefe de nadie.")
+            .WithDescription(Loc.T("Quien lo armó lo canceló antes de empezar.\n\nNo se gastó el cooldown de Jefe de nadie."))
             .Build();
     }
 
     private static Embed BuildFailedEmbed(RaidSession session)
     {
         return new EmbedBuilder()
-            .WithTitle($"👥 {session.BossName} {session.BossEmoji}: grupo cancelado")
+            .WithTitle(Loc.F($"👥 {session.BossName} {session.BossEmoji}: grupo cancelado"))
             .WithColor(Color.DarkGrey)
-            .WithDescription("Algo falló al arrancar el combate. Probá de nuevo con **/boss** (nombrando a tus compañeros) en un momento.")
+            .WithDescription(Loc.T("Algo falló al arrancar el combate. Probá de nuevo con **/boss** (nombrando a tus compañeros) en un momento."))
             .Build();
     }
 

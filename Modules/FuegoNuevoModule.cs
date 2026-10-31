@@ -344,7 +344,7 @@ public class FuegoNuevoModule(
         var components = new ComponentBuilder();
         if (preview.GateCleared)
         {
-            components.WithButton("Hacer Fuego Nuevo", $"fn_start:{owner}:{preview.FuegoNuevo}", ButtonStyle.Danger, new Emoji("🔥"), row: 0);
+            components.WithButton(Loc.T("Hacer Fuego Nuevo"), $"fn_start:{owner}:{preview.FuegoNuevo}", ButtonStyle.Danger, new Emoji("🔥"), row: 0);
         }
 
         AddOfferButtons(components, owner, offer, levels, row: 1);
@@ -378,7 +378,7 @@ public class FuegoNuevoModule(
                 $"fn_go:{owner}:{preview.FuegoNuevo}:{classDef.Name}", ButtonStyle.Primary, new Emoji(classDef.Emoji), row: 0);
         }
 
-        components.WithButton("Cancelar", $"fn_cancel:{owner}", ButtonStyle.Secondary, new Emoji("✖️"), row: 0);
+        components.WithButton(Loc.T("Cancelar"), $"fn_cancel:{owner}", ButtonStyle.Secondary, new Emoji("✖️"), row: 0);
         return components.Build();
     }
 

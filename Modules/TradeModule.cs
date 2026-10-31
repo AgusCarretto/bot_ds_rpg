@@ -199,8 +199,8 @@ public class TradeModule(
             .Build();
 
         var buttons = new ComponentBuilder()
-            .WithButton("Aceptar", $"trade_accept:{offer.Id}", ButtonStyle.Success, new Emoji("✅"))
-            .WithButton("Rechazar", $"trade_decline:{offer.Id}", ButtonStyle.Danger, new Emoji("❌"))
+            .WithButton(Loc.T("Aceptar"), $"trade_accept:{offer.Id}", ButtonStyle.Success, new Emoji("✅"))
+            .WithButton(Loc.T("Rechazar"), $"trade_decline:{offer.Id}", ButtonStyle.Danger, new Emoji("❌"))
             .Build();
 
         return new TradeOfferResult(null, target.Mention, embed, buttons);

@@ -227,7 +227,7 @@ public partial class PetModule(
 
         bool canFeed = data.Food > 0 && data.Owned.Any(p => PetRules.CanEat(p, data.NowUtc, data.FeedCooldown));
         return new ComponentBuilder()
-            .WithButton("Alimentar", $"pet_feed:{owner}", ButtonStyle.Success, new Emoji("🍖"), disabled: !canFeed)
+            .WithButton(Loc.T("Alimentar"), $"pet_feed:{owner}", ButtonStyle.Success, new Emoji("🍖"), disabled: !canFeed)
             .Build();
     }
 
