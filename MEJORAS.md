@@ -22,7 +22,6 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - **Comida para las zonas altas** (el dueño avisa cuándo), un cooldown en `/play` y zonas cada ~10 niveles (opinión dada, sin construir).
 
 **Ya hablado, falta hacerlo**
-- **Sacar el límite de intentos de `aa code` / `/code`** (el dueño, 2026-10-31: «que la gente pruebe el code que quiera»). Hoy `RedeemAttemptLimiter` frena 10 minutos después de 5 códigos que no existen en 10 minutos. Sacarlo es quitar ese chequeo en `CodeHandler` (y el limitador si no queda en uso) y ajustar `codetest`. El riesgo es poco: cada código se canjea una vez por persona y adivinar uno al azar es casi imposible.
 - Escena con desplegables para `/trade` y `/exchange` (como la taberna), para que el emoji se vea también al elegir: las listas de autocompletado no pueden llevarlo.
 - Limpiar los emojis unicode de los títulos y de los nombres de campo, pantalla por pantalla (necesita un set propio de íconos de estadística), y apilar los dos HP del combate para poder usar barras de emojis ahí.
 
@@ -33,11 +32,16 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - Confirmar que `apply_emojis.sql` corrió en Railway: sin eso no se ven los emojis de los ítems (ni los de los desplegables), ni desde la v0.32.0 el de la Comida de Dragón (`comida_dragon`).
 
 **Hoja de ruta, no es para ahora**
+- **Evento de Navidad** (el dueño, 2026-10-31): un evento de varias semanas con **drops propios del evento** y una **tienda del evento**. Para Halloween solo hubo un código (`aa admincode`). Hay que diseñarlo con tiempo: qué se farmea, en qué moneda se compra, qué pasa con lo del evento cuando termina y si sobrevive al Fuego Nuevo.
 - Clase Monje (necesita una 5.ª familia de arma o una regla de «sin arma»; el dueño ya le contestó al foro que es para más adelante).
 - **Membresía de pocos pesos** (el dueño, 2026-10-22): lo único que da es **bajar un % de los cooldowns** y **algún título especial**; nada de poder, drops, oro ni XP (el PvP, la Arena y el ranking no pueden verse afectados). Para cobrar con Premium Apps de Discord la app tiene que estar verificada, en un equipo con 2FA y con
   Términos y Privacidad públicos, y hay que confirmar si hay Premium Apps en Uruguay (Developer Portal, Monetization). Punto de enganche: `ReminderPolicy.IsEligible` y `CooldownCatalog`. El título especial entra como categoría «Especiales» del sistema de títulos.
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
+
+## Los códigos sin límite de intentos (v0.43.1, 2026-10-31)
+
+- **Pedido del dueño**: «que la gente pruebe el code que quiera». Para Halloween el código se da como una adivinanza, y el freno (`RedeemAttemptLimiter`: 10 minutos sin probar después de 5 códigos que no existen) cortaba justo a los que intentaban. Se borró el limitador entero. Cada código se sigue canjeando una vez por persona, y adivinar uno que no se anunció es casi imposible. Sin migración.
 
 ## Invitar amigos: `aa invitedby @amigo` (v0.43.0, 2026-10-31)
 

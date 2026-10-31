@@ -423,7 +423,6 @@
   "No, a pelear": "No, keep fighting",
   "Sí, huir": "Yes, run",
   "Eso no parece un código. Se escribe así: `aa code CODIGO` (o `/code`): letras y números, sin espacios.": "That does not look like a code. Type it like this: `aa code CODE` (or `/code`): letters and numbers, no spaces.",
-  "Probaste varios códigos que no existen: esperá **{0}** para volver a intentar.": "You tried several codes that do not exist: wait **{0}** before trying again.",
   "Primero creá tu personaje con **/start**.": "Create your character with **/start** first.",
   "Ese código no existe. Fijate que esté bien escrito.": "That code does not exist. Check that it is spelled right.",
   "Ese código ya no está disponible.": "That code is no longer available.",

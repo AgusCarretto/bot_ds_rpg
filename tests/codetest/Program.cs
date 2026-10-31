@@ -83,21 +83,8 @@ string?[] bad =
 ];
 Check(bad.All(e => !string.IsNullOrWhiteSpace(e)), $"{bad.Length} entradas inválidas (vacío, código corto, sin premios, símbolo raro, 0 personas, más de un año, premio que no se entiende, con mención, 7 premios) se rechazan con un motivo");
 
-Console.WriteLine("\n== 3. El freno de intentos ==");
-var clock = new DateTime(2026, 10, 28, 12, 0, 0, DateTimeKind.Utc);
-var limiter = new RedeemAttemptLimiter(() => clock);
-for (int i = 0; i < 4; i++) limiter.RegisterFailure(P1);
-Check(limiter.LockedFor(P1) is null, "4 fallos todavía no bloquean");
-limiter.RegisterFailure(P1);
-Check(limiter.LockedFor(P1) is { } w && w > TimeSpan.FromMinutes(9) && limiter.LockedFor(P2) is null, "el 5.º bloquea 10 minutos (y a otro jugador no le pasa nada)");
-clock += TimeSpan.FromMinutes(10) + TimeSpan.FromSeconds(1);
-Check(limiter.LockedFor(P1) is null, "pasados los 10 minutos puede volver a probar");
-for (int i = 0; i < 4; i++) limiter.RegisterFailure(P2);
-clock += TimeSpan.FromMinutes(11);
-limiter.RegisterFailure(P2);
-Check(limiter.LockedFor(P2) is null, "los fallos viejos (fuera de la ventana de 10 minutos) no suman");
-limiter.RegisterFailure(P2); limiter.RegisterFailure(P2); limiter.RegisterFailure(P2); limiter.Clear(P2); limiter.RegisterFailure(P2);
-Check(limiter.LockedFor(P2) is null, "un canje que salió bien borra los fallos");
+Console.WriteLine("\n== 3. Sin freno de intentos (v0.43.1) ==");
+Check(typeof(CodeHandler).Assembly.GetType("BotDsRpg.Services.RedeemAttemptLimiter") is null && typeof(CodeHandler).Assembly.GetType("RedeemAttemptLimiter") is null, "el freno de intentos ya no existe: se puede probar el código que uno quiera");
 
 Console.WriteLine("\n== 4. El repositorio: crear ==");
 var created = await codes.CreateAsync(Spec("TESTV37A", 3, null, Gold(500), Item("Cajón de Pino", 2)), ADMIN);
@@ -157,31 +144,31 @@ Check(twice.Count(r => r.Status == RedeemStatus.Redeemed) == 1 && twice.Count(r 
 
 Console.WriteLine("\n== 7. Lo que ve el jugador ==");
 var events = new RecordingEvents();
-var lim2 = new RedeemAttemptLimiter();
 await codes.CreateAsync(Spec("TESTV37PREMIO", null, null, Gold(2_500), Item("Cajón de Pino", 3), new RedeemReward(RedeemRewardKind.Xp, 5_000)), ADMIN);
 await Player(P2, level: 1, xp: 0);
-var hit = await CodeHandler.RedeemAsync(codes, lim2, events, P2, " testv37premio ");
+var hit = await CodeHandler.RedeemAsync(codes, events, P2, " testv37premio ");
 string embedText = hit.Embed is null ? "" : hit.Embed.Title + "\n" + hit.Embed.Description + "\n" + (hit.Embed.Footer?.Text ?? "");
 Check(hit.PlainMessage is null && hit.Embed is not null && hit.Embed.Title == "🎟️ ¡Código canjeado!" && embedText.Contains("TESTV37PREMIO") && embedText.Contains("**2.500** de oro") && embedText.Contains("3×") && embedText.Contains("Cajón de Pino")
     && embedText.Contains("de EXP") && embedText.Contains("¡Subiste de nivel!") && hit.Embed.Footer?.Text == "📦 Abrí tus cajas con /open", "el cartel: título, el código, oro, la caja con su cantidad, la EXP, la subida de nivel y el pie de /open");
 Check(events.Kinds.Contains(GameEventKinds.CodeRedeem) && events.Kinds.Contains(GameEventKinds.LevelUp), "queda el evento code_redeem y, por la subida de nivel, level_up (que dispara el cartel dorado)");
-var again = await CodeHandler.RedeemAsync(codes, lim2, events, P2, "TESTV37PREMIO");
-var weird = await CodeHandler.RedeemAsync(codes, lim2, events, P2, "ab!");
-var noAcct = await CodeHandler.RedeemAsync(codes, lim2, events, NOACC, "TESTV37PREMIO");
+var again = await CodeHandler.RedeemAsync(codes, events, P2, "TESTV37PREMIO");
+var weird = await CodeHandler.RedeemAsync(codes, events, P2, "ab!");
+var noAcct = await CodeHandler.RedeemAsync(codes, events, NOACC, "TESTV37PREMIO");
 Check(again.PlainMessage == "Ya canjeaste ese código." && weird.PlainMessage!.Contains("no parece un código") && noAcct.PlainMessage!.Contains("/start"), "ya canjeado, algo que no parece un código y sin cuenta: cada uno con su mensaje");
-for (int i = 0; i < 4; i++) await CodeHandler.RedeemAsync(codes, lim2, events, P1, $"TESTV37FALSO{i}");
-var fifth = await CodeHandler.RedeemAsync(codes, lim2, events, P1, "TESTV37FALSO4");
-var blocked = await CodeHandler.RedeemAsync(codes, lim2, events, P1, "TESTV37CUPO");
-Check(fifth.PlainMessage!.Contains("no existe") && blocked.PlainMessage!.Contains("esperá") && blocked.PlainMessage.Contains("10"), "tras 5 códigos que no existen, ni siquiera uno bueno se prueba: «esperá 10 min»");
+for (int i = 0; i < 4; i++) await CodeHandler.RedeemAsync(codes, events, P1, $"TESTV37FALSO{i}");
+var fifth = await CodeHandler.RedeemAsync(codes, events, P1, "TESTV37FALSO4");
+await codes.CreateAsync(Spec("TESTV37LIBRE", null, null, Gold(1)), ADMIN);
+var afterMisses = await CodeHandler.RedeemAsync(codes, events, P1, "TESTV37LIBRE");
+Check(fifth.PlainMessage!.Contains("no existe") && afterMisses.PlainMessage is null && afterMisses.Embed is not null, "tras 5 códigos que no existen, uno bueno se canjea igual (no hay freno)");
 var allowed = new[] { "Cajón de Pino", "Pino" };
 using (Loc.Use("en"))
 {
     await Player(P2, level: 1, xp: 0);
     await codes.CreateAsync(Spec("TESTV37EN", null, null, Gold(1_500), Item("Cajón de Pino", 1)), ADMIN);
-    var en = await CodeHandler.RedeemAsync(codes, new RedeemAttemptLimiter(), events, P2, "TESTV37EN");
+    var en = await CodeHandler.RedeemAsync(codes, events, P2, "TESTV37EN");
     string enText = en.Embed is null ? "" : en.Embed.Title + "\n" + en.Embed.Description + "\n" + en.Embed.Footer?.Text;
-    var enAgain = await CodeHandler.RedeemAsync(codes, new RedeemAttemptLimiter(), events, P2, "TESTV37EN");
-    var enNone = await CodeHandler.RedeemAsync(codes, new RedeemAttemptLimiter(), events, P2, "TESTV37NOPE");
+    var enAgain = await CodeHandler.RedeemAsync(codes, events, P2, "TESTV37EN");
+    var enNone = await CodeHandler.RedeemAsync(codes, events, P2, "TESTV37NOPE");
     Check(enText.Contains("Code redeemed!") && enText.Contains("**1,500** gold") && enAgain.PlainMessage == "You already redeemed that code." && enNone.PlainMessage!.StartsWith("That code does not exist")
         && LeakCheck.NoSpanish(enText + "\n" + enAgain.PlainMessage + "\n" + enNone.PlainMessage, allowed).Ok, $"en inglés, sin fugas de español ({LeakCheck.NoSpanish(enText, allowed).Found})");
 }
@@ -201,9 +188,9 @@ var list = await Panel(ADMIN, "list");
 var det = await Panel(ADMIN, "info TESTV37ADM");
 Check(list!.Contains("TESTV37ADM") && list.Contains("0/2 canjes") && det!.Contains("7.000 de oro") && det.Contains($"<@{ADMIN}>"), "list e info muestran los canjes, el vencimiento, el estado y los premios");
 await Player(P1, gold: 0);
-await CodeHandler.RedeemAsync(codes, new RedeemAttemptLimiter(), events, P1, "TESTV37ADM");
+await CodeHandler.RedeemAsync(codes, events, P1, "TESTV37ADM");
 Check((await Panel(ADMIN, "info TESTV37ADM"))!.Contains("1/2 canjes"), "después de un canje, info dice 1/2");
-Check((await Panel(ADMIN, "off TESTV37ADM"))!.Contains("apagado") && (await CodeHandler.RedeemAsync(codes, new RedeemAttemptLimiter(), events, P2, "TESTV37ADM")).PlainMessage == "Ese código ya no está disponible."
+Check((await Panel(ADMIN, "off TESTV37ADM"))!.Contains("apagado") && (await CodeHandler.RedeemAsync(codes, events, P2, "TESTV37ADM")).PlainMessage == "Ese código ya no está disponible."
     && (await Panel(ADMIN, "on TESTV37ADM"))!.Contains("activo") && (await Panel(ADMIN, "off NOEXISTE9"))!.Contains("No encontré"), "off lo frena para todos, on lo vuelve a abrir, y uno que no existe lo dice");
 Check(evA.Kinds.Count(k => k == GameEventKinds.AdminCode) == 3 && (await Panel(ADMIN, "algo raro"))!.Contains("Uso:"), "queda el rastro admin_code de crear, apagar y prender; un subcomando desconocido muestra el uso");
 

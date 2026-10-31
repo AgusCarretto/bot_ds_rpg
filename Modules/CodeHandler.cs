@@ -11,17 +11,12 @@ public static class CodeHandler
     public sealed record CodeReply(string? PlainMessage, Embed? Embed);
 
     public static async Task<CodeReply> RedeemAsync(
-        IRedeemCodeRepository codes, IRedeemAttemptLimiter limiter, IGameEvents events, ulong discordId, string? typed)
+        IRedeemCodeRepository codes, IGameEvents events, ulong discordId, string? typed)
     {
         string? code = RedeemCodeRules.Normalize(typed);
         if (code is null)
         {
             return Plain(Loc.T("Eso no parece un código. Se escribe así: `aa code CODIGO` (o `/code`): letras y números, sin espacios."));
-        }
-
-        if (limiter.LockedFor(discordId) is { } wait)
-        {
-            return Plain(Loc.F($"Probaste varios códigos que no existen: esperá **{TimeFormat.Remaining(wait)}** para volver a intentar."));
         }
 
         var result = await codes.RedeemAsync(discordId, code);
@@ -30,7 +25,6 @@ public static class CodeHandler
             case RedeemStatus.NoAccount:
                 return Plain(Loc.T("Primero creá tu personaje con **/start**."));
             case RedeemStatus.UnknownCode:
-                limiter.RegisterFailure(discordId);
                 return Plain(Loc.T("Ese código no existe. Fijate que esté bien escrito."));
             case RedeemStatus.Inactive:
                 return Plain(Loc.T("Ese código ya no está disponible."));
@@ -44,7 +38,6 @@ public static class CodeHandler
                 return Plain(Loc.T("Ese código no tiene premios cargados: avisale al staff."));
         }
 
-        limiter.Clear(discordId);
         await events.RecordAsync(discordId, GameEventKinds.CodeRedeem, null, 1, code);
         if (result.LevelsGained > 0)
         {

@@ -14,7 +14,7 @@ public partial class TextCommandModule
     {
         try
         {
-            var reply = await CodeHandler.RedeemAsync(redeemCodeRepository, redeemAttemptLimiter, gameEvents, Context.User.Id, typed);
+            var reply = await CodeHandler.RedeemAsync(redeemCodeRepository, gameEvents, Context.User.Id, typed);
             await ReplyAsync(reply.PlainMessage, embed: reply.Embed);
         }
         catch (Exception ex)
