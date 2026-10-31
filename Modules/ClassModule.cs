@@ -27,20 +27,20 @@ public class ClassModule(IUserRepository userRepository) : InteractionModuleBase
 
     // Lo que se le dice a quien ya no puede cambiar de clase.
     public static string BuildLockedMessage(BotDsRpg.Models.User player) =>
-        $"🔒 Tu clase (**{player.Class}**) ya no se cambia: solo se elige empezando de cero (nivel 1) y se vuelve a elegir al hacer un **Fuego Nuevo** (**/fuegonuevo**).";
+        Loc.F($"🔒 Tu clase (**{player.Class}**) ya no se cambia: solo se elige empezando de cero (nivel 1) y se vuelve a elegir al hacer un **Fuego Nuevo** (**/fuegonuevo**).");
 
     // Públicos (sin dependencia de Context) para que Modules/TextCommandModule.cs arme el mismo
     // mensaje en "aa class".
     public static Embed BuildPromptEmbed()
     {
         var embed = new EmbedBuilder()
-            .WithTitle("🎭 Elegí tu clase")
+            .WithTitle(Loc.T("🎭 Elegí tu clase"))
             .WithColor(Color.Gold)
-            .WithDescription("Cada clase usa un arma exclusiva y define tu estilo de combate. Tocá un botón para elegir.");
+            .WithDescription(Loc.T("Cada clase usa un arma exclusiva y define tu estilo de combate. Tocá un botón para elegir."));
 
         foreach (var classDef in ClassCatalog.All)
         {
-            embed.AddField($"{classDef.Emoji} {classDef.Name} — {classDef.WeaponType}", classDef.Description);
+            embed.AddField($"{classDef.Emoji} {classDef.Name} — {classDef.WeaponType}", Loc.Tr(classDef.Description));
         }
 
         return embed.Build();
@@ -69,7 +69,7 @@ public class ClassModule(IUserRepository userRepository) : InteractionModuleBase
         var classDef = ClassCatalog.All.FirstOrDefault(c => c.Name == chosenClass);
         if (classDef is null)
         {
-            await FollowupAsync("Esa clase no existe, probá de nuevo con /class.", ephemeral: true);
+            await FollowupAsync(Loc.T("Esa clase no existe, probá de nuevo con /class."), ephemeral: true);
             return;
         }
 
@@ -80,13 +80,13 @@ public class ClassModule(IUserRepository userRepository) : InteractionModuleBase
             if (player is null)
             {
                 var current = await userRepository.GetByDiscordIdAsync(Context.User.Id);
-                await FollowupAsync(current is null ? "Todavía no tenés cuenta: empezá con **/start**." : BuildLockedMessage(current), ephemeral: true);
+                await FollowupAsync(current is null ? Loc.T("Todavía no tenés cuenta: empezá con **/start**.") : BuildLockedMessage(current), ephemeral: true);
                 return;
             }
 
             var confirmationEmbed = new EmbedBuilder()
-                .WithTitle("✅ ¡Clase asignada!")
-                .WithDescription($"{Context.User.Username} ahora es **{player.Class}** {classDef.Emoji}, especialista en {classDef.WeaponType}.")
+                .WithTitle(Loc.T("✅ ¡Clase asignada!"))
+                .WithDescription(Loc.F($"{Context.User.Username} ahora es **{player.Class}** {classDef.Emoji}, especialista en {classDef.WeaponType}."))
                 .WithColor(Color.Green)
                 .Build();
 
@@ -100,7 +100,7 @@ public class ClassModule(IUserRepository userRepository) : InteractionModuleBase
         {
             BotLog.Error(ex);
             // Si la base falla, avisamos sin tirar abajo el bot.
-            await FollowupAsync("No pude guardar tu clase, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("No pude guardar tu clase, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 }

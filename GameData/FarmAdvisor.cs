@@ -74,8 +74,8 @@ public static class FarmAdvisor
         if (advice.CraftableNow)
         {
             return advice.SellFirst is null
-                ? ("💡 ¡Ya podés forjar algo!", $"**{recipe}** está lista: pasá por `/forge`.")
-                : ("💡 ¡Ya podés forjar algo!", $"**{recipe}** está lista, pero primero vendé {advice.SellFirst} en `/taberna` y después pasá por `/forge`.");
+                ? (Loc.T("💡 ¡Ya podés forjar algo!"), Loc.F($"**{recipe}** está lista: pasá por `/forge`."))
+                : (Loc.T("💡 ¡Ya podés forjar algo!"), Loc.F($"**{recipe}** está lista, pero primero vendé {advice.SellFirst} en `/taberna` y después pasá por `/forge`."));
         }
 
         var lines = new List<string> { $"**{recipe}**" };
@@ -84,19 +84,19 @@ public static class FarmAdvisor
 
         if (advice.GoldShort > 0)
         {
-            lines.Add($"• 💰 {advice.GoldShort} de oro{SourceText(FarmSource.Travel)}");
+            lines.Add(Loc.F($"• 💰 {advice.GoldShort} de oro{SourceText(FarmSource.Travel)}"));
         }
 
-        return ("💡 Para tu próxima forja", string.Join('\n', lines));
+        return (Loc.T("💡 Para tu próxima forja"), string.Join('\n', lines));
     }
 
     private static string SourceText(FarmSource source) => source switch
     {
-        FarmSource.Chop => " → 🪓 `/chop`",
-        FarmSource.Mine => " → ⛏️ `/mine`",
-        FarmSource.Hunt => " → 🏹 `/hunt`",
-        FarmSource.Travel => " → 🗺️ `/travel`",
-        FarmSource.Boss => " → 👑 `/boss`",
+        FarmSource.Chop => Loc.T(" → 🪓 `/chop`"),
+        FarmSource.Mine => Loc.T(" → ⛏️ `/mine`"),
+        FarmSource.Hunt => Loc.T(" → 🏹 `/hunt`"),
+        FarmSource.Travel => Loc.T(" → 🗺️ `/travel`"),
+        FarmSource.Boss => Loc.T(" → 👑 `/boss`"),
         _ => string.Empty,
     };
 

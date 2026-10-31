@@ -35,7 +35,7 @@ public class TradeModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude armar el cambio, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude armar el cambio, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -48,20 +48,20 @@ public class TradeModule(
         {
             if (!Guid.TryParse(offerIdRaw, out var offerId) || offers.Peek(offerId) is not { } offer)
             {
-                await FollowupAsync("Esa propuesta ya venció o ya se resolvió.", ephemeral: true);
+                await FollowupAsync(Loc.T("Esa propuesta ya venció o ya se resolvió."), ephemeral: true);
                 return;
             }
 
             if (Context.User.Id != offer.ToId)
             {
-                await FollowupAsync("Esta propuesta no es para vos.", ephemeral: true);
+                await FollowupAsync(Loc.T("Esta propuesta no es para vos."), ephemeral: true);
                 return;
             }
 
             // Sacarla de forma atómica: si dos clicks llegan a la vez, solo uno la recibe y el cambio no se hace dos veces.
             if (offers.TryTake(offerId) is not { } taken)
             {
-                await FollowupAsync("Esa propuesta ya venció o ya se resolvió.", ephemeral: true);
+                await FollowupAsync(Loc.T("Esa propuesta ya venció o ya se resolvió."), ephemeral: true);
                 return;
             }
 
@@ -83,7 +83,7 @@ public class TradeModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude hacer el cambio, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude hacer el cambio, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -97,25 +97,25 @@ public class TradeModule(
         {
             if (!Guid.TryParse(offerIdRaw, out var offerId) || offers.Peek(offerId) is not { } offer)
             {
-                await FollowupAsync("Esa propuesta ya venció o ya se resolvió.", ephemeral: true);
+                await FollowupAsync(Loc.T("Esa propuesta ya venció o ya se resolvió."), ephemeral: true);
                 return;
             }
 
             if (Context.User.Id != offer.ToId && Context.User.Id != offer.FromId)
             {
-                await FollowupAsync("Esta propuesta no es tuya.", ephemeral: true);
+                await FollowupAsync(Loc.T("Esta propuesta no es tuya."), ephemeral: true);
                 return;
             }
 
             if (offers.TryTake(offerId) is null)
             {
-                await FollowupAsync("Esa propuesta ya venció o ya se resolvió.", ephemeral: true);
+                await FollowupAsync(Loc.T("Esa propuesta ya venció o ya se resolvió."), ephemeral: true);
                 return;
             }
 
             var embed = new EmbedBuilder()
-                .WithTitle("❌ Cambio cancelado")
-                .WithDescription($"{MentionUtils.MentionUser(Context.User.Id)} canceló el cambio de **{offer.GiveName}** por **{offer.GetName}**.")
+                .WithTitle(Loc.T("❌ Cambio cancelado"))
+                .WithDescription(Loc.F($"{MentionUtils.MentionUser(Context.User.Id)} canceló el cambio de **{offer.GiveName}** por **{offer.GetName}**."))
                 .WithColor(Color.DarkGrey)
                 .Build();
             await ModifyOriginalResponseAsync(p =>
@@ -128,7 +128,7 @@ public class TradeModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude cancelar el cambio, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude cancelar el cambio, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -142,34 +142,34 @@ public class TradeModule(
 
         if (target.IsBot)
         {
-            return Reject("Los bots no cambian materiales 🤖");
+            return Reject(Loc.T("Los bots no cambian materiales 🤖"));
         }
 
         if (target.Id == fromId)
         {
-            return Reject("No podés cambiar con vos mismo.");
+            return Reject(Loc.T("No podés cambiar con vos mismo."));
         }
 
         if (combatSessions.Peek(fromId) is not null)
         {
-            return Reject("No podés armar un cambio en medio de un combate. Terminalo (atacando o huyendo) primero.");
+            return Reject(Loc.T("No podés armar un cambio en medio de un combate. Terminalo (atacando o huyendo) primero."));
         }
 
         if (await userRepository.GetByDiscordIdAsync(target.Id) is null)
         {
-            return Reject($"{target.Mention} todavía no empezó a jugar: que use **/start** y después cambian.");
+            return Reject(Loc.F($"{target.Mention} todavía no empezó a jugar: que use **/start** y después cambian."));
         }
 
         var give = await itemRepository.GetByNameAsync(giveName);
         if (give is null)
         {
-            return Reject($"No encontré ningún material llamado **{giveName.Trim()}**.");
+            return Reject(Loc.F($"No encontré ningún material llamado **{giveName.Trim()}**."));
         }
 
         var get = await itemRepository.GetByNameAsync(getName);
         if (get is null)
         {
-            return Reject($"No encontré ningún material llamado **{getName.Trim()}**.");
+            return Reject(Loc.F($"No encontré ningún material llamado **{getName.Trim()}**."));
         }
 
         if (TradeRules.Validate(give, get) is { } broken)
@@ -179,23 +179,23 @@ public class TradeModule(
 
         if (await inventoryRepository.GetQuantityAsync(fromId, give.ItemId) < 1)
         {
-            return Reject($"No tenés **{ItemDisplay.Format(give.Emoji, give.Name)}** para dar.");
+            return Reject(Loc.F($"No tenés **{ItemDisplay.Format(give.Emoji, give.Name)}** para dar."));
         }
 
         if (await inventoryRepository.GetQuantityAsync(target.Id, get.ItemId) < 1)
         {
-            return Reject($"{target.Mention} no tiene **{ItemDisplay.Format(get.Emoji, get.Name)}** para cambiarte.");
+            return Reject(Loc.F($"{target.Mention} no tiene **{ItemDisplay.Format(get.Emoji, get.Name)}** para cambiarte."));
         }
 
         var offer = offers.Create(fromId, target.Id, give, get);
 
         var embed = new EmbedBuilder()
-            .WithTitle("🔄 Propuesta de cambio")
+            .WithTitle(Loc.T("🔄 Propuesta de cambio"))
             .WithColor(Color.Blue)
             .WithDescription(
-                $"{MentionUtils.MentionUser(fromId)} te propone cambiar **1× {ItemDisplay.Format(give.Emoji, give.Name)}** por " +
-                $"**1× {ItemDisplay.Format(get.Emoji, get.Name)}** (los dos son {give.Rarity}).")
-            .WithFooter($"{target.Username}: tenés {(int)TradeOfferService.Lifetime.TotalMinutes} minutos para aceptar.")
+                Loc.F($"{MentionUtils.MentionUser(fromId)} te propone cambiar **1× {ItemDisplay.Format(give.Emoji, give.Name)}** por ") +
+                Loc.F($"**1× {ItemDisplay.Format(get.Emoji, get.Name)}** (los dos son {RarityCatalog.DisplayName(give.Rarity)})."))
+            .WithFooter(Loc.F($"{target.Username}: tenés {(int)TradeOfferService.Lifetime.TotalMinutes} minutos para aceptar."))
             .Build();
 
         var buttons = new ComponentBuilder()
@@ -214,15 +214,15 @@ public class TradeModule(
         return status switch
         {
             SwapStatus.Ok => new EmbedBuilder()
-                .WithTitle("✅ ¡Cambio hecho!")
+                .WithTitle(Loc.T("✅ ¡Cambio hecho!"))
                 .WithColor(Color.Green)
-                .WithDescription($"{from} dio **1× {offer.GiveName}** y {to} dio **1× {offer.GetName}**.")
+                .WithDescription(Loc.F($"{from} dio **1× {offer.GiveName}** y {to} dio **1× {offer.GetName}**."))
                 .Build(),
-            SwapStatus.FirstMissing => Failed($"{from} ya no tiene **{offer.GiveName}**."),
-            _ => Failed($"{to} ya no tiene **{offer.GetName}**."),
+            SwapStatus.FirstMissing => Failed(Loc.F($"{from} ya no tiene **{offer.GiveName}**.")),
+            _ => Failed(Loc.F($"{to} ya no tiene **{offer.GetName}**.")),
         };
 
-        static Embed Failed(string why) => new EmbedBuilder().WithTitle("⚠️ No se pudo cambiar").WithColor(Color.Red).WithDescription(why).Build();
+        static Embed Failed(string why) => new EmbedBuilder().WithTitle(Loc.T("⚠️ No se pudo cambiar")).WithColor(Color.Red).WithDescription(why).Build();
     }
 }
 
@@ -237,7 +237,7 @@ public static class TradeChoices
             .ThenBy(e => RarityCatalog.RankOf(e.Rarity))
             .ThenBy(e => e.ItemName, StringComparer.Ordinal)
             .Take(MaxChoices)
-            .Select(e => new AutocompleteResult(Truncate($"{e.ItemName} — tenés {e.Quantity} ({e.Rarity})"), e.ItemName))
+            .Select(e => new AutocompleteResult(Truncate(Loc.F($"{e.ItemName} — tenés {e.Quantity} ({RarityCatalog.DisplayName(e.Rarity)})")), e.ItemName))
             .ToList();
 
     public static IReadOnlyList<AutocompleteResult> ForGet(IEnumerable<Item> gatherables, string typed) =>
@@ -247,7 +247,7 @@ public static class TradeChoices
             .ThenBy(i => RarityCatalog.RankOf(i.Rarity))
             .ThenBy(i => i.Name, StringComparer.Ordinal)
             .Take(MaxChoices)
-            .Select(i => new AutocompleteResult(Truncate($"{i.Name} ({i.Rarity})"), i.Name))
+            .Select(i => new AutocompleteResult(Truncate($"{i.Name} ({RarityCatalog.DisplayName(i.Rarity)})"), i.Name))
             .ToList();
 }
 

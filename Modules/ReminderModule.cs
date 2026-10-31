@@ -29,7 +29,7 @@ public class ReminderModule(IUserRepository userRepository, IReminderRepository 
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude abrir tus recordatorios, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude abrir tus recordatorios, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -42,7 +42,7 @@ public class ReminderModule(IUserRepository userRepository, IReminderRepository 
         {
             if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
             {
-                await FollowupAsync("Esos ajustes son de otra persona: abrí los tuyos con **/reminders**.", ephemeral: true);
+                await FollowupAsync(Loc.T("Esos ajustes son de otra persona: abrí los tuyos con **/reminders**."), ephemeral: true);
                 return;
             }
 
@@ -57,7 +57,7 @@ public class ReminderModule(IUserRepository userRepository, IReminderRepository 
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude guardar eso, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude guardar eso, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -70,7 +70,7 @@ public class ReminderModule(IUserRepository userRepository, IReminderRepository 
         {
             if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
             {
-                await FollowupAsync("Esos ajustes son de otra persona: abrí los tuyos con **/reminders**.", ephemeral: true);
+                await FollowupAsync(Loc.T("Esos ajustes son de otra persona: abrí los tuyos con **/reminders**."), ephemeral: true);
                 return;
             }
 
@@ -86,7 +86,7 @@ public class ReminderModule(IUserRepository userRepository, IReminderRepository 
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude guardar eso, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude guardar eso, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -123,7 +123,7 @@ public class ReminderModule(IUserRepository userRepository, IReminderRepository 
     }
 
     private static ReminderView NoAccount() =>
-        new("Todavía no tenés cuenta: empezá con **/start** y después el bot te avisa cuando termine cada espera.", null, null);
+        new(Loc.T("Todavía no tenés cuenta: empezá con **/start** y después el bot te avisa cuando termine cada espera."), null, null);
 
     // La pantalla a partir de los tipos apagados (pura, para probarla sin base de datos).
     public static ReminderView Compose(IReadOnlyCollection<string> offKinds, ulong discordId)
@@ -134,26 +134,26 @@ public class ReminderModule(IUserRepository userRepository, IReminderRepository 
         var lines = ReminderCatalog.All.Select(k =>
         {
             // La expedición de la mascota no tiene una espera fija (1, 4 u 8 horas según lo que se elija): se avisa cuando vuelve.
-            string wait = ReminderCatalog.WaitOf(k.Key) is { } w ? $"cada {ReminderCatalog.WaitLabel(w)}" : "cuando vuelve";
+            string wait = ReminderCatalog.WaitOf(k.Key) is { } w ? Loc.F($"cada {ReminderCatalog.WaitLabel(w)}") : Loc.T("cuando vuelve");
             return off.Contains(k.Key)
                 ? $"🔕 {k.Emoji} ~~{k.Name}~~ · {wait}"
                 : $"✅ {k.Emoji} **{k.Name}** · {wait}";
         });
 
         var embed = new EmbedBuilder()
-            .WithTitle("⏰ Tus recordatorios")
+            .WithTitle(Loc.T("⏰ Tus recordatorios"))
             .WithColor(OnboardingModule.BrandColor)
             .WithDescription(
-                "Cuando termina una espera, el bot te avisa en el canal donde usaste el comando. " +
-                $"Los de cacería, talar y minar (esperas cortas) se borran solos a los {(int)ReminderCatalog.ShortLived.TotalMinutes} minutos.\n\n" +
+                Loc.T("Cuando termina una espera, el bot te avisa en el canal donde usaste el comando. ") +
+                Loc.F($"Los de cacería, talar y minar (esperas cortas) se borran solos a los {(int)ReminderCatalog.ShortLived.TotalMinutes} minutos.\n\n") +
                 string.Join('\n', lines))
             .WithFooter(on == ReminderCatalog.All.Count
-                ? "Recibís todos. Desmarcá en la lista los que no querés."
-                : $"Recibís {on} de {ReminderCatalog.All.Count}. Marcá en la lista los que querés recibir.");
+                ? Loc.T("Recibís todos. Desmarcá en la lista los que no querés.")
+                : Loc.F($"Recibís {on} de {ReminderCatalog.All.Count}. Marcá en la lista los que querés recibir."));
 
         var menu = new SelectMenuBuilder()
             .WithCustomId($"{MenuPrefix}:{discordId}")
-            .WithPlaceholder("Marcá los que querés recibir")
+            .WithPlaceholder(Loc.T("Marcá los que querés recibir"))
             .WithMinValues(0)
             .WithMaxValues(ReminderCatalog.All.Count);
         foreach (var kind in ReminderCatalog.All)
@@ -164,8 +164,8 @@ public class ReminderModule(IUserRepository userRepository, IReminderRepository 
 
         var components = new ComponentBuilder()
             .WithSelectMenu(menu)
-            .WithButton("Recibir todos", $"{AllPrefix}:{discordId}:on", ButtonStyle.Success, new Emoji("🔔"), disabled: on == ReminderCatalog.All.Count, row: 1)
-            .WithButton("Silenciar todos", $"{AllPrefix}:{discordId}:off", ButtonStyle.Secondary, new Emoji("🔕"), disabled: on == 0, row: 1)
+            .WithButton(Loc.T("Recibir todos"), $"{AllPrefix}:{discordId}:on", ButtonStyle.Success, new Emoji("🔔"), disabled: on == ReminderCatalog.All.Count, row: 1)
+            .WithButton(Loc.T("Silenciar todos"), $"{AllPrefix}:{discordId}:off", ButtonStyle.Secondary, new Emoji("🔕"), disabled: on == 0, row: 1)
             .Build();
 
         return new ReminderView(null, embed.Build(), components);

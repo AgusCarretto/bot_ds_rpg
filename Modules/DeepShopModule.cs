@@ -42,7 +42,7 @@ public class DeepShopModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! El Tabernero del Inframundo no te escucha ahora, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! El Tabernero del Inframundo no te escucha ahora, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -56,7 +56,7 @@ public class DeepShopModule(
         {
             if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
             {
-                await FollowupAsync("Esa charla es de otra persona: pasá por el inframundo con **/deepshop**.", ephemeral: true);
+                await FollowupAsync(Loc.T("Esa charla es de otra persona: pasá por el inframundo con **/deepshop**."), ephemeral: true);
                 return;
             }
 
@@ -77,7 +77,7 @@ public class DeepShopModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude hacer la compra, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude hacer la compra, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -98,9 +98,9 @@ public class DeepShopModule(
     }
 
     // Lo que ve alguien que todavía no lo conoce: no dice dónde ni cómo (se descubre jugando), solo que existe.
-    public const string NotOpenMessage = "🕯️ No sabés de qué hablan. Dicen que, pasado el último guardián del fondo del mapa, hay alguien que vende lo que no se consigue. Primero llegá hasta ahí.";
+    public static string NotOpenMessage => Loc.T("🕯️ No sabés de qué hablan. Dicen que, pasado el último guardián del fondo del mapa, hay alguien que vende lo que no se consigue. Primero llegá hasta ahí.");
 
-    private const string NoAccount = "Todavía no tenés cuenta: empezá con **/start**.";
+    private static string NoAccount => Loc.T("Todavía no tenés cuenta: empezá con **/start**.");
 
     // La carta: la frase del tabernero, tu Polvo y lo que vende con su precio. null en Embed = todavía no lo conocés (PlainMessage explica). Pública y sin Context para probarla.
     public static async Task<DeepShopScene> BuildSceneAsync(
@@ -120,14 +120,14 @@ public class DeepShopModule(
 
         var menu = new SelectMenuBuilder()
             .WithCustomId($"{MenuPrefix}:{discordId}")
-            .WithPlaceholder($"Comprar UNA unidad ({GameHistory.Number(DeepShop.PricePerUnit)} de Polvo)")
+            .WithPlaceholder(Loc.F($"Comprar UNA unidad ({GameHistory.Number(DeepShop.PricePerUnit)} de Polvo)"))
             .WithMinValues(1)
             .WithMaxValues(1);
 
         var embed = new EmbedBuilder()
-            .WithTitle("🕯️ El Tabernero del Inframundo")
+            .WithTitle(Loc.T("🕯️ El Tabernero del Inframundo"))
             .WithColor(Color.DarkPurple)
-            .WithDescription((talk ?? NpcDialogue.DeepShopkeeper(DeepShopkeeperLine.Greeting, rng)) + $"\n\n✨ Tu Polvo: **{GameHistory.Number(player.Dust)}**");
+            .WithDescription((talk ?? NpcDialogue.DeepShopkeeper(DeepShopkeeperLine.Greeting, rng)) + Loc.F($"\n\n✨ Tu Polvo: **{GameHistory.Number(player.Dust)}**"));
 
         foreach (var entry in DeepShop.Stock)
         {
@@ -139,13 +139,13 @@ public class DeepShopModule(
 
             int have = await dustRepository.GetQuantityAsync(discordId, item.ItemId);
             embed.AddField(
-                $"{ItemDisplay.Format(item.Emoji, item.Name)} — {GameHistory.Number(DeepShop.PricePerUnit)} de Polvo",
-                $"{entry.UseLine}\nTenés **{GameHistory.Number(have)}**.",
+                Loc.F($"{ItemDisplay.Format(item.Emoji, item.Name)} — {GameHistory.Number(DeepShop.PricePerUnit)} de Polvo"),
+                Loc.F($"{entry.UseLine}\nTenés **{GameHistory.Number(have)}**."),
                 false);
-            menu.AddItemOption(item.Name, item.Name, entry.Key, $"{GameHistory.Number(DeepShop.PricePerUnit)} de Polvo · tenés {GameHistory.Number(have)}");
+            menu.AddItemOption(item.Name, item.Name, entry.Key, Loc.F($"{GameHistory.Number(DeepShop.PricePerUnit)} de Polvo · tenés {GameHistory.Number(have)}"));
         }
 
-        embed.WithFooter($"El Polvo sale de /dismantle. Para varias de una: /deepshop item:… cantidad:… (hasta {DeepShop.MaxPerPurchase}).");
+        embed.WithFooter(Loc.F($"El Polvo sale de /dismantle. Para varias de una: /deepshop item:… cantidad:… (hasta {DeepShop.MaxPerPurchase})."));
         var decorated = NpcImages.Decorate(embed.Build(), NpcImages.DeepShopkeeper);
         return new DeepShopScene(decorated, new ComponentBuilder().WithSelectMenu(menu).Build(), null, NpcImages.AttachmentPathFor(decorated));
     }
@@ -174,13 +174,13 @@ public class DeepShopModule(
 
         if (quantity < 1 || quantity > DeepShop.MaxPerPurchase)
         {
-            return new DeepShopResult($"Se compran de 1 a {DeepShop.MaxPerPurchase} por vez.", null);
+            return new DeepShopResult(Loc.F($"Se compran de 1 a {DeepShop.MaxPerPurchase} por vez."), null);
         }
 
         var item = await itemRepository.GetByNameAsync(entry.ItemName);
         if (item is null)
         {
-            return new DeepShopResult("El Tabernero del Inframundo no tiene eso en el catálogo todavía.", null);
+            return new DeepShopResult(Loc.T("El Tabernero del Inframundo no tiene eso en el catálogo todavía."), null);
         }
 
         int cost = DeepShop.Cost(quantity);
@@ -191,7 +191,7 @@ public class DeepShopModule(
                 return new DeepShopResult(NoAccount, null);
             case DustSpendStatus.NotEnoughDust:
                 return new DeepShopResult(
-                    NpcDialogue.DeepShopkeeper(DeepShopkeeperLine.NoDust, rng) + $"\n\n**{quantity}×** {ItemDisplay.Format(item.Emoji, item.Name)} cuesta **{GameHistory.Number(cost)}** de Polvo y tenés **{GameHistory.Number(player.Dust)}**.", null);
+                    NpcDialogue.DeepShopkeeper(DeepShopkeeperLine.NoDust, rng) + Loc.F($"\n\n**{quantity}×** {ItemDisplay.Format(item.Emoji, item.Name)} cuesta **{GameHistory.Number(cost)}** de Polvo y tenés **{GameHistory.Number(player.Dust)}**."), null);
         }
 
         await gameEvents.RecordAsync(discordId, GameEventKinds.DeepShopBuy, amount: quantity, detail: item.Name);
@@ -201,8 +201,8 @@ public class DeepShopModule(
             .WithItemThumbnail(item.Emoji)
             .WithDescription(
                 NpcDialogue.DeepShopkeeper(DeepShopkeeperLine.BuySuccess, rng) +
-                $"\n\nComprás **{quantity}×** {ItemDisplay.Format(item.Emoji, item.Name)} por **{GameHistory.Number(cost)}** de Polvo.")
-            .AddField("✨ Tu Polvo", $"**{GameHistory.Number(outcome.DustAfter)}**", false)
+                Loc.F($"\n\nComprás **{quantity}×** {ItemDisplay.Format(item.Emoji, item.Name)} por **{GameHistory.Number(cost)}** de Polvo."))
+            .AddField(Loc.T("✨ Tu Polvo"), $"**{GameHistory.Number(outcome.DustAfter)}**", false)
             .Build();
         return new DeepShopResult(null, embed);
     }
