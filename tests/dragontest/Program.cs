@@ -146,6 +146,15 @@ Check(bD.Dragon is not null && Math.Abs(bD.Dragon.GoldPercent - DragonRules.Bonu
 Console.WriteLine("\n== 5. La pantalla ==");
 var empty = await DragonModule.BuildDragonEmbedAsync(dragons, GHOST);
 Check(empty.Description.Contains("/taberna") && empty.Description.Contains("3.000") && empty.Fields.Length == 0, "sin dragón: dice cómo conseguirlo (taberna, 3.000 de oro)");
+// v0.44.0: /dragon en inglés (los nombres de los tipos, de los tiers y de las mejoras se quedan en español).
+using (Loc.Use("en"))
+{
+    string enDragon = LeakCheck.AllText(await DragonModule.BuildDragonEmbedAsync(dragons, D)) + "\n" + LeakCheck.AllText(await DragonModule.BuildDragonEmbedAsync(dragons, GHOST));
+    string[] dragonNames = ["Fuerza", "Defensa", "Oro", "Especial", "Cría", "Dragoncito", "Joven", "Adolescente", "Adulto", "Curtido", "Anciano", "Ancestral", "Legendario", "Eterno",
+        "Ojo de tesoro", "Garras de recolector", "Aliento final", "Piel de escamas", "Instinto de caza", "Hoguera de oro", "Sangre de dragón", "Fortuna", "Llama eterna", DragonRules.FoodItemName];
+    var dragonLeak = LeakCheck.NoSpanish(enDragon, dragonNames);
+    Check(dragonLeak.Ok, $"/dragon en inglés, sin español colado ({dragonLeak.Found})");
+}
 var view = await DragonModule.BuildDragonEmbedAsync(dragons, D);
 var ladder = view.Fields.Single(f => f.Name.Contains("mejora nueva")).Value.Split('\n');
 Check(view.Description.Contains("Tier **6/10**") && view.Description.Contains("Curtido") && ladder.Length == 10 && ladder.Count(l => l.StartsWith("✅")) == 6 && ladder.Count(l => l.StartsWith("🔒")) == 4 && ladder[3].Contains("Aliento final") && view.Description.Contains("Nivel **0/60**") && view.Fields.Any(f => f.Name.Contains("Criar") && f.Value.Contains("/dragon-breed")) && view.Fields.Any(f => f.Name.Contains("Entrenar")) && view.Length < 6000,
