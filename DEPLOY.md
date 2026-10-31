@@ -119,8 +119,9 @@ Usan el mismo `Dockerfile` (servicio tipo *worker*, sin puerto ni healthcheck) y
 | `TopGg__Token`, `TopGg__VoteUrl` | opcionales: prenden `/vote` (ver abajo). Sin el token el voto queda dormido |
 
 **Votar en top.gg (`/vote`, v0.18.0).** El bot NO recibe webhooks ni abre ningún puerto: cuando alguien escribe `/vote` le pregunta a top.gg (`GET https://top.gg/api/v1/projects/@me/votes/{id}?source=discord`,
-con `Authorization: Bearer <token>`) si tiene un voto vigente. Para prenderlo hace falta un proyecto aprobado en top.gg — **el bot o el servidor** (la API v1 llama «proyecto» a los dos y el código es el mismo; mientras el bot
-esté en revisión se puede usar el del servidor, y después se cambian las dos variables) —, copiar su **token** (en la página del proyecto, sección *Integrations & API*; tiene que ser un token de la API v1, no uno legacy) a la variable `TopGg__Token` del
+con `Authorization: Bearer <token>`) si tiene un voto vigente. **Desde el 2026-10-31 se vota el BOT** (aprobado en top.gg; link `https://top.gg/bot/1544372330157834272/vote`). Hasta esa fecha se votaba el
+servidor: la API v1 llama «proyecto» a los dos y el código es el mismo, así que el cambio fueron solo las dos variables (los votos al servidor ya no pagan). Para prenderlo hace falta copiar el **token** del proyecto (página del bot en top.gg →
+*Integrations & API*, más abajo de los webhooks: un token de la API v1 con permiso **Read** solamente, el bot no escribe nada; no hace falta crear un webhook) a la variable `TopGg__Token` del
 servicio (nunca al repo ni a un chat) y, si querés que el mensaje lleve el link, `TopGg__VoteUrl`. Se reinicia el servicio y listo; sin el token todo sigue igual y `/vote` solo explica el premio. Si el token está mal
 cargado, `/vote` contesta «no pude confirmar tu voto» y el log dice `top.gg no dio un voto usable (HTTP 401)` (nunca imprime el token).
 
