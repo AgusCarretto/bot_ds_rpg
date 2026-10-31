@@ -27,14 +27,14 @@ public static class DropsCatalog
         var monsters = zoneMonsters.ToList();
         var blocks = new List<DropsBlock>();
 
-        AddBlock(blocks, "🏹 Cazar", $"{CombatRewardCalculator.HuntDropChancePercent}% al ganar", monsters, MonsterKind.Hunt, items);
+        AddBlock(blocks, Loc.T("🏹 Cazar"), Loc.F($"{CombatRewardCalculator.HuntDropChancePercent}% al ganar"), monsters, MonsterKind.Hunt, items);
         // El viaje no suelta material: paga oro y EXP (x30 una cacería) y puede dar la caja de la zona.
-        AddBlock(blocks, "🗺️ Viajar (élite)", travelBox is null ? "sin material" : $"{travelBox.ChancePercent}% de caja", monsters, MonsterKind.Travel, items,
-            travelBox is null ? string.Empty : $"\n\n📦 {DescribeItem(travelBox.BoxName, items)}", showDrops: false);
+        AddBlock(blocks, Loc.T("🗺️ Viajar (élite)"), travelBox is null ? Loc.T("sin material") : Loc.F($"{travelBox.ChancePercent}% de caja"), monsters, MonsterKind.Travel, items,
+            travelBox is null ? string.Empty : Loc.F($"\n\n📦 {DescribeItem(travelBox.BoxName, items)}"), showDrops: false);
         string bossRepeatLine = bossRepeat is null
             ? string.Empty
-            : $"\n\n🔁 Si ya lo vencías: {bossRepeat.ChancePercent}% de {DescribeItem(bossRepeat.BoxName, items)}";
-        AddBlock(blocks, "👑 Jefe", $"cofre: {CombatRewardCalculator.BossChestFirstClearPercent}% la 1.ª vez", monsters, MonsterKind.Boss, items, bossRepeatLine);
+            : Loc.F($"\n\n🔁 Si ya lo vencías: {bossRepeat.ChancePercent}% de {DescribeItem(bossRepeat.BoxName, items)}");
+        AddBlock(blocks, Loc.T("👑 Jefe"), Loc.F($"cofre: {CombatRewardCalculator.BossChestFirstClearPercent}% la 1.ª vez"), monsters, MonsterKind.Boss, items, bossRepeatLine);
 
         return blocks;
     }
