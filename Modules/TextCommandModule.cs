@@ -70,7 +70,8 @@ public partial class TextCommandModule(
     IAdminAccess adminAccess,
     IAdminRepository adminRepository,
     IRedeemCodeRepository redeemCodeRepository,
-    IRedeemAttemptLimiter redeemAttemptLimiter) : ModuleBase<SocketCommandContext>
+    IRedeemAttemptLimiter redeemAttemptLimiter,
+    IReferralRepository referralRepository) : ModuleBase<SocketCommandContext>
 {
     // ---- Onboarding / clase ----
 

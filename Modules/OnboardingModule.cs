@@ -140,6 +140,7 @@ public class OnboardingModule(IUserRepository userRepository, IGameEvents gameEv
         if (kitGranted)
         {
             embed.AddField(Loc.T("🎁 Kit inicial"), Loc.F($"**{StarterKit.FoodQuantity}× {StarterKit.FoodItemName}** en tu mochila: usá `/heal` cuando te falte vida."), false);
+            embed.AddField(Loc.T("🤝 ¿Te invitó un amigo?"), ReferralModule.Hint(), false);
         }
 
         return embed

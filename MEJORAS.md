@@ -22,6 +22,7 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - **Comida para las zonas altas** (el dueño avisa cuándo), un cooldown en `/play` y zonas cada ~10 niveles (opinión dada, sin construir).
 
 **Ya hablado, falta hacerlo**
+- **Sacar el límite de intentos de `aa code` / `/code`** (el dueño, 2026-10-31: «que la gente pruebe el code que quiera»). Hoy `RedeemAttemptLimiter` frena 10 minutos después de 5 códigos que no existen en 10 minutos. Sacarlo es quitar ese chequeo en `CodeHandler` (y el limitador si no queda en uso) y ajustar `codetest`. El riesgo es poco: cada código se canjea una vez por persona y adivinar uno al azar es casi imposible.
 - Escena con desplegables para `/trade` y `/exchange` (como la taberna), para que el emoji se vea también al elegir: las listas de autocompletado no pueden llevarlo.
 - Limpiar los emojis unicode de los títulos y de los nombres de campo, pantalla por pantalla (necesita un set propio de íconos de estadística), y apilar los dos HP del combate para poder usar barras de emojis ahí.
 
@@ -37,6 +38,14 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
   Términos y Privacidad públicos, y hay que confirmar si hay Premium Apps en Uruguay (Developer Portal, Monetization). Punto de enganche: `ReminderPolicy.IsEligible` y `CooldownCatalog`. El título especial entra como categoría «Especiales» del sistema de títulos.
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
+
+## Invitar amigos: `aa invitedby @amigo` (v0.43.0, 2026-10-31)
+
+- **Pedido del dueño**: después de anunciar a mano «20k cuando tu invitado hace /start y 80k más al nivel 5», que el bot lo haga solo: «si te invitó un amigo, escribí aa invitedby y el nombre de tu amigo… solo 1 validez por cuenta», con 10k para el nuevo. Después: «que cualquiera lo pueda hacer pero 1 SOLA vez… si ya pasó el nivel 5 o de FN, que le dé los 80k también instantáneo».
+- **Cómo funciona**: `/invitedby amigo:` o `aa invitedby @amigo` (alias `invitado`, `meinvito`, `referido`). Una vez por cuenta, cualquier cuenta. El nuevo cobra **10.000** y el que invitó **20.000** en el momento; el que invitó cobra **80.000** más cuando el invitado llega al nivel 5 (o si ya estaba en el 5 o tenía un Fuego Nuevo, en el momento: 100.000 juntos). Sin nadie, muestra quién te invitó y a cuántos invitaste. El aviso «¿Te invitó un amigo?» está al final de `/tutorial` y en la pantalla de `/start`.
+- **Para la base viva**: correr `Database/add_referrals.sql` con `psql` (re-ejecutable). Sin la tabla solo falla `aa invitedby`; el resto del bot anda. Arnés nuevo: `tests/referraltest` (70 arneses).
+- **Ojo con los que ya cobraron a mano**: si alguien ya te avisó en #general y le pagaste con `aa admingive`, cuando su invitado use `aa invitedby` el bot le paga de nuevo. Son pocos casos; si querés evitarlo, que esos invitados no lo usen o descontalo a mano.
+- **Abierto**: no hay tope de invitados por jugador ni nada contra cuentas secundarias más allá del nivel 5; los eventos `referral` dicen quién invitó a quién. Las palancas son los montos y el nivel en `ReferralRules`.
 
 ## El jefe cada 10 horas (v0.42.0, 2026-10-31)
 

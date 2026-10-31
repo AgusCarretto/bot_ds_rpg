@@ -88,6 +88,10 @@ public static class GameEventKinds
     // v0.15.0: la historia (GameData/Lore.cs). Se abrió un capítulo del Acto I (la PRIMERA vez que vence a ese jefe; detail = la clave del capítulo): de este evento sale el aviso "📖 Capítulo desbloqueado".
     public const string StoryChapter = "story_chapter";
 
+    // v0.43.0: invitar amigos (GameData/Referrals.cs). Se registran en el INVITADO.
+    public const string Referral = "referral";              // anotó quién lo invitó; amount = oro que cobró el que invitó; detail = el ID de Discord del que invitó
+    public const string ReferralLevel = "referral_level";   // llegó al nivel 5 y el que lo invitó cobró ese premio; amount = ese oro; detail = el ID del que invitó
+
     // Las victorias de combate de las que sale un "enemigo vencido" (GameEventExtensions.RecordVictoryAsync suma el enemy_defeated con ellas).
     public static bool IsEnemyWin(string kind) => kind is HuntWin or TravelWin or BossWin or RaidWin;
 }
