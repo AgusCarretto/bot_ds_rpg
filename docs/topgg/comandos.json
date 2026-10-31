@@ -1,0 +1,990 @@
+[
+  {
+    "type": 1,
+    "name": "achievements",
+    "description": "Tus logros: cazador, herrero, recolector... con su progreso y premios."
+  },
+  {
+    "type": 1,
+    "name": "arena",
+    "description": "El torneo PvP diario: anotate, mirá quiénes van y el resultado del último.",
+    "options": [
+      {
+        "type": 1,
+        "name": "join",
+        "description": "Anotate en el torneo de hoy (se juega a las 00:00, hora de Uruguay)."
+      },
+      {
+        "type": 1,
+        "name": "listplayers",
+        "description": "Mirá quiénes están anotados en el torneo de hoy."
+      },
+      {
+        "type": 1,
+        "name": "results",
+        "description": "Mirá la llave y el campeón del último torneo que se jugó."
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "autohunt",
+    "description": "Resuelve una cacería completa de una sola vez, sin botones (comparte cooldown con /hunt)."
+  },
+  {
+    "type": 1,
+    "name": "bank",
+    "description": "Tu cuenta del banco: guardá oro a salvo de la penalidad por morir.",
+    "options": [
+      {
+        "type": 1,
+        "name": "view",
+        "description": "Mirá tu billetera y lo que tenés en el banco."
+      },
+      {
+        "type": 1,
+        "name": "open",
+        "description": "Abrí tu cuenta del banco (se paga una sola vez)."
+      },
+      {
+        "type": 1,
+        "name": "deposit",
+        "description": "Guardá oro en el banco.",
+        "options": [
+          {
+            "type": 3,
+            "name": "cantidad",
+            "description": "Cuánto guardás, o all para todo el oro que llevás.",
+            "required": true,
+            "min_value": -9007199254740991,
+            "max_value": 9007199254740991
+          }
+        ]
+      },
+      {
+        "type": 1,
+        "name": "withdraw",
+        "description": "Sacá oro del banco.",
+        "options": [
+          {
+            "type": 3,
+            "name": "cantidad",
+            "description": "Cuánto sacás, o all para todo lo que hay en el banco.",
+            "required": true,
+            "min_value": -9007199254740991,
+            "max_value": 9007199254740991
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "blessings",
+    "description": "Tus bendiciones (una por cada Fuego Nuevo) y la que tengas para elegir."
+  },
+  {
+    "type": 1,
+    "name": "boss",
+    "description": "Enfrentá al Jefe de tu zona, solo o con amigos (cooldown de 5 h, 30 min si perdés).",
+    "options": [
+      {
+        "type": 6,
+        "name": "companero",
+        "description": "Un amigo para pelear juntos por turnos (misma zona máxima que vos).",
+        "required": false,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      },
+      {
+        "type": 6,
+        "name": "companero2",
+        "description": "Otro amigo más (opcional).",
+        "required": false,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      },
+      {
+        "type": 6,
+        "name": "companero3",
+        "description": "Otro amigo más (opcional).",
+        "required": false,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      },
+      {
+        "type": 6,
+        "name": "companero4",
+        "description": "Otro amigo más (opcional).",
+        "required": false,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      },
+      {
+        "type": 6,
+        "name": "companero5",
+        "description": "Otro amigo más (opcional).",
+        "required": false,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "cd",
+    "description": "Mirá tus cooldowns: cazar, viajar, talar, minar, jefe, cajas, mascotas, diario y la Arena de hoy."
+  },
+  {
+    "type": 1,
+    "name": "chop",
+    "description": "Talá madera cercana (cooldown de 5 minutos).",
+    "options": [
+      {
+        "type": 3,
+        "name": "modo",
+        "description": "Normal, o Avanzada (4 sorteos juntos; pide el oficio Leñador al nivel 100).",
+        "required": false,
+        "choices": [
+          {
+            "name": "Normal",
+            "value": "normal"
+          },
+          {
+            "name": "Avanzada",
+            "value": "avanzada"
+          }
+        ],
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "class",
+    "description": "Elegí tu clase en Asado y Acero RPG (solo con nivel 1; después, con cada Fuego Nuevo)."
+  },
+  {
+    "type": 1,
+    "name": "code",
+    "description": "Canjeá un código por premios (solo lo ves vos).",
+    "options": [
+      {
+        "type": 3,
+        "name": "codigo",
+        "description": "El código que te dieron.",
+        "required": true,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "config",
+    "description": "Configurá cómo ves el bot: el resumen del combate y el recetario de la herrería."
+  },
+  {
+    "type": 1,
+    "name": "daily",
+    "description": "Reclamá tu recompensa diaria: más oro y EXP con la racha, y cajas desde el día 6."
+  },
+  {
+    "type": 1,
+    "name": "deepshop",
+    "description": "El Tabernero del Inframundo: comprá la Corteza y el Meteorito con Polvo.",
+    "options": [
+      {
+        "type": 3,
+        "name": "item",
+        "description": "Qué comprás. Sin elegir ves la carta.",
+        "required": false,
+        "choices": [
+          {
+            "name": "Corteza del Árbol de Vida",
+            "value": "corteza"
+          },
+          {
+            "name": "Fragmento de Meteorito",
+            "value": "meteorito"
+          }
+        ],
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      },
+      {
+        "type": 4,
+        "name": "cantidad",
+        "description": "Cuántos comprás (por defecto 1).",
+        "required": false,
+        "min_value": 1,
+        "max_value": 10
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "dismantle",
+    "description": "Desmantelá materiales para conseguir Polvo (la cantidad que quieras, o todo).",
+    "options": [
+      {
+        "type": 3,
+        "name": "item",
+        "description": "Elegí de la lista el material que querés desmantelar.",
+        "required": true,
+        "autocomplete": true,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      },
+      {
+        "type": 3,
+        "name": "cantidad",
+        "description": "Cuántos desmantelás: un número o \"todo\" (por defecto 1).",
+        "required": false,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "dragon",
+    "description": "Mirá tu dragón: su tipo, su tier, sus mejoras, y cómo entrenarlo y criarlo con un amigo."
+  },
+  {
+    "type": 1,
+    "name": "dragon-board",
+    "description": "Tablón de crías: anotate para buscar pareja de tu tier y mirá quién busca."
+  },
+  {
+    "type": 1,
+    "name": "dragon-breed",
+    "description": "Criá tu dragón con un amigo del mismo tier (suben los dos) o solo, con un tercio de la chance.",
+    "options": [
+      {
+        "type": 6,
+        "name": "amigo",
+        "description": "Con quién (si no ponés a nadie, lo criás solo, con un tercio de la chance)",
+        "required": false,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "dragon-name",
+    "description": "Ponele nombre a tu dragón (o cambiáselo): cuesta oro cada vez.",
+    "options": [
+      {
+        "type": 3,
+        "name": "nombre",
+        "description": "El nombre nuevo (2 a 24 letras, números o espacios)",
+        "required": true,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "dragon-train",
+    "description": "Entrená a tu dragón con oro: cada nivel suma al bono de su tipo y sale más caro que el anterior.",
+    "options": [
+      {
+        "type": 4,
+        "name": "veces",
+        "description": "Cuántos niveles (se entrena hasta donde alcance el oro)",
+        "required": false,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "drops",
+    "description": "Mirá qué suelta cada monstruo de cada zona (cazar, viajar y jefe) y con qué chance."
+  },
+  {
+    "type": 1,
+    "name": "duels",
+    "description": "Tu historial de duelos: tu récord y contra quién fueron los últimos.",
+    "options": [
+      {
+        "type": 6,
+        "name": "jugador",
+        "description": "Opcional: de qué jugador del server querés ver los duelos.",
+        "required": false,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "enchant",
+    "description": "Encantá tu arma o tu amuleto con oro y Polvo (sin elegir, ves cómo estás).",
+    "options": [
+      {
+        "type": 3,
+        "name": "pieza",
+        "description": "Qué encantar. Sin elegir ves lo tuyo; con Info, los tiers, sus chances y costos.",
+        "required": false,
+        "choices": [
+          {
+            "name": "Arma",
+            "value": "weapon"
+          },
+          {
+            "name": "Amuleto",
+            "value": "amulet"
+          },
+          {
+            "name": "Info: tiers, chances y costos",
+            "value": "info"
+          }
+        ],
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      },
+      {
+        "type": 3,
+        "name": "modo",
+        "description": "Normal, o Avanzado (2 tiradas, te quedás la mejor, 1,5× el costo; pide el oficio Encantador al 100).",
+        "required": false,
+        "choices": [
+          {
+            "name": "Normal",
+            "value": "normal"
+          },
+          {
+            "name": "Avanzado",
+            "value": "avanzado"
+          }
+        ],
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      },
+      {
+        "type": 3,
+        "name": "efecto",
+        "description": "Arma: Filo, Crítico o Sangre. Amuleto: Guarda, Vida o Esquive. Sin elegir, el que ya tiene.",
+        "required": false,
+        "choices": [
+          {
+            "name": "Filo (arma)",
+            "value": "filo"
+          },
+          {
+            "name": "Crítico (arma)",
+            "value": "critico"
+          },
+          {
+            "name": "Sangre (arma)",
+            "value": "sangre"
+          },
+          {
+            "name": "Guarda (amuleto)",
+            "value": "guarda"
+          },
+          {
+            "name": "Vida (amuleto)",
+            "value": "vida"
+          },
+          {
+            "name": "Esquive (amuleto)",
+            "value": "esquive"
+          }
+        ],
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "exchange",
+    "description": "El tabernero te cambia 3 drops de una zona por 1 de la misma zona.",
+    "options": [
+      {
+        "type": 3,
+        "name": "dar",
+        "description": "El drop que entregás, de a 3 por cambio. Elegí de la lista.",
+        "required": true,
+        "autocomplete": true,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      },
+      {
+        "type": 3,
+        "name": "recibir",
+        "description": "El drop de la MISMA zona que querés recibir, de a 1 por cambio.",
+        "required": true,
+        "autocomplete": true,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      },
+      {
+        "type": 4,
+        "name": "veces",
+        "description": "Cuántos cambios hacés juntos (cada uno es 3 por 1). Por defecto 1.",
+        "required": false,
+        "min_value": 1,
+        "max_value": 50
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "fight",
+    "description": "Desafiá a otro jugador a un duelo amistoso (no se gana ni se pierde nada: es por el honor).",
+    "options": [
+      {
+        "type": 6,
+        "name": "player",
+        "description": "A quién querés desafiar.",
+        "required": true,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "forge",
+    "description": "Pasá por la herrería: elegí de la lista qué querés que te forje, o mirá las recetas de cada zona."
+  },
+  {
+    "type": 1,
+    "name": "forge-special",
+    "description": "El equipo del Fogón Eterno (Zona 0): mirá desde ya qué materiales guardar para forjarlo."
+  },
+  {
+    "type": 1,
+    "name": "fuegonuevo",
+    "description": "Fuego Nuevo: volvé a empezar con bonus permanentes y una bendición nueva."
+  },
+  {
+    "type": 1,
+    "name": "give",
+    "description": "Dale monedas a otro jugador.",
+    "options": [
+      {
+        "type": 6,
+        "name": "jugador",
+        "description": "A quién le das las monedas.",
+        "required": true,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      },
+      {
+        "type": 3,
+        "name": "cantidad",
+        "description": "Cuántas monedas le das, o all para darle todo tu oro.",
+        "required": true,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "heal",
+    "description": "Curate toda la vida de una: come lo necesario de tu mochila (o elegí qué comida usar).",
+    "options": [
+      {
+        "type": 3,
+        "name": "comida",
+        "description": "Opcional: qué comida usar. Sin elegir, uso la combinación que menos desperdicie.",
+        "required": false,
+        "autocomplete": true,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "history",
+    "description": "Tu historial de juegos: cuántas veces jugaste, ganaste y perdiste en cada uno.",
+    "options": [
+      {
+        "type": 6,
+        "name": "jugador",
+        "description": "Opcional: de qué jugador del server querés ver el historial.",
+        "required": false,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "hunt",
+    "description": "Salí a cazar monstruos cercanos (cooldown de 1 minuto)."
+  },
+  {
+    "type": 1,
+    "name": "info",
+    "description": "La lista de comandos, o con un tema te explica cómo funciona algo (enchant, play, bank...).",
+    "options": [
+      {
+        "type": 3,
+        "name": "tema",
+        "description": "Opcional: de qué querés saber cómo funciona (elegí de la lista o escribilo).",
+        "required": false,
+        "autocomplete": true,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "inventory",
+    "description": "Mostrá los materiales que tenés guardados (o los de otro jugador del server).",
+    "options": [
+      {
+        "type": 6,
+        "name": "jugador",
+        "description": "Opcional: de qué jugador del server querés ver el inventario.",
+        "required": false,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "language",
+    "description": "Idioma / Language: español o English",
+    "options": [
+      {
+        "type": 3,
+        "name": "idioma",
+        "description": "Español o English / Spanish or English",
+        "required": false,
+        "choices": [
+          {
+            "name": "Español",
+            "value": "es"
+          },
+          {
+            "name": "English",
+            "value": "en"
+          }
+        ],
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "leaderboard",
+    "description": "El ranking del server: primero por Fuego Nuevo y después por nivel."
+  },
+  {
+    "type": 1,
+    "name": "mine",
+    "description": "Miná materiales cercanos (cooldown de 5 minutos).",
+    "options": [
+      {
+        "type": 3,
+        "name": "modo",
+        "description": "Normal, o Avanzada (4 sorteos juntos; pide el oficio Minero al nivel 100).",
+        "required": false,
+        "choices": [
+          {
+            "name": "Normal",
+            "value": "normal"
+          },
+          {
+            "name": "Avanzada",
+            "value": "avanzada"
+          }
+        ],
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "miniboss",
+    "description": "Anotate al jefe mundial de hoy: se pelea entre todos a las 00:00 y gasta tu cooldown del jefe."
+  },
+  {
+    "type": 1,
+    "name": "missions",
+    "description": "Tus misiones del día y de la semana (se reinician a medianoche, hora de Uruguay)."
+  },
+  {
+    "type": 1,
+    "name": "open",
+    "description": "Abrí cajas (hasta 10 juntas) o huevos de mascota de tu inventario.",
+    "options": [
+      {
+        "type": 3,
+        "name": "box",
+        "description": "Elegí la caja o el huevo que querés abrir.",
+        "required": true,
+        "autocomplete": true,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      },
+      {
+        "type": 4,
+        "name": "cantidad",
+        "description": "Cuántas abrís (1 a 10, por defecto 1).",
+        "required": false,
+        "min_value": 1,
+        "max_value": 10
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "pet",
+    "description": "Tus mascotas: mirá sus bonus y alimentalas (una vez por hora cada una).",
+    "options": [
+      {
+        "type": 1,
+        "name": "view",
+        "description": "Mirá tus mascotas, el bonus que da cada una y cuándo pueden comer."
+      },
+      {
+        "type": 1,
+        "name": "feed",
+        "description": "Dale Comida para Mascotas: a la que elijas o, sin elegir, a todas las que puedan comer.",
+        "options": [
+          {
+            "type": 3,
+            "name": "mascota",
+            "description": "Cuál alimentás. Si no elegís ninguna, comen todas las que estén listas.",
+            "required": false,
+            "autocomplete": true,
+            "min_value": -9007199254740991,
+            "max_value": 9007199254740991
+          }
+        ]
+      },
+      {
+        "type": 1,
+        "name": "evolve",
+        "description": "Evolucioná una mascota en el nivel máximo de su tier (pide horas de expedición y huevos).",
+        "options": [
+          {
+            "type": 3,
+            "name": "mascota",
+            "description": "Cuál evolucionás. Si hay una sola lista, esa.",
+            "required": false,
+            "autocomplete": true,
+            "min_value": -9007199254740991,
+            "max_value": 9007199254740991
+          }
+        ]
+      },
+      {
+        "type": 1,
+        "name": "expedition",
+        "description": "Mandá a una mascota nivel 10 de expedición (1, 4 u 8 h) y recogé el premio cuando vuelva.",
+        "options": [
+          {
+            "type": 3,
+            "name": "mascota",
+            "description": "Cuál mandás. Sin elegir, te muestro las opciones.",
+            "required": false,
+            "autocomplete": true,
+            "min_value": -9007199254740991,
+            "max_value": 9007199254740991
+          },
+          {
+            "type": 4,
+            "name": "duracion",
+            "description": "Cuántas horas: más tiempo, más premio y más chance de hallazgo.",
+            "required": false,
+            "choices": [
+              {
+                "name": "1 hora",
+                "value": 1
+              },
+              {
+                "name": "4 horas",
+                "value": 4
+              },
+              {
+                "name": "8 horas",
+                "value": 8
+              }
+            ],
+            "min_value": -9007199254740991,
+            "max_value": 9007199254740991
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "play",
+    "description": "Apostá tu oro en el casino (Coinflip, Slots o Blackjack).",
+    "options": [
+      {
+        "type": 3,
+        "name": "game",
+        "description": "Elegí el juego.",
+        "required": true,
+        "choices": [
+          {
+            "name": "Coinflip",
+            "value": "coinflip"
+          },
+          {
+            "name": "Slots",
+            "value": "slots"
+          },
+          {
+            "name": "Blackjack",
+            "value": "blackjack"
+          }
+        ],
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      },
+      {
+        "type": 3,
+        "name": "apuesta",
+        "description": "Cuánto oro querés apostar (mínimo 10; también 10k, 1m), o all para apostar todo.",
+        "required": true,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      },
+      {
+        "type": 3,
+        "name": "lado",
+        "description": "Solo para Coinflip: elegí Heads o Tails.",
+        "required": false,
+        "choices": [
+          {
+            "name": "Heads",
+            "value": "heads"
+          },
+          {
+            "name": "Tails",
+            "value": "tails"
+          }
+        ],
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "professions",
+    "description": "Tus oficios (Leñador, Minero, Encantador): nivel, XP y lo que dan."
+  },
+  {
+    "type": 1,
+    "name": "profile",
+    "description": "Mostrá tu estado actual, nivel y estadísticas (o los de otro jugador del server).",
+    "options": [
+      {
+        "type": 6,
+        "name": "jugador",
+        "description": "Opcional: de qué jugador del server querés ver el perfil.",
+        "required": false,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "reminders",
+    "description": "Los avisos del bot cuando termina una espera (cacería, viaje, talar, jefe...): elegí cuáles recibir."
+  },
+  {
+    "type": 1,
+    "name": "shop",
+    "description": "Comprá objetos con tu oro.",
+    "options": [
+      {
+        "type": 1,
+        "name": "buy",
+        "description": "Comprá un consumible de la tienda.",
+        "options": [
+          {
+            "type": 3,
+            "name": "item",
+            "description": "Elegí de la lista el consumible que querés comprar.",
+            "required": true,
+            "autocomplete": true,
+            "min_value": -9007199254740991,
+            "max_value": 9007199254740991
+          },
+          {
+            "type": 4,
+            "name": "cantidad",
+            "description": "Cuántos querés comprar (por defecto 1).",
+            "required": false,
+            "min_value": -9007199254740991,
+            "max_value": 9007199254740991
+          }
+        ]
+      },
+      {
+        "type": 1,
+        "name": "sell",
+        "description": "Vendé ítems de tu inventario a cambio de oro.",
+        "options": [
+          {
+            "type": 3,
+            "name": "item",
+            "description": "Elegí de la lista lo que querés vender.",
+            "required": true,
+            "autocomplete": true,
+            "min_value": -9007199254740991,
+            "max_value": 9007199254740991
+          },
+          {
+            "type": 4,
+            "name": "cantidad",
+            "description": "Cuántos querés vender (por defecto 1).",
+            "required": false,
+            "min_value": -9007199254740991,
+            "max_value": 9007199254740991
+          }
+        ]
+      },
+      {
+        "type": 1,
+        "name": "sellall",
+        "description": "Vendé todo tu inventario de una sola vez a cambio de oro."
+      },
+      {
+        "type": 1,
+        "name": "view",
+        "description": "Mostrá la tienda: comida y cajas en venta."
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "start",
+    "description": "Empezá tu aventura en Asado y Acero RPG: elegí tu clase inicial."
+  },
+  {
+    "type": 1,
+    "name": "story",
+    "description": "Las Crónicas del Fogón: la historia que te cuenta el Tabernero, capítulo por capítulo."
+  },
+  {
+    "type": 1,
+    "name": "taberna",
+    "description": "Pasá por la taberna: comé, comprá comida y cajas, y vendé con el tabernero."
+  },
+  {
+    "type": 1,
+    "name": "tips",
+    "description": "Un consejo: qué te falta para tu próxima forja y de dónde sacarlo."
+  },
+  {
+    "type": 1,
+    "name": "titles",
+    "description": "Tus títulos: mirá los que desbloqueaste y ponete uno en el perfil."
+  },
+  {
+    "type": 1,
+    "name": "tools",
+    "description": "Pasá por el Carpintero: mirá tu hacha y tu pico y armá uno mejor para recolectar más."
+  },
+  {
+    "type": 1,
+    "name": "trade",
+    "description": "Cambiá 1 material por 1 de otro material de la misma rareza con otro jugador.",
+    "options": [
+      {
+        "type": 6,
+        "name": "player",
+        "description": "Con quién querés cambiar.",
+        "required": true,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      },
+      {
+        "type": 3,
+        "name": "give",
+        "description": "El material que das (1 unidad).",
+        "required": true,
+        "autocomplete": true,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      },
+      {
+        "type": 3,
+        "name": "get",
+        "description": "El material que querés a cambio (misma rareza).",
+        "required": true,
+        "autocomplete": true,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "travel",
+    "description": "Enfrentá al monstruo élite de tu zona: más difícil, recompensa x30 (cooldown de 30 minutos)."
+  },
+  {
+    "type": 1,
+    "name": "tutorial",
+    "description": "Aprendé el loop básico del juego: recolección, herrería, combate y supervivencia."
+  },
+  {
+    "type": 1,
+    "name": "use",
+    "description": "Usá un consumible de tu inventario para curar HP (funciona incluso en combate, sin gastar oro).",
+    "options": [
+      {
+        "type": 3,
+        "name": "item",
+        "description": "Elegí de la lista la comida que querés usar.",
+        "required": true,
+        "autocomplete": true,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "vote",
+    "description": "Votá en top.gg: te llevás un Baúl de Roble y el jefe se resetea."
+  },
+  {
+    "type": 1,
+    "name": "zona",
+    "description": "Viajá a otra zona del mundo (usá /zonas para ver los IDs disponibles).",
+    "options": [
+      {
+        "type": 4,
+        "name": "id",
+        "description": "Elegí de la lista la zona a la que querés viajar (ver /zonas).",
+        "required": true,
+        "autocomplete": true,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "zonas",
+    "description": "Mostrá todas las zonas del mundo y sus niveles requeridos."
+  }
+]

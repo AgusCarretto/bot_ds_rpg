@@ -1,7 +1,11 @@
 # Comandos para top.gg
 
-Lo que va en el panel del bot → *Commands*. Un comando por fila: nombre y descripción corta. Sacado de los
-`[SlashCommand]` del código (2026-10-31, v0.41.2); cuando se agregue o cambie un comando, se actualiza acá también.
+**Para cargarlos en top.gg** (panel del bot → *Commands* → *Import from Discord*) se pega el contenido de
+[comandos.json](comandos.json): el importador solo acepta el JSON de comandos de Discord, no esta tabla. Ese JSON se
+arma desde el código con `dotnet run --project tools/slashjson -- docs/topgg/comandos.json` (no necesita token ni
+conectarse a Discord); cuando se agregue o cambie un comando, se vuelve a generar y se reimporta.
+
+Esta tabla es la versión para leer (2026-10-31, v0.41.2).
 Los comandos de administrador (`aa admingive`, `aa admincode`) NO van: no son para los jugadores.
 
 Todo comando también se puede escribir con el prefijo `aa` (por ejemplo `aa hunt`, `aa daily`).
