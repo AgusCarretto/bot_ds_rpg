@@ -39,7 +39,7 @@ public class AchievementsModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude mostrar tus logros, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude mostrar tus logros, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -55,7 +55,7 @@ public class AchievementsModule(
         {
             if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
             {
-                await FollowupAsync("Esos logros son de otra persona: usá **/achievements** para ver los tuyos.", ephemeral: true);
+                await FollowupAsync(Loc.T("Esos logros son de otra persona: usá **/achievements** para ver los tuyos."), ephemeral: true);
                 return;
             }
 
@@ -71,7 +71,7 @@ public class AchievementsModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude abrir esa página de logros, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude abrir esa página de logros, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -90,7 +90,7 @@ public class AchievementsModule(
         {
             if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
             {
-                await FollowupAsync("Esos logros son de otra persona: usá **/achievements** para ver los tuyos.", ephemeral: true);
+                await FollowupAsync(Loc.T("Esos logros son de otra persona: usá **/achievements** para ver los tuyos."), ephemeral: true);
                 return;
             }
 
@@ -107,7 +107,7 @@ public class AchievementsModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude cobrar los logros, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude cobrar los logros, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -154,7 +154,7 @@ public class AchievementsModule(
 
         if (totals.IsEmpty)
         {
-            return new AchievementClaimResult("No tenés logros listos para reclamar ahora. Mirá tu progreso con **/achievements**.", null);
+            return new AchievementClaimResult(Loc.T("No tenés logros listos para reclamar ahora. Mirá tu progreso con **/achievements**."), null);
         }
 
         if (totals.LevelsGained > 0)
@@ -163,10 +163,10 @@ public class AchievementsModule(
         }
 
         var embed = new EmbedBuilder()
-            .WithTitle("🏆 ¡Logros reclamados!")
+            .WithTitle(Loc.T("🏆 ¡Logros reclamados!"))
             .WithColor(Color.Gold)
-            .WithDescription($"{string.Join('\n', lines)}\n\n**Total:** {totals.Describe()}")
-            .AddField("💰 Tu oro ahora", totals.GoldAfter.ToString(), true);
+            .WithDescription(Loc.F($"{string.Join('\n', lines)}\n\n**Total:** {totals.Describe()}"))
+            .AddField(Loc.T("💰 Tu oro ahora"), totals.GoldAfter.ToString(), true);
 
         // La subida de nivel sale como mensaje propio (GameData/LevelUpCard.cs), no como una línea más acá.
         return new AchievementClaimResult(null, embed.Build());
@@ -181,14 +181,14 @@ public class AchievementsModule(
         var shown = category.Keys.Select(k => rows.FirstOrDefault(r => r.Definition.Key == k)).OfType<AchievementRow>().ToList();
 
         var embed = new EmbedBuilder()
-            .WithTitle($"🏆 Tus logros — {category.Emoji} {category.Name}")
+            .WithTitle(Loc.F($"🏆 Tus logros — {category.Emoji} {category.Name}"))
             .WithColor(Color.Gold)
-            .WithDescription("Cada logro tiene tres tramos. ✅ cobrado · 🎁 listo para reclamar · 🔒 todavía no. Cuentan desde que se activó el registro de eventos.")
+            .WithDescription(Loc.T("Cada logro tiene tres tramos. ✅ cobrado · 🎁 listo para reclamar · 🔒 todavía no. Cuentan desde que se activó el registro de eventos."))
             .AddField("Logros", string.Join("\n\n", shown.Select(Line)));
 
         int claimable = rows.Sum(r => r.ClaimableTiers.Count);
-        string tail = claimable > 0 ? $"🎁 Tenés {claimable} para reclamar en total: tocá el botón." : "Seguí jugando: se suman solos.";
-        embed.WithFooter($"Página {page + 1}/{AchievementCatalog.Categories.Count} · {tail}");
+        string tail = claimable > 0 ? Loc.F($"🎁 Tenés {claimable} para reclamar en total: tocá el botón.") : Loc.T("Seguí jugando: se suman solos.");
+        embed.WithFooter(Loc.F($"Página {page + 1}/{AchievementCatalog.Categories.Count} · {tail}"));
 
         return embed.Build();
     }
@@ -198,7 +198,7 @@ public class AchievementsModule(
     {
         page = Math.Clamp(page, 0, AchievementCatalog.Categories.Count - 1);
 
-        var menu = new SelectMenuBuilder().WithCustomId($"ach_page:{ownerId}").WithPlaceholder("Elegí una página de logros");
+        var menu = new SelectMenuBuilder().WithCustomId($"ach_page:{ownerId}").WithPlaceholder(Loc.T("Elegí una página de logros"));
         for (int i = 0; i < AchievementCatalog.Categories.Count; i++)
         {
             var category = AchievementCatalog.Categories[i];
@@ -208,7 +208,7 @@ public class AchievementsModule(
             int total = inCategory.Sum(r => r.Definition.Tiers.Count);
 
             // El emoji va en el texto de la opción y no como emote de la opción (regla del proyecto: un emoji que Discord rechaza tira abajo el mensaje entero).
-            menu.AddOption($"{category.Emoji} {category.Name}", i.ToString(), ready > 0 ? $"🎁 {ready} para reclamar" : $"{done}/{total} tramos cobrados", isDefault: i == page);
+            menu.AddOption($"{category.Emoji} {category.Name}", i.ToString(), ready > 0 ? Loc.F($"🎁 {ready} para reclamar") : Loc.F($"{done}/{total} tramos cobrados"), isDefault: i == page);
         }
 
         var components = new ComponentBuilder().WithSelectMenu(menu, row: 0);
@@ -216,7 +216,7 @@ public class AchievementsModule(
         int claimable = rows.Sum(r => r.ClaimableTiers.Count);
         if (claimable > 0)
         {
-            components.WithButton($"Reclamar ({claimable})", $"ach_claim:{ownerId}:{page}", ButtonStyle.Success, new Emoji("🏆"), row: 1);
+            components.WithButton(Loc.F($"Reclamar ({claimable})"), $"ach_claim:{ownerId}:{page}", ButtonStyle.Success, new Emoji("🏆"), row: 1);
         }
 
         return components.Build();
@@ -235,7 +235,7 @@ public class AchievementsModule(
         string progress;
         if (row.Reached >= row.Definition.Tiers.Count)
         {
-            progress = $"✨ ¡Completo! ({row.Value})";
+            progress = Loc.F($"✨ ¡Completo! ({row.Value})");
         }
         else
         {
