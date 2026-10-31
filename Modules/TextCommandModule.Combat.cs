@@ -24,7 +24,7 @@ public partial class TextCommandModule
     // pega por turnos (v0.19.0, reemplaza al viejo "aa raid"). Solo ARRANCA la invitación: los botones (Aceptar / Rechazar / Empezar ya / Atacar / Huir) siempre llegan como interacción
     // de componente, sin importar si el mensaje nació de un slash command o de este comando de texto.
     [Command("boss")]
-    [Summary("Enfrentá al Jefe de tu zona, solo o con amigos: \"aa boss @amigo\" (hasta 5, misma zona máxima, pegan por turnos). Cooldown de 5 horas; si perdés o huís, 30 minutos.")]
+    [Summary("Enfrentá al Jefe de tu zona, solo o con amigos: \"aa boss @amigo\" (hasta 5, misma zona máxima, pegan por turnos). Cooldown de 10 horas; si perdés o huís, 30 minutos.")]
     public async Task BossAsync(params IUser[] companions)
     {
         if (companions.Length == 0)

@@ -27,7 +27,7 @@ public class AdventureModule(
 
     // El jefe de la zona, SOLO o EN EQUIPO (v0.19.0; reemplaza al viejo /raid): sin compañeros es la pelea de siempre; nombrando a uno o más (hasta 5) arma un grupo que pega por turnos
     // y exige la misma zona máxima (ver Modules/RaidModule.cs). Slash no tiene parámetros variables, de ahí los cinco opcionales; "aa boss @a @b" los toma todos juntos.
-    [SlashCommand("boss", "Enfrentá al Jefe de tu zona, solo o con amigos (cooldown de 5 h, 30 min si perdés).")]
+    [SlashCommand("boss", "Enfrentá al Jefe de tu zona, solo o con amigos (cooldown de 10 h, 30 min si perdés).")]
     public Task HandleBossAsync(
         [Summary("companero", "Un amigo para pelear juntos por turnos (misma zona máxima que vos).")] IUser? companion = null,
         [Summary("companero2", "Otro amigo más (opcional).")] IUser? companion2 = null,

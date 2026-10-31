@@ -53,9 +53,9 @@ Check(await adventure.TryClaimCooldownAsync(A, boss.CommandName, boss.Duration, 
 await adventure.ReleaseCooldownAsync(A, boss.CommandName, boss.Duration);
 await adventure.ReleaseCooldownAsync(A, boss.CommandName, boss.Duration);
 Check(!await HasRow(A), "soltar dos veces (o sin que haya nada) no falla ni cambia nada");
-await db.ExecuteAsync("INSERT INTO cooldowns (discord_id, command_name, last_executed_at) VALUES (@id, 'boss', now() - interval '6 hours')", new { id = (long)A });
+await db.ExecuteAsync("INSERT INTO cooldowns (discord_id, command_name, last_executed_at) VALUES (@id, 'boss', now() - interval '11 hours')", new { id = (long)A });
 await adventure.ReleaseCooldownAsync(A, boss.CommandName, boss.Duration);
-Check(await HasRow(A), "un cooldown que ya había vencido (hace 6 h) no se toca: solo se suelta el que sigue corriendo");
+Check(await HasRow(A), "un cooldown que ya había vencido (hace 11 h) no se toca: solo se suelta el que sigue corriendo");
 await db.ExecuteAsync("INSERT INTO cooldowns (discord_id, command_name, last_executed_at) VALUES (@id, 'hunt', now()) ON CONFLICT (discord_id, command_name) DO UPDATE SET last_executed_at = now()", new { id = (long)A });
 await BusyBoss(A);
 await adventure.ReleaseCooldownAsync(A, boss.CommandName, boss.Duration);

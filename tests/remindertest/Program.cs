@@ -65,7 +65,7 @@ Check(ReminderCatalog.WaitOf("hunt") == CooldownCatalog.Hunt.Duration && Reminde
     && ReminderCatalog.WaitOf("buybox") == CooldownCatalog.BoxBuy.Duration && ReminderCatalog.WaitOf("chop_adv") == CooldownCatalog.ChopAdvanced.Duration && ReminderCatalog.WaitOf("pet") == PetRules.FeedCooldown
     && ReminderCatalog.WaitOf("daily") == DailyRewardCalculator.MinInterval && ReminderCatalog.WaitOf("nada") is null && ReminderCatalog.Keys.Where(k => k != "expedition").All(k => ReminderCatalog.WaitOf(k) is not null) && ReminderCatalog.WaitOf("expedition") is null,
     "la espera de cada tipo sale de las constantes del juego (CooldownCatalog, PetRules, DailyRewardCalculator); la expedición no tiene una fija (1, 4 u 8 h)");
-Check(new[] { "hunt", "travel", "chop", "boss", "buybox", "chop_adv", "pet", "daily" }.Select(k => ReminderCatalog.WaitLabel(ReminderCatalog.WaitOf(k)!.Value)).SequenceEqual(["1 min", "30 min", "5 min", "5 h", "2 h", "1 h", "1 h", "24 h"]), "etiquetas de espera: 1 min, 30 min, 5 min, 5 h, 2 h, 1 h, 1 h, 24 h");
+Check(new[] { "hunt", "travel", "chop", "boss", "buybox", "chop_adv", "pet", "daily" }.Select(k => ReminderCatalog.WaitLabel(ReminderCatalog.WaitOf(k)!.Value)).SequenceEqual(["1 min", "30 min", "5 min", "10 h", "2 h", "1 h", "1 h", "24 h"]), "etiquetas de espera: 1 min, 30 min, 5 min, 10 h, 2 h, 1 h, 1 h, 24 h");
 
 // -- FromCooldowns
 var rows = new List<(string, DateTime)>
@@ -73,7 +73,7 @@ var rows = new List<(string, DateTime)>
     ("hunt", now0.AddSeconds(-10)),       // corre: faltan ~50 s
     ("chop", now0.AddMinutes(-10)),       // ya terminó (5 min): sin aviso
     ("travel", now0.AddMinutes(-5)),      // corre: faltan ~25 min
-    ("boss", now0.AddHours(-4.5)),        // la espera corta de un jefe perdido (ya acomodada en last_executed_at): faltan 30 min
+    ("boss", now0.AddHours(-9.5)),        // la espera corta de un jefe perdido (ya acomodada en last_executed_at): faltan 30 min
     ("daily", now0.AddHours(-1)),         // 'daily' no vive en cooldowns como esta clase: igual no es de la tabla de cooldowns → se ignora
     ("raid", now0),                       // no es un tipo
     ("buybox", now0.AddMinutes(-30)),
@@ -125,7 +125,7 @@ var all = ReminderModule.Compose([], U);
 string allT = AllText(all.Embed!);
 Check(all.PlainMessage is null && all.Embed is not null && all.Components is not null, "con todo prendido hay embed y controles");
 Check(ReminderCatalog.All.All(k => allT.Contains(k.Name)) && allT.Split('\n').Count(l => l.StartsWith("✅")) == 13 && !allT.Contains("🔕"), "las 13 líneas con ✅, una por tipo, ninguna apagada");
-Check(allT.Contains("cada 1 min") && allT.Contains("cada 24 h") && allT.Contains("cada 5 h"), "cada línea dice cada cuánto");
+Check(allT.Contains("cada 1 min") && allT.Contains("cada 24 h") && allT.Contains("cada 10 h"), "cada línea dice cada cuánto");
 Check(allT.Contains("2 minutos") && all.Embed!.Length <= 6000, $"avisa que los cortos se borran a los 2 minutos y entra en Discord ({all.Embed.Length})");
 var menu = Flat(all.Components!).OfType<SelectMenuComponent>().Single();
 Check(menu.CustomId == $"reminders_pick:{U}" && menu.MinValues == 0 && menu.MaxValues == 13 && menu.Options.Count == 13 && menu.Options.All(o => o.IsDefault == true) && menu.Options.Select(o => o.Value).SequenceEqual(ReminderCatalog.Keys), "el desplegable lleva al dueño, deja marcar de 0 a 13 y arranca con todos marcados");
@@ -193,7 +193,7 @@ Check(service.LastActivityUtc(U) is null, "antes de ver al jugador no hay activi
 await SetCooldown(U, "hunt", TimeSpan.FromSeconds(10));
 await SetCooldown(U, "chop", TimeSpan.FromMinutes(10));
 await SetCooldown(U, "travel", TimeSpan.FromMinutes(5));
-await SetCooldown(U, "boss", TimeSpan.FromHours(4.5));
+await SetCooldown(U, "boss", TimeSpan.FromHours(9.5));
 var allRows = await cooldowns.GetAllAsync(U);
 Check(allRows.Count == 4 && allRows.All(r => r.LastExecutedUtc.Kind == DateTimeKind.Utc) && allRows.Single(r => r.Command == "hunt").LastExecutedUtc > DateTime.UtcNow.AddSeconds(-30), "GetAllAsync devuelve todas las filas del jugador, en UTC");
 Check((await cooldowns.GetAllAsync(U3)).Count == 0, "y vacío si no tiene ninguna");
@@ -407,7 +407,7 @@ var topic = HelpTopics.Find("recordatorios");
 Check(topic?.Key == "reminders" && new[] { "reminders", "recordatorio", "reminder", "aviso", "avisos", "alarma", "alarmas" }.All(a => HelpTopics.Find(a)?.Key == "reminders"), "«info recordatorios / avisos / alarma…» abren el tema");
 Check(HelpTopics.Find("fuego")?.Key == "fuego" && HelpTopics.Find("pets")?.Key == "pets" && HelpTopics.Find("daily")?.Key == "daily" && HelpTopics.Find("story")?.Key == "story", "y los demás temas siguen en su lugar");
 var te = topic!.Build(); string tt = AllText(te);
-Check(te.Length <= 6000 && te.Fields.All(f => f.Value.Length <= 1024) && tt.Contains("/reminders") && tt.Contains("cada 1 min") && tt.Contains("cada 30 min") && tt.Contains("cada 5 min") && tt.Contains("cada 5 h") && tt.Contains("cada 2 h") && tt.Contains("cada 24 h") && tt.Contains("2 minutos"),
+Check(te.Length <= 6000 && te.Fields.All(f => f.Value.Length <= 1024) && tt.Contains("/reminders") && tt.Contains("cada 1 min") && tt.Contains("cada 30 min") && tt.Contains("cada 5 min") && tt.Contains("cada 10 h") && tt.Contains("cada 2 h") && tt.Contains("cada 24 h") && tt.Contains("2 minutos"),
     $"el tema entra en los límites ({te.Length}) y sus números salen de las constantes");
 var slashNames = interactions.SlashCommands.Select(c => c.Name).Concat(interactions.SlashCommands.Select(c => c.Module.SlashGroupName)).Where(n => n is not null).ToHashSet();
 var mentioned = System.Text.RegularExpressions.Regex.Matches(tt, @"/([a-z]+)").Select(m => m.Groups[1].Value).Distinct().ToList();
