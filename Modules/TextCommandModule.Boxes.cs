@@ -1,3 +1,4 @@
+using BotDsRpg.GameData;
 using BotDsRpg.Services;
 using Discord.Commands;
 
@@ -22,7 +23,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude abrir la caja, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! No pude abrir la caja, intentá de nuevo en un momento."));
         }
     }
 }

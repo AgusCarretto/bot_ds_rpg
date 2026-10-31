@@ -20,7 +20,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude mostrar tus títulos, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! No pude mostrar tus títulos, intentá de nuevo en un momento."));
         }
     }
 
@@ -49,13 +49,13 @@ public partial class TextCommandModule
             var matches = TitleCatalog.FindByName(wanted);
             if (matches.Count == 0)
             {
-                await ReplyAsync("No encontré ningún título con ese nombre. Mirá la lista con **aa titles**.");
+                await ReplyAsync(Loc.T("No encontré ningún título con ese nombre. Mirá la lista con **aa titles**."));
                 return;
             }
 
             if (matches.Count > 1)
             {
-                await ReplyAsync($"Hay varios que se parecen: {string.Join(", ", matches.Take(6).Select(t => $"**{t.Name}**"))}{(matches.Count > 6 ? "…" : string.Empty)}. Escribí el nombre entero.");
+                await ReplyAsync(Loc.F($"Hay varios que se parecen: {string.Join(", ", matches.Take(6).Select(t => $"**{t.Name}**"))}{(matches.Count > 6 ? "…" : string.Empty)}. Escribí el nombre entero."));
                 return;
             }
 
@@ -65,7 +65,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude ponerte ese título, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! No pude ponerte ese título, intentá de nuevo en un momento."));
         }
     }
 }

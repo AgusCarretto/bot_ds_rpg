@@ -40,52 +40,52 @@ public static class AchievementCatalog
 
     public static readonly IReadOnlyList<AchievementDefinition> All =
     [
-        new("cazador",       "Cazador",       "🏹", GameEventKinds.HuntWin,       "Ganá cacerías con /hunt",                          Standard(25, 150, 600)),
-        new("viajero",       "Viajero",       "🗺️", GameEventKinds.TravelWin,     "Ganá viajes contra élites con /travel",            Standard(10, 50, 200)),
-        new("matajefes",     "Matajefes",     "👑", GameEventKinds.BossWin,       "Vencé a los jefes de zona con /boss",              Standard(1, 5, 20, mythicTop: true)),
-        new("recolector",    "Recolector",    "🪓", GameEventKinds.GatheredUnits, "Juntá materiales con /chop y /mine",               Standard(100, 600, 3000)),
-        new("herrero",       "Herrero",       "🔨", GameEventKinds.Craft,         "Forjá equipo en la herrería con /forge",           Standard(1, 10, 40)),
-        new("comerciante",   "Comerciante",   "🛒", GameEventKinds.ShopGoldSpent, "Gastá oro en la tienda (/shop)",                   Standard(1000, 25000, 250000)),
-        new("generoso",      "Generoso",      "🤝", GameEventKinds.GoldGiven,     "Regalá monedas a otros jugadores con /give",       Standard(500, 5000, 50000)),
-        new("abridor",       "Abridor",       "📦", GameEventKinds.BoxOpened,     "Abrí cajas con /open",                            Standard(5, 30, 150)),
-        new("constante",     "Constante",     "📅", GameEventKinds.DailyClaim,    "Reclamá tu recompensa diaria con /daily",          Standard(7, 30, 100)),
+        new("cazador",       "Cazador",       "🏹", GameEventKinds.HuntWin,       Loc.Mark("Ganá cacerías con /hunt"),                          Standard(25, 150, 600)),
+        new("viajero",       "Viajero",       "🗺️", GameEventKinds.TravelWin,     Loc.Mark("Ganá viajes contra élites con /travel"),            Standard(10, 50, 200)),
+        new("matajefes",     "Matajefes",     "👑", GameEventKinds.BossWin,       Loc.Mark("Vencé a los jefes de zona con /boss"),              Standard(1, 5, 20, mythicTop: true)),
+        new("recolector",    "Recolector",    "🪓", GameEventKinds.GatheredUnits, Loc.Mark("Juntá materiales con /chop y /mine"),               Standard(100, 600, 3000)),
+        new("herrero",       "Herrero",       "🔨", GameEventKinds.Craft,         Loc.Mark("Forjá equipo en la herrería con /forge"),           Standard(1, 10, 40)),
+        new("comerciante",   "Comerciante",   "🛒", GameEventKinds.ShopGoldSpent, Loc.Mark("Gastá oro en la tienda (/shop)"),                   Standard(1000, 25000, 250000)),
+        new("generoso",      "Generoso",      "🤝", GameEventKinds.GoldGiven,     Loc.Mark("Regalá monedas a otros jugadores con /give"),       Standard(500, 5000, 50000)),
+        new("abridor",       "Abridor",       "📦", GameEventKinds.BoxOpened,     Loc.Mark("Abrí cajas con /open"),                            Standard(5, 30, 150)),
+        new("constante",     "Constante",     "📅", GameEventKinds.DailyClaim,    Loc.Mark("Reclamá tu recompensa diaria con /daily"),          Standard(7, 30, 100)),
         // v0.18.3: la racha más larga del /daily. Es un contador de MÁXIMO (no se puede inflar: hace falta reclamar de verdad día tras día), por eso paga cajas como los logros estándar.
-        new("racha",         "Racha",         "🔥", GameEventKinds.DailyStreakBest, "Llegá a 7, 30 y 100 días seguidos reclamando tu /daily", Standard(7, 30, 100)),
+        new("racha",         "Racha",         "🔥", GameEventKinds.DailyStreakBest, Loc.Mark("Llegá a 7, 30 y 100 días seguidos reclamando tu /daily"), Standard(7, 30, 100)),
 
         // v0.9.0 (premios solo de oro y XP, ver Plain).
-        new("comandante",    "Comandante",    "⌨️", GameEventKinds.CommandUsed,   "Usá comandos del bot (de barra o con aa)",          Plain(100, 1000, 10000)),
-        new("exterminador",  "Exterminador",  "☠️", GameEventKinds.EnemyDefeated, "Vencé enemigos: cacerías, viajes y jefes (solo o en equipo)",   Plain(50, 500, 3000)),
-        new("misionero",     "Misionero",     "📋", GameEventKinds.MissionClaimed,"Reclamá misiones diarias y semanales",              Plain(5, 40, 150)),
-        new("desmantelador", "Desmantelador", "🧰", GameEventKinds.Dismantle,     "Desmantelá materiales para sacar Polvo",           Plain(20, 150, 1000)),
-        new("encantador",    "Encantador",    "✨", GameEventKinds.Enchant,       "Intentá encantar tu arma o tu amuleto",            Plain(1, 10, 40)),
-        new("afortunado",    "Afortunado",    "🎰", GameEventKinds.CasinoWin,     "Ganá oro en el casino con /play",                  Plain(500, 5000, 50000)),
-        new("gladiador",     "Gladiador",     "🏟️", GameEventKinds.ArenaJoin,     "Anotate en el torneo diario con /arena join",      Plain(3, 15, 60)),
+        new("comandante",    "Comandante",    "⌨️", GameEventKinds.CommandUsed,   Loc.Mark("Usá comandos del bot (de barra o con aa)"),          Plain(100, 1000, 10000)),
+        new("exterminador",  "Exterminador",  "☠️", GameEventKinds.EnemyDefeated, Loc.Mark("Vencé enemigos: cacerías, viajes y jefes (solo o en equipo)"),   Plain(50, 500, 3000)),
+        new("misionero",     "Misionero",     "📋", GameEventKinds.MissionClaimed,Loc.Mark("Reclamá misiones diarias y semanales"),              Plain(5, 40, 150)),
+        new("desmantelador", "Desmantelador", "🧰", GameEventKinds.Dismantle,     Loc.Mark("Desmantelá materiales para sacar Polvo"),           Plain(20, 150, 1000)),
+        new("encantador",    "Encantador",    "✨", GameEventKinds.Enchant,       Loc.Mark("Intentá encantar tu arma o tu amuleto"),            Plain(1, 10, 40)),
+        new("afortunado",    "Afortunado",    "🎰", GameEventKinds.CasinoWin,     Loc.Mark("Ganá oro en el casino con /play"),                  Plain(500, 5000, 50000)),
+        new("gladiador",     "Gladiador",     "🏟️", GameEventKinds.ArenaJoin,     Loc.Mark("Anotate en el torneo diario con /arena join"),      Plain(3, 15, 60)),
 
         // v0.10.0: las mascotas (también solo oro y XP). Hay 6 especies desde la v0.14.0 (la del Fogón Eterno), así que Domador termina en 6; para dejar a las seis en el nivel máximo hacen falta
         // 150 comidas (PetRules.TotalFeedsToMax × 6) y ese es el último tramo de Criador. Se alimenta a cada una una vez por hora: el contador no se infla.
-        new("domador",       "Domador",       "🐾", GameEventKinds.PetHatched,    "Abrí huevos y sumá mascotas con /open",            Plain(1, 3, 6)),
-        new("criador",       "Criador",       "🍖", GameEventKinds.PetFed,        "Alimentá a tus mascotas con /pet feed",            Plain(10, 50, 150)),
+        new("domador",       "Domador",       "🐾", GameEventKinds.PetHatched,    Loc.Mark("Abrí huevos y sumá mascotas con /open"),            Plain(1, 3, 6)),
+        new("criador",       "Criador",       "🍖", GameEventKinds.PetFed,        Loc.Mark("Alimentá a tus mascotas con /pet feed"),            Plain(10, 50, 150)),
 
         // v0.11.0: El Fogón Eterno (también solo oro y XP; el contador sube una vez por victoria sobre el Asador, que tiene el cooldown del jefe).
-        new("asador",        "Asador",        "🔥", GameEventKinds.GateWin,       "Vencé al Asador Eterno en El Fogón Eterno",        Plain(1, 3, 10)),
+        new("asador",        "Asador",        "🔥", GameEventKinds.GateWin,       Loc.Mark("Vencé al Asador Eterno en El Fogón Eterno"),        Plain(1, 3, 10)),
 
         // v0.12.0: Fuego Nuevo (solo oro y XP; cada reinicio exige volver a vencer al Asador, así que el contador no se infla).
-        new("renacido",      "Renacido",      "♻️", GameEventKinds.FuegoNuevo,    "Hacé un Fuego Nuevo y empezá otra vuelta",         Plain(1, 5, 20)),
+        new("renacido",      "Renacido",      "♻️", GameEventKinds.FuegoNuevo,    Loc.Mark("Hacé un Fuego Nuevo y empezá otra vuelta"),         Plain(1, 5, 20)),
 
         // v0.15.0: la historia (GameData/Lore.cs). Mismo contador que Renacido (cada Fuego Nuevo exige volver a vencer al Asador, no se infla; solo oro y XP) con tramos más
         // adelante: caen en vueltas donde el fuego cuenta algo nuevo del Asador. El último tramo de "El que volvió" es el Fuego Nuevo 100, el final de la historia.
-        new("companero",     "Compañero del Asador", "🫂", GameEventKinds.FuegoNuevo, "Seguí volviendo al Fogón: cada vuelta le saca pesar al Asador", Plain(10, 25, 50)),
-        new("volvio",        "El que volvió", "🪑", GameEventKinds.FuegoNuevo,    "Llegá hasta el final de la historia del Fogón",   Plain(75, 90, Lore.FinalFuegoNuevo)),
+        new("companero",     "Compañero del Asador", "🫂", GameEventKinds.FuegoNuevo, Loc.Mark("Seguí volviendo al Fogón: cada vuelta le saca pesar al Asador"), Plain(10, 25, 50)),
+        new("volvio",        "El que volvió", "🪑", GameEventKinds.FuegoNuevo,    Loc.Mark("Llegá hasta el final de la historia del Fogón"),   Plain(75, 90, Lore.FinalFuegoNuevo)),
 
         // v0.41.0 — HAZAÑAS (página propia; premio solo de oro y EXP, ver Feat).
-        new("hz_cazador",    "Cazador de Leyenda", "🏹", GameEventKinds.HuntWin,    "Ganá miles de cacerías con /hunt",                 Feat(2_500, 7_500, 20_000)),
-        new("hz_viajero",    "Trotamundos",        "🧭", GameEventKinds.TravelWin,  "Ganá cientos de viajes contra élites con /travel",  Feat(400, 1_200, 3_000)),
-        new("hz_jefes",      "Verdugo de Gigantes", "🗡️", GameEventKinds.BossWin,   "Vencé a decenas de jefes con /boss",               Feat(40, 120, 300)),
-        new("hz_recolector", "Titán del Monte",    "⛰️", GameEventKinds.GatheredUnits, "Juntá decenas de miles de materiales con /chop y /mine", Feat(10_000, 30_000, 100_000)),
-        new("hz_herrero",    "Yunque Eterno",      "⚒️", GameEventKinds.Craft,      "Forjá cientos de piezas en la herrería con /forge", Feat(60, 150, 400)),
-        new("hz_magnate",    "Magnate",            "💎", GameEventKinds.ShopGoldSpent, "Gastá millones de oro en la tienda (/shop)",    Feat(1_000_000, 10_000_000, 100_000_000)),
-        new("hz_encantador", "Archimago",          "🪄", GameEventKinds.Enchant,    "Intentá cientos de encantamientos",                Feat(150, 500, 2_000)),
-        new("hz_explorador", "Gran Explorador",    "🏕️", GameEventKinds.PetExpeditionClaim, "Sumá horas de expedición con tus mascotas (/pet expedition)", Feat(300, 1_500, 5_000)),
+        new("hz_cazador",    "Cazador de Leyenda", "🏹", GameEventKinds.HuntWin,    Loc.Mark("Ganá miles de cacerías con /hunt"),                 Feat(2_500, 7_500, 20_000)),
+        new("hz_viajero",    "Trotamundos",        "🧭", GameEventKinds.TravelWin,  Loc.Mark("Ganá cientos de viajes contra élites con /travel"),  Feat(400, 1_200, 3_000)),
+        new("hz_jefes",      "Verdugo de Gigantes", "🗡️", GameEventKinds.BossWin,   Loc.Mark("Vencé a decenas de jefes con /boss"),               Feat(40, 120, 300)),
+        new("hz_recolector", "Titán del Monte",    "⛰️", GameEventKinds.GatheredUnits, Loc.Mark("Juntá decenas de miles de materiales con /chop y /mine"), Feat(10_000, 30_000, 100_000)),
+        new("hz_herrero",    "Yunque Eterno",      "⚒️", GameEventKinds.Craft,      Loc.Mark("Forjá cientos de piezas en la herrería con /forge"), Feat(60, 150, 400)),
+        new("hz_magnate",    "Magnate",            "💎", GameEventKinds.ShopGoldSpent, Loc.Mark("Gastá millones de oro en la tienda (/shop)"),    Feat(1_000_000, 10_000_000, 100_000_000)),
+        new("hz_encantador", "Archimago",          "🪄", GameEventKinds.Enchant,    Loc.Mark("Intentá cientos de encantamientos"),                Feat(150, 500, 2_000)),
+        new("hz_explorador", "Gran Explorador",    "🏕️", GameEventKinds.PetExpeditionClaim, Loc.Mark("Sumá horas de expedición con tus mascotas (/pet expedition)"), Feat(300, 1_500, 5_000)),
     ];
 
     // Los logros se muestran en páginas por tema (/achievements): cada logro está en exactamente una (lo chequea la prueba).

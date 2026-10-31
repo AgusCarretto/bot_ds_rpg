@@ -47,7 +47,7 @@ public sealed class ProgressNotifier(
         {
             string titleLine = TitleCatalog.ForAchievementTier(achievement.Key, tier) is { } earned ? $"\n{TitleNoticeText(earned)}" : string.Empty;
             notices.Add(new GameNotice(
-                $"🏆 **¡Logro desbloqueado!** {achievement.Emoji} **{AchievementCatalog.TierName(achievement, tier)}** — reclamá tu premio con `/achievements`.{titleLine}",
+                Loc.F($"🏆 **¡Logro desbloqueado!** {achievement.Emoji} **{AchievementCatalog.TierName(achievement, tier)}** — reclamá tu premio con `/achievements`.{titleLine}"),
                 Public: true));
         }
 
@@ -72,7 +72,7 @@ public sealed class ProgressNotifier(
 
             foreach (var mission in matching.Where(m => total - amount < m.Target && m.Target <= total))
             {
-                notices.Add(new GameNotice($"✅ **¡Misión completada!** {mission.Title} — reclamá el premio con `/missions`.", Public: false));
+                notices.Add(new GameNotice(Loc.F($"✅ **¡Misión completada!** {Loc.Tr(mission.Title)} — reclamá el premio con `/missions`."), Public: false));
             }
         }
 
@@ -80,7 +80,7 @@ public sealed class ProgressNotifier(
     }
 
     // El aviso de un título nuevo: dice CUÁL es y cómo ponérselo.
-    private static string TitleNoticeText(TitleDefinition title) => $"🏷️ **¡Título nuevo!** **{title.Name}** — ponetelo en tu perfil con `/titles`.";
+    private static string TitleNoticeText(TitleDefinition title) => Loc.F($"🏷️ **¡Título nuevo!** **{title.Name}** — ponetelo en tu perfil con `/titles`.");
 
     // Cuánto viven los avisos de la historia que quedan sin entregar (un raid: solo quien dio el golpe final tiene una interacción para contestar). Un capítulo nuevo sigue siendo
     // cierto horas después, a diferencia de un festejo de nivel; igual se descarta para que no le llegue pegado a algo que no tiene nada que ver.

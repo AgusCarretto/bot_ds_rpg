@@ -18,6 +18,11 @@ public sealed record TitleDefinition(
     string Key, string Name, string PageKey, TitleRule Rule, string Hint, string Source = "", long Threshold = 0, string? AchievementKey = null, int AchievementTier = 0)
 {
     public bool FromAchievement => AchievementKey is not null;
+
+    // La pista en el idioma de quien la lee (v0.44.0). Hint queda en español (lo que se arma al cargar el catálogo y lo que leen las pruebas); HintFn, si está, la vuelve a armar con Loc.
+    public Func<string>? HintFn { get; init; }
+
+    public string DisplayHint => HintFn?.Invoke() ?? Loc.Tr(Hint);
 }
 
 // Una página de /titles (hasta 25 títulos: el desplegable de equipar admite 25 opciones).
@@ -60,43 +65,43 @@ public static class TitleCatalog
     // Los títulos de los logros: (logro, página, qué cuenta la meta, los tres nombres en orden de tramo).
     private static readonly (string Achievement, string Page, string Goal, string[] Names)[] FromAchievements =
     [
-        ("cazador", "combate", "Cacerías ganadas", ["Rastreador de Pradera", "Cazador Curtido", "Azote de las Bestias"]),
-        ("viajero", "combate", "Viajes ganados", ["Caminante", "Baqueano", "Señor de los Caminos"]),
-        ("matajefes", "combate", "Jefes vencidos", ["Desafiante", "Matajefes", "Terror de Jefes"]),
-        ("exterminador", "combate", "Enemigos vencidos", ["Espanta Bichos", "Exterminador", "Pesadilla de los Monstruos"]),
-        ("gladiador", "combate", "Torneos de la Arena jugados", ["Pisa Arena", "Gladiador", "Fiera del Coliseo"]),
-        ("asador", "combate", "Veces que venciste al Asador", ["Rompe Brasas", "Guardián del Fogón", "Señor del Fogón"]),
+        ("cazador", "combate", Loc.Mark("Cacerías ganadas"), ["Rastreador de Pradera", "Cazador Curtido", "Azote de las Bestias"]),
+        ("viajero", "combate", Loc.Mark("Viajes ganados"), ["Caminante", "Baqueano", "Señor de los Caminos"]),
+        ("matajefes", "combate", Loc.Mark("Jefes vencidos"), ["Desafiante", "Matajefes", "Terror de Jefes"]),
+        ("exterminador", "combate", Loc.Mark("Enemigos vencidos"), ["Espanta Bichos", "Exterminador", "Pesadilla de los Monstruos"]),
+        ("gladiador", "combate", Loc.Mark("Torneos de la Arena jugados"), ["Pisa Arena", "Gladiador", "Fiera del Coliseo"]),
+        ("asador", "combate", Loc.Mark("Veces que venciste al Asador"), ["Rompe Brasas", "Guardián del Fogón", "Señor del Fogón"]),
 
-        ("recolector", "oficios", "Materiales juntados", ["Juntador", "Manos de Obrero", "Dueño del Monte"]),
-        ("herrero", "oficios", "Piezas forjadas", ["Aprendiz de Fragua", "Forjador", "Maestro del Yunque"]),
-        ("desmantelador", "oficios", "Materiales desmantelados", ["Desarmador", "Chatarrero", "Señor del Polvo"]),
-        ("encantador", "oficios", "Intentos de encantar", ["Aprendiz de Brasas", "Encantador de Hierros", "Maestro del Encanto"]),
+        ("recolector", "oficios", Loc.Mark("Materiales juntados"), ["Juntador", "Manos de Obrero", "Dueño del Monte"]),
+        ("herrero", "oficios", Loc.Mark("Piezas forjadas"), ["Aprendiz de Fragua", "Forjador", "Maestro del Yunque"]),
+        ("desmantelador", "oficios", Loc.Mark("Materiales desmantelados"), ["Desarmador", "Chatarrero", "Señor del Polvo"]),
+        ("encantador", "oficios", Loc.Mark("Intentos de encantar"), ["Aprendiz de Brasas", "Encantador de Hierros", "Maestro del Encanto"]),
 
-        ("comerciante", "economia", "Oro gastado en la tienda", ["Cliente Fiel", "Mercachifle", "Magnate del Mostrador"]),
-        ("generoso", "economia", "Oro regalado", ["Mano Abierta", "Corazón Generoso", "Mecenas del Fogón"]),
-        ("abridor", "economia", "Cajas abiertas", ["Curioso", "Abrecofres", "Rey de las Cajas"]),
-        ("afortunado", "economia", "Oro ganado en el casino", ["Suertudo", "Mano Caliente", "Rey del Azar"]),
+        ("comerciante", "economia", Loc.Mark("Oro gastado en la tienda"), ["Cliente Fiel", "Mercachifle", "Magnate del Mostrador"]),
+        ("generoso", "economia", Loc.Mark("Oro regalado"), ["Mano Abierta", "Corazón Generoso", "Mecenas del Fogón"]),
+        ("abridor", "economia", Loc.Mark("Cajas abiertas"), ["Curioso", "Abrecofres", "Rey de las Cajas"]),
+        ("afortunado", "economia", Loc.Mark("Oro ganado en el casino"), ["Suertudo", "Mano Caliente", "Rey del Azar"]),
 
-        ("constante", "constancia", "Días que reclamaste el /daily", ["Madrugador", "De Palabra", "Fiel como el Fogón"]),
-        ("racha", "constancia", "Racha más larga del /daily, en días", ["Chispa Constante", "Fuego Parejo", "Brasa que no se Apaga"]),
-        ("comandante", "constancia", "Comandos usados", ["Recluta", "Sargento de Fogón", "Comandante"]),
-        ("misionero", "constancia", "Misiones reclamadas", ["Mandadero", "Cumplidor", "Hombre de Palabra"]),
+        ("constante", "constancia", Loc.Mark("Días que reclamaste el /daily"), ["Madrugador", "De Palabra", "Fiel como el Fogón"]),
+        ("racha", "constancia", Loc.Mark("Racha más larga del /daily, en días"), ["Chispa Constante", "Fuego Parejo", "Brasa que no se Apaga"]),
+        ("comandante", "constancia", Loc.Mark("Comandos usados"), ["Recluta", "Sargento de Fogón", "Comandante"]),
+        ("misionero", "constancia", Loc.Mark("Misiones reclamadas"), ["Mandadero", "Cumplidor", "Hombre de Palabra"]),
 
-        ("domador", "fogon", "Mascotas conseguidas", ["Amigo de las Bestias", "Domador", "Señor de la Manada"]),
-        ("criador", "fogon", "Comidas dadas a tus mascotas", ["Alimentador", "Criador", "Maestro Criador"]),
-        ("renacido", "fogon", "Fuegos Nuevos hechos", ["Renacido", "Fénix de Cenizas", "Eterno Retorno"]),
-        ("companero", "fogon", "Fuegos Nuevos hechos", ["Compañero de Mesa", "Amigo de la Brasa", "Hermano del Fuego"]),
-        ("volvio", "fogon", "Fuegos Nuevos hechos", ["El que Vuelve", "Fiel a la Mesa Larga", "El que Volvió"]),
+        ("domador", "fogon", Loc.Mark("Mascotas conseguidas"), ["Amigo de las Bestias", "Domador", "Señor de la Manada"]),
+        ("criador", "fogon", Loc.Mark("Comidas dadas a tus mascotas"), ["Alimentador", "Criador", "Maestro Criador"]),
+        ("renacido", "fogon", Loc.Mark("Fuegos Nuevos hechos"), ["Renacido", "Fénix de Cenizas", "Eterno Retorno"]),
+        ("companero", "fogon", Loc.Mark("Fuegos Nuevos hechos"), ["Compañero de Mesa", "Amigo de la Brasa", "Hermano del Fuego"]),
+        ("volvio", "fogon", Loc.Mark("Fuegos Nuevos hechos"), ["El que Vuelve", "Fiel a la Mesa Larga", "El que Volvió"]),
 
         // v0.41.0: las hazañas (la página «Hazañas»).
-        ("hz_cazador", "hazanas", "Cacerías ganadas", ["Pesadilla de la Pradera", "Cazador Sin Descanso", "Leyenda de la Cacería"]),
-        ("hz_viajero", "hazanas", "Viajes ganados", ["Pisa Caminos", "Trotamundos", "Dueño del Horizonte"]),
-        ("hz_jefes", "hazanas", "Jefes vencidos", ["Rompe Gigantes", "Verdugo de Gigantes", "Azote de los Colosos"]),
-        ("hz_recolector", "hazanas", "Materiales juntados", ["Brazo de Hierro", "Titán del Monte", "Montaña Andante"]),
-        ("hz_herrero", "hazanas", "Piezas forjadas", ["Martillo Firme", "Yunque Eterno", "Herrero de Leyenda"]),
-        ("hz_magnate", "hazanas", "Oro gastado en la tienda", ["Bolsillo Gordo", "Gran Magnate", "Dueño de la Tienda"]),
-        ("hz_encantador", "hazanas", "Intentos de encantar", ["Chispa Terca", "Archimago del Polvo", "Señor de los Encantos"]),
-        ("hz_explorador", "hazanas", "Horas de expedición de tus mascotas", ["Explorador", "Gran Explorador", "Leyenda de los Caminos"]),
+        ("hz_cazador", "hazanas", Loc.Mark("Cacerías ganadas"), ["Pesadilla de la Pradera", "Cazador Sin Descanso", "Leyenda de la Cacería"]),
+        ("hz_viajero", "hazanas", Loc.Mark("Viajes ganados"), ["Pisa Caminos", "Trotamundos", "Dueño del Horizonte"]),
+        ("hz_jefes", "hazanas", Loc.Mark("Jefes vencidos"), ["Rompe Gigantes", "Verdugo de Gigantes", "Azote de los Colosos"]),
+        ("hz_recolector", "hazanas", Loc.Mark("Materiales juntados"), ["Brazo de Hierro", "Titán del Monte", "Montaña Andante"]),
+        ("hz_herrero", "hazanas", Loc.Mark("Piezas forjadas"), ["Martillo Firme", "Yunque Eterno", "Herrero de Leyenda"]),
+        ("hz_magnate", "hazanas", Loc.Mark("Oro gastado en la tienda"), ["Bolsillo Gordo", "Gran Magnate", "Dueño de la Tienda"]),
+        ("hz_encantador", "hazanas", Loc.Mark("Intentos de encantar"), ["Chispa Terca", "Archimago del Polvo", "Señor de los Encantos"]),
+        ("hz_explorador", "hazanas", Loc.Mark("Horas de expedición de tus mascotas"), ["Explorador", "Gran Explorador", "Leyenda de los Caminos"]),
     ];
 
     // Los jefes de la escalera por orden de zona (los mismos de Lore.Chapters cap1..cap5).
@@ -117,26 +122,33 @@ public static class TitleCatalog
             for (int i = 0; i < achievement.Tiers.Count; i++)
             {
                 long threshold = achievement.Tiers[i].Threshold;
-                all.Add(new TitleDefinition($"{achievementKey}_{i + 1}", names[i], page, TitleRule.Stat, $"{goal}: {GameHistory.Number(threshold)}", achievement.StatKind, threshold, achievementKey, i + 1));
+                all.Add(new TitleDefinition($"{achievementKey}_{i + 1}", names[i], page, TitleRule.Stat, $"{goal}: {GameHistory.Number(threshold)}", achievement.StatKind, threshold, achievementKey, i + 1)
+                    { HintFn = () => $"{Loc.Tr(goal)}: {GameHistory.Number(threshold)}" });
             }
         }
 
         // 2) Jefes y niveles: la primera victoria sobre cada jefe de la escalera, el nivel más alto alcanzado y la Brasa de Color.
         for (int rank = 1; rank <= BossTitles.Length; rank++)
         {
-            all.Add(new TitleDefinition($"jefe_{rank}", BossTitles[rank - 1], "jefes", TitleRule.BossRank, $"Vencé a {LadderBosses[rank - 1]}, el jefe de la Zona {rank}", Threshold: rank));
+            string boss = LadderBosses[rank - 1];
+            int bossRank = rank;
+            all.Add(new TitleDefinition($"jefe_{rank}", BossTitles[rank - 1], "jefes", TitleRule.BossRank, $"Vencé a {boss}, el jefe de la Zona {rank}", Threshold: rank)
+                { HintFn = () => Loc.F($"Vencé a {boss}, el jefe de la Zona {bossRank}") });
         }
 
-        all.Add(new TitleDefinition("jefe_50", "Jefe de Jefes", "jefes", TitleRule.Stat, $"Jefes vencidos: {GameHistory.Number(50)}", GameEventKinds.BossWin, 50));
+        all.Add(new TitleDefinition("jefe_50", "Jefe de Jefes", "jefes", TitleRule.Stat, $"Jefes vencidos: {GameHistory.Number(50)}", GameEventKinds.BossWin, 50)
+            { HintFn = () => Loc.F($"Jefes vencidos: {GameHistory.Number(50)}") });
         foreach (var (key, name, level) in new[] { ("nivel_10", "Fogonero", 10), ("nivel_25", "Parrillero Hecho y Derecho", 25), ("nivel_40", "Asador de Ley", 40), ("nivel_60", "Maestro Parrillero", 60) })
         {
-            all.Add(new TitleDefinition(key, name, "jefes", TitleRule.Level, $"Llegá al nivel {level}", Threshold: level));
+            all.Add(new TitleDefinition(key, name, "jefes", TitleRule.Level, $"Llegá al nivel {level}", Threshold: level) { HintFn = () => Loc.F($"Llegá al nivel {level}") });
         }
 
         string[] colorTitles = ["Brasa Viva", "Llama Dorada", "Fuego Azul", "Ascua Violeta", "Sol del Fogón"];
         for (int level = 1; level <= colorTitles.Length; level++)
         {
-            all.Add(new TitleDefinition($"color_{level}", colorTitles[level - 1], "jefes", TitleRule.BlessingColor, $"Bendición Brasa de Color, nivel {level}", Threshold: level));
+            int colorLevel = level;
+            all.Add(new TitleDefinition($"color_{level}", colorTitles[level - 1], "jefes", TitleRule.BlessingColor, $"Bendición Brasa de Color, nivel {level}", Threshold: level)
+                { HintFn = () => Loc.F($"Bendición Brasa de Color, nivel {colorLevel}") });
         }
 
         // 3) Maestros de oficio: el nivel 25, 50 y 100 de cada oficio (la meta se expresa en el contador de su XP, que es lo que ven los avisos).
@@ -152,23 +164,25 @@ public static class TitleCatalog
             for (int i = 0; i < levels.Length; i++)
             {
                 long threshold = (ProfessionRules.XpToReach(levels[i]) + profession.XpPerAction - 1) / profession.XpPerAction;
-                all.Add(new TitleDefinition($"{professionKey}_{levels[i]}", names[i], "maestros", TitleRule.Stat, $"Subí el oficio de {profession.Name} al nivel {levels[i]}", profession.StatKind, threshold));
+                int professionLevel = levels[i];
+                all.Add(new TitleDefinition($"{professionKey}_{levels[i]}", names[i], "maestros", TitleRule.Stat, $"Subí el oficio de {profession.Name} al nivel {levels[i]}", profession.StatKind, threshold)
+                    { HintFn = () => Loc.F($"Subí el oficio de {profession.DisplayName} al nivel {professionLevel}") });
             }
         }
 
         // 4) PvP y comunidad.
-        AddStatTitles(all, "pvp", GameEventKinds.DuelWin, "duelo", "Duelos amistosos ganados", [(1, "Peleador de Barrio"), (10, "Duelista"), (50, "Espada Libre")]);
-        AddStatTitles(all, "pvp", GameEventKinds.ArenaWin, "arena", "Torneos de la Arena ganados", [(1, "Campeón del Día"), (5, "Campeón de Campeones"), (20, "Leyenda de la Arena")]);
-        AddStatTitles(all, "pvp", GameEventKinds.Vote, "voto", "Votos cobrados con /vote", [(1, "Votante"), (10, "Voz del Pueblo"), (50, "Padrino de la Casa")]);
-        AddStatTitles(all, "pvp", GameEventKinds.Trade, "trueque", "Cambios hechos con otros jugadores", [(1, "Trocador"), (10, "Cambista"), (50, "Rey del Trueque")]);
+        AddStatTitles(all, "pvp", GameEventKinds.DuelWin, "duelo", Loc.Mark("Duelos amistosos ganados"), [(1, "Peleador de Barrio"), (10, "Duelista"), (50, "Espada Libre")]);
+        AddStatTitles(all, "pvp", GameEventKinds.ArenaWin, "arena", Loc.Mark("Torneos de la Arena ganados"), [(1, "Campeón del Día"), (5, "Campeón de Campeones"), (20, "Leyenda de la Arena")]);
+        AddStatTitles(all, "pvp", GameEventKinds.Vote, "voto", Loc.Mark("Votos cobrados con /vote"), [(1, "Votante"), (10, "Voz del Pueblo"), (50, "Padrino de la Casa")]);
+        AddStatTitles(all, "pvp", GameEventKinds.Trade, "trueque", Loc.Mark("Cambios hechos con otros jugadores"), [(1, "Trocador"), (10, "Cambista"), (50, "Rey del Trueque")]);
 
         // 5) Curiosos.
-        AddStatTitles(all, "curiosos", GameEventKinds.FightLost, "derrota", "Peleas perdidas", [(10, "Caído y Levantado"), (50, "Terco como Mula"), (200, "Cabeza de Hierro")]);
-        all.Add(new TitleDefinition("hallazgo_corteza", "Ojo de Savia", "curiosos", TitleRule.Flag, "Encontrá una Corteza del Árbol de Vida con /chop", FlagCorteza));
-        all.Add(new TitleDefinition("hallazgo_meteorito", "Tocado por el Cielo", "curiosos", TitleRule.Flag, "Encontrá un Fragmento de Meteorito con /mine", FlagMeteorito));
-        all.Add(new TitleDefinition("inframundo", "Cliente del Inframundo", "curiosos", TitleRule.Stat, "Comprale algo al Tabernero del Inframundo con /deepshop", GameEventKinds.DeepShopBuy, 1));
-        all.Add(new TitleDefinition("encanto_v", "Brasa Soberana", "curiosos", TitleRule.Flag, "Sacá un encantamiento de tier V (Soberano) con /enchant", FlagEnchantV));
-        all.Add(new TitleDefinition(DefaultKey, "Recién Llegado", "curiosos", TitleRule.Always, "Lo tenés desde el primer día"));
+        AddStatTitles(all, "curiosos", GameEventKinds.FightLost, "derrota", Loc.Mark("Peleas perdidas"), [(10, "Caído y Levantado"), (50, "Terco como Mula"), (200, "Cabeza de Hierro")]);
+        all.Add(new TitleDefinition("hallazgo_corteza", "Ojo de Savia", "curiosos", TitleRule.Flag, Loc.Mark("Encontrá una Corteza del Árbol de Vida con /chop"), FlagCorteza));
+        all.Add(new TitleDefinition("hallazgo_meteorito", "Tocado por el Cielo", "curiosos", TitleRule.Flag, Loc.Mark("Encontrá un Fragmento de Meteorito con /mine"), FlagMeteorito));
+        all.Add(new TitleDefinition("inframundo", "Cliente del Inframundo", "curiosos", TitleRule.Stat, Loc.Mark("Comprale algo al Tabernero del Inframundo con /deepshop"), GameEventKinds.DeepShopBuy, 1));
+        all.Add(new TitleDefinition("encanto_v", "Brasa Soberana", "curiosos", TitleRule.Flag, Loc.Mark("Sacá un encantamiento de tier V (Soberano) con /enchant"), FlagEnchantV));
+        all.Add(new TitleDefinition(DefaultKey, "Recién Llegado", "curiosos", TitleRule.Always, Loc.Mark("Lo tenés desde el primer día")));
 
         return all;
     }
@@ -178,7 +192,8 @@ public static class TitleCatalog
     {
         foreach (var (threshold, name) in tiers)
         {
-            all.Add(new TitleDefinition($"{prefix}_{threshold}", name, page, TitleRule.Stat, $"{goal}: {GameHistory.Number(threshold)}", kind, threshold));
+            all.Add(new TitleDefinition($"{prefix}_{threshold}", name, page, TitleRule.Stat, $"{goal}: {GameHistory.Number(threshold)}", kind, threshold)
+                { HintFn = () => $"{Loc.Tr(goal)}: {GameHistory.Number(threshold)}" });
         }
     }
 
@@ -216,14 +231,14 @@ public static class TitleCatalog
                 // Los de la página de maestros miden el NIVEL del oficio (no los puntos de XP, que no dicen nada).
                 if (title.PageKey == "maestros" && ProfessionCatalog.All.FirstOrDefault(p => p.StatKind == title.Source) is { } profession)
                 {
-                    return $"vas en el nivel {ProfessionRules.LevelFor(ProfessionRules.XpFrom(profession, context.Stats))}";
+                    return Loc.F($"vas en el nivel {ProfessionRules.LevelFor(ProfessionRules.XpFrom(profession, context.Stats))}");
                 }
 
-                return $"vas {GameHistory.Number(Math.Min(context.Stats.GetValueOrDefault(title.Source), Math.Max(0, title.Threshold - 1)))}";
+                return Loc.F($"vas {GameHistory.Number(Math.Min(context.Stats.GetValueOrDefault(title.Source), Math.Max(0, title.Threshold - 1)))}");
             }
 
             case TitleRule.Level:
-                return $"tu máximo: nivel {context.MaxLevel}";
+                return Loc.F($"tu máximo: nivel {context.MaxLevel}");
             default:
                 return null;
         }

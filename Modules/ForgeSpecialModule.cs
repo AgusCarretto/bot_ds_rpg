@@ -25,7 +25,7 @@ public class ForgeSpecialModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude mostrar el forge especial ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude mostrar el forge especial ahora mismo, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -47,13 +47,13 @@ public class ForgeSpecialModule(
     public static Embed BuildEmbed(IReadOnlyList<RecipeDetails> recipes, IReadOnlyList<Zone> zones, User? player, IReadOnlyDictionary<string, int>? owned)
     {
         var embed = new EmbedBuilder()
-            .WithTitle("🔥 Forge especial · El Fogón Eterno")
+            .WithTitle(Loc.T("🔥 Forge especial · El Fogón Eterno"))
             .WithColor(Color.DarkOrange);
 
         var gateRecipes = recipes.Where(r => r.ZoneId == FogonRules.GateZoneId).ToList();
         if (gateRecipes.Count == 0)
         {
-            return embed.WithDescription("Todavía no hay recetas del Fogón cargadas.").Build();
+            return embed.WithDescription(Loc.T("Todavía no hay recetas del Fogón cargadas.")).Build();
         }
 
         var ordered = ZoneRanking.OrderByDifficulty(zones);
@@ -61,21 +61,21 @@ public class ForgeSpecialModule(
         bool gateOpen = player is not null && FogonRules.IsGateOpen(ordered, player.HighestZoneCleared);
 
         string status = player is null
-            ? "Empezá con **/start** para ver cuánto te falta de cada cosa."
+            ? Loc.T("Empezá con **/start** para ver cuánto te falta de cada cosa.")
             : gateOpen
-                ? "✅ La puerta ya está abierta: forjalas en **/forge** (o `aa forge make <nombre>`)."
-                : $"🔒 Se forjan en **/forge** cuando venzas al jefe de {lastZone?.Emoji ?? "🗺️"} **{lastZone?.Name ?? "la última zona"}**.";
+                ? Loc.T("✅ La puerta ya está abierta: forjalas en **/forge** (o `aa forge make <nombre>`).")
+                : Loc.F($"🔒 Se forjan en **/forge** cuando venzas al jefe de {lastZone?.Emoji ?? "🗺️"} **{lastZone?.Name ?? Loc.T("la última zona")}**.");
 
         embed.WithDescription(
-            "**El Fogón Eterno** (la «Zona 0») es la puerta al **Fuego Nuevo**: para entrar hay que llevar **puestas** estas dos piezas. Piden drops de cacería de las **5 zonas** y mucho mineral y madera, " +
-            "así que conviene ir juntándolos desde ahora.\n\n" +
-            "⚠️ **No desmanteles ni vendas** lo que figura acá: **/dismantle** lo gasta y después hay que volver a farmearlo.\n\n" +
+            Loc.T("**El Fogón Eterno** (la «Zona 0») es la puerta al **Fuego Nuevo**: para entrar hay que llevar **puestas** estas dos piezas. Piden drops de cacería de las **5 zonas** y mucho mineral y madera, ") +
+            Loc.T("así que conviene ir juntándolos desde ahora.\n\n") +
+            Loc.T("⚠️ **No desmanteles ni vendas** lo que figura acá: **/dismantle** lo gasta y después hay que volver a farmearlo.\n\n") +
             status);
 
         string playerClass = player?.Class ?? string.Empty;
-        ForgeModule.AddRecipes(embed, gateRecipes, RecipeGroup.GeneralWeapon, "equipo del Fogón", playerClass, owned, player?.Gold);
-        ForgeModule.AddRecipes(embed, gateRecipes, RecipeGroup.Amulet, "equipo del Fogón", playerClass, owned, player?.Gold);
+        ForgeModule.AddRecipes(embed, gateRecipes, RecipeGroup.GeneralWeapon, Loc.T("equipo del Fogón"), playerClass, owned, player?.Gold);
+        ForgeModule.AddRecipes(embed, gateRecipes, RecipeGroup.Amulet, Loc.T("equipo del Fogón"), playerClass, owned, player?.Gold);
 
-        return embed.WithFooter("Dónde cae cada material: /drops · qué te falta primero: /tips · cómo funciona el Fogón: /info tema:fogon · ¿te falta la Corteza o el Meteorito? /deepshop (Polvo)").Build();
+        return embed.WithFooter(Loc.T("Dónde cae cada material: /drops · qué te falta primero: /tips · cómo funciona el Fogón: /info tema:fogon · ¿te falta la Corteza o el Meteorito? /deepshop (Polvo)")).Build();
     }
 }

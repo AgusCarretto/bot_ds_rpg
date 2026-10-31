@@ -24,7 +24,7 @@ public class LeaderboardModule(IUserRepository userRepository) : InteractionModu
         {
             BotLog.Error(ex);
             // Si la base falla o algo inesperado ocurre, avisamos sin tirar abajo el bot.
-            await FollowupAsync("No pude cargar el ranking ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("No pude cargar el ranking ahora mismo, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -35,13 +35,13 @@ public class LeaderboardModule(IUserRepository userRepository) : InteractionModu
         var topPlayers = await userRepository.GetTopPlayersAsync(TopPlayersCount);
 
         var embed = new EmbedBuilder()
-            .WithTitle("🏆 Líderes de Asado y Acero RPG")
+            .WithTitle(Loc.T("🏆 Líderes de Asado y Acero RPG"))
             .WithColor(Color.Gold)
             .WithCurrentTimestamp();
 
         if (topPlayers.Count == 0)
         {
-            embed.WithDescription("Todavía no hay ningún aventurero registrado.");
+            embed.WithDescription(Loc.T("Todavía no hay ningún aventurero registrado."));
         }
         else
         {
@@ -52,7 +52,7 @@ public class LeaderboardModule(IUserRepository userRepository) : InteractionModu
             });
 
             embed.WithDescription(string.Join('\n', lines))
-                .WithFooter("Ordena primero por Fuego Nuevo (FN) y, con el mismo FN, por nivel; el XP del nivel solo desempata.");
+                .WithFooter(Loc.T("Ordena primero por Fuego Nuevo (FN) y, con el mismo FN, por nivel; el XP del nivel solo desempata."));
         }
 
         return embed.Build();

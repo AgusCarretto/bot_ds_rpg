@@ -106,7 +106,7 @@ public sealed class MiniEventService(
                     .WithTitle($"{MiniEventRules.Emoji(kind)} {title}")
                     .WithColor(Color.Orange)
                     .WithDescription(story)
-                    .WithFooter($"Tenés {(int)_settings.JoinWindow.TotalSeconds} segundos · cuanta más gente se sume, más se lleva cada uno")
+                    .WithFooter(Loc.F($"Tenés {(int)_settings.JoinWindow.TotalSeconds} segundos · cuanta más gente se sume, más se lleva cada uno"))
                     .Build();
                 var buttons = new ComponentBuilder()
                     .WithButton("¡Juntar!", $"miniev_join:{open.Id}", ButtonStyle.Success, new Emoji(MiniEventRules.Emoji(kind)))
@@ -236,18 +236,18 @@ public sealed class MiniEventService(
         if (joinedCount == 0)
         {
             return new EmbedBuilder()
-                .WithTitle($"{MiniEventRules.Emoji(kind)} Se terminó")
+                .WithTitle(Loc.F($"{MiniEventRules.Emoji(kind)} Se terminó"))
                 .WithColor(Color.DarkGrey)
-                .WithDescription("Nadie llegó a tiempo: se lo llevó el viento.")
+                .WithDescription(Loc.T("Nadie llegó a tiempo: se lo llevó el viento."))
                 .Build();
         }
 
         if (paid.Count == 0)
         {
             return new EmbedBuilder()
-                .WithTitle($"{MiniEventRules.Emoji(kind)} No se pudo repartir")
+                .WithTitle(Loc.F($"{MiniEventRules.Emoji(kind)} No se pudo repartir"))
                 .WithColor(Color.DarkGrey)
-                .WithDescription("Algo falló al repartir la recompensa esta vez. Perdón.")
+                .WithDescription(Loc.T("Algo falló al repartir la recompensa esta vez. Perdón."))
                 .Build();
         }
 
@@ -256,15 +256,15 @@ public sealed class MiniEventService(
 
         // Con material todos se llevan lo mismo; con plata depende de la zona de cada uno, así que va una línea por persona.
         string reward = sameForAll && paid.Count > 0
-            ? $"Cada uno se llevó **{MiniEventRules.Describe(paid[0].Reward)}**."
+            ? Loc.F($"Cada uno se llevó **{MiniEventRules.Describe(paid[0].Reward)}**.")
             : string.Join('\n', paid.Select(p => $"{MentionUtils.MentionUser(p.UserId)}: **{MiniEventRules.Describe(p.Reward)}**"));
 
         string tip = MiniEventRules.Counted(joinedCount) >= MiniEventRules.MaxCountedParticipants
-            ? "¡Éxito total, llegaron al máximo!"
-            : "Con más gente, cada uno se lleva más.";
+            ? Loc.T("¡Éxito total, llegaron al máximo!")
+            : Loc.T("Con más gente, cada uno se lleva más.");
 
         return new EmbedBuilder()
-            .WithTitle($"{MiniEventRules.Emoji(kind)} ¡Entre {joinedCount} lo juntaron todo!")
+            .WithTitle(Loc.F($"{MiniEventRules.Emoji(kind)} ¡Entre {joinedCount} lo juntaron todo!"))
             .WithColor(Color.Green)
             .WithDescription($"{who}\n\n{reward}\n\n_{tip}_")
             .Build();

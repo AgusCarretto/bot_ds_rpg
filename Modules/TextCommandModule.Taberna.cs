@@ -19,7 +19,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! La taberna está cerrada ahora, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! La taberna está cerrada ahora, intentá de nuevo en un momento."));
         }
     }
 }

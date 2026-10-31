@@ -46,9 +46,9 @@ public static class ArenaStoryteller
         {
             string[] miracles =
             [
-                $"🍀 ¡Milagro en la Arena! Los astros se alinearon y **{nameA}** y **{nameB}** pelean hoy de igual a igual.",
-                $"🌟 Algo raro pasa en el aire: el destino igualó a **{nameA}** y **{nameB}**. Hoy nadie es favorito.",
-                $"✨ ¡Día de suerte! La Arena emparejó las fuerzas de **{nameA}** y **{nameB}**: quien juegue mejor se lleva la pelea.",
+                Loc.F($"🍀 ¡Milagro en la Arena! Los astros se alinearon y **{nameA}** y **{nameB}** pelean hoy de igual a igual."),
+                Loc.F($"🌟 Algo raro pasa en el aire: el destino igualó a **{nameA}** y **{nameB}**. Hoy nadie es favorito."),
+                Loc.F($"✨ ¡Día de suerte! La Arena emparejó las fuerzas de **{nameA}** y **{nameB}**: quien juegue mejor se lleva la pelea."),
             ];
             opening.Add(miracles[rng.Next(miracles.Length)]);
         }
@@ -59,8 +59,8 @@ public static class ArenaStoryteller
             {
                 string[] great =
                 [
-                    $"💪 **{name}** llegó en un día brillante (+{Percent(form - 1)} %).",
-                    $"🔥 **{name}** se levantó con todo (+{Percent(form - 1)} %).",
+                    Loc.F($"💪 **{name}** llegó en un día brillante (+{Percent(form - 1)} %)."),
+                    Loc.F($"🔥 **{name}** se levantó con todo (+{Percent(form - 1)} %)."),
                 ];
                 opening.Add(great[rng.Next(great.Length)]);
             }
@@ -68,8 +68,8 @@ public static class ArenaStoryteller
             {
                 string[] poor =
                 [
-                    $"🤕 **{name}** se levantó con el pie izquierdo (−{Percent(1 - form)} %).",
-                    $"😴 **{name}** llegó con la cabeza en otro lado (−{Percent(1 - form)} %).",
+                    Loc.F($"🤕 **{name}** se levantó con el pie izquierdo (−{Percent(1 - form)} %)."),
+                    Loc.F($"😴 **{name}** llegó con la cabeza en otro lado (−{Percent(1 - form)} %)."),
                 ];
                 opening.Add(poor[rng.Next(poor.Length)]);
             }

@@ -28,7 +28,7 @@ public class ZoneModule(IUserRepository userRepository, IZoneRepository zoneRepo
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude procesar el viaje ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude procesar el viaje ahora mismo, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -45,7 +45,7 @@ public class ZoneModule(IUserRepository userRepository, IZoneRepository zoneRepo
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("No pude consultar las zonas ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("No pude consultar las zonas ahora mismo, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -65,19 +65,19 @@ public class ZoneModule(IUserRepository userRepository, IZoneRepository zoneRepo
         var zone = await zoneRepository.GetByIdAsync(zoneId);
         if (zone is null || zone.Kind != "normal")
         {
-            return ($"No existe ninguna zona con ID **{zoneId}**. Usá `/zonas` (o `aa zonas`) para ver las disponibles.", null);
+            return (Loc.F($"No existe ninguna zona con ID **{zoneId}**. Usá `/zonas` (o `aa zonas`) para ver las disponibles."), null);
         }
 
         var player = await userRepository.GetOrCreateUserAsync(discordId);
 
         if (player.Level < zone.MinLevel)
         {
-            return ($"🚫 **{zone.Name}** requiere nivel **{zone.MinLevel}** — todavía sos nivel {player.Level}. Seguí subiendo antes de cruzar.", null);
+            return (Loc.F($"🚫 **{zone.Name}** requiere nivel **{zone.MinLevel}** — todavía sos nivel {player.Level}. Seguí subiendo antes de cruzar."), null);
         }
 
         if (player.CurrentZoneId == zone.ZoneId && !player.InGate)
         {
-            return ($"Ya estás en **{zone.Name}** {zone.Emoji}.", null);
+            return (Loc.F($"Ya estás en **{zone.Name}** {zone.Emoji}."), null);
         }
 
         // Bloqueo por Jefe de Zona: no se puede saltar más de una zona más allá de la última cuyo
@@ -95,8 +95,8 @@ public class ZoneModule(IUserRepository userRepository, IZoneRepository zoneRepo
             if (gatekeeperBoss is not null)
             {
                 return (
-                    $"🔒 Para viajar a **{zone.Name}** primero tenés que derrotar a **{gatekeeperBoss.Name}** {gatekeeperBoss.Emoji}, " +
-                    $"el Jefe de **{gatekeeperZone.Name}** — probá `/boss` estando ahí.",
+                    Loc.F($"🔒 Para viajar a **{zone.Name}** primero tenés que derrotar a **{gatekeeperBoss.Name}** {gatekeeperBoss.Emoji}, ") +
+                    Loc.F($"el Jefe de **{gatekeeperZone.Name}** — probá `/boss` estando ahí."),
                     null);
             }
         }
@@ -114,7 +114,7 @@ public class ZoneModule(IUserRepository userRepository, IZoneRepository zoneRepo
         var gate = await zoneRepository.GetGateAsync();
         if (gate is null)
         {
-            return ($"No existe ninguna zona con ID **{FogonRules.GateZoneId}**. Usá `/zonas` (o `aa zonas`) para ver las disponibles.", null);
+            return (Loc.F($"No existe ninguna zona con ID **{FogonRules.GateZoneId}**. Usá `/zonas` (o `aa zonas`) para ver las disponibles."), null);
         }
 
         var player = await userRepository.GetOrCreateUserAsync(discordId);
@@ -127,36 +127,36 @@ public class ZoneModule(IUserRepository userRepository, IZoneRepository zoneRepo
         {
             case FogonRules.EntryStatus.NotOpen:
                 var last = FogonRules.LastZone(orderedZones);
-                return ($"🔒 **{gate.Name}** {gate.Emoji} se abre cuando vencés al jefe de **{last?.Name ?? "la última zona"}** — probá `/boss` estando ahí.", null);
+                return (Loc.F($"🔒 **{gate.Name}** {gate.Emoji} se abre cuando vencés al jefe de **{last?.Name ?? Loc.T("la última zona")}** — probá `/boss` estando ahí."), null);
             case FogonRules.EntryStatus.LevelTooLow:
-                return ($"🚫 **{gate.Name}** requiere nivel **{gate.MinLevel}** — todavía sos nivel {player.Level}. Seguí subiendo antes de entrar.", null);
+                return (Loc.F($"🚫 **{gate.Name}** requiere nivel **{gate.MinLevel}** — todavía sos nivel {player.Level}. Seguí subiendo antes de entrar."), null);
             case FogonRules.EntryStatus.MissingGear:
-                return ($"🔥 Para entrar a **{gate.Name}** tenés que llevar PUESTOS {FogonRules.MissingText(check)}. Se forjan en la herrería (`/forge`) y quedan equipados solos; " +
-                    "los de la zona anterior hay que venderlos primero. Mirá cómo funciona con `/info tema:fogon`.", null);
+                return (Loc.F($"🔥 Para entrar a **{gate.Name}** tenés que llevar PUESTOS {FogonRules.MissingText(check)}. Se forjan en la herrería (`/forge`) y quedan equipados solos; ") +
+                    Loc.T("los de la zona anterior hay que venderlos primero. Mirá cómo funciona con `/info tema:fogon`."), null);
         }
 
         if (player.InGate)
         {
-            return ($"Ya estás en **{gate.Name}** {gate.Emoji}: enfrentá a **{FogonRules.BossName}** con `/boss`.", null);
+            return (Loc.F($"Ya estás en **{gate.Name}** {gate.Emoji}: enfrentá a **{FogonRules.BossName}** con `/boss`."), null);
         }
 
         await userRepository.SetInGateAsync(discordId, true);
 
         return (null, new EmbedBuilder()
-            .WithTitle($"🔥 ¡Entraste a {gate.Name}!")
+            .WithTitle(Loc.F($"🔥 ¡Entraste a {gate.Name}!"))
             .WithColor(Color.DarkOrange)
-            .WithDescription($"{gate.Description}\n\nAcá no hay cacería, viajes ni jefe en equipo. Enfrentá a **{FogonRules.BossName}** con **/boss**.\nPara salir, viajá a una zona con **/zona**.")
+            .WithDescription(Loc.F($"{gate.Description}\n\nAcá no hay cacería, viajes ni jefe en equipo. Enfrentá a **{FogonRules.BossName}** con **/boss**.\nPara salir, viajá a una zona con **/zona**."))
             .Build());
     }
 
     private static Embed BuildTravelEmbed(Zone zone)
     {
         return new EmbedBuilder()
-            .WithTitle("🗺️ ¡Viaje completado!")
+            .WithTitle(Loc.T("🗺️ ¡Viaje completado!"))
             .WithColor(Color.Teal)
-            .WithDescription($"Llegaste a **{zone.Name}** {zone.Emoji}.\n\n_{zone.Description}_")
-            .AddField("📊 Nivel requerido", zone.MinLevel.ToString(), true)
-            .WithFooter("A partir de ahora, /hunt caza monstruos de esta zona.")
+            .WithDescription(Loc.F($"Llegaste a **{zone.Name}** {zone.Emoji}.\n\n_{zone.Description}_"))
+            .AddField(Loc.T("📊 Nivel requerido"), zone.MinLevel.ToString(), true)
+            .WithFooter(Loc.T("A partir de ahora, /hunt caza monstruos de esta zona."))
             .Build();
     }
 
@@ -167,17 +167,17 @@ public class ZoneModule(IUserRepository userRepository, IZoneRepository zoneRepo
         var zones = await zoneRepository.GetAllAsync();
 
         var embed = new EmbedBuilder()
-            .WithTitle("🗺️ Zonas de Asado y Acero")
+            .WithTitle(Loc.T("🗺️ Zonas de Asado y Acero"))
             .WithColor(Color.Teal)
-            .WithDescription("Usá `/zona <id>` (o `aa zona <id>`) para viajar. `/hunt` siempre caza en tu zona actual.");
+            .WithDescription(Loc.T("Usá `/zona <id>` (o `aa zona <id>`) para viajar. `/hunt` siempre caza en tu zona actual."));
 
         foreach (var zone in zones)
         {
-            string here = zone.ZoneId == player.CurrentZoneId && !player.InGate ? " 📍 _(acá estás)_" : string.Empty;
+            string here = zone.ZoneId == player.CurrentZoneId && !player.InGate ? Loc.T(" 📍 _(acá estás)_") : string.Empty;
             string locked = player.Level < zone.MinLevel ? " 🔒" : string.Empty;
             embed.AddField(
                 $"{zone.Emoji} {zone.ZoneId}. {zone.Name}{here}{locked}",
-                $"Nivel mínimo: **{zone.MinLevel}**\n_{zone.Description}_",
+                Loc.F($"Nivel mínimo: **{zone.MinLevel}**\n_{zone.Description}_"),
                 false);
         }
 
@@ -185,11 +185,11 @@ public class ZoneModule(IUserRepository userRepository, IZoneRepository zoneRepo
         var gate = await zoneRepository.GetGateAsync();
         if (gate is not null && FogonRules.IsGateOpen(ZoneRanking.OrderByDifficulty(zones), player.HighestZoneCleared))
         {
-            string here = player.InGate ? " 📍 _(acá estás)_" : string.Empty;
+            string here = player.InGate ? Loc.T(" 📍 _(acá estás)_") : string.Empty;
             string locked = player.Level < gate.MinLevel ? " 🔒" : string.Empty;
             embed.AddField(
                 $"{gate.Emoji} {gate.ZoneId}. {gate.Name}{here}{locked}",
-                $"Nivel mínimo: **{gate.MinLevel}** · solo con el **{FogonRules.WeaponName}** y la **{FogonRules.AmuletName}** puestos\n_{gate.Description}_",
+                Loc.F($"Nivel mínimo: **{gate.MinLevel}** · solo con el **{FogonRules.WeaponName}** y la **{FogonRules.AmuletName}** puestos\n_{gate.Description}_"),
                 false);
         }
 

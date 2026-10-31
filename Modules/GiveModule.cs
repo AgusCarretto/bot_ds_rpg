@@ -25,7 +25,7 @@ public class GiveModule(IUserRepository userRepository, ITransferRepository tran
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude dar las monedas, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude dar las monedas, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -40,7 +40,7 @@ public class GiveModule(IUserRepository userRepository, ITransferRepository tran
         var sender = await userRepository.GetByDiscordIdAsync(fromDiscordId);
         if (sender is null)
         {
-            return new GiveResult("Todavía no tenés cuenta: empezá con **/start**.", null);
+            return new GiveResult(Loc.T("Todavía no tenés cuenta: empezá con **/start**."), null);
         }
 
         var parsed = AmountParser.Parse(amountText, sender.Gold);
@@ -59,22 +59,22 @@ public class GiveModule(IUserRepository userRepository, ITransferRepository tran
     {
         if (amount < 1)
         {
-            return new GiveResult("La cantidad tiene que ser al menos 1.", null);
+            return new GiveResult(Loc.T("La cantidad tiene que ser al menos 1."), null);
         }
 
         if (recipient.IsBot)
         {
-            return new GiveResult("Los bots no usan monedas 🤖", null);
+            return new GiveResult(Loc.T("Los bots no usan monedas 🤖"), null);
         }
 
         if (recipient.Id == fromDiscordId)
         {
-            return new GiveResult("No podés darte monedas a vos mismo.", null);
+            return new GiveResult(Loc.T("No podés darte monedas a vos mismo."), null);
         }
 
         if (await userRepository.GetByDiscordIdAsync(recipient.Id) is null)
         {
-            return new GiveResult($"{recipient.Mention} todavía no empezó a jugar: que use **/start** y después le das.", null);
+            return new GiveResult(Loc.F($"{recipient.Mention} todavía no empezó a jugar: que use **/start** y después le das."), null);
         }
 
         var outcome = await transferRepository.TransferGoldAsync(fromDiscordId, recipient.Id, amount);
@@ -86,23 +86,23 @@ public class GiveModule(IUserRepository userRepository, ITransferRepository tran
                 await gameEvents.RecordAsync(recipient.Id, GameEventKinds.GoldReceived, amount: amount, detail: fromDiscordId.ToString());
 
                 return new GiveResult(null, new EmbedBuilder()
-                    .WithTitle("💸 ¡Monedas enviadas!")
+                    .WithTitle(Loc.T("💸 ¡Monedas enviadas!"))
                     .WithColor(Color.Gold)
-                    .WithDescription($"{MentionUtils.MentionUser(fromDiscordId)} le dio **{amount}** monedas a {recipient.Mention}.")
-                    .AddField("💰 Tu oro ahora", outcome.SenderGold.ToString(), true)
+                    .WithDescription(Loc.F($"{MentionUtils.MentionUser(fromDiscordId)} le dio **{amount}** monedas a {recipient.Mention}."))
+                    .AddField(Loc.T("💰 Tu oro ahora"), outcome.SenderGold.ToString(), true)
                     .Build());
 
             case TransferStatus.InsufficientGold:
-                return new GiveResult($"No te alcanza: tenés **{outcome.SenderGold}** monedas y querés dar **{amount}**.", null);
+                return new GiveResult(Loc.F($"No te alcanza: tenés **{outcome.SenderGold}** monedas y querés dar **{amount}**."), null);
 
             case TransferStatus.RecipientMissing:
-                return new GiveResult($"{recipient.Mention} todavía no empezó a jugar: que use **/start** y después le das.", null);
+                return new GiveResult(Loc.F($"{recipient.Mention} todavía no empezó a jugar: que use **/start** y después le das."), null);
 
             case TransferStatus.SenderMissing:
-                return new GiveResult("Todavía no tenés cuenta: empezá con **/start**.", null);
+                return new GiveResult(Loc.T("Todavía no tenés cuenta: empezá con **/start**."), null);
 
             default:
-                return new GiveResult("No pude hacer la transferencia.", null);
+                return new GiveResult(Loc.T("No pude hacer la transferencia."), null);
         }
     }
 }

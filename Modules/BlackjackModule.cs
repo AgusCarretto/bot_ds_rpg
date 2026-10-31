@@ -32,7 +32,7 @@ public class BlackjackModule(IBlackjackService blackjack) : InteractionModuleBas
         {
             if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
             {
-                await FollowupAsync("Esa mano es de otra persona: empezá la tuya con **/play game:blackjack** o **aa bj <apuesta>**.", ephemeral: true);
+                await FollowupAsync(Loc.T("Esa mano es de otra persona: empezá la tuya con **/play game:blackjack** o **aa bj <apuesta>**."), ephemeral: true);
                 return;
             }
 
@@ -52,7 +52,7 @@ public class BlackjackModule(IBlackjackService blackjack) : InteractionModuleBas
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! Algo falló en la mesa, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! Algo falló en la mesa, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -76,41 +76,42 @@ public class BlackjackModule(IBlackjackService blackjack) : InteractionModuleBas
     {
         var state = view.State;
         var (playerTotal, playerSoft) = Blackjack.Evaluate(state.Player);
-        string playerText = $"**Tu mano** ({playerTotal}{(playerSoft ? " blando" : string.Empty)}): `{string.Join(" ", state.Player.Select(c => c.Label))}`";
+        string cards = string.Join(" ", state.Player.Select(c => c.Label));
+        string playerText = playerSoft ? Loc.F($"**Tu mano** ({playerTotal} blando): `{cards}`") : Loc.F($"**Tu mano** ({playerTotal}): `{cards}`");
 
         string dealerText;
         if (state.Finished && !(state.Outcome == BlackjackOutcome.PlayerBust))
         {
-            dealerText = $"**La banca** ({Blackjack.Evaluate(state.Dealer).Total}): `{string.Join(" ", state.Dealer.Select(c => c.Label))}`";
+            dealerText = Loc.F($"**La banca** ({Blackjack.Evaluate(state.Dealer).Total}): `{string.Join(" ", state.Dealer.Select(c => c.Label))}`");
         }
         else if (state.Finished)
         {
             // Te pasaste: la banca ni juega, se le ve lo que tenía.
-            dealerText = $"**La banca**: `{string.Join(" ", state.Dealer.Select(c => c.Label))}`";
+            dealerText = Loc.F($"**La banca**: `{string.Join(" ", state.Dealer.Select(c => c.Label))}`");
         }
         else
         {
-            dealerText = $"**La banca**: `{state.Dealer[0].Label} ❓`";
+            dealerText = Loc.F($"**La banca**: `{state.Dealer[0].Label} ❓`");
         }
 
-        string stakeText = state.Doubled ? $"{state.Stake} (doblada)" : state.Stake.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        string stakeText = state.Doubled ? Loc.F($"{state.Stake} (doblada)") : state.Stake.ToString(System.Globalization.CultureInfo.InvariantCulture);
         var lines = new List<string> { playerText, dealerText, string.Empty };
 
         if (!state.Finished)
         {
-            lines.Add("Elegí: **Pedir** otra carta, **Plantarte**" + (view.CanDouble ? " o **Doblar** (una sola carta más y la apuesta se duplica)." : "."));
-            lines.Add("_En texto: `aa bj hit`, `aa bj stand`" + (view.CanDouble ? ", `aa bj double`" : string.Empty) + "._");
+            lines.Add(view.CanDouble ? Loc.T("Elegí: **Pedir** otra carta, **Plantarte** o **Doblar** (una sola carta más y la apuesta se duplica).") : Loc.T("Elegí: **Pedir** otra carta o **Plantarte**."));
+            lines.Add(view.CanDouble ? Loc.T("_En texto: `aa bj hit`, `aa bj stand`, `aa bj double`._") : Loc.T("_En texto: `aa bj hit`, `aa bj stand`._"));
         }
         else
         {
             int payout = Blackjack.Payout(state), net = Blackjack.Net(state);
             lines.Add(state.Outcome switch
             {
-                BlackjackOutcome.PlayerBlackjack => $"🎉 **¡Blackjack!** Paga 3 a 2: cobrás **{payout}** (+{net}).",
-                BlackjackOutcome.PlayerWin => $"✅ **¡Ganaste!** Cobrás **{payout}** (+{net}).",
-                BlackjackOutcome.Push => $"🤝 **Empate.** Te devuelvo los **{state.Stake}**.",
-                BlackjackOutcome.PlayerBust => $"💥 **Te pasaste.** Perdés **{state.Stake}**.",
-                _ => Blackjack.IsBlackjack(state.Dealer) ? $"😢 **La banca tenía blackjack.** Perdés **{state.Stake}**." : $"😢 **La banca gana.** Perdés **{state.Stake}**.",
+                BlackjackOutcome.PlayerBlackjack => Loc.F($"🎉 **¡Blackjack!** Paga 3 a 2: cobrás **{payout}** (+{net})."),
+                BlackjackOutcome.PlayerWin => Loc.F($"✅ **¡Ganaste!** Cobrás **{payout}** (+{net})."),
+                BlackjackOutcome.Push => Loc.F($"🤝 **Empate.** Te devuelvo los **{state.Stake}**."),
+                BlackjackOutcome.PlayerBust => Loc.F($"💥 **Te pasaste.** Perdés **{state.Stake}**."),
+                _ => Blackjack.IsBlackjack(state.Dealer) ? Loc.F($"😢 **La banca tenía blackjack.** Perdés **{state.Stake}**.") : Loc.F($"😢 **La banca gana.** Perdés **{state.Stake}**."),
             });
         }
 
@@ -121,7 +122,7 @@ public class BlackjackModule(IBlackjackService blackjack) : InteractionModuleBas
         }
 
         return new EmbedBuilder()
-            .WithTitle($"🃏 Blackjack · apuesta {stakeText}")
+            .WithTitle(Loc.F($"🃏 Blackjack · apuesta {stakeText}"))
             .WithColor(!state.Finished ? Color.Blue : state.Outcome switch
             {
                 BlackjackOutcome.PlayerBlackjack or BlackjackOutcome.PlayerWin => Color.Green,
@@ -129,7 +130,7 @@ public class BlackjackModule(IBlackjackService blackjack) : InteractionModuleBas
                 _ => Color.Red,
             })
             .WithDescription(string.Join("\n", lines))
-            .WithFooter($"Oro: {view.Gold} · la banca se planta en 17, el blackjack paga 3 a 2")
+            .WithFooter(Loc.F($"Oro: {view.Gold} · la banca se planta en 17, el blackjack paga 3 a 2"))
             .Build();
     }
 
@@ -143,9 +144,9 @@ public class BlackjackModule(IBlackjackService blackjack) : InteractionModuleBas
 
         string game = view.GameId.ToString("N");
         return new ComponentBuilder()
-            .WithButton("Pedir", $"{HitPrefix}:{owner}:{game}", ButtonStyle.Primary, new Emoji("➕"))
-            .WithButton("Plantarse", $"{StandPrefix}:{owner}:{game}", ButtonStyle.Secondary, new Emoji("✋"))
-            .WithButton("Doblar", $"{DoublePrefix}:{owner}:{game}", ButtonStyle.Success, new Emoji("⏫"), disabled: !view.CanDouble)
+            .WithButton(Loc.T("Pedir"), $"{HitPrefix}:{owner}:{game}", ButtonStyle.Primary, new Emoji("➕"))
+            .WithButton(Loc.T("Plantarse"), $"{StandPrefix}:{owner}:{game}", ButtonStyle.Secondary, new Emoji("✋"))
+            .WithButton(Loc.T("Doblar"), $"{DoublePrefix}:{owner}:{game}", ButtonStyle.Success, new Emoji("⏫"), disabled: !view.CanDouble)
             .Build();
     }
 }

@@ -1,3 +1,4 @@
+using BotDsRpg.GameData;
 using BotDsRpg.Services;
 using Discord.Commands;
 
@@ -19,7 +20,7 @@ public partial class TextCommandModule
                 "open" or "abrir" => await BankModule.ExecuteOpenAsync(userRepository, bankRepository, gameEvents, Context.User.Id),
                 "deposit" or "depositar" or "dep" => await BankModule.ExecuteDepositAsync(userRepository, bankRepository, gameEvents, Context.User.Id, cantidad),
                 "withdraw" or "retirar" or "sacar" => await BankModule.ExecuteWithdrawAsync(userRepository, bankRepository, Context.User.Id, cantidad),
-                _ => new BankModule.BankResult("No entendí: probá **aa bank**, **aa bank open**, **aa bank deposit 500** o **aa bank withdraw 500**.", null),
+                _ => new BankModule.BankResult(Loc.T("No entendí: probá **aa bank**, **aa bank open**, **aa bank deposit 500** o **aa bank withdraw 500**."), null),
             };
 
             await ReplyAsync(result.PlainMessage, embed: result.Embed);
@@ -27,7 +28,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude hacer la operación del banco, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! No pude hacer la operación del banco, intentá de nuevo en un momento."));
         }
     }
 }

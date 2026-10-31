@@ -34,7 +34,7 @@ public class TitlesModule(IUserRepository userRepository, IZoneRepository zoneRe
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude mostrar tus títulos, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude mostrar tus títulos, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -47,7 +47,7 @@ public class TitlesModule(IUserRepository userRepository, IZoneRepository zoneRe
         {
             if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
             {
-                await FollowupAsync("Esos títulos son de otra persona: usá **/titles** para ver los tuyos.", ephemeral: true);
+                await FollowupAsync(Loc.T("Esos títulos son de otra persona: usá **/titles** para ver los tuyos."), ephemeral: true);
                 return;
             }
 
@@ -57,7 +57,7 @@ public class TitlesModule(IUserRepository userRepository, IZoneRepository zoneRe
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude abrir esa página de títulos, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude abrir esa página de títulos, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -70,7 +70,7 @@ public class TitlesModule(IUserRepository userRepository, IZoneRepository zoneRe
         {
             if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
             {
-                await FollowupAsync("Esos títulos son de otra persona: usá **/titles** para ver los tuyos.", ephemeral: true);
+                await FollowupAsync(Loc.T("Esos títulos son de otra persona: usá **/titles** para ver los tuyos."), ephemeral: true);
                 return;
             }
 
@@ -81,7 +81,7 @@ public class TitlesModule(IUserRepository userRepository, IZoneRepository zoneRe
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude ponerte ese título, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude ponerte ese título, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -94,7 +94,7 @@ public class TitlesModule(IUserRepository userRepository, IZoneRepository zoneRe
         {
             if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
             {
-                await FollowupAsync("Esos títulos son de otra persona: usá **/titles** para ver los tuyos.", ephemeral: true);
+                await FollowupAsync(Loc.T("Esos títulos son de otra persona: usá **/titles** para ver los tuyos."), ephemeral: true);
                 return;
             }
 
@@ -105,7 +105,7 @@ public class TitlesModule(IUserRepository userRepository, IZoneRepository zoneRe
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude sacarte el título, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude sacarte el título, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -126,7 +126,7 @@ public class TitlesModule(IUserRepository userRepository, IZoneRepository zoneRe
         var player = await userRepository.GetByDiscordIdAsync(discordId);
         if (player is null)
         {
-            return new TitlesView(null, null, "Todavía no tenés cuenta: empezá con **/start** y después mirá tus títulos.");
+            return new TitlesView(null, null, Loc.T("Todavía no tenés cuenta: empezá con **/start** y después mirá tus títulos."));
         }
 
         var context = await LoadContextAsync(zoneRepository, titleRepository, discordId);
@@ -140,33 +140,33 @@ public class TitlesModule(IUserRepository userRepository, IZoneRepository zoneRe
     {
         if (await userRepository.GetByDiscordIdAsync(discordId) is null)
         {
-            return new TitleChangeResult(false, "Todavía no tenés cuenta: empezá con **/start**.");
+            return new TitleChangeResult(false, Loc.T("Todavía no tenés cuenta: empezá con **/start**."));
         }
 
         if (TitleCatalog.Find(titleKey) is not { } title)
         {
-            return new TitleChangeResult(false, "No conozco ese título: elegilo de la lista.");
+            return new TitleChangeResult(false, Loc.T("No conozco ese título: elegilo de la lista."));
         }
 
         var context = await LoadContextAsync(zoneRepository, titleRepository, discordId);
         if (!TitleCatalog.IsUnlocked(title, context))
         {
-            return new TitleChangeResult(false, $"Todavía no tenés **{title.Name}**: {title.Hint}.");
+            return new TitleChangeResult(false, Loc.F($"Todavía no tenés **{title.Name}**: {title.DisplayHint}."));
         }
 
         await titleRepository.SetEquippedAsync(discordId, title.Key);
-        return new TitleChangeResult(true, $"🏷️ Ahora en tu perfil sos **{title.Name}**.");
+        return new TitleChangeResult(true, Loc.F($"🏷️ Ahora en tu perfil sos **{title.Name}**."));
     }
 
     public static async Task<TitleChangeResult> ExecuteClearAsync(IUserRepository userRepository, ITitleRepository titleRepository, ulong discordId)
     {
         if (await userRepository.GetByDiscordIdAsync(discordId) is null)
         {
-            return new TitleChangeResult(false, "Todavía no tenés cuenta: empezá con **/start**.");
+            return new TitleChangeResult(false, Loc.T("Todavía no tenés cuenta: empezá con **/start**."));
         }
 
         await titleRepository.SetEquippedAsync(discordId, null);
-        return new TitleChangeResult(true, $"🏷️ Te sacaste el título: en tu perfil vuelve a salir **{TitleCatalog.Default.Name}**.");
+        return new TitleChangeResult(true, Loc.F($"🏷️ Te sacaste el título: en tu perfil vuelve a salir **{TitleCatalog.Default.Name}**."));
     }
 
     private static async Task<TitleContext> LoadContextAsync(IZoneRepository zoneRepository, ITitleRepository titleRepository, ulong discordId) =>
@@ -184,28 +184,28 @@ public class TitlesModule(IUserRepository userRepository, IZoneRepository zoneRe
         }
 
         lines.Add(equipped is null
-            ? $"Puesto: _ninguno_ (en tu perfil sale «{TitleCatalog.Default.Name}»)"
-            : $"Puesto: **{equipped.Name}**");
+            ? Loc.F($"Puesto: _ninguno_ (en tu perfil sale «{TitleCatalog.Default.Name}»)")
+            : Loc.F($"Puesto: **{equipped.Name}**"));
         lines.Add(string.Empty);
 
         foreach (var title in TitleCatalog.OfPage(page.Key))
         {
             if (TitleCatalog.IsUnlocked(title, context))
             {
-                lines.Add($"✅ **{title.Name}**" + (equipped?.Key == title.Key ? " ◀ puesto" : string.Empty));
+                lines.Add($"✅ **{title.Name}**" + (equipped?.Key == title.Key ? Loc.T(" ◀ puesto") : string.Empty));
             }
             else
             {
                 string? progress = TitleCatalog.Progress(title, context);
-                lines.Add($"🔒 {title.Name} — {title.Hint}" + (progress is null ? string.Empty : $" _({progress})_"));
+                lines.Add($"🔒 {title.Name} — {title.DisplayHint}" + (progress is null ? string.Empty : $" _({progress})_"));
             }
         }
 
         return new EmbedBuilder()
-            .WithTitle($"🏷️ Títulos · {page.Emoji} {page.Name}")
+            .WithTitle(Loc.F($"🏷️ Títulos · {page.Emoji} {page.Name}"))
             .WithColor(Color.Gold)
             .WithDescription(string.Join("\n", lines))
-            .WithFooter($"Tenés {TitleCatalog.UnlockedCount(context)} de {TitleCatalog.All.Count} · el que te pongas se ve en tu perfil, al lado de tu nombre")
+            .WithFooter(Loc.F($"Tenés {TitleCatalog.UnlockedCount(context)} de {TitleCatalog.All.Count} · el que te pongas se ve en tu perfil, al lado de tu nombre"))
             .Build();
     }
 
@@ -214,14 +214,14 @@ public class TitlesModule(IUserRepository userRepository, IZoneRepository zoneRe
     {
         var pageMenu = new SelectMenuBuilder()
             .WithCustomId($"{PagePrefix}:{discordId}")
-            .WithPlaceholder("Elegí una página de títulos")
+            .WithPlaceholder(Loc.T("Elegí una página de títulos"))
             .WithMinValues(1)
             .WithMaxValues(1);
         foreach (var other in TitleCatalog.Pages)
         {
             var inPage = TitleCatalog.OfPage(other.Key);
             int have = inPage.Count(t => TitleCatalog.IsUnlocked(t, context));
-            pageMenu.AddOption($"{other.Emoji} {other.Name}", other.Key, $"{have} de {inPage.Count} desbloqueados", isDefault: other.Key == page.Key);
+            pageMenu.AddOption($"{other.Emoji} {other.Name}", other.Key, Loc.F($"{have} de {inPage.Count} desbloqueados"), isDefault: other.Key == page.Key);
         }
 
         var builder = new ComponentBuilder().WithSelectMenu(pageMenu, row: 0);
@@ -231,18 +231,18 @@ public class TitlesModule(IUserRepository userRepository, IZoneRepository zoneRe
         {
             var equipMenu = new SelectMenuBuilder()
                 .WithCustomId($"{EquipPrefix}:{discordId}:{page.Key}")
-                .WithPlaceholder("Ponete un título de esta página")
+                .WithPlaceholder(Loc.T("Ponete un título de esta página"))
                 .WithMinValues(1)
                 .WithMaxValues(1);
             foreach (var title in owned)
             {
-                equipMenu.AddOption(title.Name, title.Key, equippedKey == title.Key ? "Puesto ahora" : null);
+                equipMenu.AddOption(title.Name, title.Key, equippedKey == title.Key ? Loc.T("Puesto ahora") : null);
             }
 
             builder.WithSelectMenu(equipMenu, row: 1);
         }
 
-        builder.WithButton("Quitar título", $"{ClearPrefix}:{discordId}:{page.Key}", ButtonStyle.Secondary, new Emoji("🏷️"), disabled: TitleCatalog.Find(equippedKey) is null, row: 2);
+        builder.WithButton(Loc.T("Quitar título"), $"{ClearPrefix}:{discordId}:{page.Key}", ButtonStyle.Secondary, new Emoji("🏷️"), disabled: TitleCatalog.Find(equippedKey) is null, row: 2);
         return builder.Build();
     }
 }

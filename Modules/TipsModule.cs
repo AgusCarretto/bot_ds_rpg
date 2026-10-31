@@ -21,7 +21,7 @@ public class TipsModule(IFarmAdvisor farmAdvisor) : InteractionModuleBase<Socket
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude armar el consejo ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude armar el consejo ahora mismo, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -34,11 +34,11 @@ public class TipsModule(IFarmAdvisor farmAdvisor) : InteractionModuleBase<Socket
         {
             // El consejo es null si ya forjaste todo lo que ves en tu zona, si tu zona no tiene recetas, o si algo falló (se registra y no rompe nada).
             return new EmbedBuilder()
-                .WithTitle("💡 Consejo")
+                .WithTitle(Loc.T("💡 Consejo"))
                 .WithColor(Color.Gold)
                 .WithDescription(
-                    "Por ahora no tengo nada para aconsejarte: o ya forjaste todo lo de tu zona, o todavía no hay recetas para ella.\n\n" +
-                    "Mirá a dónde seguir con `/zonas`.")
+                    Loc.T("Por ahora no tengo nada para aconsejarte: o ya forjaste todo lo de tu zona, o todavía no hay recetas para ella.\n\n") +
+                    Loc.T("Mirá a dónde seguir con `/zonas`."))
                 .Build();
         }
 
@@ -48,7 +48,7 @@ public class TipsModule(IFarmAdvisor farmAdvisor) : InteractionModuleBase<Socket
             .WithTitle(title)
             .WithColor(Color.Gold)
             .WithDescription(value)
-            .WithFooter("El consejo sale de lo que tenés en la mochila ahora mismo. Todas las recetas, en /forge.")
+            .WithFooter(Loc.T("El consejo sale de lo que tenés en la mochila ahora mismo. Todas las recetas, en /forge."))
             .Build();
     }
 }

@@ -116,7 +116,7 @@ public static class ProfessionRules
         GatherXpTable.FirstOrDefault(e => e.Rarity == rarity) is { Rarity: not null } entry ? entry.Xp : GatherXpTable[0].Xp;
 
     // «Común 2 · Raro 7 · Épico 15 · Legendario 30 · Mítico 100» (para /professions y la ayuda).
-    public static string DescribeGatherXp() => string.Join(" · ", GatherXpTable.Select(e => $"{e.Rarity} {e.Xp}"));
+    public static string DescribeGatherXp() => string.Join(" · ", GatherXpTable.Select(e => $"{RarityCatalog.DisplayName(e.Rarity)} {e.Xp}"));
 
     // La XP promedio por tirada con las chances reales de /chop y /mine (RarityCatalog.GatheringChances), sin la mejora del oficio: con ella se calcula cuántas tiradas son llegar al máximo.
     public static double AverageGatherXp() => RarityCatalog.GatheringChances.Sum(c => c.Percent / 100.0 * GatherXp(c.Rarity));
@@ -124,8 +124,8 @@ public static class ProfessionRules
     // De dónde sale la XP de cada oficio, en palabras.
     public static string DescribeXpSource(ProfessionDefinition profession) => profession.Key switch
     {
-        ProfessionCatalog.EnchanterKey => $"{profession.XpPerAction} XP por intento",
-        _ => $"según lo que te salga, por tirada: {DescribeGatherXp()} XP",
+        ProfessionCatalog.EnchanterKey => Loc.F($"{profession.XpPerAction} XP por intento"),
+        _ => Loc.F($"según lo que te salga, por tirada: {DescribeGatherXp()} XP"),
     };
 
     // XP total para llegar al nivel donde los efectos topan (MaxLevel, el 100).
@@ -202,8 +202,8 @@ public static class ProfessionRules
         int effective = Math.Clamp(level, 0, MaxLevel);
         return profession.Key switch
         {
-            ProfessionCatalog.EnchanterKey => $"−{Pct(DustDiscountPerLevel * effective)} de Polvo por intento y +{Pct(TierUpgradePerLevel * effective)} de chance de mejorar el tier",
-            _ => $"+{Pct(QuantityPerLevel * effective)} de cantidad y +{Pct(RarityUpgradePerLevel * effective)} de chance de mejorar la rareza",
+            ProfessionCatalog.EnchanterKey => Loc.F($"−{Pct(DustDiscountPerLevel * effective)} de Polvo por intento y +{Pct(TierUpgradePerLevel * effective)} de chance de mejorar el tier"),
+            _ => Loc.F($"+{Pct(QuantityPerLevel * effective)} de cantidad y +{Pct(RarityUpgradePerLevel * effective)} de chance de mejorar la rareza"),
         };
     }
 
@@ -213,19 +213,19 @@ public static class ProfessionRules
     // Lo que da CADA nivel, en palabras.
     public static string DescribePerLevel(ProfessionDefinition profession) => profession.Key switch
     {
-        ProfessionCatalog.EnchanterKey => $"−{Pct(DustDiscountPerLevel)} de Polvo por intento y +{Pct(TierUpgradePerLevel)} de chance de mejorar el tier",
-        _ => $"+{Pct(QuantityPerLevel)} de cantidad y +{Pct(RarityUpgradePerLevel)} de chance de mejorar la rareza",
+        ProfessionCatalog.EnchanterKey => Loc.F($"−{Pct(DustDiscountPerLevel)} de Polvo por intento y +{Pct(TierUpgradePerLevel)} de chance de mejorar el tier"),
+        _ => Loc.F($"+{Pct(QuantityPerLevel)} de cantidad y +{Pct(RarityUpgradePerLevel)} de chance de mejorar la rareza"),
     };
 
     // Lo que da la versión avanzada, en palabras.
     public static string DescribeAdvanced(ProfessionDefinition profession) => profession.Key switch
     {
-        ProfessionCatalog.EnchanterKey => $"**{profession.AdvancedName}** (`/enchant modo:Avanzado`): tira {AdvancedEnchantRolls} veces y se queda con el mejor tier, a {Dec(AdvancedEnchantCostMultiplier)}× el costo",
-        _ => $"**{profession.AdvancedName}** (`{profession.Command} modo:Avanzada`): {AdvancedGatherRolls} sorteos de una vez, con su propio enfriamiento de {(int)AdvancedGatherCooldown.TotalHours} h",
+        ProfessionCatalog.EnchanterKey => Loc.F($"**{profession.DisplayAdvancedName}** (`/enchant modo:Avanzado`): tira {AdvancedEnchantRolls} veces y se queda con el mejor tier, a {Dec(AdvancedEnchantCostMultiplier)}× el costo"),
+        _ => Loc.F($"**{profession.DisplayAdvancedName}** (`{profession.Command} modo:Avanzada`): {AdvancedGatherRolls} sorteos de una vez, con su propio enfriamiento de {(int)AdvancedGatherCooldown.TotalHours} h"),
     };
 
     // 0,002 → "0,2 %" (con coma decimal y sin ceros de más).
-    public static string Pct(double fraction) => $"{Dec(fraction * 100)} %";
+    public static string Pct(double fraction) => Loc.Current == Loc.English ? $"{Dec(fraction * 100)}%" : $"{Dec(fraction * 100)} %";
 
-    private static string Dec(double value) => value.ToString("0.##", CultureInfo.InvariantCulture).Replace('.', ',');
+    private static string Dec(double value) => Loc.Current == Loc.English ? value.ToString("0.##", CultureInfo.InvariantCulture) : value.ToString("0.##", CultureInfo.InvariantCulture).Replace('.', ',');
 }

@@ -61,12 +61,12 @@ public static class FuegoNuevoRules
 
     // Lo que da hoy ese Fuego Nuevo, un renglón por cosa (para el perfil y /fuegonuevo). Son los multiplicadores sobre la base; la chance real de /travel la topa el 100 %.
     public static string BonusLines(int fuegoNuevo) =>
-        $"🏹 Chance de drop en /hunt: **{PercentText(HuntDropMultiplier(fuegoNuevo))}**\n" +
-        $"🗺️ Chance de caja en /travel: **{PercentText(TravelDropMultiplier(fuegoNuevo))}**\n" +
-        $"🪓⛏️ Cantidad en /chop y /mine: **{PercentText(GatherMultiplier(fuegoNuevo))}**\n" +
-        $"📊 EXP de las peleas: **{PercentText(XpMultiplier(fuegoNuevo))}**";
+        Loc.F($"🏹 Chance de drop en /hunt: **{PercentText(HuntDropMultiplier(fuegoNuevo))}**\n") +
+        Loc.F($"🗺️ Chance de caja en /travel: **{PercentText(TravelDropMultiplier(fuegoNuevo))}**\n") +
+        Loc.F($"🪓⛏️ Cantidad en /chop y /mine: **{PercentText(GatherMultiplier(fuegoNuevo))}**\n") +
+        Loc.F($"📊 EXP de las peleas: **{PercentText(XpMultiplier(fuegoNuevo))}**");
 
     // "+30 %" de un multiplicador (1,3 → "+30 %"), con coma decimal y un decimal como mucho.
     public static string PercentText(double multiplier) =>
-        $"+{((multiplier - 1) * 100).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',')} %";
+        Loc.Current == Loc.English ? $"+{((multiplier - 1) * 100).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)}%" : $"+{((multiplier - 1) * 100).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',')} %";
 }

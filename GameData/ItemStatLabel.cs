@@ -10,8 +10,8 @@ public static class ItemStatLabel
     // null si el ítem no se equipa (material, consumible).
     public static string? Format(Item item) => item.Type switch
     {
-        "Weapon" => $"+{item.StatValue} ATQ",
-        "Amulet" => $"+{item.StatValue} DEF",
+        "Weapon" => Loc.F($"+{item.StatValue} ATQ"),
+        "Amulet" => Loc.F($"+{item.StatValue} DEF"),
         _ => null,
     };
 }

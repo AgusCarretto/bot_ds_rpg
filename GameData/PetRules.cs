@@ -111,7 +111,7 @@ public static class PetRules
     public static string CooldownText(TimeSpan? cooldown)
     {
         var value = cooldown ?? FeedCooldown;
-        return value == FeedCooldown ? "1 hora" : $"{(int)Math.Round(value.TotalMinutes)} min";
+        return value == FeedCooldown ? Loc.T("1 hora") : Loc.F($"{(int)Math.Round(value.TotalMinutes)} min");
     }
 
     // En el tope de SU tier (10, 20 o 30): ya no come hasta que evolucione.
@@ -165,15 +165,15 @@ public static class PetRules
     // "oro" / "EXP" / "defensa" / "drop de monstruos": cómo se nombra cada bonus ante el jugador.
     public static string KindName(string bonusKind) => bonusKind switch
     {
-        PetBonusKind.Gold => "oro",
-        PetBonusKind.Xp => "EXP",
-        PetBonusKind.Defense => "defensa",
-        PetBonusKind.Drop => "drop de monstruos",
-        PetBonusKind.Gather => "recolección",
+        PetBonusKind.Gold => Loc.T("oro"),
+        PetBonusKind.Xp => Loc.T("EXP"),
+        PetBonusKind.Defense => Loc.T("defensa"),
+        PetBonusKind.Drop => Loc.T("drop de monstruos"),
+        PetBonusKind.Gather => Loc.T("recolección"),
         _ => bonusKind,
     };
 
     // "+1,5 %" con coma decimal (un decimal como mucho).
     public static string PercentText(double percent) =>
-        $"+{percent.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',')} %";
+        Loc.Current == Loc.English ? $"+{percent.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)}%" : $"+{percent.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',')} %";
 }

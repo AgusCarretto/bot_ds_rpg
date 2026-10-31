@@ -26,7 +26,7 @@ public class DropsModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("No pude consultar los drops ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("No pude consultar los drops ahora mismo, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -72,10 +72,10 @@ public class DropsModule(
         for (int i = 0; i < zones.Count; i++)
         {
             var zone = zones[i];
-            string here = player is not null && zone.ZoneId == player.CurrentZoneId ? "  📍 _acá estás_" : string.Empty;
+            string here = player is not null && zone.ZoneId == player.CurrentZoneId ? Loc.T("  📍 _acá estás_") : string.Empty;
 
             var embed = new EmbedBuilder()
-                .WithTitle($"{zone.Emoji} Zona {zone.ZoneId} · {zone.Name}")
+                .WithTitle(Loc.F($"{zone.Emoji} Zona {zone.ZoneId} · {zone.Name}"))
                 .WithColor(ZoneColors[i % ZoneColors.Length]);
 
             if (here.Length > 0)
@@ -87,7 +87,7 @@ public class DropsModule(
                 monsters.Where(m => m.ZoneId == zone.ZoneId), dropItems, boxTable?.ForZone(zone.ZoneId, ZoneBoxRole.Repeat), boxTable?.ForZone(zone.ZoneId, ZoneBoxRole.Travel));
             if (blocks.Count == 0)
             {
-                embed.AddField("Sin monstruos", "_Todavía no hay monstruos cargados en esta zona._", false);
+                embed.AddField(Loc.T("Sin monstruos"), Loc.T("_Todavía no hay monstruos cargados en esta zona._"), false);
             }
 
             foreach (var block in blocks)
@@ -99,7 +99,7 @@ public class DropsModule(
         }
 
         return new DropsMessage(
-            "🎁 **Qué suelta cada monstruo** — uno solo por monstruo, y solo si ganás la pelea (la chance va en cada bloque).",
+            Loc.T("🎁 **Qué suelta cada monstruo** — uno solo por monstruo, y solo si ganás la pelea (la chance va en cada bloque)."),
             embeds.ToArray());
     }
 }

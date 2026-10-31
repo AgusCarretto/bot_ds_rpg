@@ -22,7 +22,7 @@ public class ProfessionModule(IUserRepository userRepository, IPlayerBonusServic
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude abrir tus oficios, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude abrir tus oficios, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -35,7 +35,7 @@ public class ProfessionModule(IUserRepository userRepository, IPlayerBonusServic
         var player = await userRepository.GetByDiscordIdAsync(discordId);
         if (player is null)
         {
-            return new ProfessionResult("Todavía no tenés cuenta: empezá con **/start**.", null);
+            return new ProfessionResult(Loc.T("Todavía no tenés cuenta: empezá con **/start**."), null);
         }
 
         var bonuses = await bonusService.GetAsync(discordId, player.FuegoNuevo);
@@ -46,12 +46,12 @@ public class ProfessionModule(IUserRepository userRepository, IPlayerBonusServic
     public static Embed BuildEmbed(PlayerBonuses bonuses)
     {
         var embed = new EmbedBuilder()
-            .WithTitle("🛠️ Tus oficios")
+            .WithTitle(Loc.T("🛠️ Tus oficios"))
             .WithColor(Color.Teal)
             .WithDescription(
-                "Cada vez que usás el comando de un oficio, ese oficio sube de nivel. Cada nivel da un poco más, " +
-                $"y al **nivel {ProfessionRules.MaxLevel}** se desbloquea la versión avanzada del comando. Los oficios **se quedan con cada Fuego Nuevo**.\n" +
-                $"El {ProfessionRules.MaxLevel} es el tope de lo que dan, pero el nivel **sigue subiendo**: cada uno cuesta un {ProfessionRules.DescribePostCapGrowth()} más que el anterior.");
+                Loc.T("Cada vez que usás el comando de un oficio, ese oficio sube de nivel. Cada nivel da un poco más, ") +
+                Loc.F($"y al **nivel {ProfessionRules.MaxLevel}** se desbloquea la versión avanzada del comando. Los oficios **se quedan con cada Fuego Nuevo**.\n") +
+                Loc.F($"El {ProfessionRules.MaxLevel} es el tope de lo que dan, pero el nivel **sigue subiendo**: cada uno cuesta un {ProfessionRules.DescribePostCapGrowth()} más que el anterior."));
 
         foreach (var profession in ProfessionCatalog.All)
         {
@@ -59,7 +59,7 @@ public class ProfessionModule(IUserRepository userRepository, IPlayerBonusServic
         }
 
         return embed
-            .WithFooter($"Llegar al {ProfessionRules.MaxLevel} lleva ~{GameHistory.Number(ProfessionRules.TotalXpToMax)} de XP. Lo que ya hiciste antes de que existieran los oficios también cuenta.")
+            .WithFooter(Loc.F($"Llegar al {ProfessionRules.MaxLevel} lleva ~{GameHistory.Number(ProfessionRules.TotalXpToMax)} de XP. Lo que ya hiciste antes de que existieran los oficios también cuenta."))
             .Build();
     }
 
@@ -68,8 +68,8 @@ public class ProfessionModule(IUserRepository userRepository, IPlayerBonusServic
         var progress = ProfessionRules.ProgressFor(bonuses.ProfessionXpOf(profession.Key));
         // Antes del 100 se ve cuánto falta («nivel 40/100»); del 100 en adelante el nivel ya no tiene techo que mostrar.
         return progress.AtEffectCap
-            ? $"{profession.Emoji} {profession.Name} · nivel {progress.Level}"
-            : $"{profession.Emoji} {profession.Name} · nivel {progress.Level}/{ProfessionRules.MaxLevel}";
+            ? Loc.F($"{profession.Emoji} {profession.DisplayName} · nivel {progress.Level}")
+            : Loc.F($"{profession.Emoji} {profession.DisplayName} · nivel {progress.Level}/{ProfessionRules.MaxLevel}");
     }
 
     private static string FieldText(ProfessionDefinition profession, PlayerBonuses bonuses)
@@ -77,19 +77,19 @@ public class ProfessionModule(IUserRepository userRepository, IPlayerBonusServic
         var progress = ProfessionRules.ProgressFor(bonuses.ProfessionXpOf(profession.Key));
         // Pasado el 100 el costo de cada nivel crece (1,6 millones de XP en el último de la tabla): entra en un int, pero se muestra con separador de miles.
         string bar = progress.IsMax
-            ? "🏆 **¡Nivel máximo!**"
-            : $"{ProgressBar.Render((int)progress.IntoLevel, (int)progress.ToNext)} {GameHistory.Number(progress.IntoLevel)}/{GameHistory.Number(progress.ToNext)} XP";
+            ? Loc.T("🏆 **¡Nivel máximo!**")
+            : Loc.F($"{ProgressBar.Render((int)progress.IntoLevel, (int)progress.ToNext)} {GameHistory.Number(progress.IntoLevel)}/{GameHistory.Number(progress.ToNext)} XP");
 
         string now = progress.Level == 0
-            ? $"Cada nivel da {ProfessionRules.DescribePerLevel(profession)}."
+            ? Loc.F($"Cada nivel da {ProfessionRules.DescribePerLevel(profession)}.")
             : progress.AtEffectCap
-                ? $"🏆 Tope de lo que da: {ProfessionRules.DescribeEffect(profession, progress.Level)}. El nivel sigue subiendo."
-                : $"Hoy da {ProfessionRules.DescribeEffect(profession, progress.Level)}.";
+                ? Loc.F($"🏆 Tope de lo que da: {ProfessionRules.DescribeEffect(profession, progress.Level)}. El nivel sigue subiendo.")
+                : Loc.F($"Hoy da {ProfessionRules.DescribeEffect(profession, progress.Level)}.");
 
         string advanced = ProfessionRules.AdvancedUnlocked(progress.Level)
             ? $"🔓 {ProfessionRules.DescribeAdvanced(profession)}"
-            : $"🔒 Al {ProfessionRules.MaxLevel}: {ProfessionRules.DescribeAdvanced(profession)}";
+            : Loc.F($"🔒 Al {ProfessionRules.MaxLevel}: {ProfessionRules.DescribeAdvanced(profession)}");
 
-        return $"{bar}\n{now}\n{advanced}\n_Sube con {profession.Command}: {ProfessionRules.DescribeXpSource(profession)}._";
+        return Loc.F($"{bar}\n{now}\n{advanced}\n_Sube con {profession.Command}: {ProfessionRules.DescribeXpSource(profession)}._");
     }
 }

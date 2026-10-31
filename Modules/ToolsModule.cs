@@ -43,7 +43,7 @@ public class ToolsModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! El carpintero no está en el taller ahora, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! El carpintero no está en el taller ahora, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -57,7 +57,7 @@ public class ToolsModule(
         {
             if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
             {
-                await FollowupAsync("Esa charla es de otra persona: hablá con el carpintero con **/tools**.", ephemeral: true);
+                await FollowupAsync(Loc.T("Esa charla es de otra persona: hablá con el carpintero con **/tools**."), ephemeral: true);
                 return;
             }
 
@@ -78,7 +78,7 @@ public class ToolsModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude pasarle el pedido al carpintero, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude pasarle el pedido al carpintero, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -94,7 +94,7 @@ public class ToolsModule(
     // La línea de lo que llevás puesto: «🪓 **Hacha:** <emoji> Hacha de Hierro Forjado · ×2» o «sin hacha · ×1 (lo de siempre)».
     private static string WornLine(string kind, PlayerTool? current) =>
         $"{ToolRules.KindEmoji(kind)} **{ToolRules.KindLabel(kind)}:** " + (current is null
-            ? $"ninguna · **×1** (lo de siempre)"
+            ? Loc.F($"ninguna · **×1** (lo de siempre)")
             : $"{ItemDisplay.Format(current.Emoji, current.Name)} · **×{current.Multiplier}**");
 
     // La escena: el saludo, lo que llevás de cada herramienta y la lista de lo que podés armar. Pública y sin Context para que «aa herramientas» muestre exactamente lo mismo.
@@ -106,8 +106,8 @@ public class ToolsModule(
         if (player is null)
         {
             return new ToolsScene(
-                new EmbedBuilder().WithTitle("🪚 El Carpintero").WithColor(Color.DarkOrange)
-                    .WithDescription("Primero tenés que empezar tu aventura con **/start**.").Build(),
+                new EmbedBuilder().WithTitle(Loc.T("🪚 El Carpintero")).WithColor(Color.DarkOrange)
+                    .WithDescription(Loc.T("Primero tenés que empezar tu aventura con **/start**.")).Build(),
                 null);
         }
 
@@ -119,7 +119,7 @@ public class ToolsModule(
 
         var menu = new SelectMenuBuilder()
             .WithCustomId($"{MenuPrefix}:{discordId}")
-            .WithPlaceholder("🔨 ¿Qué querés que te arme?")
+            .WithPlaceholder(Loc.T("🔨 ¿Qué querés que te arme?"))
             .WithMinValues(1)
             .WithMaxValues(1);
         int options = 0;
@@ -139,7 +139,7 @@ public class ToolsModule(
                 string mark = isLocked ? "🔒" : canMake ? "✅" : "❌";
                 // Cerrada: dice en qué zona se abre. Abierta: los materiales con lo que tenés de cuántos hacen falta (lo mismo que mostraba el campo grande de antes).
                 string description = isLocked
-                    ? $"×{recipe.ResultItem.StatValue} en {ToolRules.KindCommand(kind)} · se abre en la Zona {rank}: {orderedZones[Math.Min(rank, orderedZones.Count) - 1].Name}"
+                    ? Loc.F($"×{recipe.ResultItem.StatValue} en {ToolRules.KindCommand(kind)} · se abre en la Zona {rank}: {orderedZones[Math.Min(rank, orderedZones.Count) - 1].Name}")
                     : string.Join(" · ", recipe.Ingredients.Select(i => $"{ShortName(i.ItemName)} {owned.GetValueOrDefault(i.ItemName)}/{i.Quantity}"));
 
                 menu.AddItemOption(recipe.ResultItem.Name, $"{mark} {recipe.ResultItem.Name} (×{recipe.ResultItem.StatValue})", recipe.ResultItem.Name, Cut(description));
@@ -148,19 +148,19 @@ public class ToolsModule(
         }
 
         var embed = new EmbedBuilder()
-            .WithTitle("🪚 El Carpintero")
+            .WithTitle(Loc.T("🪚 El Carpintero"))
             .WithColor(Color.DarkOrange)
             .WithDescription(
                 $"{NpcDialogue.Carpenter(CarpenterLine.Greeting, rng)}\n\n" +
                 $"{WornLine(ToolRules.AxeKind, worn.FirstOrDefault(t => t.Kind == ToolRules.AxeKind))}\n" +
                 $"{WornLine(ToolRules.PickaxeKind, worn.FirstOrDefault(t => t.Kind == ToolRules.PickaxeKind))}\n\n" +
                 (options > 0
-                    ? "_Se arman solo con materiales de **/chop** y **/mine**, multiplican lo Común, Raro y Épico, y se ponen solas. ✅ = ya tenés todo · ❌ = te falta · 🔒 = zona cerrada._"
-                    : "_Ya tenés lo mejor que arma el Carpintero por ahora._"));
+                    ? Loc.T("_Se arman solo con materiales de **/chop** y **/mine**, multiplican lo Común, Raro y Épico, y se ponen solas. ✅ = ya tenés todo · ❌ = te falta · 🔒 = zona cerrada._")
+                    : Loc.T("_Ya tenés lo mejor que arma el Carpintero por ahora._")));
 
         if (options > 0)
         {
-            embed.WithFooter("Lo que te conteste el carpintero sale abajo.");
+            embed.WithFooter(Loc.T("Lo que te conteste el carpintero sale abajo."));
         }
 
         // La foto del Carpintero (NpcImages.Carpenter: una URL, Assets/npc/carpenter.jpg o un emoji de la aplicación llamado «carpintero»), de miniatura como en la taberna.
@@ -177,7 +177,7 @@ public class ToolsModule(
         var recipe = await recipeRepository.GetByResultItemNameAsync(itemName);
         if (recipe is null || !ToolRules.IsToolType(recipe.ResultItem.Type))
         {
-            return new ForgeModule.ForgeMakeResult($"{NpcDialogue.Carpenter(CarpenterLine.UnknownTool, rng)}\n(Mirá lo que arma con `/tools`.)", null);
+            return new ForgeModule.ForgeMakeResult(Loc.F($"{NpcDialogue.Carpenter(CarpenterLine.UnknownTool, rng)}\n(Mirá lo que arma con `/tools`.)"), null);
         }
 
         // Si es la primera vez que este usuario ejecuta un comando, se crea acá con los valores por defecto.
@@ -190,13 +190,13 @@ public class ToolsModule(
         if (rank > ZoneRanking.MaxUnlockedRank(orderedZones, player.Level, player.HighestZoneCleared))
         {
             return new ForgeModule.ForgeMakeResult(
-                $"{NpcDialogue.Carpenter(CarpenterLine.Locked, rng)}\n🔒 **{itemText}** se desbloquea al llegar a la **Zona {rank}**.", null);
+                Loc.F($"{NpcDialogue.Carpenter(CarpenterLine.Locked, rng)}\n🔒 **{itemText}** se desbloquea al llegar a la **Zona {rank}**."), null);
         }
 
         var current = (await toolRepository.GetAsync(discordId)).FirstOrDefault(t => t.Kind == kind);
         if (current is not null && current.Multiplier >= recipe.ResultItem.StatValue)
         {
-            return new ForgeModule.ForgeMakeResult($"{NpcDialogue.Carpenter(CarpenterLine.AlreadyHave, rng)}\nTu {ToolRules.KindLabel(kind).ToLowerInvariant()} actual: {ItemDisplay.Format(current.Emoji, current.Name)} (×{current.Multiplier}).", null);
+            return new ForgeModule.ForgeMakeResult(Loc.F($"{NpcDialogue.Carpenter(CarpenterLine.AlreadyHave, rng)}\nTu {ToolRules.KindLabel(kind).ToLowerInvariant()} actual: {ItemDisplay.Format(current.Emoji, current.Name)} (×{current.Multiplier})."), null);
         }
 
         var ingredients = recipe.Ingredients.Select(i => (i.ItemId, i.ItemName, i.Quantity)).ToList();
@@ -211,8 +211,8 @@ public class ToolsModule(
             }
 
             return new ForgeModule.ForgeMakeResult(null, new EmbedBuilder()
-                .WithTitle("🪚 El carpintero no pudo armarla")
-                .WithDescription($"{NpcDialogue.Carpenter(CarpenterLine.NotEnough, rng)}\n\nNo pudiste armar **{itemText}**: {outcome.FailureReason}")
+                .WithTitle(Loc.T("🪚 El carpintero no pudo armarla"))
+                .WithDescription(Loc.F($"{NpcDialogue.Carpenter(CarpenterLine.NotEnough, rng)}\n\nNo pudiste armar **{itemText}**: {outcome.FailureReason}"))
                 .WithColor(Color.Red)
                 .Build());
         }
@@ -220,10 +220,10 @@ public class ToolsModule(
         await gameEvents.RecordAsync(discordId, GameEventKinds.Craft, player.CurrentZoneId, detail: recipe.ResultItem.Name);
 
         return new ForgeModule.ForgeMakeResult(null, new EmbedBuilder()
-            .WithTitle("🪚 ¡Herramienta lista!")
+            .WithTitle(Loc.T("🪚 ¡Herramienta lista!"))
             .WithDescription(
-                $"{NpcDialogue.Carpenter(CarpenterLine.Success, rng)}\n\n**{itemText}** ya quedó **puesta** como tu {ToolRules.KindLabel(kind).ToLowerInvariant()}: " +
-                $"{ToolRules.KindCommand(kind)} te da **×{recipe.ResultItem.StatValue}** de lo Común, Raro y Épico.")
+                Loc.F($"{NpcDialogue.Carpenter(CarpenterLine.Success, rng)}\n\n**{itemText}** ya quedó **puesta** como tu {ToolRules.KindLabel(kind).ToLowerInvariant()}: ") +
+                Loc.F($"{ToolRules.KindCommand(kind)} te da **×{recipe.ResultItem.StatValue}** de lo Común, Raro y Épico."))
             .WithColor(Color.Green)
             .Build());
     }

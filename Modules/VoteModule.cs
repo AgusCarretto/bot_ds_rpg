@@ -28,7 +28,7 @@ public class VoteModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude revisar tu voto ahora mismo, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude revisar tu voto ahora mismo, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -44,7 +44,7 @@ public class VoteModule(
         switch (check.Status)
         {
             case VoteCheckStatus.Unavailable:
-                return new VoteResult("No pude confirmar tu voto con top.gg ahora mismo. Probá de nuevo en un minuto: no se perdió nada.", null);
+                return new VoteResult(Loc.T("No pude confirmar tu voto con top.gg ahora mismo. Probá de nuevo en un minuto: no se perdió nada."), null);
 
             case VoteCheckStatus.NoActiveVote:
             {
@@ -61,7 +61,7 @@ public class VoteModule(
                 if (outcome.Status == VoteClaimStatus.BoxMissing)
                 {
                     BotLog.Error(new InvalidOperationException($"El premio del voto ({VoteRules.RewardBoxName}) no existe en el catálogo: el voto no se cobró."));
-                    return new VoteResult("¡Upa! No pude entregarte la caja del voto. No se cobró nada: avisale al administrador y volvé a intentar.", null);
+                    return new VoteResult(Loc.T("¡Upa! No pude entregarte la caja del voto. No se cobró nada: avisale al administrador y volvé a intentar."), null);
                 }
 
                 var nextVote = VoteRules.NextVoteIn(DateTime.UtcNow, voted, check.ExpiresUtc);
@@ -92,22 +92,22 @@ public class VoteModule(
     {
         string status = screen switch
         {
-            VoteScreen.NotAvailable => "Todavía no se puede votar: se habilita muy pronto. ¡Estate atento!",
-            VoteScreen.Waiting => $"⏳ Podés volver a votar en **{TimeFormat.Remaining(wait ?? TimeSpan.Zero)}**.",
-            VoteScreen.AlreadyClaimed => $"✅ Ya cobraste este voto. Podés volver a votar en **{TimeFormat.Remaining(wait ?? TimeSpan.Zero)}**.",
-            _ => (string.IsNullOrWhiteSpace(voteUrl) ? "🔗 Buscá Asado y Acero en **top.gg** y votá ahí." : $"🔗 **Votá acá:** {voteUrl}")
-                 + "\n\nDespués escribí **/vote** otra vez para cobrar (el voto vale unas 12 horas).",
+            VoteScreen.NotAvailable => Loc.T("Todavía no se puede votar: se habilita muy pronto. ¡Estate atento!"),
+            VoteScreen.Waiting => Loc.F($"⏳ Podés volver a votar en **{TimeFormat.Remaining(wait ?? TimeSpan.Zero)}**."),
+            VoteScreen.AlreadyClaimed => Loc.F($"✅ Ya cobraste este voto. Podés volver a votar en **{TimeFormat.Remaining(wait ?? TimeSpan.Zero)}**."),
+            _ => (string.IsNullOrWhiteSpace(voteUrl) ? Loc.T("🔗 Buscá Asado y Acero en **top.gg** y votá ahí.") : Loc.F($"🔗 **Votá acá:** {voteUrl}"))
+                 + Loc.T("\n\nDespués escribí **/vote** otra vez para cobrar (el voto vale unas 12 horas)."),
         };
 
         return new EmbedBuilder()
-            .WithTitle("🗳️ Votá por Asado y Acero RPG")
+            .WithTitle(Loc.T("🗳️ Votá por Asado y Acero RPG"))
             .WithColor(OnboardingModule.BrandColor)
             .WithDescription(
-                "Votar en top.gg ayuda a que más gente nos encuentre. Como agradecimiento te da:\n\n" +
-                $"{ItemEmojiRegistry.IconOf(VoteRules.RewardBoxName, "📦")} **{VoteRules.RewardBoxes}× {VoteRules.RewardBoxName}** — se abre con **/open**\n" +
-                "👑 **El jefe se resetea** — si el cooldown de **/boss** (solo o en equipo) estaba corriendo, queda listo al instante\n\n" +
+                Loc.T("Votar en top.gg ayuda a que más gente nos encuentre. Como agradecimiento te da:\n\n") +
+                Loc.F($"{ItemEmojiRegistry.IconOf(VoteRules.RewardBoxName, "📦")} **{VoteRules.RewardBoxes}× {VoteRules.RewardBoxName}** — se abre con **/open**\n") +
+                Loc.T("👑 **El jefe se resetea** — si el cooldown de **/boss** (solo o en equipo) estaba corriendo, queda listo al instante\n\n") +
                 status)
-            .WithFooter($"Se puede votar cada {ReminderCatalog.WaitLabel(VoteRules.Interval)}.")
+            .WithFooter(Loc.F($"Se puede votar cada {ReminderCatalog.WaitLabel(VoteRules.Interval)}."))
             .Build();
     }
 
@@ -116,14 +116,14 @@ public class VoteModule(
     {
         string boxText = box is null ? VoteRules.RewardBoxName : ItemDisplay.Format(box.Emoji, box.Name);
         string bossText = bossReset
-            ? "👑 **¡Jefe reseteado!** Ya podés enfrentarlo con **/boss**, solo o con amigos."
-            : "👑 Tu jefe ya estaba listo, así que no hizo falta resetearlo. (Tip: votá justo después de ganarle y se resetea.)";
-        string nextText = nextVote is { } left ? $"⏳ Podés volver a votar en **{TimeFormat.Remaining(left)}**." : "⏳ Ya podés votar de nuevo.";
+            ? Loc.T("👑 **¡Jefe reseteado!** Ya podés enfrentarlo con **/boss**, solo o con amigos.")
+            : Loc.T("👑 Tu jefe ya estaba listo, así que no hizo falta resetearlo. (Tip: votá justo después de ganarle y se resetea.)");
+        string nextText = nextVote is { } left ? Loc.F($"⏳ Podés volver a votar en **{TimeFormat.Remaining(left)}**.") : Loc.T("⏳ Ya podés votar de nuevo.");
 
         var embed = new EmbedBuilder()
-            .WithTitle("🎉 ¡Gracias por votar!")
+            .WithTitle(Loc.T("🎉 ¡Gracias por votar!"))
             .WithColor(Color.Gold)
-            .WithDescription($"📦 Te llevás **{VoteRules.RewardBoxes}×** {boxText} — abrilo con **/open**.\n\n{bossText}\n\n{nextText}");
+            .WithDescription(Loc.F($"📦 Te llevás **{VoteRules.RewardBoxes}×** {boxText} — abrilo con **/open**.\n\n{bossText}\n\n{nextText}"));
 
         if (box is not null)
         {

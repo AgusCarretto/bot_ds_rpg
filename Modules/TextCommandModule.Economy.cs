@@ -36,7 +36,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude procesar tu recompensa diaria, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! No pude procesar tu recompensa diaria, intentá de nuevo en un momento."));
         }
     }
 
@@ -59,7 +59,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("No pude cargar la tienda ahora mismo, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("No pude cargar la tienda ahora mismo, intentá de nuevo en un momento."));
         }
     }
 
@@ -81,7 +81,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude procesar la compra, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! No pude procesar la compra, intentá de nuevo en un momento."));
         }
     }
 
@@ -103,7 +103,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude procesar la venta, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! No pude procesar la venta, intentá de nuevo en un momento."));
         }
     }
 
@@ -121,7 +121,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude procesar la venta, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! No pude procesar la venta, intentá de nuevo en un momento."));
         }
     }
 
@@ -142,7 +142,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("No pude cargar las recetas ahora mismo, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("No pude cargar las recetas ahora mismo, intentá de nuevo en un momento."));
         }
     }
 
@@ -160,7 +160,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! Algo falló en la herrería, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! Algo falló en la herrería, intentá de nuevo en un momento."));
         }
     }
 
@@ -178,7 +178,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude procesar la curación, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! No pude procesar la curación, intentá de nuevo en un momento."));
         }
     }
 
@@ -197,7 +197,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude usar ese ítem, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! No pude usar ese ítem, intentá de nuevo en un momento."));
         }
     }
 
@@ -223,7 +223,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! Algo falló en el casino, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! Algo falló en el casino, intentá de nuevo en un momento."));
         }
     }
 }

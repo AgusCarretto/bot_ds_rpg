@@ -162,34 +162,34 @@ public static class DuelNarrator
     {
         string a = $"**{e.ActorName}**";
         string b = $"**{e.TargetName}**";
-        string heal = e.Heal > 0 ? $" 🩸 _(se curó {e.Heal})_" : string.Empty;
-        string crit = e.Crits switch { 0 => string.Empty, 1 => " 💥 _crítico_", _ => $" 💥 _{e.Crits} críticos_" };
+        string heal = e.Heal > 0 ? Loc.F($" 🩸 _(se curó {e.Heal})_") : string.Empty;
+        string crit = e.Crits switch { 0 => string.Empty, 1 => Loc.T(" 💥 _crítico_"), _ => Loc.F($" 💥 _{e.Crits} críticos_") };
 
         // Sombra: no pega, se esconde.
         if (e.AbilityUsed?.Kind == AbilityKind.Sombra)
         {
-            return $"🌑 {a} se desvanece en las **sombras**: {Pct(AbilityTuning.SombraTotalDodgeChance)} de esquive y su próximo golpe es una emboscada.";
+            return Loc.F($"🌑 {a} se desvanece en las **sombras**: {Pct(AbilityTuning.SombraTotalDodgeChance)} de esquive y su próximo golpe es una emboscada.");
         }
 
         if (e.Dodged)
         {
-            string opener = e.AbilityUsed is { } used ? $"{used.Emoji} {a} usa **{used.Name}**, pero " : string.Empty;
-            return $"{opener}💨 {b} esquivó el ataque{(opener.Length > 0 ? string.Empty : $" de {a}")}.";
+            string opener = e.AbilityUsed is { } used ? Loc.F($"{used.Emoji} {a} usa **{used.Name}**, pero ") : string.Empty;
+            return Loc.F($"{opener}💨 {b} esquivó el ataque{(opener.Length > 0 ? string.Empty : Loc.F($" de {a}"))}.");
         }
 
         if (e.Ambush)
         {
-            return $"🥷 ¡Emboscada! {a} sale de las sombras y le pega a {b} por **{e.Damage}**.{crit}{heal}";
+            return Loc.F($"🥷 ¡Emboscada! {a} sale de las sombras y le pega a {b} por **{e.Damage}**.{crit}{heal}");
         }
 
         return e.AbilityUsed?.Kind switch
         {
-            AbilityKind.Aguante => $"🛡️ {a} se planta con **Aguante** y le pega a {b} por **{e.Damage}** (recibe menos daño por {AbilityTuning.AguanteEffectTurns} golpes).{crit}{heal}",
-            AbilityKind.BolaDeFuego => $"🔥 {a} lanza una **Bola de Fuego** y le pega a {b} por **{e.Damage}**.{crit}{heal}",
-            AbilityKind.LluviaDeFlechas => $"🏹 {a} descarga una **Lluvia de Flechas** sobre {b}: **{e.Damage}** de daño.{crit}{heal}",
+            AbilityKind.Aguante => Loc.F($"🛡️ {a} se planta con **Aguante** y le pega a {b} por **{e.Damage}** (recibe menos daño por {AbilityTuning.AguanteEffectTurns} golpes).{crit}{heal}"),
+            AbilityKind.BolaDeFuego => Loc.F($"🔥 {a} lanza una **Bola de Fuego** y le pega a {b} por **{e.Damage}**.{crit}{heal}"),
+            AbilityKind.LluviaDeFlechas => Loc.F($"🏹 {a} descarga una **Lluvia de Flechas** sobre {b}: **{e.Damage}** de daño.{crit}{heal}"),
             _ => e.Crits > 0
-                ? $"💥 ¡Crítico! {a} le pega a {b} por **{e.Damage}**.{heal}"
-                : $"⚔️ {a} le pega a {b} por **{e.Damage}**.{heal}",
+                ? Loc.F($"💥 ¡Crítico! {a} le pega a {b} por **{e.Damage}**.{heal}")
+                : Loc.F($"⚔️ {a} le pega a {b} por **{e.Damage}**.{heal}"),
         };
     }
 

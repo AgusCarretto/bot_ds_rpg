@@ -1,3 +1,4 @@
+using BotDsRpg.GameData;
 using Discord;
 
 namespace BotDsRpg.Services;
@@ -74,7 +75,7 @@ public sealed class MessageRaidTurnOutput(IMessageChannel channel) : IRaidTurnOu
     public async Task PrepareFinalAsync(RaidSession session)
     {
         var placeholder = new EmbedBuilder()
-            .WithTitle("🏁 Resolviendo el final del raid…")
+            .WithTitle(Loc.T("🏁 Resolviendo el final del raid…"))
             .WithColor(Color.DarkGrey)
             .Build();
 

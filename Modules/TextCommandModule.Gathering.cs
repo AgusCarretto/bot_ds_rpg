@@ -23,7 +23,7 @@ public partial class TextCommandModule
         {
             if (GatheringModule.ParseAdvanced(modo) is not bool advanced)
             {
-                await ReplyAsync($"No entendí **{modo}**: usá `aa {definition.CommandName}` o `aa {definition.CommandName} avanzada`.");
+                await ReplyAsync(Loc.F($"No entendí **{modo}**: usá `aa {definition.CommandName}` o `aa {definition.CommandName} avanzada`."));
                 return;
             }
 
@@ -34,7 +34,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! Algo falló procesando la recolección, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! Algo falló procesando la recolección, intentá de nuevo en un momento."));
         }
     }
 }

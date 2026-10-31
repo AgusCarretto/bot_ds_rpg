@@ -26,7 +26,7 @@ public class DuelModule(IUserRepository userRepository, IDuelService duels, IDue
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude armar el desafío, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude armar el desafío, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -39,20 +39,20 @@ public class DuelModule(IUserRepository userRepository, IDuelService duels, IDue
         {
             if (!Guid.TryParse(idRaw, out var id) || duels.PeekChallenge(id) is not { } challenge)
             {
-                await FollowupAsync("Ese desafío ya venció o ya se resolvió.", ephemeral: true);
+                await FollowupAsync(Loc.T("Ese desafío ya venció o ya se resolvió."), ephemeral: true);
                 return;
             }
 
             if (Context.User.Id != challenge.TargetId)
             {
-                await FollowupAsync("Este desafío no es para vos.", ephemeral: true);
+                await FollowupAsync(Loc.T("Este desafío no es para vos."), ephemeral: true);
                 return;
             }
 
             // Sacarlo de forma atómica: si dos clicks llegan a la vez, solo uno arranca el duelo.
             if (duels.TryTakeChallenge(id) is not { } taken)
             {
-                await FollowupAsync("Ese desafío ya venció o ya se resolvió.", ephemeral: true);
+                await FollowupAsync(Loc.T("Ese desafío ya venció o ya se resolvió."), ephemeral: true);
                 return;
             }
 
@@ -60,14 +60,14 @@ public class DuelModule(IUserRepository userRepository, IDuelService duels, IDue
             var b = await fighters.BuildAsync(taken.TargetId, taken.TargetName);
             if (a is null || b is null)
             {
-                await FollowupAsync("Alguno de los dos ya no tiene cuenta: el duelo no se puede armar.", ephemeral: true);
+                await FollowupAsync(Loc.T("Alguno de los dos ya no tiene cuenta: el duelo no se puede armar."), ephemeral: true);
                 return;
             }
 
             var session = duels.TryStart(a, b, new InteractionCombatReplyTarget(Context.Interaction), Render);
             if (session is null)
             {
-                await FollowupAsync("Alguno de los dos ya está en otro duelo: terminenlo y vuelvan a desafiarse.", ephemeral: true);
+                await FollowupAsync(Loc.T("Alguno de los dos ya está en otro duelo: terminenlo y vuelvan a desafiarse."), ephemeral: true);
                 return;
             }
 
@@ -82,7 +82,7 @@ public class DuelModule(IUserRepository userRepository, IDuelService duels, IDue
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude arrancar el duelo, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude arrancar el duelo, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -96,29 +96,29 @@ public class DuelModule(IUserRepository userRepository, IDuelService duels, IDue
         {
             if (!Guid.TryParse(idRaw, out var id) || duels.PeekChallenge(id) is not { } challenge)
             {
-                await FollowupAsync("Ese desafío ya venció o ya se resolvió.", ephemeral: true);
+                await FollowupAsync(Loc.T("Ese desafío ya venció o ya se resolvió."), ephemeral: true);
                 return;
             }
 
             if (Context.User.Id != challenge.TargetId && Context.User.Id != challenge.ChallengerId)
             {
-                await FollowupAsync("Este desafío no es tuyo.", ephemeral: true);
+                await FollowupAsync(Loc.T("Este desafío no es tuyo."), ephemeral: true);
                 return;
             }
 
             if (duels.TryTakeChallenge(id) is null)
             {
-                await FollowupAsync("Ese desafío ya venció o ya se resolvió.", ephemeral: true);
+                await FollowupAsync(Loc.T("Ese desafío ya venció o ya se resolvió."), ephemeral: true);
                 return;
             }
 
             bool byTarget = Context.User.Id == challenge.TargetId;
             var embed = new EmbedBuilder()
-                .WithTitle("❌ Duelo cancelado")
+                .WithTitle(Loc.T("❌ Duelo cancelado"))
                 .WithColor(Color.DarkGrey)
                 .WithDescription(byTarget
-                    ? $"**{challenge.TargetName}** rechazó el duelo de **{challenge.ChallengerName}**. Será para otra."
-                    : $"**{challenge.ChallengerName}** retiró el desafío a **{challenge.TargetName}**.")
+                    ? Loc.F($"**{challenge.TargetName}** rechazó el duelo de **{challenge.ChallengerName}**. Será para otra.")
+                    : Loc.F($"**{challenge.ChallengerName}** retiró el desafío a **{challenge.TargetName}**."))
                 .Build();
 
             await ModifyOriginalResponseAsync(p =>
@@ -131,7 +131,7 @@ public class DuelModule(IUserRepository userRepository, IDuelService duels, IDue
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude cancelar el desafío, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude cancelar el desafío, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -149,7 +149,7 @@ public class DuelModule(IUserRepository userRepository, IDuelService duels, IDue
         {
             if (!Guid.TryParse(idRaw, out var id))
             {
-                await FollowupAsync("Ese duelo ya terminó.", ephemeral: true);
+                await FollowupAsync(Loc.T("Ese duelo ya terminó."), ephemeral: true);
                 return;
             }
 
@@ -169,7 +169,7 @@ public class DuelModule(IUserRepository userRepository, IDuelService duels, IDue
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! Algo falló en el duelo, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! Algo falló en el duelo, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -182,7 +182,7 @@ public class DuelModule(IUserRepository userRepository, IDuelService duels, IDue
         {
             if (!Guid.TryParse(idRaw, out var id))
             {
-                await FollowupAsync("Ese duelo ya terminó.", ephemeral: true);
+                await FollowupAsync(Loc.T("Ese duelo ya terminó."), ephemeral: true);
                 return;
             }
 
@@ -202,7 +202,7 @@ public class DuelModule(IUserRepository userRepository, IDuelService duels, IDue
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude registrar la rendición, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude registrar la rendición, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -211,10 +211,10 @@ public class DuelModule(IUserRepository userRepository, IDuelService duels, IDue
     {
         string? message = result.Status switch
         {
-            DuelActStatus.NotFound or DuelActStatus.AlreadyOver => "Ese duelo ya terminó.",
-            DuelActStatus.NotParticipant => "Ese duelo no es tuyo.",
-            DuelActStatus.NotYourTurn => "Todavía no es tu turno.",
-            DuelActStatus.AbilityUnavailable => "Tu habilidad todavía está en enfriamiento.",
+            DuelActStatus.NotFound or DuelActStatus.AlreadyOver => Loc.T("Ese duelo ya terminó."),
+            DuelActStatus.NotParticipant => Loc.T("Ese duelo no es tuyo."),
+            DuelActStatus.NotYourTurn => Loc.T("Todavía no es tu turno."),
+            DuelActStatus.AbilityUnavailable => Loc.T("Tu habilidad todavía está en enfriamiento."),
             _ => null,
         };
 
@@ -234,55 +234,55 @@ public class DuelModule(IUserRepository userRepository, IDuelService duels, IDue
     {
         if (target.IsBot)
         {
-            return new DuelChallengeResult("Los bots no pelean: elegí a otra persona.", null, null, null);
+            return new DuelChallengeResult(Loc.T("Los bots no pelean: elegí a otra persona."), null, null, null);
         }
 
         if (target.Id == challenger.Id)
         {
-            return new DuelChallengeResult("No podés desafiarte a vos mismo, ¡buscate un rival!", null, null, null);
+            return new DuelChallengeResult(Loc.T("No podés desafiarte a vos mismo, ¡buscate un rival!"), null, null, null);
         }
 
         var challengerUser = await userRepository.GetByDiscordIdAsync(challenger.Id);
         if (challengerUser is null)
         {
-            return new DuelChallengeResult("Primero tenés que empezar tu aventura con **/start**.", null, null, null);
+            return new DuelChallengeResult(Loc.T("Primero tenés que empezar tu aventura con **/start**."), null, null, null);
         }
 
         string targetName = GameModule.GetDisplayName(target);
         var targetUser = await userRepository.GetByDiscordIdAsync(target.Id);
         if (targetUser is null)
         {
-            return new DuelChallengeResult($"**{targetName}** todavía no empezó su aventura (le falta **/start**).", null, null, null);
+            return new DuelChallengeResult(Loc.F($"**{targetName}** todavía no empezó su aventura (le falta **/start**)."), null, null, null);
         }
 
         if (duels.IsInDuel(challenger.Id))
         {
-            return new DuelChallengeResult("Ya estás en un duelo: terminalo antes de armar otro.", null, null, null);
+            return new DuelChallengeResult(Loc.T("Ya estás en un duelo: terminalo antes de armar otro."), null, null, null);
         }
 
         if (duels.IsInDuel(target.Id))
         {
-            return new DuelChallengeResult($"**{targetName}** ya está en pleno duelo. Esperá a que termine.", null, null, null);
+            return new DuelChallengeResult(Loc.F($"**{targetName}** ya está en pleno duelo. Esperá a que termine."), null, null, null);
         }
 
         string challengerName = GameModule.GetDisplayName(challenger);
         var challenge = duels.CreateChallenge(challenger.Id, challengerName, target.Id, targetName);
 
         var embed = new EmbedBuilder()
-            .WithTitle("⚔️ ¡Duelo amistoso!")
+            .WithTitle(Loc.T("⚔️ ¡Duelo amistoso!"))
             .WithColor(Color.Orange)
             .WithDescription(
-                $"{MentionUtils.MentionUser(challenger.Id)} desafía a {MentionUtils.MentionUser(target.Id)}.\n\n" +
-                "Es **amistoso**: no se pierde ni se gana nada, es solo por el honor. Los dos arrancan con la vida completa " +
-                "(en PvP la vida se ajusta un poco por clase para que sea parejo).")
+                Loc.F($"{MentionUtils.MentionUser(challenger.Id)} desafía a {MentionUtils.MentionUser(target.Id)}.\n\n") +
+                Loc.T("Es **amistoso**: no se pierde ni se gana nada, es solo por el honor. Los dos arrancan con la vida completa ") +
+                Loc.T("(en PvP la vida se ajusta un poco por clase para que sea parejo)."))
             .AddField($"🥊 {challengerName}", FighterLine(challengerUser.Class, challengerUser.Level), true)
             .AddField($"🥊 {targetName}", FighterLine(targetUser.Class, targetUser.Level), true)
-            .WithFooter($"{targetName}: aceptá cuando quieras (el desafío vence en {(int)DuelService.ChallengeLifetime.TotalMinutes} minutos).")
+            .WithFooter(Loc.F($"{targetName}: aceptá cuando quieras (el desafío vence en {(int)DuelService.ChallengeLifetime.TotalMinutes} minutos)."))
             .Build();
 
         var buttons = new ComponentBuilder()
-            .WithButton("Aceptar", $"duel_accept:{challenge.Id}", ButtonStyle.Success, new Emoji("⚔️"))
-            .WithButton("Rechazar", $"duel_decline:{challenge.Id}", ButtonStyle.Secondary, new Emoji("✖️"))
+            .WithButton(Loc.T("Aceptar"), $"duel_accept:{challenge.Id}", ButtonStyle.Success, new Emoji("⚔️"))
+            .WithButton(Loc.T("Rechazar"), $"duel_decline:{challenge.Id}", ButtonStyle.Secondary, new Emoji("✖️"))
             .Build();
 
         return new DuelChallengeResult(null, MentionUtils.MentionUser(target.Id), embed, buttons);
@@ -291,7 +291,7 @@ public class DuelModule(IUserRepository userRepository, IDuelService duels, IDue
     private static string FighterLine(string playerClass, int level)
     {
         string emoji = ClassCatalog.All.FirstOrDefault(c => c.Name == playerClass)?.Emoji ?? "🥊";
-        return $"{emoji} {playerClass} · nivel {level}";
+        return Loc.F($"{emoji} {playerClass} · nivel {level}");
     }
 
     // El mensaje del duelo en su estado actual: en curso (con los botones del que tiene el turno) o terminado (resumen y sin botones).
@@ -304,7 +304,7 @@ public class DuelModule(IUserRepository userRepository, IDuelService duels, IDue
             string log = session.Log.Count == 0 ? string.Empty : string.Join("\n", session.Log);
 
             var embed = new EmbedBuilder()
-                .WithTitle($"⚔️ {state.A.Fighter.Name} vs {state.B.Fighter.Name}")
+                .WithTitle(Loc.F($"⚔️ {state.A.Fighter.Name} vs {state.B.Fighter.Name}"))
                 .AddField(SideTitle(state.A), SideBody(state.A), true)
                 .AddField(SideTitle(state.B), SideBody(state.B), true);
 
@@ -312,8 +312,8 @@ public class DuelModule(IUserRepository userRepository, IDuelService duels, IDue
             {
                 var actor = state.Actor;
                 embed.WithColor(Color.Orange)
-                    .WithDescription($"{log}{(log.Length > 0 ? "\n\n" : string.Empty)}▶️ Le toca a {MentionUtils.MentionUser(actor.Fighter.DiscordId)}.")
-                    .WithFooter($"Duelo amistoso · cada turno tiene {(int)DuelService.TurnTimeout.TotalSeconds} s · no se pierde nada");
+                    .WithDescription(Loc.F($"{log}{(log.Length > 0 ? "\n\n" : string.Empty)}▶️ Le toca a {MentionUtils.MentionUser(actor.Fighter.DiscordId)}."))
+                    .WithFooter(Loc.F($"Duelo amistoso · cada turno tiene {(int)DuelService.TurnTimeout.TotalSeconds} s · no se pierde nada"));
 
                 return (embed.Build(), ActiveButtons(session.Id, actor));
             }
@@ -321,17 +321,17 @@ public class DuelModule(IUserRepository userRepository, IDuelService duels, IDue
             var winner = session.Winner!;
             string how = session.End switch
             {
-                DuelEnd.Knockout => "Se quedó sin vida.",
-                DuelEnd.Forfeit => "Se rindió.",
-                DuelEnd.TimedOut => "No jugó a tiempo.",
-                _ => "Se acabó el tiempo de combate: gana el que tiene más vida.",
+                DuelEnd.Knockout => Loc.T("Se quedó sin vida."),
+                DuelEnd.Forfeit => Loc.T("Se rindió."),
+                DuelEnd.TimedOut => Loc.T("No jugó a tiempo."),
+                _ => Loc.T("Se acabó el tiempo de combate: gana el que tiene más vida."),
             };
 
-            embed.WithTitle($"🏆 ¡{winner.Fighter.Name} ganó el duelo!")
+            embed.WithTitle(Loc.F($"🏆 ¡{winner.Fighter.Name} ganó el duelo!"))
                 .WithColor(Color.Green)
                 .WithDescription($"{log}\n\n{how}")
-                .AddField("📋 Resumen", Summary(state), false)
-                .WithFooter("Duelo amistoso: no se ganó ni se perdió nada. ¡Revancha cuando quieran!");
+                .AddField(Loc.T("📋 Resumen"), Summary(state), false)
+                .WithFooter(Loc.T("Duelo amistoso: no se ganó ni se perdió nada. ¡Revancha cuando quieran!"));
 
             return (embed.Build(), new ComponentBuilder().Build());
         }
@@ -342,20 +342,20 @@ public class DuelModule(IUserRepository userRepository, IDuelService duels, IDue
     private static string SideBody(DuelSide side)
     {
         string ability = AdventureModule.BuildAbilityStatusLine(side.Fighter.PlayerClass, side.Status);
-        return $"{ProgressBar.Render(side.Hp, side.Fighter.MaxHp)}\n{Math.Max(0, side.Hp)}/{side.Fighter.MaxHp}{(ability.Length > 0 ? $"\n{ability}" : string.Empty)}";
+        return Loc.F($"{ProgressBar.Render(side.Hp, side.Fighter.MaxHp)}\n{Math.Max(0, side.Hp)}/{side.Fighter.MaxHp}{(ability.Length > 0 ? $"\n{ability}" : string.Empty)}");
     }
 
     private static string Summary(DuelState state) =>
-        $"**{state.A.Fighter.Name}**: {state.A.DamageDealt} de daño · {state.A.Crits} crít. · {state.A.Dodges} esquives\n" +
-        $"**{state.B.Fighter.Name}**: {state.B.DamageDealt} de daño · {state.B.Crits} crít. · {state.B.Dodges} esquives\n" +
-        $"Duró {state.Actions} acciones.";
+        Loc.F($"**{state.A.Fighter.Name}**: {state.A.DamageDealt} de daño · {state.A.Crits} crít. · {state.A.Dodges} esquives\n") +
+        Loc.F($"**{state.B.Fighter.Name}**: {state.B.DamageDealt} de daño · {state.B.Crits} crít. · {state.B.Dodges} esquives\n") +
+        Loc.F($"Duró {state.Actions} acciones.");
 
     // Los botones son los del que tiene el turno: el de habilidad lleva SU habilidad (y sus turnos de enfriamiento). Solo él puede apretarlos
     // (el servicio lo valida), pero la rendición es de los dos.
     private static MessageComponent ActiveButtons(Guid id, DuelSide actor)
     {
         var builder = new ComponentBuilder()
-            .WithButton("Atacar", $"duel_attack:{id}", ButtonStyle.Primary, new Emoji("⚔️"));
+            .WithButton(Loc.T("Atacar"), $"duel_attack:{id}", ButtonStyle.Primary, new Emoji("⚔️"));
 
         var ability = ClassAbilities.For(actor.Fighter.PlayerClass);
         if (ability is not null)
@@ -366,6 +366,6 @@ public class DuelModule(IUserRepository userRepository, IDuelService duels, IDue
                 new Emoji(ability.Emoji), disabled: cooldown > 0);
         }
 
-        return builder.WithButton("Rendirse", $"duel_forfeit:{id}", ButtonStyle.Danger, new Emoji("🏳️")).Build();
+        return builder.WithButton(Loc.T("Rendirse"), $"duel_forfeit:{id}", ButtonStyle.Danger, new Emoji("🏳️")).Build();
     }
 }

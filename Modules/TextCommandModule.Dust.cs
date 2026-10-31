@@ -20,7 +20,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude desmantelar, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! No pude desmantelar, intentá de nuevo en un momento."));
         }
     }
 
@@ -47,7 +47,7 @@ public partial class TextCommandModule
                 }
                 else
                 {
-                    await ReplyAsync($"No entendí **{word}**: usá `aa enchant {pieza} <efecto>` o `aa enchant {pieza} <efecto> avanzado`.");
+                    await ReplyAsync(Loc.F($"No entendí **{word}**: usá `aa enchant {pieza} <efecto>` o `aa enchant {pieza} <efecto> avanzado`."));
                     return;
                 }
             }
@@ -59,7 +59,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude encantar, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! No pude encantar, intentá de nuevo en un momento."));
         }
     }
 }

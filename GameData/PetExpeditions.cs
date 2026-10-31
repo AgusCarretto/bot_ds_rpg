@@ -128,5 +128,5 @@ public static class PetExpeditions
     }
 
     // «1 hora» / «4 horas» / «8 horas».
-    public static string HoursText(int hours) => hours == 1 ? "1 hora" : $"{hours} horas";
+    public static string HoursText(int hours) => hours == 1 ? Loc.T("1 hora") : Loc.F($"{hours} horas");
 }

@@ -1,3 +1,4 @@
+using BotDsRpg.GameData;
 using BotDsRpg.Services;
 using Discord.Commands;
 
@@ -19,7 +20,7 @@ public partial class TextCommandModule
                 "feed" or "alimentar" or "comer" => await PetModule.ExecuteFeedAsync(userRepository, petRepository, gameEvents, Context.User.Id, mascota, bonusService),
                 "expedition" or "expedicion" or "expedición" or "exp" or "aventura" => await ExpeditionAsync(mascota),
                 "evolve" or "evolucionar" or "evolucion" or "evolución" or "evo" => await PetModule.ExecuteEvolveAsync(userRepository, petRepository, gameEvents, Context.User.Id, mascota),
-                _ => new PetModule.PetResult("No entendí: probá **aa pet**, **aa pet feed** (o **aa pet feed Ñandusito** para una sola), **aa pet expedition** o **aa pet evolve**.", null),
+                _ => new PetModule.PetResult(Loc.T("No entendí: probá **aa pet**, **aa pet feed** (o **aa pet feed Ñandusito** para una sola), **aa pet expedition** o **aa pet evolve**."), null),
             };
 
             await ReplyAsync(result.PlainMessage, embed: result.Embed, components: result.Components);
@@ -27,7 +28,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude con tus mascotas ahora mismo, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! No pude con tus mascotas ahora mismo, intentá de nuevo en un momento."));
         }
     }
 

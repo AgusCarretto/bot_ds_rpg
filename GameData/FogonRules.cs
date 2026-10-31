@@ -67,9 +67,9 @@ public static class FogonRules
     // Lo que falta, en palabras: "el Trinche del Asador Eterno y la Brasa del Fogón Eterno".
     public static string MissingText(EntryCheck check) => (check.MissingWeapon, check.MissingAmulet) switch
     {
-        (true, true) => $"el **{WeaponName}** y la **{AmuletName}**",
-        (true, false) => $"el **{WeaponName}**",
-        (false, true) => $"la **{AmuletName}**",
+        (true, true) => Loc.F($"el **{WeaponName}** y la **{AmuletName}**"),
+        (true, false) => Loc.F($"el **{WeaponName}**"),
+        (false, true) => Loc.F($"la **{AmuletName}**"),
         _ => string.Empty,
     };
 }

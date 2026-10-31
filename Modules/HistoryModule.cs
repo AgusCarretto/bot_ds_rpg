@@ -24,7 +24,7 @@ public class HistoryModule(IUserRepository userRepository, IGameEventRepository 
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude armar el historial, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude armar el historial, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -42,7 +42,7 @@ public class HistoryModule(IUserRepository userRepository, IGameEventRepository 
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude armar el historial de duelos, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude armar el historial de duelos, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -53,19 +53,19 @@ public class HistoryModule(IUserRepository userRepository, IGameEventRepository 
         // GetByDiscordIdAsync (no GetOrCreate): mirar un historial no le crea cuenta a nadie.
         if (await userRepository.GetByDiscordIdAsync(discordId) is null)
         {
-            return new EmbedBuilder().WithTitle("📜 Historial").WithColor(Color.DarkGrey).WithDescription(GameModule.BuildNotRegisteredMessage(name)).Build();
+            return new EmbedBuilder().WithTitle(Loc.T("📜 Historial")).WithColor(Color.DarkGrey).WithDescription(GameModule.BuildNotRegisteredMessage(name)).Build();
         }
 
         var report = GameHistory.Build(await eventRepository.GetBreakdownAsync(discordId, GameHistory.Kinds));
         var arena = GameHistory.DescribeArena(report);
 
         var embed = new EmbedBuilder()
-            .WithTitle($"📜 Historial de {name}")
+            .WithTitle(Loc.F($"📜 Historial de {name}"))
             .WithColor(Color.Orange);
 
         if (report.Games.Count == 0 && arena is null)
         {
-            return embed.WithDescription("Todavía no hay nada para contar: salí a cazar (**/hunt**), viajá (**/travel**) o probá suerte en el casino (**/play**).").Build();
+            return embed.WithDescription(Loc.T("Todavía no hay nada para contar: salí a cazar (**/hunt**), viajá (**/travel**) o probá suerte en el casino (**/play**).")).Build();
         }
 
         // Un campo por juego, con una fila en blanco entre uno y otro para que respire.
@@ -92,7 +92,7 @@ public class HistoryModule(IUserRepository userRepository, IGameEventRepository 
             embed.AddField(arenaField.Title, arenaField.Value, false);
         }
 
-        return embed.WithFooter("Se cuenta desde que el bot empezó a registrar cada juego · los duelos en detalle, con /duels").Build();
+        return embed.WithFooter(Loc.T("Se cuenta desde que el bot empezó a registrar cada juego · los duelos en detalle, con /duels")).Build();
     }
 
     public static async Task<Embed> BuildDuelsEmbedAsync(
@@ -100,14 +100,14 @@ public class HistoryModule(IUserRepository userRepository, IGameEventRepository 
     {
         if (await userRepository.GetByDiscordIdAsync(discordId) is null)
         {
-            return new EmbedBuilder().WithTitle("🥊 Duelos").WithColor(Color.DarkGrey).WithDescription(GameModule.BuildNotRegisteredMessage(name)).Build();
+            return new EmbedBuilder().WithTitle(Loc.T("🥊 Duelos")).WithColor(Color.DarkGrey).WithDescription(GameModule.BuildNotRegisteredMessage(name)).Build();
         }
 
         var totals = await eventRepository.GetBreakdownAsync(discordId, DuelHistory.Kinds);
         var recent = await eventRepository.GetRecentAsync(discordId, DuelHistory.Kinds, DuelHistory.RecentCount);
         var (title, description) = DuelHistory.Describe(name, totals, recent, utcNow);
 
-        return new EmbedBuilder().WithTitle(title).WithColor(Color.Orange).WithDescription(description).WithFooter("Los duelos son amistosos: no se gana ni se pierde nada.").Build();
+        return new EmbedBuilder().WithTitle(title).WithColor(Color.Orange).WithDescription(description).WithFooter(Loc.T("Los duelos son amistosos: no se gana ni se pierde nada.")).Build();
     }
 
     // Espacio de ancho cero (U+200B): Discord no deja campos con el texto vacío; así se arma una fila en blanco (igual que en /inventory).

@@ -37,14 +37,14 @@ public class BankModule(IUserRepository userRepository, IBankRepository bankRepo
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude hacer la operación del banco, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude hacer la operación del banco, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
     // Exactamente uno de los dos campos viene con valor (mismo patrón que GiveModule.GiveResult).
     public sealed record BankResult(string? PlainMessage, Embed? Embed);
 
-    private const string NoAccountText = "Todavía no tenés cuenta en el banco: abrila con **/bank open** (cuesta {0} de oro, una sola vez).";
+    private static string NoAccountMessage() => Loc.F($"Todavía no tenés cuenta en el banco: abrila con **/bank open** (cuesta {GameHistory.Number(BankRules.AccountPrice)} de oro, una sola vez).");
 
     // zoneRepository: para decir cuánto oro extra rinde el saldo en la zona del jugador (el minibuff del banco); sin él (algunas pruebas) esa línea no sale.
     public static async Task<BankResult> BuildViewAsync(IUserRepository userRepository, ulong discordId, IZoneRepository? zoneRepository = null)
@@ -52,30 +52,30 @@ public class BankModule(IUserRepository userRepository, IBankRepository bankRepo
         var player = await userRepository.GetByDiscordIdAsync(discordId);
         if (player is null)
         {
-            return new BankResult("Todavía no tenés cuenta: empezá con **/start**.", null);
+            return new BankResult(Loc.T("Todavía no tenés cuenta: empezá con **/start**."), null);
         }
 
-        var embed = new EmbedBuilder().WithTitle("🏦 El Banco").WithColor(Color.Teal);
+        var embed = new EmbedBuilder().WithTitle(Loc.T("🏦 El Banco")).WithColor(Color.Teal);
 
         if (!player.HasBank)
         {
             embed.WithDescription(
-                $"Todavía no tenés cuenta. Abrirla cuesta **{GameHistory.Number(BankRules.AccountPrice)}** de oro (una sola vez) y guarda tu oro **a salvo**: " +
-                "si perdés un combate, lo que está en el banco no se toca.\n\nAbrila con **/bank open**.")
-                .AddField("💰 Tu billetera", GameHistory.Number(player.Gold), true);
+                Loc.F($"Todavía no tenés cuenta. Abrirla cuesta **{GameHistory.Number(BankRules.AccountPrice)}** de oro (una sola vez) y guarda tu oro **a salvo**: ") +
+                Loc.T("si perdés un combate, lo que está en el banco no se toca.\n\nAbrila con **/bank open**."))
+                .AddField(Loc.T("💰 Tu billetera"), GameHistory.Number(player.Gold), true);
             return new BankResult(null, embed.Build());
         }
 
         embed.WithDescription(
-                "Lo que guardás acá **no lo toca la penalidad por morir** (la billetera sí: pierde el 5 % cada vez que perdés un combate).\n\n" +
-                "Guardá con **/bank deposit** y sacá con **/bank withdraw** (podés escribir **all**).")
-            .AddField("💰 Billetera", GameHistory.Number(player.Gold), true)
-            .AddField("🏦 En el banco", GameHistory.Number(player.BankGold), true);
+                Loc.T("Lo que guardás acá **no lo toca la penalidad por morir** (la billetera sí: pierde el 5 % cada vez que perdés un combate).\n\n") +
+                Loc.T("Guardá con **/bank deposit** y sacá con **/bank withdraw** (podés escribir **all**)."))
+            .AddField(Loc.T("💰 Billetera"), GameHistory.Number(player.Gold), true)
+            .AddField(Loc.T("🏦 En el banco"), GameHistory.Number(player.BankGold), true);
 
         if (zoneRepository is not null)
         {
             double percent = BankRules.GoldBonusPercent(player.BankGold, await ResolveBankZoneRankAsync(zoneRepository, player.CurrentZoneId));
-            embed.AddField("📈 Lo que rinde", BuildBonusText(percent), false);
+            embed.AddField(Loc.T("📈 Lo que rinde"), BuildBonusText(percent), false);
         }
 
         return new BankResult(null, embed.Build());
@@ -86,8 +86,8 @@ public class BankModule(IUserRepository userRepository, IBankRepository bankRepo
     // «Con lo que guardás ganás +3,2 % de oro en las peleas (el tope es 5 %)...»: lo que da el banco hoy y cómo sube. Público y puro para probarlo.
     public static string BuildBonusText(double percent) =>
         percent <= 0
-            ? $"Lo que guardás da **oro extra en las peleas**: hasta **+{BankRules.MaxGoldBonusPercent:0} %**. Cuanto más tengas, más sube (cada vez más despacio) y se mide según tu zona."
-            : $"Lo que guardás te da **{BankRules.BonusText(percent)} de oro** en las peleas (el tope es **+{BankRules.MaxGoldBonusPercent:0} %**). Cuanto más tengas, más sube, cada vez más despacio, y se mide según tu zona.";
+            ? Loc.F($"Lo que guardás da **oro extra en las peleas**: hasta **+{BankRules.MaxGoldBonusPercent:0} %**. Cuanto más tengas, más sube (cada vez más despacio) y se mide según tu zona.")
+            : Loc.F($"Lo que guardás te da **{BankRules.BonusText(percent)} de oro** en las peleas (el tope es **+{BankRules.MaxGoldBonusPercent:0} %**). Cuanto más tengas, más sube, cada vez más despacio, y se mide según tu zona.");
 
     public static async Task<BankResult> ExecuteOpenAsync(IUserRepository userRepository, IBankRepository bankRepository, IGameEvents gameEvents, ulong discordId)
     {
@@ -97,21 +97,21 @@ public class BankModule(IUserRepository userRepository, IBankRepository bankRepo
         switch (outcome.Status)
         {
             case BankStatus.AlreadyHasAccount:
-                return new BankResult("Ya tenés tu cuenta del banco: mirala con **/bank view**.", null);
+                return new BankResult(Loc.T("Ya tenés tu cuenta del banco: mirala con **/bank view**."), null);
             case BankStatus.NotEnoughGold:
-                return new BankResult($"No te alcanza el oro: abrir la cuenta cuesta **{GameHistory.Number(BankRules.AccountPrice)}**.", null);
+                return new BankResult(Loc.F($"No te alcanza el oro: abrir la cuenta cuesta **{GameHistory.Number(BankRules.AccountPrice)}**."), null);
             case not BankStatus.Ok:
-                return new BankResult("Todavía no tenés cuenta de jugador: empezá con **/start**.", null);
+                return new BankResult(Loc.T("Todavía no tenés cuenta de jugador: empezá con **/start**."), null);
         }
 
         await gameEvents.RecordAsync(discordId, GameEventKinds.BankOpened);
 
         var embed = new EmbedBuilder()
-            .WithTitle("🏦 ¡Cuenta abierta!")
+            .WithTitle(Loc.T("🏦 ¡Cuenta abierta!"))
             .WithColor(Color.Green)
-            .WithDescription($"Pagaste **{GameHistory.Number(BankRules.AccountPrice)}** de oro. Desde ahora lo que guardes en el banco está a salvo de la penalidad por morir.\n\nProbá con **/bank deposit**.")
-            .AddField("💰 Billetera", GameHistory.Number(outcome.User!.Gold), true)
-            .AddField("🏦 En el banco", GameHistory.Number(outcome.User.BankGold), true);
+            .WithDescription(Loc.F($"Pagaste **{GameHistory.Number(BankRules.AccountPrice)}** de oro. Desde ahora lo que guardes en el banco está a salvo de la penalidad por morir.\n\nProbá con **/bank deposit**."))
+            .AddField(Loc.T("💰 Billetera"), GameHistory.Number(outcome.User!.Gold), true)
+            .AddField(Loc.T("🏦 En el banco"), GameHistory.Number(outcome.User.BankGold), true);
         return new BankResult(null, embed.Build());
     }
 
@@ -121,12 +121,12 @@ public class BankModule(IUserRepository userRepository, IBankRepository bankRepo
         var player = await userRepository.GetByDiscordIdAsync(discordId);
         if (player is null)
         {
-            return new BankResult("Todavía no tenés cuenta de jugador: empezá con **/start**.", null);
+            return new BankResult(Loc.T("Todavía no tenés cuenta de jugador: empezá con **/start**."), null);
         }
 
         if (!player.HasBank)
         {
-            return new BankResult(string.Format(NoAccountText, GameHistory.Number(BankRules.AccountPrice)), null);
+            return new BankResult(NoAccountMessage(), null);
         }
 
         var parsed = AmountParser.Parse(amountText, player.Gold);
@@ -139,12 +139,12 @@ public class BankModule(IUserRepository userRepository, IBankRepository bankRepo
         if (outcome.Status != BankStatus.Ok)
         {
             return new BankResult(outcome.Status == BankStatus.NotEnoughGold
-                ? $"No tenés tanto oro en la billetera: tenés **{GameHistory.Number(player.Gold)}**."
-                : string.Format(NoAccountText, GameHistory.Number(BankRules.AccountPrice)), null);
+                ? Loc.F($"No tenés tanto oro en la billetera: tenés **{GameHistory.Number(player.Gold)}**.")
+                : NoAccountMessage(), null);
         }
 
         await gameEvents.RecordAsync(discordId, GameEventKinds.BankDeposit, amount: parsed.Amount);
-        return new BankResult(null, MovedEmbed("🏦 Guardaste oro", $"Guardaste **{GameHistory.Number(parsed.Amount)}** de oro en el banco.", outcome.User!));
+        return new BankResult(null, MovedEmbed(Loc.T("🏦 Guardaste oro"), Loc.F($"Guardaste **{GameHistory.Number(parsed.Amount)}** de oro en el banco."), outcome.User!));
     }
 
     public static async Task<BankResult> ExecuteWithdrawAsync(
@@ -153,29 +153,29 @@ public class BankModule(IUserRepository userRepository, IBankRepository bankRepo
         var player = await userRepository.GetByDiscordIdAsync(discordId);
         if (player is null)
         {
-            return new BankResult("Todavía no tenés cuenta de jugador: empezá con **/start**.", null);
+            return new BankResult(Loc.T("Todavía no tenés cuenta de jugador: empezá con **/start**."), null);
         }
 
         if (!player.HasBank)
         {
-            return new BankResult(string.Format(NoAccountText, GameHistory.Number(BankRules.AccountPrice)), null);
+            return new BankResult(NoAccountMessage(), null);
         }
 
         var parsed = AmountParser.Parse(amountText, player.BankGold);
         if (!parsed.Ok)
         {
-            return new BankResult(parsed.IsAll ? "No tenés oro en el banco para sacar." : parsed.Error, null);
+            return new BankResult(parsed.IsAll ? Loc.T("No tenés oro en el banco para sacar.") : parsed.Error, null);
         }
 
         var outcome = await bankRepository.WithdrawAsync(discordId, parsed.Amount);
         if (outcome.Status != BankStatus.Ok)
         {
             return new BankResult(outcome.Status == BankStatus.NotEnoughBank
-                ? $"No tenés tanto en el banco: tenés **{GameHistory.Number(player.BankGold)}**."
-                : string.Format(NoAccountText, GameHistory.Number(BankRules.AccountPrice)), null);
+                ? Loc.F($"No tenés tanto en el banco: tenés **{GameHistory.Number(player.BankGold)}**.")
+                : NoAccountMessage(), null);
         }
 
-        return new BankResult(null, MovedEmbed("🏦 Sacaste oro", $"Sacaste **{GameHistory.Number(parsed.Amount)}** de oro del banco.", outcome.User!));
+        return new BankResult(null, MovedEmbed(Loc.T("🏦 Sacaste oro"), Loc.F($"Sacaste **{GameHistory.Number(parsed.Amount)}** de oro del banco."), outcome.User!));
     }
 
     // Público y puro: se prueba sin Discord.
@@ -184,7 +184,7 @@ public class BankModule(IUserRepository userRepository, IBankRepository bankRepo
             .WithTitle(title)
             .WithColor(Color.Teal)
             .WithDescription(text)
-            .AddField("💰 Billetera", GameHistory.Number(after.Gold), true)
-            .AddField("🏦 En el banco", GameHistory.Number(after.BankGold), true)
+            .AddField(Loc.T("💰 Billetera"), GameHistory.Number(after.Gold), true)
+            .AddField(Loc.T("🏦 En el banco"), GameHistory.Number(after.BankGold), true)
             .Build();
 }

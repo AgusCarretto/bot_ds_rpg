@@ -50,10 +50,10 @@ public static class DragonRules
     // Qué mejora cada tipo, para frases como «+12 % de ATQ contra monstruos».
     public static string KindEffect(string kind) => kind switch
     {
-        Strength => "de ATQ contra monstruos",
-        Defense => "de DEF contra monstruos",
-        Gold => "de oro en las peleas",
-        _ => "de EXP en las peleas",
+        Strength => Loc.T("de ATQ contra monstruos"),
+        Defense => Loc.T("de DEF contra monstruos"),
+        Gold => Loc.T("de oro en las peleas"),
+        _ => Loc.T("de EXP en las peleas"),
     };
 
     // Los nombres de cada tier, del dragoncito al eterno.
@@ -110,6 +110,21 @@ public static class DragonRules
         new(9, "Fortuna", $"+{Percent(FortunePerk)} % más de drop, recolección, oro y EXP."),
         new(10, "Llama eterna", $"El bono de su tipo rinde ×{Percent(EternalMultiplier)}."),
     ];
+
+    // El texto de la mejora de cada tier en el idioma de quien lo lee (v0.44.0). La tabla de arriba se arma una sola vez y queda en español.
+    public static string PerkText(int tier) => tier switch
+    {
+        2 => Loc.F($"+{Percent(DropPerk)} % de chance de drop en /hunt y /travel."),
+        3 => Loc.F($"+{Percent(GatherPerk)} % de cantidad en /chop y /mine."),
+        4 => Loc.T("Una vez por pelea, si el golpe te iba a matar, quedás con 1 de vida."),
+        5 => Loc.F($"+{Percent(HpPerk)} % de vida máxima en las peleas."),
+        6 => Loc.F($"+{Percent(XpPerk)} % de EXP en las peleas."),
+        7 => Loc.F($"+{Percent(GoldPerk)} % de oro en las peleas."),
+        8 => Loc.F($"+{Percent(PowerPerk)} % de ATQ y de DEF contra monstruos."),
+        9 => Loc.F($"+{Percent(FortunePerk)} % más de drop, recolección, oro y EXP."),
+        10 => Loc.F($"El bono de su tipo rinde ×{Percent(EternalMultiplier)}."),
+        _ => Loc.T("Da el bono de su tipo."),
+    };
 
     // Todo lo que da un dragón de ese tipo, tier y nivel: el bono de su tipo y los extras de cada tier que ya desbloqueó.
     public static DragonBonuses BonusesFor(string kind, int tier, int level = 0)
@@ -252,5 +267,5 @@ public static class DragonRules
 
     // «12,5» (coma decimal, sin ceros de más): el formato de los porcentajes en español.
     public static string Percent(double value) =>
-        value.ToString(value % 1 == 0 ? "0" : "0.0##", CultureInfo.InvariantCulture).Replace('.', ',');
+        Loc.Current == Loc.English ? value.ToString(value % 1 == 0 ? "0" : "0.0##", CultureInfo.InvariantCulture) : value.ToString(value % 1 == 0 ? "0" : "0.0##", CultureInfo.InvariantCulture).Replace('.', ',');
 }

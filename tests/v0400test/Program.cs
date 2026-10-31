@@ -315,6 +315,15 @@ var vT2 = AllText(PetModule.BuildViewEmbed(View(P(gSpecies, 14, 2, 120), 0)));
 Check(vT2.Contains($"{gSpecies.Name} II") && vT2.Contains("nivel 14/20") && vT2.Contains("cada una gasta 3 comidas") && !vT2.Contains("Para evolucionar") && vT2.Contains("alimentadas"), "un tier II en el 14 se llama «… II», muestra 14/20 y que cada alimentada gasta 3 comidas, sin hablar de evolución todavía");
 var vT3 = AllText(PetModule.BuildViewEmbed(View(P(gSpecies, 30, 3, 400), 0)));
 Check(vT3.Contains($"{gSpecies.Name} III") && vT3.Contains("nivel 30/30") && vT3.Contains("🏆 Nivel máximo") && !vT3.Contains("evolucionar"), "el tier III en el 30 es «Nivel máximo»");
+// v0.44.0: /pet view y /vote en inglés (los nombres de las mascotas, los huevos y la comida se quedan en español).
+using (Loc.Use("en"))
+{
+    string[] petNames = [gSpecies.Name, gSpecies.EggName, PetRules.FoodItemName, "Manada", "Baúl de Roble", "Asado y Acero"];
+    string enView = AllText(PetModule.BuildViewEmbed(View(P(gSpecies, 10, 1, 62), 3))) + "\n" + AllText(PetModule.BuildViewEmbed(View(P(gSpecies, 4, 1, 0), 0)));
+    string enVote = AllText(VoteModule.BuildInfoEmbed(VoteModule.VoteScreen.Ready, "https://top.gg/x", null)) + "\n" + AllText(VoteModule.BuildClaimedEmbed(null, true, TimeSpan.FromHours(3)));
+    var petLeak = LeakCheck.NoSpanish(enView + "\n" + enVote, petNames);
+    Check(petLeak.Ok && enView.Contains("level") && enVote.Contains("Thanks for voting"), $"/pet view y /vote en inglés, sin español colado ({petLeak.Found})");
+}
 // Con las piezas de barra de emoji de verdad cargadas (cada una es un código de ~35 caracteres) la pantalla de las 6 mascotas en el tope de su tier, con dos barras cada una, sigue entrando en Discord.
 UiEmojis.Set(new[] { "l_f", "l_e", "m_f", "m_e", "r_f", "r_e" }.Select(p => ($"bar_xp_{p}", $"<:bar_xp_{p}:123456789012345678>")));
 var sixPets = species.Take(6).Select(sp => P(sp, 10, 1, 40)).ToList();

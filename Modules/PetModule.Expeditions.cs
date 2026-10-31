@@ -52,7 +52,7 @@ public partial class PetModule
             var match = owned.FirstOrDefault(p => SameName(p.Species.Name, petName!));
             if (match is null)
             {
-                return new PetResult($"No tenés una mascota que se llame **{petName!.Trim()}**. Mirá las tuyas con **/pet view**.", null);
+                return new PetResult(Loc.F($"No tenés una mascota que se llame **{petName!.Trim()}**. Mirá las tuyas con **/pet view**."), null);
             }
 
             return await StartExpeditionAsync(expeditionRepository, gameEvents, player, match.Species.SpeciesId, chosenHours);
@@ -77,7 +77,7 @@ public partial class PetModule
         var option = PetExpeditions.OptionFor(hours);
         if (option is null)
         {
-            return new PetResult($"Las expediciones duran {string.Join(", ", PetExpeditions.Options.Select(o => o.Hours.ToString()))} horas: elegí una de esas.", null);
+            return new PetResult(Loc.F($"Las expediciones duran {string.Join(", ", PetExpeditions.Options.Select(o => o.Hours.ToString()))} horas: elegí una de esas."), null);
         }
 
         var outcome = await expeditionRepository.StartAsync(discordId, speciesId, hours);
@@ -87,18 +87,18 @@ public partial class PetModule
             case ExpeditionStartStatus.Ok:
                 break;
             case ExpeditionStartStatus.BadDuration:
-                return new PetResult($"Las expediciones duran {string.Join(", ", PetExpeditions.Options.Select(o => o.Hours.ToString()))} horas: elegí una de esas.", null);
+                return new PetResult(Loc.F($"Las expediciones duran {string.Join(", ", PetExpeditions.Options.Select(o => o.Hours.ToString()))} horas: elegí una de esas."), null);
             case ExpeditionStartStatus.AlreadyOut:
                 return outcome.Expedition is { } already
                     ? new PetResult(null, BuildOutEmbed(already))
-                    : new PetResult("Ya tenés una mascota de expedición: mirá cuándo vuelve con **/pet expedition**.", null);
+                    : new PetResult(Loc.T("Ya tenés una mascota de expedición: mirá cuándo vuelve con **/pet expedition**."), null);
             case ExpeditionStartStatus.NotOwned:
                 return new PetResult(NoPets, null);
             case ExpeditionStartStatus.NotMaxLevel:
-                return new PetResult($"**{outcome.Species!.Name}** todavía no está en el nivel **{PetExpeditions.RequiredLevel}**: las expediciones son para las mascotas al máximo. Alimentala con **/pet feed**.", null);
+                return new PetResult(Loc.F($"**{outcome.Species!.Name}** todavía no está en el nivel **{PetExpeditions.RequiredLevel}**: las expediciones son para las mascotas al máximo. Alimentala con **/pet feed**."), null);
             case ExpeditionStartStatus.NoFood:
                 return new PetResult(
-                    $"{ItemEmojiRegistry.IconOf(PetRules.FoodItemName, "🦴")} Una expedición de {PetExpeditions.HoursText(hours)} cuesta **{option.FoodCost}** {PetRules.FoodItemName} y tenés **{outcome.FoodHave}**: se compra en la **/taberna**.", null);
+                    Loc.F($"{ItemEmojiRegistry.IconOf(PetRules.FoodItemName, "🦴")} Una expedición de {PetExpeditions.HoursText(hours)} cuesta **{option.FoodCost}** {PetRules.FoodItemName} y tenés **{outcome.FoodHave}**: se compra en la **/taberna**."), null);
             default:
                 return new PetResult(NoAccount, null);
         }
@@ -107,14 +107,14 @@ public partial class PetModule
         await gameEvents.RecordAsync(discordId, GameEventKinds.PetExpeditionStart, player.CurrentZoneId, hours, started.Species.Name);
 
         var embed = new EmbedBuilder()
-            .WithTitle($"🧭 {started.Species.Emoji} {started.Species.Name} salió de expedición")
+            .WithTitle(Loc.F($"🧭 {started.Species.Emoji} {started.Species.Name} salió de expedición"))
             .WithColor(Color.Teal)
             // A propósito NO dice qué va a traer (ni el oro, ni la EXP, ni el hallazgo de la especie): el dueño quiere que se descubra jugando.
             .WithDescription(
-                $"Va por **{PetExpeditions.HoursText(hours)}** y vuelve {FormatWhen(started.EndsUtc)}.\n" +
-                $"Gastó **{option.FoodCost}** {PetRules.FoodItemName} (te quedan **{outcome.FoodHave}**).\n\n" +
-                "Cuando vuelva, recogé lo que trajo con **/pet expedition**.")
-            .WithFooter("Te aviso cuando vuelva si tenés los avisos prendidos (/reminders).")
+                Loc.F($"Va por **{PetExpeditions.HoursText(hours)}** y vuelve {FormatWhen(started.EndsUtc)}.\n") +
+                Loc.F($"Gastó **{option.FoodCost}** {PetRules.FoodItemName} (te quedan **{outcome.FoodHave}**).\n\n") +
+                Loc.T("Cuando vuelva, recogé lo que trajo con **/pet expedition**."))
+            .WithFooter(Loc.T("Te aviso cuando vuelva si tenés los avisos prendidos (/reminders)."))
             .Build();
         return new PetResult(null, embed);
     }
@@ -133,9 +133,9 @@ public partial class PetModule
             case ExpeditionClaimStatus.NotReady:
                 return outcome.Expedition is { } waiting
                     ? new PetResult(null, BuildOutEmbed(waiting))
-                    : new PetResult("Tu mascota todavía no volvió: mirá cuándo con **/pet expedition**.", null);
+                    : new PetResult(Loc.T("Tu mascota todavía no volvió: mirá cuándo con **/pet expedition**."), null);
             case ExpeditionClaimStatus.NoExpedition:
-                return new PetResult("No tenés ninguna mascota de expedición (o ya recogiste el premio). Mandá una con **/pet expedition**.", null);
+                return new PetResult(Loc.T("No tenés ninguna mascota de expedición (o ya recogiste el premio). Mandá una con **/pet expedition**."), null);
             default:
                 return new PetResult(NoAccount, null);
         }
@@ -150,7 +150,7 @@ public partial class PetModule
 
         var lines = new List<string>
         {
-            $"Estuvo **{PetExpeditions.HoursText(done.Hours)}** afuera y trajo: {MissionRewards.Describe(receipt.Reward)}",
+            Loc.F($"Estuvo **{PetExpeditions.HoursText(done.Hours)}** afuera y trajo: {MissionRewards.Describe(receipt.Reward)}"),
         };
         if (outcome.Find is { } find)
         {
@@ -158,14 +158,14 @@ public partial class PetModule
         }
         else
         {
-            lines.Add("No encontró nada especial esta vez.");
+            lines.Add(Loc.T("No encontró nada especial esta vez."));
         }
 
         var embed = new EmbedBuilder()
-            .WithTitle($"🎉 {done.Species.Emoji} {done.Species.Name} volvió de la expedición")
+            .WithTitle(Loc.F($"🎉 {done.Species.Emoji} {done.Species.Name} volvió de la expedición"))
             .WithColor(outcome.Find is null ? Color.Teal : Color.Gold)
             .WithDescription(string.Join("\n\n", lines))
-            .WithFooter("Mandala de nuevo con /pet expedition.")
+            .WithFooter(Loc.T("Mandala de nuevo con /pet expedition."))
             .Build();
         return new PetResult(null, embed);
     }
@@ -176,11 +176,11 @@ public partial class PetModule
         string items = string.Join(", ", find.Items.Select(i => $"{ItemEmojiRegistry.IconOf(i.ItemName, string.Empty)} {i.Quantity}× **{i.ItemName}**".Trim()));
         return find.Kind switch
         {
-            ExpeditionFindKind.GoldBag => $"✨ ¡Encontró una bolsa extra! El **oro** de la expedición subió un {PetExpeditions.FindBonusPercent} %.",
-            ExpeditionFindKind.XpBoost => $"✨ ¡Tuvo una inspiración! La **EXP** de la expedición subió un {PetExpeditions.FindBonusPercent} %.",
-            ExpeditionFindKind.Dust => $"✨ ¡Encontró **{find.Amount}** de Polvo!",
-            ExpeditionFindKind.HuntDrops => find.Items.Count > 0 ? $"✨ ¡Encontró un drop de cacería!: {items}" : "✨ Encontró algo, pero tu zona no tiene drops cargados.",
-            ExpeditionFindKind.Gather => find.Items.Count > 0 ? $"✨ ¡Volvió con materiales!: {items}" : "✨ Volvió con las manos vacías de materiales.",
+            ExpeditionFindKind.GoldBag => Loc.F($"✨ ¡Encontró una bolsa extra! El **oro** de la expedición subió un {PetExpeditions.FindBonusPercent} %."),
+            ExpeditionFindKind.XpBoost => Loc.F($"✨ ¡Tuvo una inspiración! La **EXP** de la expedición subió un {PetExpeditions.FindBonusPercent} %."),
+            ExpeditionFindKind.Dust => Loc.F($"✨ ¡Encontró **{find.Amount}** de Polvo!"),
+            ExpeditionFindKind.HuntDrops => find.Items.Count > 0 ? Loc.F($"✨ ¡Encontró un drop de cacería!: {items}") : Loc.T("✨ Encontró algo, pero tu zona no tiene drops cargados."),
+            ExpeditionFindKind.Gather => find.Items.Count > 0 ? Loc.F($"✨ ¡Volvió con materiales!: {items}") : Loc.T("✨ Volvió con las manos vacías de materiales."),
             _ => string.Empty,
         };
     }
@@ -191,18 +191,18 @@ public partial class PetModule
     // La mascota está afuera: a qué hora vuelve.
     public static Embed BuildOutEmbed(ActiveExpedition expedition) =>
         new EmbedBuilder()
-            .WithTitle($"🧭 {expedition.Species.Emoji} {expedition.Species.Name} está de expedición")
+            .WithTitle(Loc.F($"🧭 {expedition.Species.Emoji} {expedition.Species.Name} está de expedición"))
             .WithColor(Color.Teal)
             .WithDescription(expedition.IsReady
-                ? "¡Ya volvió! Recogé el premio con **/pet expedition**."
-                : $"Salió por **{PetExpeditions.HoursText(expedition.Hours)}** y vuelve {FormatWhen(expedition.EndsUtc)} (en **{TimeFormat.Remaining(expedition.Remaining)}**).\n" +
-                  "Cuando vuelva, recogé el premio con **/pet expedition**. De a una mascota por vez.")
+                ? Loc.T("¡Ya volvió! Recogé el premio con **/pet expedition**.")
+                : Loc.F($"Salió por **{PetExpeditions.HoursText(expedition.Hours)}** y vuelve {FormatWhen(expedition.EndsUtc)} (en **{TimeFormat.Remaining(expedition.Remaining)}**).\n") +
+                  Loc.T("Cuando vuelva, recogé el premio con **/pet expedition**. De a una mascota por vez."))
             .Build();
 
     private static string NoEligibleText(ExpeditionMenuData data)
     {
-        string levels = string.Join(", ", data.TooLow.Select(p => $"{p.Species.Name} nivel {PetRules.LevelFor(p.FeedPoints)}"));
-        return $"Las expediciones son para las mascotas en el **nivel {PetExpeditions.RequiredLevel}** y todavía ninguna llegó ({levels}). Alimentalas con **/pet feed**.";
+        string levels = string.Join(", ", data.TooLow.Select(p => Loc.F($"{p.Species.Name} nivel {PetRules.LevelFor(p.FeedPoints)}")));
+        return Loc.F($"Las expediciones son para las mascotas en el **nivel {PetExpeditions.RequiredLevel}** y todavía ninguna llegó ({levels}). Alimentalas con **/pet feed**.");
     }
 
     // El menú: cuánto dura y cuánta comida cuesta cada salida, y qué mascotas pueden salir. A propósito NO muestra el premio (oro, EXP, chance de hallazgo) ni qué trae cada especie: el dueño
@@ -210,23 +210,23 @@ public partial class PetModule
     public static Embed BuildExpeditionMenuEmbed(ExpeditionMenuData data)
     {
         var durations = PetExpeditions.Options.Select(o =>
-            $"**{PetExpeditions.HoursText(o.Hours)}** — {ItemEmojiRegistry.IconOf(PetRules.FoodItemName, "🦴")} {o.FoodCost} comidas");
+            Loc.F($"**{PetExpeditions.HoursText(o.Hours)}** — {ItemEmojiRegistry.IconOf(PetRules.FoodItemName, "🦴")} {o.FoodCost} comidas"));
 
         var embed = new EmbedBuilder()
-            .WithTitle("🧭 Expediciones")
+            .WithTitle(Loc.T("🧭 Expediciones"))
             .WithColor(Color.Teal)
             .WithDescription(
-                $"Mandá a una mascota **nivel {PetExpeditions.RequiredLevel}** a explorar mientras hacés otra cosa. Sale de a una por vez y gasta {PetRules.FoodItemName} (tenés **{data.Food}**). " +
-                "Cuando vuelve, recogés lo que trajo. ¿Qué encontrará? Descubrilo.")
-            .AddField("⏱️ Cuánto dura y cuánto cuesta", string.Join("\n", durations), false)
-            .AddField("🐾 Pueden salir", string.Join("\n", data.Eligible.Select(p => $"{p.Species.Emoji} **{p.Species.Name}**")), false);
+                Loc.F($"Mandá a una mascota **nivel {PetExpeditions.RequiredLevel}** a explorar mientras hacés otra cosa. Sale de a una por vez y gasta {PetRules.FoodItemName} (tenés **{data.Food}**). ") +
+                Loc.T("Cuando vuelve, recogés lo que trajo. ¿Qué encontrará? Descubrilo."))
+            .AddField(Loc.T("⏱️ Cuánto dura y cuánto cuesta"), string.Join("\n", durations), false)
+            .AddField(Loc.T("🐾 Pueden salir"), string.Join("\n", data.Eligible.Select(p => $"{p.Species.Emoji} **{p.Species.Name}**")), false);
 
         if (data.TooLow.Count > 0)
         {
-            embed.AddField("⏳ Todavía no", string.Join("\n", data.TooLow.Select(p => $"{p.Species.Emoji} {p.Species.Name} — nivel {PetRules.LevelFor(p.FeedPoints)}/{PetRules.MaxLevel}")), false);
+            embed.AddField(Loc.T("⏳ Todavía no"), string.Join("\n", data.TooLow.Select(p => Loc.F($"{p.Species.Emoji} {p.Species.Name} — nivel {PetRules.LevelFor(p.FeedPoints)}/{PetRules.MaxLevel}"))), false);
         }
 
-        return embed.WithFooter("Elegí mascota y horas abajo, o escribilo: /pet expedition mascota:Ñandusito duracion:8 horas").Build();
+        return embed.WithFooter(Loc.T("Elegí mascota y horas abajo, o escribilo: /pet expedition mascota:Ñandusito duracion:8 horas")).Build();
     }
 
     // Un solo desplegable con mascota × duración (6 mascotas × 3 = 18 opciones, entra en las 25 de Discord). Va desactivado si no alcanza ni para la más barata. El valor es «especie:horas».
@@ -235,7 +235,7 @@ public partial class PetModule
         int cheapest = PetExpeditions.CheapestFoodCost;
         var menu = new SelectMenuBuilder()
             .WithCustomId($"pet_exp_go:{owner}")
-            .WithPlaceholder(data.Food >= cheapest ? "Elegí mascota y duración…" : $"Te faltan comidas ({data.Food}/{cheapest})")
+            .WithPlaceholder(data.Food >= cheapest ? Loc.T("Elegí mascota y duración…") : Loc.F($"Te faltan comidas ({data.Food}/{cheapest})"))
             .WithMinValues(1)
             .WithMaxValues(1)
             .WithDisabled(data.Food < cheapest);
@@ -247,7 +247,7 @@ public partial class PetModule
                 menu.AddOption(
                     $"{pet.Species.Name} · {PetExpeditions.HoursText(option.Hours)}",
                     $"{pet.Species.SpeciesId}:{option.Hours}",
-                    $"🍖 Cuesta {option.FoodCost} comidas");
+                    Loc.F($"🍖 Cuesta {option.FoodCost} comidas"));
             }
         }
 
@@ -297,7 +297,7 @@ public class PetExpeditionButtonsModule(IUserRepository userRepository, IPetExpe
     {
         if (!ulong.TryParse(ownerRaw, out ulong owner) || owner != Context.User.Id)
         {
-            await RespondAsync("Ese menú no es tuyo: abrí el tuyo con **/pet expedition**.", ephemeral: true);
+            await RespondAsync(Loc.T("Ese menú no es tuyo: abrí el tuyo con **/pet expedition**."), ephemeral: true);
             return;
         }
 
@@ -308,14 +308,14 @@ public class PetExpeditionButtonsModule(IUserRepository userRepository, IPetExpe
             string[] parts = (selected.FirstOrDefault() ?? string.Empty).Split(':');
             if (parts.Length != 2 || !int.TryParse(parts[0], out int speciesId) || !int.TryParse(parts[1], out int hours))
             {
-                await FollowupAsync("No entendí esa opción: abrí el menú de nuevo con **/pet expedition**.", ephemeral: true);
+                await FollowupAsync(Loc.T("No entendí esa opción: abrí el menú de nuevo con **/pet expedition**."), ephemeral: true);
                 return;
             }
 
             var player = await userRepository.GetByDiscordIdAsync(owner);
             if (player is null)
             {
-                await FollowupAsync("Todavía no tenés cuenta: empezá con **/start**.", ephemeral: true);
+                await FollowupAsync(Loc.T("Todavía no tenés cuenta: empezá con **/start**."), ephemeral: true);
                 return;
             }
 
@@ -338,7 +338,7 @@ public class PetExpeditionButtonsModule(IUserRepository userRepository, IPetExpe
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude mandar a la mascota, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude mandar a la mascota, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 }
@@ -352,7 +352,7 @@ public static class ExpeditionChoices
             .OrderBy(p => Relevance(p.Species.Name, typed))
             .ThenBy(p => p.Species.ZoneId == FogonRules.GateZoneId ? int.MaxValue : p.Species.ZoneId)
             .Take(MaxChoices)
-            .Select(p => new AutocompleteResult(Truncate($"{p.Species.Emoji} {p.Species.Name} — nivel {PetRules.LevelFor(p.FeedPoints)}"), p.Species.Name))
+            .Select(p => new AutocompleteResult(Truncate(Loc.F($"{p.Species.Emoji} {p.Species.Name} — nivel {PetRules.LevelFor(p.FeedPoints)}")), p.Species.Name))
             .ToList();
 }
 

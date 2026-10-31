@@ -1005,6 +1005,34 @@ Check(boxEn43.Count > 0 && boxEn43.All(c => System.Text.RegularExpressions.Regex
     $"la lista de /shop buy dice el precio de cada caja UNA vez, en los dos idiomas ({boxEn43.FirstOrDefault()?.Name})");
 Check(buyEn43.All(c => !c.Name.Contains("cura ") && !c.Name.Contains("te falta") && !c.Name.Contains("para tu")), "y en inglés no queda «cura», «te falta oro» ni «para tus mascotas»");
 
+// v0.44.0: /enchant y /dismantle en inglés (los nombres de los efectos y de los tiers se quedan en español).
+string[] enchantNames44 = ["Filo", "Guarda", "Crítico", "Sangre", "Vida", "Esquive", "Tibio", "Al Rojo", "Ardiente", "Incandescente", "Soberano", "Piedra"];
+Embed enchantInfoEn44; using (Loc.Use("en")) { enchantInfoEn44 = DustModule.BuildOptionsEmbed(); }
+var enchantLeak44 = LeakCheck.NoSpanish(LeakCheck.AllText(enchantInfoEn44), enchantNames44);
+Check(enchantLeak44.Ok && LeakCheck.FitsDiscord(enchantInfoEn44) && DustModule.BuildOptionsEmbed().Title == "✨ Encantamientos: opciones", $"/enchant info en inglés, sin español colado, y en español igual que antes ({enchantLeak44.Found})");
+
+// v0.44.0: la herrería, el forge especial, /zonas y /drops en inglés. Los nombres (ítems, zonas, monstruos, clases) y las descripciones de las zonas (vienen de la base) se quedan en español.
+await userRepo.GetOrCreateUserAsync(CD);
+var cdPlayer44 = (await userRepo.GetByDiscordIdAsync(CD))!;
+var invRepo44 = new InventoryRepository(factory);
+var recipeRepo44 = new RecipeRepository(factory);
+var zones44 = (await zoneRepo8.GetAllAsync()).ToList();
+var names44 = new List<string> { "El Fogón Eterno", "Fuego Nuevo", "Fogón", "Eterno", "Trinche", "Brasa", "Corteza", "Meteorito", "Guerrero", "Arquero", "Ninja", "Hechicero", "Asador" };
+names44.AddRange(zones44.SelectMany(z => new[] { z.Name, z.Description ?? string.Empty }));
+foreach (var type in new[] { "Weapon", "Amulet", "Material", "Madera", "Mineral", "Caja" }) names44.AddRange((await itemRepo8.GetAllByTypeAsync(type)).Select(i => i.Name));
+Embed bookEn44, specialEn44, zonesEn44;
+using (Loc.Use("en"))
+{
+    bookEn44 = await ForgeModule.BuildRecipeBookForPlayerAsync(recipeRepo44, zoneRepo8, invRepo44, cdPlayer44, false, null);
+    specialEn44 = await ForgeSpecialModule.BuildEmbedAsync(userRepo, recipeRepo44, zoneRepo8, invRepo44, CD);
+    zonesEn44 = await ZoneModule.BuildZoneListEmbedAsync(userRepo, zoneRepo8, CD);
+}
+foreach (var (name, embed) in new[] { ("el recetario", bookEn44), ("el forge especial", specialEn44), ("/zonas", zonesEn44) })
+{
+    var leak = LeakCheck.NoSpanish(LeakCheck.AllText(embed), names44);
+    Check(leak.Ok && LeakCheck.FitsDiscord(embed), $"{name} en inglés, sin español colado ({leak.Found})");
+}
+
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;
 

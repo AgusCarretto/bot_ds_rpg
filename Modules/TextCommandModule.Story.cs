@@ -1,3 +1,4 @@
+using BotDsRpg.GameData;
 using BotDsRpg.Services;
 using Discord.Commands;
 
@@ -18,7 +19,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! El Tabernero no encuentra sus crónicas ahora, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! El Tabernero no encuentra sus crónicas ahora, intentá de nuevo en un momento."));
         }
     }
 }

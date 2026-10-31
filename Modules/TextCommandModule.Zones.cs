@@ -1,3 +1,4 @@
+using BotDsRpg.GameData;
 using Discord.Commands;
 using BotDsRpg.Services;
 
@@ -19,7 +20,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("¡Upa! No pude procesar el viaje ahora mismo, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("¡Upa! No pude procesar el viaje ahora mismo, intentá de nuevo en un momento."));
         }
     }
 
@@ -36,7 +37,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("No pude consultar los drops ahora mismo, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("No pude consultar los drops ahora mismo, intentá de nuevo en un momento."));
         }
     }
 
@@ -53,7 +54,7 @@ public partial class TextCommandModule
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await ReplyAsync("No pude consultar las zonas ahora mismo, intentá de nuevo en un momento.");
+            await ReplyAsync(Loc.T("No pude consultar las zonas ahora mismo, intentá de nuevo en un momento."));
         }
     }
 }

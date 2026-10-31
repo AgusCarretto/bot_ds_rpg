@@ -37,6 +37,11 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
 
+## El juego en inglés, casi entero (v0.44.0, 2026-10-31)
+
+- **Pedido del dueño**: «seguí con lo del inglés, fijate de hacer todo lo que falte». Se tradujo todo lo de «Alta» y «Media» de la checklist de inglés salvo la historia (ver la checklist más abajo, con lo que quedó). Sin migración. En español no cambia nada, salvo dos arreglos de género: «Sin arma puesta» y «Ya tenés un arma equipada» (antes «puesto»/«equipad**o**» para el arma).
+- **Para revisar antes de confiarse**: el inglés lo escribí yo; conviene pasar por las pantallas con `/language English`. Los nombres se quedan en español a propósito.
+
 ## Editar y borrar códigos, el precio repetido en inglés y los emojis de Railway (v0.43.2, 2026-10-31)
 
 - **`aa admincode edit` y `delete`** (el dueño, después de crear sin querer HALLOWEEN y CALABAZA): `edit CODIGO [personas] [duración] | premios…` tiene la misma forma que `create` y REEMPLAZA todo (el tope, la duración contada desde ahora y la lista entera de premios); los que ya lo canjearon no lo pueden canjear de nuevo y, si estaba apagado, sigue apagado. `delete CODIGO` solo borra un código que nadie canjeó (así su nombre queda libre); uno ya canjeado se apaga con `off`, porque borrarlo perdería quién lo canjeó. Los dos dejan el evento `admin_code`.
@@ -305,34 +310,21 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - **Una trampa que se encontró al traducir**: la taberna reconocía «ya estás sano» mirando `Title.Contains("máximo")`; en inglés dejaba de funcionar y mostraba la frase equivocada. Ahora los dos lados comparan con `UseModule.AlreadyFullTitle()`. Si algún día algo decide mirando un texto, que sea el de una función compartida, nunca un literal en español.
 - **Lo que queda abierto para el dueño**: que alguien que hable inglés revise el tono de `Locales/en.json` (sobre todo las frases de los monstruos y de los NPC), y decidir con qué pantallas seguir (lo que más se ve: `/enchant`, `/bank`, el jefe en equipo y los avisos de misión/logro).
 
-### Lo que falta en inglés — checklist (anotado el 2026-10-23, de lo que más se ve a lo que menos)
+### Lo que falta en inglés — checklist (puesto al día el 2026-10-31, v0.44.0)
 
-Cada casilla es una tarea chica y del mismo molde (ver «Language» en `CLAUDE.md`): prueba primero en `tests/loctest`, `dotnet run --project tools/loc -- --untranslated <archivos>`, envolver, `--skeleton`, `en.json`, suite completa. Las cantidades son textos sin envolver que cuenta el escáner (aproximadas: incluye algunos nombres de comando que no se traducen).
+Cada casilla es una tarea del mismo molde (ver «Language» en `CLAUDE.md`): prueba en `tests/loctest` (o en el arnés de la pantalla), `dotnet run --project tools/loc -- --untranslated <archivos>`, envolver, `--skeleton`, `en.json`, suite completa.
 
-**Alta (lo que más ve cualquiera)**
-- [ ] **Avisos al terminar un comando** — `Services/ProgressNotifier.cs`: «¡Misión completada!», «¡Logro desbloqueado!», «¡Título nuevo!», capítulo de la historia, y los de `NoticeDelivery`. Salen en español a todos.
-- [ ] **`/enchant` y `/dismantle`** — `Modules/DustModule.cs` (~105), `GameData/Enchantments.cs` (~39: nombres de tiers y efectos, descripciones), `Dismantling`. Los efectos (Filo, Crítico, Sangre, Guarda, Vida, Esquive) son nombres y se quedan; sus descripciones no.
-- [ ] **Jefe en equipo** — `Modules/RaidModule.cs` (~169: invitación, botones Aceptar/Rechazar/Empezar/Cancelar, turnos, aviso de turno, comer, victoria y derrota), `Services/RaidTurnOutput.cs`, `PartyBossService`, `IRaidSessionService`.
-- [ ] **`/bank`** (`BankModule` ~35 y `BankRules`), **`/play`** (`CasinoModule` ~18, `CasinoService`) y **blackjack** (`BlackjackModule` ~20, `BlackjackService` ~16, la mesa y los botones).
-- [ ] **Herrería** — `ForgeModule` (~36: las recetas, «have/need»), `BlacksmithModule` (~23: la escena y sus menús), `ForgeSpecialModule` (~14), `ItemStatLabel`, `RecipeCatalog`.
-- [ ] **Zonas** — `ZoneModule` (~29: `/zona`, `/zonas`), `DropsModule` y `DropsCatalog` (`/drops`).
+**Hecho en la v0.44.0** (todo lo que estaba en «Alta» y «Media» salvo la historia): los avisos de misión, logro y título nuevo · `/enchant`, `/dismantle` y las descripciones de los oficios · `/bank`, `/play` y el blackjack · la herrería, el forge especial, `/zona`, `/zonas` y `/drops` · `/pet` (ver, alimentar, expediciones, evolución), `/vote` y `/open` · `/achievements` y `/titles` (las pistas de los títulos se arman en el idioma de quien las lee: `TitleDefinition.DisplayHint`) · `/professions`, `/trade`, `/exchange`, `/give`, `/leaderboard`, `/reminders` (la pantalla), `/tips`, `/deepshop`, `/class` · el dragón (`DragonRules.PerkText` traduce las mejoras) y el Carpintero · el jefe en equipo · `/fuegonuevo` y las bendiciones · duelos, Arena (anuncios y relatos golpe por golpe), jefe mundial, `/history` y `/duels` · los mensajes de error de los comandos `aa` y el minievento · los botones de una palabra. Los nombres se quedan en español (ítems, monstruos, zonas, clases, habilidades, títulos, efectos de encantamiento, tiers y mejoras del dragón, bendiciones, jefes mundiales) y las descripciones de las zonas también (vienen de la base).
 
-**Media**
-- [ ] **`/achievements`** — `AchievementsModule` (~26) y `AchievementCatalog` (~31 descripciones; los NOMBRES de logros y sus páginas se quedan).
-- [ ] **`/titles`** — `TitlesModule` (~30) y `TitleCatalog` (~134: pistas y páginas; los nombres de los títulos se quedan).
-- [ ] **`/pet`** — `PetModule` (~55), `PetRules`. **`/professions`** — `ProfessionModule` (~15), `ProfessionRules` (las descripciones de efectos y de la versión avanzada).
-- [ ] **`/fuegonuevo` y `/blessings`** — `FuegoNuevoModule` (~87), `BlessingCatalog` (~47), `FuegoNuevoRules`.
-- [ ] **`/story`** — `StoryModule` (~36) y toda `GameData/Lore.cs` (~97: los capítulos y las 13 escenas; es texto largo y literario: conviene que lo revise alguien nativo).
-- [ ] **PvP** — `DuelModule` (~54), `ArenaModule` (~47), `ArenaNarrator` y `ArenaStory` (los anuncios golpe por golpe), `DuelEngine` (~16), `GameHistory` (~21: `/history` y `/duels`).
-- [ ] **Jefe mundial** — `WorldBossModule` (~32), `WorldBoss` (~20).
-- [ ] **Intercambios** — `TradeModule` (~31), `ExchangeModule` (~20; su resultado aparece dentro de la taberna), `GiveModule` (~14), `BoxModule` (`/open`, ~16).
-- [ ] **Resto de pantallas** — `/leaderboard`, `/reminders` (la pantalla, ~17; los avisos ya están), `/vote` (`VoteModule` ~21), `/tips` (`FarmAdvisor` ~14), `/deepshop` (`DeepShopModule` ~18), el minievento (`MiniEvents` ~14, `MiniEventService` ~13), `OnboardingModule` (`/class` y lo que queda, ~13), `TextCommandModule.Economy` (~41) y `.Combat` (~24), los textos de uso de `TextCommandModule`.
-
-**Baja**
-- [ ] **Ayuda** — los 21 temas de `/info` que faltan (`HelpTopics`, ~270 textos; cada uno entero, con `InEnglish: true` al terminar), las descripciones de las habilidades de clase (`ClassAbilities`, `aa hab`), los textos de `aa sell` y `aa cf` sin argumentos (`TextShortcuts.SellHelp`/`CoinflipHelp`) y el «¿Qué hace?» del error de uso (`[Summary]` de cada comando de texto).
-- [ ] **Pulido del inglés ya hecho** — plurales con «(s)» (`turn(s)`, `hit(s)`, `crit(s)`), `Loc.Percent`/`Loc.Decimal` en los pocos lugares que todavía arman decimales a mano (`HelpTopics.Dec`), y la revisión del tono por alguien nativo.
-- [ ] **Lo que NO se resuelve con `Loc`** — los nombres y descripciones de los slash commands y de sus parámetros en la lista de «/» de Discord: hace falta la localización propia de Discord (`NameLocalizations` / `DescriptionLocalizations`); es un mecanismo aparte que no se armó.
+**Lo que falta**
+- [ ] **Ayuda** — los 21 temas de `/info` que faltan (`HelpTopics`, ~300 textos; cada tema entero, con `InEnglish: true` al terminar). Es lo más útil que queda para un jugador nuevo.
+- [ ] **`/story`** — `StoryModule` (~36) y toda `GameData/Lore.cs` (~97: capítulos y escenas). Es prosa con tono: conviene que la revise alguien nativo.
+- [ ] **Las habilidades de clase** (`ClassAbilities`, `aa hab`) y algunas frases de los personajes (`NpcDialogue`, ~23).
+- [ ] **El «¿Qué hace?» del error de uso** de los comandos de texto: sale del `[Summary]` de cada comando, que es un atributo y no puede llevar `Loc`. Habría que armar una tabla aparte o pasar a `Loc.Tr` con claves propias. También los textos de `aa sell` y `aa cf` sin argumentos (`TextShortcuts`).
+- [ ] **Pulido del inglés ya hecho** — plurales con «(s)» (`turn(s)`, `round(s)`, `player(s)`), algún «%» con espacio que viene de un `Pct` viejo, y la revisión del tono por alguien nativo (todo lo escribí yo).
+- [ ] **Lo que NO se resuelve con `Loc`** — los nombres y descripciones de los slash commands en la lista de «/» de Discord: hace falta la localización propia de Discord (`NameLocalizations` / `DescriptionLocalizations`).
 - [ ] **Deuda chica del propio idioma** — el caché de `PlayerLanguageService` no borra entradas vencidas; un jugador con Discord en inglés que nunca usó un comando de barra y escribe `aa …` ve español (el mensaje de texto no trae idioma; al usar cualquier barra queda guardado).
+- [ ] **Test con azar en `fntest`**: el chequeo «las repeticiones del jefe siguen en 40 %» a veces da 41 % y falla; necesita más margen o más tiradas.
 
 ## En plena pelea solo valen los comandos de la pelea (v0.25.4, 2026-10-23)
 

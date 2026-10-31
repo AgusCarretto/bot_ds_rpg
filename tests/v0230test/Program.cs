@@ -139,6 +139,17 @@ Console.WriteLine("\n== 7. La pantalla de /titles ==");
 var noAccount = await TitlesModule.BuildViewAsync(users, zonesRepo, titles, GHOST);
 Check(noAccount.Embed is null && noAccount.Components is null && noAccount.PlainMessage!.Contains("/start"), "sin cuenta: solo el mensaje que pide /start");
 await titles.SetEquippedAsync(U, "cazador_1");
+// v0.44.0: la página de títulos en inglés (los nombres de los títulos y de las páginas se quedan en español; las pistas se traducen).
+Loc.LoadEmbedded();
+foreach (var pageKey in TitleCatalog.Pages.Select(p => p.Key))
+{
+    string enPage;
+    using (Loc.Use("en")) { enPage = (await TitlesModule.BuildViewAsync(users, zonesRepo, titles, U, pageKey)).Embed!.Description; }
+    var allowed = TitleCatalog.All.Select(t => t.Name).Concat(TitleCatalog.Pages.Select(p => p.Name))
+        .Concat(["Rey Jabalí", "Lobisón Alfa", "Capataz de Hierro", "Señor del Volcán", "Soberano de la Escoria", "Brasa de Color", "Corteza del Árbol de Vida", "Fragmento de Meteorito", "Tabernero del Inframundo", "Soberano", "Asador", "Fogón", "Fuegos Nuevos"]);
+    var pageLeak = LeakCheck.NoSpanish(enPage, allowed);
+    Check(pageLeak.Ok, $"la página «{pageKey}» de /titles en inglés, sin español colado ({pageLeak.Found})");
+}
 var view = await TitlesModule.BuildViewAsync(users, zonesRepo, titles, U, "combate");
 var desc = view.Embed!.Description;
 Check(view.Embed.Title == "🏷️ Títulos · ⚔️ Combate" && desc.Contains("Puesto: **Rastreador de Pradera**") && desc.Contains("✅ **Rastreador de Pradera** ◀ puesto") && desc.Contains("✅ **Cazador Curtido**") && !desc.Contains("◀ puesto\n✅ **Cazador Curtido** ◀"),

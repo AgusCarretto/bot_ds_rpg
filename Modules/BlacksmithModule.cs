@@ -49,7 +49,7 @@ public class BlacksmithModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! El herrero no está en la fragua ahora, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! El herrero no está en la fragua ahora, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -63,7 +63,7 @@ public class BlacksmithModule(
         {
             if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
             {
-                await FollowupAsync("Esa charla es de otra persona: hablá con el herrero con **/forge**.", ephemeral: true);
+                await FollowupAsync(Loc.T("Esa charla es de otra persona: hablá con el herrero con **/forge**."), ephemeral: true);
                 return;
             }
 
@@ -84,7 +84,7 @@ public class BlacksmithModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude pasarle el pedido al herrero, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude pasarle el pedido al herrero, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -98,13 +98,13 @@ public class BlacksmithModule(
         {
             if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
             {
-                await FollowupAsync("Esa charla es de otra persona: hablá con el herrero con **/forge**.", ephemeral: true);
+                await FollowupAsync(Loc.T("Esa charla es de otra persona: hablá con el herrero con **/forge**."), ephemeral: true);
                 return;
             }
 
             if (!int.TryParse(selected.FirstOrDefault(), out int zoneId))
             {
-                await FollowupAsync("No entendí qué zona querías ver, probá de nuevo.", ephemeral: true);
+                await FollowupAsync(Loc.T("No entendí qué zona querías ver, probá de nuevo."), ephemeral: true);
                 return;
             }
 
@@ -119,7 +119,7 @@ public class BlacksmithModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude abrir esa página de recetas, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude abrir esa página de recetas, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -140,7 +140,7 @@ public class BlacksmithModule(
         {
             if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
             {
-                await FollowupAsync("Esa charla es de otra persona: hablá con el herrero con **/forge**.", ephemeral: true);
+                await FollowupAsync(Loc.T("Esa charla es de otra persona: hablá con el herrero con **/forge**."), ephemeral: true);
                 return;
             }
 
@@ -155,7 +155,7 @@ public class BlacksmithModule(
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude abrir el recetario, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude abrir el recetario, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -177,8 +177,8 @@ public class BlacksmithModule(
         if (player is null)
         {
             return new BlacksmithScene(
-                new EmbedBuilder().WithTitle("⚒️ La Herrería").WithColor(Color.Orange)
-                    .WithDescription("Primero tenés que empezar tu aventura con **/start**.").Build(),
+                new EmbedBuilder().WithTitle(Loc.T("⚒️ La Herrería")).WithColor(Color.Orange)
+                    .WithDescription(Loc.T("Primero tenés que empezar tu aventura con **/start**.")).Build(),
                 null);
         }
 
@@ -201,7 +201,7 @@ public class BlacksmithModule(
             // CLÁSICO: la página de recetas de la zona elegida (con lo que tenés de cada material). La frase de cómo forjar es la de la escena.
             embed = ForgeModule.RenderZonePageEmbed(
                     recipes, zones, player.Class, zoneId, owned, player.Gold, player.Level,
-                    forgeHint: choices.Count > 0 ? "Forjá desde la primera lista (✅ lo que ya podés hacer)." : "Todavía no tenés nada para forjar en tu zona.",
+                    forgeHint: choices.Count > 0 ? Loc.T("Forjá desde la primera lista (✅ lo que ya podés hacer).") : Loc.T("Todavía no tenés nada para forjar en tu zona."),
                     highestZoneCleared: player.HighestZoneCleared)
                 .ToEmbedBuilder()
                 .WithColor(Color.Orange);
@@ -211,7 +211,7 @@ public class BlacksmithModule(
             // COMPLETO: el recetario con todas las zonas para tu clase, con 🔒 en las que todavía no alcanzás. La frase de cómo forjar es la de la escena.
             embed = ForgeModule.RenderRecipesEmbed(
                     recipes, zones, player.Class, null, player.Level,
-                    forgeHint: choices.Count > 0 ? "Forjá desde la lista de arriba (✅ lo que ya podés hacer)." : "Todavía no tenés nada para forjar en tu zona.",
+                    forgeHint: choices.Count > 0 ? Loc.T("Forjá desde la lista de arriba (✅ lo que ya podés hacer).") : Loc.T("Todavía no tenés nada para forjar en tu zona."),
                     highestZoneCleared: player.HighestZoneCleared)
                 .ToEmbedBuilder()
                 .WithColor(Color.Orange);
@@ -220,22 +220,22 @@ public class BlacksmithModule(
         {
             string talk = choices.Count == 0
                 ? NpcDialogue.Blacksmith(BlacksmithLine.NoRecipes)
-                : $"{NpcDialogue.Blacksmith(BlacksmithLine.Greeting, fuegoNuevo: player.FuegoNuevo)}\n\n_✅ lo que ya podés forjar · ❌ lo que todavía te falta (te digo qué)_";
+                : Loc.F($"{NpcDialogue.Blacksmith(BlacksmithLine.Greeting, fuegoNuevo: player.FuegoNuevo)}\n\n_✅ lo que ya podés forjar · ❌ lo que todavía te falta (te digo qué)_");
 
             if (fullBook)
             {
-                talk += "\n_📜 Con el botón de abajo ves todas las recetas._";
+                talk += Loc.T("\n_📜 Con el botón de abajo ves todas las recetas._");
             }
             else if (zonesWithRecipes.Count > 0)
             {
-                talk += "\n_📜 En la segunda lista mirás las recetas de cada zona._";
+                talk += Loc.T("\n_📜 En la segunda lista mirás las recetas de cada zona._");
             }
 
-            embed = new EmbedBuilder().WithTitle("⚒️ La Herrería").WithColor(Color.Orange).WithDescription(talk);
+            embed = new EmbedBuilder().WithTitle(Loc.T("⚒️ La Herrería")).WithColor(Color.Orange).WithDescription(talk);
 
             if (choices.Count > 0)
             {
-                embed.WithFooter("Lo que te conteste el herrero sale abajo.");
+                embed.WithFooter(Loc.T("Lo que te conteste el herrero sale abajo."));
             }
         }
 
@@ -252,7 +252,7 @@ public class BlacksmithModule(
         {
             var menu = new SelectMenuBuilder()
                 .WithCustomId($"{MenuPrefix}:{discordId}")
-                .WithPlaceholder("🔨 ¿Qué querés que te forje?")
+                .WithPlaceholder(Loc.T("🔨 ¿Qué querés que te forje?"))
                 .WithMinValues(1)
                 .WithMaxValues(1);
             foreach (var choice in choices)
@@ -268,7 +268,7 @@ public class BlacksmithModule(
         {
             // Un solo botón: abre el recetario completo, y desde el recetario vuelve al saludo.
             components.WithButton(
-                showBook ? "↩ Volver a la herrería" : "📜 Ver todas las recetas",
+                showBook ? Loc.T("↩ Volver a la herrería") : Loc.T("📜 Ver todas las recetas"),
                 showBook ? $"{HomePrefix}:{discordId}" : $"{BookPrefix}:{discordId}",
                 ButtonStyle.Secondary, row: row);
         }
@@ -287,14 +287,14 @@ public class BlacksmithModule(
     {
         var menu = new SelectMenuBuilder()
             .WithCustomId($"{ZonePrefix}:{discordId}")
-            .WithPlaceholder("📜 Ver las recetas de una zona")
+            .WithPlaceholder(Loc.T("📜 Ver las recetas de una zona"))
             .WithMinValues(1)
             .WithMaxValues(1);
 
         foreach (var zone in zones)
         {
-            string label = $"{zone.Emoji ?? "🗺️"} Zona {zone.ZoneId} · {zone.Name}";
-            string description = $"Nivel {zone.MinLevel}+" + (zone.ZoneId == player.CurrentZoneId ? " · tu zona" : string.Empty);
+            string label = Loc.F($"{zone.Emoji ?? "🗺️"} Zona {zone.ZoneId} · {zone.Name}");
+            string description = Loc.F($"Nivel {zone.MinLevel}+") + (zone.ZoneId == player.CurrentZoneId ? Loc.T(" · tu zona") : string.Empty);
             menu.AddOption(
                 label.Length <= 100 ? label : label[..99] + "…",
                 zone.ZoneId.ToString(),

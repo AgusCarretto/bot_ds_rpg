@@ -21,7 +21,7 @@ public class WorldBossModule(IWorldBossService worldBoss) : InteractionModuleBas
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude anotarte contra el jefe mundial, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude anotarte contra el jefe mundial, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -33,30 +33,30 @@ public class WorldBossModule(IWorldBossService worldBoss) : InteractionModuleBas
         string day = ArenaRules.Format(result.Day);
         string until = UruguayCalendar.FormatRemaining(result.UntilPlay);
         var boss = result.Boss;
-        string reward = $"cada anotado cobra de **{WorldBossRules.MinHunts} a {WorldBossRules.MaxHunts} cacerías de oro de su zona** ({WorldBossRules.MaxHunts} si el jefe cae)";
+        string reward = Loc.F($"cada anotado cobra de **{WorldBossRules.MinHunts} a {WorldBossRules.MaxHunts} cacerías de oro de su zona** ({WorldBossRules.MaxHunts} si el jefe cae)");
 
         return result.Status switch
         {
             WorldBossJoinStatus.Joined => new EmbedBuilder()
-                .WithTitle($"{boss.Emoji} ¡Anotado contra {boss.Name}!")
+                .WithTitle(Loc.F($"{boss.Emoji} ¡Anotado contra {boss.Name}!"))
                 .WithColor(Color.DarkRed)
                 .WithDescription(
-                    $"{boss.Intro}\n\n" +
-                    $"Quedaste anotado en el jefe del **{day}**. Se pelea a las **00:00** (hora de Uruguay), en **{until}**, **entre todos** los anotados.\n\n" +
-                    $"Ya hay **{result.Count}** anotado(s). **Mientras más seamos, mejor**: {reward}. Con unos {WorldBossRules.FullCrowd:0} jugadores normales el jefe cae.\n\n" +
-                    $"Anotarte gastó tu **cooldown del jefe** ({TimeFormat.Remaining(CooldownCatalog.Boss.Duration)}). No hace falta nivel.")
-                .WithFooter("Volvé a escribir /miniboss para ver cómo viene el día.")
+                    $"{Loc.Tr(boss.Intro)}\n\n" +
+                    Loc.F($"Quedaste anotado en el jefe del **{day}**. Se pelea a las **00:00** (hora de Uruguay), en **{until}**, **entre todos** los anotados.\n\n") +
+                    Loc.F($"Ya hay **{result.Count}** anotado(s). **Mientras más seamos, mejor**: {reward}. Con unos {WorldBossRules.FullCrowd:0} jugadores normales el jefe cae.\n\n") +
+                    Loc.F($"Anotarte gastó tu **cooldown del jefe** ({TimeFormat.Remaining(CooldownCatalog.Boss.Duration)}). No hace falta nivel."))
+                .WithFooter(Loc.T("Volvé a escribir /miniboss para ver cómo viene el día."))
                 .Build(),
 
-            WorldBossJoinStatus.AlreadyJoined => Simple($"{boss.Emoji} Ya estabas anotado", Color.DarkGrey,
-                $"Seguís anotado contra **{boss.Name}** (se pelea en **{until}**). Hay **{result.Count}** anotado(s): {reward}. Con unos {WorldBossRules.FullCrowd:0} jugadores normales el jefe cae, así que traé amigos."),
+            WorldBossJoinStatus.AlreadyJoined => Simple(Loc.F($"{boss.Emoji} Ya estabas anotado"), Color.DarkGrey,
+                Loc.F($"Seguís anotado contra **{boss.Name}** (se pelea en **{until}**). Hay **{result.Count}** anotado(s): {reward}. Con unos {WorldBossRules.FullCrowd:0} jugadores normales el jefe cae, así que traé amigos.")),
 
-            WorldBossJoinStatus.OnCooldown => Simple("⏳ Todavía no podés anotarte", Color.DarkGrey,
-                $"El jefe mundial usa tu **cooldown del jefe** y todavía te faltan **{TimeFormat.Remaining(result.CooldownLeft)}**. Cuando termine, anotate con **/miniboss** (se pelea en {until}; si te pasás de hora, mañana hay otro)."),
+            WorldBossJoinStatus.OnCooldown => Simple(Loc.T("⏳ Todavía no podés anotarte"), Color.DarkGrey,
+                Loc.F($"El jefe mundial usa tu **cooldown del jefe** y todavía te faltan **{TimeFormat.Remaining(result.CooldownLeft)}**. Cuando termine, anotate con **/miniboss** (se pelea en {until}; si te pasás de hora, mañana hay otro).")),
 
-            WorldBossJoinStatus.NoAccount => Simple("Primero tu aventura", Color.DarkGrey, "Tenés que empezar con **/start** antes de anotarte contra el jefe mundial."),
+            WorldBossJoinStatus.NoAccount => Simple(Loc.T("Primero tu aventura"), Color.DarkGrey, Loc.T("Tenés que empezar con **/start** antes de anotarte contra el jefe mundial.")),
 
-            _ => Simple("⏳ El jefe de hoy ya se cerró", Color.DarkGrey, "Ese jefe ya no está abierto. Probá de nuevo en unos instantes."),
+            _ => Simple(Loc.T("⏳ El jefe de hoy ya se cerró"), Color.DarkGrey, Loc.T("Ese jefe ya no está abierto. Probá de nuevo en unos instantes.")),
         };
     }
 
@@ -68,7 +68,7 @@ public class WorldBossModule(IWorldBossService worldBoss) : InteractionModuleBas
 
         if (resolution.Cancelled || resolution.Hits.Count == 0)
         {
-            return [new ArenaModule.ArenaMessage(null, Simple($"{boss.Emoji} {boss.Name} se fue sin pelea", Color.DarkGrey, $"El jefe mundial del **{day}** no tuvo con quién pelear. Mañana aparece otro: anotate con **/miniboss**."))];
+            return [new ArenaModule.ArenaMessage(null, Simple(Loc.F($"{boss.Emoji} {boss.Name} se fue sin pelea"), Color.DarkGrey, Loc.F($"El jefe mundial del **{day}** no tuvo con quién pelear. Mañana aparece otro: anotate con **/miniboss**.")))];
         }
 
         var messages = new List<ArenaModule.ArenaMessage>();
@@ -81,11 +81,11 @@ public class WorldBossModule(IWorldBossService worldBoss) : InteractionModuleBas
         }
 
         messages.Add(new ArenaModule.ArenaMessage(null, new EmbedBuilder()
-            .WithTitle($"{boss.Emoji} ¡{boss.Name} se despertó!")
+            .WithTitle(Loc.F($"{boss.Emoji} ¡{boss.Name} se despertó!"))
             .WithColor(Color.DarkRed)
             .WithDescription(
-                $"{boss.Intro}\n\n" +
-                $"Se anotaron **{resolution.Participants}** héroe(s) y le pegan **todos juntos**: tienen que sacarle el 100 % de la vida entre todos.\n\n🗡️ {roster}")
+                $"{Loc.Tr(boss.Intro)}\n\n" +
+                Loc.F($"Se anotaron **{resolution.Participants}** héroe(s) y le pegan **todos juntos**: tienen que sacarle el 100 % de la vida entre todos.\n\n🗡️ {roster}"))
             .Build()));
 
         var top = resolution.Hits.Take(6).ToList();
@@ -94,31 +94,31 @@ public class WorldBossModule(IWorldBossService worldBoss) : InteractionModuleBas
         if (others > 0)
         {
             double sum = resolution.Hits.Skip(top.Count).Sum(h => h.DamagePercent);
-            lines.Add($"👥 Y otros **{others}** más suman **{sum.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)} %** entre todos.");
+            lines.Add(Loc.F($"👥 Y otros **{others}** más suman **{sum.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)} %** entre todos."));
         }
 
         int left = (int)Math.Round(Math.Clamp(100 - resolution.TotalPercent, 0, 100));
         messages.Add(new ArenaModule.ArenaMessage(null, new EmbedBuilder()
-            .WithTitle("⚔️ La batalla")
+            .WithTitle(Loc.T("⚔️ La batalla"))
             .WithColor(Color.DarkOrange)
             .WithDescription(
                 string.Join("\n", lines) + "\n\n" +
-                $"{boss.Emoji} Vida de {boss.Name}\n{ProgressBar.Render(left, 100, kind: UiEmojis.BarHp)}\nLe sacaron **{resolution.TotalPercent.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)} %** entre todos.")
+                Loc.F($"{boss.Emoji} Vida de {boss.Name}\n{ProgressBar.Render(left, 100, kind: UiEmojis.BarHp)}\nLe sacaron **{resolution.TotalPercent.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)} %** entre todos."))
             .Build()));
 
         var mvp = resolution.Hits[0];
-        string rewardLine = $"Cada uno de los **{resolution.Participants}** anotados cobró **{resolution.Hunts} cacerías de oro de su zona**" +
-            (resolution.Defeated ? " (el máximo)." : $" (de {WorldBossRules.MinHunts} a {WorldBossRules.MaxHunts}: **mientras más gente, mejor**; con unos {WorldBossRules.FullCrowd:0} jugadores normales el jefe cae).");
+        string rewardLine = Loc.F($"Cada uno de los **{resolution.Participants}** anotados cobró **{resolution.Hunts} cacerías de oro de su zona**") +
+            (resolution.Defeated ? Loc.T(" (el máximo).") : Loc.F($" (de {WorldBossRules.MinHunts} a {WorldBossRules.MaxHunts}: **mientras más gente, mejor**; con unos {WorldBossRules.FullCrowd:0} jugadores normales el jefe cae)."));
 
         messages.Add(new ArenaModule.ArenaMessage(null, new EmbedBuilder()
-            .WithTitle(resolution.Defeated ? $"🏆 ¡Cayó {boss.Name}!" : $"{boss.Emoji} {boss.Name} sigue en pie")
+            .WithTitle(resolution.Defeated ? Loc.F($"🏆 ¡Cayó {boss.Name}!") : Loc.F($"{boss.Emoji} {boss.Name} sigue en pie"))
             .WithColor(resolution.Defeated ? Color.Gold : Color.DarkGrey)
             .WithDescription(
                 (resolution.Defeated
-                    ? $"Lo lograron: entre todos le sacaron más del 100 % de la vida. ¡Qué equipo!\n\n"
-                    : $"Le quedó **{left} %** de vida: faltaron manos. Mañana vuelve otro jefe, y cuanta más gente se anote, más fácil cae.\n\n") +
-                $"{rewardLine}\n\n🥇 El que más le pegó: **{Short(mvp.Name, 24)}** (nivel {mvp.Level}) con **{mvp.DamagePercent.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)} %**.")
-            .WithFooter("Anotate mañana con /miniboss (aa miniboss).")
+                    ? Loc.F($"Lo lograron: entre todos le sacaron más del 100 % de la vida. ¡Qué equipo!\n\n")
+                    : Loc.F($"Le quedó **{left} %** de vida: faltaron manos. Mañana vuelve otro jefe, y cuanta más gente se anote, más fácil cae.\n\n")) +
+                Loc.F($"{rewardLine}\n\n🥇 El que más le pegó: **{Short(mvp.Name, 24)}** (nivel {mvp.Level}) con **{mvp.DamagePercent.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)} %**."))
+            .WithFooter(Loc.T("Anotate mañana con /miniboss (aa miniboss)."))
             .Build()));
 
         return messages;

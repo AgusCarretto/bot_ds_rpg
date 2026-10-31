@@ -28,7 +28,7 @@ public class ExchangeModule(IUserRepository userRepository, IItemRepository item
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! El tabernero no pudo hacer el cambio ahora, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! El tabernero no pudo hacer el cambio ahora, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -42,19 +42,19 @@ public class ExchangeModule(IUserRepository userRepository, IItemRepository item
     {
         if (await userRepository.GetByDiscordIdAsync(discordId) is null)
         {
-            return new ExchangeResult("Todavía no tenés cuenta: empezá con **/start**.", null);
+            return new ExchangeResult(Loc.T("Todavía no tenés cuenta: empezá con **/start**."), null);
         }
 
         if (times < 1 || times > DropExchange.MaxTimes)
         {
-            return new ExchangeResult($"Se hacen de 1 a {DropExchange.MaxTimes} cambios por vez (cada uno es {DropExchange.GiveAmount} por {DropExchange.GetAmount}).", null);
+            return new ExchangeResult(Loc.F($"Se hacen de 1 a {DropExchange.MaxTimes} cambios por vez (cada uno es {DropExchange.GiveAmount} por {DropExchange.GetAmount})."), null);
         }
 
         var give = await itemRepository.GetByNameAsync(giveName);
         var get = await itemRepository.GetByNameAsync(getName);
         if (give is null || get is null)
         {
-            return new ExchangeResult($"No conozco **{(give is null ? giveName : getName).Trim()}**: elegilo de la lista.", null);
+            return new ExchangeResult(Loc.F($"No conozco **{(give is null ? giveName : getName).Trim()}**: elegilo de la lista."), null);
         }
 
         var outcome = await exchangeRepository.ExchangeAsync(discordId, give.ItemId, get.ItemId, times);
@@ -63,34 +63,36 @@ public class ExchangeModule(IUserRepository userRepository, IItemRepository item
         switch (outcome.Status)
         {
             case ExchangeStatus.NoAccount:
-                return new ExchangeResult("Todavía no tenés cuenta: empezá con **/start**.", null);
+                return new ExchangeResult(Loc.T("Todavía no tenés cuenta: empezá con **/start**."), null);
             case ExchangeStatus.SameItem:
-                return new ExchangeResult("Entregás y recibís el mismo ítem: elegí un drop **distinto** de la misma zona.", null);
+                return new ExchangeResult(Loc.T("Entregás y recibís el mismo ítem: elegí un drop **distinto** de la misma zona."), null);
             case ExchangeStatus.NotExchangeable:
-                return new ExchangeResult("El tabernero solo cambia **drops de monstruos** (los de cacería y de viaje): no madera ni minerales, ni cajas.", null);
+                return new ExchangeResult(Loc.T("El tabernero solo cambia **drops de monstruos** (los de cacería y de viaje): no madera ni minerales, ni cajas."), null);
             case ExchangeStatus.DifferentZones:
             {
                 var zones = (await exchangeRepository.GetExchangeableDropsAsync()).ToDictionary(d => d.ItemId, d => d.ZoneName);
                 return new ExchangeResult(
-                    $"**{give.Name}** es de {zones.GetValueOrDefault(give.ItemId, "otra zona")} y **{get.Name}** de {zones.GetValueOrDefault(get.ItemId, "otra zona")}: el cambio es dentro de la **misma** zona.", null);
+                    Loc.F($"**{give.Name}** es de {zones.GetValueOrDefault(give.ItemId, Loc.T("otra zona"))} y **{get.Name}** de {zones.GetValueOrDefault(get.ItemId, Loc.T("otra zona"))}: el cambio es dentro de la **misma** zona."), null);
             }
 
             case ExchangeStatus.NotEnough:
                 return new ExchangeResult(
-                    $"Para {times} cambio{(times == 1 ? string.Empty : "s")} hacen falta **{giveTotal}** de **{give.Name}** y tenés **{outcome.GiveLeft}** ({DropExchange.GiveAmount} por cada {DropExchange.GetAmount} que recibís).", null);
+                    (times == 1
+                        ? Loc.F($"Para 1 cambio hacen falta **{giveTotal}** de **{give.Name}** y tenés **{outcome.GiveLeft}** ({DropExchange.GiveAmount} por cada {DropExchange.GetAmount} que recibís).")
+                        : Loc.F($"Para {times} cambios hacen falta **{giveTotal}** de **{give.Name}** y tenés **{outcome.GiveLeft}** ({DropExchange.GiveAmount} por cada {DropExchange.GetAmount} que recibís).")), null);
         }
 
         await gameEvents.RecordAsync(discordId, GameEventKinds.DropExchange, amount: times, detail: $"{give.Name}->{get.Name}");
 
         var embed = new EmbedBuilder()
-            .WithTitle("🔁 ¡Cambio hecho!")
+            .WithTitle(Loc.T("🔁 ¡Cambio hecho!"))
             .WithColor(Color.Gold)
             .WithItemThumbnail(get.Emoji)
             .WithDescription(
                 $"{NpcDialogue.Shopkeeper(ShopkeeperLine.Exchange)}\n\n" +
-                $"Le diste **{giveTotal}×** {ItemDisplay.Format(give.Emoji, give.Name)} y te llevás **{DropExchange.GetAmount * times}×** {ItemDisplay.Format(get.Emoji, get.Name)}.")
-            .AddField("🎒 Te quedan", $"**{GameHistory.Number(outcome.GiveLeft)}** de {give.Name}", false)
-            .AddField("🎁 Ahora tenés", $"**{GameHistory.Number(outcome.GetNow)}** de {get.Name}", false)
+                Loc.F($"Le diste **{giveTotal}×** {ItemDisplay.Format(give.Emoji, give.Name)} y te llevás **{DropExchange.GetAmount * times}×** {ItemDisplay.Format(get.Emoji, get.Name)}."))
+            .AddField(Loc.T("🎒 Te quedan"), Loc.F($"**{GameHistory.Number(outcome.GiveLeft)}** de {give.Name}"), false)
+            .AddField(Loc.T("🎁 Ahora tenés"), Loc.F($"**{GameHistory.Number(outcome.GetNow)}** de {get.Name}"), false)
             .Build();
         return new ExchangeResult(null, embed);
     }
@@ -112,7 +114,7 @@ public static class ExchangeChoices
             .Where(x => AutocompleteText.FitsAsValue(x.Drop.Name) && AutocompleteText.Matches(x.Drop.Name, typed))
             .OrderBy(x => AutocompleteText.Relevance(x.Drop.Name, typed))
             .Take(AutocompleteText.MaxChoices)
-            .Select(x => new AutocompleteResult(AutocompleteText.Truncate($"{x.Drop.Name} — tenés {x.Have} · {x.Drop.ZoneName}"), x.Drop.Name))
+            .Select(x => new AutocompleteResult(AutocompleteText.Truncate(Loc.F($"{x.Drop.Name} — tenés {x.Have} · {x.Drop.ZoneName}")), x.Drop.Name))
             .ToList();
 
     // Lo que se puede recibir a cambio de "giveName": los OTROS drops de su misma zona. Si todavía no eligió qué da (o no es un drop), todos los drops con su zona.
@@ -129,7 +131,7 @@ public static class ExchangeChoices
             .Where(d => AutocompleteText.FitsAsValue(d.Name) && AutocompleteText.Matches(d.Name, typed))
             .OrderBy(d => AutocompleteText.Relevance(d.Name, typed))
             .Take(AutocompleteText.MaxChoices)
-            .Select(d => new AutocompleteResult(AutocompleteText.Truncate($"{d.Name} — tenés {have.GetValueOrDefault(d.Name)} · {d.ZoneName}"), d.Name))
+            .Select(d => new AutocompleteResult(AutocompleteText.Truncate(Loc.F($"{d.Name} — tenés {have.GetValueOrDefault(d.Name)} · {d.ZoneName}")), d.Name))
             .ToList();
     }
 }

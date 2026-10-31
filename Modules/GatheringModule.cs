@@ -165,7 +165,7 @@ public class GatheringModule(
             return Loc.F($"{profession.Emoji} {profession.DisplayName} nivel {after.Level} (máximo)");
         }
 
-        string progress = $"{GameHistory.Number(after.IntoLevel)}/{GameHistory.Number(after.ToNext)} XP" + (gained is > 0 ? $" (+{GameHistory.Number(gained.Value)})" : string.Empty);   // los números siguen el idioma; el resto del texto, igual
+        string progress = Loc.F($"{GameHistory.Number(after.IntoLevel)}/{GameHistory.Number(after.ToNext)} XP") + (gained is > 0 ? $" (+{GameHistory.Number(gained.Value)})" : string.Empty);   // los números siguen el idioma; el resto del texto, igual
         return after.Level > before.Level
             ? Loc.F($"🎉 ¡{profession.DisplayName} subió al nivel {after.Level}! · {progress}")
             : Loc.F($"{profession.Emoji} {profession.DisplayName} nivel {after.Level} · {progress}");

@@ -35,14 +35,14 @@ public static class GameHistory
 
         var games = new List<GameRecord>
         {
-            new("🏹", "Cacería", Count(GameEventKinds.HuntWin), Count(GameEventKinds.FightLost, "hunt")),
-            new("🗺️", "Viaje", Count(GameEventKinds.TravelWin), Count(GameEventKinds.FightLost, "travel")),
-            new("👑", "Jefe", Count(GameEventKinds.BossWin), Count(GameEventKinds.FightLost, "boss")),
-            new("🛡️", "Jefe en equipo", Count(GameEventKinds.RaidWin), Count(GameEventKinds.FightLost, "raid")),
-            new("🥊", "Duelos", Count(GameEventKinds.DuelWin), Count(GameEventKinds.DuelLoss)),
-            new("🎰", "Tragamonedas", Count(GameEventKinds.CasinoWin, "slots"), Count(GameEventKinds.CasinoLoss, "slots"),
+            new("🏹", Loc.T("Cacería"), Count(GameEventKinds.HuntWin), Count(GameEventKinds.FightLost, "hunt")),
+            new("🗺️", Loc.T("Viaje"), Count(GameEventKinds.TravelWin), Count(GameEventKinds.FightLost, "travel")),
+            new("👑", Loc.T("Jefe"), Count(GameEventKinds.BossWin), Count(GameEventKinds.FightLost, "boss")),
+            new("🛡️", Loc.T("Jefe en equipo"), Count(GameEventKinds.RaidWin), Count(GameEventKinds.FightLost, "raid")),
+            new("🥊", Loc.T("Duelos"), Count(GameEventKinds.DuelWin), Count(GameEventKinds.DuelLoss)),
+            new("🎰", Loc.T("Tragamonedas"), Count(GameEventKinds.CasinoWin, "slots"), Count(GameEventKinds.CasinoLoss, "slots"),
                 Gold(GameEventKinds.CasinoWin, "slots"), Gold(GameEventKinds.CasinoLoss, "slots"), IsCasino: true),
-            new("🪙", "Cara o cruz", Count(GameEventKinds.CasinoWin, "coinflip"), Count(GameEventKinds.CasinoLoss, "coinflip"),
+            new("🪙", Loc.T("Cara o cruz"), Count(GameEventKinds.CasinoWin, "coinflip"), Count(GameEventKinds.CasinoLoss, "coinflip"),
                 Gold(GameEventKinds.CasinoWin, "coinflip"), Gold(GameEventKinds.CasinoLoss, "coinflip"), IsCasino: true),
             new("🃏", "Blackjack", Count(GameEventKinds.CasinoWin, "blackjack"), Count(GameEventKinds.CasinoLoss, "blackjack"),
                 Gold(GameEventKinds.CasinoWin, "blackjack"), Gold(GameEventKinds.CasinoLoss, "blackjack"), IsCasino: true),
@@ -55,19 +55,19 @@ public static class GameHistory
     // Título y texto del campo de UN juego: "🏹 Cacería · 120 veces" y debajo ganadas / perdidas / % (y el oro, si es de casino).
     public static (string Title, string Value) Describe(GameRecord game)
     {
-        string title = $"{game.Emoji} {game.Name} · {Plural(game.Played, "vez", "veces")}";
+        string title = $"{game.Emoji} {game.Name} · {Plural(game.Played, Loc.T("vez"), Loc.T("veces"))}";
         string rate = game.Played == 0 ? "—" : $"{(int)Math.Round(game.Won * 100.0 / game.Played)}%";
 
         var lines = new List<string>
         {
-            $"✅ **{Number(game.Won)}** ganada(s) · ❌ **{Number(game.Lost)}** perdida(s) · 📊 {rate}",
+            Loc.F($"✅ **{Number(game.Won)}** ganada(s) · ❌ **{Number(game.Lost)}** perdida(s) · 📊 {rate}"),
         };
 
         if (game.IsCasino)
         {
             long net = game.GoldWon - game.GoldLost;
-            lines.Add($"💰 Ganaste **+{Number(game.GoldWon)}** · perdiste **−{Number(game.GoldLost)}**");
-            lines.Add($"{(net >= 0 ? "📈" : "📉")} Balance: **{(net >= 0 ? "+" : "−")}{Number(Math.Abs(net))}** de oro");
+            lines.Add(Loc.F($"💰 Ganaste **+{Number(game.GoldWon)}** · perdiste **−{Number(game.GoldLost)}**"));
+            lines.Add(Loc.F($"{(net >= 0 ? "📈" : "📉")} Balance: **{(net >= 0 ? "+" : "−")}{Number(Math.Abs(net))}** de oro"));
         }
 
         return (title, string.Join('\n', lines));
@@ -77,7 +77,7 @@ public static class GameHistory
     public static (string Title, string Value)? DescribeArena(GameHistoryReport report) =>
         report.ArenaJoined + report.ArenaTitles == 0
             ? null
-            : ("🏟️ Arena", $"🏁 Te anotaste en **{Number(Math.Max(report.ArenaJoined, report.ArenaTitles))}** torneo(s) · 🏆 **{Number(report.ArenaTitles)}** campeonato(s)");
+            : (Loc.T("🏟️ Arena"), Loc.F($"🏁 Te anotaste en **{Number(Math.Max(report.ArenaJoined, report.ArenaTitles))}** torneo(s) · 🏆 **{Number(report.ArenaTitles)}** campeonato(s)"));
 
     // 1234567 -> "1.234.567" en español (el punto como separador de miles, como se escribe en Uruguay) y "1,234,567" en inglés (Loc.Current), sin depender de la cultura del servidor.
     public static string Number(long value)
@@ -101,17 +101,17 @@ public static class DuelHistory
     {
         long wins = totals.Where(t => t.Kind == GameEventKinds.DuelWin).Sum(t => t.Count);
         long losses = totals.Where(t => t.Kind == GameEventKinds.DuelLoss).Sum(t => t.Count);
-        string title = $"🥊 Duelos de {playerName}";
+        string title = Loc.F($"🥊 Duelos de {playerName}");
 
         if (wins + losses == 0)
         {
-            return (title, "Todavía no hiciste ningún duelo. Desafiá a alguien con **/fight @jugador**: es amistoso, no se pierde nada.");
+            return (title, Loc.T("Todavía no hiciste ningún duelo. Desafiá a alguien con **/fight @jugador**: es amistoso, no se pierde nada."));
         }
 
         long played = wins + losses;
         var lines = new List<string>
         {
-            $"✅ **{GameHistory.Number(wins)}** ganado(s) · ❌ **{GameHistory.Number(losses)}** perdido(s) · 📊 {(int)Math.Round(wins * 100.0 / played)}% de victorias",
+            Loc.F($"✅ **{GameHistory.Number(wins)}** ganado(s) · ❌ **{GameHistory.Number(losses)}** perdido(s) · 📊 {(int)Math.Round(wins * 100.0 / played)}% de victorias"),
         };
 
         // La racha: cuántos seguidos, del más nuevo para atrás, con el mismo resultado.
@@ -121,19 +121,19 @@ public static class DuelHistory
             int streak = recent.TakeWhile(e => e.Kind == newest).Count();
             if (streak >= 2)
             {
-                lines.Add(newest == GameEventKinds.DuelWin ? $"🔥 Racha: **{streak}** victorias seguidas" : $"🧊 Racha: **{streak}** derrotas seguidas");
+                lines.Add(newest == GameEventKinds.DuelWin ? Loc.F($"🔥 Racha: **{streak}** victorias seguidas") : Loc.F($"🧊 Racha: **{streak}** derrotas seguidas"));
             }
         }
 
         lines.Add(string.Empty);
-        lines.Add($"**Últimos {Math.Min(recent.Count, RecentCount)}:**");
+        lines.Add(Loc.F($"**Últimos {Math.Min(recent.Count, RecentCount)}:**"));
         foreach (var duel in recent.Take(RecentCount))
         {
-            string rival = string.IsNullOrWhiteSpace(duel.Detail) ? "un rival" : duel.Detail;
+            string rival = string.IsNullOrWhiteSpace(duel.Detail) ? Loc.T("un rival") : duel.Detail;
             string when = $"<t:{new DateTimeOffset(DateTime.SpecifyKind(duel.OccurredAtUtc, DateTimeKind.Utc)).ToUnixTimeSeconds()}:R>";
             lines.Add(duel.Kind == GameEventKinds.DuelWin
-                ? $"✅ Le ganaste a **{rival}** · {when}"
-                : $"❌ Perdiste contra **{rival}** · {when}");
+                ? Loc.F($"✅ Le ganaste a **{rival}** · {when}")
+                : Loc.F($"❌ Perdiste contra **{rival}** · {when}"));
         }
 
         return (title, string.Join('\n', lines));

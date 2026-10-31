@@ -59,7 +59,7 @@ public partial class TextCommandModule
             BotLog.Error(ex);
             if (adminAccess.IsAdmin(Context.User.Id))
             {
-                await ReplyAsync("¡Upa! Falló admincode; mirá el registro del servidor (¿corriste add_redeem_codes.sql?).");
+                await ReplyAsync(Loc.T("¡Upa! Falló admincode; mirá el registro del servidor (¿corriste add_redeem_codes.sql?)."));
             }
         }
     }
