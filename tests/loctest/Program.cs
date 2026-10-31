@@ -872,7 +872,7 @@ foreach (var (helpName, makeHelp) in helpScreens)
 }
 
 Embed tutorialEs = HelpModule.BuildTutorialEmbed(); Embed tutorialEn; using (Loc.Use("en")) { tutorialEn = HelpModule.BuildTutorialEmbed(); }
-Check(tutorialEs.Title == "📖 Cómo jugar Asado y Acero RPG" && tutorialEs.Fields.Length == 5 && tutorialEn.Title == "📖 How to play Asado y Acero RPG" && tutorialEn.Fields.Select(f => f.Name).SequenceEqual(["🪓 Gathering", "⚒️ Smithy", "⚔️ Combat", "🥩 Survival", "📋 Missions and achievements"]) && tutorialEn.Footer!.Value.Text == "Use /info to see the full list of commands.",
+Check(tutorialEs.Title == "📖 Cómo jugar Asado y Acero RPG" && tutorialEs.Fields.Length == 6 && tutorialEn.Title == "📖 How to play Asado y Acero RPG" && tutorialEn.Fields.Select(f => f.Name).SequenceEqual(["🪓 Gathering", "⚒️ Smithy", "⚔️ Combat", "🥩 Survival", "📋 Missions and achievements", "🤝 Did a friend invite you?"]) && tutorialEn.Footer!.Value.Text == "Use /info to see the full list of commands.",
     $"el tutorial en los dos idiomas ({tutorialEn.Title})");
 Embed infoEs = HelpModule.BuildInfoEmbed(); Embed infoEn; using (Loc.Use("en")) { infoEn = HelpModule.BuildInfoEmbed(); }
 Check(infoEs.Fields.Select(f => f.Name).SequenceEqual(["⚔️ Pelear", "🪓 Recolectar y forjar", "🍖 Comida y plata", "📋 Progreso", "👥 Con otros jugadores", "🔥 Final del juego", "🛠️ Tu cuenta", "📚 Cómo funciona cada cosa"]) &&

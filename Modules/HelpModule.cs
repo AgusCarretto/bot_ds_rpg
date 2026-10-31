@@ -71,6 +71,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 Loc.T("Cada día hay 3 misiones y cada semana 2 (`/missions`), y hay logros por tramos (`/achievements`). Se cuentan solas mientras jugás " +
                 "y dan oro, XP y cajas para abrir con `/open`. Las diarias se reinician a medianoche, hora de Uruguay."),
                 false)
+            .AddField(Loc.T("🤝 ¿Te invitó un amigo?"), ReferralModule.Hint(), false)
             .WithFooter(Loc.T("Usá /info para ver la lista completa de comandos."))
             .Build();
     }
@@ -88,7 +89,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             .AddField(Loc.T("🪓 Recolectar y forjar"), Loc.T("`/chop` · `/mine` · `/tools` (hacha y pico) · `/forge` · `/enchant` · `/dismantle` · `/tips` (qué te falta farmear)"), false)
             .AddField(Loc.T("🍖 Comida y plata"), Loc.T("`/taberna` (comer, comprar y vender) · `/heal` · `/use` · `/open` · `/daily` · `/bank` · `/play`"), false)
             .AddField(Loc.T("📋 Progreso"), "`/missions` · `/achievements` · `/titles` · `/pet` · `/dragon` · `/professions` · `/story` · `/leaderboard`", false)
-            .AddField(Loc.T("👥 Con otros jugadores"), "`/fight` · `/arena` · `/boss @amigo` · `/dragon-breed @amigo` · `/dragon-board` · `/give` · `/trade` · `/exchange`", false)
+            .AddField(Loc.T("👥 Con otros jugadores"), "`/fight` · `/arena` · `/boss @amigo` · `/dragon-breed @amigo` · `/dragon-board` · `/give` · `/trade` · `/exchange` · `/invitedby`", false)
             .AddField(Loc.T("🔥 Final del juego"), "`/forge-special` · `/zona 0` · `/fuegonuevo` · `/deepshop`", false)
             .AddField(Loc.T("🛠️ Tu cuenta"), "`/start` · `/class` · `/profile` · `/inventory` · `/cd` · `/config` · `/reminders` · `/vote` · `/code` · `/tutorial`", false)
             .AddField(Loc.T("📚 Cómo funciona cada cosa"), Loc.F($"`/info tema:<tema>` o `aa info <tema>`. Temas: {HelpTopics.KeysLine()}."), false)

@@ -574,6 +574,7 @@ public static class ServiceProviderBuilder
             .AddSingleton<IAdminRepository, AdminRepository>()
             // Los códigos canjeables (v0.37.0): `aa code` / `/code` y el panel `aa admincode` (Database/add_redeem_codes.sql). El freno de intentos vive en memoria.
             .AddSingleton<IRedeemCodeRepository, RedeemCodeRepository>()
+            .AddSingleton<IReferralRepository, ReferralRepository>()
             .AddSingleton<IRedeemAttemptLimiter>(_ => new RedeemAttemptLimiter())
             .AddSingleton<IPlayerBonusService, PlayerBonusService>()
             .AddSingleton<ILanguageRepository, LanguageRepository>()

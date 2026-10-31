@@ -539,3 +539,14 @@ CREATE TABLE IF NOT EXISTS pet_expeditions (
     started_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     ends_at     TIMESTAMPTZ NOT NULL
 );
+
+-- Invitar amigos (v0.43.0, Database/add_referrals.sql): una fila por jugador invitado (de ahí «una vez por cuenta»); level_paid_at = cuándo se le pagó al que invitó el premio del nivel 5.
+CREATE TABLE IF NOT EXISTS referrals (
+    invitee_id    BIGINT      PRIMARY KEY REFERENCES users (discord_id) ON DELETE CASCADE,
+    inviter_id    BIGINT      NOT NULL,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    level_paid_at TIMESTAMPTZ,
+    CHECK (invitee_id <> inviter_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_referrals_inviter ON referrals (inviter_id);

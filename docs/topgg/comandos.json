@@ -86,7 +86,7 @@
   {
     "type": 1,
     "name": "boss",
-    "description": "Enfrentá al Jefe de tu zona, solo o con amigos (cooldown de 5 h, 30 min si perdés).",
+    "description": "Enfrentá al Jefe de tu zona, solo o con amigos (cooldown de 10 h, 30 min si perdés).",
     "options": [
       {
         "type": 6,
@@ -550,6 +550,21 @@
         "type": 6,
         "name": "jugador",
         "description": "Opcional: de qué jugador del server querés ver el inventario.",
+        "required": false,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      }
+    ]
+  },
+  {
+    "type": 1,
+    "name": "invitedby",
+    "description": "¿Te invitó un amigo? Decí quién y los dos se llevan oro (una sola vez por cuenta).",
+    "options": [
+      {
+        "type": 6,
+        "name": "amigo",
+        "description": "El jugador que te invitó al juego (vacío: ver quién te invitó y a cuántos invitaste).",
         "required": false,
         "min_value": -9007199254740991,
         "max_value": 9007199254740991

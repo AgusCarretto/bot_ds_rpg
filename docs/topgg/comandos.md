@@ -84,6 +84,7 @@ Todo comando también se puede escribir con el prefijo `aa` (por ejemplo `aa hun
 | `/arena listplayers` | Quiénes están anotados hoy. |
 | `/arena results` | La llave y el campeón del último torneo. |
 | `/miniboss` | Anotate al jefe mundial de hoy, contra todo el servidor. |
+| `/invitedby` | ¿Te invitó un amigo? Decí quién y los dos se llevan oro. |
 | `/leaderboard` | El ranking del servidor. |
 | `/duels` | Tu récord de duelos. |
 | `/history` | Cuántas veces jugaste, ganaste y perdiste cada juego. |
