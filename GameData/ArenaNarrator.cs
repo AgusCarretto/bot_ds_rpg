@@ -19,7 +19,7 @@ public static class ArenaNarrator
 
         if (match.P2Id is null || match.P2Name is null)
         {
-            return $"💤 **{p1}** no tuvo rival y pasa directo.";
+            return Loc.F($"💤 **{p1}** no tuvo rival y pasa directo.");
         }
 
         bool firstWon = match.WinnerId == match.P1Id;
@@ -30,28 +30,28 @@ public static class ArenaNarrator
         string[] templates = hp <= NarrowHpPercent
             ?
             [
-                $"😮 ¡Por un pelo! **{winner}** le ganó a {loser} con apenas {hp}% de vida.",
-                $"😰 Final de infarto: **{winner}** aguantó lo justo ({hp}%) y dejó afuera a {loser}.",
-                $"🩹 **{winner}** sobrevivió con {hp}% de vida y se llevó la pelea contra {loser}.",
+                Loc.F($"😮 ¡Por un pelo! **{winner}** le ganó a {loser} con apenas {hp}% de vida."),
+                Loc.F($"😰 Final de infarto: **{winner}** aguantó lo justo ({hp}%) y dejó afuera a {loser}."),
+                Loc.F($"🩹 **{winner}** sobrevivió con {hp}% de vida y se llevó la pelea contra {loser}."),
             ]
             : hp >= CrushingHpPercent
                 ?
                 [
-                    $"🔥 **{winner}** le pasó por encima a {loser} ({hp}% de vida, ni se despeinó).",
-                    $"💥 Paliza: {loser} no tuvo chance contra **{winner}**.",
-                    $"🧨 **{winner}** aplastó a {loser} sin sufrir casi nada.",
+                    Loc.F($"🔥 **{winner}** le pasó por encima a {loser} ({hp}% de vida, ni se despeinó)."),
+                    Loc.F($"💥 Paliza: {loser} no tuvo chance contra **{winner}**."),
+                    Loc.F($"🧨 **{winner}** aplastó a {loser} sin sufrir casi nada."),
                 ]
                 : match.Actions >= LongFightActions
                     ?
                     [
-                        $"⏳ Batalla larguísima ({match.Actions} golpes): **{winner}** terminó venciendo a {loser}.",
-                        $"🥵 {loser} y **{winner}** se dieron con todo; ganó **{winner}** al final.",
+                        Loc.F($"⏳ Batalla larguísima ({match.Actions} golpes): **{winner}** terminó venciendo a {loser}."),
+                        Loc.F($"🥵 {loser} y **{winner}** se dieron con todo; ganó **{winner}** al final."),
                     ]
                     :
                     [
-                        $"⚔️ **{winner}** venció a {loser}.",
-                        $"🏁 **{winner}** dejó afuera a {loser} ({hp}% de vida).",
-                        $"✅ **{winner}** se quedó con la pelea contra {loser}.",
+                        Loc.F($"⚔️ **{winner}** venció a {loser}."),
+                        Loc.F($"🏁 **{winner}** dejó afuera a {loser} ({hp}% de vida)."),
+                        Loc.F($"✅ **{winner}** se quedó con la pelea contra {loser}."),
                     ];
 
         return templates[Seed(match) % templates.Length];
@@ -64,7 +64,7 @@ public static class ArenaNarrator
         string champion = Short(firstWon ? final.P1Name : final.P2Name ?? final.P1Name);
         string runnerUp = Short(firstWon ? final.P2Name ?? "?" : final.P1Name);
 
-        return $"👑 **{champion}** se coronó campeón de la Arena tras vencer en la final a {runnerUp}.";
+        return Loc.F($"👑 **{champion}** se coronó campeón de la Arena tras vencer en la final a {runnerUp}.");
     }
 
     private static int Seed(ArenaMatchRow match) => (int)(((uint)match.Round * 31 + (uint)match.Slot * 17 + (uint)(match.WinnerId % 97)) % 1009);

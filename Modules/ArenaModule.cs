@@ -23,7 +23,7 @@ public class ArenaModule(IArenaService arena) : InteractionModuleBase<SocketInte
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude anotarte en la Arena, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude anotarte en la Arena, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -39,7 +39,7 @@ public class ArenaModule(IArenaService arena) : InteractionModuleBase<SocketInte
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude armar la lista de la Arena, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude armar la lista de la Arena, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -55,7 +55,7 @@ public class ArenaModule(IArenaService arena) : InteractionModuleBase<SocketInte
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude traer los resultados de la Arena, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude traer los resultados de la Arena, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -70,25 +70,25 @@ public class ArenaModule(IArenaService arena) : InteractionModuleBase<SocketInte
         return result.Status switch
         {
             ArenaJoinStatus.Joined => new EmbedBuilder()
-                .WithTitle("⚔️ ¡Anotado en la Arena!")
+                .WithTitle(Loc.T("⚔️ ¡Anotado en la Arena!"))
                 .WithColor(Color.Gold)
                 .WithDescription(
-                    $"Quedaste anotado en el torneo del **{day}**. Se juega a las **00:00** (hora de Uruguay), en **{until}**.\n\n" +
-                    $"Ya hay **{result.Count}** anotado(s) (cupo {ArenaRules.MaxPlayers}, hacen falta al menos {ArenaRules.MinPlayers}).\n" +
-                    "Vas a pelear con el **nivel y el equipo que tengas a esa hora**: todavía estás a tiempo de prepararte.\n" +
-                    "El campeón se lleva oro, XP y una caja de su zona.")
-                .WithFooter("Mirá quiénes van con /arena listplayers")
+                    Loc.F($"Quedaste anotado en el torneo del **{day}**. Se juega a las **00:00** (hora de Uruguay), en **{until}**.\n\n") +
+                    Loc.F($"Ya hay **{result.Count}** anotado(s) (cupo {ArenaRules.MaxPlayers}, hacen falta al menos {ArenaRules.MinPlayers}).\n") +
+                    Loc.T("Vas a pelear con el **nivel y el equipo que tengas a esa hora**: todavía estás a tiempo de prepararte.\n") +
+                    Loc.T("El campeón se lleva oro, XP y una caja de su zona."))
+                .WithFooter(Loc.T("Mirá quiénes van con /arena listplayers"))
                 .Build(),
 
-            ArenaJoinStatus.AlreadyJoined => Simple("✅ Ya estabas anotado", Color.DarkGrey,
-                $"Seguís anotado en el torneo del **{day}** (se juega en **{until}**). Hay **{result.Count}** anotado(s)."),
+            ArenaJoinStatus.AlreadyJoined => Simple(Loc.T("✅ Ya estabas anotado"), Color.DarkGrey,
+                Loc.F($"Seguís anotado en el torneo del **{day}** (se juega en **{until}**). Hay **{result.Count}** anotado(s).")),
 
-            ArenaJoinStatus.Full => Simple("🚫 La Arena está llena", Color.DarkGrey,
-                $"El torneo de hoy ya tiene sus {ArenaRules.MaxPlayers} anotados. Mañana arranca otro: llegá temprano."),
+            ArenaJoinStatus.Full => Simple(Loc.T("🚫 La Arena está llena"), Color.DarkGrey,
+                Loc.F($"El torneo de hoy ya tiene sus {ArenaRules.MaxPlayers} anotados. Mañana arranca otro: llegá temprano.")),
 
-            ArenaJoinStatus.NoAccount => Simple("Primero tu aventura", Color.DarkGrey, "Tenés que empezar con **/start** antes de anotarte en la Arena."),
+            ArenaJoinStatus.NoAccount => Simple(Loc.T("Primero tu aventura"), Color.DarkGrey, Loc.T("Tenés que empezar con **/start** antes de anotarte en la Arena.")),
 
-            _ => Simple("⏳ La Arena de hoy ya cerró", Color.DarkGrey, "Ese torneo ya no está abierto. Probá de nuevo en unos instantes."),
+            _ => Simple(Loc.T("⏳ La Arena de hoy ya cerró"), Color.DarkGrey, Loc.T("Ese torneo ya no está abierto. Probá de nuevo en unos instantes.")),
         };
     }
 
@@ -100,27 +100,27 @@ public class ArenaModule(IArenaService arena) : InteractionModuleBase<SocketInte
 
         if (listing.Entries.Count == 0)
         {
-            return Simple($"🏟️ Arena del {day}", Color.Gold,
-                $"Todavía no se anotó nadie. Se juega en **{until}**: ¡sé el primero con **/arena join**!");
+            return Simple(Loc.F($"🏟️ Arena del {day}"), Color.Gold,
+                Loc.F($"Todavía no se anotó nadie. Se juega en **{until}**: ¡sé el primero con **/arena join**!"));
         }
 
         var lines = listing.Entries.Select((entry, index) =>
         {
             string emoji = ClassCatalog.All.FirstOrDefault(c => c.Name == entry.PlayerClass)?.Emoji ?? "🥊";
-            return $"`{index + 1,2}.` **{Short(entry.DisplayName, 24)}** — {emoji} {entry.PlayerClass} · nivel {entry.Level}";
+            return Loc.F($"`{index + 1,2}.` **{Short(entry.DisplayName, 24)}** — {emoji} {entry.PlayerClass} · nivel {entry.Level}");
         });
 
         string needed = listing.Entries.Count < ArenaRules.MinPlayers
-            ? $"\n\n⚠️ Hacen falta al menos **{ArenaRules.MinPlayers}** para que se juegue."
+            ? Loc.F($"\n\n⚠️ Hacen falta al menos **{ArenaRules.MinPlayers}** para que se juegue.")
             : string.Empty;
 
         return new EmbedBuilder()
-            .WithTitle($"🏟️ Arena del {day}")
+            .WithTitle(Loc.F($"🏟️ Arena del {day}"))
             .WithColor(Color.Gold)
             .WithDescription(
-                $"Se juega a las **00:00** (hora de Uruguay), en **{until}**.\n" +
-                $"**{listing.Entries.Count}** anotado(s) de {ArenaRules.MaxPlayers}:\n\n{string.Join('\n', lines)}{needed}")
-            .WithFooter("Anotate con /arena join · la llave se arma con el nivel y el equipo de las 00:00")
+                Loc.F($"Se juega a las **00:00** (hora de Uruguay), en **{until}**.\n") +
+                Loc.F($"**{listing.Entries.Count}** anotado(s) de {ArenaRules.MaxPlayers}:\n\n{string.Join('\n', lines)}{needed}"))
+            .WithFooter(Loc.T("Anotate con /arena join · la llave se arma con el nivel y el equipo de las 00:00"))
             .Build();
     }
 
@@ -129,8 +129,8 @@ public class ArenaModule(IArenaService arena) : InteractionModuleBase<SocketInte
         var results = await arena.GetLatestResultsAsync();
         if (results is null)
         {
-            return Simple("🏟️ Todavía no hubo torneos", Color.DarkGrey,
-                "La Arena todavía no se jugó ni una vez. Anotate con **/arena join**: el torneo de hoy se juega a las 00:00.");
+            return Simple(Loc.T("🏟️ Todavía no hubo torneos"), Color.DarkGrey,
+                Loc.T("La Arena todavía no se jugó ni una vez. Anotate con **/arena join**: el torneo de hoy se juega a las 00:00."));
         }
 
         var info = results.Info;
@@ -144,12 +144,12 @@ public class ArenaModule(IArenaService arena) : InteractionModuleBase<SocketInte
         DateOnly day, string? winnerName, int participants, int rounds, string? rewardText, IReadOnlyList<ArenaMatchRow> matches, string? extra)
     {
         var embed = new EmbedBuilder()
-            .WithTitle($"🏆 Arena del {ArenaRules.Format(day)}")
+            .WithTitle(Loc.F($"🏆 Arena del {ArenaRules.Format(day)}"))
             .WithColor(Color.Gold)
             .WithDescription(
-                $"👑 Campeón: **{Short(winnerName ?? "—", 24)}**\n" +
-                $"🎁 Premio: {rewardText ?? "—"}\n" +
-                $"👥 {participants} participantes · {rounds} ronda(s){(extra is null ? string.Empty : $"\n{extra}")}");
+                Loc.F($"👑 Campeón: **{Short(winnerName ?? "—", 24)}**\n") +
+                Loc.F($"🎁 Premio: {rewardText ?? "—"}\n") +
+                Loc.F($"👥 {participants} participantes · {rounds} ronda(s){(extra is null ? string.Empty : $"\n{extra}")}"));
 
         foreach (var group in matches.GroupBy(m => m.Round).OrderBy(g => g.Key))
         {
@@ -164,7 +164,7 @@ public class ArenaModule(IArenaService arena) : InteractionModuleBase<SocketInte
             {
                 if (length + line.Length + 1 > 1000 && chunk.Count > 0)
                 {
-                    embed.AddField(part++ == 0 ? title : $"{title} (cont.)", string.Join('\n', chunk), false);
+                    embed.AddField(part++ == 0 ? title : Loc.F($"{title} (cont.)"), string.Join('\n', chunk), false);
                     chunk.Clear();
                     length = 0;
                 }
@@ -175,11 +175,11 @@ public class ArenaModule(IArenaService arena) : InteractionModuleBase<SocketInte
 
             if (chunk.Count > 0)
             {
-                embed.AddField(part == 0 ? title : $"{title} (cont.)", string.Join('\n', chunk), false);
+                embed.AddField(part == 0 ? title : Loc.F($"{title} (cont.)"), string.Join('\n', chunk), false);
             }
         }
 
-        return embed.WithFooter("Un torneo por día · se juega a las 00:00 (hora de Uruguay) · /arena join para el próximo").Build();
+        return embed.WithFooter(Loc.T("Un torneo por día · se juega a las 00:00 (hora de Uruguay) · /arena join para el próximo")).Build();
     }
 
     // El anuncio de las 00:00: lo mismo que /arena results, o el aviso de que se canceló.
@@ -187,17 +187,17 @@ public class ArenaModule(IArenaService arena) : InteractionModuleBase<SocketInte
     {
         if (resolution.Cancelled)
         {
-            return (null, Simple($"🏟️ Se canceló la Arena del {ArenaRules.Format(resolution.Day)}", Color.DarkGrey,
-                $"No llegaron a {ArenaRules.MinPlayers} anotados, así que no hubo torneo. ¡Hoy arranca otro: anotate con **/arena join**!"));
+            return (null, Simple(Loc.F($"🏟️ Se canceló la Arena del {ArenaRules.Format(resolution.Day)}"), Color.DarkGrey,
+                Loc.F($"No llegaron a {ArenaRules.MinPlayers} anotados, así que no hubo torneo. ¡Hoy arranca otro: anotate con **/arena join**!")));
         }
 
         var crown = resolution.Matches.Where(m => m.Round == resolution.Rounds && m.P2Id is not null).Select(ArenaNarrator.Crowning).FirstOrDefault();
-        string? levelUp = resolution.LevelsGained > 0 ? $"🎉 ¡Y subió al nivel **{resolution.NewLevel}**!" : null;
+        string? levelUp = resolution.LevelsGained > 0 ? Loc.F($"🎉 ¡Y subió al nivel **{resolution.NewLevel}**!") : null;
         string? extra = string.Join("\n", new[] { crown, levelUp }.Where(x => x is not null)) is { Length: > 0 } joined ? joined : null;
         var embed = BuildResultsEmbed(
             resolution.Day, resolution.WinnerName, resolution.Participants, resolution.Rounds, resolution.RewardText, resolution.Matches, extra);
 
-        return ($"🎉 ¡{MentionUtils.MentionUser(resolution.WinnerId!.Value)} es el campeón de la Arena!", embed);
+        return (Loc.F($"🎉 ¡{MentionUtils.MentionUser(resolution.WinnerId!.Value)} es el campeón de la Arena!"), embed);
     }
 
     // Un mensaje de la transmisión: texto opcional (la mención del campeón) + el embed.
@@ -232,14 +232,14 @@ public class ArenaModule(IArenaService arena) : InteractionModuleBase<SocketInte
         var stories = resolution.Stories is { Count: > 0 } list ? list.GroupBy(s => (s.P1Id, s.P2Id)).ToDictionary(g => g.Key, g => g.First()) : null;
         string luckNote = stories is null
             ? string.Empty
-            : $"🍀 En la Arena el nivel pesa pero no decide: cada pelea tiene su **forma del día** y en {(int)Math.Round(ArenaTuning.MiracleChance * 100)} de cada 100 hay un **milagro** que iguala a los dos.\n\n";
+            : Loc.F($"🍀 En la Arena el nivel pesa pero no decide: cada pelea tiene su **forma del día** y en {(int)Math.Round(ArenaTuning.MiracleChance * 100)} de cada 100 hay un **milagro** que iguala a los dos.\n\n");
 
         messages.Add(new ArenaMessage(null, new EmbedBuilder()
-            .WithTitle($"🏟️ ¡Arranca la Arena del {day}!")
+            .WithTitle(Loc.F($"🏟️ ¡Arranca la Arena del {day}!"))
             .WithColor(Color.Orange)
             .WithDescription(
-                $"Se anotaron **{resolution.Participants}** peleadores y se juega por eliminación directa: **{resolution.Rounds}** ronda(s).\n\n" +
-                $"{luckNote}🥊 {roster}\n\n¡Que empiecen los combates!")
+                Loc.F($"Se anotaron **{resolution.Participants}** peleadores y se juega por eliminación directa: **{resolution.Rounds}** ronda(s).\n\n") +
+                Loc.F($"{luckNote}🥊 {roster}\n\n¡Que empiecen los combates!"))
             .Build()));
 
         foreach (var round in resolution.Matches.GroupBy(m => m.Round).OrderBy(g => g.Key))
@@ -265,7 +265,7 @@ public class ArenaModule(IArenaService arena) : InteractionModuleBase<SocketInte
             foreach (var (chunk, index) in Chunk(lines, 3800).Select((c, i) => (c, i)))
             {
                 messages.Add(new ArenaMessage(null, new EmbedBuilder()
-                    .WithTitle($"{roundName} · {real} combate(s){(index > 0 ? " (sigue)" : string.Empty)}")
+                    .WithTitle(Loc.F($"{roundName} · {real} combate(s){(index > 0 ? Loc.T(" (sigue)") : string.Empty)}"))
                     .WithColor(isFinal ? Color.Gold : Color.DarkOrange)
                     .WithDescription(chunk)
                     .Build()));
@@ -341,14 +341,14 @@ public class ArenaModule(IArenaService arena) : InteractionModuleBase<SocketInte
     {
         if (match.P2Id is null)
         {
-            return $"• {Short(match.P1Name, 18)} _(pasa directo)_";
+            return Loc.F($"• {Short(match.P1Name, 18)} _(pasa directo)_");
         }
 
         string p1 = Short(match.P1Name, 18);
         string p2 = Short(match.P2Name ?? "?", 18);
         bool firstWon = match.WinnerId == match.P1Id;
 
-        return $"• {(firstWon ? $"**{p1}**" : p1)} ⚔️ {(firstWon ? p2 : $"**{p2}**")}";
+        return Loc.F($"• {(firstWon ? $"**{p1}**" : p1)} ⚔️ {(firstWon ? p2 : $"**{p2}**")}");
     }
 
     private static Embed Simple(string title, Color color, string description) =>

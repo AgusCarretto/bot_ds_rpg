@@ -40,13 +40,13 @@ public static class WorldBossRules
 
     public static readonly IReadOnlyList<WorldBossDef> Bosses =
     [
-        new("chancho", "El Chancho Colosal", "🐗", "Un chancho del tamaño de una casa arrasó las parrillas del pueblo y viene por las que quedan."),
-        new("brasa", "La Brasa Madre", "🔥", "La primera brasa del mundo despertó con hambre y no hay asado que la llene."),
-        new("toro", "El Toro de Hierro", "🐂", "Un toro de metal viejo carga contra todo lo que huela a humo."),
-        new("ceniza", "El Gigante de Ceniza", "🌋", "Una montaña de ceniza se puso de pie y camina hacia el fogón."),
-        new("dragon", "El Dragón de la Pampa", "🐉", "Algo muy antiguo salió de la tierra a reclamar su campo."),
-        new("serpiente", "La Serpiente del Humo", "🐍", "Se enroscó alrededor de todas las chimeneas y no deja prender ni un fósforo."),
-        new("parrillero", "El Parrillero Infernal", "👹", "Hace el asado más grande del mundo y los invitados son ustedes."),
+        new("chancho", "El Chancho Colosal", "🐗", Loc.Mark("Un chancho del tamaño de una casa arrasó las parrillas del pueblo y viene por las que quedan.")),
+        new("brasa", "La Brasa Madre", "🔥", Loc.Mark("La primera brasa del mundo despertó con hambre y no hay asado que la llene.")),
+        new("toro", "El Toro de Hierro", "🐂", Loc.Mark("Un toro de metal viejo carga contra todo lo que huela a humo.")),
+        new("ceniza", "El Gigante de Ceniza", "🌋", Loc.Mark("Una montaña de ceniza se puso de pie y camina hacia el fogón.")),
+        new("dragon", "El Dragón de la Pampa", "🐉", Loc.Mark("Algo muy antiguo salió de la tierra a reclamar su campo.")),
+        new("serpiente", "La Serpiente del Humo", "🐍", Loc.Mark("Se enroscó alrededor de todas las chimeneas y no deja prender ni un fósforo.")),
+        new("parrillero", "El Parrillero Infernal", "👹", Loc.Mark("Hace el asado más grande del mundo y los invitados son ustedes.")),
     ];
 
     // El jefe del día: sale solo de la fecha (el mismo para todos y siempre el mismo para ese día).
@@ -91,19 +91,19 @@ public static class WorldBossRules
         string[] templates = hit.DamagePercent >= 100.0 / FullCrowd * 1.4
             ?
             [
-                $"💥 **{name}** (nivel {hit.Level}) le mete un golpazo a {boss.Name}: **{pct} %** de su vida.",
-                $"🔥 **{name}** (nivel {hit.Level}) se juega entero y le arranca **{pct} %** a {boss.Name}.",
+                Loc.F($"💥 **{name}** (nivel {hit.Level}) le mete un golpazo a {boss.Name}: **{pct} %** de su vida."),
+                Loc.F($"🔥 **{name}** (nivel {hit.Level}) se juega entero y le arranca **{pct} %** a {boss.Name}."),
             ]
             : hit.DamagePercent >= 100.0 / FullCrowd * 0.7
                 ?
                 [
-                    $"⚔️ **{name}** (nivel {hit.Level}) le pega bien: **{pct} %**.",
-                    $"🗡️ **{name}** (nivel {hit.Level}) encuentra el hueco y saca **{pct} %**.",
+                    Loc.F($"⚔️ **{name}** (nivel {hit.Level}) le pega bien: **{pct} %**."),
+                    Loc.F($"🗡️ **{name}** (nivel {hit.Level}) encuentra el hueco y saca **{pct} %**."),
                 ]
                 :
                 [
-                    $"🩹 **{name}** (nivel {hit.Level}) le hace lo que puede: **{pct} %**.",
-                    $"🪵 **{name}** (nivel {hit.Level}) lo rasguña por **{pct} %**.",
+                    Loc.F($"🩹 **{name}** (nivel {hit.Level}) le hace lo que puede: **{pct} %**."),
+                    Loc.F($"🪵 **{name}** (nivel {hit.Level}) lo rasguña por **{pct} %**."),
                 ];
 
         return templates[rng.Next(templates.Length)];
