@@ -42,7 +42,14 @@ Check(Deal(15, 1, 13, 9, 7, out _) is { } n15 && Blackjack.Payout(n15) == 37 && 
 var bothNat = Deal(100, 1, 13, 1, 12, out _);
 Check(bothNat.Outcome == BlackjackOutcome.Push && Blackjack.Payout(bothNat) == 100, "los dos con blackjack: empate, devuelve la apuesta");
 var dealerNat = Deal(100, 10, 9, 1, 13, out _);
-Check(dealerNat.Outcome == BlackjackOutcome.DealerWin && Blackjack.Payout(dealerNat) == 0 && dealerNat.Finished, "blackjack de la banca solamente: pierde al instante, antes de jugar");
+Check(dealerNat.Outcome == BlackjackOutcome.InProgress && !dealerNat.Finished, "v0.46.0: blackjack de la banca solamente ya NO pierde al instante: la mano sigue");
+var dnLost = Blackjack.Stand(dealerNat, () => throw new InvalidOperationException("la banca tiene 21, no pide"));
+Check(dnLost.Outcome == BlackjackOutcome.DealerWin && Blackjack.Payout(dnLost) == 0, "plantarse con 19 contra el blackjack de la banca: pierde");
+var dnHand = Deal(100, 10, 6, 1, 13, out var dnR, 5);
+var dnPush = Blackjack.Hit(dnHand, () => new Card(dnR.Dequeue(), 0));
+Check(dnPush.Outcome == BlackjackOutcome.Push && Blackjack.Payout(dnPush) == 100 && dnPush.Dealer.Count == 2, "llegar a 21 pidiendo (10 + 6 + 5) contra el blackjack de la banca: EMPATA y devuelve la apuesta");
+var dnDouble = Blackjack.Double(Deal(100, 5, 6, 1, 13, out var dnR2, 9), () => new Card(dnR2.Dequeue(), 0));
+Check(dnDouble.Outcome == BlackjackOutcome.DealerWin && Blackjack.Net(dnDouble) == -200, "doblar contra el blackjack de la banca y no llegar a 21: pierde la apuesta doble");
 var s1 = Deal(100, 13, 9, 13, 7, out var r1);
 Check(s1.Outcome == BlackjackOutcome.InProgress && s1.CanDouble, "una mano normal queda en juego y se puede doblar");
 var won = Blackjack.Stand(s1, () => new Card(r1.Dequeue(), 0));
@@ -233,7 +240,7 @@ Check(!viewHit.CanDouble && BlackjackModule.BuildComponents(viewHit, 77)!.Compon
 var viewWin = new BlackjackView(Guid.NewGuid(), won, 11_000);
 var embedWin = BlackjackModule.BuildEmbed(viewWin);
 Check(BlackjackModule.BuildComponents(viewWin, 77) is null && embedWin.Description.Contains("¡Ganaste!") && embedWin.Description.Contains("(+100)") && embedWin.Description.Contains($"`{string.Join(" ", won.Dealer.Select(c => c.Label))}`") && embedWin.Color == Color.Green, "terminada: sin botones, con la banca entera, el total, el resultado y color verde");
-Check(BlackjackModule.BuildEmbed(new BlackjackView(Guid.NewGuid(), nat, 0)).Description.Contains("3 a 2") && BlackjackModule.BuildEmbed(new BlackjackView(Guid.NewGuid(), dealerNat, 0)).Description.Contains("La banca tenía blackjack")
+Check(BlackjackModule.BuildEmbed(new BlackjackView(Guid.NewGuid(), nat, 0)).Description.Contains("3 a 2") && BlackjackModule.BuildEmbed(new BlackjackView(Guid.NewGuid(), dnLost, 0)).Description.Contains("La banca tenía blackjack") && BlackjackModule.BuildEmbed(new BlackjackView(Guid.NewGuid(), dnPush, 0)).Description.Contains("llegaste a 21")
       && BlackjackModule.BuildEmbed(new BlackjackView(Guid.NewGuid(), bust, 0)).Description.Contains("Te pasaste") && BlackjackModule.BuildEmbed(new BlackjackView(Guid.NewGuid(), pushState, 0)).Color == Color.LightGrey
       && BlackjackModule.BuildEmbed(new BlackjackView(Guid.NewGuid(), doubled, 0)).Title!.Contains("doblada"), "cada resultado tiene su texto: blackjack (3 a 2), blackjack de la banca, pasarse, empate y apuesta doblada");
 Check(BlackjackModule.BuildEmbed(new BlackjackView(Guid.NewGuid(), busted, 0, "⏰ nota de prueba")).Description.Contains("⏰ nota de prueba"), "la nota (por ejemplo «te plantó la banca») se muestra");

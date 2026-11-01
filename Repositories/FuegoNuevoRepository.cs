@@ -138,10 +138,8 @@ public sealed class FuegoNuevoRepository(IDbConnectionFactory connectionFactory)
                 "DELETE FROM player_buffs WHERE discord_id = @DiscordId;",
                 new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
 
-            // Los cooldowns de la vuelta (cacería, viaje, jefe, talar, minar) arrancan limpios; el de comprar cajas es de la economía, no de la vuelta, y se queda.
-            await connection.ExecuteAsync(new CommandDefinition(
-                "DELETE FROM cooldowns WHERE discord_id = @DiscordId AND command_name <> @BoxBuy;",
-                new { DiscordId = (long)discordId, BoxBuy = CooldownCatalog.BoxBuy.CommandName }, transaction: transaction, cancellationToken: cancellationToken));
+            // Los cooldowns NO se tocan (v0.46.0, el dueño: «¿qué te parece si no reseteamos? pasan cosas raras con el vote»). Hasta la v0.45 se borraban todos menos el de comprar cajas, y
+            // con ellos la fila «vote», que guarda qué voto ya se cobró: el mismo voto de top.gg se podía cobrar otra vez (otra caja y otro reinicio del jefe) después de cada Fuego Nuevo.
 
             await connection.ExecuteAsync(new CommandDefinition(
                 """

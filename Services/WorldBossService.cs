@@ -4,7 +4,7 @@ using BotDsRpg.Repositories;
 
 namespace BotDsRpg.Services;
 
-public sealed record WorldBossJoinResult(WorldBossJoinStatus Status, DateOnly Day, WorldBossDef Boss, int Count, TimeSpan UntilPlay, TimeSpan CooldownLeft);
+public sealed record WorldBossJoinResult(WorldBossJoinStatus Status, DateOnly Day, WorldBossDef Boss, int Count, TimeSpan UntilPlay);
 
 public sealed record WorldBossListing(DateOnly Day, WorldBossDef Boss, IReadOnlyList<WorldBossEntry> Entries, TimeSpan UntilPlay);
 
@@ -45,7 +45,7 @@ public sealed class WorldBossService(
             await gameEvents.RecordAsync(discordId, GameEventKinds.WorldBossJoin, detail: day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
         }
 
-        return new WorldBossJoinResult(outcome.Status, day, WorldBossRules.BossOf(day), count, ArenaRules.PlaysAtUtc(day) - utcNow, outcome.CooldownLeft);
+        return new WorldBossJoinResult(outcome.Status, day, WorldBossRules.BossOf(day), count, ArenaRules.PlaysAtUtc(day) - utcNow);
     }
 
     public async Task<WorldBossListing> ListAsync(DateTime utcNow, CancellationToken cancellationToken = default)

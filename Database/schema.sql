@@ -496,6 +496,7 @@ CREATE TABLE IF NOT EXISTS player_dragons (
     level        INTEGER NOT NULL DEFAULT 0 CHECK (level >= 0),
     name         TEXT CHECK (name IS NULL OR char_length(name) BETWEEN 2 AND 24),
     fail_streak  INTEGER NOT NULL DEFAULT 0 CHECK (fail_streak >= 0),
+    solo_fail_streak INTEGER NOT NULL DEFAULT 0 CHECK (solo_fail_streak >= 0),   -- v0.46.0: los fallos criando SOLO (fail_streak es el de la pareja)
     last_bred_at TIMESTAMPTZ,
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );

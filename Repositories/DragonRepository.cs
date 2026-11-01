@@ -14,17 +14,18 @@ public sealed class DragonRepository(IDbConnectionFactory connectionFactory) : I
         public string Kind { get; set; } = string.Empty;
         public int Tier { get; set; }
         public int FailStreak { get; set; }
+        public int SoloFailStreak { get; set; }
         public int Level { get; set; }
         public string? Name { get; set; }
         public double WaitSeconds { get; set; }
     }
 
     private const string SelectColumns = """
-        discord_id AS DiscordId, kind AS Kind, tier AS Tier, level AS Level, name AS Name, fail_streak AS FailStreak,
+        discord_id AS DiscordId, kind AS Kind, tier AS Tier, level AS Level, name AS Name, fail_streak AS FailStreak, solo_fail_streak AS SoloFailStreak,
         COALESCE(GREATEST(0, EXTRACT(EPOCH FROM (last_bred_at + make_interval(secs => @Cooldown) - now()))), 0)::float8 AS WaitSeconds
         """;
 
-    private static PlayerDragon ToDragon(DragonRow row) => new(row.Kind, row.Tier, row.FailStreak, TimeSpan.FromSeconds(row.WaitSeconds), row.Level, row.Name);
+    private static PlayerDragon ToDragon(DragonRow row) => new(row.Kind, row.Tier, row.FailStreak, TimeSpan.FromSeconds(row.WaitSeconds), row.Level, row.Name, row.SoloFailStreak);
 
     public async Task<PlayerDragon?> GetAsync(ulong discordId, CancellationToken cancellationToken = default)
     {
@@ -298,13 +299,14 @@ public sealed class DragonRepository(IDbConnectionFactory connectionFactory) : I
                 return new DragonBreedResult(DragonBreedStatus.OnCooldown, Tier: row.Tier, A: ToDragon(row), BlockedId: discordId, Wait: TimeSpan.FromSeconds(row.WaitSeconds));
             }
 
-            // Solo: un tercio de la chance del tier; la piedad cuenta con el triple de fallos seguidos (SoloPityCap).
-            bool success = DragonRules.RollBreed(row.Tier, row.FailStreak, rng, DragonRules.SoloChanceFactor);
+            // Solo: un tercio de la chance del tier; la piedad cuenta con el triple de fallos seguidos (SoloPityCap) y con SU contador (v0.46.0): los fallos criando solo
+            // ya no suman a la piedad de la cría en pareja, ni al revés.
+            bool success = DragonRules.RollBreed(row.Tier, row.SoloFailStreak, rng, DragonRules.SoloChanceFactor);
 
             await connection.ExecuteAsync(new CommandDefinition(
                 success
-                    ? "UPDATE player_dragons SET tier = tier + 1, fail_streak = 0, last_bred_at = now() WHERE discord_id = @DiscordId;"
-                    : "UPDATE player_dragons SET fail_streak = fail_streak + 1, last_bred_at = now() WHERE discord_id = @DiscordId;",
+                    ? "UPDATE player_dragons SET tier = tier + 1, fail_streak = 0, solo_fail_streak = 0, last_bred_at = now() WHERE discord_id = @DiscordId;"
+                    : "UPDATE player_dragons SET solo_fail_streak = solo_fail_streak + 1, last_bred_at = now() WHERE discord_id = @DiscordId;",
                 new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
 
             var typeChange = await ChangeTypeAsync(connection, transaction, (long)discordId, row.Kind, rng, cancellationToken);
@@ -368,7 +370,7 @@ public sealed class DragonRepository(IDbConnectionFactory connectionFactory) : I
             bool successA = DragonRules.RollBreed(a.Tier, a.FailStreak, rng);
             bool successB = DragonRules.RollBreed(b.Tier, b.FailStreak, rng);
 
-            const string up = "UPDATE player_dragons SET tier = tier + 1, fail_streak = 0, last_bred_at = now() WHERE discord_id = @DiscordId;";
+            const string up = "UPDATE player_dragons SET tier = tier + 1, fail_streak = 0, solo_fail_streak = 0, last_bred_at = now() WHERE discord_id = @DiscordId;";
             const string stay = "UPDATE player_dragons SET fail_streak = fail_streak + 1, last_bred_at = now() WHERE discord_id = @DiscordId;";
             await connection.ExecuteAsync(new CommandDefinition(successA ? up : stay, new { DiscordId = (long)firstId }, transaction: transaction, cancellationToken: cancellationToken));
             await connection.ExecuteAsync(new CommandDefinition(successB ? up : stay, new { DiscordId = (long)secondId }, transaction: transaction, cancellationToken: cancellationToken));

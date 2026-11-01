@@ -25,7 +25,7 @@ public sealed class WorldBossRepository(IDbConnectionFactory connectionFactory) 
             new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
         if (!hasAccount)
         {
-            return new WorldBossJoinOutcome(WorldBossJoinStatus.NoAccount, TimeSpan.Zero);
+            return new WorldBossJoinOutcome(WorldBossJoinStatus.NoAccount);
         }
 
         // El primero que se anota crea el día (y deja el canal para anunciar); después se bloquea la fila: los anotados de un mismo día pasan de a uno.
@@ -38,7 +38,7 @@ public sealed class WorldBossRepository(IDbConnectionFactory connectionFactory) 
             new { Day = Key(day) }, transaction: transaction, cancellationToken: cancellationToken));
         if (status != "open")
         {
-            return new WorldBossJoinOutcome(WorldBossJoinStatus.Closed, TimeSpan.Zero);
+            return new WorldBossJoinOutcome(WorldBossJoinStatus.Closed);
         }
 
         bool already = await connection.ExecuteScalarAsync<bool>(new CommandDefinition(
@@ -46,25 +46,17 @@ public sealed class WorldBossRepository(IDbConnectionFactory connectionFactory) 
             new { Day = Key(day), DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
         if (already)
         {
-            return new WorldBossJoinOutcome(WorldBossJoinStatus.AlreadyJoined, TimeSpan.Zero);
+            return new WorldBossJoinOutcome(WorldBossJoinStatus.AlreadyJoined);
         }
 
-        // Anotarse gasta el cooldown del jefe, con la misma guarda que /boss: si todavía corre no se anota (y la transacción se descarta sin tocar nada).
-        var boss = CooldownCatalog.Boss;
-        if (!await CooldownGuard.TryClaimAsync(connection, transaction, discordId, boss.CommandName, boss.Duration, cancellationToken))
-        {
-            double seconds = await connection.ExecuteScalarAsync<double?>(new CommandDefinition(
-                "SELECT EXTRACT(EPOCH FROM (last_executed_at + @Interval - now()))::float8 FROM cooldowns WHERE discord_id = @DiscordId AND command_name = @CommandName;",
-                new { DiscordId = (long)discordId, CommandName = boss.CommandName, Interval = boss.Duration }, transaction: transaction, cancellationToken: cancellationToken)) ?? 0;
-            return new WorldBossJoinOutcome(WorldBossJoinStatus.OnCooldown, TimeSpan.FromSeconds(Math.Max(0, seconds)));
-        }
+        // Hasta la v0.45 anotarse gastaba el cooldown del jefe (el mismo de /boss); desde la v0.46.0 no gasta nada: el límite es uno por día (la fila de worldboss_entries, con el día bloqueado arriba).
 
         await connection.ExecuteAsync(new CommandDefinition(
             "INSERT INTO worldboss_entries (day, discord_id, display_name) VALUES (@Day::date, @DiscordId, @Name);",
             new { Day = Key(day), DiscordId = (long)discordId, Name = displayName }, transaction: transaction, cancellationToken: cancellationToken));
 
         await transaction.CommitAsync(cancellationToken);
-        return new WorldBossJoinOutcome(WorldBossJoinStatus.Joined, TimeSpan.Zero);
+        return new WorldBossJoinOutcome(WorldBossJoinStatus.Joined);
     }
 
     public async Task<IReadOnlyList<WorldBossEntry>> GetEntriesAsync(DateOnly day, CancellationToken cancellationToken = default)

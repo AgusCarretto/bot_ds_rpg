@@ -5,11 +5,12 @@ using Discord;
 using Discord.Interactions;
 
 // /miniboss (aa miniboss): el jefe mundial del día (GameData/WorldBoss.cs). El dueño (2026-10-22): «aa miniboss y que todos peleen contra él, o worldboss; mientras más gente, mejor; que anotarse gaste el cooldown del
-// jefe; que dé entre 30 y 50 cacerías de esa zona». Durante el día te anotás (sin pedir nivel: sirve para quien todavía no llega al nivel 5 de /boss); a las 00:00 de Uruguay lo pelean entre todos los anotados y cada
+// jefe; que dé entre 30 y 50 cacerías de esa zona». Desde la v0.46.0 anotarse ya NO gasta el cooldown del jefe (el dueño, 2026-11-01: «que sea un cd aparte, nadie lo está jugando, y más ahora que son
+// 10 hrs de cd»): el único límite es uno por día, y /cd lo muestra debajo del jefe. Durante el día te anotás (sin pedir nivel: sirve para quien todavía no llega al nivel 5 de /boss); a las 00:00 de Uruguay lo pelean entre todos los anotados y cada
 // uno cobra de 30 a 50 cacerías de oro de SU zona, más cuanta más vida le saquen entre todos. El bot lo anuncia en el canal donde se anotó el primero (o en WorldBoss__ChannelId, si está configurado).
 public class WorldBossModule(IWorldBossService worldBoss) : InteractionModuleBase<SocketInteractionContext>
 {
-    [SlashCommand("miniboss", "Anotate al jefe mundial de hoy: se pelea entre todos a las 00:00 y gasta tu cooldown del jefe.")]
+    [SlashCommand("miniboss", "Jefe mundial del día: lo pelean todos a las 00:00. Uno por día y no gasta tu cooldown del jefe.")]
     public async Task HandleMinibossAsync()
     {
         await DeferAsync();
@@ -44,15 +45,12 @@ public class WorldBossModule(IWorldBossService worldBoss) : InteractionModuleBas
                     $"{Loc.Tr(boss.Intro)}\n\n" +
                     Loc.F($"Quedaste anotado en el jefe del **{day}**. Se pelea a las **00:00** (hora de Uruguay), en **{until}**, **entre todos** los anotados.\n\n") +
                     Loc.F($"Ya hay **{result.Count}** anotado(s). **Mientras más seamos, mejor**: {reward}. Con unos {WorldBossRules.FullCrowd:0} jugadores normales el jefe cae.\n\n") +
-                    Loc.F($"Anotarte gastó tu **cooldown del jefe** ({TimeFormat.Remaining(CooldownCatalog.Boss.Duration)}). No hace falta nivel."))
+                    Loc.T("No hace falta nivel y **no gasta tu cooldown del jefe**: podés hacer **/boss** igual. Hay uno por día."))
                 .WithFooter(Loc.T("Volvé a escribir /miniboss para ver cómo viene el día."))
                 .Build(),
 
             WorldBossJoinStatus.AlreadyJoined => Simple(Loc.F($"{boss.Emoji} Ya estabas anotado"), Color.DarkGrey,
                 Loc.F($"Seguís anotado contra **{boss.Name}** (se pelea en **{until}**). Hay **{result.Count}** anotado(s): {reward}. Con unos {WorldBossRules.FullCrowd:0} jugadores normales el jefe cae, así que traé amigos.")),
-
-            WorldBossJoinStatus.OnCooldown => Simple(Loc.T("⏳ Todavía no podés anotarte"), Color.DarkGrey,
-                Loc.F($"El jefe mundial usa tu **cooldown del jefe** y todavía te faltan **{TimeFormat.Remaining(result.CooldownLeft)}**. Cuando termine, anotate con **/miniboss** (se pelea en {until}; si te pasás de hora, mañana hay otro).")),
 
             WorldBossJoinStatus.NoAccount => Simple(Loc.T("Primero tu aventura"), Color.DarkGrey, Loc.T("Tenés que empezar con **/start** antes de anotarte contra el jefe mundial.")),
 
