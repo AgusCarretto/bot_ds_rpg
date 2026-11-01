@@ -1038,6 +1038,23 @@ foreach (var (name, embed) in new[] { ("el recetario", bookEn44), ("el forge esp
     Check(leak.Ok && LeakCheck.FitsDiscord(embed), $"{name} en inglés, sin español colado ({leak.Found})");
 }
 
+// v0.45.0: la historia en inglés, capítulo por capítulo y escena por escena (los nombres de lugares y personajes se quedan en español).
+string[] loreNames = ["Gran Fragua", "Praderas del Mate", "Bosque de Cenizas", "Minas del Yunque", "Cordillera del Fuego", "Cráter de la Escoria", "Fogón Eterno", "Fogón", "Árbol de Vida",
+    "Rey Jabalí", "Lobisón Alfa", "Capataz de Hierro", "Señor del Volcán", "Soberano de la Escoria", "Soberano", "Asador", "Tabernero", "Herrero", "lobisón", "El Gringo", "Ramona", "Ledesma", "El Tabernero", "El Herrero", "Las Crónicas del Fogón"];
+var loreLeaks = new List<string>();
+using (Loc.Use("en"))
+{
+    var loreTexts = new List<(string Key, string Text)> { ("prólogo", Loc.Tr(Lore.PrologueTitle) + "\n" + Lore.Translate(Lore.Prologue)) };
+    loreTexts.AddRange(Lore.Chapters.Select(c => (c.Key, Loc.Tr(c.Title) + "\n" + Lore.Translate(c.Text) + "\n" + Loc.Tr(c.FirstClearLine))));
+    loreTexts.AddRange(Lore.Scenes.Select(s => (s.Key, Loc.Tr(s.Title) + "\n" + Lore.Translate(s.Text))));
+    foreach (var (key, text) in loreTexts)
+    {
+        var leak = LeakCheck.NoSpanish(text, loreNames);
+        if (!leak.Ok) loreLeaks.Add($"{key}: {leak.Found}");
+    }
+}
+Check(loreLeaks.Count == 0 && Lore.Translate(Lore.Prologue) == Lore.Prologue, $"la historia entera en inglés sin español colado, y en español igual que antes ({string.Join(" | ", loreLeaks.Take(3))})");
+
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;
 

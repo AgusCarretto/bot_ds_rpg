@@ -978,7 +978,7 @@ public class AdventureModule(
 
     // La escena de la primera victoria sobre un jefe (GameData/Lore.cs, FirstClearLine), en cursiva y con su aire; vacía si esta victoria no abrió ningún capítulo. El aviso
     // "📖 Capítulo desbloqueado" no va acá: sale como mensaje propio al terminar el comando (Services/ProgressNotifier.cs).
-    private static string StoryScene(LoreChapter? chapter) => chapter is null ? string.Empty : $"\n\n*{chapter.FirstClearLine}*";
+    private static string StoryScene(LoreChapter? chapter) => chapter is null ? string.Empty : $"\n\n*{Loc.Tr(chapter.FirstClearLine)}*";
 
     // Lo que dice el monstruo de ESTA pelea (cacería, viaje o jefe) al aparecer, al caer o cuando te vence: todos hablan. Público para que /use y /autohunt
     // usen exactamente las mismas frases. El Asador Eterno cambia lo que dice según cuántos Fuegos Nuevos hizo el jugador (el estado lleva sus bonificaciones).

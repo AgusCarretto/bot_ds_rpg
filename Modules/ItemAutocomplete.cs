@@ -57,8 +57,8 @@ public static class ItemChoices
             .Take(MaxChoices)
             .Select(o => new AutocompleteResult(
                 o.Item.Type == "Huevo"
-                    ? Truncate($"🥚 {o.Item.Name} — tenés {o.Quantity} · nace tu mascota")
-                    : Truncate($"📦 {o.Item.Name} — tenés {o.Quantity}{(BoxCatalog.RangeText(o.Item.BoxMinItems, o.Item.BoxMaxItems) is { Length: > 0 } range ? " · " + range : string.Empty)}"),
+                    ? Truncate(Loc.F($"🥚 {o.Item.Name} — tenés {o.Quantity} · nace tu mascota"))
+                    : Truncate(Loc.F($"📦 {o.Item.Name} — tenés {o.Quantity}{(BoxCatalog.RangeText(o.Item.BoxMinItems, o.Item.BoxMaxItems) is { Length: > 0 } range ? " · " + range : string.Empty)}")),
                 o.Item.Name))
             .ToList();
     }
@@ -73,7 +73,7 @@ public static class ItemChoices
             .ThenBy(e => e.ItemName, StringComparer.Ordinal)
             .Take(MaxChoices)
             .Select(e => new AutocompleteResult(
-                Truncate($"{e.ItemName} — tenés {e.Quantity} · +{Dismantling.DustPerUnit(e.Rarity, e.DustValue)} Polvo c/u{(e.DustValue is null ? $" ({e.Rarity})" : string.Empty)}"), e.ItemName))
+                Truncate(Loc.F($"{e.ItemName} — tenés {e.Quantity} · +{Dismantling.DustPerUnit(e.Rarity, e.DustValue)} Polvo c/u{(e.DustValue is null ? $" ({RarityCatalog.DisplayName(e.Rarity)})" : string.Empty)}")), e.ItemName))
             .ToList();
     }
 
@@ -86,7 +86,7 @@ public static class ItemChoices
             .Where(i => i.SellPrice > 0 && AutocompleteText.FitsAsValue(i.Name) && Matches(i.Name, typed))
             .OrderBy(i => i.Type == "Weapon" ? 0 : 1)
             .Select(i => new AutocompleteResult(
-                Truncate($"⚠️ {i.Name} — tu {(i.Type == "Weapon" ? "arma" : "amuleto")} equipad{(i.Type == "Weapon" ? "a" : "o")} · {i.SellPrice} oro"), i.Name));
+                Truncate(i.Type == "Weapon" ? Loc.F($"⚠️ {i.Name} — tu arma equipada · {i.SellPrice} oro") : Loc.F($"⚠️ {i.Name} — tu amuleto equipado · {i.SellPrice} oro")), i.Name));
 
         var stock = inventory
             .Where(e => e.Quantity > 0 && e.SellPrice > 0 && AutocompleteText.FitsAsValue(e.ItemName) && Matches(e.ItemName, typed))
@@ -94,7 +94,7 @@ public static class ItemChoices
             .ThenByDescending(e => (long)e.SellPrice * e.Quantity)
             .ThenBy(e => e.ItemName, StringComparer.Ordinal)
             .Select(e => new AutocompleteResult(
-                Truncate($"{e.ItemName} — tenés {e.Quantity} · {e.SellPrice} oro c/u{(e.Type == "Material" ? string.Empty : $" ({e.Rarity})")}"), e.ItemName));
+                Truncate(Loc.F($"{e.ItemName} — tenés {e.Quantity} · {e.SellPrice} oro c/u{(e.Type == "Material" ? string.Empty : $" ({RarityCatalog.DisplayName(e.Rarity)})")}")), e.ItemName));
 
         return gear.Concat(stock).Take(MaxChoices).ToList();
     }
@@ -111,8 +111,8 @@ public static class ItemChoices
             .Take(MaxChoices)
             .Select(o =>
             {
-                string buffText = buffs is not null && buffs.TryGetValue(o.Item.ItemId, out var buff) ? $" y +{buff.AttackPercent}% ATQ" : string.Empty;
-                return new AutocompleteResult(Truncate($"{o.Item.Name} — cura {o.Item.StatValue} HP{buffText} · tenés {o.Quantity}"), o.Item.Name);
+                string buffText = buffs is not null && buffs.TryGetValue(o.Item.ItemId, out var buff) ? Loc.F($" y +{buff.AttackPercent}% ATQ") : string.Empty;
+                return new AutocompleteResult(Truncate(Loc.F($"{o.Item.Name} — cura {o.Item.StatValue} HP{buffText} · tenés {o.Quantity}")), o.Item.Name);
             })
             .ToList();
     }
@@ -134,7 +134,7 @@ public sealed class BuyItemAutocompleteHandler : SafeAutocompleteHandler
         // El dragón (v0.30.0) también se compra con /shop buy: aparece en la lista mientras no tengas uno (y lo que se escriba lo nombre).
         if (DragonModule.MatchesDragon(typed) && await services.GetRequiredService<IDragonRepository>().GetAsync(userId) is null)
         {
-            choices.Insert(0, new AutocompleteResult($"🐲 Dragón de cría · {GameHistory.Number(DragonRules.ShopPrice)} oro (una vez, tipo al azar)", "dragon"));
+            choices.Insert(0, new AutocompleteResult(Loc.F($"🐲 Dragón de cría · {GameHistory.Number(DragonRules.ShopPrice)} oro (una vez, tipo al azar)"), "dragon"));
         }
 
         return choices.Take(25).ToList();
