@@ -284,6 +284,11 @@ allowedNames.AddRange(await db.QueryAsync<string>("SELECT name FROM items"));
 allowedNames.AddRange(await db.QueryAsync<string>("SELECT name FROM monsters"));
 allowedNames.AddRange(await db.QueryAsync<string>("SELECT name FROM zones"));
 allowedNames.AddRange(ClassCatalog.All.Select(c => c.Name));
+// v0.45.0: los nombres que se quedan en español a propósito (efectos y tiers del encantamiento, tiers del dragón, la historia).
+allowedNames.AddRange(Enchantments.Kinds.Select(k => k.Name));
+allowedNames.AddRange(Enumerable.Range(1, Enchantments.MaxTier).Select(Enchantments.TierName));
+allowedNames.AddRange(Enumerable.Range(1, DragonRules.MaxTier).Select(DragonRules.TierName));
+allowedNames.AddRange(["Las Crónicas del Fogón", "Crónicas del Fogón"]);
 Check(LeakCheck.NoSpanish("Mate Amargo", allowedNames).Ok && LeakCheck.NoSpanish("You bought a Baúl de Roble", allowedNames).Ok && !LeakCheck.NoSpanish("Tenés 3 HP", allowedNames).Ok && !LeakCheck.NoSpanish("Estás acá", allowedNames).Ok && LeakCheck.NoSpanish("Use `/taberna` or `aa daily`", allowedNames).Ok,
     "el revisor deja pasar los nombres permitidos y los comandos entre comillas, y atrapa «Tenés» y los acentos del español");
 
@@ -855,7 +860,7 @@ Console.WriteLine("\n== 13. Ayuda ==");
 allowedNames.AddRange(AchievementCatalog.Categories.Select(c => c.Name));   // las páginas de /achievements se llaman así en los dos idiomas
 var interactions13 = new InteractionService(client); await interactions13.AddModulesAsync(typeof(LanguageModule).Assembly, sp);
 var slashNames13 = interactions13.SlashCommands.Select(c => c.Name).Concat(interactions13.SlashCommands.Select(c => c.Module.SlashGroupName)).Where(n => n is not null).ToHashSet();
-string[] translatedTopics = ["hunt", "gather", "shop", "daily", "missions"];
+string[] translatedTopics = HelpTopics.All.Select(t => t.Key).ToArray(); // v0.45.0: todos los temas tienen su inglés.
 var helpScreens = new List<(string Name, Func<Embed> Make)>
 {
     ("el tutorial", HelpModule.BuildTutorialEmbed),
@@ -903,7 +908,7 @@ foreach (var topic in untouched)
     if (spanishText != inEnglishText) { changed.Add(topic.Key); }
 }
 
-Check(untouched.Count == HelpTopics.All.Count - 5 && changed.Count == 0, $"los {untouched.Count} temas que no se traducen salen idénticos con Use(\"en\") (distintos: {string.Join(", ", changed)})");
+Check(untouched.Count == 0 && HelpTopics.All.All(t => t.InEnglish), "todos los temas de /info están traducidos (ninguno queda entero en español)");
 Embed notFoundEn; using (Loc.Use("en")) { notFoundEn = HelpTopics.Resolve("xyzzy"); }
 Check(LeakCheck.NoSpanish(notFoundEn.Title + " " + notFoundEn.Description + " " + string.Join(" ", notFoundEn.Fields.Select(f => f.Name)), allowedNames).Ok,"el marco de la lista de temas está en inglés (los resúmenes de los temas sin traducir siguen en español)");
 Check(notFoundEn.Title == "📚 Help by topic" && notFoundEn.Description!.Contains("I couldn't find the topic **xyzzy**") && notFoundEn.Fields.Length == 2, $"un tema que no existe (en inglés): {notFoundEn.Description!.Split('\n')[0]}");
@@ -1032,6 +1037,23 @@ foreach (var (name, embed) in new[] { ("el recetario", bookEn44), ("el forge esp
     var leak = LeakCheck.NoSpanish(LeakCheck.AllText(embed), names44);
     Check(leak.Ok && LeakCheck.FitsDiscord(embed), $"{name} en inglés, sin español colado ({leak.Found})");
 }
+
+// v0.45.0: la historia en inglés, capítulo por capítulo y escena por escena (los nombres de lugares y personajes se quedan en español).
+string[] loreNames = ["Gran Fragua", "Praderas del Mate", "Bosque de Cenizas", "Minas del Yunque", "Cordillera del Fuego", "Cráter de la Escoria", "Fogón Eterno", "Fogón", "Árbol de Vida",
+    "Rey Jabalí", "Lobisón Alfa", "Capataz de Hierro", "Señor del Volcán", "Soberano de la Escoria", "Soberano", "Asador", "Tabernero", "Herrero", "lobisón", "El Gringo", "Ramona", "Ledesma", "El Tabernero", "El Herrero", "Las Crónicas del Fogón"];
+var loreLeaks = new List<string>();
+using (Loc.Use("en"))
+{
+    var loreTexts = new List<(string Key, string Text)> { ("prólogo", Loc.Tr(Lore.PrologueTitle) + "\n" + Lore.Translate(Lore.Prologue)) };
+    loreTexts.AddRange(Lore.Chapters.Select(c => (c.Key, Loc.Tr(c.Title) + "\n" + Lore.Translate(c.Text) + "\n" + Loc.Tr(c.FirstClearLine))));
+    loreTexts.AddRange(Lore.Scenes.Select(s => (s.Key, Loc.Tr(s.Title) + "\n" + Lore.Translate(s.Text))));
+    foreach (var (key, text) in loreTexts)
+    {
+        var leak = LeakCheck.NoSpanish(text, loreNames);
+        if (!leak.Ok) loreLeaks.Add($"{key}: {leak.Found}");
+    }
+}
+Check(loreLeaks.Count == 0 && Lore.Translate(Lore.Prologue) == Lore.Prologue, $"la historia entera en inglés sin español colado, y en español igual que antes ({string.Join(" | ", loreLeaks.Take(3))})");
 
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;

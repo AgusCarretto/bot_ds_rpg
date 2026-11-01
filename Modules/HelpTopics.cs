@@ -20,35 +20,35 @@ public static class HelpTopics
 {
     public static readonly IReadOnlyList<HelpTopic> All =
     [
-        new("enchant", "✨", "Encantamientos", "tiers, chances y bonus para tu arma y tu amuleto", ["encantar", "encantamientos", "encantamiento", "encanto", "encantos", "enchants"], Enchant),
-        new("dismantle", "🧰", "Desmantelar y Polvo", "romper materiales para juntar Polvo", ["polvo", "dust", "desmantelar", "desarmar"], Dismantle),
-        new("bank", "🏦", "El banco", "guardar oro a salvo de la penalidad", ["banco", "guardar"], Bank),
-        new("death", "☠️", "Perder un combate", "la penalidad por morir y cómo evitarla", ["muerte", "morir", "penalidad", "derrota", "perder"], Death),
-        new("play", "🎰", "El casino", "coinflip y slots: cuánto paga cada uno", ["casino", "slots", "coinflip", "apostar", "juego"], Play),
+        new("enchant", "✨", Loc.Mark("Encantamientos"), Loc.Mark("tiers, chances y bonus para tu arma y tu amuleto"), ["encantar", "encantamientos", "encantamiento", "encanto", "encantos", "enchants"], Enchant, InEnglish: true),
+        new("dismantle", "🧰", Loc.Mark("Desmantelar y Polvo"), Loc.Mark("romper materiales para juntar Polvo"), ["polvo", "dust", "desmantelar", "desarmar"], Dismantle, InEnglish: true),
+        new("bank", "🏦", Loc.Mark("El banco"), Loc.Mark("guardar oro a salvo de la penalidad"), ["banco", "guardar"], Bank, InEnglish: true),
+        new("death", "☠️", Loc.Mark("Perder un combate"), Loc.Mark("la penalidad por morir y cómo evitarla"), ["muerte", "morir", "penalidad", "derrota", "perder"], Death, InEnglish: true),
+        new("play", "🎰", Loc.Mark("El casino"), Loc.Mark("coinflip y slots: cuánto paga cada uno"), ["casino", "slots", "coinflip", "apostar", "juego"], Play, InEnglish: true),
         new("hunt", "🏹", Loc.Mark("Combate"), Loc.Mark("cazar, viajar, huir, curarte y el modo automático"), ["combate", "cazar", "caceria", "travel", "viaje", "autohunt", "pelea", "pelear", "combat"], Hunt, InEnglish: true),
-        new("boss", "👑", "Jefes y equipo", "el jefe de cada zona y cómo hacerlo con amigos", ["jefe", "jefes", "raid", "raids", "grupo"], Boss),
-        new("forge", "🔨", "Herrería y equipo", "forjar armas y amuletos, y las herramientas del Carpintero", ["herrero", "herreria", "forja", "forjar", "recetas", "receta", "equipo", "arma", "armas", "amuleto", "carpintero", "herramientas", "herramienta", "hacha", "pico", "tools", "tool", "equipamiento"], Forge),
-        new("zone", "🗺️", "Zonas", "cómo se avanza por el mundo", ["zona", "zonas", "mundo", "mapa"], Zone),
-        new("boxes", "📦", "Cajas", "qué dan, cómo se consiguen y cada cuánto", ["caja", "cajas", "open", "abrir", "cofre", "cofres"], Boxes),
+        new("boss", "👑", Loc.Mark("Jefes y equipo"), Loc.Mark("el jefe de cada zona y cómo hacerlo con amigos"), ["jefe", "jefes", "raid", "raids", "grupo"], Boss, InEnglish: true),
+        new("forge", "🔨", Loc.Mark("Herrería y equipo"), Loc.Mark("forjar armas y amuletos, y las herramientas del Carpintero"), ["herrero", "herreria", "forja", "forjar", "recetas", "receta", "equipo", "arma", "armas", "amuleto", "carpintero", "herramientas", "herramienta", "hacha", "pico", "tools", "tool", "equipamiento"], Forge, InEnglish: true),
+        new("zone", "🗺️", Loc.Mark("Zonas"), Loc.Mark("cómo se avanza por el mundo"), ["zona", "zonas", "mundo", "mapa"], Zone, InEnglish: true),
+        new("boxes", "📦", Loc.Mark("Cajas"), Loc.Mark("qué dan, cómo se consiguen y cada cuánto"), ["caja", "cajas", "open", "abrir", "cofre", "cofres"], Boxes, InEnglish: true),
         new("shop", "🍺", Loc.Mark("Tienda, taberna y curarte"), Loc.Mark("comida, banquetes, /heal y vender"), ["tienda", "taberna", "comida", "consumibles", "consumible", "heal", "curar", "curarse", "vender", "comprar"], Shop, InEnglish: true),
         new("missions", "📋", Loc.Mark("Misiones y logros"), Loc.Mark("qué se reclama, cuándo se reinicia y cuánto pagan"), ["mision", "misiones", "logro", "logros", "achievements", "missions"], Missions, InEnglish: true),
-        new("arena", "🏟️", "Arena y duelos", "el torneo diario y los duelos con amigos", ["pvp", "duelo", "duelos", "fight", "torneo"], Arena),
-        new("trade", "🤝", "Intercambio", "cambiar materiales con otro jugador", ["cambio", "cambiar", "trueque", "intercambio"], Trade),
-        new("exchange", "🔁", "Cambiar drops con el tabernero", "3 drops de una zona por 1 de la misma", ["canje", "canjear", "swap", "tabernero", "cambalache"], Exchange),
-        new("fogon", "🔥", "El Fogón Eterno", "la puerta del final del mundo y su equipo", ["fogón", "asador", "puerta", "zona0", "zona 0", "gate"], Fogon),
-        new("fuego", "♻️", "Fuego Nuevo", "volver a empezar con bonus permanentes y bendiciones", ["fuegonuevo", "fuego nuevo", "fn", "reinicio", "reiniciar", "renacer", "reset", "vuelta", "bendicion", "bendiciones", "blessing", "blessings", "prestigio"], Fuego),
-        new("story", "📖", "Las Crónicas del Fogón", "la historia del juego: capítulos, escenas y cómo se abren", ["historia", "cronicas", "crónicas", "lore", "cuento"], Story),
-        new("professions", "🛠️", "Oficios", "Leñador, Minero y Encantador: nivel, XP y la versión avanzada", ["oficios", "oficio", "profesion", "profesiones", "prof", "lenador", "leñador", "woodcutter"], Professions),
-        new("pets", "🐾", "Mascotas", "huevos, bonus pasivos y cómo alimentarlas", ["mascota", "mascotas", "pet", "huevo", "huevos", "egg", "eggs"], Pets),
-        new("dragon", "🐲", "Dragón", "comprarlo, entrenarlo y criarlo: tipo, tiers y comida", ["dragones", "dragons", "criar", "cria", "cría", "breed", "horse", "caballo", "comida de dragon", "comida de dragón"], Dragon),
-        new("classes", "🎭", "Clases y habilidades", "qué hace cada clase", ["clase", "clases", "class", "habilidad", "habilidades"], Classes),
+        new("arena", "🏟️", Loc.Mark("Arena y duelos"), Loc.Mark("el torneo diario y los duelos con amigos"), ["pvp", "duelo", "duelos", "fight", "torneo"], Arena, InEnglish: true),
+        new("trade", "🤝", Loc.Mark("Intercambio"), Loc.Mark("cambiar materiales con otro jugador"), ["cambio", "cambiar", "trueque", "intercambio"], Trade, InEnglish: true),
+        new("exchange", "🔁", Loc.Mark("Cambiar drops con el tabernero"), Loc.Mark("3 drops de una zona por 1 de la misma"), ["canje", "canjear", "swap", "tabernero", "cambalache"], Exchange, InEnglish: true),
+        new("fogon", "🔥", Loc.Mark("El Fogón Eterno"), Loc.Mark("la puerta del final del mundo y su equipo"), ["fogón", "asador", "puerta", "zona0", "zona 0", "gate"], Fogon, InEnglish: true),
+        new("fuego", "♻️", Loc.Mark("Fuego Nuevo"), Loc.Mark("volver a empezar con bonus permanentes y bendiciones"), ["fuegonuevo", "fuego nuevo", "fn", "reinicio", "reiniciar", "renacer", "reset", "vuelta", "bendicion", "bendiciones", "blessing", "blessings", "prestigio"], Fuego, InEnglish: true),
+        new("story", "📖", Loc.Mark("Las Crónicas del Fogón"), Loc.Mark("la historia del juego: capítulos, escenas y cómo se abren"), ["historia", "cronicas", "crónicas", "lore", "cuento"], Story, InEnglish: true),
+        new("professions", "🛠️", Loc.Mark("Oficios"), Loc.Mark("Leñador, Minero y Encantador: nivel, XP y la versión avanzada"), ["oficios", "oficio", "profesion", "profesiones", "prof", "lenador", "leñador", "woodcutter"], Professions, InEnglish: true),
+        new("pets", "🐾", Loc.Mark("Mascotas"), Loc.Mark("huevos, bonus pasivos y cómo alimentarlas"), ["mascota", "mascotas", "pet", "huevo", "huevos", "egg", "eggs"], Pets, InEnglish: true),
+        new("dragon", "🐲", Loc.Mark("Dragón"), Loc.Mark("comprarlo, entrenarlo y criarlo: tipo, tiers y comida"), ["dragones", "dragons", "criar", "cria", "cría", "breed", "horse", "caballo", "comida de dragon", "comida de dragón"], Dragon, InEnglish: true),
+        new("classes", "🎭", Loc.Mark("Clases y habilidades"), Loc.Mark("qué hace cada clase"), ["clase", "clases", "class", "habilidad", "habilidades"], Classes, InEnglish: true),
         new("gather", "🪓", Loc.Mark("Recolección"), Loc.Mark("talar y minar: unidades y rarezas"), ["chop", "mine", "talar", "minar", "recolectar", "recoleccion", "madera", "mineral"], Gather, InEnglish: true),
         new("daily", "🎁", Loc.Mark("Diario y regalos"), Loc.Mark("la recompensa diaria, la racha y regalar oro"), ["diario", "racha", "give", "dar", "regalo", "regalar"], Daily, InEnglish: true),
-        new("stats", "📊", "Nivel y estadísticas", "EXP, vida, ataque y defensa", ["nivel", "exp", "xp", "ataque", "defensa", "vida", "hp", "perfil", "level"], Stats),
-        new("reminders", "⏰", "Recordatorios", "los avisos del bot cuando termina una espera", ["recordatorio", "recordatorios", "reminder", "reminders", "aviso", "avisos", "alarma", "alarmas"], Reminders),
+        new("stats", "📊", Loc.Mark("Nivel y estadísticas"), Loc.Mark("EXP, vida, ataque y defensa"), ["nivel", "exp", "xp", "ataque", "defensa", "vida", "hp", "perfil", "level"], Stats, InEnglish: true),
+        new("reminders", "⏰", Loc.Mark("Recordatorios"), Loc.Mark("los avisos del bot cuando termina una espera"), ["recordatorio", "recordatorios", "reminder", "reminders", "aviso", "avisos", "alarma", "alarmas"], Reminders, InEnglish: true),
         // OJO: Discord muestra como máximo 25 sugerencias, así que con 27 temas la lista desplegable SIN escribir nada deja afuera los dos últimos (estos: reminders y vote, los menos urgentes). Se encuentran escribiendo («votar», «avisos») y figuran en /info;
         // el próximo tema que se sume no tiene lugar sin sacar otro o fundirlo con uno existente (las herramientas del Carpintero, por eso, son un campo del tema forge y no un tema aparte).
-        new("vote", "🗳️", "Votar en top.gg", "qué da cada voto y cómo se cobra", ["votar", "voto", "votos", "votacion", "votación", "topgg", "top.gg"], Vote),
+        new("vote", "🗳️", Loc.Mark("Votar en top.gg"), Loc.Mark("qué da cada voto y cómo se cobra"), ["votar", "voto", "votos", "votacion", "votación", "topgg", "top.gg"], Vote, InEnglish: true),
     ];
 
     // Lo que se escribe para elegir un tema: su clave, su nombre y sus alias.
@@ -161,7 +161,7 @@ public static class HelpTopics
         span.TotalMinutes >= 60 && span.TotalMinutes % 60 == 0 ? $"{(int)span.TotalHours} h" : $"{(int)span.TotalMinutes} min";
 
     // Decimal con coma: 1,5 / 3,5.
-    private static string Dec(double value) => value.ToString("0.##", CultureInfo.InvariantCulture).Replace('.', ',');
+    private static string Dec(double value) => Loc.Current == Loc.English ? value.ToString("0.##", CultureInfo.InvariantCulture) : value.ToString("0.##", CultureInfo.InvariantCulture).Replace('.', ',');
 
     // Lo mismo que Dec, pero en el idioma de quien lee (coma en español, punto en inglés): lo usan los temas traducidos. Dec queda como estaba para los que todavía no.
     private static string LDec(double value) => Loc.Current == Loc.English ? value.ToString("0.##", CultureInfo.InvariantCulture) : Dec(value);
@@ -171,53 +171,53 @@ public static class HelpTopics
     private static Embed Enchant() => DustModule.BuildOptionsEmbed();
 
     private static Embed Dismantle() => Topic(Self("dismantle"),
-        "Desmantelar rompe materiales para sacarles **Polvo**, y el Polvo sirve para **encantar** tu arma y tu amuleto.",
-        ("🛠️ Cómo se hace",
-            "**/dismantle** y elegís el ítem de la lista (solo aparecen los que tenés) y la cantidad: la que quieras, sin tope, o `todo` para todas las que tengas.\nEn texto: `aa desmantelar 30 Piedra` o `aa desmantelar todo Piedra`."),
-        ("🧱 Qué se puede romper",
-            "Madera, minerales y drops de monstruos. **No** las cajas, la comida ni el equipo. Es de una sola mano: el Polvo no vuelve a convertirse en material."),
-        ("✨ Cuánto Polvo da cada unidad",
-            string.Join(" · ", new[] { "Común", "Raro", "Épico", "Legendario", "Mítico" }.Select(r => $"{r} {Num(Dismantling.DustPerUnit(r))}")) +
-            $"\nLos **drops de monstruos** no tienen rareza (caen igual en la Zona 1 que en la 5): dan **{Dismantling.HuntDropDust}** cada uno." +
-            "\nRinde parecido por minuto de farmeo en todas las rarezas, así que no hay una «mejor» para romper."),
-        ("🎯 Para qué", "Cada intento de **/enchant** gasta Polvo y oro. Mirá cómo funciona con **/info tema:enchant**. Tu Polvo figura en **/profile**."));
+        Loc.T("Desmantelar rompe materiales para sacarles **Polvo**, y el Polvo sirve para **encantar** tu arma y tu amuleto."),
+        (Loc.T("🛠️ Cómo se hace"),
+            Loc.T("**/dismantle** y elegís el ítem de la lista (solo aparecen los que tenés) y la cantidad: la que quieras, sin tope, o `todo` para todas las que tengas.\nEn texto: `aa desmantelar 30 Piedra` o `aa desmantelar todo Piedra`.")),
+        (Loc.T("🧱 Qué se puede romper"),
+            Loc.T("Madera, minerales y drops de monstruos. **No** las cajas, la comida ni el equipo. Es de una sola mano: el Polvo no vuelve a convertirse en material.")),
+        (Loc.T("✨ Cuánto Polvo da cada unidad"),
+            string.Join(" · ", new[] { Loc.T("Común"), "Raro", Loc.T("Épico"), "Legendario", Loc.T("Mítico") }.Select(r => $"{r} {Num(Dismantling.DustPerUnit(r))}")) +
+            Loc.F($"\nLos **drops de monstruos** no tienen rareza (caen igual en la Zona 1 que en la 5): dan **{Dismantling.HuntDropDust}** cada uno.") +
+            Loc.T("\nRinde parecido por minuto de farmeo en todas las rarezas, así que no hay una «mejor» para romper.")),
+        (Loc.T("🎯 Para qué"), Loc.T("Cada intento de **/enchant** gasta Polvo y oro. Mirá cómo funciona con **/info tema:enchant**. Tu Polvo figura en **/profile**.")));
 
     private static Embed Bank() => Topic(Self("bank"),
-        $"Guardás oro **a salvo de la penalidad por morir**. La cuenta se compra una sola vez por **{Num(BankRules.AccountPrice)}** de oro.",
-        ("🏦 Comandos",
-            "**/bank open** abre la cuenta · **/bank deposit** guarda · **/bank withdraw** saca · **/bank view** muestra tu billetera y tu banco.\nEn deposit y withdraw podés escribir una cantidad (**500**, **10k** de mil, **1m** de millón) o **all**. En texto, sin escribir bank: `aa deposit 500` y `aa withdraw 10k`."),
-        ("🛡️ Para qué sirve",
-            $"Si perdés un combate perdés el {DeathPenalty.GoldPercent} % del oro de la **billetera**; lo que está en el banco no se toca. Mirá **/info tema:death**."),
-        ("⚠️ Ojo", "Sin interés ni tope de capacidad. Las compras, `/give` y las apuestas usan la billetera: sacá el oro del banco antes de gastarlo."),
-        ("📈 El minibuff de oro",
-            $"Lo que guardás da hasta **+{BankRules.MaxGoldBonusPercent:0} %** de oro en las peleas (cacería, viaje, jefe y /autohunt), con una curva: tener más siempre suma, pero cada vez menos. " +
-            "Se mide según **tu zona** (una cacería de oro es la unidad), así que sirve igual al principio que al final. Mirá cuánto rinde en **/bank view**."));
+        Loc.F($"Guardás oro **a salvo de la penalidad por morir**. La cuenta se compra una sola vez por **{Num(BankRules.AccountPrice)}** de oro."),
+        (Loc.T("🏦 Comandos"),
+            Loc.T("**/bank open** abre la cuenta · **/bank deposit** guarda · **/bank withdraw** saca · **/bank view** muestra tu billetera y tu banco.\nEn deposit y withdraw podés escribir una cantidad (**500**, **10k** de mil, **1m** de millón) o **all**. En texto, sin escribir bank: `aa deposit 500` y `aa withdraw 10k`.")),
+        (Loc.T("🛡️ Para qué sirve"),
+            Loc.F($"Si perdés un combate perdés el {DeathPenalty.GoldPercent} % del oro de la **billetera**; lo que está en el banco no se toca. Mirá **/info tema:death**.")),
+        (Loc.T("⚠️ Ojo"), Loc.T("Sin interés ni tope de capacidad. Las compras, `/give` y las apuestas usan la billetera: sacá el oro del banco antes de gastarlo.")),
+        (Loc.T("📈 El minibuff de oro"),
+            Loc.F($"Lo que guardás da hasta **+{BankRules.MaxGoldBonusPercent:0} %** de oro en las peleas (cacería, viaje, jefe y /autohunt), con una curva: tener más siempre suma, pero cada vez menos. ") +
+            Loc.T("Se mide según **tu zona** (una cacería de oro es la unidad), así que sirve igual al principio que al final. Mirá cuánto rinde en **/bank view**.")));
 
     private static Embed Death() => Topic(Self("death"),
-        "Perder un combate tiene un costo. **No** bajás de nivel.",
-        ("☠️ Qué perdés",
-            $"La **EXP del nivel actual vuelve a 0** y el **{DeathPenalty.GoldPercent} % del oro de tu billetera** (con menos de {100 / DeathPenalty.GoldPercent} de oro no se pierde oro). " +
-            "Una muerte promedio son unos 15 a 20 minutos de juego en EXP."),
-        ("📍 Cuándo pasa",
-            "Si te vencen en **/hunt**, **/travel**, **/boss**, **/autohunt**, si te rematan mientras te curás con **/use**, o si cae todo el grupo del jefe en equipo (a cada caído). " +
-            "Huir, que se acabe el tiempo, los duelos (**/fight**) y la **Arena** no te quitan nada."),
-        ("🛡️ Cómo protegerte",
-            $"Guardá oro en el **banco** (**/info tema:bank**), curate con **/heal** antes de pelear, y recordá que **/autohunt** no te deja pelear con menos del {AutoHuntRules.MinHpPercent} % de vida " +
-            "porque no puede huir. En **/hunt** a mano ves tu vida y podés huir."));
+        Loc.T("Perder un combate tiene un costo. **No** bajás de nivel."),
+        (Loc.T("☠️ Qué perdés"),
+            Loc.F($"La **EXP del nivel actual vuelve a 0** y el **{DeathPenalty.GoldPercent} % del oro de tu billetera** (con menos de {100 / DeathPenalty.GoldPercent} de oro no se pierde oro). ") +
+            Loc.T("Una muerte promedio son unos 15 a 20 minutos de juego en EXP.")),
+        (Loc.T("📍 Cuándo pasa"),
+            Loc.T("Si te vencen en **/hunt**, **/travel**, **/boss**, **/autohunt**, si te rematan mientras te curás con **/use**, o si cae todo el grupo del jefe en equipo (a cada caído). ") +
+            Loc.T("Huir, que se acabe el tiempo, los duelos (**/fight**) y la **Arena** no te quitan nada.")),
+        (Loc.T("🛡️ Cómo protegerte"),
+            Loc.F($"Guardá oro en el **banco** (**/info tema:bank**), curate con **/heal** antes de pelear, y recordá que **/autohunt** no te deja pelear con menos del {AutoHuntRules.MinHpPercent} % de vida ") +
+            Loc.T("porque no puede huir. En **/hunt** a mano ves tu vida y podés huir.")));
 
     private static Embed Play() => Topic(Self("play"),
-        $"**/play** apuesta tu oro. Apuesta mínima: **{CasinoModule.MinBet}**. Podés escribir **all** para apostar todo lo que llevás en la billetera, o **10k** / **1m** para mil / millón. En texto: `aa cf h 100` (h = heads, t = tails) y `aa slots 100`.",
-        ("🪙 Coinflip",
-            $"Elegís cara (**Heads**) o cruz (**Tails**) y sale al azar: 50 % de acertar. Si acertás cobrás **×{CasinoService.CoinflipMultiplier}** lo apostado."),
-        ("🎰 Slots",
-            $"Salen tres símbolos al azar ({string.Join(' ', CasinoService.SlotsSymbolList)}): tres iguales ({Dec(CasinoService.SlotsThreeMatchChance * 100)} % de las veces) pagan **×{CasinoService.SlotsThreeMatchMultiplier}**, " +
-            $"dos iguales ({Dec(CasinoService.SlotsPairChance * 100)} %) pagan **×{Dec(CasinoService.SlotsPairMultiplier)}** y tres distintos ({Dec(CasinoService.SlotsAllDifferentChance * 100)} %) pierden la apuesta.\n" +
-            $"A la larga la casa se queda con el **{Dec((1 - CasinoService.SlotsReturnToPlayer) * 100)} %** de lo que se apuesta: es un juego de suerte, no una forma de juntar oro."),
-        ("🃏 Blackjack",
-            $"**/play game:blackjack** o `aa bj 10k` reparte una mano: te acercás a **21** sin pasarte y le ganás a la banca. Con los botones **Pedir** (otra carta), **Plantarte** o **Doblar** (solo con las dos primeras cartas: una carta más y la apuesta se duplica); por texto `aa bj hit` / `aa bj stand` / `aa bj double`. " +
-            $"La banca pide hasta 17 y se planta en todos los 17. Ganar paga 1 a 1, el **blackjack** (As + 10 de entrada) paga **3 a 2**, el empate devuelve la apuesta. No se divide ni hay seguro. La apuesta se cobra al repartir y, si dejás la mano sin tocar {BlackjackService.IdleSeconds} segundos, la banca te planta. " +
-            "Jugando bien la casa se queda con ~1 %; jugando mal, con más."),
-        ("📈 Tus números", "**/history** muestra cuánto ganaste y perdiste en el casino, y la diferencia."));
+        Loc.F($"**/play** apuesta tu oro. Apuesta mínima: **{CasinoModule.MinBet}**. Podés escribir **all** para apostar todo lo que llevás en la billetera, o **10k** / **1m** para mil / millón. En texto: `aa cf h 100` (h = heads, t = tails) y `aa slots 100`."),
+        (Loc.T("🪙 Coinflip"),
+            Loc.F($"Elegís cara (**Heads**) o cruz (**Tails**) y sale al azar: 50 % de acertar. Si acertás cobrás **×{CasinoService.CoinflipMultiplier}** lo apostado.")),
+        (Loc.T("🎰 Slots"),
+            Loc.F($"Salen tres símbolos al azar ({string.Join(' ', CasinoService.SlotsSymbolList)}): tres iguales ({Dec(CasinoService.SlotsThreeMatchChance * 100)} % de las veces) pagan **×{CasinoService.SlotsThreeMatchMultiplier}**, ") +
+            Loc.F($"dos iguales ({Dec(CasinoService.SlotsPairChance * 100)} %) pagan **×{Dec(CasinoService.SlotsPairMultiplier)}** y tres distintos ({Dec(CasinoService.SlotsAllDifferentChance * 100)} %) pierden la apuesta.\n") +
+            Loc.F($"A la larga la casa se queda con el **{Dec((1 - CasinoService.SlotsReturnToPlayer) * 100)} %** de lo que se apuesta: es un juego de suerte, no una forma de juntar oro.")),
+        (Loc.T("🃏 Blackjack"),
+            Loc.F($"**/play game:blackjack** o `aa bj 10k` reparte una mano: te acercás a **21** sin pasarte y le ganás a la banca. Con los botones **Pedir** (otra carta), **Plantarte** o **Doblar** (solo con las dos primeras cartas: una carta más y la apuesta se duplica); por texto `aa bj hit` / `aa bj stand` / `aa bj double`. ") +
+            Loc.F($"La banca pide hasta 17 y se planta en todos los 17. Ganar paga 1 a 1, el **blackjack** (As + 10 de entrada) paga **3 a 2**, el empate devuelve la apuesta. No se divide ni hay seguro. La apuesta se cobra al repartir y, si dejás la mano sin tocar {BlackjackService.IdleSeconds} segundos, la banca te planta. ") +
+            Loc.T("Jugando bien la casa se queda con ~1 %; jugando mal, con más.")),
+        (Loc.T("📈 Tus números"), Loc.T("**/history** muestra cuánto ganaste y perdiste en el casino, y la diferencia.")));
 
     private static Embed Hunt() => Topic(Self("hunt"),
         Loc.F($"Peleás por turnos contra los monstruos de tu zona. Cada turno elegís **Atacar**, la **habilidad** de tu clase (se recarga {AbilityTuning.CooldownTurns} turnos) o **huir** (perdés la recompensa)."),
@@ -237,52 +237,52 @@ public static class HelpTopics
         (Loc.T("☠️ Si perdés"), Loc.F($"Perdés la EXP del nivel y el {DeathPenalty.GoldPercent} % del oro: **/info tema:death**.")));
 
     private static Embed Boss() => Topic(Self("boss"),
-        "Cada zona tiene un jefe. Vencerlo la **primera vez** abre la zona siguiente.",
-        ("👑 /boss",
-            $"El jefe de tu zona, solo. Pide el nivel de la zona siguiente. Cooldown de **{Dur(CooldownCatalog.Boss.Duration)}** si ganás y de **{Dur(CooldownCatalog.Boss.RetryAfterFailure ?? CooldownCatalog.Boss.Duration)}** si perdés, huís o se acaba el tiempo. " +
-            $"Paga {CombatRewardCalculator.BossRewardMultiplier} cacerías (más el bono del jefe) y suelta el **cofre** de su zona: siempre la primera vez que lo vencés (en cada vuelta). Las veces siguientes puede caer una caja más chica (mirá **/drops**). " +
-            "Esa primera vez también te llega el **huevo** de la mascota de la zona (**/info tema:pets**)."),
-        ("👥 /boss @amigo (aa boss @amigo)",
-            $"El mismo jefe **en equipo**, de {RaidSettings.MinParticipants} a {RaidSettings.MaxParticipants} jugadores: nombrás a uno o más compañeros y ellos aceptan con un botón (tienen {(int)RaidModule.LobbyDuration.TotalSeconds} segundos). " +
-            "Pegan **por turnos**: pega uno, el jefe le responde a ese jugador y le toca al siguiente (el bot te menciona cuando es tu turno); si alguien no juega en 60 segundos pierde el turno y, si pasa dos veces seguidas, se retira. " +
-            "**Todos tienen que tener la misma zona máxima** (la que ves en tu perfil como \"máx. Zona N\"): si no, el grupo se rechaza. " +
-            "Cada uno puede **comer una vez** por pelea con el botón 🍖 **Comer** (o con **/use**): cura, pero gasta tu turno. Los banquetes también valen (curan y te dan su +% de ataque en el acto). " +
-            "La vida del jefe crece con cada jugador y cada uno que le pega cobra la recompensa entera. Comparte cooldown con el jefe en solitario."),
-        ("🌍 /miniboss (aa miniboss, el jefe mundial)",
-            $"Un jefe distinto cada día que **pelean todos los anotados juntos a las 00:00** (hora de Uruguay). **No pide nivel**: sirve para quien todavía no llega al del jefe. Anotarte **gasta el mismo cooldown del jefe** ({Dur(CooldownCatalog.Boss.Duration)}). " +
-            $"Cada anotado cobra de **{WorldBossRules.MinHunts} a {WorldBossRules.MaxHunts} cacerías de oro de su zona**: {WorldBossRules.MaxHunts} si el jefe cae, menos si no; con unos {WorldBossRules.FullCrowd:0} jugadores normales cae. **Mientras más gente, mejor**. Se cuenta en el canal donde se anotó el primero."),
-        ("🎒 Antes de ir", "Llevá el arma y el amuleto de tu zona (**/info tema:forge**) y la vida llena. Si perdés, pagás la penalidad: **/info tema:death**."));
+        Loc.T("Cada zona tiene un jefe. Vencerlo la **primera vez** abre la zona siguiente."),
+        (Loc.T("👑 /boss"),
+            Loc.F($"El jefe de tu zona, solo. Pide el nivel de la zona siguiente. Cooldown de **{Dur(CooldownCatalog.Boss.Duration)}** si ganás y de **{Dur(CooldownCatalog.Boss.RetryAfterFailure ?? CooldownCatalog.Boss.Duration)}** si perdés, huís o se acaba el tiempo. ") +
+            Loc.F($"Paga {CombatRewardCalculator.BossRewardMultiplier} cacerías (más el bono del jefe) y suelta el **cofre** de su zona: siempre la primera vez que lo vencés (en cada vuelta). Las veces siguientes puede caer una caja más chica (mirá **/drops**). ") +
+            Loc.T("Esa primera vez también te llega el **huevo** de la mascota de la zona (**/info tema:pets**).")),
+        (Loc.T("👥 /boss @amigo (aa boss @amigo)"),
+            Loc.F($"El mismo jefe **en equipo**, de {RaidSettings.MinParticipants} a {RaidSettings.MaxParticipants} jugadores: nombrás a uno o más compañeros y ellos aceptan con un botón (tienen {(int)RaidModule.LobbyDuration.TotalSeconds} segundos). ") +
+            Loc.T("Pegan **por turnos**: pega uno, el jefe le responde a ese jugador y le toca al siguiente (el bot te menciona cuando es tu turno); si alguien no juega en 60 segundos pierde el turno y, si pasa dos veces seguidas, se retira. ") +
+            Loc.T("**Todos tienen que tener la misma zona máxima** (la que ves en tu perfil como \"máx. Zona N\"): si no, el grupo se rechaza. ") +
+            Loc.T("Cada uno puede **comer una vez** por pelea con el botón 🍖 **Comer** (o con **/use**): cura, pero gasta tu turno. Los banquetes también valen (curan y te dan su +% de ataque en el acto). ") +
+            Loc.T("La vida del jefe crece con cada jugador y cada uno que le pega cobra la recompensa entera. Comparte cooldown con el jefe en solitario.")),
+        (Loc.T("🌍 /miniboss (aa miniboss, el jefe mundial)"),
+            Loc.F($"Un jefe distinto cada día que **pelean todos los anotados juntos a las 00:00** (hora de Uruguay). **No pide nivel**: sirve para quien todavía no llega al del jefe. Anotarte **gasta el mismo cooldown del jefe** ({Dur(CooldownCatalog.Boss.Duration)}). ") +
+            Loc.F($"Cada anotado cobra de **{WorldBossRules.MinHunts} a {WorldBossRules.MaxHunts} cacerías de oro de su zona**: {WorldBossRules.MaxHunts} si el jefe cae, menos si no; con unos {WorldBossRules.FullCrowd:0} jugadores normales cae. **Mientras más gente, mejor**. Se cuenta en el canal donde se anotó el primero.")),
+        (Loc.T("🎒 Antes de ir"), Loc.T("Llevá el arma y el amuleto de tu zona (**/info tema:forge**) y la vida llena. Si perdés, pagás la penalidad: **/info tema:death**.")));
 
     private static Embed Forge() => Topic(Self("forge"),
-        "En la herrería forjás armas y amuletos con materiales y oro. Todo está en la base de datos y cada uno ve las recetas de **su** clase.",
-        ("🔨 Cómo",
-            "**/forge** (en texto `aa herrero`): el herrero te muestra un menú con lo que podés forjar (✅ lo que ya podés pagar, ❌ lo que te falta). Cada zona tiene 5 recetas pero ves 2: **el arma de tu clase** y **el amuleto**. Con la segunda lista elegís una zona y ves sus recetas con lo que tenés de cada material (o `aa forge recipes [zona]`). Si preferís ver todas las zonas juntas, una línea cada una, activá el **recetario completo** en **/config**."),
-        ("⚔️ Tu arma y la Hoja",
-            "Cada clase tiene su arma en cada zona (espada, daga, arco o grimorio) con un ataque FIJO que sube de zona en zona: lo que dice la receta es lo que pega, sin multiplicadores. Además hay una sola arma general, la **Hoja de Acero Puro**, sin zona y hecha solo con materiales de recolección: sirve para empezar."),
-        ("🎽 Se equipa sola",
-            "Lo forjado queda **puesto**: no va a la mochila ni hace falta equiparlo. Para cambiarlo, vendés la pieza que llevás (en la **/taberna** o con **/shop sell**) y forjás la siguiente. Ojo: al venderla pierde su encantamiento."),
-        ("🪓 El Carpintero (hacha y pico)",
-            "**/tools** (en texto `aa herramientas`): el Carpintero te arma el **hacha** (multiplica lo que sacás con **/chop**) y el **pico** (con **/mine**) **solo con materiales** de recolección, sin oro. " +
-            "Hay dos de cada uno, el de la **Zona 3** y el de la **Zona 5**: se arma cuando tenés esa zona desbloqueada y reemplaza al anterior (sin herramienta rendís ×1). La lista de **/tools** muestra qué pide cada una y cuánto te falta. " +
-            "Multiplican lo Común, Raro y Épico; los Legendarios y Míticos quedan en 1. Es equipo: se vuelve a armar después de cada **Fuego Nuevo**."),
-        ("🧱 Los materiales", "Madera y minerales con **/chop** y **/mine**; los drops, de los monstruos (**/drops**). **/tips** te dice qué te falta para tu próxima forja."));
+        Loc.T("En la herrería forjás armas y amuletos con materiales y oro. Todo está en la base de datos y cada uno ve las recetas de **su** clase."),
+        (Loc.T("🔨 Cómo"),
+            Loc.T("**/forge** (en texto `aa herrero`): el herrero te muestra un menú con lo que podés forjar (✅ lo que ya podés pagar, ❌ lo que te falta). Cada zona tiene 5 recetas pero ves 2: **el arma de tu clase** y **el amuleto**. Con la segunda lista elegís una zona y ves sus recetas con lo que tenés de cada material (o `aa forge recipes [zona]`). Si preferís ver todas las zonas juntas, una línea cada una, activá el **recetario completo** en **/config**.")),
+        (Loc.T("⚔️ Tu arma y la Hoja"),
+            Loc.T("Cada clase tiene su arma en cada zona (espada, daga, arco o grimorio) con un ataque FIJO que sube de zona en zona: lo que dice la receta es lo que pega, sin multiplicadores. Además hay una sola arma general, la **Hoja de Acero Puro**, sin zona y hecha solo con materiales de recolección: sirve para empezar.")),
+        (Loc.T("🎽 Se equipa sola"),
+            Loc.T("Lo forjado queda **puesto**: no va a la mochila ni hace falta equiparlo. Para cambiarlo, vendés la pieza que llevás (en la **/taberna** o con **/shop sell**) y forjás la siguiente. Ojo: al venderla pierde su encantamiento.")),
+        (Loc.T("🪓 El Carpintero (hacha y pico)"),
+            Loc.T("**/tools** (en texto `aa herramientas`): el Carpintero te arma el **hacha** (multiplica lo que sacás con **/chop**) y el **pico** (con **/mine**) **solo con materiales** de recolección, sin oro. ") +
+            Loc.T("Hay dos de cada uno, el de la **Zona 3** y el de la **Zona 5**: se arma cuando tenés esa zona desbloqueada y reemplaza al anterior (sin herramienta rendís ×1). La lista de **/tools** muestra qué pide cada una y cuánto te falta. ") +
+            Loc.T("Multiplican lo Común, Raro y Épico; los Legendarios y Míticos quedan en 1. Es equipo: se vuelve a armar después de cada **Fuego Nuevo**.")),
+        (Loc.T("🧱 Los materiales"), Loc.T("Madera y minerales con **/chop** y **/mine**; los drops, de los monstruos (**/drops**). **/tips** te dice qué te falta para tu próxima forja.")));
 
     private static Embed Zone() => Topic(Self("zone"),
-        "El mundo se divide en zonas, cada una más difícil que la anterior. **/zonas** las lista con su nivel mínimo.",
-        ("🧭 Cómo avanzás",
-            "**/zona** te mueve a otra. Hace falta tener el nivel mínimo **y** haber vencido al jefe de la zona anterior (**/info tema:boss**). Tu perfil muestra tu zona y hasta dónde llegaste (máx. Zona N)."),
-        ("🎯 Qué depende de tu zona",
-            "Los monstruos de **/hunt**, **/travel** y **/boss**, las recetas de la herrería, el valor de los premios de misiones, logros y Arena, y qué cajas podés comprar."),
-        ("🧬 Qué hay en cada una", "Dos monstruos de cacería, un élite (para /travel) y un jefe. Con **/drops** ves qué suelta cada uno."));
+        Loc.T("El mundo se divide en zonas, cada una más difícil que la anterior. **/zonas** las lista con su nivel mínimo."),
+        (Loc.T("🧭 Cómo avanzás"),
+            Loc.T("**/zona** te mueve a otra. Hace falta tener el nivel mínimo **y** haber vencido al jefe de la zona anterior (**/info tema:boss**). Tu perfil muestra tu zona y hasta dónde llegaste (máx. Zona N).")),
+        (Loc.T("🎯 Qué depende de tu zona"),
+            Loc.T("Los monstruos de **/hunt**, **/travel** y **/boss**, las recetas de la herrería, el valor de los premios de misiones, logros y Arena, y qué cajas podés comprar.")),
+        (Loc.T("🧬 Qué hay en cada una"), Loc.T("Dos monstruos de cacería, un élite (para /travel) y un jefe. Con **/drops** ves qué suelta cada uno.")));
 
     private static Embed Boxes() => Topic(Self("boxes"),
-        "Las cajas dan varios ítems de una. Hay cinco, de Común a Mítica, y cada una dice cuántos da: **/shop view** muestra los rangos y los precios. Además hay cajas especiales que no se compran: las sueltan los jefes.",
-        ("📦 Abrirlas", $"**/open** elegís la caja y cuántas (de 1 a {BoxModule.MaxOpenAtOnce} por vez). En texto: `aa open <caja> 3`."),
-        ("🛒 Conseguirlas",
-            $"Se compran en la **/taberna** o con **/shop buy**: **{ShopCatalog.BoxesPerPurchase} por compra y una compra cada {Dur(CooldownCatalog.BoxBuy.Duration)}**, y solo de las zonas que ya desbloqueaste (🔒 si todavía no). " +
-            "Los jefes sueltan el cofre de su zona, y las misiones y logros también dan cajas. **No se pueden revender.**"),
-        ("🎁 Qué traen",
-            "Madera y minerales, drops de las zonas que ya desbloqueaste, comida, cajas más chicas y, muy de vez en cuando, un poco de oro. La **Arca del Soberano** (Mítica) no se compra: la dan solo los logros más difíciles."));
+        Loc.T("Las cajas dan varios ítems de una. Hay cinco, de Común a Mítica, y cada una dice cuántos da: **/shop view** muestra los rangos y los precios. Además hay cajas especiales que no se compran: las sueltan los jefes."),
+        (Loc.T("📦 Abrirlas"), Loc.F($"**/open** elegís la caja y cuántas (de 1 a {BoxModule.MaxOpenAtOnce} por vez). En texto: `aa open <caja> 3`.")),
+        (Loc.T("🛒 Conseguirlas"),
+            Loc.F($"Se compran en la **/taberna** o con **/shop buy**: **{ShopCatalog.BoxesPerPurchase} por compra y una compra cada {Dur(CooldownCatalog.BoxBuy.Duration)}**, y solo de las zonas que ya desbloqueaste (🔒 si todavía no). ") +
+            Loc.T("Los jefes sueltan el cofre de su zona, y las misiones y logros también dan cajas. **No se pueden revender.**")),
+        (Loc.T("🎁 Qué traen"),
+            Loc.T("Madera y minerales, drops de las zonas que ya desbloqueaste, comida, cajas más chicas y, muy de vez en cuando, un poco de oro. La **Arca del Soberano** (Mítica) no se compra: la dan solo los logros más difíciles.")));
 
     private static Embed Shop() => Topic(Self("shop"),
         Loc.T("Acá se compra y se vende todo lo que no se forja, y se cura la vida."),
@@ -302,48 +302,48 @@ public static class HelpTopics
         (Loc.T("💰 Los premios"), Loc.T("Crecen con tu zona: oro como cacerías de oro de tu zona, un % de EXP y a veces una caja. Los logros nuevos pagan solo oro y EXP.")));
 
     private static Embed Arena() => Topic(Self("arena"),
-        "Dos formas de pelear contra otros jugadores.",
-        ("🏟️ /arena (el torneo diario)",
-            $"Un torneo por día, hora de Uruguay. Te anotás con **/arena join** durante el día y a la medianoche se juega solo, en llave de eliminación ({ArenaRules.MinPlayers} a {ArenaRules.MaxPlayers} anotados; con menos de {ArenaRules.MinPlayers} se cancela). " +
-            $"El campeón cobra {ArenaRules.ChampionReward.GoldUnits} cacerías de oro de su zona, {ArenaRules.ChampionReward.XpPercent} % de EXP y una caja. **/arena listplayers** muestra los anotados, **/arena results** la última llave, y **/cd** te recuerda si ya te anotaste."),
-        ("🍀 El azar de la Arena",
-            $"El nivel y el equipo pesan pero **no deciden**: cada pelea tiene su **forma del día** (entre −{(int)Math.Round(ArenaTuning.FormSwing * 100)} % y +{(int)Math.Round(ArenaTuning.FormSwing * 100)} % de daño y vida) y en {(int)Math.Round(ArenaTuning.MiracleChance * 100)} de cada 100 peleas hay un **milagro** que iguala a los dos. " +
-            "Un nivel 1 puede ganarle a un nivel 20 (pasa pocas veces, pero pasa). El torneo se cuenta en el canal pelea por pelea, y las semifinales y la final, golpe por golpe. Los duelos de **/fight** no tienen azar extra."),
-        ("⚔️ /fight @jugador",
-            $"Duelo amistoso por turnos (Atacar, habilidad o rendirte; {(int)DuelService.TurnTimeout.TotalSeconds} segundos por turno). No se juega nada: ni vida, ni oro, ni EXP. **/duels** muestra tu récord."),
-        ("🛡️ Con qué se pelea", "Con tu nivel, tu arma, tu amuleto y tus encantamientos de ese momento. Las clases tienen un ajuste de vida propio para el PvP."));
+        Loc.T("Dos formas de pelear contra otros jugadores."),
+        (Loc.T("🏟️ /arena (el torneo diario)"),
+            Loc.F($"Un torneo por día, hora de Uruguay. Te anotás con **/arena join** durante el día y a la medianoche se juega solo, en llave de eliminación ({ArenaRules.MinPlayers} a {ArenaRules.MaxPlayers} anotados; con menos de {ArenaRules.MinPlayers} se cancela). ") +
+            Loc.F($"El campeón cobra {ArenaRules.ChampionReward.GoldUnits} cacerías de oro de su zona, {ArenaRules.ChampionReward.XpPercent} % de EXP y una caja. **/arena listplayers** muestra los anotados, **/arena results** la última llave, y **/cd** te recuerda si ya te anotaste.")),
+        (Loc.T("🍀 El azar de la Arena"),
+            Loc.F($"El nivel y el equipo pesan pero **no deciden**: cada pelea tiene su **forma del día** (entre −{(int)Math.Round(ArenaTuning.FormSwing * 100)} % y +{(int)Math.Round(ArenaTuning.FormSwing * 100)} % de daño y vida) y en {(int)Math.Round(ArenaTuning.MiracleChance * 100)} de cada 100 peleas hay un **milagro** que iguala a los dos. ") +
+            Loc.T("Un nivel 1 puede ganarle a un nivel 20 (pasa pocas veces, pero pasa). El torneo se cuenta en el canal pelea por pelea, y las semifinales y la final, golpe por golpe. Los duelos de **/fight** no tienen azar extra.")),
+        (Loc.T("⚔️ /fight @jugador"),
+            Loc.F($"Duelo amistoso por turnos (Atacar, habilidad o rendirte; {(int)DuelService.TurnTimeout.TotalSeconds} segundos por turno). No se juega nada: ni vida, ni oro, ni EXP. **/duels** muestra tu récord.")),
+        (Loc.T("🛡️ Con qué se pelea"), Loc.T("Con tu nivel, tu arma, tu amuleto y tus encantamientos de ese momento. Las clases tienen un ajuste de vida propio para el PvP.")));
 
     private static Embed Trade() => Topic(Self("trade"),
-        "Cambiás materiales con otro jugador, de a uno por uno.",
-        ("🤝 Cómo", "**/trade @jugador** y elegís lo que das y lo que querés. En texto: `aa trade @jugador \"Hierro\" \"Carbón\"`."),
-        ("📏 Las reglas",
-            "Solo **madera y minerales**, de la **misma rareza** y distintos entre sí (Roble por Hierro, Pino por Piedra...). Nada de drops, comida ni equipo."),
-        ("⏱️ La oferta", $"El otro jugador acepta o rechaza con botones. Dura {(int)TradeOfferService.Lifetime.TotalMinutes} minutos y tenés una abierta a la vez."),
-        ("🍺 ¿Y con el tabernero?", $"Los **drops de monstruos** se cambian con él, de a {DropExchange.GiveAmount} por {DropExchange.GetAmount}: **/info tema:exchange**."));
+        Loc.T("Cambiás materiales con otro jugador, de a uno por uno."),
+        (Loc.T("🤝 Cómo"), Loc.T("**/trade @jugador** y elegís lo que das y lo que querés. En texto: `aa trade @jugador \"Hierro\" \"Carbón\"`.")),
+        (Loc.T("📏 Las reglas"),
+            Loc.T("Solo **madera y minerales**, de la **misma rareza** y distintos entre sí (Roble por Hierro, Pino por Piedra...). Nada de drops, comida ni equipo.")),
+        (Loc.T("⏱️ La oferta"), Loc.F($"El otro jugador acepta o rechaza con botones. Dura {(int)TradeOfferService.Lifetime.TotalMinutes} minutos y tenés una abierta a la vez.")),
+        (Loc.T("🍺 ¿Y con el tabernero?"), Loc.F($"Los **drops de monstruos** se cambian con él, de a {DropExchange.GiveAmount} por {DropExchange.GetAmount}: **/info tema:exchange**.")));
 
     private static Embed Exchange() => Topic(Self("exchange"),
-        $"El tabernero te cambia **{DropExchange.GiveAmount} drops de una zona por {DropExchange.GetAmount} de esa misma zona**: para cuando te sobra de uno y te falta otro, o la suerte no te acompañó.",
-        ("🔁 Cómo",
-            $"**/exchange** con **dar** (el drop que entregás, de a {DropExchange.GiveAmount}), **recibir** (otro drop de la misma zona) y **veces** (de 1 a {DropExchange.MaxTimes} cambios juntos). Las listas te muestran solo lo que podés hacer.\n" +
-            "En texto: `aa exchange \"Pluma de Ñandú\" \"Cuero Grueso\" 2`. En la **/taberna** hay una lista \"Cambiar drops\" para hacer un cambio de una."),
-        ("📏 Las reglas",
-            "Solo **drops de monstruos** (los de cacería y de viaje de cada zona), siempre de la **misma zona** y a uno **distinto** del que das. No sirve para madera ni minerales (eso es entre jugadores: **/info tema:trade**), ni para cajas."),
-        ("⚖️ ¿Conviene?",
-            $"Es {DropExchange.GiveAmount} por {DropExchange.GetAmount}: compensa la mala racha, no reemplaza al farmeo. Si el drop que te falta lo podés conseguir jugando, sale más barato jugar."));
+        Loc.F($"El tabernero te cambia **{DropExchange.GiveAmount} drops de una zona por {DropExchange.GetAmount} de esa misma zona**: para cuando te sobra de uno y te falta otro, o la suerte no te acompañó."),
+        (Loc.T("🔁 Cómo"),
+            Loc.F($"**/exchange** con **dar** (el drop que entregás, de a {DropExchange.GiveAmount}), **recibir** (otro drop de la misma zona) y **veces** (de 1 a {DropExchange.MaxTimes} cambios juntos). Las listas te muestran solo lo que podés hacer.\n") +
+            Loc.T("En texto: `aa exchange \"Pluma de Ñandú\" \"Cuero Grueso\" 2`. En la **/taberna** hay una lista \"Cambiar drops\" para hacer un cambio de una.")),
+        (Loc.T("📏 Las reglas"),
+            Loc.T("Solo **drops de monstruos** (los de cacería y de viaje de cada zona), siempre de la **misma zona** y a uno **distinto** del que das. No sirve para madera ni minerales (eso es entre jugadores: **/info tema:trade**), ni para cajas.")),
+        (Loc.T("⚖️ ¿Conviene?"),
+            Loc.F($"Es {DropExchange.GiveAmount} por {DropExchange.GetAmount}: compensa la mala racha, no reemplaza al farmeo. Si el drop que te falta lo podés conseguir jugando, sale más barato jugar.")));
 
     private static Embed Fogon() => Topic(Self("fogon"),
-        "Al vencer al jefe de la **última zona** se abre **El Fogón Eterno**, la «Zona 0»: una puerta al final del mundo y el último paso antes del **Fuego Nuevo** (volver a empezar con más velocidad, tus mascotas y tu oro).",
-        ("🚪 Cómo se entra",
-            $"Con **/zona 0** (en texto `aa zona 0`). Hace falta haber vencido al jefe de la última zona, tener el nivel de la puerta (figura en **/zonas**) y llevar **puestos** el **{FogonRules.WeaponName}** y la **{FogonRules.AmuletName}**: uno solo de cada uno, iguales para todas las clases (sin sinergia de clase)."),
-        ("⚒️ El equipo",
-            "Se forja en la herrería (**/forge**) y es lo más caro del juego: pide los **drops de cacería de las 5 zonas**, bastante madera y mineral raros, un material **Mítico** de recolección en cada pieza (la **Corteza del Árbol de Vida** en el arma y el **Fragmento de Meteorito** en el amuleto: salen con 0,5 % al **/chop** y al **/mine**, así que andá juntándolos desde el principio y no los desmanteles) y mucho oro. **/forge-special** te muestra las dos recetas DESDE EL PRINCIPIO (con lo que ya tenés de cada cosa) para que no desmanteles ni vendas lo que vas a necesitar; lo que te falta primero lo ves en **/tips**. " +
-            "Como el equipo va en su casillero, hay que **vender primero el de la zona anterior** (sus encantamientos se pierden: es el último equipo, el Fuego Nuevo lo borra de todos modos)."),
-        ("⚔️ Adentro",
-            $"Solo **/boss**, contra **{FogonRules.BossName}**: no hay cacería, viajes ni grupo. Usa el cooldown del jefe (**{Dur(CooldownCatalog.Boss.Duration)}** si ganás y **{Dur(CooldownCatalog.Boss.RetryAfterFailure ?? CooldownCatalog.Boss.Duration)}** si perdés, huís o se acaba el tiempo) y si perdés pagás la penalidad de siempre (**/info tema:death**). " +
-            "Está calibrado como cada jefe: con el equipo de la zona anterior casi siempre perdés, con el del Fogón es un desafío parejo."),
-        ("🕯️ ¿Te falta un Mítico?",
-            $"La Corteza y el Meteorito salen al {Dec(RarityCatalog.GatheringChances.Last(c => c.Rarity == "Mítico").Percent)} % por **/chop** y **/mine**, y hace falta uno de cada uno por vuelta. Al vencer al jefe de la última zona se conoce al **Tabernero del Inframundo** (**/deepshop**, en texto `aa deepshop`): vende cada uno por **{Num(DeepShop.PricePerUnit)}** de Polvo (el Polvo sale de **/dismantle**; desmantelar un Mítico da solo {Num(Dismantling.DustPerUnit("Mítico"))}). Una vez que hacés un Fuego Nuevo ya lo conocés para siempre."),
-        ("🏆 Al ganar", "Volvés a la última zona, se habilita el **Fuego Nuevo** (**/fuegonuevo**, y cómo funciona en **/info tema:fuego**) y sumás el logro **Asador**. Para salir sin pelear, viajá a cualquier zona con **/zona**."));
+        Loc.T("Al vencer al jefe de la **última zona** se abre **El Fogón Eterno**, la «Zona 0»: una puerta al final del mundo y el último paso antes del **Fuego Nuevo** (volver a empezar con más velocidad, tus mascotas y tu oro)."),
+        (Loc.T("🚪 Cómo se entra"),
+            Loc.F($"Con **/zona 0** (en texto `aa zona 0`). Hace falta haber vencido al jefe de la última zona, tener el nivel de la puerta (figura en **/zonas**) y llevar **puestos** el **{FogonRules.WeaponName}** y la **{FogonRules.AmuletName}**: uno solo de cada uno, iguales para todas las clases (sin sinergia de clase).")),
+        (Loc.T("⚒️ El equipo"),
+            Loc.T("Se forja en la herrería (**/forge**) y es lo más caro del juego: pide los **drops de cacería de las 5 zonas**, bastante madera y mineral raros, un material **Mítico** de recolección en cada pieza (la **Corteza del Árbol de Vida** en el arma y el **Fragmento de Meteorito** en el amuleto: salen con 0,5 % al **/chop** y al **/mine**, así que andá juntándolos desde el principio y no los desmanteles) y mucho oro. **/forge-special** te muestra las dos recetas DESDE EL PRINCIPIO (con lo que ya tenés de cada cosa) para que no desmanteles ni vendas lo que vas a necesitar; lo que te falta primero lo ves en **/tips**. ") +
+            Loc.T("Como el equipo va en su casillero, hay que **vender primero el de la zona anterior** (sus encantamientos se pierden: es el último equipo, el Fuego Nuevo lo borra de todos modos).")),
+        (Loc.T("⚔️ Adentro"),
+            Loc.F($"Solo **/boss**, contra **{FogonRules.BossName}**: no hay cacería, viajes ni grupo. Usa el cooldown del jefe (**{Dur(CooldownCatalog.Boss.Duration)}** si ganás y **{Dur(CooldownCatalog.Boss.RetryAfterFailure ?? CooldownCatalog.Boss.Duration)}** si perdés, huís o se acaba el tiempo) y si perdés pagás la penalidad de siempre (**/info tema:death**). ") +
+            Loc.T("Está calibrado como cada jefe: con el equipo de la zona anterior casi siempre perdés, con el del Fogón es un desafío parejo.")),
+        (Loc.T("🕯️ ¿Te falta un Mítico?"),
+            Loc.F($"La Corteza y el Meteorito salen al {Dec(RarityCatalog.GatheringChances.Last(c => c.Rarity == "Mítico").Percent)} % por **/chop** y **/mine**, y hace falta uno de cada uno por vuelta. Al vencer al jefe de la última zona se conoce al **Tabernero del Inframundo** (**/deepshop**, en texto `aa deepshop`): vende cada uno por **{Num(DeepShop.PricePerUnit)}** de Polvo (el Polvo sale de **/dismantle**; desmantelar un Mítico da solo {Num(Dismantling.DustPerUnit("Mítico"))}). Una vez que hacés un Fuego Nuevo ya lo conocés para siempre.")),
+        (Loc.T("🏆 Al ganar"), Loc.T("Volvés a la última zona, se habilita el **Fuego Nuevo** (**/fuegonuevo**, y cómo funciona en **/info tema:fuego**) y sumás el logro **Asador**. Para salir sin pelear, viajá a cualquier zona con **/zona**.")));
 
     private static Embed Professions()
     {
@@ -353,137 +353,139 @@ public static class HelpTopics
         long total = ProfessionRules.TotalXpToMax;
 
         return Topic(Self("professions"),
-            "Los **oficios** suben solos cuando usás su comando: cuanto más talás, minás o encantás, mejor te sale. Cada uno empieza en el nivel 0 y lo que da llega al tope en el " + ProfessionRules.MaxLevel + ", pero el nivel **sigue subiendo** después.",
-            ("📈 Cómo suben",
-                $"{woodcutter.Emoji} **{woodcutter.Name}** con **{woodcutter.Command}** y {miner.Emoji} **{miner.Name}** con **{miner.Command}**: cada tirada da XP según la rareza del material que te sale ({ProfessionRules.DescribeGatherXp()}; una por tirada, no por unidad).\n" +
-                $"{enchanter.Emoji} **{enchanter.Name}** con cada intento de **{enchanter.Command}** ({enchanter.XpPerAction} XP).\n" +
-                $"Llegar al {ProfessionRules.MaxLevel} son ~{GameHistory.Number(total)} de XP: unas {GameHistory.Number((long)Math.Round(total / ProfessionRules.AverageGatherXp()))} tiradas de tala o minería (en promedio), o {GameHistory.Number(total / enchanter.XpPerAction)} intentos de encantamiento. " +
-                "Lo que hiciste antes de que existieran los oficios también cuenta."),
-            ("🎁 Lo que da cada nivel",
-                $"{woodcutter.Emoji} {miner.Emoji} **{woodcutter.Name} y {miner.Name}**: {ProfessionRules.DescribePerLevel(woodcutter)}. Lo de la rareza sube un escalón (Común → Raro → Épico → Legendario); el Mítico nunca se mejora.\n" +
-                $"{enchanter.Emoji} **{enchanter.Name}**: {ProfessionRules.DescribePerLevel(enchanter)}.\n" +
-                "Todo suma a lo de Fuego Nuevo y las bendiciones."),
-            ($"⭐ Al nivel {ProfessionRules.MaxLevel}",
+            Loc.T("Los **oficios** suben solos cuando usás su comando: cuanto más talás, minás o encantás, mejor te sale. Cada uno empieza en el nivel 0 y lo que da llega al tope en el ") + ProfessionRules.MaxLevel + Loc.T(", pero el nivel **sigue subiendo** después."),
+            (Loc.T("📈 Cómo suben"),
+                Loc.F($"{woodcutter.Emoji} **{woodcutter.DisplayName}** con **{woodcutter.Command}** y {miner.Emoji} **{miner.DisplayName}** con **{miner.Command}**: cada tirada da XP según la rareza del material que te sale ({ProfessionRules.DescribeGatherXp()}; una por tirada, no por unidad).\n") +
+                Loc.F($"{enchanter.Emoji} **{enchanter.DisplayName}** con cada intento de **{enchanter.Command}** ({enchanter.XpPerAction} XP).\n") +
+                Loc.F($"Llegar al {ProfessionRules.MaxLevel} son ~{GameHistory.Number(total)} de XP: unas {GameHistory.Number((long)Math.Round(total / ProfessionRules.AverageGatherXp()))} tiradas de tala o minería (en promedio), o {GameHistory.Number(total / enchanter.XpPerAction)} intentos de encantamiento. ") +
+                Loc.T("Lo que hiciste antes de que existieran los oficios también cuenta.")),
+            (Loc.T("🎁 Lo que da cada nivel"),
+                Loc.F($"{woodcutter.Emoji} {miner.Emoji} **{woodcutter.DisplayName} y {miner.DisplayName}**: {ProfessionRules.DescribePerLevel(woodcutter)}. Lo de la rareza sube un escalón (Común → Raro → Épico → Legendario); el Mítico nunca se mejora.\n") +
+                Loc.F($"{enchanter.Emoji} **{enchanter.DisplayName}**: {ProfessionRules.DescribePerLevel(enchanter)}.\n") +
+                Loc.T("Todo suma a lo de Fuego Nuevo y las bendiciones.")),
+            (Loc.F($"⭐ Al nivel {ProfessionRules.MaxLevel}"),
                 $"{ProfessionRules.DescribeAdvanced(woodcutter)}.\n{ProfessionRules.DescribeAdvanced(miner)}.\n{ProfessionRules.DescribeAdvanced(enchanter)}."),
-            ($"📈 Después del {ProfessionRules.MaxLevel}",
-                $"Los efectos ya no crecen, pero el nivel sí: cada uno cuesta un **{ProfessionRules.DescribePostCapGrowth()}** más que el anterior (el {ProfessionRules.MaxLevel + 1} pide {GameHistory.Number(ProfessionRules.XpForLevel(ProfessionRules.MaxLevel + 1))} de XP, el {ProfessionRules.MaxLevel + 50} pide {GameHistory.Number(ProfessionRules.XpForLevel(ProfessionRules.MaxLevel + 50))}). Por ahora ese avance no da ningún efecto nuevo."),
-            ("🔄 Y el Fuego Nuevo", "Los oficios **se quedan** cuando hacés un Fuego Nuevo: tu nivel no se pierde."),
-            ("📍 Comandos", "**/professions** (en texto `aa professions` o `aa oficios`) muestra tu nivel, tu XP y lo que ya te dan. También figuran en **/profile** y el avance sale al pie de cada **/chop**, **/mine** y **/enchant**."));
+            (Loc.F($"📈 Después del {ProfessionRules.MaxLevel}"),
+                Loc.F($"Los efectos ya no crecen, pero el nivel sí: cada uno cuesta un **{ProfessionRules.DescribePostCapGrowth()}** más que el anterior (el {ProfessionRules.MaxLevel + 1} pide {GameHistory.Number(ProfessionRules.XpForLevel(ProfessionRules.MaxLevel + 1))} de XP, el {ProfessionRules.MaxLevel + 50} pide {GameHistory.Number(ProfessionRules.XpForLevel(ProfessionRules.MaxLevel + 50))}). Por ahora ese avance no da ningún efecto nuevo.")),
+            (Loc.T("🔄 Y el Fuego Nuevo"), Loc.T("Los oficios **se quedan** cuando hacés un Fuego Nuevo: tu nivel no se pierde.")),
+            (Loc.T("📍 Comandos"), Loc.T("**/professions** (en texto `aa professions` o `aa oficios`) muestra tu nivel, tu XP y lo que ya te dan. También figuran en **/profile** y el avance sale al pie de cada **/chop**, **/mine** y **/enchant**.")));
     }
 
     private static Embed Fuego() => Topic(Self("fuego"),
-        "El **Fuego Nuevo** es volver a empezar, pero más rápido: perdés el nivel, el equipo y los materiales y ganás **porcentajes permanentes** y una **bendición** por cada vuelta. " +
-        "Es voluntario y se habilita al vencer al **Asador Eterno** en **El Fogón Eterno** (**/info tema:fogon**).",
-        ("🔥 Cómo se hace",
-            "**/fuegonuevo** (en texto `aa fn`) muestra lo que se va, lo que se queda y lo que ganás, con el botón para hacerlo. Después elegís la **clase** de la vuelta nueva: tocarla confirma y no se deshace. " +
-            "No se puede en pleno combate o con un grupo armado, y cada vuelta pide volver a vencer al Asador (el equipo del Fogón se forja de nuevo)."),
-        ("📈 Lo que ganás con cada uno",
-            $"🏹 Chance de drop en **/hunt**: **{FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.HuntDropStep)}** sobre la base por cada Fuego Nuevo (lineal: el 10.º es {FuegoNuevoRules.PercentText(FuegoNuevoRules.HuntDropMultiplier(10))}, no se compone)\n" +
-            $"🗺️ Chance de caja en **/travel**: arranca en **{FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.TravelStep(1))}** y cada vuelta suma un poco menos (el 10.º acumula {FuegoNuevoRules.PercentText(FuegoNuevoRules.TravelDropMultiplier(10))}, con piso de {FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.TravelStep(1000))} por vuelta)\n" +
-            $"🪓⛏️ Cantidad por **/chop** y **/mine**: **{FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.GatherStep)}** por Fuego Nuevo (el 10.º es ×{FuegoNuevoRules.GatherMultiplier(10).ToString("0.#", CultureInfo.InvariantCulture).Replace('.', ',')})\n" +
-            $"📊 EXP de las peleas: **{FuegoNuevoRules.PercentText(FuegoNuevoRules.XpMultiplier(1))}** el primero y cada vuelta suma más que la anterior (el 5.º acumula {FuegoNuevoRules.PercentText(FuegoNuevoRules.XpMultiplier(5))}, el 10.º {FuegoNuevoRules.PercentText(FuegoNuevoRules.XpMultiplier(10))})\n" +
-            $"Con la chance base de /hunt ({CombatRewardCalculator.HuntDropChancePercent} %); la de la caja de /travel sube en la misma proporción. El oro y el cofre del jefe no cambian."),
-        ("💨 Lo que se va",
-            "Nivel y EXP, la zona y los jefes vencidos, el arma y el amuleto (con sus encantamientos), todos los materiales, drops, cajas y consumibles, el Polvo, los banquetes y los enfriamientos. Sin reembolso."),
-        ("🔒 Lo que se queda",
-            "El oro (billetera y banco), las mascotas con sus huevos y su comida, los logros, las misiones cobradas, la racha diaria, las bendiciones y tus Fuegos Nuevos."),
-        ("🙏 Bendiciones",
-            $"Una por vuelta, elegida entre {BlessingCatalog.OfferSize} sorteadas ({BlessingCatalog.All.Count} en total); si repetís una sube de nivel hasta el {BlessingCatalog.RomanLevel(BlessingCatalog.MaxLevel)}. " +
-            "Las hay de velocidad (drop, cantidad, EXP), de poder chico (ataque, defensa y vida, solo contra monstruos), de mascotas, de oro, de ítems y cosméticas. **/blessings** las muestra todas."),
-        ("⚖️ Reglas", "Los duelos y la Arena no usan nada de esto: se juegan con nivel, equipo y clase. La clase solo se elige empezando de cero y con cada Fuego Nuevo (**/class**)."));
+        Loc.T("El **Fuego Nuevo** es volver a empezar, pero más rápido: perdés el nivel, el equipo y los materiales y ganás **porcentajes permanentes** y una **bendición** por cada vuelta. ") +
+        Loc.T("Es voluntario y se habilita al vencer al **Asador Eterno** en **El Fogón Eterno** (**/info tema:fogon**)."),
+        (Loc.T("🔥 Cómo se hace"),
+            Loc.T("**/fuegonuevo** (en texto `aa fn`) muestra lo que se va, lo que se queda y lo que ganás, con el botón para hacerlo. Después elegís la **clase** de la vuelta nueva: tocarla confirma y no se deshace. ") +
+            Loc.T("No se puede en pleno combate o con un grupo armado, y cada vuelta pide volver a vencer al Asador (el equipo del Fogón se forja de nuevo).")),
+        (Loc.T("📈 Lo que ganás con cada uno"),
+            Loc.F($"🏹 Chance de drop en **/hunt**: **{FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.HuntDropStep)}** sobre la base por cada Fuego Nuevo (lineal: el 10.º es {FuegoNuevoRules.PercentText(FuegoNuevoRules.HuntDropMultiplier(10))}, no se compone)\n") +
+            Loc.F($"🗺️ Chance de caja en **/travel**: arranca en **{FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.TravelStep(1))}** y cada vuelta suma un poco menos (el 10.º acumula {FuegoNuevoRules.PercentText(FuegoNuevoRules.TravelDropMultiplier(10))}, con piso de {FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.TravelStep(1000))} por vuelta)\n") +
+            Loc.F($"🪓⛏️ Cantidad por **/chop** y **/mine**: **{FuegoNuevoRules.PercentText(1 + FuegoNuevoRules.GatherStep)}** por Fuego Nuevo (el 10.º es ×{FuegoNuevoRules.GatherMultiplier(10).ToString("0.#", CultureInfo.InvariantCulture).Replace('.', ',')})\n") +
+            Loc.F($"📊 EXP de las peleas: **{FuegoNuevoRules.PercentText(FuegoNuevoRules.XpMultiplier(1))}** el primero y cada vuelta suma más que la anterior (el 5.º acumula {FuegoNuevoRules.PercentText(FuegoNuevoRules.XpMultiplier(5))}, el 10.º {FuegoNuevoRules.PercentText(FuegoNuevoRules.XpMultiplier(10))})\n") +
+            Loc.F($"Con la chance base de /hunt ({CombatRewardCalculator.HuntDropChancePercent} %); la de la caja de /travel sube en la misma proporción. El oro y el cofre del jefe no cambian.")),
+        (Loc.T("💨 Lo que se va"),
+            Loc.T("Nivel y EXP, la zona y los jefes vencidos, el arma y el amuleto (con sus encantamientos), todos los materiales, drops, cajas y consumibles, el Polvo, los banquetes y los enfriamientos. Sin reembolso.")),
+        (Loc.T("🔒 Lo que se queda"),
+            Loc.T("El oro (billetera y banco), las mascotas con sus huevos y su comida, los logros, las misiones cobradas, la racha diaria, las bendiciones y tus Fuegos Nuevos.")),
+        (Loc.T("🙏 Bendiciones"),
+            Loc.F($"Una por vuelta, elegida entre {BlessingCatalog.OfferSize} sorteadas ({BlessingCatalog.All.Count} en total); si repetís una sube de nivel hasta el {BlessingCatalog.RomanLevel(BlessingCatalog.MaxLevel)}. ") +
+            Loc.T("Las hay de velocidad (drop, cantidad, EXP), de poder chico (ataque, defensa y vida, solo contra monstruos), de mascotas, de oro, de ítems y cosméticas. **/blessings** las muestra todas.")),
+        (Loc.T("⚖️ Reglas"), Loc.T("Los duelos y la Arena no usan nada de esto: se juegan con nivel, equipo y clase. La clase solo se elige empezando de cero y con cada Fuego Nuevo (**/class**).")));
 
     private static Embed Story() => Topic(Self("story"),
-        "Las **Crónicas del Fogón** son la historia del juego: la cuenta el Tabernero junto al fuego y se va abriendo mientras jugás. No da poder (ni stats, ni oro, ni drops): da sentido. " +
-        "**/story** (en texto `aa historia`) abre el índice con una lista para leer lo que ya abriste.",
-        ("📖 Acto I · Subir",
-            $"El prólogo y un capítulo por cada jefe de zona (los {Lore.LadderChapters} de la escalera) más el del Asador Eterno. Cada uno se abre la **primera vez** que lo vencés (**/boss**, solo o en equipo) y te llega un aviso aparte. " +
-            "Lo que todavía no abriste sale 🔒 sellado, sin título, para que nadie se spoilee."),
-        ("🔥 Acto II · Soltar",
-            $"El Asador carga con un pesar enorme. Cada **Fuego Nuevo** (**/info tema:fuego**) le saca un 1 %: con {Lore.FinalFuegoNuevo} vueltas queda libre. En ciertas vueltas se abre una escena nueva " +
-            "y, desde la segunda, el Herrero, el Tabernero y el propio Asador hablan distinto. Hay logros en esas vueltas (**/achievements**)."),
-        ("🪑 Acto III",
-            $"Se abre en el Fuego Nuevo **{Lore.FinalFuegoNuevo}**. Qué es, lo descubrís llegando."));
+        Loc.T("Las **Crónicas del Fogón** son la historia del juego: la cuenta el Tabernero junto al fuego y se va abriendo mientras jugás. No da poder (ni stats, ni oro, ni drops): da sentido. ") +
+        Loc.T("**/story** (en texto `aa historia`) abre el índice con una lista para leer lo que ya abriste."),
+        (Loc.T("📖 Acto I · Subir"),
+            Loc.F($"El prólogo y un capítulo por cada jefe de zona (los {Lore.LadderChapters} de la escalera) más el del Asador Eterno. Cada uno se abre la **primera vez** que lo vencés (**/boss**, solo o en equipo) y te llega un aviso aparte. ") +
+            Loc.T("Lo que todavía no abriste sale 🔒 sellado, sin título, para que nadie se spoilee.")),
+        (Loc.T("🔥 Acto II · Soltar"),
+            Loc.F($"El Asador carga con un pesar enorme. Cada **Fuego Nuevo** (**/info tema:fuego**) le saca un 1 %: con {Lore.FinalFuegoNuevo} vueltas queda libre. En ciertas vueltas se abre una escena nueva ") +
+            Loc.T("y, desde la segunda, el Herrero, el Tabernero y el propio Asador hablan distinto. Hay logros en esas vueltas (**/achievements**).")),
+        (Loc.T("🪑 Acto III"),
+            Loc.F($"Se abre en el Fuego Nuevo **{Lore.FinalFuegoNuevo}**. Qué es, lo descubrís llegando.")));
 
     private static Embed Pets() => Topic(Self("pets"),
-        "Cada zona tiene su **mascota**. Las que tengas valen **todas a la vez**: no ocupan lugar, no se pierden y no hay que sacarlas a pasear.",
-        ("🥚 Cómo se consiguen",
-            "La **primera vez** que vencés al jefe de una zona (**/boss**, solo o en equipo) te llega un **huevo** junto con el cofre. Lo abrís con **/open** y nace la mascota de esa zona: una por zona. Cuáles son y qué dan lo descubrís jugando."),
-        ("🎁 Qué dan",
-            "Cada especie da un bonus distinto, por ejemplo **más oro**, **más EXP**, **más defensa** en las peleas contra monstruos o **más chances de drop** en cacería y viaje. " +
-            $"Es relativo: un +6 % sobre un {CombatRewardCalculator.HuntDropChancePercent} % de drop da {Dec(CombatRewardCalculator.HuntDropChancePercent * 1.06)} %. El cofre del jefe no cambia, y en duelos y Arena no cuentan. " +
-            "Mirá cuál da cada una (y cuánto) con **/pet view**."),
-        ("🍖 Cómo crecen",
-            $"Comen **{PetRules.FoodItemName}** (se compra en la **/taberna**). Cada mascota puede comer **una vez por hora**; **/pet feed** alimenta a todas las que estén listas o elegís una. " +
-            $"Tienen nivel de 1 a {PetRules.MaxLevel} y el bonus crece con el nivel (nivel 1 = el 10 % de su tope, nivel {PetRules.MaxLevel} = el tope entero). Llegar al máximo lleva {PetRules.TotalFeedsToMax} comidas por mascota. " +
-            "Y en el máximo todavía hay más: una mascota puede **evolucionar** (**/pet evolve**) y seguir creciendo. Descubrí qué hace falta cuando llegue el momento."),
-        ("🧭 Expediciones",
-            $"Una mascota en el **nivel {PetExpeditions.RequiredLevel}** puede salir de expedición por **{string.Join(", ", PetExpeditions.Options.Select(o => o.Hours))} horas** mientras hacés otra cosa (**/pet expedition**). Gasta **{string.Join(" / ", PetExpeditions.Options.Select(o => o.FoodCost))}** {PetRules.FoodItemName} según la duración, y sale de a **una por vez**. " +
-            "Cuando vuelve, el mismo comando recoge lo que trajo: cuanto más tiempo está afuera, más trae. Qué trae exactamente, descubrilo vos. Te avisa cuando vuelve si tenés los avisos prendidos (**/reminders**)."),
-        ("📍 Comandos", "**/pet view** las muestra, **/pet feed** las alimenta, **/pet expedition** las manda de expedición y **/open** abre el huevo. En texto: `aa pet`, `aa pet feed` y `aa pet expedition`. También figuran en **/profile**."));
+        Loc.T("Cada zona tiene su **mascota**. Las que tengas valen **todas a la vez**: no ocupan lugar, no se pierden y no hay que sacarlas a pasear."),
+        (Loc.T("🥚 Cómo se consiguen"),
+            Loc.T("La **primera vez** que vencés al jefe de una zona (**/boss**, solo o en equipo) te llega un **huevo** junto con el cofre. Lo abrís con **/open** y nace la mascota de esa zona: una por zona. Cuáles son y qué dan lo descubrís jugando.")),
+        (Loc.T("🎁 Qué dan"),
+            Loc.T("Cada especie da un bonus distinto, por ejemplo **más oro**, **más EXP**, **más defensa** en las peleas contra monstruos o **más chances de drop** en cacería y viaje. ") +
+            Loc.F($"Es relativo: un +6 % sobre un {CombatRewardCalculator.HuntDropChancePercent} % de drop da {Dec(CombatRewardCalculator.HuntDropChancePercent * 1.06)} %. El cofre del jefe no cambia, y en duelos y Arena no cuentan. ") +
+            Loc.T("Mirá cuál da cada una (y cuánto) con **/pet view**.")),
+        (Loc.T("🍖 Cómo crecen"),
+            Loc.F($"Comen **{PetRules.FoodItemName}** (se compra en la **/taberna**). Cada mascota puede comer **una vez por hora**; **/pet feed** alimenta a todas las que estén listas o elegís una. ") +
+            Loc.F($"Tienen nivel de 1 a {PetRules.MaxLevel} y el bonus crece con el nivel (nivel 1 = el 10 % de su tope, nivel {PetRules.MaxLevel} = el tope entero). Llegar al máximo lleva {PetRules.TotalFeedsToMax} comidas por mascota. ") +
+            Loc.T("Y en el máximo todavía hay más: una mascota puede **evolucionar** (**/pet evolve**) y seguir creciendo. Descubrí qué hace falta cuando llegue el momento.")),
+        (Loc.T("🧭 Expediciones"),
+            Loc.F($"Una mascota en el **nivel {PetExpeditions.RequiredLevel}** puede salir de expedición por **{string.Join(", ", PetExpeditions.Options.Select(o => o.Hours))} horas** mientras hacés otra cosa (**/pet expedition**). Gasta **{string.Join(" / ", PetExpeditions.Options.Select(o => o.FoodCost))}** {PetRules.FoodItemName} según la duración, y sale de a **una por vez**. ") +
+            Loc.T("Cuando vuelve, el mismo comando recoge lo que trajo: cuanto más tiempo está afuera, más trae. Qué trae exactamente, descubrilo vos. Te avisa cuando vuelve si tenés los avisos prendidos (**/reminders**).")),
+        (Loc.T("📍 Comandos"), Loc.T("**/pet view** las muestra, **/pet feed** las alimenta, **/pet expedition** las manda de expedición y **/open** abre el huevo. En texto: `aa pet`, `aa pet feed` y `aa pet expedition`. También figuran en **/profile**.")));
 
     private static Embed Dragon()
     {
         string kinds = string.Join('\n', DragonRules.Kinds.Select(k =>
-            $"{DragonRules.KindEmoji(k)} **{DragonRules.KindName(k)}**: hasta **+{DragonRules.Percent(DragonRules.MaxPercent(k))} %** {DragonRules.KindEffect(k)} en el tier {DragonRules.MaxTier}"));
+            Loc.F($"{DragonRules.KindEmoji(k)} **{DragonRules.KindName(k)}**: hasta **+{DragonRules.Percent(DragonRules.MaxPercent(k))} %** {DragonRules.KindEffect(k)} en el tier {DragonRules.MaxTier}")));
         string chances = string.Join(" / ", Enumerable.Range(1, DragonRules.MaxTier - 1).Select(t => DragonRules.Percent(Math.Round(DragonRules.BreedChance(t) * 100, 2))));
         string pity = string.Join(" / ", Enumerable.Range(1, DragonRules.MaxTier - 1).Select(DragonRules.PityCap));
 
         return Topic(Self("dragon"),
-            "Un **dragón** por cuenta que te mejora **contra los monstruos**. Se compra, se entrena con oro y se cría (solo o con un amigo) para subirlo de tier. Dura toda la vida de la cuenta: el **Fuego Nuevo** no lo toca.",
-            ("🥚 Conseguirlo",
-                $"En la **/taberna** o con **/shop buy dragon**: **{GameHistory.Number(DragonRules.ShopPrice)}** de oro, una sola vez. Nace de tier 1 (**{DragonRules.TierName(1)}**) con un tipo al azar:\n{kinds}\n" +
-                $"El **Especial** es el raro ({DragonRules.ShopWeight(DragonRules.Special)} %); los otros salen {DragonRules.ShopWeight(DragonRules.Strength)} % cada uno. No cuenta en duelos ni en la Arena."),
-            ("📈 Tiers y mejoras",
-                $"Tiene **{DragonRules.MaxTier} tiers** (de **{DragonRules.TierName(1)}** a **{DragonRules.TierName(DragonRules.MaxTier)}**). El bonus de su tipo crece en cada uno (poco al principio, mucho al final) y **cada tier le suma una mejora nueva**: más drops, más recolección, el **Aliento final** (una vez por pelea, un golpe que te mataría te deja en 1 de vida), más vida, EXP u oro... Las ves todas, con las que ya desbloqueó, en **/dragon**."),
-            ("🏋️ Entrenarlo",
-                $"**/dragon-train** (o el botón de **/dragon**; en texto `aa dragon train [n]`): gastás oro y sube de nivel. Cada nivel cuesta más que el anterior (el primero {GameHistory.Number(DragonRules.TrainCost(0))}, el décimo unos {GameHistory.Number(DragonRules.TrainCost(9))}) y suma **{DragonRules.Percent(DragonRules.LevelShare * 100)} %** del máximo de su tipo. Llega hasta el nivel **tier × 10**: subirlo de tier abre 10 niveles más."),
-            ("💞 Criarlo",
-                $"**/dragon-breed @amigo** (en texto `aa dragon breed @amigo`): los dos con el **mismo tier**; el otro acepta con un botón. Cada intento los hace descansar **{Dur(DragonRules.BreedCooldown)}** (**/cd** dice cuánto falta). **Cada dragón tira su propia suerte**: puede subir uno y el otro no (ya no pueden criar entre ellos hasta que el otro lo alcance).\n" +
-                $"Chance de subir del tier 1 al 10: **{chances} %**. Con la **piedad**, tras {pity} fallos seguidos (uno por tier) el siguiente intento sale **seguro**.\n" +
-                "Solo, sin amigo (**/dragon-breed** a secas): **un tercio** de la chance y el **triple** de fallos para el intento seguro."),
-            ("🍖 Tipo y comida",
-                $"En **cada cría** (salga bien o mal) tu dragón **cambia de tipo al azar**: puede tocarte el mismo, y los niveles entrenados se quedan y rinden según el tipo nuevo. Para **conservar el tipo**, tené **{ItemEmojiRegistry.Label(DragonRules.FoodItemName, string.Empty)}** en la mochila: se gasta **una por cría**, sola. Se compra en la **/taberna**. En la invitación a criar, el 🍖 al lado del nombre dice quién tiene."),
-            ("📌 Tablón y aviso",
-                $"**/dragon-board** (en texto `aa dragon board`) es el tablón de crías de tu servidor: **anotate** para que los demás de tu mismo tier sepan que buscás pareja (dura {(int)DragonBoardService.Lifetime.TotalHours} horas o hasta que críes) y mirá quién busca; elegís a alguien de la lista y le llega la invitación a criar. Solo aparecen los que pueden criar ahora: para anotarte tu dragón tiene que poder criar ya (si descansa, te dice cuánto falta). " +
-                $"Además el bot te **avisa** cuando termina el descanso de la cría ({Dur(DragonRules.BreedCooldown)}); se apaga con **/reminders**."),
-            ("✏️ Nombre",
-                $"**/dragon-name** le pone (o le cambia) el nombre por **{GameHistory.Number(DragonRules.RenamePrice)}** de oro cada vez; en texto `aa dragon name <nombre>`. Sale en tu **/profile**."));
+            Loc.T("Un **dragón** por cuenta que te mejora **contra los monstruos**. Se compra, se entrena con oro y se cría (solo o con un amigo) para subirlo de tier. Dura toda la vida de la cuenta: el **Fuego Nuevo** no lo toca."),
+            (Loc.T("🥚 Conseguirlo"),
+                Loc.F($"En la **/taberna** o con **/shop buy dragon**: **{GameHistory.Number(DragonRules.ShopPrice)}** de oro, una sola vez. Nace de tier 1 (**{DragonRules.TierName(1)}**) con un tipo al azar:\n{kinds}\n") +
+                Loc.F($"El **Especial** es el raro ({DragonRules.ShopWeight(DragonRules.Special)} %); los otros salen {DragonRules.ShopWeight(DragonRules.Strength)} % cada uno. No cuenta en duelos ni en la Arena.")),
+            (Loc.T("📈 Tiers y mejoras"),
+                Loc.F($"Tiene **{DragonRules.MaxTier} tiers** (de **{DragonRules.TierName(1)}** a **{DragonRules.TierName(DragonRules.MaxTier)}**). El bonus de su tipo crece en cada uno (poco al principio, mucho al final) y **cada tier le suma una mejora nueva**: más drops, más recolección, el **Aliento final** (una vez por pelea, un golpe que te mataría te deja en 1 de vida), más vida, EXP u oro... Las ves todas, con las que ya desbloqueó, en **/dragon**.")),
+            (Loc.T("🏋️ Entrenarlo"),
+                Loc.F($"**/dragon-train** (o el botón de **/dragon**; en texto `aa dragon train [n]`): gastás oro y sube de nivel. Cada nivel cuesta más que el anterior (el primero {GameHistory.Number(DragonRules.TrainCost(0))}, el décimo unos {GameHistory.Number(DragonRules.TrainCost(9))}) y suma **{DragonRules.Percent(DragonRules.LevelShare * 100)} %** del máximo de su tipo. Llega hasta el nivel **tier × 10**: subirlo de tier abre 10 niveles más.")),
+            (Loc.T("💞 Criarlo"),
+                Loc.F($"**/dragon-breed @amigo** (en texto `aa dragon breed @amigo`): los dos con el **mismo tier**; el otro acepta con un botón. Cada intento los hace descansar **{Dur(DragonRules.BreedCooldown)}** (**/cd** dice cuánto falta). **Cada dragón tira su propia suerte**: puede subir uno y el otro no (ya no pueden criar entre ellos hasta que el otro lo alcance).\n") +
+                Loc.F($"Chance de subir del tier 1 al 10: **{chances} %**. Con la **piedad**, tras {pity} fallos seguidos (uno por tier) el siguiente intento sale **seguro**.\n") +
+                Loc.T("Solo, sin amigo (**/dragon-breed** a secas): **un tercio** de la chance y el **triple** de fallos para el intento seguro.")),
+            (Loc.T("🍖 Tipo y comida"),
+                Loc.F($"En **cada cría** (salga bien o mal) tu dragón **cambia de tipo al azar**: puede tocarte el mismo, y los niveles entrenados se quedan y rinden según el tipo nuevo. Para **conservar el tipo**, tené **{ItemEmojiRegistry.Label(DragonRules.FoodItemName, string.Empty)}** en la mochila: se gasta **una por cría**, sola. Se compra en la **/taberna**. En la invitación a criar, el 🍖 al lado del nombre dice quién tiene.")),
+            (Loc.T("📌 Tablón y aviso"),
+                Loc.F($"**/dragon-board** (en texto `aa dragon board`) es el tablón de crías de tu servidor: **anotate** para que los demás de tu mismo tier sepan que buscás pareja (dura {(int)DragonBoardService.Lifetime.TotalHours} horas o hasta que críes) y mirá quién busca; elegís a alguien de la lista y le llega la invitación a criar. Solo aparecen los que pueden criar ahora: para anotarte tu dragón tiene que poder criar ya (si descansa, te dice cuánto falta). ") +
+                Loc.F($"Además el bot te **avisa** cuando termina el descanso de la cría ({Dur(DragonRules.BreedCooldown)}); se apaga con **/reminders**.")),
+            (Loc.T("✏️ Nombre"),
+                Loc.F($"**/dragon-name** le pone (o le cambia) el nombre por **{GameHistory.Number(DragonRules.RenamePrice)}** de oro cada vez; en texto `aa dragon name <nombre>`. Sale en tu **/profile**.")));
     }
 
     private static Embed Reminders()
     {
-        var waits = ReminderCatalog.All.Select(k => $"{k.Emoji} **{k.Name}** — {(ReminderCatalog.WaitOf(k.Key) is { } w ? "cada " + ReminderCatalog.WaitLabel(w) : "cuando vuelve (1, 4 u 8 h)")}");
+        var waits = ReminderCatalog.All.Select(k => ReminderCatalog.WaitOf(k.Key) is { } w
+            ? Loc.F($"{k.Emoji} **{Loc.Tr(k.Name)}** — cada {ReminderCatalog.WaitLabel(w)}")
+            : Loc.F($"{k.Emoji} **{Loc.Tr(k.Name)}** — cuando vuelve (1, 4 u 8 h)"));
         int shortMinutes = (int)ReminderCatalog.ShortLived.TotalMinutes;
 
         return Topic(Self("reminders"),
-            "El bot te **avisa solo** cuando termina una espera, así no tenés que andar mirando **/cd**.",
-            ("🔔 Cuándo avisa",
-                "Después de usar un comando que deja una espera, el bot te escribe en **ese mismo canal** cuando termina:\n" + string.Join('\n', waits)),
-            ("🧹 Sin ensuciar el canal",
-                $"Los de **cacería, talar y minar** (esperas cortas) se borran solos a los {shortMinutes} minutos, y no avisan si justo estás peleando o acabás de usar un comando. Los demás se quedan. " +
-                "Si terminan varias esperas juntas, llegan en un solo mensaje. Si peleaste el jefe en equipo, el aviso les llega a todos los que pelearon."),
-            ("⚙️ Elegir cuáles",
-                "**/reminders** (en texto `aa recordatorios` o `aa avisos`) abre una lista donde marcás cuáles querés recibir, con botones para recibir o silenciar todos. Al apagar uno se borra el aviso que estaba pendiente."),
-            ("📌 Cosas a saber",
-                "El aviso se arma cuando usás el comando y sobrevive a un reinicio del bot; si el bot estuvo apagado y el aviso llega muy tarde, se descarta. Para las **mascotas** avisa cuando la primera que pueda subir de nivel puede comer de nuevo. Para el **dragón**, cuando termina el descanso de la cría."));
+            Loc.T("El bot te **avisa solo** cuando termina una espera, así no tenés que andar mirando **/cd**."),
+            (Loc.T("🔔 Cuándo avisa"),
+                Loc.T("Después de usar un comando que deja una espera, el bot te escribe en **ese mismo canal** cuando termina:\n") + string.Join('\n', waits)),
+            (Loc.T("🧹 Sin ensuciar el canal"),
+                Loc.F($"Los de **cacería, talar y minar** (esperas cortas) se borran solos a los {shortMinutes} minutos, y no avisan si justo estás peleando o acabás de usar un comando. Los demás se quedan. ") +
+                Loc.T("Si terminan varias esperas juntas, llegan en un solo mensaje. Si peleaste el jefe en equipo, el aviso les llega a todos los que pelearon.")),
+            (Loc.T("⚙️ Elegir cuáles"),
+                Loc.T("**/reminders** (en texto `aa recordatorios` o `aa avisos`) abre una lista donde marcás cuáles querés recibir, con botones para recibir o silenciar todos. Al apagar uno se borra el aviso que estaba pendiente.")),
+            (Loc.T("📌 Cosas a saber"),
+                Loc.T("El aviso se arma cuando usás el comando y sobrevive a un reinicio del bot; si el bot estuvo apagado y el aviso llega muy tarde, se descarta. Para las **mascotas** avisa cuando la primera que pueda subir de nivel puede comer de nuevo. Para el **dragón**, cuando termina el descanso de la cría.")));
     }
 
     private static Embed Vote() => Topic(Self("vote"),
-        "Votar en **top.gg** ayuda a que más gente encuentre el juego, y te devolvemos el favor.",
-        ("🎁 Qué da cada voto",
-            $"**{VoteRules.RewardBoxes}× {ItemEmojiRegistry.Label(VoteRules.RewardBoxName, string.Empty)}** (se abre con **/open**) y **el jefe se resetea**: si el cooldown de **/boss** (solo o en equipo) ({Dur(CooldownCatalog.Boss.Duration)} tras ganar) estaba corriendo, queda listo al instante."),
-        ("🗳️ Cómo se cobra",
-            "**/vote** (en texto `aa vote`) te muestra el link para votar. Después de votar, escribí **/vote** otra vez: el bot le pregunta a top.gg y te paga. Cada voto se cobra **una sola vez**, y si no lo cobrás antes de que venza (unas 12 horas) se pierde."),
-        ("⏳ Cada cuánto",
-            $"Se puede votar cada **{Dur(VoteRules.Interval)}**; **/cd** te dice cuánto falta y el bot te avisa cuando ya podés (**/reminders**). Mientras no esté habilitado el voto, **/vote** solo cuenta qué te llevarías."),
-        ("💡 Truco", "El reseteo rinde más si cobrás el voto justo después de ganarle al jefe: así te ahorrás la espera. Si el jefe ya estaba listo, igual te llevás la caja."));
+        Loc.T("Votar en **top.gg** ayuda a que más gente encuentre el juego, y te devolvemos el favor."),
+        (Loc.T("🎁 Qué da cada voto"),
+            Loc.F($"**{VoteRules.RewardBoxes}× {ItemEmojiRegistry.Label(VoteRules.RewardBoxName, string.Empty)}** (se abre con **/open**) y **el jefe se resetea**: si el cooldown de **/boss** (solo o en equipo) ({Dur(CooldownCatalog.Boss.Duration)} tras ganar) estaba corriendo, queda listo al instante.")),
+        (Loc.T("🗳️ Cómo se cobra"),
+            Loc.T("**/vote** (en texto `aa vote`) te muestra el link para votar. Después de votar, escribí **/vote** otra vez: el bot le pregunta a top.gg y te paga. Cada voto se cobra **una sola vez**, y si no lo cobrás antes de que venza (unas 12 horas) se pierde.")),
+        (Loc.T("⏳ Cada cuánto"),
+            Loc.F($"Se puede votar cada **{Dur(VoteRules.Interval)}**; **/cd** te dice cuánto falta y el bot te avisa cuando ya podés (**/reminders**). Mientras no esté habilitado el voto, **/vote** solo cuenta qué te llevarías.")),
+        (Loc.T("💡 Truco"), Loc.T("El reseteo rinde más si cobrás el voto justo después de ganarle al jefe: así te ahorrás la espera. Si el jefe ya estaba listo, igual te llevás la caja.")));
 
     private static Embed Classes()
     {
         var embed = new EmbedBuilder()
             .WithTitle($"{Self("classes").Emoji} {Self("classes").Name}")
             .WithColor(OnboardingModule.BrandColor)
-            .WithDescription("Elegís tu clase con **/class** (solo empezando de cero, nivel 1: después se vuelve a elegir con cada **Fuego Nuevo**). Cada una tiene una **pasiva** que siempre está y una **habilidad** que se usa con un botón en la pelea manual.");
+            .WithDescription(Loc.T("Elegís tu clase con **/class** (solo empezando de cero, nivel 1: después se vuelve a elegir con cada **Fuego Nuevo**). Cada una tiene una **pasiva** que siempre está y una **habilidad** que se usa con un botón en la pelea manual."));
 
         foreach (var cls in ClassCatalog.All)
         {
@@ -491,20 +493,20 @@ public static class HelpTopics
             var ability = ClassAbilities.For(cls.Name);
             string passiveText = cls.Name switch
             {
-                "Guerrero" => $"+{(int)Math.Round((passive.MaxHpMultiplier - 1) * 100)} % de vida y {(int)Math.Round((1 - passive.DamageTakenMultiplier) * 100)} % menos de daño recibido",
-                "Ninja" => $"+{(int)Math.Round(passive.DodgeChanceBonus * 100)} % de esquive",
-                "Arquero" => $"+{(int)Math.Round(passive.CritChanceBonus * 100)} % de golpe crítico",
-                "Hechicero" => $"{(int)Math.Round(passive.LifestealChance * 100)} % de chance de curarte el {(int)Math.Round(passive.LifestealRatio * 100)} % del daño que hacés (Sifón de Almas)",
+                "Guerrero" => Loc.F($"+{(int)Math.Round((passive.MaxHpMultiplier - 1) * 100)} % de vida y {(int)Math.Round((1 - passive.DamageTakenMultiplier) * 100)} % menos de daño recibido"),
+                "Ninja" => Loc.F($"+{(int)Math.Round(passive.DodgeChanceBonus * 100)} % de esquive"),
+                "Arquero" => Loc.F($"+{(int)Math.Round(passive.CritChanceBonus * 100)} % de golpe crítico"),
+                "Hechicero" => Loc.F($"{(int)Math.Round(passive.LifestealChance * 100)} % de chance de curarte el {(int)Math.Round(passive.LifestealRatio * 100)} % del daño que hacés (Sifón de Almas)"),
                 _ => "—",
             };
 
             embed.AddField(
-                $"{cls.Emoji} {cls.Name} — arma: {cls.WeaponType}",
-                $"{cls.Description}\n**Pasiva:** {passiveText}.\n**Habilidad:** {(ability is null ? "—" : $"{ability.Emoji} {ability.Name} — {ability.Description}")}",
+                Loc.F($"{cls.Emoji} {cls.Name} — arma: {cls.WeaponType}"),
+                Loc.F($"{Loc.Tr(cls.Description)}\n**Pasiva:** {passiveText}.\n**Habilidad:** {(ability is null ? "—" : $"{ability.Emoji} {ability.Name} — {ClassAbilities.DescribeLocalized(ability)}")}"),
                 false);
         }
 
-        return embed.WithFooter($"La habilidad se recarga {AbilityTuning.CooldownTurns} turnos y /autohunt no la usa.").Build();
+        return embed.WithFooter(Loc.F($"La habilidad se recarga {AbilityTuning.CooldownTurns} turnos y /autohunt no la usa.")).Build();
     }
 
     private static Embed Gather() => Topic(Self("gather"),
@@ -536,14 +538,14 @@ public static class HelpTopics
         (Loc.T("🤝 /give @jugador cantidad"), Loc.T("Le regalás oro a otro jugador (una cantidad o **all**). Sale de tu billetera; no a vos mismo. En texto: `aa give @jugador 100`.")));
 
     private static Embed Stats() => Topic(Self("stats"),
-        "Tu **/profile** muestra todo esto junto.",
-        ("📊 EXP y nivel",
-            $"Para pasar de nivel hace falta {LevelingCalculator.XpPerLevelSquared} × nivel² de EXP (nivel 5: {Num(LevelingCalculator.RequiredXpForLevel(5))}, nivel 10: {Num(LevelingCalculator.RequiredXpForLevel(10))}, nivel 20: {Num(LevelingCalculator.RequiredXpForLevel(20))}). " +
-            "La EXP es la del nivel actual: se reinicia cuando subís (y también si perdés un combate: **/info tema:death**)."),
-        ("⬆️ Al subir de nivel",
-            $"+{LevelingCalculator.HpGainedPerLevel} de vida máxima (y te curás entera), +{CombatStats.BaseAttack(2) - CombatStats.BaseAttack(1)} de ataque y +{CombatStats.BaseDefense(2) - CombatStats.BaseDefense(1)} de defensa."),
-        ("⚔️ Ataque y defensa",
-            $"Ataque = {CombatStats.BaseAttack(0)} + {CombatStats.BaseAttack(2) - CombatStats.BaseAttack(1)} por nivel + tu arma (más su encantamiento). Defensa = tu nivel + tu amuleto (con su encantamiento)."));
+        Loc.T("Tu **/profile** muestra todo esto junto."),
+        (Loc.T("📊 EXP y nivel"),
+            Loc.F($"Para pasar de nivel hace falta {LevelingCalculator.XpPerLevelSquared} × nivel² de EXP (nivel 5: {Num(LevelingCalculator.RequiredXpForLevel(5))}, nivel 10: {Num(LevelingCalculator.RequiredXpForLevel(10))}, nivel 20: {Num(LevelingCalculator.RequiredXpForLevel(20))}). ") +
+            Loc.T("La EXP es la del nivel actual: se reinicia cuando subís (y también si perdés un combate: **/info tema:death**).")),
+        (Loc.T("⬆️ Al subir de nivel"),
+            Loc.F($"+{LevelingCalculator.HpGainedPerLevel} de vida máxima (y te curás entera), +{CombatStats.BaseAttack(2) - CombatStats.BaseAttack(1)} de ataque y +{CombatStats.BaseDefense(2) - CombatStats.BaseDefense(1)} de defensa.")),
+        (Loc.T("⚔️ Ataque y defensa"),
+            Loc.F($"Ataque = {CombatStats.BaseAttack(0)} + {CombatStats.BaseAttack(2) - CombatStats.BaseAttack(1)} por nivel + tu arma (más su encantamiento). Defensa = tu nivel + tu amuleto (con su encantamiento).")));
 }
 
 // La lista desplegable de /info tema: los temas que contienen lo escrito (en su clave, su nombre o sus alias). El valor es la clave, así que escribirla a mano también anda.

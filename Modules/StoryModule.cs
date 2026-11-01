@@ -29,7 +29,7 @@ public class StoryModule(IUserRepository userRepository, IZoneRepository zoneRep
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! El Tabernero no encuentra sus crónicas ahora, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! El Tabernero no encuentra sus crónicas ahora, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -42,7 +42,7 @@ public class StoryModule(IUserRepository userRepository, IZoneRepository zoneRep
         {
             if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
             {
-                await FollowupAsync("Esa charla es de otra persona: escuchá al Tabernero con **/story**.", ephemeral: true);
+                await FollowupAsync(Loc.T("Esa charla es de otra persona: escuchá al Tabernero con **/story**."), ephemeral: true);
                 return;
             }
 
@@ -56,7 +56,7 @@ public class StoryModule(IUserRepository userRepository, IZoneRepository zoneRep
         catch (Exception ex)
         {
             BotLog.Error(ex);
-            await FollowupAsync("¡Upa! No pude abrir ese capítulo, intentá de nuevo en un momento.", ephemeral: true);
+            await FollowupAsync(Loc.T("¡Upa! No pude abrir ese capítulo, intentá de nuevo en un momento."), ephemeral: true);
         }
     }
 
@@ -68,8 +68,8 @@ public class StoryModule(IUserRepository userRepository, IZoneRepository zoneRep
         if (player is null)
         {
             return new StoryView(
-                new EmbedBuilder().WithTitle("📖 Las Crónicas del Fogón").WithColor(OnboardingModule.BrandColor)
-                    .WithDescription("Primero tenés que empezar tu aventura con **/start**; después el Tabernero te cuenta.").Build(),
+                new EmbedBuilder().WithTitle(Loc.T("📖 Las Crónicas del Fogón")).WithColor(OnboardingModule.BrandColor)
+                    .WithDescription(Loc.T("Primero tenés que empezar tu aventura con **/start**; después el Tabernero te cuenta.")).Build(),
                 null);
         }
 
@@ -83,19 +83,19 @@ public class StoryModule(IUserRepository userRepository, IZoneRepository zoneRep
         EmbedBuilder embed;
         if (key == Lore.PrologueKey)
         {
-            embed = ReadingEmbed($"📜 Prólogo — «{Lore.PrologueTitle}»", Lore.Prologue, "Las Crónicas del Fogón · Acto I");
+            embed = ReadingEmbed(Loc.F($"📜 Prólogo — «{Loc.Tr(Lore.PrologueTitle)}»"), Lore.Translate(Lore.Prologue), Loc.T("Las Crónicas del Fogón · Acto I"));
         }
         else if (Lore.FindChapter(key) is { } chapter && Lore.IsUnlocked(chapter, progress))
         {
-            embed = ReadingEmbed($"📖 Capítulo {chapter.Number} — «{chapter.Title}»", chapter.Text, "Las Crónicas del Fogón · Acto I");
+            embed = ReadingEmbed(Loc.F($"📖 Capítulo {chapter.Number} — «{Loc.Tr(chapter.Title)}»"), Lore.Translate(chapter.Text), Loc.T("Las Crónicas del Fogón · Acto I"));
         }
         else if (Lore.FindScene(key) is { } scene && Lore.IsUnlocked(scene, progress))
         {
             embed = ReadingEmbed(
-                $"🔥 «{scene.Title}»", scene.Text,
+                $"🔥 «{Loc.Tr(scene.Title)}»", Lore.Translate(scene.Text),
                 scene.FuegoNuevo >= Lore.FinalFuegoNuevo
-                    ? "Las Crónicas del Fogón · Acto III · Lo cuenta el fuego"
-                    : $"Las Crónicas del Fogón · Acto II · Lo cuenta el fuego · {PesarLine(progress.FuegoNuevo)}");
+                    ? Loc.T("Las Crónicas del Fogón · Acto III · Lo cuenta el fuego")
+                    : Loc.F($"Las Crónicas del Fogón · Acto II · Lo cuenta el fuego · {PesarLine(progress.FuegoNuevo)}"));
         }
         else
         {
@@ -111,30 +111,30 @@ public class StoryModule(IUserRepository userRepository, IZoneRepository zoneRep
 
     // El pesar del Asador y la mesa, en una línea corta ("🔥 Pesar del Asador 97 % · 🍽️ 38 platos").
     public static string PesarLine(int fuegoNuevo) =>
-        $"🔥 Pesar del Asador {Lore.Pesar(fuegoNuevo)} % · 🍽️ {Lore.Plates(fuegoNuevo)} platos";
+        Loc.F($"🔥 Pesar del Asador {Lore.Pesar(fuegoNuevo)} % · 🍽️ {Lore.Plates(fuegoNuevo)} platos");
 
     // El índice: los tres actos con lo que ya abriste. Lo sellado no muestra título.
     public static EmbedBuilder IndexEmbed(StoryProgress progress)
     {
         var embed = new EmbedBuilder()
-            .WithTitle("📖 Las Crónicas del Fogón")
+            .WithTitle(Loc.T("📖 Las Crónicas del Fogón"))
             .WithColor(OnboardingModule.BrandColor)
-            .WithDescription("Lo que cuenta el Tabernero junto al fuego. Elegí qué leer en la lista de abajo; lo sellado se abre jugando.");
+            .WithDescription(Loc.T("Lo que cuenta el Tabernero junto al fuego. Elegí qué leer en la lista de abajo; lo sellado se abre jugando."));
 
-        var actOne = new List<string> { $"📜 Prólogo — «{Lore.PrologueTitle}»" };
+        var actOne = new List<string> { Loc.F($"📜 Prólogo — «{Loc.Tr(Lore.PrologueTitle)}»") };
         foreach (var chapter in Lore.Chapters)
         {
             actOne.Add(Lore.IsUnlocked(chapter, progress)
-                ? $"📖 Capítulo {chapter.Number} — «{chapter.Title}»"
-                : $"🔒 Capítulo {chapter.Number} — sellado");
+                ? Loc.F($"📖 Capítulo {chapter.Number} — «{Loc.Tr(chapter.Title)}»")
+                : Loc.F($"🔒 Capítulo {chapter.Number} — sellado"));
         }
 
-        embed.AddField("Acto I · Subir", string.Join('\n', actOne), false);
+        embed.AddField(Loc.T("Acto I · Subir"), string.Join('\n', actOne), false);
 
         var actTwoScenes = Lore.Scenes.Where(s => s.FuegoNuevo < Lore.FinalFuegoNuevo).ToList();
         if (progress.FuegoNuevo < 1)
         {
-            embed.AddField("Acto II · Soltar", "🔒 Se abre con tu primer **Fuego Nuevo**.", false);
+            embed.AddField(Loc.T("Acto II · Soltar"), Loc.T("🔒 Se abre con tu primer **Fuego Nuevo**."), false);
         }
         else
         {
@@ -143,20 +143,20 @@ public class StoryModule(IUserRepository userRepository, IZoneRepository zoneRep
                 $"{PesarLine(progress.FuegoNuevo)}",
                 $"{ProgressBar.Render(Lore.Pesar(progress.FuegoNuevo), 100, 20, UiEmojis.BarPesar)}",
             };
-            lines.AddRange(actTwoScenes.Where(s => Lore.IsUnlocked(s, progress)).Select(s => $"🔥 «{s.Title}»"));
+            lines.AddRange(actTwoScenes.Where(s => Lore.IsUnlocked(s, progress)).Select(s => $"🔥 «{Loc.Tr(s.Title)}»"));
 
             if (Lore.NextSceneFuegoNuevo(progress.FuegoNuevo) is int next && next < Lore.FinalFuegoNuevo)
             {
-                lines.Add($"🔒 Próxima escena: en el Fuego Nuevo **{next}**.");
+                lines.Add(Loc.F($"🔒 Próxima escena: en el Fuego Nuevo **{next}**."));
             }
 
-            embed.AddField("Acto II · Soltar", string.Join('\n', lines), false);
+            embed.AddField(Loc.T("Acto II · Soltar"), string.Join('\n', lines), false);
         }
 
         var final = Lore.FindScene("fn100")!;
         embed.AddField(
-            "Acto III · El que volvió",
-            Lore.IsUnlocked(final, progress) ? $"🪑 «{final.Title}»" : $"🔒 Se abre en el Fuego Nuevo **{Lore.FinalFuegoNuevo}**.",
+            Loc.T("Acto III · El que volvió"),
+            Lore.IsUnlocked(final, progress) ? $"🪑 «{Loc.Tr(final.Title)}»" : Loc.F($"🔒 Se abre en el Fuego Nuevo **{Lore.FinalFuegoNuevo}**."),
             false);
 
         return embed;
@@ -167,23 +167,23 @@ public class StoryModule(IUserRepository userRepository, IZoneRepository zoneRep
     {
         var menu = new SelectMenuBuilder()
             .WithCustomId($"{MenuPrefix}:{discordId}")
-            .WithPlaceholder("📖 ¿Qué querés leer?")
+            .WithPlaceholder(Loc.T("📖 ¿Qué querés leer?"))
             .WithMinValues(1)
             .WithMaxValues(1);
 
         menu.AddOption("Índice", IndexKey, isDefault: current == IndexKey);
-        menu.AddOption($"Prólogo — {Lore.PrologueTitle}", Lore.PrologueKey, isDefault: current == Lore.PrologueKey);
+        menu.AddOption(Loc.F($"Prólogo — {Loc.Tr(Lore.PrologueTitle)}"), Lore.PrologueKey, isDefault: current == Lore.PrologueKey);
 
         foreach (var chapter in Lore.Chapters.Where(c => Lore.IsUnlocked(c, progress)))
         {
-            menu.AddOption(Fit($"Capítulo {chapter.Number} — {chapter.Title}"), chapter.Key, isDefault: current == chapter.Key);
+            menu.AddOption(Fit(Loc.F($"Capítulo {chapter.Number} — {Loc.Tr(chapter.Title)}")), chapter.Key, isDefault: current == chapter.Key);
         }
 
         foreach (var scene in Lore.Scenes.Where(s => Lore.IsUnlocked(s, progress)))
         {
             string label = scene.FuegoNuevo >= Lore.FinalFuegoNuevo
-                ? $"Final — {scene.Title}"
-                : $"Fuego Nuevo {scene.FuegoNuevo} — {scene.Title}";
+                ? Loc.F($"Final — {Loc.Tr(scene.Title)}")
+                : Loc.F($"Fuego Nuevo {scene.FuegoNuevo} — {Loc.Tr(scene.Title)}");
             menu.AddOption(Fit(label), scene.Key, isDefault: current == scene.Key);
         }
 

@@ -87,40 +87,40 @@ public static class NpcDialogue
     {
         [CarpenterLine.Greeting] =
         [
-            "Pase, pase, que acá hay aserrín de sobra. ¿Qué herramienta le armo?",
-            "Buenas. Un buen hacha le cambia el día a cualquier leñador. ¿Qué necesita?",
-            "Entre nomás. Traiga la madera y el hierro, que yo pongo las manos.",
+            Loc.Mark("Pase, pase, que acá hay aserrín de sobra. ¿Qué herramienta le armo?"),
+            Loc.Mark("Buenas. Un buen hacha le cambia el día a cualquier leñador. ¿Qué necesita?"),
+            Loc.Mark("Entre nomás. Traiga la madera y el hierro, que yo pongo las manos."),
         ],
         [CarpenterLine.Success] =
         [
-            "Ahí la tiene: firme, derecha y lista para trabajar.",
-            "Esa no se le rompe ni en mil años. Cuídela bien.",
-            "Salió de primera. Ahora sí van a ver lo que es recolectar.",
+            Loc.Mark("Ahí la tiene: firme, derecha y lista para trabajar."),
+            Loc.Mark("Esa no se le rompe ni en mil años. Cuídela bien."),
+            Loc.Mark("Salió de primera. Ahora sí van a ver lo que es recolectar."),
         ],
         [CarpenterLine.NotEnough] =
         [
-            "Así no puedo, amigo: me falta material. Salga a talar y a picar, y vuelva.",
-            "Con lo que trajo no alcanza ni para el mango. Junte más y vuelva.",
+            Loc.Mark("Así no puedo, amigo: me falta material. Salga a talar y a picar, y vuelva."),
+            Loc.Mark("Con lo que trajo no alcanza ni para el mango. Junte más y vuelva."),
         ],
         [CarpenterLine.Locked] =
         [
-            "Esa todavía no se la puedo armar: primero llegue a esa zona.",
-            "Paciencia, que esa herramienta es para más adelante. Todavía no llegó a esa zona.",
+            Loc.Mark("Esa todavía no se la puedo armar: primero llegue a esa zona."),
+            Loc.Mark("Paciencia, que esa herramienta es para más adelante. Todavía no llegó a esa zona."),
         ],
         [CarpenterLine.AlreadyHave] =
         [
-            "Pero si ya tiene una igual o mejor. No le hago otra, amigo.",
-            "Esa ya la tiene, y la que lleva rinde lo mismo o más. Guarde el material.",
+            Loc.Mark("Pero si ya tiene una igual o mejor. No le hago otra, amigo."),
+            Loc.Mark("Esa ya la tiene, y la que lleva rinde lo mismo o más. Guarde el material."),
         ],
         [CarpenterLine.UnknownTool] =
         [
-            "Esa no la hago yo. Elija de la lista.",
-            "No conozco esa herramienta. Mire lo que tengo en la lista.",
+            Loc.Mark("Esa no la hago yo. Elija de la lista."),
+            Loc.Mark("No conozco esa herramienta. Mire lo que tengo en la lista."),
         ],
         [CarpenterLine.Maxed] =
         [
-            "Ya tiene lo mejor que sé hacer. Por ahora no le puedo ofrecer más.",
-            "Más que eso no me sale, amigo: tiene lo mejor de mi taller.",
+            Loc.Mark("Ya tiene lo mejor que sé hacer. Por ahora no le puedo ofrecer más."),
+            Loc.Mark("Más que eso no me sale, amigo: tiene lo mejor de mi taller."),
         ],
     };
 

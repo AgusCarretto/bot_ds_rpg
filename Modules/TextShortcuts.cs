@@ -14,10 +14,10 @@ public sealed record CoinflipRequest(string Amount, string Side);
 
 public static class TextShortcuts
 {
-    public const string SellHelp =
-        "Vendé sin pasar por la tienda: **aa sell all** (todo lo vendible de tu mochila), **aa sell arma**, **aa sell amuleto** (lo que llevás puesto), **aa sell <ítem>** o **aa sell <cantidad> <ítem>** (también **aa sell all <ítem>** para todas las unidades de ese ítem).";
+    public static string SellHelp =>
+        Loc.T("Vendé sin pasar por la tienda: **aa sell all** (todo lo vendible de tu mochila), **aa sell arma**, **aa sell amuleto** (lo que llevás puesto), **aa sell <ítem>** o **aa sell <cantidad> <ítem>** (también **aa sell all <ítem>** para todas las unidades de ese ítem).");
 
-    public const string CoinflipHelp = "Cara o cruz: **aa cf h 100** (h = heads, t = tails) y la apuesta puede ser un número, **10k**, **1m** o **all**.";
+    public static string CoinflipHelp => Loc.T("Cara o cruz: **aa cf h 100** (h = heads, t = tails) y la apuesta puede ser un número, **10k**, **1m** o **all**.");
 
     private static readonly string[] WeaponWords = ["arma", "weapon"];
     private static readonly string[] AmuletWords = ["amuleto", "amulet"];
@@ -110,14 +110,14 @@ public static class TextShortcuts
                 var player = await userRepository.GetByDiscordIdAsync(discordId);
                 if (player is null)
                 {
-                    return new ShopModule.ShopActionResult("Todavía no tenés cuenta: empezá con **/start**.", null);
+                    return new ShopModule.ShopActionResult(Loc.T("Todavía no tenés cuenta: empezá con **/start**."), null);
                 }
 
                 int? itemId = weapon ? player.WeaponId : player.AmuletId;
                 var worn = itemId is int id ? await itemRepository.GetByIdAsync(id) : null;
                 if (worn is null)
                 {
-                    return new ShopModule.ShopActionResult($"No tenés {(weapon ? "ningún arma equipada" : "ningún amuleto equipado")} para vender.", null);
+                    return new ShopModule.ShopActionResult((weapon ? Loc.T("No tenés ningún arma equipada para vender.") : Loc.T("No tenés ningún amuleto equipado para vender.")), null);
                 }
 
                 return await ShopModule.ExecuteSellAsync(itemRepository, shopRepository, gameEvents, discordId, worn.Name, 1);

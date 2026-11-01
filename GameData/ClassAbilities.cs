@@ -67,6 +67,16 @@ public static class ClassAbilities
         "cada una con su propia chance de crítico.",
         null);
 
+    // La descripción en el idioma de quien la lee (v0.45.0). La de la tabla (Description) se arma una sola vez y queda en español.
+    public static string DescribeLocalized(ClassAbility ability) => ability.Kind switch
+    {
+        AbilityKind.Aguante => Loc.F($"Atacás al {Pct(AbilityTuning.AguanteStrikeMultiplier)} y durante {AbilityTuning.AguanteEffectTurns} turnos recibís {Pct(1 - AbilityTuning.AguanteDamageTakenMultiplier)} menos de daño."),
+        AbilityKind.BolaDeFuego => Loc.F($"Un golpe de fuego que pega el {Pct(AbilityTuning.BolaDeFuegoMultiplier)} de tu daño."),
+        AbilityKind.Sombra => Loc.F($"Te desvanecés este turno (no atacás): {AbilityTuning.SombraEffectTurns} turnos con {Pct(AbilityTuning.SombraTotalDodgeChance)} de esquive, y tu próximo ataque es crítico garantizado (+{Pct(AbilityTuning.SombraAmbushMultiplier - 1)})."),
+        AbilityKind.LluviaDeFlechas => Loc.F($"Disparás {AbilityTuning.LluviaArrows} flechas al {Pct(AbilityTuning.LluviaArrowMultiplier)} del daño, cada una con su propia chance de crítico."),
+        _ => ability.Description,
+    };
+
     public static ClassAbility? For(string playerClass) => playerClass switch
     {
         "Guerrero" => Aguante,
