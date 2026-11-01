@@ -136,8 +136,8 @@ public class ReminderModule(IUserRepository userRepository, IReminderRepository 
             // La expedición de la mascota no tiene una espera fija (1, 4 u 8 horas según lo que se elija): se avisa cuando vuelve.
             string wait = ReminderCatalog.WaitOf(k.Key) is { } w ? Loc.F($"cada {ReminderCatalog.WaitLabel(w)}") : Loc.T("cuando vuelve");
             return off.Contains(k.Key)
-                ? $"🔕 {k.Emoji} ~~{k.Name}~~ · {wait}"
-                : $"✅ {k.Emoji} **{k.Name}** · {wait}";
+                ? $"🔕 {k.Emoji} ~~{Loc.Tr(k.Name)}~~ · {wait}"
+                : $"✅ {k.Emoji} **{Loc.Tr(k.Name)}** · {wait}";
         });
 
         var embed = new EmbedBuilder()

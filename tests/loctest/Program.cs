@@ -284,6 +284,11 @@ allowedNames.AddRange(await db.QueryAsync<string>("SELECT name FROM items"));
 allowedNames.AddRange(await db.QueryAsync<string>("SELECT name FROM monsters"));
 allowedNames.AddRange(await db.QueryAsync<string>("SELECT name FROM zones"));
 allowedNames.AddRange(ClassCatalog.All.Select(c => c.Name));
+// v0.45.0: los nombres que se quedan en español a propósito (efectos y tiers del encantamiento, tiers del dragón, la historia).
+allowedNames.AddRange(Enchantments.Kinds.Select(k => k.Name));
+allowedNames.AddRange(Enumerable.Range(1, Enchantments.MaxTier).Select(Enchantments.TierName));
+allowedNames.AddRange(Enumerable.Range(1, DragonRules.MaxTier).Select(DragonRules.TierName));
+allowedNames.AddRange(["Las Crónicas del Fogón", "Crónicas del Fogón"]);
 Check(LeakCheck.NoSpanish("Mate Amargo", allowedNames).Ok && LeakCheck.NoSpanish("You bought a Baúl de Roble", allowedNames).Ok && !LeakCheck.NoSpanish("Tenés 3 HP", allowedNames).Ok && !LeakCheck.NoSpanish("Estás acá", allowedNames).Ok && LeakCheck.NoSpanish("Use `/taberna` or `aa daily`", allowedNames).Ok,
     "el revisor deja pasar los nombres permitidos y los comandos entre comillas, y atrapa «Tenés» y los acentos del español");
 
@@ -855,7 +860,7 @@ Console.WriteLine("\n== 13. Ayuda ==");
 allowedNames.AddRange(AchievementCatalog.Categories.Select(c => c.Name));   // las páginas de /achievements se llaman así en los dos idiomas
 var interactions13 = new InteractionService(client); await interactions13.AddModulesAsync(typeof(LanguageModule).Assembly, sp);
 var slashNames13 = interactions13.SlashCommands.Select(c => c.Name).Concat(interactions13.SlashCommands.Select(c => c.Module.SlashGroupName)).Where(n => n is not null).ToHashSet();
-string[] translatedTopics = ["hunt", "gather", "shop", "daily", "missions"];
+string[] translatedTopics = HelpTopics.All.Select(t => t.Key).ToArray(); // v0.45.0: todos los temas tienen su inglés.
 var helpScreens = new List<(string Name, Func<Embed> Make)>
 {
     ("el tutorial", HelpModule.BuildTutorialEmbed),
@@ -903,7 +908,7 @@ foreach (var topic in untouched)
     if (spanishText != inEnglishText) { changed.Add(topic.Key); }
 }
 
-Check(untouched.Count == HelpTopics.All.Count - 5 && changed.Count == 0, $"los {untouched.Count} temas que no se traducen salen idénticos con Use(\"en\") (distintos: {string.Join(", ", changed)})");
+Check(untouched.Count == 0 && HelpTopics.All.All(t => t.InEnglish), "todos los temas de /info están traducidos (ninguno queda entero en español)");
 Embed notFoundEn; using (Loc.Use("en")) { notFoundEn = HelpTopics.Resolve("xyzzy"); }
 Check(LeakCheck.NoSpanish(notFoundEn.Title + " " + notFoundEn.Description + " " + string.Join(" ", notFoundEn.Fields.Select(f => f.Name)), allowedNames).Ok,"el marco de la lista de temas está en inglés (los resúmenes de los temas sin traducir siguen en español)");
 Check(notFoundEn.Title == "📚 Help by topic" && notFoundEn.Description!.Contains("I couldn't find the topic **xyzzy**") && notFoundEn.Fields.Length == 2, $"un tema que no existe (en inglés): {notFoundEn.Description!.Split('\n')[0]}");
