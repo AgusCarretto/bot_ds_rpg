@@ -2,10 +2,10 @@ using BotDsRpg.GameData;
 
 namespace BotDsRpg.Repositories;
 
-public enum WorldBossJoinStatus { Joined, AlreadyJoined, OnCooldown, NoAccount, Closed }
+// v0.46.0: anotarse ya no gasta el cooldown del jefe (el dueño: «que sea un cd aparte, nadie lo está jugando, y más ahora que son 10 hrs»), así que no hay estado «en cooldown»: el único límite es uno por día.
+public enum WorldBossJoinStatus { Joined, AlreadyJoined, NoAccount, Closed }
 
-// CooldownLeft solo importa con OnCooldown: lo que falta del cooldown del jefe, que es el que se gasta al anotarse.
-public sealed record WorldBossJoinOutcome(WorldBossJoinStatus Status, TimeSpan CooldownLeft);
+public sealed record WorldBossJoinOutcome(WorldBossJoinStatus Status);
 
 public sealed record WorldBossEntry(ulong DiscordId, string DisplayName, DateTime JoinedAt);
 

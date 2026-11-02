@@ -23,8 +23,9 @@ public sealed record BlackjackState(IReadOnlyList<Card> Player, IReadOnlyList<Ca
 // El blackjack del casino (v0.25.0, el dueño: «armate el bj, aa bj 10k»). Puro: las cartas salen de la función draw que se le pasa (en el juego, un mazo infinito al azar; en las pruebas, un guion).
 // Reglas, todas acá:
 //   · Mazo infinito: cada carta es uniforme entre 13 valores (el 10, J, Q y K valen 10, o sea 4 de cada 13).
-//   · Se reparten dos cartas al jugador y dos a la banca (de la banca se ve una). Un blackjack «natural» (As + 10 en las dos primeras) paga 3 a 2; si los dos lo tienen es empate; si lo tiene SOLO la banca, se pierde
-//     la mano al instante (la banca «mira» antes de que el jugador juegue).
+//   · Se reparten dos cartas al jugador y dos a la banca (de la banca se ve una). Un blackjack «natural» (As + 10 en las dos primeras) paga 3 a 2; si los dos lo tienen es empate. Si lo tiene SOLO la banca,
+//     la mano SIGUE (v0.46.0, el dueño: «que no pierdas al instante cuando la máquina tiene 21, porque si llegás a 21 podrías empatar»): el jugador juega a ciegas como siempre y, al
+//     comparar, su 21 empata con el de la banca y cualquier otra cosa pierde (doblando, pierde el doble). Hasta la v0.45 la banca «miraba» y la mano se perdía antes de jugar.
 //   · El jugador pide, se planta o dobla (solo con las dos primeras cartas: una sola carta más y la apuesta se duplica). Sin dividir, sin seguro, sin rendirse. Llegar a 21 pidiendo planta solo.
 //   · La banca pide hasta 17 y SE PLANTA en todos los 17 (también en el 17 blando).
 //   · Pierde quien se pasa de 21 (el jugador se pasa primero: la banca ni juega). Ganar paga 1 a 1, empatar devuelve la apuesta.
@@ -52,10 +53,10 @@ public static class Blackjack
         var player = new List<Card> { draw(), draw() };
         var dealer = new List<Card> { draw(), draw() };
 
+        // El blackjack de la banca no corta la mano: se resuelve al plantarse (su 21 contra el del jugador).
         bool playerNatural = IsBlackjack(player), dealerNatural = IsBlackjack(dealer);
         var outcome = playerNatural && dealerNatural ? BlackjackOutcome.Push
             : playerNatural ? BlackjackOutcome.PlayerBlackjack
-            : dealerNatural ? BlackjackOutcome.DealerWin
             : BlackjackOutcome.InProgress;
 
         return new BlackjackState(player, dealer, stake, false, outcome);

@@ -387,21 +387,23 @@ Check(!DragonRules.RollBreed(2, 0, new FixedRandom(0.5), DragonRules.SoloChanceF
 await Clean(); await Player(A, 100000); await Player(B, 1000); await Player(C, 1000);
 await Dragon(A, "oro", 2);
 var soloFail = await dragons.BreedSoloAsync(A, new FixedRandom(0.5));
-Check(soloFail.Status == DragonBreedStatus.Bred && !soloFail.Success && soloFail.A is { Tier: 2, FailStreak: 1 } && !soloFail.A.CanBreed, "solo, con mala suerte: el dragón sigue en el tier 2, suma un fallo y descansa igual que criando con alguien");
+Check(soloFail.Status == DragonBreedStatus.Bred && !soloFail.Success && soloFail.A is { Tier: 2, FailStreak: 0, SoloFailStreak: 1 } && !soloFail.A.CanBreed, "solo, con mala suerte: el dragón sigue en el tier 2, suma un fallo A SU CONTADOR DE SOLO (el de pareja no se toca) y descansa igual que criando con alguien");
 Check((await dragons.BreedSoloAsync(A, new FixedRandom(0))).Status == DragonBreedStatus.OnCooldown, "y mientras descansa no puede criar solo");
 await db.ExecuteAsync("UPDATE player_dragons SET last_bred_at = NULL WHERE discord_id = @id", new { id = (long)A });
 var soloWin = await dragons.BreedSoloAsync(A, new FixedRandom(0.1));
 Check(soloWin.Success && soloWin.Tier == 2 && soloWin.A is { Tier: 3, FailStreak: 0 } && !soloWin.A.CanBreed, "con suerte (por debajo del tercio de la chance) sube de tier, reinicia los fallos y descansa");
-await db.ExecuteAsync("UPDATE player_dragons SET last_bred_at = NULL, fail_streak = @cap WHERE discord_id = @id", new { id = (long)A, cap = DragonRules.PityCap(3) });
+await db.ExecuteAsync("UPDATE player_dragons SET last_bred_at = NULL, solo_fail_streak = @cap WHERE discord_id = @id", new { id = (long)A, cap = DragonRules.PityCap(3) });
 Check(!(await dragons.BreedSoloAsync(A, new FixedRandom(0.999))).Success, "solo, el tope de fallos que ya alcanza con pareja todavía NO alcanza (hace falta el triple)");
-await db.ExecuteAsync("UPDATE player_dragons SET last_bred_at = NULL, fail_streak = @cap WHERE discord_id = @id", new { id = (long)A, cap = DragonRules.SoloPityCap(3) });
+await db.ExecuteAsync("UPDATE player_dragons SET last_bred_at = NULL, solo_fail_streak = 0, fail_streak = 999 WHERE discord_id = @id", new { id = (long)A });
+Check(!(await dragons.BreedSoloAsync(A, new FixedRandom(0.999))).Success, "v0.46.0: los fallos de la PAREJA no cuentan para la piedad de criar solo (los contadores van separados)");
+await db.ExecuteAsync("UPDATE player_dragons SET last_bred_at = NULL, fail_streak = 0, solo_fail_streak = @cap WHERE discord_id = @id", new { id = (long)A, cap = DragonRules.SoloPityCap(3) });
 Check((await dragons.BreedSoloAsync(A, new FixedRandom(0.999))).Success, "la piedad cuenta también solo: con el tope de fallos seguidos (el triple) el intento sale seguro");
 Check((await dragons.BreedSoloAsync(GHOST)).Status == DragonBreedStatus.NoDragon && (await dragons.BreedSoloAsync(B)).Status == DragonBreedStatus.NoDragon, "sin dragón no se cría solo");
 await Dragon(B, "oro", 10);
 Check((await dragons.BreedSoloAsync(B)).Status == DragonBreedStatus.MaxTier, "en el tier máximo tampoco");
 await Dragon(C, "defensa", 4);
 var soloRace = await Task.WhenAll(Enumerable.Range(0, 12).Select(_ => dragons.BreedSoloAsync(C, new FixedRandom(0.999))));
-Check(soloRace.Count(r => r.Status == DragonBreedStatus.Bred) == 1 && soloRace.Count(r => r.Status == DragonBreedStatus.OnCooldown) == 11 && (await dragons.GetAsync(C))!.FailStreak == 1, "12 intentos solos a la vez: se hace UNO y los demás encuentran el descanso");
+Check(soloRace.Count(r => r.Status == DragonBreedStatus.Bred) == 1 && soloRace.Count(r => r.Status == DragonBreedStatus.OnCooldown) == 11 && (await dragons.GetAsync(C))!.SoloFailStreak == 1 && (await dragons.GetAsync(C))!.FailStreak == 0, "12 intentos solos a la vez: se hace UNO y los demás encuentran el descanso");
 await db.ExecuteAsync("UPDATE player_dragons SET tier = 2, fail_streak = 0, last_bred_at = NULL WHERE discord_id = @id", new { id = (long)A });
 var winEmbed = await DragonModule.ExecuteSoloBreedAsync(dragons, A, new FixedRandom(0.1));
 await db.ExecuteAsync("UPDATE player_dragons SET fail_streak = 0, last_bred_at = NULL WHERE discord_id = @id", new { id = (long)A });
@@ -457,7 +459,7 @@ var invite2 = await DragonModule.PrepareBreedAsync(dragons, offers, A, B, false)
 Check(invite2.Embed!.Description.Contains("uno y el otro no") && invite2.Embed.Description.Contains("60"), "la invitación avisa que cada dragón tira su suerte (puede subir uno y el otro no)");
 await Dragon(D, "oro", 6, streak: 5);
 var viewD = (await DragonModule.BuildDragonViewAsync(dragons, D)).Embed.Fields.Single(f => f.Name == "Criar").Value;
-Check(viewD.Contains("Fallos seguidos: **5**") && viewD.Contains($"**{DragonRules.PityCap(6)}**") && viewD.Contains($"**{DragonRules.SoloPityCap(6)}**"), "la pantalla muestra los fallos seguidos del dragón y los dos topes: con un amigo y solo (el triple)");
+Check(viewD.Contains($"Fallos seguidos con un amigo: **5/{DragonRules.PityCap(6)}**") && viewD.Contains($"solo: **0/{DragonRules.SoloPityCap(6)}**") && viewD.Contains("van por separado"), "la pantalla muestra los fallos seguidos del dragón y los dos topes: con un amigo y solo (el triple)");
 
 Console.WriteLine("\n== 17. Al subir de tier cambia el tipo; la Comida de Dragón lo conserva ==");
 var foodItem = await items.GetByNameAsync(DragonRules.FoodItemName);

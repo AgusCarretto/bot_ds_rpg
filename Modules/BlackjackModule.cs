@@ -109,7 +109,9 @@ public class BlackjackModule(IBlackjackService blackjack) : InteractionModuleBas
             {
                 BlackjackOutcome.PlayerBlackjack => Loc.F($"🎉 **¡Blackjack!** Paga 3 a 2: cobrás **{payout}** (+{net})."),
                 BlackjackOutcome.PlayerWin => Loc.F($"✅ **¡Ganaste!** Cobrás **{payout}** (+{net})."),
-                BlackjackOutcome.Push => Loc.F($"🤝 **Empate.** Te devuelvo los **{state.Stake}**."),
+                BlackjackOutcome.Push => Blackjack.IsBlackjack(state.Dealer) && !Blackjack.IsBlackjack(state.Player)
+                    ? Loc.F($"🤝 **¡Empate!** La banca tenía blackjack, pero llegaste a 21. Te devuelvo los **{state.Stake}**.")
+                    : Loc.F($"🤝 **Empate.** Te devuelvo los **{state.Stake}**."),
                 BlackjackOutcome.PlayerBust => Loc.F($"💥 **Te pasaste.** Perdés **{state.Stake}**."),
                 _ => Blackjack.IsBlackjack(state.Dealer) ? Loc.F($"😢 **La banca tenía blackjack.** Perdés **{state.Stake}**.") : Loc.F($"😢 **La banca gana.** Perdés **{state.Stake}**."),
             });

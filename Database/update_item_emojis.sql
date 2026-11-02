@@ -53,7 +53,7 @@ UPDATE items SET emoji = '<:cofre_legendario:1555578509601280113>' WHERE name = 
 UPDATE items SET emoji = '<:cofre_mitico:1555578518115590245>' WHERE name = 'Arca del Soberano';
 -- Las dos cajas de premio nuevas (v0.14.0), con su arte propio desde el 2026-10-19: el Cofre de Escoria (el cofre del jefe de la Zona 5, de escoria volcánica) y el Brasero del Fogón (el cofre de El Asador Eterno,
 -- un brasero de hierro negro con grietas amarillo-naranja, hermano del Trinche y la Brasa).
-UPDATE items SET emoji = '<:cofre_escoria:1561758887038820615>' WHERE name = 'Cofre de Escoria';
+UPDATE items SET emoji = '<:cofre_escoria:1562102152090878113>' WHERE name = 'Cofre de Escoria';
 UPDATE items SET emoji = '<:brasero:1561758888951418940>' WHERE name = 'Brasero del Fogón';
 
 -- 🩸 Material — drops de monstruo (los 15 de las zonas) y trofeos de caja (32/32 completo). El rework de la v0.7.0 retiró 6 (Colmillo de Cimarrón y los 5 drops de jefe): sus emojis quedan libres en el portal (drop_comunes_colmillo, drops_raros_colmilloreyjabali, pelaje_plateado_alfa, forja_hierro, brasa_eterna, corazon_del_soberano)

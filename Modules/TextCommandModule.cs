@@ -193,7 +193,7 @@ public partial class TextCommandModule(
     {
         try
         {
-            var embed = await CooldownModule.BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id, arenaService, bonusService, voteClient.Enabled, petRepository, dragonRepository, petExpeditionRepository);
+            var embed = await CooldownModule.BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id, arenaService, bonusService, voteClient.Enabled, petRepository, dragonRepository, petExpeditionRepository, worldBossService);
             await ReplyAsync(embed: embed);
         }
         catch (Exception ex)

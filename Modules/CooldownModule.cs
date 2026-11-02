@@ -6,7 +6,8 @@ using Discord.Interactions;
 using BotDsRpg.Services;
 
 public class CooldownModule(
-    ICooldownRepository cooldownRepository, IUserRepository userRepository, IArenaService arenaService, IPlayerBonusService bonusService, ITopGgVoteClient voteClient, IPetRepository petRepository, IDragonRepository dragonRepository, IPetExpeditionRepository expeditionRepository)
+    ICooldownRepository cooldownRepository, IUserRepository userRepository, IArenaService arenaService, IPlayerBonusService bonusService, ITopGgVoteClient voteClient, IPetRepository petRepository, IDragonRepository dragonRepository, IPetExpeditionRepository expeditionRepository,
+    IWorldBossService worldBossService)
     : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("cd", "Mirá tus cooldowns: cazar, viajar, talar, minar, jefe, cajas, mascotas, diario y la Arena de hoy.")]
@@ -16,7 +17,7 @@ public class CooldownModule(
 
         try
         {
-            var embed = await BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id, arenaService, bonusService, voteClient.Enabled, petRepository, dragonRepository, expeditionRepository);
+            var embed = await BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id, arenaService, bonusService, voteClient.Enabled, petRepository, dragonRepository, expeditionRepository, worldBossService);
             await FollowupAsync(embed: embed, ephemeral: true);
         }
         catch (Exception ex)
@@ -37,7 +38,7 @@ public class CooldownModule(
     // sin mascotas que puedan subir de nivel la línea no sale, y si falla leerlas tampoco: /cd nunca se rompe por esto.
     public static async Task<Embed> BuildStatusEmbedAsync(
         ICooldownRepository cooldownRepository, IUserRepository userRepository, ulong discordId, IArenaService? arenaService = null, IPlayerBonusService? bonusService = null, bool voteEnabled = false,
-        IPetRepository? petRepository = null, IDragonRepository? dragonRepository = null, IPetExpeditionRepository? expeditionRepository = null)
+        IPetRepository? petRepository = null, IDragonRepository? dragonRepository = null, IPetExpeditionRepository? expeditionRepository = null, IWorldBossService? worldBossService = null)
     {
         var lines = new List<string>();
         var player = await userRepository.GetOrCreateUserAsync(discordId);
@@ -55,6 +56,12 @@ public class CooldownModule(
         foreach (var definition in CooldownCatalog.All)
         {
             await AddLineAsync(definition);
+
+            // El jefe mundial (v0.46.0) va justo debajo del jefe: tiene su propio límite (uno por día) y ya no gasta el cooldown del jefe.
+            if (definition == CooldownCatalog.Boss && await TryBuildWorldBossLineAsync(worldBossService, discordId) is { } worldBossLine)
+            {
+                lines.Add(worldBossLine);
+            }
         }
 
         // Las versiones avanzadas de /chop y /mine: solo con el oficio al nivel máximo (GameData/ProfessionRules.cs).
@@ -214,6 +221,31 @@ public class CooldownModule(
         var next = growing.Min(p => PetRules.RemainingCooldown(p, nowUtc, feedCooldown));
         return $"🐾 **{Loc.T("Mascotas")}**: " + Loc.F($"{TimeFormat.Remaining(next)} restantes") + (growing.Count > 1 ? Loc.T(" (la primera)") : string.Empty);
     }
+
+    private static async Task<string?> TryBuildWorldBossLineAsync(IWorldBossService? worldBossService, ulong discordId)
+    {
+        if (worldBossService is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            var listing = await worldBossService.ListAsync(DateTime.UtcNow);
+            return WorldBossLine(listing.Entries.Any(e => e.DiscordId == discordId), listing.UntilPlay);
+        }
+        catch (Exception ex)
+        {
+            BotLog.Warn(ex);
+            return null;
+        }
+    }
+
+    // La línea del jefe mundial: anotado ✅ con lo que falta para la pelea de las 00:00, o «¡Listo!» para anotarse. Pública y pura para probarla sin base.
+    public static string WorldBossLine(bool joined, TimeSpan untilPlay) =>
+        joined
+            ? Loc.F($"🌍 **Jefe mundial**: anotado ✅ — se pelea en {TimeFormat.Remaining(untilPlay)}")
+            : Loc.F($"🌍 **Jefe mundial**: **¡Listo!** ✅ Anotate con **/miniboss** (se pelea en {TimeFormat.Remaining(untilPlay)})");
 
     private static async Task<string?> TryBuildArenaLineAsync(IArenaService? arenaService, ulong discordId)
     {

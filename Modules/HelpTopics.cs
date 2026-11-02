@@ -27,6 +27,7 @@ public static class HelpTopics
         new("play", "🎰", Loc.Mark("El casino"), Loc.Mark("coinflip y slots: cuánto paga cada uno"), ["casino", "slots", "coinflip", "apostar", "juego"], Play, InEnglish: true),
         new("hunt", "🏹", Loc.Mark("Combate"), Loc.Mark("cazar, viajar, huir, curarte y el modo automático"), ["combate", "cazar", "caceria", "travel", "viaje", "autohunt", "pelea", "pelear", "combat"], Hunt, InEnglish: true),
         new("boss", "👑", Loc.Mark("Jefes y equipo"), Loc.Mark("el jefe de cada zona y cómo hacerlo con amigos"), ["jefe", "jefes", "raid", "raids", "grupo"], Boss, InEnglish: true),
+        new("miniboss", "🌍", Loc.Mark("El jefe mundial"), Loc.Mark("el jefe del día que pelean todos juntos a la medianoche"), ["worldboss", "world boss", "wb", "jefe mundial", "jefemundial", "mundial", "minijefe"], Miniboss, InEnglish: true),
         new("forge", "🔨", Loc.Mark("Herrería y equipo"), Loc.Mark("forjar armas y amuletos, y las herramientas del Carpintero"), ["herrero", "herreria", "forja", "forjar", "recetas", "receta", "equipo", "arma", "armas", "amuleto", "carpintero", "herramientas", "herramienta", "hacha", "pico", "tools", "tool", "equipamiento"], Forge, InEnglish: true),
         new("zone", "🗺️", Loc.Mark("Zonas"), Loc.Mark("cómo se avanza por el mundo"), ["zona", "zonas", "mundo", "mapa"], Zone, InEnglish: true),
         new("boxes", "📦", Loc.Mark("Cajas"), Loc.Mark("qué dan, cómo se consiguen y cada cuánto"), ["caja", "cajas", "open", "abrir", "cofre", "cofres"], Boxes, InEnglish: true),
@@ -46,7 +47,7 @@ public static class HelpTopics
         new("daily", "🎁", Loc.Mark("Diario y regalos"), Loc.Mark("la recompensa diaria, la racha y regalar oro"), ["diario", "racha", "give", "dar", "regalo", "regalar"], Daily, InEnglish: true),
         new("stats", "📊", Loc.Mark("Nivel y estadísticas"), Loc.Mark("EXP, vida, ataque y defensa"), ["nivel", "exp", "xp", "ataque", "defensa", "vida", "hp", "perfil", "level"], Stats, InEnglish: true),
         new("reminders", "⏰", Loc.Mark("Recordatorios"), Loc.Mark("los avisos del bot cuando termina una espera"), ["recordatorio", "recordatorios", "reminder", "reminders", "aviso", "avisos", "alarma", "alarmas"], Reminders, InEnglish: true),
-        // OJO: Discord muestra como máximo 25 sugerencias, así que con 27 temas la lista desplegable SIN escribir nada deja afuera los dos últimos (estos: reminders y vote, los menos urgentes). Se encuentran escribiendo («votar», «avisos») y figuran en /info;
+        // OJO: Discord muestra como máximo 25 sugerencias, así que con 28 temas la lista desplegable SIN escribir nada deja afuera los tres últimos (stats, reminders y vote). Desde la v0.46.0 el jefe mundial tiene tema propio. Se encuentran escribiendo («votar», «avisos») y figuran en /info;
         // el próximo tema que se sume no tiene lugar sin sacar otro o fundirlo con uno existente (las herramientas del Carpintero, por eso, son un campo del tema forge y no un tema aparte).
         new("vote", "🗳️", Loc.Mark("Votar en top.gg"), Loc.Mark("qué da cada voto y cómo se cobra"), ["votar", "voto", "votos", "votacion", "votación", "topgg", "top.gg"], Vote, InEnglish: true),
     ];
@@ -208,14 +209,14 @@ public static class HelpTopics
     private static Embed Play() => Topic(Self("play"),
         Loc.F($"**/play** apuesta tu oro. Apuesta mínima: **{CasinoModule.MinBet}**. Podés escribir **all** para apostar todo lo que llevás en la billetera, o **10k** / **1m** para mil / millón. En texto: `aa cf h 100` (h = heads, t = tails) y `aa slots 100`."),
         (Loc.T("🪙 Coinflip"),
-            Loc.F($"Elegís cara (**Heads**) o cruz (**Tails**) y sale al azar: 50 % de acertar. Si acertás cobrás **×{CasinoService.CoinflipMultiplier}** lo apostado.")),
+            Loc.F($"Elegís cara (**Heads**) o cruz (**Tails**) y sale al azar: 50 % de acertar. Si acertás cobrás **×{CasinoService.CoinflipMultiplier}** lo apostado. Y a veces (1 de cada {1000 / CasinoService.CoinflipEdgeChancePerMille}) la moneda cae **de canto**: sorpresa, cobrás **×{CasinoService.CoinflipEdgeMultiplier}** elijas lo que elijas.")),
         (Loc.T("🎰 Slots"),
             Loc.F($"Salen tres símbolos al azar ({string.Join(' ', CasinoService.SlotsSymbolList)}): tres iguales ({Dec(CasinoService.SlotsThreeMatchChance * 100)} % de las veces) pagan **×{CasinoService.SlotsThreeMatchMultiplier}**, ") +
             Loc.F($"dos iguales ({Dec(CasinoService.SlotsPairChance * 100)} %) pagan **×{Dec(CasinoService.SlotsPairMultiplier)}** y tres distintos ({Dec(CasinoService.SlotsAllDifferentChance * 100)} %) pierden la apuesta.\n") +
             Loc.F($"A la larga la casa se queda con el **{Dec((1 - CasinoService.SlotsReturnToPlayer) * 100)} %** de lo que se apuesta: es un juego de suerte, no una forma de juntar oro.")),
         (Loc.T("🃏 Blackjack"),
             Loc.F($"**/play game:blackjack** o `aa bj 10k` reparte una mano: te acercás a **21** sin pasarte y le ganás a la banca. Con los botones **Pedir** (otra carta), **Plantarte** o **Doblar** (solo con las dos primeras cartas: una carta más y la apuesta se duplica); por texto `aa bj hit` / `aa bj stand` / `aa bj double`. ") +
-            Loc.F($"La banca pide hasta 17 y se planta en todos los 17. Ganar paga 1 a 1, el **blackjack** (As + 10 de entrada) paga **3 a 2**, el empate devuelve la apuesta. No se divide ni hay seguro. La apuesta se cobra al repartir y, si dejás la mano sin tocar {BlackjackService.IdleSeconds} segundos, la banca te planta. ") +
+            Loc.F($"La banca pide hasta 17 y se planta en todos los 17. Ganar paga 1 a 1, el **blackjack** (As + 10 de entrada) paga **3 a 2**, el empate devuelve la apuesta. No se divide ni hay seguro. Si la banca tiene blackjack la mano **sigue**: si llegás a 21, empatás. La apuesta se cobra al repartir y, si dejás la mano sin tocar {BlackjackService.IdleSeconds} segundos, la banca te planta. ") +
             Loc.T("Jugando bien la casa se queda con ~1 %; jugando mal, con más.")),
         (Loc.T("📈 Tus números"), Loc.T("**/history** muestra cuánto ganaste y perdiste en el casino, y la diferencia.")));
 
@@ -248,10 +249,21 @@ public static class HelpTopics
             Loc.T("**Todos tienen que tener la misma zona máxima** (la que ves en tu perfil como \"máx. Zona N\"): si no, el grupo se rechaza. ") +
             Loc.T("Cada uno puede **comer una vez** por pelea con el botón 🍖 **Comer** (o con **/use**): cura, pero gasta tu turno. Los banquetes también valen (curan y te dan su +% de ataque en el acto). ") +
             Loc.T("La vida del jefe crece con cada jugador y cada uno que le pega cobra la recompensa entera. Comparte cooldown con el jefe en solitario.")),
-        (Loc.T("🌍 /miniboss (aa miniboss, el jefe mundial)"),
-            Loc.F($"Un jefe distinto cada día que **pelean todos los anotados juntos a las 00:00** (hora de Uruguay). **No pide nivel**: sirve para quien todavía no llega al del jefe. Anotarte **gasta el mismo cooldown del jefe** ({Dur(CooldownCatalog.Boss.Duration)}). ") +
-            Loc.F($"Cada anotado cobra de **{WorldBossRules.MinHunts} a {WorldBossRules.MaxHunts} cacerías de oro de su zona**: {WorldBossRules.MaxHunts} si el jefe cae, menos si no; con unos {WorldBossRules.FullCrowd:0} jugadores normales cae. **Mientras más gente, mejor**. Se cuenta en el canal donde se anotó el primero.")),
+        (Loc.T("🌍 /miniboss (el jefe mundial)"),
+            Loc.T("Un jefe del día que pelean **todos los anotados juntos** a las 00:00. No pide nivel y **no gasta el cooldown del jefe**. Todo en **/info tema:miniboss**.")),
         (Loc.T("🎒 Antes de ir"), Loc.T("Llevá el arma y el amuleto de tu zona (**/info tema:forge**) y la vida llena. Si perdés, pagás la penalidad: **/info tema:death**.")));
+
+    private static Embed Miniboss() => Topic(Self("miniboss"),
+        Loc.T("Todos los días aparece **un jefe para todo el servidor**. Durante el día te anotás y a la medianoche lo pelean **todos los anotados juntos**: mientras más gente, más vida le sacan y más cobra cada uno."),
+        (Loc.T("📝 Anotarte"),
+            Loc.T("**/miniboss** (en texto `aa miniboss` o `aa wb`). **No pide nivel** (sirve aunque todavía no llegues al de **/boss**) y **no gasta ningún cooldown**: el jefe de tu zona lo seguís haciendo igual. Te anotás **una vez por día**; escribir **/miniboss** otra vez te muestra cuántos van. En **/cd** ves si ya estás anotado, justo debajo del jefe.")),
+        (Loc.T("🕛 La pelea"),
+            Loc.T("A las **00:00** (hora de Uruguay) el bot pelea solo: no tenés que estar conectado. Cada anotado le pega según **su ataque comparado con lo esperable en su zona** (arma, nivel y encantamiento), con un poco de suerte del día; así un jugador de la Zona 1 bien equipado pega tanto como uno de la Zona 5 bien equipado. ") +
+            Loc.T("Se cuenta en el canal donde se anotó el primero: quiénes fueron, los golpes más fuertes, cuánta vida le sacaron y el MVP.")),
+        (Loc.T("💰 El premio"),
+            Loc.F($"Cada anotado cobra lo mismo, en **cacerías de oro de SU zona**: **{WorldBossRules.MaxHunts}** si el jefe cae y, si no, de **{WorldBossRules.MinHunts}** a {WorldBossRules.MaxHunts} según cuánta vida le sacaron entre todos. ") +
+            Loc.F($"Con unos **{WorldBossRules.FullCrowd:0} jugadores** bien equipados el jefe cae. Solo, cobrás cerca de {WorldBossRules.MinHunts}: **traé amigos**.")),
+        (Loc.T("💡 Truco"), Loc.T("Anotate apenas empieza el día y avisale a tus amigos: no cuesta nada y el premio sube con cada uno que se suma.")));
 
     private static Embed Forge() => Topic(Self("forge"),
         Loc.T("En la herrería forjás armas y amuletos con materiales y oro. Todo está en la base de datos y cada uno ve las recetas de **su** clase."),
@@ -384,7 +396,7 @@ public static class HelpTopics
             Loc.F($"📊 EXP de las peleas: **{FuegoNuevoRules.PercentText(FuegoNuevoRules.XpMultiplier(1))}** el primero y cada vuelta suma más que la anterior (el 5.º acumula {FuegoNuevoRules.PercentText(FuegoNuevoRules.XpMultiplier(5))}, el 10.º {FuegoNuevoRules.PercentText(FuegoNuevoRules.XpMultiplier(10))})\n") +
             Loc.F($"Con la chance base de /hunt ({CombatRewardCalculator.HuntDropChancePercent} %); la de la caja de /travel sube en la misma proporción. El oro y el cofre del jefe no cambian.")),
         (Loc.T("💨 Lo que se va"),
-            Loc.T("Nivel y EXP, la zona y los jefes vencidos, el arma y el amuleto (con sus encantamientos), todos los materiales, drops, cajas y consumibles, el Polvo, los banquetes y los enfriamientos. Sin reembolso.")),
+            Loc.T("Nivel y EXP, la zona y los jefes vencidos, el arma y el amuleto (con sus encantamientos), todos los materiales, drops, cajas y consumibles, el Polvo y los banquetes. Sin reembolso (los cooldowns siguen como estaban).")),
         (Loc.T("🔒 Lo que se queda"),
             Loc.T("El oro (billetera y banco), las mascotas con sus huevos y su comida, los logros, las misiones cobradas, la racha diaria, las bendiciones y tus Fuegos Nuevos.")),
         (Loc.T("🙏 Bendiciones"),

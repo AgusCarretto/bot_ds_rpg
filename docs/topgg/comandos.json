@@ -629,7 +629,7 @@
   {
     "type": 1,
     "name": "miniboss",
-    "description": "Anotate al jefe mundial de hoy: se pelea entre todos a las 00:00 y gasta tu cooldown del jefe."
+    "description": "Jefe mundial del día: lo pelean todos a las 00:00. Uno por día y no gasta tu cooldown del jefe."
   },
   {
     "type": 1,

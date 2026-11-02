@@ -1,7 +1,7 @@
 namespace BotDsRpg.Repositories;
 
 // El dragón de un jugador (v0.30.0, tabla player_dragons). Name: el nombre que le puso su dueño (null = sin nombre). Level: su nivel de entrenamiento (0 hasta tier × 10). Wait = lo que falta para que pueda volver a criar (cero si ya puede; medido con el reloj de la base).
-public sealed record PlayerDragon(string Kind, int Tier, int FailStreak, TimeSpan Wait, int Level = 0, string? Name = null)
+public sealed record PlayerDragon(string Kind, int Tier, int FailStreak, TimeSpan Wait, int Level = 0, string? Name = null, int SoloFailStreak = 0)
 {
     public bool CanBreed => Wait <= TimeSpan.Zero;
 }

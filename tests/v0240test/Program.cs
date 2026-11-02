@@ -99,19 +99,17 @@ Check(ghost.Status == WorldBossJoinStatus.NoAccount && await db.ExecuteScalarAsy
 await Make(1, level: 1);
 var j1 = await repo.JoinAsync(day1, Id(1), "Uno", 555);
 var stamp1 = await BossStamp(1);
-Check(j1.Status == WorldBossJoinStatus.Joined && stamp1 is not null && (DateTime.UtcNow - DateTime.SpecifyKind(stamp1.Value, DateTimeKind.Utc)).TotalSeconds is > -5 and < 30, "un nivel 1 se anota (no pide nivel) y se gasta su cooldown del jefe");
-Check(!await adventure.TryClaimCooldownAsync(Id(1), CooldownCatalog.Boss.CommandName, CooldownCatalog.Boss.Duration), "y ahora /boss ve ese cooldown corriendo: es el mismo");
+Check(j1.Status == WorldBossJoinStatus.Joined && stamp1 is null, "un nivel 1 se anota (no pide nivel) y desde la v0.46.0 NO se gasta su cooldown del jefe");
 var j1b = await repo.JoinAsync(day1, Id(1), "Uno", 555);
-Check(j1b.Status == WorldBossJoinStatus.AlreadyJoined && await BossStamp(1) == stamp1, "anotarse otra vez dice «ya estás» y NO toca el cooldown");
+Check(j1b.Status == WorldBossJoinStatus.AlreadyJoined && await BossStamp(1) is null, "anotarse otra vez dice «ya estás» (uno por día) y tampoco toca el cooldown");
 var info1 = await repo.GetDayAsync(day1);
 Check(info1 is { Status: "open", ChannelId: 555 } && (await repo.GetEntriesAsync(day1)).Count == 1, "el día queda abierto y guarda el canal del primero que se anotó");
 
 await Make(2);
 await db.ExecuteAsync("INSERT INTO cooldowns (discord_id, command_name, last_executed_at) VALUES (@id, 'boss', now() - interval '1 hour')", new { id = Base + 2 });
+var stamp2 = await BossStamp(2);
 var busy = await repo.JoinAsync(day1, Id(2), "Dos", 555);
-Check(busy.Status == WorldBossJoinStatus.OnCooldown && busy.CooldownLeft.TotalHours is > 8.9 and < 9.1 && (await repo.GetEntriesAsync(day1)).Count == 1, $"con el cooldown del jefe corriendo (1 h de 10) no se anota y dice cuánto falta ({busy.CooldownLeft.TotalHours:F2} h)");
-await db.ExecuteAsync("UPDATE cooldowns SET last_executed_at = now() - interval '11 hours' WHERE discord_id = @id AND command_name = 'boss'", new { id = Base + 2 });
-Check((await repo.JoinAsync(day1, Id(2), "Dos", 555)).Status == WorldBossJoinStatus.Joined, "con el cooldown vencido sí se anota");
+Check(busy.Status == WorldBossJoinStatus.Joined && await BossStamp(2) == stamp2 && (await repo.GetEntriesAsync(day1)).Count == 2, "con el cooldown del jefe corriendo (1 h de 10) se anota igual y el cooldown queda como estaba: son independientes");
 
 // Carreras: 10 clicks del mismo jugador y 8 jugadores distintos a la vez.
 await Make(3);
@@ -196,10 +194,16 @@ Check(WorldBossModule.BuildBroadcast(Res(3, 1.0)).Select(m => m.Embed.Descriptio
 Console.WriteLine("\n== 6. La pantalla de anotarse ==");
 var fakeUser = FakeProxy.Make<IUser>(new() { ["Id"] = 5UL, ["Username"] = "Agus", ["IsBot"] = false });
 var boss0 = WorldBossRules.BossOf(day1);
-Embed Join(WorldBossJoinStatus s, TimeSpan? left = null) => WorldBossModule.ExecuteJoinAsync(new FakeWorldBoss { Join = new WorldBossJoinResult(s, day1, boss0, 4, TimeSpan.FromHours(3), left ?? TimeSpan.Zero) }, fakeUser, 1, DateTime.UtcNow).GetAwaiter().GetResult();
+Embed Join(WorldBossJoinStatus s) => WorldBossModule.ExecuteJoinAsync(new FakeWorldBoss { Join = new WorldBossJoinResult(s, day1, boss0, 4, TimeSpan.FromHours(3)) }, fakeUser, 1, DateTime.UtcNow).GetAwaiter().GetResult();
 var joined = Join(WorldBossJoinStatus.Joined);
-Check(joined.Title!.Contains(boss0.Name) && joined.Description.Contains("00:00") && joined.Description.Contains("30 a 50") && joined.Description.Contains("cooldown del jefe") && joined.Description.Contains("No hace falta nivel") && joined.Description.Contains("**4** anotado"), "anotarse: dice cuándo se pelea, cuánto paga, que gastó el cooldown del jefe y que no pide nivel");
-Check(Join(WorldBossJoinStatus.AlreadyJoined).Title!.Contains("Ya estabas") && Join(WorldBossJoinStatus.OnCooldown, TimeSpan.FromMinutes(95)).Description.Contains("1h 35m") && Join(WorldBossJoinStatus.NoAccount).Description.Contains("/start") && Join(WorldBossJoinStatus.Closed).Title!.Contains("cerró"), "los otros cuatro resultados, cada uno con su mensaje (y el cooldown que falta)");
+Check(joined.Title!.Contains(boss0.Name) && joined.Description.Contains("00:00") && joined.Description.Contains("30 a 50") && joined.Description.Contains("no gasta tu cooldown del jefe") && joined.Description.Contains("No hace falta nivel") && joined.Description.Contains("**4** anotado"), "anotarse: dice cuándo se pelea, cuánto paga, que NO gasta el cooldown del jefe y que no pide nivel");
+Check(Join(WorldBossJoinStatus.AlreadyJoined).Title!.Contains("Ya estabas") && Join(WorldBossJoinStatus.NoAccount).Description.Contains("/start") && Join(WorldBossJoinStatus.Closed).Title!.Contains("cerró"), "los otros tres resultados, cada uno con su mensaje");
+Check(CooldownModule.WorldBossLine(true, TimeSpan.FromMinutes(95)).Contains("anotado ✅") && CooldownModule.WorldBossLine(true, TimeSpan.FromMinutes(95)).Contains("1h 35m") && CooldownModule.WorldBossLine(false, TimeSpan.FromMinutes(95)).Contains("/miniboss"),
+    "v0.46.0: la línea de /cd dice si ya te anotaste (y cuánto falta para la pelea) o que podés anotarte");
+var cdWb = await CooldownModule.BuildStatusEmbedAsync(new CooldownRepository(factory), users, Id(1), null, null, false, null, null, null, new FakeWorldBoss { Listing = new WorldBossListing(day1, boss0, [new WorldBossEntry(Id(1), "Uno", DateTime.UtcNow)], TimeSpan.FromHours(2)) });
+var cdLines = cdWb.Description.Split('\n');
+int jefeAt = Array.FindIndex(cdLines, l => l.Contains("**Jefe**"));
+Check(jefeAt >= 0 && jefeAt + 1 < cdLines.Length && cdLines[jefeAt + 1].Contains("Jefe mundial") && cdLines[jefeAt + 1].Contains("anotado"), "en /cd el jefe mundial sale justo debajo del jefe");
 
 Console.WriteLine("\n== 7. El reloj ==");
 ArenaScheduler.RoundPause = TimeSpan.Zero;
@@ -236,7 +240,10 @@ var textMods = await texts.AddModulesAsync(typeof(BoxModule).Assembly, sp);
 var aliasCount = textMods.SelectMany(m => m.Commands).SelectMany(c => c.Aliases).GroupBy(a => a.ToLowerInvariant()).ToDictionary(g => g.Key, g => g.Count());
 Check(new[] { "miniboss", "worldboss", "wb", "jefemundial" }.All(a => aliasCount.GetValueOrDefault(a) == 1), "aa miniboss / worldboss / wb / jefemundial están registrados, sin repetirse con otro comando");
 var bossHelp = string.Join("\n", HelpTopics.Find("boss")!.Build().Fields.Select(f => f.Name + " " + f.Value));
-Check(bossHelp.Contains("/miniboss") && bossHelp.Contains("30 a 50") && bossHelp.Contains("Mientras más gente, mejor") && bossHelp.Contains("cooldown del jefe"), "/info tema:boss explica el jefe mundial con los números reales");
+var wbHelp = string.Join("\n", new[] { HelpTopics.Find("miniboss")!.Build() }.SelectMany(e => new[] { e.Description }.Concat(e.Fields.Select(f => f.Name + " " + f.Value))));
+Check(bossHelp.Contains("/miniboss") && bossHelp.Contains("tema:miniboss") && HelpTopics.Find("miniboss")?.Key == "miniboss" && HelpTopics.Find("worldboss")?.Key == "miniboss" && HelpTopics.Find("jefe mundial")?.Key == "miniboss"
+    && wbHelp.Contains($"**{WorldBossRules.MaxHunts}**") && wbHelp.Contains($"**{WorldBossRules.MinHunts}**") && wbHelp.Contains("no gasta ningún cooldown") && wbHelp.Contains("una vez por día") && wbHelp.Contains("00:00"),
+    "/info tema:miniboss tiene su propio tema con los números reales, y /info tema:boss manda ahí");
 Check(HelpTopics.All.All(t => { var e = t.Build(); return e.Length <= 6000 && e.Fields.All(f => f.Value.Length <= 1024 && f.Name.Length <= 256); }), "todos los temas de ayuda siguen entrando en los límites de Discord");
 var broken = new List<string>();
 foreach (var type in typeof(BoxModule).Assembly.GetTypes().Where(x => !x.IsAbstract && (typeof(IInteractionModuleBase).IsAssignableFrom(x) || typeof(Discord.Commands.IModuleBase).IsAssignableFrom(x))))
@@ -258,7 +265,8 @@ sealed class FakeWorldBoss : IWorldBossService
     public IReadOnlyList<WorldBossResolution> Due = [];
     public bool Throw;
     public Task<WorldBossJoinResult> JoinAsync(ulong discordId, string displayName, ulong channelId, DateTime utcNow, CancellationToken cancellationToken = default) => Task.FromResult(Join!);
-    public Task<WorldBossListing> ListAsync(DateTime utcNow, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    public WorldBossListing? Listing;
+    public Task<WorldBossListing> ListAsync(DateTime utcNow, CancellationToken cancellationToken = default) => Listing is null ? throw new NotSupportedException() : Task.FromResult(Listing);
     public Task<IReadOnlyList<WorldBossResolution>> ResolveDueAsync(DateTime utcNow, CancellationToken cancellationToken = default) => Throw ? throw new InvalidOperationException("falla") : Task.FromResult(Due);
     public Task<WorldBossResolution?> ResolveDayAsync(DateOnly day, CancellationToken cancellationToken = default) => Task.FromResult<WorldBossResolution?>(null);
 }

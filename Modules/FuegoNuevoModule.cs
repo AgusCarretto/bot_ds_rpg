@@ -78,7 +78,7 @@ public class FuegoNuevoModule(
         try
         {
             var result = await ExecuteRenewAsync(
-                fuegoNuevoRepository, combatSessions, raidSessions, gameEvents, Context.User.Id, ParseCount(countRaw), className);
+                fuegoNuevoRepository, combatSessions, raidSessions, gameEvents, Context.User.Id, ParseCount(countRaw), className, blessingRepository);
             await ShowAsync(result);
         }
         catch (Exception ex)
@@ -217,7 +217,7 @@ public class FuegoNuevoModule(
     // Paso 2 → hecho. Todo el reinicio es la transacción del repositorio; acá solo se traduce el resultado.
     public static async Task<FnResult> ExecuteRenewAsync(
         IFuegoNuevoRepository fuegoNuevoRepository, ICombatSessionService combatSessions, IRaidSessionService raidSessions, IGameEvents gameEvents,
-        ulong discordId, int expectedCount, string newClass)
+        ulong discordId, int expectedCount, string newClass, IBlessingRepository? blessingRepository = null)
     {
         // Misma regla que la tienda y las cajas: en plena pelea no. (Es una comprobación en memoria; la transacción no depende de ella.)
         if (combatSessions.Peek(discordId) is not null || raidSessions.IsInAnyRaid(discordId))
@@ -240,8 +240,10 @@ public class FuegoNuevoModule(
 
         await gameEvents.RecordAsync(discordId, GameEventKinds.FuegoNuevo, amount: 1, detail: newClass);
 
-        var embed = BuildRenewedEmbed(outcome, newClass);
-        return new FnResult(null, embed, BuildOfferButtons(discordId, outcome.Offer, new Dictionary<string, int>()));
+        // Los niveles que ya tiene: una bendición que se repite se ofrece en el nivel siguiente (II, III...), no en el I. Antes esta pantalla las armaba sin leerlos y todas decían «I».
+        IReadOnlyDictionary<string, int> levels = blessingRepository is null ? new Dictionary<string, int>() : await blessingRepository.GetLevelsAsync(discordId);
+        var embed = BuildRenewedEmbed(outcome, newClass, levels);
+        return new FnResult(null, embed, BuildOfferButtons(discordId, outcome.Offer, levels));
     }
 
     // Elegir una bendición de la oferta. La transacción del repositorio decide (oferta vigente, que no haya elegido ya, nivel máximo).
@@ -382,7 +384,7 @@ public class FuegoNuevoModule(
         return components.Build();
     }
 
-    public static Embed BuildRenewedEmbed(RenewOutcome outcome, string newClass)
+    public static Embed BuildRenewedEmbed(RenewOutcome outcome, string newClass, IReadOnlyDictionary<string, int>? levels = null)
     {
         var classDef = ClassCatalog.All.First(c => c.Name == newClass);
         var embed = new EmbedBuilder()
@@ -398,7 +400,7 @@ public class FuegoNuevoModule(
 
         if (outcome.Offer is not null)
         {
-            embed.AddField(Loc.T("🙏 Elegí tu bendición"), Cut(OfferText(outcome.Offer, new Dictionary<string, int>())), false);
+            embed.AddField(Loc.T("🙏 Elegí tu bendición"), Cut(OfferText(outcome.Offer, levels ?? new Dictionary<string, int>())), false);
         }
         else
         {
@@ -503,7 +505,7 @@ public class FuegoNuevoModule(
             lines.Add($"{TypeLabel(type)}: {GameHistory.Number(units)}");
         }
 
-        lines.Add(Loc.T("🍖 Los banquetes activos y los enfriamientos de la vuelta"));
+        lines.Add(Loc.T("🍖 Los banquetes activos"));
         return string.Join('\n', lines);
     }
 

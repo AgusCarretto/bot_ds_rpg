@@ -142,7 +142,9 @@ public class CasinoModule(
         if (game == "coinflip")
         {
             string prediction = predictedSide == "heads" ? "Heads" : "Tails";
-            embed.WithDescription(Loc.F($"Elegiste **{prediction}** — salió **{result.Reveal[0]}** 🪙"));
+            embed.WithDescription(result.Reveal[0] == CasinoService.CoinflipEdge
+                ? Loc.F($"Elegiste **{prediction}** — ¡la moneda cayó **de canto**! 🪙✨ Pasa una vez cada {1000 / CasinoService.CoinflipEdgeChancePerMille} tiradas y paga **×{CasinoService.CoinflipEdgeMultiplier}**.")
+                : Loc.F($"Elegiste **{prediction}** — salió **{result.Reveal[0]}** 🪙"));
         }
         else
         {

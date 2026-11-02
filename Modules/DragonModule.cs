@@ -609,8 +609,8 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
             int pityCap = DragonRules.PityCap(dragon.Tier);
             int soloCap = DragonRules.SoloPityCap(dragon.Tier);
             string pity = pityCap == 0
-                ? Loc.F($"En este tier la cría con un amigo es **segura** (solo, si falla una vez, la siguiente sale segura). Fallos seguidos: **{dragon.FailStreak}**.")
-                : Loc.F($"Fallos seguidos: **{dragon.FailStreak}**. Con un amigo, con **{pityCap}** fallos seguidos el siguiente intento sale **seguro**; solo, con **{soloCap}**.");
+                ? Loc.F($"En este tier la cría con un amigo es **segura**. Solo: fallos seguidos **{dragon.SoloFailStreak}/{soloCap}** (al llegar, el siguiente sale seguro).")
+                : Loc.F($"Fallos seguidos con un amigo: **{dragon.FailStreak}/{pityCap}** · solo: **{dragon.SoloFailStreak}/{soloCap}**. Al llegar al tope, el siguiente intento de esa forma sale **seguro**: los dos contadores van por separado.");
             embed.AddField(
                 "Criar",
                 Loc.F($"Chance de subir de tier: **{DragonRules.Percent(Math.Round(DragonRules.BreedChance(dragon.Tier) * 100, 2))} %** por intento · en promedio, unos **{DragonRules.ExpectedAttempts(dragon.Tier):0.#}** intentos.\n{pity}\n") +
@@ -724,7 +724,7 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
                 int cap = DragonRules.SoloPityCap(result.Tier);
                 return embed.WithDescription(
                     Loc.F($"💨 No se dio esta vez: tu dragón se queda en el **Tier {result.Tier}**. Criándolo solo la chance es **un tercio** de la normal ({DragonRules.Percent(Math.Round(DragonRules.SoloBreedChance(result.Tier) * 100, 2))} %); con un amigo del mismo tier es del {DragonRules.Percent(Math.Round(DragonRules.BreedChance(result.Tier) * 100, 2))} %.\n") +
-                    Loc.F($"Fallos seguidos: **{result.A!.FailStreak}/{cap}**; con {cap} fallos seguidos, el siguiente intento sale **seguro**.{TypeNote(result.TypeA, result.A!)}\n") +
+                    Loc.F($"Fallos seguidos criando solo: **{result.A!.SoloFailStreak}/{cap}**; con {cap} fallos seguidos, el siguiente intento solo sale **seguro** (los de la cría con un amigo se cuentan aparte).{TypeNote(result.TypeA, result.A!)}\n") +
                     Loc.F($"Descansa {TimeFormat.Remaining(DragonRules.BreedCooldown)} antes de volver a intentar.")).Build();
             }
 

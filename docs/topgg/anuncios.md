@@ -6,6 +6,24 @@ solo. El más nuevo va arriba. Cada anuncio tiene un título y un texto.
 
 ---
 
+## 2026-11-01 — Jefe mundial libre, blackjack y dragones (v0.46.0)
+
+**Título:** El jefe mundial ya no gasta tu cooldown
+
+**Texto:**
+
+🌍 Anotarse al **jefe mundial** (`/miniboss`) ya **no gasta el cooldown del jefe**: es uno por día, gratis, y lo pelean todos juntos a la medianoche. Mientras más se anoten, más cobra cada uno. Lo ves en `/cd`, justo debajo del jefe, y todo se explica en `/info tema:miniboss`.
+
+🃏 **Blackjack**: si la banca tiene 21 de entrada, la mano ya no se pierde al instante. Si llegás a 21, empatás.
+
+🪙 **Coinflip**: de vez en cuando la moneda cae **de canto**… y paga **×5**, elijas el lado que elijas. Una sorpresa.
+
+🐲 **Dragones**: los fallos de criar solo y en pareja ahora se cuentan por separado, cada uno con su propia garantía.
+
+♻️ El **Fuego Nuevo** ya no reinicia los cooldowns, y las bendiciones repetidas ahora muestran bien su nivel (II, III…).
+
+---
+
 ## 2026-10-31 — El jefe cada 10 horas (v0.42.0)
 
 **Título:** El jefe ahora es cada 10 horas, y votar vale más
