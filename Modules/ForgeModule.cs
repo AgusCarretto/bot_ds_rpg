@@ -141,6 +141,7 @@ public static class ForgeModule
         AddRecipes(embed, zoneRecipes, RecipeGroup.ClassWeapon, Loc.T("arma de tu clase"), playerClass, owned, playerGold);
         AddRecipes(embed, zoneRecipes, RecipeGroup.GeneralWeapon, Loc.T("arma general"), playerClass, owned, playerGold);
         AddRecipes(embed, zoneRecipes, RecipeGroup.Amulet, "amuleto", playerClass, owned, playerGold);
+        AddRecipes(embed, zoneRecipes, RecipeGroup.Relic, Loc.T("reliquia: la llave de la mazmorra"), playerClass, owned, playerGold);
         AddRecipes(embed, zoneRecipes, RecipeGroup.Other, "otro", playerClass, owned, playerGold);
 
         // El equipo de El Fogón Eterno (zona 0): el arma y el amuleto que hay que llevar PUESTOS para entrar. Son caros a propósito (drops de las 5 zonas).

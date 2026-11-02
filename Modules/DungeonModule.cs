@@ -6,7 +6,7 @@ using BotDsRpg.Services;
 using Discord;
 using Discord.Interactions;
 
-// Las mazmorras de las Zonas 6 a 10 (v0.47.0, GameData/Dungeons): se entra con /boss (o «aa boss») estando en una de esas zonas y con su Reliquia; se juega con los botones (o «aa d <acción>»
+// Las mazmorras de las Zonas 6 a 10 (v0.47.0, GameData/Dungeons): se entra con /boss (o «aa boss») estando en una de esas zonas y con su Reliquia; se juega con los botones (o «aa dg <acción>»
 // si un botón no responde). Ganar la de una zona intermedia abre la siguiente; ganar la de la zona tope te manda directo contra el Asador (un mensaje nuevo con la pelea), sin curarte.
 // Perder (o quedarte quieto 3 minutos) gasta la Reliquia. La lógica está en Services/DungeonService.cs; acá solo se arma lo que se ve.
 public class DungeonModule(
@@ -54,7 +54,7 @@ public class DungeonModule(
         }
     }
 
-    // ---- Lógica compartida con «aa boss» y «aa d» (sin Context) ----
+    // ---- Lógica compartida con «aa boss» y «aa dg» (sin Context) ----
 
     // ¿Está parado en una zona de mazmorra? (así /boss sabe si arranca una mazmorra o la pelea de siempre.)
     public static async Task<bool> IsInDungeonZoneAsync(IUserRepository users, IZoneRepository zones, ulong discordId)
@@ -97,7 +97,7 @@ public class DungeonModule(
         return (null, BuildRunEmbed(session, null), BuildButtons(session), session);
     }
 
-    // La acción escrita («aa d agua»): misma lógica que el botón.
+    // La acción escrita («aa dg agua»): misma lógica que el botón.
     public static async Task<(string? Message, DungeonActResult? Result)> ExecuteTypedAsync(IDungeonService dungeons, ulong discordId, string? word)
     {
         var session = dungeons.Peek(discordId);
@@ -119,11 +119,11 @@ public class DungeonModule(
 
     public static string TypedHelp(DungeonKind kind) => kind switch
     {
-        DungeonKind.FirePattern => Loc.T("`aa d listo`, `aa d agua`, `aa d piedra`, `aa d fuego`."),
-        DungeonKind.SmokeMaze => Loc.T("`aa d arriba`, `aa d abajo`, `aa d izquierda`, `aa d derecha`."),
-        DungeonKind.Embers => Loc.T("`aa d b3` (la columna A-D y la fila 1-4 de la brasa)."),
-        DungeonKind.Lock => Loc.T("`aa d fuego|agua|piedra|hoja|rayo`, `aa d borrar`, `aa d probar`."),
-        _ => Loc.T("`aa d llamarada`, `aa d hachazo`, `aa d rafaga`."),
+        DungeonKind.FirePattern => Loc.T("`aa dg listo`, `aa dg agua`, `aa dg piedra`, `aa dg fuego`."),
+        DungeonKind.SmokeMaze => Loc.T("`aa dg arriba`, `aa dg abajo`, `aa dg izquierda`, `aa dg derecha`."),
+        DungeonKind.Embers => Loc.T("`aa dg b3` (la columna A-D y la fila 1-4 de la brasa)."),
+        DungeonKind.Lock => Loc.T("`aa dg fuego|agua|piedra|hoja|rayo`, `aa dg borrar`, `aa dg probar`."),
+        _ => Loc.T("`aa dg llamarada`, `aa dg hachazo`, `aa dg rafaga`."),
     };
 
     // El mensaje según cómo quedó: la corrida en curso o el final (ganada, perdida o vencida por tiempo).

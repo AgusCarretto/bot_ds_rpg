@@ -74,7 +74,7 @@
 ### Task 6: Pantalla y comandos de la mazmorra
 
 **Files:** Create `Modules/DungeonModule.cs`, `Modules/TextCommandModule.Dungeon.cs`; Modify `Modules/AdventureModule.cs` y `Modules/TextCommandModule.Combat.cs` (`/boss` en zona de mazmorra la arranca), `Modules/RaidModule.cs` (`/boss @amigo` en zona de mazmorra: «la mazmorra se hace solo»), `GameData/FightLock.cs` (permitir `dungeon`).
-- [ ] Botones `dg:{owner}:{action}`; texto `aa d <acción>`; arnés con el `InteractionService` real para el ruteo.
+- [ ] Botones `dg:{owner}:{action}`; texto `aa dg <acción>`; arnés con el `InteractionService` real para el ruteo.
 
 ### Task 7: El Asador desde la mazmorra
 

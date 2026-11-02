@@ -6,6 +6,22 @@ solo. El más nuevo va arriba. Cada anuncio tiene un título y un texto.
 
 ---
 
+## 2026-11-02 — (BORRADOR: no publicar hasta que la v0.47.0 esté en main) Las zonas que abre el Fuego Nuevo (v0.47.0)
+
+**Título:** Más allá del Fogón: cinco zonas nuevas y sus mazmorras
+
+**Texto:**
+
+🏛️ Desde el **Fuego Nuevo 5** el mundo sigue: aparecen zonas nuevas, una cada 3 Fuegos Nuevos, hasta la **Zona 10**. Cada una tiene su monstruo, su drop, su equipo y su **Reliquia**.
+
+🧩 Las zonas nuevas no tienen jefe: se sale por una **mazmorra**, un acertijo distinto en cada una (memoria, laberinto, lógica, ritmo…), que se hace **solo** y **sin comida**. Cada error cuesta vida.
+
+🔥 Y el **Asador** se corre: te espera del otro lado de la mazmorra de tu última zona, **más fuerte** y con un golpe nuevo. Llegás con la vida que te dejó la mazmorra.
+
+¿Te gusta el juego? Dejá tu reseña acá en top.gg.
+
+---
+
 ## 2026-11-01 — Jefe mundial libre, blackjack y dragones (v0.46.0)
 
 **Título:** El jefe mundial ya no gasta tu cooldown

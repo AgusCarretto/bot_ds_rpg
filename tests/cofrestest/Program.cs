@@ -33,7 +33,7 @@ async Task Reset(int level = 30, int highest = 0)
 async Task<User> Me() => (await users.GetByDiscordIdAsync(U))!;
 async Task<int> Have(string name) => await db.ExecuteScalarAsync<int>("SELECT COALESCE(SUM(quantity), 0)::int FROM inventory inv JOIN items i USING (item_id) WHERE inv.discord_id = @id AND i.name = @n", new { id = (long)U, n = name });
 
-var ordered = ZoneRanking.OrderByDifficulty((await zonesRepo.GetAllAsync()).ToList());
+var ordered = ZoneRanking.ForPlayer((await zonesRepo.GetAllAsync()).ToList(), 0);
 int lastZoneId = ordered[^1].ZoneId;
 
 Console.WriteLine("== 1. La tabla pura (ZoneBoxTable) ==");
@@ -59,7 +59,7 @@ Check(BossChest.IsFirstClear(new User { GateCleared = false, HighestZoneCleared 
 Console.WriteLine("\n== 2. La tabla zone_boxes de la base ==");
 ZoneBoxTable live;
 await using (var c = new NpgsqlConnection(conn)) { await c.OpenAsync(); live = await ZoneBoxQueries.LoadAsync(c, null); }
-Check(live.Rows.Count == 31 && live.MaxRank == 5, $"31 filas (5 zonas × 6 roles + el repeat del Fogón) y la posición máxima es 5 ({live.Rows.Count} / {live.MaxRank})");
+Check(live.Rows.Count == 61 && live.MaxRank == 10, $"61 filas (10 zonas × 6 roles + el repeat del Fogón; v0.47.0 sumó las 6 a 10) y la posición máxima es 10 ({live.Rows.Count} / {live.MaxRank})");
 var svc = new ZoneBoxService(factory, zonesRepo);
 Check((await svc.MissingAsync()).Count == 0, "el servicio no encuentra nada faltante (todas las zonas con sus seis roles y la puerta con el de repetición)");
 string B(int rank, string role) => live.ForRank(rank, role)!.BoxName;
@@ -72,7 +72,8 @@ var travelRows = Enumerable.Range(1, 5).Select(r => live.ForRank(r, ZoneBoxRole.
 Check(travelRows.All(r => r is not null) && travelRows.Select(r => r!.BoxName).SequenceEqual(["Cajón de Pino", "Cajón de Pino", "Baúl de Roble", "Arcón de Hierro", "Arcón de Hierro"]) && travelRows.Select(r => r!.ChancePercent).SequenceEqual([20, 20, 20, 20, 20]) && live.ForZone(0, ZoneBoxRole.Travel) is null,
     "las cajas del viaje: Pino / Pino / Roble / Arcón / Arcón, todas con 20 % (la puerta no viaja)");
 // El Cofre de Oro YA NO sale en los premios de las zonas bajas: solo desde la Zona 3 (prize_top) en adelante.
-Check(live.Rows.Where(r => r.BoxName == "Cofre de Oro").All(r => r.Rank >= 3) && !live.Rows.Any(r => r.BoxName is "Arca del Soberano" or "Cofre de Escoria" or "Brasero del Fogón"), "el Cofre de Oro solo aparece desde la Zona 3, y el Arca / Escoria / Brasero no se regalan por tabla");
+Check(live.Rows.Where(r => r.BoxName == "Cofre de Oro").All(r => r.Rank >= 3) && !live.Rows.Any(r => r.BoxName is "Arca del Soberano" or "Brasero del Fogón") && live.Rows.Where(r => r.BoxName == "Cofre de Escoria").All(r => r.Role == ZoneBoxRole.Travel && r.Rank >= 6),
+    "el Cofre de Oro solo aparece desde la Zona 3, el Arca y el Brasero no se regalan por tabla, y el Cofre de Escoria solo en el viaje de las zonas 6 a 10 (v0.47.0: lo pide la Reliquia)");
 
 Console.WriteLine("\n== 3. Los premios de misiones y logros siguen la tabla ==");
 var daily = MissionRewards.Resolve(new RewardSpec(3, 0, BoxGrant.Daily), 2, 10, live);

@@ -85,7 +85,7 @@ public static class DungeonRules
     {
         DungeonKind.FirePattern => Loc.T("Las llamas anuncian una serie de golpes; memorizala y contestá cada uno con su contraataque, en orden. Cada piso la serie es más larga."),
         DungeonKind.SmokeMaze => Loc.T("Un laberinto lleno de humo que se descubre a medida que caminás. Encontrá la salida con los pasos que tenés; las trampas queman."),
-        DungeonKind.Embers => Loc.T("Un tablero de brasas: tocar una prende o apaga ella y sus vecinas. Prendelas todas; cada 3 toques el viento apaga una y te quema."),
+        DungeonKind.Embers => Loc.T("Un tablero de brasas: tocar una prende o apaga ella y sus vecinas. Prendelas todas; cada 3 toques el viento sopla sobre una (como si la tocara) y te quema."),
         DungeonKind.Lock => Loc.T("Una clave de 4 símbolos. Probá combinaciones: cada intento te dice cuántos están en su lugar y cuántos están pero en otro lado."),
         _ => Loc.T("El Asador pega siguiendo un ciclo que se repite. Aprendelo y anticipá su próximo golpe; hay que acertar varios seguidos."),
     };

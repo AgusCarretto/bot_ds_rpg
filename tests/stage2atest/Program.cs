@@ -96,7 +96,7 @@ Console.WriteLine("\n== 2. El sorteo (20.000 aperturas por caja, con el contexto
 await Cleanup();
 await users.GetOrCreateUserAsync(U);
 // Un jugador con todas las zonas desbloqueadas: nivel de sobra y el jefe 5 derrotado.
-await db.ExecuteAsync("UPDATE users SET level = 99, highest_zone_cleared = (SELECT MAX(zone_id) FROM zones) WHERE discord_id = @id", new { id = (long)U });
+await db.ExecuteAsync("UPDATE users SET level = 99, highest_zone_cleared = (SELECT zone_id FROM zones WHERE kind = 'normal' AND min_fuego_nuevo = 0 ORDER BY min_level DESC LIMIT 1) WHERE discord_id = @id", new { id = (long)U });
 var ctxAll = await boxCtx.BuildAsync(U);
 Check(ctxAll.MaxZoneRank == 5, $"el contexto del jugador de nivel 99 con todos los jefes dice zona {ctxAll.MaxZoneRank}");
 foreach (var n in boxNames)

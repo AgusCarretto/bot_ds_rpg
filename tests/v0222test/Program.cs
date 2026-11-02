@@ -158,7 +158,7 @@ var healEmpty = Menus(AdventureModule.BuildCombatButtons(travel, [])).Single(m =
 Check(healEmpty.IsDisabled && healEmpty.Options.Single().Emote is null, "los estados «sin comida» / «ya te curaste» (opción de relleno, deshabilitada) no llevan emoji");
 
 // 4f. El Tabernero del Inframundo.
-var zonesOrdered = ZoneRanking.OrderByDifficulty(await zonesRepo.GetAllAsync());
+var zonesOrdered = ZoneRanking.ForPlayer(await zonesRepo.GetAllAsync(), 0);
 await db.ExecuteAsync("UPDATE users SET dust = 9000, highest_zone_cleared = @h WHERE discord_id = @id", new { id = (long)D, h = zonesOrdered[^1].ZoneId });
 await Reload(AppList());
 var deep = await DeepShopModule.BuildSceneAsync(users, zonesRepo, dust, itemsRepo, D, null, new Random(2));

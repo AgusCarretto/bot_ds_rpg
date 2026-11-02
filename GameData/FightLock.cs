@@ -12,7 +12,7 @@ public static class FightLock
     private static readonly HashSet<string> Allowed = new(StringComparer.OrdinalIgnoreCase)
     {
         "use", "attack", "ability", "flee",
-        // v0.47.0: la jugada escrita de la mazmorra («aa d agua»).
+        // v0.47.0: la jugada escrita de la mazmorra («aa dg agua»).
         "dungeon",
         "profile", "inventory", "cd", "info", "tutorial",
     };

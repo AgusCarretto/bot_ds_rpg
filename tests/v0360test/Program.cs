@@ -48,10 +48,10 @@ await Clean();
 
 Console.WriteLine("== 1. El estado final de los datos ==");
 var travelMonsters = (await db.QueryAsync<(string Name, int ZoneId, int Drops)>(
-    "SELECT m.name, m.zone_id, (SELECT count(*) FROM monster_drops d WHERE d.monster_id = m.monster_id)::int FROM monsters m WHERE m.is_travel AND m.zone_id > 0 ORDER BY m.zone_id")).ToList();
+    "SELECT m.name, m.zone_id, (SELECT count(*) FROM monster_drops d WHERE d.monster_id = m.monster_id)::int FROM monsters m WHERE m.is_travel AND m.zone_id BETWEEN 1 AND 5 ORDER BY m.zone_id")).ToList();
 Check(travelMonsters.Count == 5 && travelMonsters.All(t => t.Drops == 0), $"los 5 monstruos de viaje existen y no sueltan nada ({string.Join(", ", travelMonsters.Select(t => t.Name))})");
 var huntDrops = (await db.QueryAsync<(int ZoneId, string Item)>(
-    "SELECT m.zone_id, i.name FROM monsters m JOIN monster_drops d ON d.monster_id = m.monster_id JOIN items i ON i.item_id = d.item_id WHERE NOT m.is_boss AND NOT m.is_travel AND m.zone_id > 0")).ToList();
+    "SELECT m.zone_id, i.name FROM monsters m JOIN monster_drops d ON d.monster_id = m.monster_id JOIN items i ON i.item_id = d.item_id WHERE NOT m.is_boss AND NOT m.is_travel AND m.zone_id BETWEEN 1 AND 5")).ToList();
 Check(huntDrops.Count == 10 && huntDrops.GroupBy(h => h.ZoneId).Count() == 5 && huntDrops.GroupBy(h => h.ZoneId).All(g => g.Count() == 2), "quedan 10 drops de monstruos comunes: 2 por zona (los de cacería)");
 int gone = await db.ExecuteScalarAsync<int>("SELECT count(*)::int FROM items WHERE name IN ('Cuero Grueso','Ceniza Bendita','Escoria Metálica Densa','Aliento de Fuego Eterno','Ceniza del Abismo')");
 Check(gone == 0, "los 5 drops de viaje ya no están en el catálogo");

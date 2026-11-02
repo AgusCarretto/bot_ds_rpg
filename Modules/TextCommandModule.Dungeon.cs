@@ -3,13 +3,13 @@ using BotDsRpg.Services;
 using Discord;
 using Discord.Commands;
 
-// Las mazmorras por texto (v0.47.0): «aa boss» en una zona de mazmorra la abre (TextCommandModule.Combat.cs), y «aa d <acción>» juega una jugada cuando un botón no responde
+// Las mazmorras por texto (v0.47.0): «aa boss» en una zona de mazmorra la abre (TextCommandModule.Combat.cs), y «aa dg <acción>» juega una jugada cuando un botón no responde
 // (la misma lógica que el botón: Modules/DungeonModule.cs). El mensaje nuevo trae botones nuevos.
 public partial class TextCommandModule
 {
     [Command("dungeon")]
-    [Alias("d", "mazmorra", "dg")]
-    [Summary("Jugá una jugada de la mazmorra escribiéndola: \"aa d agua\", \"aa d arriba\", \"aa d b3\", \"aa d probar\" (por si un botón no responde).")]
+    [Alias("dg", "mazmorra")]
+    [Summary("Jugá una jugada de la mazmorra escribiéndola: \"aa dg agua\", \"aa dg arriba\", \"aa dg b3\", \"aa dg probar\" (por si un botón no responde).")]
     public async Task DungeonAsync([Remainder] string? action = null)
     {
         try

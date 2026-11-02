@@ -92,7 +92,7 @@ ulong Id(int n) => (ulong)(Base + n);
 async Task<int> Gold(int n) => await db.ExecuteScalarAsync<int>("SELECT gold FROM users WHERE discord_id = @id", new { id = Base + n });
 async Task<DateTime?> BossStamp(int n) => await db.ExecuteScalarAsync<DateTime?>("SELECT last_executed_at FROM cooldowns WHERE discord_id = @id AND command_name = 'boss'", new { id = Base + n });
 var day1 = new DateOnly(2020, 6, 1);
-var zones = ZoneRanking.OrderByDifficulty(await zonesRepo.GetAllAsync());
+var zones = ZoneRanking.ForPlayer(await zonesRepo.GetAllAsync(), 0);
 
 var ghost = await repo.JoinAsync(day1, Id(999), "Nadie", 555);
 Check(ghost.Status == WorldBossJoinStatus.NoAccount && await db.ExecuteScalarAsync<int>("SELECT COUNT(*)::int FROM worldboss_days WHERE day = '2020-06-01'") == 0, "sin cuenta no se anota y no deja nada");

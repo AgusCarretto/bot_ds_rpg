@@ -3,7 +3,8 @@ using BotDsRpg.Models;
 namespace BotDsRpg.GameData;
 
 // Cómo se agrupa una receta al mostrarla (ver RecipeCatalog.GroupOf).
-public enum RecipeGroup { ClassWeapon, GeneralWeapon, Amulet, Other }
+// Relic (v0.47.0): la Reliquia de las Zonas 6 a 10, la llave de su mazmorra.
+public enum RecipeGroup { ClassWeapon, GeneralWeapon, Amulet, Relic, Other }
 
 // Lo que un jugador ve del herrero. El molde de cada zona (v0.27.0) son 5 recetas — 4 armas de CLASE (una por clase, con su ATQ fijo: ya no hay sinergia ×1,5) + 1 amuleto — de las que cada jugador ve 2: el arma de su
 // clase y el amuleto. Aparte hay UNA sola receta sin zona, la de la Hoja de Acero Puro (la única arma general, hecha solo con materiales de recolección), que ve todo el mundo. Así el mensaje de /forge recipes
@@ -151,6 +152,7 @@ public static class RecipeCatalog
     public static RecipeGroup GroupOf(RecipeDetails recipe) => recipe.ResultItem.Type switch
     {
         "Amulet" => RecipeGroup.Amulet,
+        "Reliquia" => RecipeGroup.Relic,
         "Weapon" => recipe.Affinity ? RecipeGroup.ClassWeapon : RecipeGroup.GeneralWeapon,
         _ => RecipeGroup.Other,
     };

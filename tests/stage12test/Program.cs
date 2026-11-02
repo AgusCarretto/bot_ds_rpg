@@ -447,7 +447,7 @@ Check(todayDue.All(d => d < new DateOnly(2020, 3, 5)), "GetOpenDaysBefore(hoy) n
 
 // Zona del campeón: el premio escala
 var zoneDay = new DateOnly(2020, 5, 1);
-await MakeUser(60, "Guerrero", 25, zone: (await zonesRepo.GetAllAsync()).OrderBy(z => z.MinLevel).Last().ZoneId);
+await MakeUser(60, "Guerrero", 25, zone: (await zonesRepo.GetAllAsync()).Where(z => z.MinFuegoNuevo == 0).OrderBy(z => z.MinLevel).Last().ZoneId);
 await MakeUser(61, "Guerrero", 1);
 await arenaRepo.JoinAsync(zoneDay, (ulong)(BaseId + 60), "Veterano", 2, 32); await arenaRepo.JoinAsync(zoneDay, (ulong)(BaseId + 61), "Novato", 2, 32);
 var zr = await arena.ResolveDayAsync(zoneDay);

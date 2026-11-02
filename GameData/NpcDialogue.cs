@@ -472,6 +472,67 @@ public static class NpcDialogue
             [BossLine.Defeated] = [Loc.Mark("Tres cabezas... y ninguna ganó..."), Loc.Mark("El abismo... me recibe...")],
             [BossLine.Victory] = [Loc.Mark("Tres bocas para un solo bocado."), Loc.Mark("El abismo siempre cobra.")],
         },
+        // v0.47.0: los monstruos de las Zonas 6 a 10 (Database/add_zones_6_10.sql).
+        ["Guanaco de Sal"] = new()
+        {
+            [BossLine.Intro] = [Loc.Mark("¡Ptuh! Escupo sal, y la sal no se olvida."), Loc.Mark("En las salinas nadie deja huellas. Vos tampoco vas a dejar.")],
+            [BossLine.Defeated] = [Loc.Mark("La sal... me tapa los ojos..."), Loc.Mark("Me voy... como se van las huellas.")],
+            [BossLine.Victory] = [Loc.Mark("Otro que el viento se va a llevar."), Loc.Mark("Ptuh. La sal arde, ¿no?")],
+        },
+        ["Coloso de Sal"] = new()
+        {
+            [BossLine.Intro] = [Loc.Mark("Soy todo lo que se olvidó aquí, apilado."), Loc.Mark("Cristal sobre cristal. ¿Cuánto pesás vos?")],
+            [BossLine.Defeated] = [Loc.Mark("Me desarmo... en granos..."), Loc.Mark("Hasta la sal... se rompe.")],
+            [BossLine.Victory] = [Loc.Mark("Quedate. Te vas a volver sal."), Loc.Mark("Las salinas te guardan, como a todos.")],
+        },
+        ["Yaguareté de Humo"] = new()
+        {
+            [BossLine.Intro] = [Loc.Mark("No me ves. Pero yo te huelo desde hace rato."), Loc.Mark("En el humo, el que mira primero gana.")],
+            [BossLine.Defeated] = [Loc.Mark("Me disipo... como el humo..."), Loc.Mark("Me viste... nadie me ve...")],
+            [BossLine.Victory] = [Loc.Mark("Ni me viste venir."), Loc.Mark("El monte arde, y vos con él.")],
+        },
+        ["Sombra del Monte"] = new()
+        {
+            [BossLine.Intro] = [Loc.Mark("Soy lo que el humo esconde."), Loc.Mark("Cada paso que das, yo lo doy detrás.")],
+            [BossLine.Defeated] = [Loc.Mark("La luz... me alcanza..."), Loc.Mark("Vuelvo al humo... por ahora.")],
+            [BossLine.Victory] = [Loc.Mark("Otro que se perdió en el monte."), Loc.Mark("Las sombras no se cansan.")],
+        },
+        ["Sapo de Brea"] = new()
+        {
+            [BossLine.Intro] = [Loc.Mark("¡Croac! Pisá, pisá... que la brea no suelta."), Loc.Mark("Glup. Todo lo que cae al pantano es mío.")],
+            [BossLine.Defeated] = [Loc.Mark("Me hundo... croac..."), Loc.Mark("La brea... me traga a mí...")],
+            [BossLine.Victory] = [Loc.Mark("Glup. Otro para el fondo."), Loc.Mark("¡Croac! Te quedaste pegado.")],
+        },
+        ["Bestia del Pantano"] = new()
+        {
+            [BossLine.Intro] = [Loc.Mark("Del barro salgo, al barro te llevo."), Loc.Mark("Hace siglos que no subía a respirar. Vos me despertaste.")],
+            [BossLine.Defeated] = [Loc.Mark("Vuelvo... al fondo..."), Loc.Mark("El pantano... me reclama...")],
+            [BossLine.Victory] = [Loc.Mark("Lo que se hunde no vuelve."), Loc.Mark("El barro te queda bien.")],
+        },
+        ["Lobo de Hielo"] = new()
+        {
+            [BossLine.Intro] = [Loc.Mark("...No aullo. En el glaciar ni el viento hace ruido."), Loc.Mark("Tu aliento te delata. El mío, no.")],
+            [BossLine.Defeated] = [Loc.Mark("Me quiebro... en silencio..."), Loc.Mark("El hielo... se parte...")],
+            [BossLine.Victory] = [Loc.Mark("Silencio. Como todo acá."), Loc.Mark("El frío también quema, ¿viste?")],
+        },
+        ["Gigante Escarchado"] = new()
+        {
+            [BossLine.Intro] = [Loc.Mark("Dormía bajo el hielo. Hacías demasiado ruido."), Loc.Mark("Cada paso mío es un invierno.")],
+            [BossLine.Defeated] = [Loc.Mark("El deshielo... al fin..."), Loc.Mark("Me derrito... qué calor tenés...")],
+            [BossLine.Victory] = [Loc.Mark("Quedate quieto. Para siempre."), Loc.Mark("Otro invierno, otra estatua.")],
+        },
+        ["Cóndor del Rayo"] = new()
+        {
+            [BossLine.Intro] = [Loc.Mark("Desde arriba todo es presa. Y vos estás muy abajo."), Loc.Mark("Mis alas traen la tormenta.")],
+            [BossLine.Defeated] = [Loc.Mark("Caigo... como un rayo..."), Loc.Mark("La cumbre... se queda sin mí...")],
+            [BossLine.Victory] = [Loc.Mark("El cielo pega primero."), Loc.Mark("Ni subiste y ya caíste.")],
+        },
+        ["Titán de Tormenta"] = new()
+        {
+            [BossLine.Intro] = [Loc.Mark("¡Escuchá el trueno! Es mi risa."), Loc.Mark("La última cima es mía. Nadie la pisa.")],
+            [BossLine.Defeated] = [Loc.Mark("La tormenta... se calma..."), Loc.Mark("Hasta el trueno... se apaga...")],
+            [BossLine.Victory] = [Loc.Mark("El cielo te devolvió al suelo."), Loc.Mark("¡Ja! Un rayo y listo.")],
+        },
     };
 
     // Para un monstruo que no está en la tabla (uno nuevo en la base): frases genéricas, así nunca queda mudo.

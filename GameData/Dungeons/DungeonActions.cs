@@ -1,6 +1,6 @@
 namespace BotDsRpg.GameData.Dungeons;
 
-// Lo que se puede ESCRIBIR en una mazmorra («aa d agua», «aa d b3», «aa d probar»), para cuando un botón no responde: cada palabra se traduce a la acción del botón. Español e inglés.
+// Lo que se puede ESCRIBIR en una mazmorra («aa dg agua», «aa dg b3», «aa dg probar»), para cuando un botón no responde: cada palabra se traduce a la acción del botón. Español e inglés.
 public static class DungeonActions
 {
     public static string? Parse(DungeonKind kind, string? text)

@@ -68,7 +68,7 @@ Check(DailyRewardCalculator.NextDayHint(2)!.Contains("día 3") && DailyRewardCal
 Check(!DailyRewardCalculator.IsWeekMilestone(0) && !DailyRewardCalculator.IsWeekMilestone(6) && DailyRewardCalculator.IsWeekMilestone(7) && DailyRewardCalculator.IsWeekMilestone(70) && DailyRewardCalculator.IsThreeDayBonus(3) && !DailyRewardCalculator.IsThreeDayBonus(10), "los hitos se reconocen bien (7, 14, 70...; el 3 solo una vez)");
 
 Console.WriteLine("\n== 2. Las cajas de cada zona (zone_boxes) ==");
-Check(iron.Length == 5 && gold.Length == 5, $"hay caja diaria y semanal para las 5 zonas ({string.Join("/", iron)} | {string.Join("/", gold)})");
+Check(iron.Length == 10 && gold.Length == 10, $"hay caja diaria y semanal para las 10 zonas (v0.47.0: las 6 a 10 copian las de la 5) ({string.Join("/", iron)} | {string.Join("/", gold)})");
 Check(iron[1] == "Baúl de Roble" && gold[1] == "Arcón de Hierro" && iron[4] == "Arcón de Hierro" && gold[4] == "Cofre de Oro", "zona 2: Roble / Arcón de Hierro; zona 5: Arcón de Hierro / Cofre de Oro (lo que se le dijo al dueño)");
 
 Console.WriteLine("\n== 3. El pago, contra la base ==");
