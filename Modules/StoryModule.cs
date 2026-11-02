@@ -73,7 +73,7 @@ public class StoryModule(IUserRepository userRepository, IZoneRepository zoneRep
                 null);
         }
 
-        var zones = ZoneRanking.OrderByDifficulty(await zoneRepository.GetAllAsync());
+        var zones = ZoneRanking.ForPlayer(await zoneRepository.GetAllAsync(), player.FuegoNuevo);
         return Compose(StoryProgress.For(player, zones), discordId, key);
     }
 

@@ -48,7 +48,8 @@ public class DropsModule(
         IZoneBoxService? zoneBoxService = null)
     {
         var player = await userRepository.GetByDiscordIdAsync(discordId);
-        var zones = ZoneRanking.OrderByDifficulty(await zoneRepository.GetAllAsync());
+        // Solo las zonas que su Fuego Nuevo ya abrió (v0.47.0): las de más arriba son una sorpresa.
+        var zones = ZoneRanking.ForPlayer(await zoneRepository.GetAllAsync(), player?.FuegoNuevo ?? 0);
         var monsters = await monsterRepository.GetAllAsync();
         // Materiales y cofres: el jefe suelta un cofre, y tiene que salir con su emoji igual que un material.
         var dropItems = (await itemRepository.GetAllByTypeAsync("Material")).Concat(await itemRepository.GetAllByTypeAsync("Caja"))

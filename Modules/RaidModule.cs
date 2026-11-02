@@ -1176,7 +1176,7 @@ public class RaidModule(
             return new RaidRejection(null, AdventureModule.BuildNoBossInZoneEmbed());
         }
 
-        var orderedZones = ZoneRanking.OrderByDifficulty(await zoneRepository.GetAllAsync());
+        var orderedZones = ZoneRanking.ForPlayer(await zoneRepository.GetAllAsync(), player.FuegoNuevo);
         int? requiredLevel = ZoneRanking.RequiredLevelForBoss(orderedZones, player.CurrentZoneId);
 
         if (requiredLevel is not null && player.Level < requiredLevel)
@@ -1279,7 +1279,7 @@ public class RaidModule(
         }
 
         var starter = await userRepository.GetOrCreateUserAsync(starterId);
-        var orderedZones = ZoneRanking.OrderByDifficulty(await zoneRepository.GetAllAsync());
+        var orderedZones = ZoneRanking.ForPlayer(await zoneRepository.GetAllAsync(), starter.FuegoNuevo);
         int starterRank = ZoneRanking.MaxUnlockedRank(orderedZones, starter.Level, starter.HighestZoneCleared);
 
         var problems = new List<string>();
@@ -1343,7 +1343,7 @@ public class RaidModule(
             return new CompanionProblem(Loc.T("todavía no creó su personaje (que use **/start**)"), Loc.T("todavía no creaste tu personaje: usá **/start**"));
         }
 
-        var orderedZones = ZoneRanking.OrderByDifficulty(await zoneRepository.GetAllAsync());
+        var orderedZones = ZoneRanking.ForPlayer(await zoneRepository.GetAllAsync(), player.FuegoNuevo);
 
         // La regla del grupo: la MISMA zona máxima desbloqueada (la que muestra el perfil como "máx. Zona N"). Si no, uno pasearía al otro por una zona que no le toca.
         if (expectedMaxRank > 0)

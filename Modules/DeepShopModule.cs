@@ -112,7 +112,7 @@ public class DeepShopModule(
             return new DeepShopScene(null, null, NoAccount);
         }
 
-        var zones = ZoneRanking.OrderByDifficulty(await zoneRepository.GetAllAsync());
+        var zones = ZoneRanking.ForPlayer(await zoneRepository.GetAllAsync(), player.FuegoNuevo);
         if (!DeepShop.IsOpen(zones, player))
         {
             return new DeepShopScene(null, null, NotOpenMessage);
@@ -161,7 +161,7 @@ public class DeepShopModule(
             return new DeepShopResult(NoAccount, null);
         }
 
-        var zones = ZoneRanking.OrderByDifficulty(await zoneRepository.GetAllAsync());
+        var zones = ZoneRanking.ForPlayer(await zoneRepository.GetAllAsync(), player.FuegoNuevo);
         if (!DeepShop.IsOpen(zones, player))
         {
             return new DeepShopResult(NotOpenMessage, null);

@@ -66,7 +66,7 @@ public sealed class AdventureCombatStarter(
                 // de la PRÓXIMA zona (a lo que ganarle te deja avanzar) — no antes. Ver
                 // GameData/ZoneRanking.cs (también la usa Modules/RaidModule.cs para el mismo gate
                 // en los jefes cooperativos, y Modules/ZoneModule.cs para el gate de /zona).
-                var orderedZones = ZoneRanking.OrderByDifficulty(await zoneRepository.GetAllAsync(cancellationToken));
+                var orderedZones = ZoneRanking.ForPlayer(await zoneRepository.GetAllAsync(cancellationToken), player.FuegoNuevo);
                 int? requiredLevel = ZoneRanking.RequiredLevelForBoss(orderedZones, player.CurrentZoneId);
 
                 return requiredLevel is not null && player.Level < requiredLevel

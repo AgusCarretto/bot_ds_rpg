@@ -72,7 +72,8 @@ public class GameModule(
         // Si es la primera vez que este usuario ejecuta un comando, se crea acá
         // automáticamente con los valores por defecto (Nivel 1, 0 EXP, 50 de oro, 100/100 HP, Guerrero).
         var player = await userRepository.GetOrCreateUserAsync(discordId);
-        var allZones = ZoneRanking.OrderByDifficulty(await zoneRepository.GetAllAsync());
+        // La escalera DE ESTE jugador (v0.47.0: las zonas 6 a 10 solo existen con su Fuego Nuevo).
+        var allZones = ZoneRanking.ForPlayer(await zoneRepository.GetAllAsync(), player.FuegoNuevo);
         var zone = allZones.FirstOrDefault(z => z.ZoneId == player.CurrentZoneId);
         // La zona más alta que tiene desbloqueada (la misma regla que /zona), para el "(máx. Zona N)".
         var maxZone = allZones.Count == 0 ? null : allZones[ZoneRanking.MaxUnlockedRank(allZones, player.Level, player.HighestZoneCleared) - 1];

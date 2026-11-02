@@ -70,6 +70,12 @@ public class ZoneModule(IUserRepository userRepository, IZoneRepository zoneRepo
 
         var player = await userRepository.GetOrCreateUserAsync(discordId);
 
+        // Las zonas 6 a 10 (v0.47.0) solo existen con su Fuego Nuevo.
+        if (zone.MinFuegoNuevo > player.FuegoNuevo)
+        {
+            return (Loc.F($"🔒 **{zone.Name}** {zone.Emoji} se abre con el **Fuego Nuevo {zone.MinFuegoNuevo}** (tenés {player.FuegoNuevo}). Mirá cómo funciona con `/info tema:fuego`."), null);
+        }
+
         if (player.Level < zone.MinLevel)
         {
             return (Loc.F($"🚫 **{zone.Name}** requiere nivel **{zone.MinLevel}** — todavía sos nivel {player.Level}. Seguí subiendo antes de cruzar."), null);
@@ -85,8 +91,14 @@ public class ZoneModule(IUserRepository userRepository, IZoneRepository zoneRepo
         // zone_id crudo — ver users.highest_zone_cleared en Database/schema.sql). Si la zona
         // inmediatamente anterior todavía no tiene un jefe cargado, no bloqueamos: no seria justo
         // trabar el avance por contenido que todavía no existe.
-        var orderedZones = ZoneRanking.OrderByDifficulty(await zoneRepository.GetAllAsync());
+        var orderedZones = ZoneRanking.ForPlayer(await zoneRepository.GetAllAsync(), player.FuegoNuevo);
         var gatekeeperZone = ZoneRanking.PendingGatekeeperZone(orderedZones, zone.ZoneId, player.HighestZoneCleared);
+
+        // Las zonas 6 a 10 no tienen jefe: se sale de ellas pasando su mazmorra (GameData/Dungeons).
+        if (ZoneRanking.IsDungeonZone(gatekeeperZone))
+        {
+            return (Loc.F($"🔒 Para viajar a **{zone.Name}** primero tenés que pasar la **mazmorra** de **{gatekeeperZone!.Name}**: forjá su **Reliquia** y usá `/boss` estando ahí."), null);
+        }
 
         if (gatekeeperZone is not null)
         {
@@ -118,7 +130,15 @@ public class ZoneModule(IUserRepository userRepository, IZoneRepository zoneRepo
         }
 
         var player = await userRepository.GetOrCreateUserAsync(discordId);
-        var orderedZones = ZoneRanking.OrderByDifficulty(await zoneRepository.GetAllAsync());
+        var orderedZones = ZoneRanking.ForPlayer(await zoneRepository.GetAllAsync(), player.FuegoNuevo);
+
+        // Con la zona tope en las 6 a 10 (v0.47.0) a la puerta no se entra caminando: se llega pasando la mazmorra de esa zona, que te deja frente al Asador.
+        if (ZoneRanking.IsDungeonZone(FogonRules.LastZone(orderedZones)))
+        {
+            var top = FogonRules.LastZone(orderedZones)!;
+            return (Loc.F($"🔥 Con tu Fuego Nuevo, a **{gate.Name}** se llega pasando la **mazmorra** de **{top.Name}**: forjá su **Reliquia** y usá `/boss` estando ahí. Al salir de la mazmorra peleás contra **{FogonRules.BossName}** sin curarte."), null);
+        }
+
         var weapon = player.WeaponId is int weaponId && itemRepository is not null ? await itemRepository.GetByIdAsync(weaponId) : null;
         var amulet = player.AmuletId is int amuletId && itemRepository is not null ? await itemRepository.GetByIdAsync(amuletId) : null;
         var check = FogonRules.CheckEntry(orderedZones, gate, player.Level, player.HighestZoneCleared, weapon, amulet);
@@ -164,7 +184,8 @@ public class ZoneModule(IUserRepository userRepository, IZoneRepository zoneRepo
     public static async Task<Embed> BuildZoneListEmbedAsync(IUserRepository userRepository, IZoneRepository zoneRepository, ulong discordId)
     {
         var player = await userRepository.GetOrCreateUserAsync(discordId);
-        var zones = await zoneRepository.GetAllAsync();
+        var everyZone = await zoneRepository.GetAllAsync();
+        var zones = ZoneRanking.ForPlayer(everyZone, player.FuegoNuevo);
 
         var embed = new EmbedBuilder()
             .WithTitle(Loc.T("🗺️ Zonas de Asado y Acero"))
@@ -177,8 +198,14 @@ public class ZoneModule(IUserRepository userRepository, IZoneRepository zoneRepo
             string locked = player.Level < zone.MinLevel ? " 🔒" : string.Empty;
             embed.AddField(
                 $"{zone.Emoji} {zone.ZoneId}. {zone.Name}{here}{locked}",
-                Loc.F($"Nivel mínimo: **{zone.MinLevel}**\n_{zone.Description}_"),
+                ZoneRanking.IsDungeonZone(zone) ? Loc.F($"Nivel mínimo: **{zone.MinLevel}** · sin jefe: se sale por su **mazmorra**\n_{zone.Description}_") : Loc.F($"Nivel mínimo: **{zone.MinLevel}**\n_{zone.Description}_"),
                 false);
+        }
+
+        // La próxima zona que abre el Fuego Nuevo (v0.47.0): se anuncia, sin contar qué tiene.
+        if (player.FuegoNuevo > 0 && ZoneRanking.NextLockedByFuegoNuevo(everyZone, player.FuegoNuevo) is { } next)
+        {
+            embed.AddField($"🔒 {next.ZoneId}. {next.Name}", Loc.F($"Se abre con el **Fuego Nuevo {next.MinFuegoNuevo}**."), false);
         }
 
         // El Fogón Eterno (zona 0): aparece recién cuando vencés al jefe de la última zona (hasta entonces es una sorpresa).

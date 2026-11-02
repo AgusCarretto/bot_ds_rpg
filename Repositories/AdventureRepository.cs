@@ -184,7 +184,7 @@ public sealed class AdventureRepository(IDbConnectionFactory connectionFactory) 
                         $"""
                         UPDATE users
                         SET gate_cleared = true, in_gate = false,
-                            current_zone_id = (SELECT zone_id FROM zones WHERE kind = 'normal' ORDER BY min_level DESC LIMIT 1)
+                            current_zone_id = (SELECT zone_id FROM zones WHERE kind = 'normal' AND min_fuego_nuevo <= users.fuego_nuevo ORDER BY min_level DESC LIMIT 1)
                         WHERE discord_id = @DiscordId
                         RETURNING {UserSql.SelectColumns};
                         """,
@@ -192,8 +192,9 @@ public sealed class AdventureRepository(IDbConnectionFactory connectionFactory) 
                     gate = GateEvent.Cleared;
                 }
                 else if (current.HighestZoneCleared < fought && await connection.ExecuteScalarAsync<bool>(new CommandDefinition(
-                    "SELECT @ZoneId = (SELECT zone_id FROM zones WHERE kind = 'normal' ORDER BY min_level DESC LIMIT 1);",
-                    new { ZoneId = fought }, transaction: transaction, cancellationToken: cancellationToken)))
+                    // La última zona DE ESTE jugador (v0.47.0: con Fuego Nuevo 5 o más la zona tope es una de mazmorra y la Zona 5 ya no abre la puerta).
+                    "SELECT @ZoneId = (SELECT zone_id FROM zones WHERE kind = 'normal' AND min_fuego_nuevo <= @Fn ORDER BY min_level DESC LIMIT 1);",
+                    new { ZoneId = fought, Fn = current.FuegoNuevo }, transaction: transaction, cancellationToken: cancellationToken)))
                 {
                     gate = GateEvent.Opened;
                 }

@@ -32,7 +32,7 @@ var zoneBoxes = new ZoneBoxService(factory, zonesRepo);
 await using var db = new NpgsqlConnection(conn);
 await db.OpenAsync();
 const ulong U = 999000000000017000UL;
-var zones = ZoneRanking.OrderByDifficulty(await zonesRepo.GetAllAsync());
+var zones = ZoneRanking.ForPlayer(await zonesRepo.GetAllAsync(), 0); // v0.47.0: la escalera de un jugador sin Fuego Nuevo
 
 async Task Reset(int fuegoNuevo = 0, int highestCleared = 0, bool gateCleared = false, string cls = "Guerrero")
 {
@@ -333,8 +333,8 @@ Console.WriteLine("\n== 17. El Polvo de los drops de monstruo por su origen (v0.
     Check(Dismantling.HuntDropDust == 17, $"la constante sale de la chance y el cooldown reales: cacería {Dismantling.HuntDropDust} (los drops de viaje se borraron en la v0.36.0)");
     var dropRows = (await db.QueryAsync<(string Name, string Rarity, int Dust, bool Travel)>(
         @"SELECT i.name, i.rarity, i.dust_value, EXISTS (SELECT 1 FROM monster_drops d JOIN monsters m ON m.monster_id = d.monster_id WHERE d.item_id = i.item_id AND m.is_travel) FROM items i WHERE i.dust_value IS NOT NULL")).ToList();
-    Check(dropRows.Count == 10 && dropRows.All(r => r.Dust == Dismantling.HuntDropDust) && dropRows.Count(r => r.Travel) == 0,
-        "en la base: los 10 drops de monstruo (todos de cacería) traen su Polvo y coincide con la constante del código");
+    Check(dropRows.Count == 15 && dropRows.All(r => r.Dust == Dismantling.HuntDropDust) && dropRows.Count(r => r.Travel) == 0,
+        "en la base: los 15 drops de monstruo (10 de las zonas 1 a 5 y 5 de las 6 a 10, v0.47.0) (todos de cacería) traen su Polvo y coincide con la constante del código");
     Check(dropRows.Any(r => r.Rarity == "Mítico" && r.Dust == 17) && dropRows.Any(r => r.Rarity == "Común" && r.Dust == 17), "un drop «Mítico» de cacería da lo mismo que uno «Común» (la etiqueta ya no cuenta)");
     Check(Dismantling.DustFor("Mítico", 1) == 500 && Dismantling.DustFor("Raro", 3) == 18 && Dismantling.DustFor("Mítico", 2, 17) == 34 && Dismantling.DustPerUnit("Común", 38) == 38,
         "lo recolectado sigue pagando por rareza (Mítico 500) y el valor propio del ítem manda cuando existe");

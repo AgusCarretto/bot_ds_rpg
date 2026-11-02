@@ -44,7 +44,7 @@ public sealed class BoxContextService(
         }
 
         var statics = await LoadStaticsAsync(cancellationToken);
-        return ZoneRanking.MaxUnlockedRank(statics.OrderedZones, player.Level, player.HighestZoneCleared);
+        return ZoneRanking.MaxUnlockedRank(ZoneRanking.ForPlayer(statics.OrderedZones, player.FuegoNuevo), player.Level, player.HighestZoneCleared);
     }
 
     private async Task<Statics> LoadStaticsAsync(CancellationToken cancellationToken)

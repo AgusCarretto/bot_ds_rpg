@@ -24,8 +24,9 @@ public sealed record ResolvedReward(int Gold, int Xp, string? BoxName, int BoxQu
 // Database/report_box_economy.sql).
 public static class MissionRewards
 {
-    // Oro promedio de una cacería por posición de zona (1..5): Z1 ~14, Z2 ~58, Z3 ~118, Z4 ~215, Z5 ~375.
-    private static readonly int[] GoldPerHunt = [14, 58, 118, 215, 375];
+    // Oro promedio de una cacería por posición de zona (1..10): Z1 ~14, Z2 ~58, Z3 ~118, Z4 ~215, Z5 ~375; v0.47.0: las zonas 6 a 10 (Fuego Nuevo 5 en adelante) siguen ×1,5 por zona,
+    // que es lo que pagan sus monstruos al nivel mínimo + 3 (Database/add_zones_6_10.sql: 10 + 2 × nivel + el bono del monstruo).
+    private static readonly int[] GoldPerHunt = [14, 58, 118, 215, 375, 560, 840, 1260, 1890, 2840];
 
     public const string MythicBox = "Arca del Soberano";
 

@@ -48,7 +48,7 @@ List<SelectMenuComponent> Menus(BlacksmithScene s) => s.Components?.Components.O
 Task<BlacksmithScene> Forge(bool book = false, ulong? id = null) => BlacksmithModule.BuildSceneAsync(users, recipesRepo, zonesRepo, inventory, id ?? U, book, fullBook: true);
 
 var zones = await zonesRepo.GetAllAsync();
-var zonesByRank = ZoneRanking.OrderByDifficulty(zones);
+var zonesByRank = ZoneRanking.ForPlayer(zones, 0); // v0.47.0: la escalera de un jugador sin Fuego Nuevo (las zonas 6 a 10 se abren con el FN)
 
 Console.WriteLine("== 1. Comandos ==");
 await interactions.AddModulesAsync(typeof(BoxModule).Assembly, sp);
@@ -90,7 +90,7 @@ Check(plain.All(r => r.Gold is >= 15 * 25 and <= 15 * 35 && r.Xp is >= 135 and <
 var hunt = Enumerable.Range(0, 2000).Select(_ => CombatRewardCalculator.RollHuntReward(10)).ToList();
 Check(hunt.All(r => r.Gold is >= 25 and <= 35 && r.Xp is >= 9 and <= 15), "/hunt: oro 25-35 y XP 9-15 a nivel 10 (la EXP a la mitad desde la v0.18.1)");
 Check(CombatRewardCalculator.FightXpScale == 0.5 && Enumerable.Range(0, 2000).Select(_ => CombatRewardCalculator.RollTravelReward(10)).All(r => r.Xp is >= 270 and <= 450 && r.Gold is >= 30 * 25 and <= 30 * 35) && Enumerable.Range(0, 2000).Select(_ => CombatRewardCalculator.RollHuntReward(10, 0, 100)).All(r => r.Xp is >= 59 and <= 65), "la EXP de las peleas vale la mitad (0,5): viaje x30 a nivel 10 = 270-450, y un monstruo con bono 100 da 59-65 (el oro no cambia)");
-foreach (var zone in zonesByRank)
+foreach (var zone in zonesByRank.Where(z => !ZoneRanking.IsDungeonZone(z))) // v0.47.0: las zonas 6 a 10 no tienen jefe (se sale por la mazmorra)
 {
     var boss = await monsters.GetBossByZoneAsync(zone.ZoneId); var travel = await monsters.GetTravelMonsterByZoneAsync(zone.ZoneId);
     if (boss is null || travel is null) { Check(false, $"zona {zone.ZoneId} sin jefe o sin monstruo de viaje"); continue; }
