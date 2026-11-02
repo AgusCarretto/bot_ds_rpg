@@ -204,6 +204,7 @@ var cdWb = await CooldownModule.BuildStatusEmbedAsync(new CooldownRepository(fac
 var cdLines = cdWb.Description.Split('\n');
 int jefeAt = Array.FindIndex(cdLines, l => l.Contains("**Jefe**"));
 Check(jefeAt >= 0 && jefeAt + 1 < cdLines.Length && cdLines[jefeAt + 1].Contains("Jefe mundial") && cdLines[jefeAt + 1].Contains("anotado"), "en /cd el jefe mundial sale justo debajo del jefe");
+Check(jefeAt == cdLines.Length - 2 && jefeAt > Array.FindIndex(cdLines, l => l.Contains("**Diario**")), "y los dos van abajo de todo, después del diario (la Arena, si hay, va última)");
 
 Console.WriteLine("\n== 7. El reloj ==");
 ArenaScheduler.RoundPause = TimeSpan.Zero;

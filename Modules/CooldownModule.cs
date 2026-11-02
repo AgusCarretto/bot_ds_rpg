@@ -53,15 +53,10 @@ public class CooldownModule(
             lines.Add($"{definition.Emoji} **{Loc.Tr(definition.DisplayName)}**: {status}");
         }
 
-        foreach (var definition in CooldownCatalog.All)
+        // El jefe va abajo de todo, con el jefe mundial y la Arena (el dueño, v0.46.0): los tres son las peleas «grandes» del día.
+        foreach (var definition in CooldownCatalog.All.Where(d => d != CooldownCatalog.Boss))
         {
             await AddLineAsync(definition);
-
-            // El jefe mundial (v0.46.0) va justo debajo del jefe: tiene su propio límite (uno por día) y ya no gasta el cooldown del jefe.
-            if (definition == CooldownCatalog.Boss && await TryBuildWorldBossLineAsync(worldBossService, discordId) is { } worldBossLine)
-            {
-                lines.Add(worldBossLine);
-            }
         }
 
         // Las versiones avanzadas de /chop y /mine: solo con el oficio al nivel máximo (GameData/ProfessionRules.cs).
@@ -110,6 +105,13 @@ public class CooldownModule(
             ? Loc.F($"{TimeFormat.Remaining(dailyCalculation.RemainingCooldown!.Value)} restantes")
             : Loc.T("**¡Listo!** ✅");
         lines.Add($"🎁 **{Loc.T("Diario")}**: {dailyStatus}");
+
+        // Abajo de todo: el jefe, el jefe mundial (v0.46.0: su propio límite, uno por día, no gasta el cooldown del jefe) y la Arena.
+        await AddLineAsync(CooldownCatalog.Boss);
+        if (await TryBuildWorldBossLineAsync(worldBossService, discordId) is { } worldBossLine)
+        {
+            lines.Add(worldBossLine);
+        }
 
         if (await TryBuildArenaLineAsync(arenaService, discordId) is { } arenaLine)
         {
