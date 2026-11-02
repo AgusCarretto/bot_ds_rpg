@@ -47,8 +47,9 @@ foreach (var r in recipes)
 {
     foreach (var ing in r.Ingredients.Where(i => rarityOf.ContainsKey(i.ItemName)))
     {
-        // Legendarios y Míticos salen de a 1: ninguna receta pide más de 1 de ellos (Ébano, Zafiro, Corteza, Meteorito).
-        if (rarityOf[ing.ItemName] is "Legendario" or "Mítico" && ing.Quantity != 1) bad.Add($"{r.ResultItem.Name} <- {ing.Quantity}x {ing.ItemName}");
+        // Legendarios y Míticos salen de a 1: ninguna receta de las zonas 1-5 pide más de 1 de ellos (Ébano, Zafiro, Corteza, Meteorito).
+        // Las zonas 6-10 (v0.47.0) piden más a propósito: el dueño, en FN 7, saca Ébano y Zafiro de sobra («poné cantidades de mats grandes»).
+        if (r.ZoneId is not >= 6 && rarityOf[ing.ItemName] is "Legendario" or "Mítico" && ing.Quantity != 1) bad.Add($"{r.ResultItem.Name} <- {ing.Quantity}x {ing.ItemName}");
         if (ing.Quantity < 1) bad.Add($"{r.ResultItem.Name} <- {ing.Quantity}x {ing.ItemName}");
     }
 }
@@ -58,7 +59,7 @@ int Qty(string recipe, string ing) => recipes.First(r => r.ResultItem.Name == re
 Check(Qty("Hoja de Acero Puro", "Hierro") == 2 && Qty("Hoja de Acero Puro", "Madera de Pino") == 10 && Qty("Hombreras de Cuero Grueso", "Piedra") == 25, "la Hoja de Acero Puro (sin zona, solo materiales) pide 2 Hierro y 10 Madera de Pino (accesible); el amuleto de la Zona 1, 25 Piedra");
 Check(Qty("Hacha de Hierro MK3", "Hierro") == 6 && Qty("Mazo de Escoria", "Hierro") == 6 && Qty("Arco de Caza Mayor", "Madera de Ébano") == 1 && Qty("Báculo del Árbol de Vida", "Madera de Nogal") == 3 && Qty("Báculo del Árbol de Vida", "Madera de Ébano") == 1 && Qty("Espada del Abismo", "Gema de Zafiro") == 1 && Qty("Hacha de Hierro MK3", "Garra de Puma Cenizo") == 4 && Qty("Talismán de Ceniza Bendita", "Esencia Espectral") == 4 && Qty("Espada del Abismo", "Corazón de Titán") == 4 && Qty("Corazón de Titán Engarzado", "Fragmento de Alma") == 4,
     "Zonas 2-5: 6 Hierro en las armas pesadas de clase; Ébano en 1; sin Mítico en la Zona 5 (Nogal x3 / Zafiro); el drop de cacería ×4 en el arma y ×4 de cada uno en el amuleto (v0.36.0: ya no hay drop de viaje)");
-Check(recipes.Count(r => r.ZoneId is null or <= 5) == 26 && recipes.Count(r => r.ZoneId is >= 6) == 30 && recipes.All(r => r.Ingredients.Count is >= 2 and <= 4) && recipes.Where(r => r.ResultItem.Type is "Weapon" or "Amulet" && r.ZoneId is >= 1 and <= 5).All(r => r.Ingredients.Count <= 3), $"26 recetas (4 armas de clase y 1 amuleto por zona, más la Hoja sin zona), ninguna con más de 4 tipos de ingrediente y las armas y amuletos de las zonas 1-5 con 3 como mucho (hay {recipes.Count})");
+Check(recipes.Count(r => r.ZoneId is null or <= 5) == 26 && recipes.Count(r => r.ZoneId is >= 6) == 30 && recipes.All(r => r.Ingredients.Count is >= 2 and <= 4 || (r.ZoneId is >= 6 && r.ResultItem.Type == "Weapon" && r.Ingredients.Count == 5)) && recipes.Where(r => r.ResultItem.Type is "Weapon" or "Amulet" && r.ZoneId is >= 1 and <= 5).All(r => r.Ingredients.Count <= 3), $"26 recetas (4 armas de clase y 1 amuleto por zona, más la Hoja sin zona), ninguna con más de 4 tipos de ingrediente y las armas y amuletos de las zonas 1-5 con 3 como mucho (hay {recipes.Count})");
 
 Console.WriteLine("\n== 3. Precios de las comidas ==");
 var foods = (await items.GetAllByTypeAsync("Consumable")).OrderBy(i => i.StatValue).ThenBy(i => i.BuyPrice).ToList(); // el Cordero y el Asado Completo curan lo mismo (150) desde la v0.19.2: desempata el precio
