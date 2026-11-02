@@ -292,6 +292,42 @@ Check(encounter.Contains("no se come") && encounter.Contains("llamarada"), "la p
 Check(AdventureModule.BuildCombatButtons(fromDungeon.State!, [new HealOption("Mate Amargo", 15, 3)]).Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<SelectMenuComponent>().All(m => m.IsDisabled == true),
     "y el desplegable de comida sale apagado");
 
+Console.WriteLine("\n== 8. Ruteo con el InteractionService y el CommandService reales ==");
+{
+    var client = new Discord.WebSocket.DiscordSocketClient();
+    var interactions = new Discord.Interactions.InteractionService(client.Rest);
+    var anyStatic = System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static;
+    var sp = (IServiceProvider)typeof(BoxModule).Assembly.GetType("ServiceProviderBuilder")!.GetMethod("BuildServiceProvider", anyStatic)!.Invoke(null, [client, interactions, cfg])!;
+    await interactions.AddModulesAsync(typeof(BoxModule).Assembly, sp);
+    IComponentInteraction Click(string id) => FakeProxy47.Make<IComponentInteraction>(new() { ["Data"] = FakeProxy47.Make<IComponentInteractionData>(new() { ["CustomId"] = id }) });
+    var route = interactions.SearchComponentCommand(Click($"dg:{Id(1)}:abcd1234:W"));
+    Check(route.IsSuccess && route.Command.MethodName == "HandleButtonAsync", "el botón «dg:{dueño}:{corrida}:{acción}» llega al handler de la mazmorra");
+    var texts = new Discord.Commands.CommandService(new Discord.Commands.CommandServiceConfig { CaseSensitiveCommands = false });
+    texts.AddTypeReader<IUser>(new GuildUserTypeReader(), true);
+    var textMods = await texts.AddModulesAsync(typeof(BoxModule).Assembly, sp);
+    var textNames = textMods.SelectMany(x => x.Commands).SelectMany(c => c.Aliases).Select(a => a.ToLowerInvariant()).ToList();
+    Check(new[] { "dungeon", "dg", "mazmorra" }.All(n => textNames.Count(x => x == n) == 1) && textNames.Count(x => x == "d") == 1, "aa dungeon / aa dg / aa mazmorra registrados una sola vez, y «aa d» sigue siendo solo el del diario");
+    Check(Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetService<IDungeonService>(sp) is DungeonService
+        && Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance(sp, typeof(DungeonModule)) is not null
+        && Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance(sp, typeof(AdventureModule)) is not null, "el contenedor arma el servicio de mazmorras y los módulos que lo usan");
+}
+
 for (int n = 1; n <= 16; n++) await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id; DELETE FROM game_events WHERE discord_id = @id; DELETE FROM player_stats WHERE discord_id = @id; DELETE FROM cooldowns WHERE discord_id = @id;", new { id = Base + n });
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;
+
+public class FakeProxy47 : System.Reflection.DispatchProxy
+{
+    public Dictionary<string, object?> Values = new();
+    protected override object? Invoke(System.Reflection.MethodInfo? method, object?[]? args)
+    {
+        if (method!.Name.StartsWith("get_") && Values.TryGetValue(method.Name[4..], out var v)) return v;
+        return method.ReturnType.IsValueType && method.ReturnType != typeof(void) ? Activator.CreateInstance(method.ReturnType) : null;
+    }
+    public static T Make<T>(Dictionary<string, object?> values) where T : class
+    {
+        var proxy = Create<T, FakeProxy47>();
+        ((FakeProxy47)(object)proxy).Values = values;
+        return proxy;
+    }
+}
