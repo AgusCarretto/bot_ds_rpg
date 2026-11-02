@@ -12,9 +12,9 @@ Hoy, con el equipo del Fogón y la comida, al Asador se lo baja rápido, y con F
 
 - Cinco zonas nuevas, **6 a 10**, que se abren con el Fuego Nuevo: **la 6 en el FN 5, la 7 en el 8, la 8 en el 11, la 9 en el 14 y la 10 en el 17** (una cada 3 FN). El FN 20 queda para «algo después de la 10» (fuera de este diseño).
 - Del FN 0 al 4 **no cambia nada**: el jefe de la Zona 5 abre la Zona 0 y se pelea al Asador como hoy.
-- Cada zona nueva es **una zona normal pero simple**: **un solo monstruo para cazar y un solo drop** (que sale bastante), su monstruo de travel y su Reliquia. Nada de mecánicas raras dentro de la zona (eso «para mucho más adelante»).
+- Cada zona nueva es **una zona normal pero simple**: **un solo monstruo para cazar y un solo drop**, que sale con **la misma chance que todos los drops** (la de la caza, que ya sube con el Fuego Nuevo: en el FN 5 o 6 es bastante más alta que en el 1 o 2), su monstruo de travel y su Reliquia. Nada de mecánicas raras dentro de la zona (eso «para mucho más adelante»).
 - **El drop de cada zona es sencillo y se distingue a simple vista** (nombre corto y claro, emoji propio). 5 drops nuevos en total, uno por zona.
-- Recetas que piden **muchos materiales** (a esa altura se recolecta mucho más) y **bastantes drops** de la zona.
+- Recetas que piden **muchos materiales** (a esa altura se recolecta mucho más) y **más drops cuanto más alta la zona** (el dueño: «mientras más zona, más va a pedir la receta»).
 - **Mazmorras que se hacen solo**, con botones de Discord, sin comida adentro.
 
 ## No-metas (por ahora)
@@ -22,7 +22,7 @@ Hoy, con el equipo del Fogón y la comida, al Asador se lo baja rápido, y con F
 - Mazmorras en grupo.
 - Mecánicas especiales dentro de las zonas (clima, monstruos con reglas propias).
 - Lo que pasa en el FN 20 («zona 11» u otra cosa).
-- **[mi decisión]** Mascotas nuevas para las zonas 6 a 10, capítulos de historia nuevos y logros/títulos propios: se pueden sumar después sin tocar este diseño.
+- **Mascotas nuevas: no** (el dueño). **[mi decisión]** Capítulos de historia nuevos y logros/títulos propios: se pueden sumar después sin tocar este diseño.
 
 ## Anti-metas (sería un fracaso aunque funcione)
 
@@ -76,13 +76,13 @@ Si las brasas no convencen al probarlas, la de repuesto es otro acertijo de lóg
 - Es **el único jefe** de este tramo (no hay guardianes en las mazmorras).
 - **Más fuerte según la zona tope desde la que llegás** (vida y daño por zona; números a calibrar).
 - **Desde la Zona 6 tiene una habilidad que tira al azar el 20 % de las veces, sin cooldown.** Cuál es la habilidad queda para el constructor.
-- Se lo pelea solo, recién salido de la mazmorra, con la vida que te quedó.
+- Se lo pelea solo, recién salido de la mazmorra, con la vida que te quedó, y **sin comida** (el dueño: se deja así y después se ve si conviene calibrar con comida y un Asador más poderoso).
 
 ## Restricciones del código actual (para el constructor)
 
 - **El juego asume 5 zonas en varios lugares**: `MissionRewards.GoldPerHunt`, `Enchantments.DustPerAttempt` y `WorldBoss.WeaponLadder` son tablas de 5 valores (una zona 6 usaría en silencio los de la 5); `BoxCatalog.RequiredZoneRank` (la caja Mítica es «Zona 5»); `PvpTuning.AmuletDefenseInPvp` necesita fila para cada amuleto nuevo; `zone_boxes` necesita sus filas por zona (repeat, daily, weekly, prize, prize_top, travel) o el pago tira error.
 - **La puerta**: `FogonRules.IsGateOpen` hoy dice «venció al jefe de la ÚLTIMA zona de la escalera»; pasa a ser «salió de la mazmorra de su zona tope» (y desde el FN 5 la Zona 5 ya no abre la puerta). `ZoneRanking.MaxUnlockedRank` y `/zona`, `/zonas` tienen que respetar el tope por Fuego Nuevo (una zona por encima del tope no existe para ese jugador).
-- **Hoy entrar a la Zona 0 pide el Trinche y la Brasa puestos** (`FogonRules.CheckEntry`). En el camino nuevo se entra desde la mazmorra (ver «Preguntas abiertas»).
+- **Hoy entrar a la Zona 0 pide el Trinche y la Brasa puestos** (`FogonRules.CheckEntry`). **Desde la Zona 6 ya no se piden** (el dueño): el equipo de la zona nueva los reemplaza. Del FN 0 al 4 se siguen pidiendo como hoy.
 - `highest_zone_cleared` y `gate_cleared` vuelven a 0 con cada Fuego Nuevo: la escalera 6–10 se rehace cada vuelta, como la 1–5.
 - El combate y el jefe en equipo viven en memoria (`ICombatSessionService`, `RaidSession`); la mazmorra también puede (un reinicio la corta: por eso la Reliquia se descuenta al terminar).
 - Todo texto para el jugador en español con `Loc` y su inglés (`Locales/en.json`); `/info` necesita tema (o campo) para las mazmorras; anuncio de top.gg cuando salga.
@@ -97,5 +97,4 @@ Si las brasas no convencen al probarlas, la de repuesto es otro acertijo de lóg
 
 ## Preguntas abiertas (del dueño)
 
-1. Desde el FN 5, ¿se sigue pidiendo el **Trinche y la Brasa del Fogón** para pelear al Asador, o lo reemplazan la mazmorra y el equipo de la zona tope?
-2. En la pelea contra el Asador (después de la mazmorra), ¿se puede **comer una vez** como en los otros jefes, o nada?
+1. **Qué hacer con el Trinche y la Brasa del Fogón** desde el FN 5: siguen existiendo (los pide la Zona 0 del FN 0 al 4), pero desde la Zona 6 no son obligatorios. El dueño pensaba si dejarlos como están, moverlos a la Zona 6 o convertirlos en armas de la Zona 5. No frena la construcción de la Zona 6.
