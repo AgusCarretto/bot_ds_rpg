@@ -15,7 +15,9 @@ public class AdventureModule(
     IGameEvents gameEvents,
     IBuffRepository buffRepository,
     IZoneBoxService zoneBoxService,
-    IPartyBossService partyBoss) : InteractionModuleBase<SocketInteractionContext>
+    IPartyBossService partyBoss,
+    IDungeonService dungeons,
+    IZoneRepository zoneRepository) : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("hunt", "Salí a cazar monstruos cercanos (cooldown de 1 minuto).")]
     public Task HandleHuntAsync() =>
@@ -36,10 +38,58 @@ public class AdventureModule(
         [Summary("companero5", "Otro amigo más (opcional).")] IUser? companion5 = null)
     {
         var named = new[] { companion, companion2, companion3, companion4, companion5 }.OfType<IUser>().ToList();
-        return named.Count == 0
-            ? StartCombatAsync(CooldownCatalog.Boss, () => combatStarter.PrepareBossAsync(Context.User.Id))
-            : StartPartyAsync(named);
+        return HandleBossOrDungeonAsync(named);
     }
+
+    // Las Zonas 6 a 10 no tienen jefe: /boss abre su mazmorra (v0.47.0, Modules/DungeonModule.cs), que se hace solo.
+    private async Task HandleBossOrDungeonAsync(IReadOnlyList<IUser> named)
+    {
+        if (await DungeonModule.IsInDungeonZoneAsync(userRepository, zoneRepository, Context.User.Id))
+        {
+            await StartDungeonAsync(named.Count > 0);
+            return;
+        }
+
+        await (named.Count == 0
+            ? StartCombatAsync(CooldownCatalog.Boss, () => combatStarter.PrepareBossAsync(Context.User.Id))
+            : StartPartyAsync(named));
+    }
+
+    private async Task StartDungeonAsync(bool withCompanions)
+    {
+        await DeferAsync();
+        try
+        {
+            if (withCompanions)
+            {
+                await FollowupAsync(Loc.T("La mazmorra se hace **solo**: usá **/boss** sin compañeros."), ephemeral: true);
+                return;
+            }
+
+            var (problem, embed, components, session) = await DungeonModule.ExecuteStartAsync(dungeons, Context.User.Id, Context.Channel?.Id ?? 0);
+            if (problem is not null)
+            {
+                await FollowupAsync(problem, ephemeral: true);
+                return;
+            }
+
+            var message = await FollowupAsync(embed: embed, components: components);
+            AttachDungeonTimeout(session!, message, zoneRepository);
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            await FollowupAsync(Loc.T("¡Upa! No pude abrir la mazmorra, probá de nuevo en un momento."), ephemeral: true);
+        }
+    }
+
+    // Si la corrida vence por tiempo, el mensaje de la mazmorra pasa a mostrar el final (compartido con «aa boss»).
+    public static void AttachDungeonTimeout(DungeonSession session, IUserMessage message, IZoneRepository zoneRepository) =>
+        session.OnTimeout = async result =>
+        {
+            var (endEmbed, endComponents) = await DungeonModule.RenderAsync(zoneRepository, result);
+            await message.ModifyAsync(p => { p.Embed = endEmbed; p.Components = endComponents; });
+        };
 
     // Arma el grupo: valida a todos, publica la invitación (con la mención de los invitados fuera del embed, que es lo único que avisa) y deja que RaidModule siga con los botones.
     private async Task StartPartyAsync(IReadOnlyList<IUser> companions)
@@ -119,6 +169,9 @@ public class AdventureModule(
                     return;
                 case CombatStartStatus.GateGearMissing:
                     await FollowupAsync(embed: BuildGateGearMissingEmbed(), ephemeral: true);
+                    return;
+                case CombatStartStatus.GateViaDungeon:
+                    await FollowupAsync(embed: BuildGateViaDungeonEmbed(), ephemeral: true);
                     return;
                 case CombatStartStatus.RaceLost:
                     await FollowupAsync(Loc.T("Justo se te adelantó otra ejecución de este comando, probá de nuevo en un toque."), ephemeral: true);
@@ -368,11 +421,14 @@ public class AdventureModule(
 
             // --- Turno del jugador: golpe, Sifón de Almas y contraataque, todo en un único lugar
             // compartido con el raid y el autohunt (ver GameData/CombatTurnResolver.cs). ---
+            // La llamarada del Asador (v0.47.0, GameData/AsadorScaling.cs): en un % de los turnos su golpe entra más grande; el resto del turno es la cuenta de siempre.
+            bool flare = state.MonsterSpecialChancePercent > 0 && Random.Shared.Next(100) < state.MonsterSpecialChancePercent;
             var turn = CombatTurnResolver.ResolveTurn(
                 new CombatantProfile(state.PlayerDamage, state.PlayerDefense, state.PlayerClass, state.Passives),
                 state.Ability,
                 useAbility ? PlayerAction.Ability : PlayerAction.Attack,
-                state.PlayerCurrentHp, state.PlayerMaxHp, state.MonsterCurrentHp, state.MonsterDamage);
+                state.PlayerCurrentHp, state.PlayerMaxHp, state.MonsterCurrentHp, flare ? AsadorScaling.FlareDamage(state.MonsterDamage) : state.MonsterDamage);
+            flare = flare && turn.MonsterHit is { Dodged: false };
 
             int playerHit = turn.DamageDealt;
             int monsterHpAfter = turn.MonsterHpAfter;
@@ -472,6 +528,7 @@ public class AdventureModule(
                 var finalState = state with
                 {
                     PlayerCurrentHp = playerHpAfter,
+                    LastTurnFlare = flare,
                     TurnsElapsed = turnsElapsed,
                     DodgeCount = dodgeCount,
                     CritCount = critCount,
@@ -495,6 +552,7 @@ public class AdventureModule(
             {
                 MonsterCurrentHp = monsterHpAfter,
                 PlayerCurrentHp = playerHpAfter,
+                LastTurnFlare = flare,
                 TurnsElapsed = turnsElapsed,
                 DodgeCount = dodgeCount,
                 CritCount = critCount,
@@ -682,6 +740,14 @@ public class AdventureModule(
             .Build();
 
     // /boss en el Fogón sin el equipo puesto (lo vendió después de entrar).
+    // v0.47.0: con la zona tope de mazmorra al Asador se llega pasando esa mazmorra (el bot ya lo sacó de la puerta).
+    public static Embed BuildGateViaDungeonEmbed() =>
+        new EmbedBuilder()
+            .WithTitle(Loc.T("🔥 El Fogón se corrió"))
+            .WithDescription(Loc.F($"Con tu Fuego Nuevo, a **{FogonRules.BossName}** se llega pasando la **mazmorra** de tu última zona: forjá su **Reliquia** y usá **/boss** estando ahí. Te saqué de la puerta. No se gastó el cooldown."))
+            .WithColor(Color.DarkOrange)
+            .Build();
+
     public static Embed BuildGateGearMissingEmbed() =>
         new EmbedBuilder()
             .WithTitle(Loc.T("🔥 Te falta el equipo del Fogón"))
@@ -717,7 +783,11 @@ public class AdventureModule(
             .AddField(Loc.T("❤️ Tu HP"), HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
             .AddField(Loc.F($"{state.MonsterEmoji} HP de {state.MonsterName}"), HpLine(state.MonsterCurrentHp, state.MonsterMaxHp), true);
 
-        if (CombatHeal.HasMenu(state.CommandName))
+        if (state.FromDungeon)
+        {
+            embed.WithFooter(Loc.T("🚫 Venís de la mazmorra: en esta pelea no se come. Y cuidado con su llamarada."));
+        }
+        else if (CombatHeal.HasMenu(state.CommandName))
         {
             embed.WithFooter(Loc.T("🍖 Podés curarte UNA vez en esta pelea con el desplegable de abajo."));
         }
@@ -741,7 +811,7 @@ public class AdventureModule(
             .WithTitle(Loc.F($"⚔️ Combate contra {state.MonsterName} {state.MonsterEmoji}"))
             .WithColor(Color.Gold)
             .WithMonsterPortrait(state.MonsterPortrait)
-            .WithDescription($"{turn.ActionFlavor}{CritPrefix(turn.CritCount)}{playerLine} {monsterLine}{LifestealSuffix(turn.LifestealHeal, turn.LeechHeal)}{LastStandSuffix(turn)}")
+            .WithDescription($"{turn.ActionFlavor}{CritPrefix(turn.CritCount)}{playerLine} {monsterLine}{FlareSuffix(state)}{LifestealSuffix(turn.LifestealHeal, turn.LeechHeal)}{LastStandSuffix(turn)}")
             .AddField(Loc.T("❤️ Tu HP"), HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
             .AddField(Loc.F($"{state.MonsterEmoji} HP de {state.MonsterName}"), HpLine(state.MonsterCurrentHp, state.MonsterMaxHp), true);
 
@@ -858,7 +928,7 @@ public class AdventureModule(
             .WithTitle(Loc.F($"💀 Derrota contra {state.MonsterName} {state.MonsterEmoji}"))
             .WithColor(Color.DarkRed)
             .WithMonsterPortrait(state.MonsterPortrait)
-            .WithDescription($"{turn.ActionFlavor}{CritPrefix(turn.CritCount)}{hitLine}{LifestealSuffix(turn.LifestealHeal, turn.LeechHeal)}\n\n{MonsterSays(state, NpcDialogue.BossLine.Victory)}")
+            .WithDescription($"{turn.ActionFlavor}{CritPrefix(turn.CritCount)}{hitLine}{FlareSuffix(state)}{LifestealSuffix(turn.LifestealHeal, turn.LeechHeal)}\n\n{MonsterSays(state, NpcDialogue.BossLine.Victory)}")
             .AddField(Loc.T("❤️ Tu HP"), HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
             .AddField(Loc.F($"{state.MonsterEmoji} HP de {state.MonsterName}"), HpLine(turn.MonsterHpAfter, state.MonsterMaxHp), true);
 
@@ -922,6 +992,8 @@ public class AdventureModule(
     };
 
     // El «Aliento final» del dragón (tier 4+): el golpe te iba a matar y quedaste con 1 de vida.
+    private static string FlareSuffix(CombatState state) => state.LastTurnFlare ? Loc.T("\n🔥 ¡Llamarada! El Asador te pegó con todo su fuego.") : string.Empty;
+
     private static string LastStandSuffix(TurnResult turn) => turn.LastStand ? Loc.T("\n🐉 ¡Aliento final! Tu dragón te mantuvo en pie con 1 de vida.") : string.Empty;
 
     // "🔮 Sifón de Almas te curó X HP." si el Hechicero curó algo este turno y "🩸 Sangre te curó Y HP." si fue el encantamiento (healed = la cura total; leech = la parte de Sangre).

@@ -306,8 +306,9 @@ class Program
             // En medio de una pelea solo valen los comandos de la pelea y los que solo miran (GameData/FightLock.cs): nada de recolectar, forjar ni jugar mientras se pelea. Los botones del combate no son
             // comandos de barra y nunca pasan por acá. Se responde en privado y no se despacha nada.
             if (interaction is SocketSlashCommand fightSlash
-                && !FightLock.IsAllowed(fightSlash.CommandName)
-                && FightGuard.IsInFight(_services.GetRequiredService<ICombatSessionService>(), _services.GetService<IRaidSessionService>(), _services.GetService<IDuelService>(), interaction.User.Id))
+                && ((_services.GetService<IDungeonService>()?.IsInDungeon(interaction.User.Id) == true && !FightLock.IsAllowedInDungeon(fightSlash.CommandName))
+                    || (!FightLock.IsAllowed(fightSlash.CommandName)
+                && FightGuard.IsInFight(_services.GetRequiredService<ICombatSessionService>(), _services.GetService<IRaidSessionService>(), _services.GetService<IDuelService>(), interaction.User.Id, _services.GetService<IDungeonService>()))))
             {
                 await interaction.RespondAsync(FightLock.Message($"/{fightSlash.CommandName}"), ephemeral: true);
                 return;
@@ -390,8 +391,9 @@ class Program
             if (found.IsSuccess && found.Commands.Count > 0)
             {
                 string key = FightLock.TextKey(found.Commands[0].Command.Aliases.FirstOrDefault() ?? found.Commands[0].Command.Name);
-                if (!FightLock.IsAllowed(key)
-                    && FightGuard.IsInFight(_services.GetRequiredService<ICombatSessionService>(), _services.GetService<IRaidSessionService>(), _services.GetService<IDuelService>(), message.Author.Id))
+                if ((_services.GetService<IDungeonService>()?.IsInDungeon(message.Author.Id) == true && !FightLock.IsAllowedInDungeon(key))
+                    || (!FightLock.IsAllowed(key)
+                    && FightGuard.IsInFight(_services.GetRequiredService<ICombatSessionService>(), _services.GetService<IRaidSessionService>(), _services.GetService<IDuelService>(), message.Author.Id, _services.GetService<IDungeonService>())))
                 {
                     await message.Channel.SendMessageAsync(FightLock.Message($"{TextCommandPrefix}{key}"));
                     return;
@@ -616,6 +618,9 @@ public static class ServiceProviderBuilder
             .AddSingleton<IRaidSessionService, RaidSessionService>()
             .AddSingleton<IPartyBossService, PartyBossService>()
             .AddSingleton<IAdventureCombatStarter, AdventureCombatStarter>()
+            // Las mazmorras de las Zonas 6 a 10 (v0.47.0): las corridas viven en memoria, como las peleas.
+            .AddSingleton<IDungeonRepository, DungeonRepository>()
+            .AddSingleton<IDungeonService, DungeonService>()
             .BuildServiceProvider();
     }
 }

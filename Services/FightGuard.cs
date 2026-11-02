@@ -4,8 +4,10 @@ namespace BotDsRpg.Services;
 // un jefe en equipo que YA está peleando (no la sala de espera de las invitaciones) y un duelo en curso. Sin efectos: solo lee.
 public static class FightGuard
 {
-    public static bool IsInFight(ICombatSessionService combatSessions, IRaidSessionService? raidSessions, IDuelService? duelService, ulong discordId) =>
+    // v0.47.0: una corrida de mazmorra también cuenta (adentro no se come ni se hace otra cosa).
+    public static bool IsInFight(ICombatSessionService combatSessions, IRaidSessionService? raidSessions, IDuelService? duelService, ulong discordId, IDungeonService? dungeons = null) =>
         combatSessions.Peek(discordId) is not null
         || raidSessions?.IsInActiveFight(discordId) == true
-        || duelService?.IsInDuel(discordId) == true;
+        || duelService?.IsInDuel(discordId) == true
+        || dungeons?.IsInDungeon(discordId) == true;
 }

@@ -307,7 +307,7 @@ public class GameModule(
         // La comida de las mascotas va con los consumibles y los huevos con las cajas (v0.10.0): los dos son cosas que se tienen en la mochila para usar después.
         var food = Lines(entries.Where(e => e.Type is "Consumable" or "PetFood" or "DragonFood"));
         var drops = Lines(entries.Where(e => e.Type == "Material"));
-        var boxes = Lines(entries.Where(e => e.Type is "Caja" or "Huevo"));
+        var boxes = Lines(entries.Where(e => e.Type is "Caja" or "Huevo" or "Reliquia"));
         bool hasEggs = entries.Any(e => e.Type == "Huevo" && e.Quantity > 0);
         string boxTitle = hasEggs ? Loc.T("Cajas y huevos") : Loc.T("Cajas");
 
@@ -392,7 +392,8 @@ public class GameModule(
         InvGather => e.Type is "Madera" or "Mineral",
         InvDrops => e.Type == "Material",
         InvFood => e.Type is "Consumable" or "PetFood" or "DragonFood",
-        InvBoxes => e.Type is "Caja" or "Huevo",
+        // v0.47.0: las Reliquias de las Zonas 6 a 10 (la llave de su mazmorra) van con las cajas.
+        InvBoxes => e.Type is "Caja" or "Huevo" or "Reliquia",
         _ => false,
     };
 

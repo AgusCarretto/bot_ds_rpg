@@ -15,6 +15,9 @@ public static class GameEventKinds
     public const string TravelWin = "travel_win";
     public const string BossWin = "boss_win";
     public const string RaidWin = "raid_win";
+    // v0.47.0: las mazmorras de las Zonas 6 a 10 (GameData/Dungeons); detail = la zona.
+    public const string DungeonWin = "dungeon_win";
+    public const string DungeonLoss = "dungeon_loss";
     public const string FightLost = "fight_lost";           // perdió una pelea (cacería, viaje, jefe o raid); detail = cuál ("hunt", "travel", "boss", "raid")
 
     // Recolección y forja.

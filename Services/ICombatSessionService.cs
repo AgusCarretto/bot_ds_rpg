@@ -62,7 +62,12 @@ public sealed record CombatState(
     // Solo para CommandName == "travel" (v0.36.0): la zona del viaje, capturada al arrancar. De ahí sale la caja que puede caer al ganar (zone_boxes, rol "travel"); null en hunt/boss.
     int? TravelZoneId = null,
     // El id de ESTA pelea (v0.37.1): lo lleva el botón «Sí, huir» de la confirmación para no huir de otra pelea si la que se quería dejar ya terminó. Guid.Empty = una pelea armada a mano (las pruebas).
-    Guid FightId = default)
+    Guid FightId = default,
+    // v0.47.0: el Asador recién salido de una mazmorra (GameData/AsadorScaling.cs): sin comida (HealUsed arranca en true) y con la llamarada, un golpe ×1,75 en este % de los turnos.
+    bool FromDungeon = false,
+    int MonsterSpecialChancePercent = 0,
+    // El último contraataque fue una llamarada (para la línea del mensaje del turno).
+    bool LastTurnFlare = false)
 {
     // Convierte un delta de HP en unidades de COMBATE (ya escaladas por Passives.MaxHpMultiplier)
     // a unidades reales de base de datos, para pasarlo a IUserRepository.ApplyCombatHpDeltaAsync /
