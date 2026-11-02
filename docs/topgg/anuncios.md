@@ -16,6 +16,8 @@ solo. El más nuevo va arriba. Cada anuncio tiene un título y un texto.
 
 🃏 **Blackjack**: si la banca tiene 21 de entrada, la mano ya no se pierde al instante. Si llegás a 21, empatás.
 
+🪙 **Coinflip**: de vez en cuando la moneda cae **de canto**… y paga **×5**, elijas el lado que elijas. Una sorpresa.
+
 🐲 **Dragones**: los fallos de criar solo y en pareja ahora se cuentan por separado, cada uno con su propia garantía.
 
 ♻️ El **Fuego Nuevo** ya no reinicia los cooldowns, y las bendiciones repetidas ahora muestran bien su nivel (II, III…).

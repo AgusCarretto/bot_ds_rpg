@@ -9,6 +9,17 @@ public sealed class CasinoService : ICasinoService
     // Lo que paga cada jugada, multiplicando la apuesta (lo que vuelve a tu billetera, apuesta incluida). Están acá, con nombre, para que la ayuda ("/info play") lea
     // los mismos números que el juego y no se desincronicen si se retocan.
     public const int CoinflipMultiplier = 2;
+
+    // La moneda de canto (v0.46.0, el dueño: «puede llegar a salir canto, que ahí te paga ×5, es como una sorpresa, un regalo… no un tipo de apuesta»): 1 tirada de cada 100 la moneda
+    // cae parada y paga ×5 elijas el lado que elijas. No se apuesta al canto. Con esto el coinflip devuelve 1,04 por cada 1 apostado (0,495 × 2 + 0,01 × 5): el dueño lo sabe y lo quiere así
+    // («que sea suerte y verdad»). Si hubiera que volverlo a 1 o menos, la palanca es bajar CoinflipMultiplier a 1,9 o la chance del canto.
+    public const int CoinflipEdgeMultiplier = 5;
+    public const int CoinflipEdgeChancePerMille = 10;
+    public const string CoinflipEdge = "Edge";
+
+    // Lo que vuelve de cada 1 apostado en el coinflip, en promedio.
+    public static double CoinflipReturnToPlayer =>
+        ((1000.0 - CoinflipEdgeChancePerMille) / 2000.0 * CoinflipMultiplier) + (CoinflipEdgeChancePerMille / 1000.0 * CoinflipEdgeMultiplier);
     public const int SlotsThreeMatchMultiplier = 5;
     // El par paga ×1,3 (la apuesta y un 30 % más, redondeado hacia abajo). Era ×1,5 hasta la v0.12.0, el dueño lo bajó a ×1,1 (2026-10-06: «ganamos mucho»: con un amigo juntaron oro
     // de más jugando slots) y el 2026-10-07 pidió ×1,3 con un símbolo más: el sexto símbolo hace que el par y el trío salgan menos seguido y compensa el pago mayor. Con la apuesta
@@ -30,15 +41,23 @@ public sealed class CasinoService : ICasinoService
 
     public CasinoResult PlayCoinflip(int bet, string? predictedSide)
     {
-        bool landedHeads = Random.Shared.Next(2) == 0; // 50% de probabilidad
-        string landedSide = landedHeads ? "Heads" : "Tails";
+        // Una tirada de 0 a 999: las primeras CoinflipEdgeChancePerMille son el canto; el resto se reparte mitad y mitad entre cara y cruz.
+        int roll = Random.Shared.Next(1000);
+        string landedSide = roll < CoinflipEdgeChancePerMille ? CoinflipEdge : roll % 2 == 0 ? "Heads" : "Tails";
+        int payout = CoinflipPayout(bet, landedSide, predictedSide);
+        return new CasinoResult(payout > 0, payout, [landedSide]);
+    }
 
-        bool won = predictedSide is null
-            ? landedHeads
-            : string.Equals(predictedSide, landedSide, StringComparison.OrdinalIgnoreCase);
+    // El premio del coinflip según cómo cayó la moneda: pura, para probarla sin azar. El canto paga ×5 a todo el mundo; si no, gana quien acertó el lado (sin lado elegido, Heads).
+    public static int CoinflipPayout(int bet, string landedSide, string? predictedSide)
+    {
+        if (landedSide == CoinflipEdge)
+        {
+            return (int)Math.Min((long)bet * CoinflipEdgeMultiplier, int.MaxValue);
+        }
 
-        int payout = won ? bet * CoinflipMultiplier : 0;
-        return new CasinoResult(won, payout, [landedSide]);
+        bool won = string.Equals(predictedSide ?? "Heads", landedSide, StringComparison.OrdinalIgnoreCase);
+        return won ? (int)Math.Min((long)bet * CoinflipMultiplier, int.MaxValue) : 0;
     }
 
     public CasinoResult PlaySlots(int bet)

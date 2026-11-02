@@ -209,7 +209,7 @@ public static class HelpTopics
     private static Embed Play() => Topic(Self("play"),
         Loc.F($"**/play** apuesta tu oro. Apuesta mínima: **{CasinoModule.MinBet}**. Podés escribir **all** para apostar todo lo que llevás en la billetera, o **10k** / **1m** para mil / millón. En texto: `aa cf h 100` (h = heads, t = tails) y `aa slots 100`."),
         (Loc.T("🪙 Coinflip"),
-            Loc.F($"Elegís cara (**Heads**) o cruz (**Tails**) y sale al azar: 50 % de acertar. Si acertás cobrás **×{CasinoService.CoinflipMultiplier}** lo apostado.")),
+            Loc.F($"Elegís cara (**Heads**) o cruz (**Tails**) y sale al azar: 50 % de acertar. Si acertás cobrás **×{CasinoService.CoinflipMultiplier}** lo apostado. Y a veces (1 de cada {1000 / CasinoService.CoinflipEdgeChancePerMille}) la moneda cae **de canto**: sorpresa, cobrás **×{CasinoService.CoinflipEdgeMultiplier}** elijas lo que elijas.")),
         (Loc.T("🎰 Slots"),
             Loc.F($"Salen tres símbolos al azar ({string.Join(' ', CasinoService.SlotsSymbolList)}): tres iguales ({Dec(CasinoService.SlotsThreeMatchChance * 100)} % de las veces) pagan **×{CasinoService.SlotsThreeMatchMultiplier}**, ") +
             Loc.F($"dos iguales ({Dec(CasinoService.SlotsPairChance * 100)} %) pagan **×{Dec(CasinoService.SlotsPairMultiplier)}** y tres distintos ({Dec(CasinoService.SlotsAllDifferentChance * 100)} %) pierden la apuesta.\n") +

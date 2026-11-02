@@ -2214,7 +2214,7 @@
   "Guardá oro en el **banco** (**/info tema:bank**), curate con **/heal** antes de pelear, y recordá que **/autohunt** no te deja pelear con menos del {0} % de vida ": "Keep gold in the **bank** (**/info tema:bank**), heal with **/heal** before fighting, and remember that **/autohunt** does not let you fight with less than {0}% life ",
   "porque no puede huir. En **/hunt** a mano ves tu vida y podés huir.": "because it cannot flee. In manual **/hunt** you see your life and can flee.",
   "**/play** apuesta tu oro. Apuesta mínima: **{0}**. Podés escribir **all** para apostar todo lo que llevás en la billetera, o **10k** / **1m** para mil / millón. En texto: `aa cf h 100` (h = heads, t = tails) y `aa slots 100`.": "**/play** bets your gold. Minimum bet: **{0}**. You can type **all** to bet everything in your wallet, or **10k** / **1m** for a thousand / a million. By text: `aa cf h 100` (h = heads, t = tails) and `aa slots 100`.",
-  "Elegís cara (**Heads**) o cruz (**Tails**) y sale al azar: 50 % de acertar. Si acertás cobrás **×{0}** lo apostado.": "You pick **Heads** or **Tails** and it comes up at random: a 50% chance. If you guess right you get **×{0}** your bet.",
+  "Elegís cara (**Heads**) o cruz (**Tails**) y sale al azar: 50 % de acertar. Si acertás cobrás **×{0}** lo apostado. Y a veces (1 de cada {1}) la moneda cae **de canto**: sorpresa, cobrás **×{2}** elijas lo que elijas.": "You pick **Heads** or **Tails** and it comes up at random: a 50% chance. If you guess right you get **×{0}** your bet. And sometimes (1 in {1}) the coin lands **on its edge**: a surprise, you get **×{2}** whatever you picked.",
   "Salen tres símbolos al azar ({0}): tres iguales ({1} % de las veces) pagan **×{2}**, ": "Three random symbols come up ({0}): three of a kind ({1}% of the time) pays **×{2}**, ",
   "dos iguales ({0} %) pagan **×{1}** y tres distintos ({2} %) pierden la apuesta.\n": "a pair ({0}%) pays **×{1}** and three different ({2}%) lose the bet.\n",
   "A la larga la casa se queda con el **{0} %** de lo que se apuesta: es un juego de suerte, no una forma de juntar oro.": "In the long run the house keeps **{0}%** of what is bet: it is a game of luck, not a way to make gold.",
@@ -2593,5 +2593,6 @@
   "Anotate apenas empieza el día y avisale a tus amigos: no cuesta nada y el premio sube con cada uno que se suma.": "Join as soon as the day starts and tell your friends: it costs nothing and the prize grows with each one who joins.",
   "No hace falta nivel y **no gasta tu cooldown del jefe**: podés hacer **/boss** igual. Hay uno por día.": "No level needed and it **does not spend your boss cooldown**: you can still do **/boss**. There is one per day.",
   "🤝 **¡Empate!** La banca tenía blackjack, pero llegaste a 21. Te devuelvo los **{0}**.": "🤝 **Push!** The dealer had blackjack, but you reached 21. You get your **{0}** back.",
-  "🍖 Los banquetes activos": "🍖 Active feasts"
+  "🍖 Los banquetes activos": "🍖 Active feasts",
+  "Elegiste **{0}** — ¡la moneda cayó **de canto**! 🪙✨ Pasa una vez cada {1} tiradas y paga **×{2}**.": "You picked **{0}** — the coin landed **on its edge**! 🪙✨ It happens once every {1} flips and pays **×{2}**."
 }

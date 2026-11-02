@@ -37,5 +37,15 @@ for (int p = 0; p < tries; p++) { long gold = 1000; for (int s = 0; s < 30 && go
 Check(richer / tries < 1000, $"jugando «all» 30 veces seguidas con 1.000 de oro terminan sin nada {broke * 100.0 / tries:0.0} % de los jugadores (el promedio queda en {richer / tries:0} < 1.000; con el par en ×2 el oro se multiplicaba)");
 Check(Enumerable.Range(0, 2000).Select(_ => casino.PlaySlots(50)).All(r => r.Reveal.Length == 3 && r.Reveal.All(s => CasinoService.SlotsSymbolList.Contains(s))), "cada tirada muestra tres símbolos de la lista");
 
+Console.WriteLine("\n== 4. La moneda de canto (v0.46.0) ==");
+Check(CasinoService.CoinflipPayout(100, CasinoService.CoinflipEdge, "heads") == 500 && CasinoService.CoinflipPayout(100, CasinoService.CoinflipEdge, "tails") == 500 && CasinoService.CoinflipPayout(100, CasinoService.CoinflipEdge, null) == 500, "de canto paga ×5 elijas el lado que elijas (no es una apuesta, es una sorpresa)");
+Check(CasinoService.CoinflipPayout(100, "Heads", "heads") == 200 && CasinoService.CoinflipPayout(100, "Tails", "heads") == 0 && CasinoService.CoinflipPayout(100, "Tails", "tails") == 200, "cara y cruz siguen pagando ×2 al que acierta");
+Check(CasinoService.CoinflipPayout(int.MaxValue, CasinoService.CoinflipEdge, "heads") == int.MaxValue, "una apuesta enorme de canto no desborda");
+Check(Math.Abs(CasinoService.CoinflipReturnToPlayer - 1.04) < 1e-12, $"retorno esperado ×{CasinoService.CoinflipReturnToPlayer:0.###} (0,495 × 2 + 0,01 × 5): el dueño lo quiere así, como un regalo");
+int edges = 0, wins = 0; long cfBack = 0;
+for (int i = 0; i < Plays; i++) { var r = casino.PlayCoinflip(100, i % 2 == 0 ? "heads" : "tails"); cfBack += r.Payout; if (r.Reveal[0] == CasinoService.CoinflipEdge) edges++; else if (r.Won) wins++; }
+Check(Math.Abs(edges / (double)Plays - 0.01) < 0.0005 && Math.Abs(wins / (double)Plays - 0.495) < 0.003, $"2 millones de tiradas: de canto {edges * 100.0 / Plays:0.00} % (esperado 1 %), acertar el lado {wins * 100.0 / Plays:0.00} % (esperado 49,5 %)");
+Check(Math.Abs(cfBack / (100.0 * Plays) - 1.04) < 0.005, $"y vuelve ×{cfBack / (100.0 * Plays):0.0000} de lo apostado");
+
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;

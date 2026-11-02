@@ -128,7 +128,7 @@ var casino = new CasinoService();
 await db.ExecuteAsync("UPDATE users SET gold = 50000 WHERE discord_id = @id", new { id = (long)U });
 var flip = await CasinoModule.ExecutePlayAsync(users, casinoRepo, casino, U, "coinflip", "1k", "heads", events);
 int afterFlip = await Gold();
-Check(flip.Embed is not null && (afterFlip == 51_000 || afterFlip == 49_000), $"coinflip con «1k»: se apostaron 1.000 (quedó en {afterFlip:N0})");
+Check(flip.Embed is not null && (afterFlip == 51_000 || afterFlip == 49_000 || afterFlip == 54_000), $"coinflip con «1k»: se apostaron 1.000 (quedó en {afterFlip:N0})");
 await db.ExecuteAsync("UPDATE users SET gold = 5000 WHERE discord_id = @id", new { id = (long)U });
 var poor = await CasinoModule.ExecutePlayAsync(users, casinoRepo, casino, U, "coinflip", "1m", "tails", events);
 Check(poor.Embed is null && poor.PlainMessage!.Contains("No tenés suficiente oro") && await Gold() == 5000, "apostar 1m sin tenerlo se rechaza sin tocar el oro");
