@@ -9,6 +9,7 @@ internal static class ZoneSql
         description AS "Description",
         min_level   AS "MinLevel",
         emoji       AS "Emoji",
-        kind        AS "Kind"
+        kind        AS "Kind",
+        min_fuego_nuevo AS "MinFuegoNuevo"
         """;
 }

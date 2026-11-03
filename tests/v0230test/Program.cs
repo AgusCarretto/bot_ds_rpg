@@ -97,7 +97,7 @@ const ulong U = 999000000000096001UL, GHOST = 999000000000096999UL;
 await db.ExecuteAsync("DELETE FROM users WHERE discord_id = ANY(@ids); DELETE FROM game_events WHERE discord_id = ANY(@ids); DELETE FROM player_stats WHERE discord_id = ANY(@ids)", new { ids = new[] { (long)U, (long)GHOST } });
 await users.GetOrCreateUserAsync(U);
 await db.ExecuteAsync("UPDATE users SET class = 'Guerrero', level = 3 WHERE discord_id = @id", new { id = (long)U });
-var zones = ZoneRanking.OrderByDifficulty(await zonesRepo.GetAllAsync());
+var zones = ZoneRanking.ForPlayer(await zonesRepo.GetAllAsync(), 0);
 
 var empty = await titles.GetContextAsync(U, zones);
 Check(empty.Stats.Count == 0 && empty.MaxLevel == 3 && empty.BossRanksCleared.Count == 0 && empty.Flags.Count == 0 && empty.ColorBlessingLevel == 0 && TitleCatalog.UnlockedCount(empty) == 1, "un jugador nuevo: sin contadores, su nivel de cuenta como máximo y solo el título inicial");

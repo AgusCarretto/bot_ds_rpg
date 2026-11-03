@@ -285,7 +285,13 @@ public static class HelpTopics
             Loc.T("**/zona** te mueve a otra. Hace falta tener el nivel mínimo **y** haber vencido al jefe de la zona anterior (**/info tema:boss**). Tu perfil muestra tu zona y hasta dónde llegaste (máx. Zona N).")),
         (Loc.T("🎯 Qué depende de tu zona"),
             Loc.T("Los monstruos de **/hunt**, **/travel** y **/boss**, las recetas de la herrería, el valor de los premios de misiones, logros y Arena, y qué cajas podés comprar.")),
-        (Loc.T("🧬 Qué hay en cada una"), Loc.T("Dos monstruos de cacería, un élite (para /travel) y un jefe. Con **/drops** ves qué suelta cada uno.")));
+        (Loc.T("🧬 Qué hay en cada una"), Loc.T("Dos monstruos de cacería, un élite (para /travel) y un jefe. Con **/drops** ves qué suelta cada uno.")),
+        (Loc.T("🏛️ Las zonas que abre el Fuego Nuevo"),
+            Loc.F($"Desde el **Fuego Nuevo {ZoneSixFn}** aparecen zonas nuevas, una cada 3 Fuegos Nuevos, hasta la **Zona 10**. Cada una tiene **un** monstruo de cacería con **un** drop y un élite, y **no tiene jefe**: se sale por una **mazmorra**, un acertijo distinto en cada zona, que se hace solo y sin comida. ") +
+            Loc.T("Se entra con **/boss** y la **Reliquia** de la zona (se forja; pide un **Cofre de Escoria**, que sale del **/travel** de esas zonas). Cada error saca vida; si te quedás sin vida perdés la Reliquia. Ganarla abre la zona siguiente, y la de tu última zona te lleva directo contra el **Asador**, más fuerte y sin poder curarte.")));
+
+    // El Fuego Nuevo que abre la Zona 6 (Database/add_zones_6_10.sql: 5, 8, 11, 14, 17).
+    private const int ZoneSixFn = 5;
 
     private static Embed Boxes() => Topic(Self("boxes"),
         Loc.T("Las cajas dan varios ítems de una. Hay cinco, de Común a Mítica, y cada una dice cuántos da: **/shop view** muestra los rangos y los precios. Además hay cajas especiales que no se compran: las sueltan los jefes."),
@@ -355,6 +361,8 @@ public static class HelpTopics
             Loc.T("Está calibrado como cada jefe: con el equipo de la zona anterior casi siempre perdés, con el del Fogón es un desafío parejo.")),
         (Loc.T("🕯️ ¿Te falta un Mítico?"),
             Loc.F($"La Corteza y el Meteorito salen al {Dec(RarityCatalog.GatheringChances.Last(c => c.Rarity == "Mítico").Percent)} % por **/chop** y **/mine**, y hace falta uno de cada uno por vuelta. Al vencer al jefe de la última zona se conoce al **Tabernero del Inframundo** (**/deepshop**, en texto `aa deepshop`): vende cada uno por **{Num(DeepShop.PricePerUnit)}** de Polvo (el Polvo sale de **/dismantle**; desmantelar un Mítico da solo {Num(Dismantling.DustPerUnit("Mítico"))}). Una vez que hacés un Fuego Nuevo ya lo conocés para siempre.")),
+        (Loc.T("🏛️ Desde el Fuego Nuevo 5"),
+            Loc.T("El Fogón **se corre**: queda pasando tu última zona (la 6, la 7… según tus Fuegos Nuevos). Ya no se entra con **/zona 0** ni hace falta el Trinche y la Brasa: se llega ganando la **mazmorra** de tu última zona, y del otro lado te espera el Asador, **más fuerte** (cuanto más lejos, más), con la vida que te dejó la mazmorra, **sin comida** y con su **llamarada** (a veces pega mucho más). Más en **/info tema:zone**.")),
         (Loc.T("🏆 Al ganar"), Loc.T("Volvés a la última zona, se habilita el **Fuego Nuevo** (**/fuegonuevo**, y cómo funciona en **/info tema:fuego**) y sumás el logro **Asador**. Para salir sin pelear, viajá a cualquier zona con **/zona**.")));
 
     private static Embed Professions()

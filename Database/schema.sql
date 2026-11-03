@@ -74,7 +74,9 @@ CREATE TABLE IF NOT EXISTS zones (
     emoji       TEXT,
     -- v0.11.0: 'normal' = una zona de la escalera; 'gate' = El Fogón Eterno (zone_id 0, Database/seed_fogon.sql), la puerta al Fuego Nuevo. IZoneRepository.GetAllAsync y
     -- IMonsterRepository.GetAllAsync solo devuelven las normales: la escalera, /zonas, las recetas por zona, los drops y las cajas no ven la puerta.
-    kind        TEXT NOT NULL DEFAULT 'normal' CHECK (kind IN ('normal', 'gate'))
+    kind        TEXT NOT NULL DEFAULT 'normal' CHECK (kind IN ('normal', 'gate')),
+    -- v0.47.0: cuántos Fuegos Nuevos hacen falta para que la zona exista para el jugador (0 = zonas 1 a 5; 5/8/11/14/17 = zonas 6 a 10, Database/add_zones_6_10.sql).
+    min_fuego_nuevo INTEGER NOT NULL DEFAULT 0 CHECK (min_fuego_nuevo >= 0)
 );
 
 -- recipes.zone_id: a qué zona pertenece la receta (de dónde salen sus materiales y contra qué se

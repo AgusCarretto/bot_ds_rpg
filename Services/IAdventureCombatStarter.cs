@@ -2,7 +2,8 @@ using BotDsRpg.GameData;
 
 namespace BotDsRpg.Services;
 
-public enum CombatStartStatus { Started, AlreadyInCombat, OnCooldown, NoHp, RaceLost, NoMonstersInZone, NoBossInZone, NotLeveledForBoss, InGate, GateGearMissing }
+// GateViaDungeon (v0.47.0): parado en la puerta con la zona tope de mazmorra; al Asador se llega pasando la mazmorra, no por /zona 0 (el bot lo saca de la puerta).
+public enum CombatStartStatus { Started, AlreadyInCombat, OnCooldown, NoHp, RaceLost, NoMonstersInZone, NoBossInZone, NotLeveledForBoss, InGate, GateGearMissing, GateViaDungeon }
 
 // CooldownRemaining: solo si Status == OnCooldown. State: solo si Status == Started.
 // RequiredLevel: solo si Status == NotLeveledForBoss (nivel mínimo de la PRÓXIMA zona, ver
@@ -31,4 +32,9 @@ public interface IAdventureCombatStarter
     // PRÓXIMA zona (lo que el jefe permite cruzar) — no tiene sentido dejar desafiarlo antes de
     // estar a la altura de a dónde te lleva ganarle.
     Task<CombatStartOutcome> PrepareBossAsync(ulong discordId, CancellationToken cancellationToken = default);
+
+    // v0.47.0: el Asador apenas sale de la mazmorra de su zona tope (posición 6..10): sin cobrar el cooldown (ya lo cobró la mazmorra), con la vida que le dejó la mazmorra, sin
+    // comida y con sus números de GameData/AsadorScaling.cs. Su victoria es la de siempre (BossZoneId = 0: habilita el Fuego Nuevo).
+    // arrivalHp: la vida (de las que se ven) con la que salió de la mazmorra: la pelea arranca con eso aunque haya comido algo por afuera mientras tanto.
+    Task<CombatStartOutcome> PrepareAsadorFromDungeonAsync(ulong discordId, int topRank, int? arrivalHp = null, CancellationToken cancellationToken = default);
 }

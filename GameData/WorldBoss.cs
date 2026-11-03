@@ -36,7 +36,8 @@ public static class WorldBossRules
 
     // Lo que suma el arma de clase de cada zona (la escalera: Z1 +14, Z2 +30, Z3 +48, Z4 +75, Z5 +120; ver CLAUDE.md): con eso se arma «lo que se espera» de alguien equipado para su zona.
     // Son los 9/20/32/50/80 × 1,5 de antes de la v0.27.0 (cuando la sinergia se hizo parte del número del arma): el mismo resultado de siempre.
-    private static readonly int[] WeaponLadder = [14, 30, 48, 75, 120];
+    // v0.47.0: las zonas 6 a 10 (Database/add_zones_6_10.sql) siguen la escalera con 180/270/400/600/900.
+    private static readonly int[] WeaponLadder = [14, 30, 48, 75, 120, 180, 270, 400, 600, 900];
 
     public static readonly IReadOnlyList<WorldBossDef> Bosses =
     [

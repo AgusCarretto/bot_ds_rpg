@@ -45,8 +45,8 @@ var userRepo = new UserRepository(factory);
 var recipesRepo = new RecipeRepository(factory);
 var zonesRepo = new ZoneRepository(factory);
 var inventory = new InventoryRepository(factory);
-var recipes = await recipesRepo.GetAllAsync();
-var zones = await zonesRepo.GetAllAsync();
+var recipes = (await recipesRepo.GetAllAsync()).Where(r => r.ZoneId is not (>= 6 and <= 10)).ToList(); // v0.47.0: las zonas 6 a 10 solo existen con Fuego Nuevo
+var zones = ZoneRanking.ForPlayer(await zonesRepo.GetAllAsync(), 0);
 var zonesByRank = ZoneRanking.OrderByDifficulty(zones);
 var lastZone = zonesByRank[^1];
 

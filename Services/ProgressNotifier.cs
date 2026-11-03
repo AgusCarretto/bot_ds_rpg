@@ -136,12 +136,20 @@ public sealed class ProgressNotifier(
                 if (await userRepository.GetByDiscordIdAsync(discordId) is { } player)
                 {
                     hpMultiplier = await bonusService.HpMultiplierAsync(player);
+                    // «Zona nueva a tu alcance» solo con las zonas que su Fuego Nuevo abrió (v0.47.0).
+                    zones = ZoneRanking.ForPlayer(zones, player.FuegoNuevo);
                 }
             }
             catch (Exception ex)
             {
                 BotLog.Warn(ex);
             }
+        }
+
+        // Sin poder leer al jugador, las zonas de base (las 1 a 5): nunca se anuncia una zona que su Fuego Nuevo no abrió.
+        if (zones.Any(z => z.MinFuegoNuevo > 0) && userRepository is null)
+        {
+            zones = ZoneRanking.ForPlayer(zones, 0);
         }
 
         var card = LevelUpCard.Compose(discordId, newLevel, levelsGained, zones, hpMultiplier: hpMultiplier);

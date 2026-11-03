@@ -458,7 +458,7 @@ string ProfLine(Embed e, string label) => ProfileProbe.Line(e, label);
 var atkField = ProfLine(pe, "ATQ");
 Check(!System.Text.RegularExpressions.Regex.IsMatch(atkField, @"\(\+\d+\)") && atkField.Contains("✨+8 %") && !System.Text.RegularExpressions.Regex.IsMatch(ProfLine(pe, "DEF"), @"\(\+\d+\)") && !ProfLine(pe, "DEF").Contains("✨"), $"sin el «(+N)» del arma ni del amuleto, y el encantamiento queda como «✨+8 %» al final de la línea del arma ({atkField})");
 Check(ProfLine(pe, "Oro") == "💰 **Oro:** 4.321" && ProfLine(pe, "Banco") == "🏦 **Banco:** 7.450" && ProfLine(pe, "Polvo") == "✨ **Polvo:** 12" && ProfLine(pe, "Racha") == "🎁 **Racha:** día 3", "oro y banco con separador de miles, Polvo y racha: una línea cada uno, con su ícono PRIMERO y el nombre con dos puntos (el ícono de siempre mientras no estén subidos los propios)");
-var zonesAll = ZoneRanking.OrderByDifficulty(await zonesRepo.GetAllAsync());
+var zonesAll = ZoneRanking.ForPlayer(await zonesRepo.GetAllAsync(), 0);
 int expectedMax = zonesAll[ZoneRanking.MaxUnlockedRank(zonesAll, 19, 0) - 1].ZoneId;
 string ZoneLine(Embed e) => ProfileProbe.ZoneLine(e);
 var zoneIcon = zonesAll.First(z => z.ZoneId == 1).Emoji;

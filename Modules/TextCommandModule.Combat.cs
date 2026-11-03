@@ -27,6 +27,13 @@ public partial class TextCommandModule
     [Summary("Enfrentá al Jefe de tu zona, solo o con amigos: \"aa boss @amigo\" (hasta 5, misma zona máxima, pegan por turnos). Cooldown de 10 horas; si perdés o huís, 30 minutos.")]
     public async Task BossAsync(params IUser[] companions)
     {
+        // Las Zonas 6 a 10 no tienen jefe: /boss abre su mazmorra (v0.47.0, Modules/DungeonModule.cs), que se hace solo.
+        if (await DungeonModule.IsInDungeonZoneAsync(userRepository, zoneRepository, Context.User.Id))
+        {
+            await StartDungeonTypedAsync(companions.Length > 0);
+            return;
+        }
+
         if (companions.Length == 0)
         {
             await StartCombatAsync(CooldownCatalog.Boss, () => combatStarter.PrepareBossAsync(Context.User.Id));
@@ -126,6 +133,9 @@ public partial class TextCommandModule
                     return;
                 case CombatStartStatus.GateGearMissing:
                     await ReplyAsync(embed: AdventureModule.BuildGateGearMissingEmbed());
+                    return;
+                case CombatStartStatus.GateViaDungeon:
+                    await ReplyAsync(embed: AdventureModule.BuildGateViaDungeonEmbed());
                     return;
                 case CombatStartStatus.RaceLost:
                     await ReplyAsync(Loc.T("Justo se te adelantó otra ejecución de este comando, probá de nuevo en un toque."));

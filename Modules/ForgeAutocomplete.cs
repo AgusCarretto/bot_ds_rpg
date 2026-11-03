@@ -23,7 +23,8 @@ public static class ForgeChoices
         // + las recetas del Fogón Eterno cuando ya venció al jefe de la última zona (GameData/FogonRules.cs).
         // + la Hoja de Acero Puro (la única arma general, sin zona y solo con materiales) mientras no lleves NINGUNA arma puesta: es la base de quien empieza; con un arma puesta
         //   sería una opción más cada vez ("🔁 vendé tu arma primero") para algo que ya no sirve.
-        bool gateOpen = FogonRules.IsGateOpen(ZoneRanking.OrderByDifficulty(zones), player.HighestZoneCleared);
+        zones = ZoneRanking.ForPlayer(zones, player.FuegoNuevo);
+        bool gateOpen = FogonRules.IsGateOpen(zones, player.HighestZoneCleared);
         return RecipeCatalog.ViewFor(recipes, zones, player.Class, player.CurrentZoneId, gateOpen).Recipes
             .Where(recipe => !(recipe.ZoneId is null && recipe.ResultItem.Type == "Weapon" && player.WeaponId is not null))
             .Where(recipe => FitsAsValue(recipe.ResultItem.Name) && Matches(recipe.ResultItem.Name, typed))

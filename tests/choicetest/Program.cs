@@ -256,7 +256,7 @@ async Task<(List<(string Name, string Value)> Fields, string? Description, strin
 {
     var recipeRepo = FakeProxy.Create(recipeRepoType, (n, a) => n == "GetAllAsync" ? ListOf(recipeType, recipeList.ToArray()) : throw new NotSupportedException(n));
     var zoneRepo = FakeProxy.Create(zoneRepoType, (n, a) => n == "GetAllAsync" ? zones : throw new NotSupportedException(n));
-    var task = (Task)forgeModule.GetMethod("BuildRecipesEmbed")!.Invoke(null, [recipeRepo, zoneRepo, playerClass, zoneId, null, null])!;
+    var task = (Task)forgeModule.GetMethod("BuildRecipesEmbed")!.Invoke(null, [recipeRepo, zoneRepo, playerClass, zoneId, null, null, 0])!;
     await task;
     var embed = task.GetType().GetProperty("Result")!.GetValue(task)!;
     var description = (string?)embed.GetType().GetProperty("Description")!.GetValue(embed);

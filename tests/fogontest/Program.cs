@@ -43,14 +43,14 @@ async Task Equip(string weapon, string amulet) =>
     await db.ExecuteAsync("UPDATE users SET weapon_id = (SELECT item_id FROM items WHERE name = @w), amulet_id = (SELECT item_id FROM items WHERE name = @a) WHERE discord_id = @id", new { id = (long)U, w = weapon, a = amulet });
 
 var normal = (await zonesRepo.GetAllAsync()).ToList();
-var ordered = ZoneRanking.OrderByDifficulty(normal);
+var ordered = ZoneRanking.ForPlayer(normal, 0); // v0.47.0: la escalera de un jugador sin Fuego Nuevo (las 5 de siempre; la 6 a 10 se abren con el FN)
 int lastZoneId = ordered[^1].ZoneId, z4 = ordered[3].ZoneId;
 var gate = (await zonesRepo.GetGateAsync())!;
 
 Console.WriteLine("== 1. La puerta en la base y la escalera intacta ==");
-Check(normal.Count == 5 && normal.All(z => z.Kind == "normal" && z.ZoneId > 0), "GetAllAsync devuelve solo las 5 zonas de la escalera (la puerta no está)");
+Check(normal.Count == 10 && normal.Count(z => z.MinFuegoNuevo == 0) == 5 && normal.All(z => z.Kind == "normal" && z.ZoneId > 0), "GetAllAsync devuelve las zonas de la escalera (5 de base y 5 que abre el Fuego Nuevo) y la puerta no está");
 Check(gate is { ZoneId: 0, Kind: "gate", Name: "El Fogón Eterno", MinLevel: 25 } && (await zonesRepo.GetByIdAsync(0))?.Kind == "gate", "la puerta existe aparte: zona 0, «El Fogón Eterno», nivel 25");
-Check((await monstersRepo.GetAllAsync()).Count == 20 && (await monstersRepo.GetAllAsync()).All(m => m.ZoneId > 0), "GetAllAsync de monstruos sigue en 20 (el Asador no entra en /drops, cajas, trueque)");
+Check((await monstersRepo.GetAllAsync()).Count == 30 && (await monstersRepo.GetAllAsync()).All(m => m.ZoneId > 0), "GetAllAsync de monstruos: 20 de las zonas 1 a 5 y 10 de las 6 a 10 (el Asador no entra en /drops, cajas, trueque)");
 var boss = await monstersRepo.GetBossByZoneAsync(FogonRules.GateZoneId);
 Check(boss is { Name: "El Asador Eterno", MinHp: 2503, MaxHp: 3001, MinDamage: 233, MaxDamage: 289, GoldBonus: 3000, XpBonus: 300 } && boss.DropItemNames.SequenceEqual(["Brasero del Fogón"]), "El Asador Eterno: HP 2503-3001 (×1,25 en la v0.17.1), daño 233-289 (v0.15.1), oro 3000 / XP 300 (v0.14.0) y suelta el Brasero del Fogón");
 Check(await monstersRepo.GetTravelMonsterByZoneAsync(0) is null && (await monstersRepo.GetMonstersByZoneAsync(0)).Count == 0, "la puerta no tiene pool de /hunt ni monstruo de /travel");
@@ -159,10 +159,10 @@ Check(vOpen.GateRecipes!.Count == 2 && vOpen.Recipes.Count == vClosed.Recipes.Co
 var pOpen = new User { Class = "Guerrero", Level = 30, HighestZoneCleared = lastZoneId, CurrentZoneId = lastZoneId, Gold = 100000 };
 var pClosed = new User { Class = "Guerrero", Level = 30, HighestZoneCleared = z4, CurrentZoneId = lastZoneId, Gold = 100000 };
 var owned0 = new Dictionary<string, int>();
-Check(ForgeChoices.For(recipes, normal, pOpen, owned0, "").Any(c => c.Value.ToString() == FogonRules.WeaponName) && !ForgeChoices.For(recipes, normal, pClosed, owned0, "").Any(c => c.Value.ToString() == FogonRules.WeaponName), "el menú y el autocompletado de /forge ofrecen el equipo del Fogón solo con la puerta abierta");
-var page = ForgeModule.RenderRecipesEmbed(recipes, normal, "Guerrero", null, 30, highestZoneCleared: lastZoneId);
-var pageClosed = ForgeModule.RenderRecipesEmbed(recipes, normal, "Guerrero", null, 30, highestZoneCleared: z4);
-var pageZ1 = ForgeModule.RenderRecipesEmbed(recipes, normal, "Guerrero", ordered[0].ZoneId, 30, highestZoneCleared: lastZoneId);
+Check(ForgeChoices.For(recipes, ordered, pOpen, owned0, "").Any(c => c.Value.ToString() == FogonRules.WeaponName) && !ForgeChoices.For(recipes, ordered, pClosed, owned0, "").Any(c => c.Value.ToString() == FogonRules.WeaponName), "el menú y el autocompletado de /forge ofrecen el equipo del Fogón solo con la puerta abierta");
+var page = ForgeModule.RenderRecipesEmbed(recipes, ordered, "Guerrero", null, 30, highestZoneCleared: lastZoneId);
+var pageClosed = ForgeModule.RenderRecipesEmbed(recipes, ordered, "Guerrero", null, 30, highestZoneCleared: z4);
+var pageZ1 = ForgeModule.RenderRecipesEmbed(recipes, ordered, "Guerrero", ordered[0].ZoneId, 30, highestZoneCleared: lastZoneId);
 Check(page.Fields.Any(f => f.Name == "🔥 El Fogón Eterno" && f.Value.Split('\n').Length == 2 && f.Value.Contains(FogonRules.WeaponName)) && !AllText(pageClosed).Contains("Fogón") && !AllText(pageZ1).Contains("Fogón"), "el recetario suma el bloque del Fogón (sus 2 piezas) solo con la puerta abierta (y no si pedís una sola zona)");
 Check(page.Length <= 6000 && page.Fields.All(f => f.Value.Length <= 1024), $"y entra en los límites de Discord ({page.Length} / 6000)");
 var scene = await BlacksmithModule.BuildSceneAsync(users, recipesRepo, zonesRepo, new InventoryRepository(factory), U);

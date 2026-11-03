@@ -44,8 +44,9 @@ var monsterRepo = new BotDsRpg.Repositories.MonsterRepository(factory);
 var adventureRepo = new BotDsRpg.Repositories.AdventureRepository(factory);
 var inventoryRepo = new BotDsRpg.Repositories.InventoryRepository(factory);
 
-var zones = await zoneRepo.GetAllAsync();
-var allRecipes = await recipeRepo.GetAllAsync();
+// v0.47.0: el rework es el de las zonas 1 a 5 (las 6 a 10 las arma Database/add_zones_6_10.sql y las prueba v0470test).
+var zones = (await zoneRepo.GetAllAsync()).Where(z => z.MinFuegoNuevo == 0).ToList();
+var allRecipes = (await recipeRepo.GetAllAsync()).Where(r => r.ZoneId is not (>= 6 and <= 10)).ToList();
 foreach (var cls in new[] { "Guerrero", "Ninja", "Arquero", "Hechicero" })
 {
     var bad = new List<string>();
@@ -80,7 +81,7 @@ var classStats = allRecipes.Where(r => RecipeCatalog.GroupOf(r) == RecipeGroup.C
 Check(classStats.Count == 5 && classStats.All(s => s.Count == 1) && classStats.Select(s => s[0]).SequenceEqual([14, 30, 48, 75, 120]), $"las 4 armas de clase de cada zona suman el MISMO ATQ fijo: {string.Join(" / ", classStats.Select(s => string.Join(",", s)))} (lo que antes salía de 9/20/32/50/80 × 1,5)");
 Check(zones.All(z => allRecipes.Count(r => r.ZoneId == z.ZoneId && RecipeCatalog.GroupOf(r) == RecipeGroup.ClassWeapon) == 4 && allRecipes.Count(r => r.ZoneId == z.ZoneId && RecipeCatalog.GroupOf(r) == RecipeGroup.Amulet) == 1), "cada zona: 4 armas de clase (una por clase) + 1 amuleto");
 
-var monstersAll = await monsterRepo.GetAllAsync();
+var monstersAll = (await monsterRepo.GetAllAsync()).Where(m => m.ZoneId <= 5).ToList();
 foreach (var z in zones)
 {
     var hunt = monstersAll.Where(m => m.ZoneId == z.ZoneId && m.Kind == MonsterKind.Hunt).ToList();

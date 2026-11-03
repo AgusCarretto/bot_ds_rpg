@@ -112,7 +112,7 @@ public class ToolsModule(
         }
 
         var toolRecipes = (await recipeRepository.GetAllAsync()).Where(r => ToolRules.IsToolType(r.ResultItem.Type)).ToList();
-        var orderedZones = ZoneRanking.OrderByDifficulty(await zoneRepository.GetAllAsync());
+        var orderedZones = ZoneRanking.ForPlayer(await zoneRepository.GetAllAsync(), player.FuegoNuevo);
         int unlocked = ZoneRanking.MaxUnlockedRank(orderedZones, player.Level, player.HighestZoneCleared);
         var worn = await toolRepository.GetAsync(discordId);
         var owned = (await inventoryRepository.GetByDiscordIdAsync(discordId)).ToDictionary(e => e.ItemName, e => e.Quantity);
@@ -185,7 +185,7 @@ public class ToolsModule(
         string kind = ToolRules.KindOfItemType(recipe.ResultItem.Type)!;
         string itemText = ItemDisplay.Format(recipe.ResultItem.Emoji, recipe.ResultItem.Name);
 
-        var orderedZones = ZoneRanking.OrderByDifficulty(await zoneRepository.GetAllAsync());
+        var orderedZones = ZoneRanking.ForPlayer(await zoneRepository.GetAllAsync(), player.FuegoNuevo);
         int rank = UnlockRank(recipe, orderedZones);
         if (rank > ZoneRanking.MaxUnlockedRank(orderedZones, player.Level, player.HighestZoneCleared))
         {

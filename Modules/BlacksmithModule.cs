@@ -183,7 +183,7 @@ public class BlacksmithModule(
         }
 
         var recipes = await recipeRepository.GetAllAsync();
-        var zones = await zoneRepository.GetAllAsync();
+        var zones = ZoneRanking.ForPlayer(await zoneRepository.GetAllAsync(), player.FuegoNuevo);
         var inventory = await inventoryRepository.GetByDiscordIdAsync(discordId);
         var owned = inventory.ToDictionary(entry => entry.ItemName, entry => entry.Quantity);
         var choices = ForgeChoices.For(recipes, zones, player, owned, string.Empty);

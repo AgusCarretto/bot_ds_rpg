@@ -72,7 +72,7 @@ await db.OpenAsync();
 const ulong U = 999000000000095001UL;
 await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)U });
 await users.GetOrCreateUserAsync(U);
-var zones = ZoneRanking.OrderByDifficulty(await zonesRepo.GetAllAsync());
+var zones = ZoneRanking.ForPlayer(await zonesRepo.GetAllAsync(), 0);
 async Task Put(bool hasBank, int bank, int zoneRank) =>
     await db.ExecuteAsync("UPDATE users SET has_bank = @h, bank_gold = @b, current_zone_id = @z WHERE discord_id = @id", new { id = (long)U, h = hasBank, b = bank, z = zones[zoneRank - 1].ZoneId });
 var service = new PlayerBonusService(petsRepo, blessings, eventRepo, users, zonesRepo);

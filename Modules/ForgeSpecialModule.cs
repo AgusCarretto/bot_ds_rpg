@@ -35,7 +35,7 @@ public class ForgeSpecialModule(
     {
         var player = await userRepository.GetByDiscordIdAsync(discordId);
         var recipes = await recipeRepository.GetAllAsync();
-        var zones = await zoneRepository.GetAllAsync();
+        var zones = ZoneRanking.ForPlayer(await zoneRepository.GetAllAsync(), player?.FuegoNuevo ?? 0);
         var owned = player is null
             ? null
             : (await inventoryRepository.GetByDiscordIdAsync(discordId)).ToDictionary(e => e.ItemName, e => e.Quantity, StringComparer.Ordinal);

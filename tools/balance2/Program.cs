@@ -28,6 +28,7 @@ switch (part)
     case "K": PartK.Run(args); break;
     case "L": PartL.Run(args); break;
     case "M": PartM.Run(args); break;
+    case "N": PartN.Run(args); break;
     default: Console.WriteLine("A | B | C"); break;
 }
 

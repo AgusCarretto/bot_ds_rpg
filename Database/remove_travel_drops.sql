@@ -68,7 +68,7 @@ DECLARE
 BEGIN
     SELECT string_agg(DISTINCT i.name, ', ') INTO v_bad
     FROM items i
-    WHERE i.item_id IN (SELECT md.item_id FROM monsters m JOIN monster_drops md ON md.monster_id = m.monster_id WHERE m.is_travel AND m.zone_id > 0)
+    WHERE i.item_id IN (SELECT md.item_id FROM monsters m JOIN monster_drops md ON md.monster_id = m.monster_id WHERE m.is_travel AND m.zone_id BETWEEN 1 AND 5)
       AND (EXISTS (SELECT 1 FROM monster_drops md2 JOIN monsters m2 ON m2.monster_id = md2.monster_id WHERE md2.item_id = i.item_id AND NOT m2.is_travel)
            OR EXISTS (SELECT 1 FROM box_loot bl WHERE bl.item_id = i.item_id)
            OR EXISTS (SELECT 1 FROM pet_species ps WHERE ps.egg_item_id = i.item_id)
@@ -88,7 +88,7 @@ BEGIN
     SELECT count(DISTINCT inv.discord_id), COALESCE(sum(inv.quantity), 0) INTO v_holders, v_units
     FROM inventory inv
     WHERE inv.quantity > 0
-      AND inv.item_id IN (SELECT md.item_id FROM monsters m JOIN monster_drops md ON md.monster_id = m.monster_id WHERE m.is_travel AND m.zone_id > 0);
+      AND inv.item_id IN (SELECT md.item_id FROM monsters m JOIN monster_drops md ON md.monster_id = m.monster_id WHERE m.is_travel AND m.zone_id BETWEEN 1 AND 5);
 
     RAISE NOTICE 'remove_travel_drops: % jugadores tienen % drops de viaje en la mochila (se canjean por drops de cacería de su zona).', v_holders, v_units;
 END $$;
@@ -96,11 +96,11 @@ END $$;
 WITH travel AS (
     SELECT DISTINCT m.zone_id, md.item_id AS travel_item
     FROM monsters m JOIN monster_drops md ON md.monster_id = m.monster_id
-    WHERE m.is_travel AND m.zone_id > 0
+    WHERE m.is_travel AND m.zone_id BETWEEN 1 AND 5
 ), hunt AS (
     SELECT DISTINCT m.zone_id, md.item_id AS hunt_item
     FROM monsters m JOIN monster_drops md ON md.monster_id = m.monster_id
-    WHERE NOT m.is_travel AND NOT m.is_boss AND m.zone_id > 0
+    WHERE NOT m.is_travel AND NOT m.is_boss AND m.zone_id BETWEEN 1 AND 5
 ), gifts AS (
     SELECT inv.discord_id, h.hunt_item, inv.quantity
     FROM inventory inv
@@ -117,9 +117,9 @@ ON CONFLICT (discord_id, item_id) DO UPDATE
 
 -- 3. Las recetas que pedían un drop de viaje: sube la cantidad de los drops de cacería (valor ABSOLUTO, así correrlo dos veces no suma dos veces) y después se saca el ingrediente de viaje.
 WITH travel_items AS (
-    SELECT DISTINCT md.item_id FROM monsters m JOIN monster_drops md ON md.monster_id = m.monster_id WHERE m.is_travel AND m.zone_id > 0
+    SELECT DISTINCT md.item_id FROM monsters m JOIN monster_drops md ON md.monster_id = m.monster_id WHERE m.is_travel AND m.zone_id BETWEEN 1 AND 5
 ), hunt_items AS (
-    SELECT DISTINCT md.item_id FROM monsters m JOIN monster_drops md ON md.monster_id = m.monster_id WHERE NOT m.is_travel AND NOT m.is_boss AND m.zone_id > 0
+    SELECT DISTINCT md.item_id FROM monsters m JOIN monster_drops md ON md.monster_id = m.monster_id WHERE NOT m.is_travel AND NOT m.is_boss AND m.zone_id BETWEEN 1 AND 5
 ), affected AS (
     SELECT DISTINCT r.recipe_id, r.zone_id, (res.type = 'Amulet') AS is_amulet
     FROM recipes r
@@ -139,11 +139,11 @@ WHERE ri.recipe_id = a.recipe_id
   AND ri.item_id IN (SELECT item_id FROM hunt_items);
 
 DELETE FROM recipe_ingredients
-WHERE item_id IN (SELECT md.item_id FROM monsters m JOIN monster_drops md ON md.monster_id = m.monster_id WHERE m.is_travel AND m.zone_id > 0);
+WHERE item_id IN (SELECT md.item_id FROM monsters m JOIN monster_drops md ON md.monster_id = m.monster_id WHERE m.is_travel AND m.zone_id BETWEEN 1 AND 5);
 
 -- 4. Se borran los 5 drops de viaje (en cascada: sus filas de monster_drops y lo que quedara en mochilas, ya canjeado arriba).
 DELETE FROM items
-WHERE item_id IN (SELECT md.item_id FROM monsters m JOIN monster_drops md ON md.monster_id = m.monster_id WHERE m.is_travel AND m.zone_id > 0);
+WHERE item_id IN (SELECT md.item_id FROM monsters m JOIN monster_drops md ON md.monster_id = m.monster_id WHERE m.is_travel AND m.zone_id BETWEEN 1 AND 5);
 
 -- Verificación del estado final.
 DO $$
@@ -156,7 +156,7 @@ BEGIN
         RAISE EXCEPTION 'remove_travel_drops: quedaron % drops en monstruos de viaje', v_n;
     END IF;
 
-    SELECT count(DISTINCT md.item_id) INTO v_n FROM monster_drops md JOIN monsters m ON m.monster_id = md.monster_id WHERE NOT m.is_boss AND m.zone_id > 0;
+    SELECT count(DISTINCT md.item_id) INTO v_n FROM monster_drops md JOIN monsters m ON m.monster_id = md.monster_id WHERE NOT m.is_boss AND m.zone_id BETWEEN 1 AND 5;
     IF v_n <> 10 THEN
         RAISE EXCEPTION 'remove_travel_drops: se esperaban 10 drops de monstruos comunes (2 por zona) y hay %', v_n;
     END IF;

@@ -57,6 +57,13 @@ public sealed class AdventureCombatStarter(
                 // En El Fogón Eterno (zona 0) el requisito es el equipo del Fogón PUESTO (se vuelve a comprobar acá: pudo venderlo después de entrar). El nivel ya se pidió al entrar.
                 if (player.InGate)
                 {
+                    // v0.47.0: con la zona tope de mazmorra al Asador se llega por la mazmorra; quien quedó parado en la puerta de antes sale de ella.
+                    if (ZoneRanking.IsDungeonZone(ZoneRanking.TopZone(await zoneRepository.GetAllAsync(cancellationToken), player.FuegoNuevo)))
+                    {
+                        await userRepository.SetInGateAsync(discordId, false);
+                        return new CombatStartOutcome(CombatStartStatus.GateViaDungeon, null, null);
+                    }
+
                     var gateWeapon = player.WeaponId is int gw ? await itemRepository.GetByIdAsync(gw, cancellationToken) : null;
                     var gateAmulet = player.AmuletId is int ga ? await itemRepository.GetByIdAsync(ga, cancellationToken) : null;
                     return FogonRules.HasKeyGear(gateWeapon, gateAmulet) ? null : new CombatStartOutcome(CombatStartStatus.GateGearMissing, null, null);
@@ -66,7 +73,7 @@ public sealed class AdventureCombatStarter(
                 // de la PRÓXIMA zona (a lo que ganarle te deja avanzar) — no antes. Ver
                 // GameData/ZoneRanking.cs (también la usa Modules/RaidModule.cs para el mismo gate
                 // en los jefes cooperativos, y Modules/ZoneModule.cs para el gate de /zona).
-                var orderedZones = ZoneRanking.OrderByDifficulty(await zoneRepository.GetAllAsync(cancellationToken));
+                var orderedZones = ZoneRanking.ForPlayer(await zoneRepository.GetAllAsync(cancellationToken), player.FuegoNuevo);
                 int? requiredLevel = ZoneRanking.RequiredLevelForBoss(orderedZones, player.CurrentZoneId);
 
                 return requiredLevel is not null && player.Level < requiredLevel
@@ -137,6 +144,52 @@ public sealed class AdventureCombatStarter(
             return new CombatStartOutcome(CombatStartStatus.RaceLost, null, null);
         }
 
+        var monster = MonsterCatalog.RollFrom(monsterPool);
+        int? bossZoneId = isBossFight ? (player.InGate ? FogonRules.GateZoneId : player.CurrentZoneId) : null;
+        var state = await BuildStateAsync(player, definition, monster, bossZoneId, cancellationToken);
+        return new CombatStartOutcome(CombatStartStatus.Started, null, state);
+    }
+
+    public async Task<CombatStartOutcome> PrepareAsadorFromDungeonAsync(ulong discordId, int topRank, int? arrivalHp = null, CancellationToken cancellationToken = default)
+    {
+        if (combatSessions.Peek(discordId) is not null || raidSessions.IsInAnyRaid(discordId))
+        {
+            return new CombatStartOutcome(CombatStartStatus.AlreadyInCombat, null, null);
+        }
+
+        var player = await userRepository.GetByDiscordIdAsync(discordId, cancellationToken);
+        var asador = await monsterRepository.GetBossByZoneAsync(FogonRules.GateZoneId, cancellationToken);
+        if (player is null || asador is null)
+        {
+            return new CombatStartOutcome(CombatStartStatus.NoBossInZone, null, null);
+        }
+
+        if (player.CurrentHp <= 0)
+        {
+            return new CombatStartOutcome(CombatStartStatus.NoHp, null, null);
+        }
+
+        // Más fuerte cuanto más lejos está (GameData/AsadorScaling.cs); fuera de 6..10, el de siempre.
+        if (AsadorScaling.StatsFor(topRank) is { } stats)
+        {
+            asador = asador with { MinHp = stats.MinHp, MaxHp = stats.MaxHp, MinDamage = stats.MinDamage, MaxDamage = stats.MaxDamage };
+        }
+
+        var state = await BuildStateAsync(player, CooldownCatalog.Boss, asador, FogonRules.GateZoneId, cancellationToken);
+        // Sin comida (la curación de la pelea ya «se usó») y con la llamarada.
+        state = state with { FromDungeon = true, HealUsed = true, MonsterSpecialChancePercent = AsadorScaling.FlareChancePercent };
+        if (arrivalHp is int arrival && arrival < state.PlayerCurrentHp)
+        {
+            int hp = Math.Max(1, arrival);
+            state = state with { PlayerCurrentHp = hp, PlayerStartingHp = hp };
+        }
+        return new CombatStartOutcome(CombatStartStatus.Started, null, state);
+    }
+
+    // El estado de una pelea solitaria: el perfil del jugador (nivel, equipo, banquete, todo lo permanente) contra un monstruo ya elegido.
+    private async Task<CombatState> BuildStateAsync(User player, CooldownDefinition definition, MonsterTemplate monster, int? bossZoneId, CancellationToken cancellationToken)
+    {
+        ulong discordId = (ulong)player.DiscordId;
         var weapon = player.WeaponId is int weaponId ? await itemRepository.GetByIdAsync(weaponId, cancellationToken) : null;
         var amulet = player.AmuletId is int amuletId ? await itemRepository.GetByIdAsync(amuletId, cancellationToken) : null;
         // Nivel + equipo + pasivas de clase, misma cuenta que usa Modules/RaidModule.cs para los
@@ -150,11 +203,10 @@ public sealed class AdventureCombatStarter(
         var bonuses = await bonusService.GetAsync(discordId, player.FuegoNuevo, cancellationToken);
         var profile = PlayerCombatProfileCalculator.Resolve(player, weapon, amulet, buff?.AttackPercent ?? 0, bonuses);
 
-        var monster = MonsterCatalog.RollFrom(monsterPool);
         int monsterMaxHp = Random.Shared.Next(monster.MinHp, monster.MaxHp + 1);
         int monsterDamage = Random.Shared.Next(monster.MinDamage, monster.MaxDamage + 1);
 
-        var state = new CombatState(
+        return new CombatState(
             CommandName: definition.CommandName,
             MonsterName: monster.Name,
             MonsterEmoji: monster.Emoji,
@@ -165,7 +217,7 @@ public sealed class AdventureCombatStarter(
             MonsterDropItemNames: monster.DropItemNames,
             MonsterGoldBonus: monster.GoldBonus,
             MonsterXpBonus: monster.XpBonus,
-            BossZoneId: isBossFight ? (player.InGate ? FogonRules.GateZoneId : player.CurrentZoneId) : null,
+            BossZoneId: bossZoneId,
             TravelZoneId: definition.CommandName == "travel" ? player.CurrentZoneId : null,
             FightId: Guid.NewGuid(),
             PlayerMaxHp: profile.CombatMaxHp,
@@ -180,7 +232,5 @@ public sealed class AdventureCombatStarter(
             Bonuses: bonuses,
             // La tablita del resumen se lee UNA vez, al arrancar (/config); el servicio nunca tira (sin dato: se muestra, como siempre).
             ShowFightSummary: settingsService is null || (await settingsService.GetAsync(discordId)).ShowFightSummary);
-
-        return new CombatStartOutcome(CombatStartStatus.Started, null, state);
     }
 }

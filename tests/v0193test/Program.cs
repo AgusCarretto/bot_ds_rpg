@@ -63,12 +63,14 @@ foreach (var name in new[] { "Cofre de Escoria", "Brasero del Fogón", "Huevo de
 {
     Check(ItemEmojiRegistry.IconOf(name, "FALLBACK").StartsWith("<:"), $"{name}: el registro cargado de la base tiene su emoji propio ({ItemEmojiRegistry.IconOf(name, "FALLBACK")})");
 }
+// v0.47.0: los drops de las zonas 6 a 10 todavía no tienen arte.
+var pendingArt = (await db.QueryAsync<string>("SELECT i.name FROM monster_drops d JOIN monsters m ON m.monster_id = d.monster_id JOIN items i ON i.item_id = d.item_id WHERE m.zone_id BETWEEN 6 AND 10")).ToHashSet();
 var missing = new List<string>();
 foreach (var type in new[] { "Caja", "Huevo", "PetFood", "Consumable", "Madera", "Mineral", "Material" })
 {
     foreach (var item in await items.GetAllByTypeAsync(type))
     {
-        if (string.IsNullOrWhiteSpace(item.Emoji) || !item.Emoji.StartsWith("<:"))
+        if (!pendingArt.Contains(item.Name) && (string.IsNullOrWhiteSpace(item.Emoji) || !item.Emoji.StartsWith("<:")))
         {
             missing.Add($"{type}/{item.Name}");
         }

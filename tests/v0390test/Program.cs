@@ -39,7 +39,7 @@ await db.OpenAsync();
 const ulong U = 999000000000039000UL;
 
 // La zona en la 3.ª posición de la escalera (la de los jugadores del test) y la 1.ª y la 5.ª para probar que el premio NO depende de la zona.
-var ladder = ZoneRanking.OrderByDifficulty(await zonesRepo.GetAllAsync());
+var ladder = ZoneRanking.ForPlayer(await zonesRepo.GetAllAsync(), 0);
 int zone1 = ladder[0].ZoneId, zone3 = ladder[2].ZoneId, zone5 = ladder[4].ZoneId;
 const int Level = 20;
 

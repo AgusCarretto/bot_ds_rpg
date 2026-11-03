@@ -11,6 +11,22 @@ public static class ZoneRanking
     public static IReadOnlyList<Zone> OrderByDifficulty(IReadOnlyList<Zone> zones) =>
         zones.OrderBy(z => z.MinLevel).ToList();
 
+    // v0.47.0: la escalera DE UN JUGADOR: solo las zonas que su Fuego Nuevo ya abrió (zones.min_fuego_nuevo), ordenadas por dificultad. Con FN 0 a 4 son las 5 de siempre;
+    // la 6 aparece en el FN 5, la 7 en el 8... Todo lo que razona sobre «la escalera de este jugador» (la zona máxima, la puerta del Fogón, la zona siguiente) tiene que recibir ESTA
+    // lista: con la lista entera, la última zona sería la 10 para todos y el Fogón no se abriría nunca con FN bajo.
+    public static IReadOnlyList<Zone> ForPlayer(IReadOnlyList<Zone> zones, int fuegoNuevo) =>
+        OrderByDifficulty(zones.Where(z => z.MinFuegoNuevo <= fuegoNuevo).ToList());
+
+    // La zona tope del jugador (la más alta que le abre su Fuego Nuevo): la última de ForPlayer. Null sin zonas.
+    public static Zone? TopZone(IReadOnlyList<Zone> zones, int fuegoNuevo) => ForPlayer(zones, fuegoNuevo) is { Count: > 0 } mine ? mine[^1] : null;
+
+    // Las zonas 6 a 10 no tienen jefe: su salida es una mazmorra (GameData/Dungeons). Son las que pide un Fuego Nuevo.
+    public static bool IsDungeonZone(Zone? zone) => zone is not null && zone.MinFuegoNuevo > 0;
+
+    // La primera zona que todavía NO le abrió su Fuego Nuevo (para avisar en /zonas qué viene), o null si ya tiene todas.
+    public static Zone? NextLockedByFuegoNuevo(IReadOnlyList<Zone> zones, int fuegoNuevo) =>
+        OrderByDifficulty(zones).FirstOrDefault(z => z.MinFuegoNuevo > fuegoNuevo);
+
     // Nivel mínimo para desafiar al jefe de "currentZoneId": el min_level de la zona siguiente en
     // dificultad (derrotar a ese jefe es justamente lo que te deja cruzar a esa zona). Null si no
     // hay zona siguiente conocida (última zona cargada, o currentZoneId no está en la lista).

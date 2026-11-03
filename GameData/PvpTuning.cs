@@ -35,6 +35,12 @@ public static class PvpTuning
         ["Talismán del Volcán"] = 46,
         ["Corazón de Titán Engarzado"] = 75,
         ["Brasa del Fogón Eterno"] = 120,
+        // v0.47.0: los amuletos de las zonas 6 a 10 siguen la escalera vieja (×1,5 por zona), no su DEF de PvE.
+        ["Amuleto de Sal"] = 110,
+        ["Amuleto de Humo"] = 160,
+        ["Amuleto de Brea"] = 230,
+        ["Amuleto de Hielo"] = 330,
+        ["Amuleto de Rayo"] = 480,
     };
 
     // El amuleto tal como cuenta en PvP: una copia con la DEF de la escalera vieja (null si no lleva).

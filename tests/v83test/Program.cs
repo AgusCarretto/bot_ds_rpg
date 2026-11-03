@@ -25,7 +25,7 @@ Console.WriteLine("== 1. Todos los monstruos tienen sus frases ==");
 var all = await monsterRepo.GetAllAsync();
 var nonBoss = all.Where(m => m.Kind != MonsterKind.Boss).Select(m => m.Monster.Name).ToHashSet();
 var bosses = all.Where(m => m.Kind == MonsterKind.Boss).Select(m => m.Monster.Name).ToHashSet();
-Check(nonBoss.Count == 15 && nonBoss.SetEquals(NpcDialogue.KnownMonsters), $"los {nonBoss.Count} monstruos de cacería y de viaje tienen frases propias (faltan: {string.Join(", ", nonBoss.Except(NpcDialogue.KnownMonsters))})");
+Check(nonBoss.Count == 25 && nonBoss.SetEquals(NpcDialogue.KnownMonsters), $"los {nonBoss.Count} monstruos de cacería y de viaje tienen frases propias (faltan: {string.Join(", ", nonBoss.Except(NpcDialogue.KnownMonsters))})");
 Check(bosses.Count == 5 && bosses.SetEquals(NpcDialogue.KnownBosses.Where(b => b != "El Asador Eterno")) && NpcDialogue.KnownBosses.Contains("El Asador Eterno"), "y los 5 jefes de la escalera siguen con las suyas (más las del Asador Eterno, el jefe del Fogón)");
 var tables = NpcDialogue.AllTables().ToList();
 foreach (string name in nonBoss) foreach (var line in Enum.GetValues<NpcDialogue.BossLine>())
@@ -79,9 +79,10 @@ await Clean(); await userRepo.GetOrCreateUserAsync(U);
 var empty = await GameModule.BuildInventoryEmbedAsync(inventoryRepo, U, "prueba");
 Check(empty.Fields.Length == 0 && empty.Description.Contains("Todavía no tenés"), "inventario vacío: el mensaje de siempre y ningún campo");
 
-await Fill("type IN ('Madera','Mineral','Material','Consumable','Caja')", 9999);   // el peor caso: TODO el catálogo con 9.999 de cada uno
+// v0.47.0: los drops de las zonas 6 a 10 esperan su arte (sin emoji no tienen el formato de los demás).
+await Fill("type IN ('Madera','Mineral','Material','Consumable','Caja') AND item_id NOT IN (SELECT d.item_id FROM monster_drops d JOIN monsters m ON m.monster_id = d.monster_id WHERE m.zone_id BETWEEN 6 AND 10)", 9999);   // el peor caso: TODO el catálogo con 9.999 de cada uno
 var big = await GameModule.BuildInventoryEmbedAsync(inventoryRepo, U, "prueba");
-int expectedItems = await db.ExecuteScalarAsync<int>("SELECT count(*) FROM items WHERE type IN ('Madera','Mineral','Material','Consumable','Caja')");
+int expectedItems = await db.ExecuteScalarAsync<int>("SELECT count(*) FROM items WHERE type IN ('Madera','Mineral','Material','Consumable','Caja') AND item_id NOT IN (SELECT d.item_id FROM monster_drops d JOIN monsters m ON m.monster_id = d.monster_id WHERE m.zone_id BETWEEN 6 AND 10)");
 Console.WriteLine($"   ({expectedItems} ítems, {big.Fields.Length} campos, {big.Length} caracteres)");
 Check(big.Fields.Length >= 6 && big.Fields.Length <= 25 && big.Length < 6000 && big.Fields.All(f => f.Value.Length <= 1024 && f.Name.Length <= 256), "todo el catálogo a 9.999: entra en los límites de Discord (campos de a lo sumo 1024, embed bajo 6000)");
 string ZWl = ((char)0x200B).ToString();

@@ -17,6 +17,8 @@ public sealed class DropExchangeRepository(IDbConnectionFactory connectionFactor
         JOIN zones z ON z.zone_id = m.zone_id
         JOIN items i ON i.item_id = d.item_id
         WHERE NOT m.is_boss AND i.type = 'Material'
+          -- v0.47.0: las zonas 6 a 10 tienen UN solo drop: no hay otro de la misma zona por el cual cambiarlo.
+          AND z.min_fuego_nuevo = 0
         """;
 
     public async Task<IReadOnlyList<ExchangeDrop>> GetExchangeableDropsAsync(CancellationToken cancellationToken = default)

@@ -32,7 +32,7 @@ Console.WriteLine("\n== 3. El ritmo con el juego perfecto (monstruos reales de l
 string conn = TestEnv.Connection();
 await using var db = new NpgsqlConnection(conn);
 await db.OpenAsync();
-var zonesDb = (await db.QueryAsync<(int ZoneId, int MinLevel)>("SELECT zone_id, min_level FROM zones WHERE zone_id > 0 ORDER BY min_level")).ToList();
+var zonesDb = (await db.QueryAsync<(int ZoneId, int MinLevel)>("SELECT zone_id, min_level FROM zones WHERE zone_id > 0 AND min_fuego_nuevo = 0 ORDER BY min_level")).ToList();
 var xpBonus = (await db.QueryAsync<(int ZoneId, bool IsBoss, bool IsTravel, int Xp)>("SELECT zone_id, is_boss, is_travel, xp_reward FROM monsters WHERE zone_id > 0")).ToList();
 int HuntBonus(int z) => xpBonus.First(m => m.ZoneId == z && !m.IsBoss && !m.IsTravel).Xp;
 int BossBonus(int z) => xpBonus.First(m => m.ZoneId == z && m.IsBoss).Xp;

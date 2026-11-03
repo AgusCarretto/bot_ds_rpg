@@ -158,7 +158,7 @@ for (int d = 1; d < 365; d++)
 Check(consecutive < 12, $"los días seguidos no se repiten (solo {consecutive} de 364 pares de días consecutivos tienen exactamente las mismas 3)");
 
 Console.WriteLine("\n== 3. Premios ==");
-Check(new[] { 0, 1, 2, 3, 4, 5, 9 }.Select(MissionRewards.GoldUnit).SequenceEqual([14, 14, 58, 118, 215, 375, 375]), "oro por cacería: zonas 1..5 = 14/58/118/215/375 (zona desconocida = la primera, muy arriba = la última)");
+Check(new[] { 0, 1, 2, 3, 4, 5, 6, 10, 11 }.Select(MissionRewards.GoldUnit).SequenceEqual([14, 14, 58, 118, 215, 375, 560, 2840, 2840]), "oro por cacería: zonas 1..5 = 14/58/118/215/375 y 6..10 hasta 2840 (zona desconocida = la primera, muy arriba = la última)");
 Check(MissionRewards.BoxName(BoxGrant.ZoneTier, 1, live) == "Cajón de Pino" && MissionRewards.BoxName(BoxGrant.ZoneTier, 3, live) == "Arcón de Hierro" && MissionRewards.BoxName(BoxGrant.ZoneTier, 5, live) == "Cofre de Oro"
     && MissionRewards.BoxName(BoxGrant.ZoneTierPlusOne, 1, live) == "Baúl de Roble" && MissionRewards.BoxName(BoxGrant.ZoneTierPlusOne, 4, live) == "Cofre de Oro" && MissionRewards.BoxName(BoxGrant.Mythic, 1, live) == "Arca del Soberano" && MissionRewards.BoxName(BoxGrant.None, 3, live) is null,
     "la caja sigue la zona (Cajón -> Baúl -> Arcón -> Cofre), la 'una más' sube un escalón sin pasarse del Cofre, y la Mítica es solo la Mítica");

@@ -22,10 +22,10 @@ public static class ForgeModule
     // zoneId: solo esa zona (aa forge recipes 3; 0 es el Fogón); null = todas. playerLevel: si viene, las zonas que piden más nivel llevan un 🔒.
     public static async Task<Embed> BuildRecipesEmbed(
         IRecipeRepository recipeRepository, IZoneRepository zoneRepository, string playerClass, int? zoneId = null,
-        int? playerLevel = null, int? highestZoneCleared = null)
+        int? playerLevel = null, int? highestZoneCleared = null, int fuegoNuevo = 0)
     {
         var recipes = await recipeRepository.GetAllAsync();
-        var zones = await zoneRepository.GetAllAsync();
+        var zones = ZoneRanking.ForPlayer(await zoneRepository.GetAllAsync(), fuegoNuevo);
         return RenderRecipesEmbed(recipes, zones, playerClass, zoneId, playerLevel, highestZoneCleared: highestZoneCleared);
     }
 
@@ -141,6 +141,7 @@ public static class ForgeModule
         AddRecipes(embed, zoneRecipes, RecipeGroup.ClassWeapon, Loc.T("arma de tu clase"), playerClass, owned, playerGold);
         AddRecipes(embed, zoneRecipes, RecipeGroup.GeneralWeapon, Loc.T("arma general"), playerClass, owned, playerGold);
         AddRecipes(embed, zoneRecipes, RecipeGroup.Amulet, "amuleto", playerClass, owned, playerGold);
+        AddRecipes(embed, zoneRecipes, RecipeGroup.Relic, Loc.T("reliquia: la llave de la mazmorra"), playerClass, owned, playerGold);
         AddRecipes(embed, zoneRecipes, RecipeGroup.Other, "otro", playerClass, owned, playerGold);
 
         // El equipo de El Fogón Eterno (zona 0): el arma y el amuleto que hay que llevar PUESTOS para entrar. Son caros a propósito (drops de las 5 zonas).
@@ -161,11 +162,11 @@ public static class ForgeModule
     {
         if (fullBook)
         {
-            return await BuildRecipesEmbed(recipeRepository, zoneRepository, player.Class, zoneId, player.Level, player.HighestZoneCleared);
+            return await BuildRecipesEmbed(recipeRepository, zoneRepository, player.Class, zoneId, player.Level, player.HighestZoneCleared, player.FuegoNuevo);
         }
 
         var recipes = await recipeRepository.GetAllAsync();
-        var zones = await zoneRepository.GetAllAsync();
+        var zones = ZoneRanking.ForPlayer(await zoneRepository.GetAllAsync(), player.FuegoNuevo);
         var owned = (await inventoryRepository.GetByDiscordIdAsync((ulong)player.DiscordId)).ToDictionary(e => e.ItemName, e => e.Quantity);
         return RenderZonePageEmbed(recipes, zones, player.Class, zoneId ?? player.CurrentZoneId, owned, player.Gold, player.Level, highestZoneCleared: player.HighestZoneCleared);
     }

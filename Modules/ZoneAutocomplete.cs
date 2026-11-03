@@ -18,7 +18,8 @@ public static class ZoneChoices
     public static IReadOnlyList<AutocompleteResult> For(
         IReadOnlyList<Zone> zones, User player, IReadOnlyDictionary<int, string> bossNameByZoneId, string typed, Zone? gate = null)
     {
-        var ordered = ZoneRanking.OrderByDifficulty(zones);
+        // Solo las zonas que su Fuego Nuevo ya abrió (v0.47.0): las de más arriba no se ofrecen.
+        var ordered = ZoneRanking.ForPlayer(zones, player.FuegoNuevo);
 
         var choices = ordered
             .Where(zone => MatchesTyped(zone, typed))
@@ -34,6 +35,10 @@ public static class ZoneChoices
                 else if (player.Level < zone.MinLevel)
                 {
                     status = " · 🔒 te falta nivel";
+                }
+                else if (ZoneRanking.PendingGatekeeperZone(ordered, zone.ZoneId, player.HighestZoneCleared) is { } dungeonZone && ZoneRanking.IsDungeonZone(dungeonZone))
+                {
+                    status = $" · 🔒 pasá la mazmorra de {dungeonZone.Name}";
                 }
                 else if (ZoneRanking.PendingGatekeeperZone(ordered, zone.ZoneId, player.HighestZoneCleared) is { } gatekeeper
                     && bossNameByZoneId.TryGetValue(gatekeeper.ZoneId, out string? bossName))
@@ -77,7 +82,7 @@ public sealed class ZoneAutocompleteHandler : SafeAutocompleteHandler
         }
 
         var zones = await services.GetRequiredService<IZoneRepository>().GetAllAsync();
-        var ordered = ZoneRanking.OrderByDifficulty(zones);
+        var ordered = ZoneRanking.ForPlayer(zones, player.FuegoNuevo);
 
         // Solo se consulta el jefe de las zonas que de verdad frenan a este jugador en alguna zona.
         var monsters = services.GetRequiredService<IMonsterRepository>();

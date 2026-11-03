@@ -66,7 +66,7 @@ async Task GiveRecipe(ulong id, string tool, int times = 1)
 }
 
 await Clean();
-var zones = ZoneRanking.OrderByDifficulty(await zonesRepo.GetAllAsync());
+var zones = ZoneRanking.ForPlayer(await zonesRepo.GetAllAsync(), 0);
 int Z2 = zones[1].ZoneId, Z4 = zones[3].ZoneId;   // haber vencido al jefe de la Zona 2 abre la 3; al de la 4, la 5
 const string AxeZ3 = "Hacha de Hierro Forjado", PickZ3 = "Pico de Hierro Forjado", AxeZ5 = "Hacha de Escoria Templada", PickZ5 = "Pico de Escoria Templada";
 

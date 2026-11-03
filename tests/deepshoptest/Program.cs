@@ -41,7 +41,7 @@ async Task<int> Have(string name, ulong id = U) => await db.ExecuteScalarAsync<i
 async Task<int> DustOf(ulong id = U) => await db.ExecuteScalarAsync<int>("SELECT dust FROM users WHERE discord_id = @id", new { id = (long)id });
 async Task<long> Stat(string kind, ulong id = U) => (await eventsRepo.GetStatsAsync(id)).GetValueOrDefault(kind);
 
-var zones = ZoneRanking.OrderByDifficulty(await zonesRepo.GetAllAsync());
+var zones = ZoneRanking.ForPlayer(await zonesRepo.GetAllAsync(), 0); // v0.47.0: la escalera de un jugador sin Fuego Nuevo
 int lastZoneId = zones[^1].ZoneId;
 Task<DeepShopResult> Buy(string text, int qty = 1, ulong id = U) => DeepShopModule.ExecuteBuyAsync(users, zonesRepo, items, dust, rec, id, text, qty, new Random(1));
 

@@ -36,7 +36,7 @@ await db.OpenAsync();
 const ulong U = 999000000000040000UL;
 const int Level = 20;
 
-var ladder = ZoneRanking.OrderByDifficulty(await zonesRepo.GetAllAsync());
+var ladder = ZoneRanking.ForPlayer(await zonesRepo.GetAllAsync(), 0);
 int zone1 = ladder[0].ZoneId, zone3 = ladder[2].ZoneId;
 
 async Task Reset()
