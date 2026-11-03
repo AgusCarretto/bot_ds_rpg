@@ -58,11 +58,24 @@ UNION ALL SELECT z.k, z.zone_id, 'Grimorio de ' || z.suffix, 'Weapon', z.weapon_
 UNION ALL SELECT z.k, z.zone_id, 'Amuleto de ' || z.suffix, 'Amulet', z.amulet_def * 6, z.amulet_def * 78 / 10, z.amulet_def, NULL, NULL, NULL, 'amulet' FROM z610 z
 UNION ALL SELECT z.k, z.zone_id, 'Reliquia de ' || z.suffix, 'Reliquia', 0, 0, 0, NULL, NULL, NULL, 'relic' FROM z610 z;
 
-INSERT INTO items (name, type, rarity, stat_value, sell_price, buy_price, weapon_family, class_requirement, dust_value)
-SELECT name, type, 'Mítico', stat, sell, buy, family, class, dust FROM z610_items
+-- Emoji unicode de relleno hasta que llegue el arte propio (los prompts están en docs/arte-zonas-6-10.md): se pone solo si el ítem no tiene uno, así el arte
+-- cargado después con update_item_emojis.sql nunca se pisa. Mismo criterio que la 🍖 de la Comida de Dragón en add_dragon_food.sql.
+INSERT INTO items (name, type, rarity, stat_value, sell_price, buy_price, weapon_family, class_requirement, dust_value, emoji)
+SELECT name, type, 'Mítico', stat, sell, buy, family, class, dust,
+       CASE
+           WHEN role = 'relic' THEN '🗝️'
+           WHEN type = 'Amulet' THEN '📿'
+           WHEN family = 'Espadas' THEN '🗡️'
+           WHEN family = 'Dagas' THEN '🔪'
+           WHEN family = 'Arcos' THEN '🏹'
+           WHEN family = 'Grimorios' THEN '📖'
+           ELSE CASE k WHEN 0 THEN '🧂' WHEN 1 THEN '🦷' WHEN 2 THEN '🌑' WHEN 3 THEN '🧊' ELSE '🪶' END
+       END
+FROM z610_items
 ON CONFLICT (name) DO UPDATE
     SET type = EXCLUDED.type, rarity = EXCLUDED.rarity, stat_value = EXCLUDED.stat_value, sell_price = EXCLUDED.sell_price, buy_price = EXCLUDED.buy_price,
-        weapon_family = EXCLUDED.weapon_family, class_requirement = EXCLUDED.class_requirement, dust_value = EXCLUDED.dust_value;
+        weapon_family = EXCLUDED.weapon_family, class_requirement = EXCLUDED.class_requirement, dust_value = EXCLUDED.dust_value,
+        emoji = COALESCE(items.emoji, EXCLUDED.emoji);
 
 -- Los monstruos: uno de caza (suelta el drop) y uno de viaje (no suelta nada). Sin jefe.
 INSERT INTO monsters (zone_id, name, emoji, min_hp, max_hp, min_damage, max_damage, gold_reward, xp_reward, is_boss, is_travel)

@@ -6,7 +6,7 @@ solo. El más nuevo va arriba. Cada anuncio tiene un título y un texto.
 
 ---
 
-## 2026-11-02 — (BORRADOR: no publicar hasta que la v0.47.0 esté en main) Las zonas que abre el Fuego Nuevo (v0.47.0)
+## 2026-11-03 — Las zonas que abre el Fuego Nuevo (v0.47.0)
 
 **Título:** Más allá del Fogón: cinco zonas nuevas y sus mazmorras
 

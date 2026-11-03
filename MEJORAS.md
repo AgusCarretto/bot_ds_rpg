@@ -1,6 +1,6 @@
 # Asado y Acero RPG — Estado y mejoras pendientes
 
-_Última revisión: 2026-11-02 (v0.47.0, en develop: las zonas 6 a 10 con sus mazmorras; antes, v0.46.0: contadores de cría separados, el jefe mundial sin cooldown, el blackjack de la banca ya no corta la mano, el Fuego Nuevo no toca los cooldowns, el nivel de las bendiciones repetidas y el emoji del Cofre de Escoria; antes, v0.41.2: la lista de `/pet view` con íconos y barras; antes, v0.41.1: corrección del regalo retroactivo de huevos; antes, v0.41.0: las hazañas, logros mucho más difíciles; antes, v0.40.0: tiers de mascotas y huevos de repuesto; antes, v0.39.1: las pantallas de las expediciones ya no cuentan el premio; antes, v0.39.0: expediciones de mascotas; antes, v0.38.3: Épico 6 % y Legendario 3 % en la recolección; antes, v0.38.2: Corteza y Meteorito a 5.000 de oro; antes, v0.38.1: los oficios siguen subiendo después del 100, costo exponencial; antes, v0.38.0 orden de ingredientes, «vender todo» que respeta lo del Fuego Nuevo, sin Míticos de recolección en las cajas y amuletos ×4)_
+_Última revisión: 2026-11-03 (v0.47.0, en main desde el 2026-11-03: las zonas 6 a 10 con sus mazmorras; antes, v0.46.0: contadores de cría separados, el jefe mundial sin cooldown, el blackjack de la banca ya no corta la mano, el Fuego Nuevo no toca los cooldowns, el nivel de las bendiciones repetidas y el emoji del Cofre de Escoria; antes, v0.41.2: la lista de `/pet view` con íconos y barras; antes, v0.41.1: corrección del regalo retroactivo de huevos; antes, v0.41.0: las hazañas, logros mucho más difíciles; antes, v0.40.0: tiers de mascotas y huevos de repuesto; antes, v0.39.1: las pantallas de las expediciones ya no cuentan el premio; antes, v0.39.0: expediciones de mascotas; antes, v0.38.3: Épico 6 % y Legendario 3 % en la recolección; antes, v0.38.2: Corteza y Meteorito a 5.000 de oro; antes, v0.38.1: los oficios siguen subiendo después del 100, costo exponencial; antes, v0.38.0 orden de ingredientes, «vender todo» que respeta lo del Fuego Nuevo, sin Míticos de recolección en las cajas y amuletos ×4)_
 
 ## Pendiente de un vistazo (puesto al día el 2026-10-28)
 
@@ -38,7 +38,7 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 - Casamiento, comandos de administrador, eventos temporizados de servidor, la fusión de mascotas en los Fuegos Nuevos 3 o 5, dos guardianes Míticos en la Zona 0, y que la chance Mítica suba con el Fuego Nuevo.
 - Deuda técnica real: no hay registro de qué migraciones corrieron en cada base, y no hay CI (ver «Deuda técnica» más abajo).
 
-## Zonas 6 a 10, Reliquias y mazmorras (v0.47.0, 2026-11-02, en develop: falta probarlo y pasarlo a main)
+## Zonas 6 a 10, Reliquias y mazmorras (v0.47.0, en main desde el 2026-11-03; el dueño la pidió subir sin el arte para probarla en FN 7)
 
 - **Pedido del dueño** (2026-11-01, ver el diseño en `docs/superpowers/specs/2026-11-01-zonas-6-a-10-mazmorras-design.md`): zonas nuevas que abre el Fuego Nuevo, el Fogón que se corre, una Reliquia para salir de cada zona y, en vez de jefe, una mazmorra-acertijo distinta por zona, que se hace solo y sin comida; después de la mazmorra de tu última zona, el Asador, más fuerte, sin curarte. Lo construí de noche con el ok del dueño («decidí y después me contás»).
 - **Lo que quedó**: zonas 6 a 10 con Fuego Nuevo 5 / 8 / 11 / 14 / 17; un monstruo de caza con un drop sencillo (Cristal de Sal, Colmillo de Humo, Gota de Brea, Escama de Hielo, Pluma de Rayo) y uno de viaje por zona; arma de clase y amuleto por zona; la Reliquia de cada zona; las cinco mazmorras (el patrón del fuego, el laberinto de humo, las brasas, el candado del Fogón, el ritmo del Asador); el Asador escalado con su llamarada. Todo en CLAUDE.md («Zones 6 to 10, Relics and dungeons»).
@@ -54,7 +54,7 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
   - **El Asador** se calibró para ~30 % de derrota llegando con el 80 % de la vida y el equipo de la zona tope (nivel mínimo + 3), sin comida; la llamarada es 20 % de los turnos ×1,75. Perder contra el Asador cobra la penalidad de muerte como cualquier jefe y obliga a hacer la mazmorra de nuevo (con otra Reliquia).
   - **/zonas** ya anuncia la próxima zona («se abre con el Fuego Nuevo 8») a quien tiene al menos un Fuego Nuevo.
 - **Abierto (del dueño)**: qué hacer con el Trinche y la Brasa desde el FN 5 (no son obligatorios desde la Zona 6). Y lo que venga en el FN 20.
-- **Falta**: arte (emojis de los 5 drops, 5 Reliquias, 25 piezas de equipo y 10 monstruos), capítulos de historia, logros y títulos de las mazmorras, medir el ritmo de las recetas nuevas con datos reales.
+- **Falta**: arte (emojis de los 5 drops, 5 Reliquias, 25 piezas de equipo y 10 monstruos; hasta que llegue, add_zones_6_10.sql les pone un unicode de relleno —🧂 🦷 🌑 🧊 🪶, 🗝️, 🗡️ 🔪 🏹 📖 📿— sin pisar uno cargado, y los monstruos van sin cara en la pelea; los prompts están en docs/arte-zonas-6-10.md), capítulos de historia, logros y títulos de las mazmorras, medir el ritmo de las recetas nuevas con datos reales.
 
 ## Cría del dragón, jefe mundial, blackjack y Fuego Nuevo (v0.46.0, 2026-11-01)
 
