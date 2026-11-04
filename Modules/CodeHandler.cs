@@ -7,8 +7,9 @@ using Discord;
 // solo le pasan lo que escribió el jugador.
 public static class CodeHandler
 {
-    // Lo que hay que contestar: un texto (algo no salió) o la pantalla del premio. Nunca los dos.
-    public sealed record CodeReply(string? PlainMessage, Embed? Embed);
+    // Lo que hay que contestar: un texto (algo no salió) o la pantalla del premio. Nunca los dos. EmbedWithoutCode es la misma pantalla sin el nombre del código (null si no hay pantalla): es lo único que
+    // se puede mostrar en un canal cuando no se pudo contestar por privado (ver DeliverTypedAsync).
+    public sealed record CodeReply(string? PlainMessage, Embed? Embed, Embed? EmbedWithoutCode = null);
 
     public static async Task<CodeReply> RedeemAsync(
         IRedeemCodeRepository codes, IGameEvents events, ulong discordId, string? typed)
@@ -45,10 +46,39 @@ public static class CodeHandler
             await events.RecordAsync(discordId, GameEventKinds.LevelUp, null, result.LevelsGained, result.NewLevel.ToString());
         }
 
-        return new CodeReply(null, BuildRedeemedEmbed(code, result));
+        return new CodeReply(null, BuildRedeemedEmbed(code, result), BuildRedeemedEmbed(null, result));
     }
 
-    public static Embed BuildRedeemedEmbed(string code, RedeemResult result)
+    // «aa code» escrito en un canal (el dueño, 2026-11-04: «el mensaje de canje debería ser para vos solo»; en el canal lo veía todo el mundo, código incluido, y los códigos son para descubrirlos). Un texto no puede ser
+    // privado como /code, así que la respuesta va por MENSAJE DIRECTO y en el canal queda un aviso con la mención que no dice nada (ni el código, ni los premios, ni si salió bien o mal). Si no se puede escribir por
+    // privado (mensajes directos cerrados) el canje ya está pagado, así que se contesta en el canal con los premios pero SIN el nombre del código, y se avisa que /code es privado. Escrito ya en un chat privado con
+    // el bot, se contesta ahí mismo. Nunca tira: un fallo de envío al canal lo ve quien llama (que lo registra).
+    public static async Task DeliverTypedAsync(
+        CodeReply reply, bool inPrivateChannel, string mention,
+        Func<string?, Embed?, Task> sendPrivately, Func<string?, Embed?, Task> sendInChannel)
+    {
+        if (inPrivateChannel)
+        {
+            await sendInChannel(reply.PlainMessage, reply.Embed);
+            return;
+        }
+
+        try
+        {
+            await sendPrivately(reply.PlainMessage, reply.Embed);
+        }
+        catch (Exception ex)
+        {
+            BotLog.Warn(ex);
+            string? note = reply.Embed is null ? reply.PlainMessage : Loc.F($"{mention} No pude escribirte por privado (¿tenés los mensajes directos cerrados?): usá **/code**, que responde solo para vos.");
+            await sendInChannel(note, reply.EmbedWithoutCode ?? reply.Embed);
+            return;
+        }
+
+        await sendInChannel(Loc.F($"{mention} 🎟️ Te respondí por mensaje privado."), null);
+    }
+
+    public static Embed BuildRedeemedEmbed(string? code, RedeemResult result)
     {
         var lines = result.Rewards.Select(RewardLine).ToList();
         if (result.LevelsGained > 0)
@@ -64,7 +94,7 @@ public static class CodeHandler
         var embed = new EmbedBuilder()
             .WithTitle(Loc.T("🎟️ ¡Código canjeado!"))
             .WithColor(Color.Gold)
-            .WithDescription(Loc.F($"Canjeaste **{code}** y recibiste:") + "\n\n" + string.Join('\n', lines));
+            .WithDescription((code is null ? Loc.T("Canjeaste un código y recibiste:") : Loc.F($"Canjeaste **{code}** y recibiste:")) + "\n\n" + string.Join('\n', lines));
         if (result.Rewards.Any(r => r.Kind == RedeemRewardKind.Item))
         {
             embed.WithFooter(Loc.T("📦 Abrí tus cajas con /open"));

@@ -6,16 +6,20 @@ using Discord.Commands;
 // Parte de TextCommandModule (ver el comentario en TextCommandModule.cs): los códigos canjeables (v0.37.0). La lógica está en CodeHandler; acá solo se lee lo que escribió el jugador.
 public partial class TextCommandModule
 {
-    // "aa code CODIGO" — canjea un código. Escrito en un canal lo puede leer cualquiera: el bot borra el mensaje del jugador si tiene permiso (y recomienda /code, que es privado).
+    // "aa code CODIGO" — canjea un código. Escrito en un canal lo puede leer cualquiera: el bot borra el mensaje del jugador si tiene permiso y la RESPUESTA va por mensaje directo (en el canal solo queda un aviso con la
+    // mención; ver CodeHandler.DeliverTypedAsync). /code es privado de por sí.
     [Command("code")]
     [Alias("codigo", "código", "redeem", "cupon", "cupón")]
-    [Summary("Canjeá un código por premios: \"aa code CODIGO\" (con /code lo ves solo vos).")]
+    [Summary("Canjeá un código por premios: \"aa code CODIGO\" (te respondo por privado; con /code lo ves solo vos).")]
     public async Task CodeAsync([Remainder] string typed = "")
     {
         try
         {
             var reply = await CodeHandler.RedeemAsync(redeemCodeRepository, gameEvents, Context.User.Id, typed);
-            await ReplyAsync(reply.PlainMessage, embed: reply.Embed);
+            await CodeHandler.DeliverTypedAsync(
+                reply, Context.IsPrivate, Context.User.Mention,
+                (plain, embed) => Context.User.SendMessageAsync(plain, embed: embed),
+                (plain, embed) => ReplyAsync(plain, embed: embed, allowedMentions: new AllowedMentions(AllowedMentionTypes.Users)));
         }
         catch (Exception ex)
         {
