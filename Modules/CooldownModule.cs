@@ -248,11 +248,11 @@ public class CooldownModule(
         }
     }
 
-    // La línea del jefe mundial: anotado ✅ con lo que falta para la pelea de las 00:00, o «¡Listo!» para anotarse. Pública y pura para probarla sin base.
+    // La línea del jefe mundial: anotado ✅ con lo que falta para la pelea de las 00:00, o el aviso ⚠️ de que todavía no te anotaste (como la Arena). Pública y pura para probarla sin base.
     public static string WorldBossLine(bool joined, TimeSpan untilPlay) =>
         joined
             ? Loc.F($"🌍 **Jefe mundial**: anotado ✅ — se pelea en {TimeFormat.Remaining(untilPlay)}")
-            : Loc.F($"🌍 **Jefe mundial**: **¡Listo!** ✅ Anotate con **/miniboss** (se pelea en {TimeFormat.Remaining(untilPlay)})");
+            : Loc.F($"🌍 **Jefe mundial**: **¡todavía no te anotaste!** ⚠️ Se pelea en {TimeFormat.Remaining(untilPlay)}: **/miniboss**");
 
     private static async Task<string?> TryBuildArenaLineAsync(IArenaService? arenaService, ulong discordId)
     {

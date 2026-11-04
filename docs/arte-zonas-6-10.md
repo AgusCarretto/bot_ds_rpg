@@ -2,27 +2,33 @@
 
 Cada imagen se sube al Developer Portal (la aplicación del bot → Emojis) con el **nombre de emoji** de la tabla. Cuando estén subidas, el bot las conecta: los ítems en `Database/update_item_emojis.sql` y las caras de los monstruos en `Database/update_monster_portraits.sql` (después se corre `Database/apply_emojis.sql` en Railway).
 
-Consejos: pedí 4 variantes y elegí la que se lea mejor en chiquito (Discord la muestra a 22 px en el texto). Recortala cuadrada y, si podés, sacale el fondo antes de subirla.
+Consejos: pedí 4 variantes y elegí la que se lea mejor en chiquito (Discord la muestra a 22 px en el texto). Recortala cuadrada y, en los ítems, si podés sacale el fondo antes de subirla (los monstruos NO: llevan su escenario, no se lo saques).
 
-## Monstruos (prioridad)
+## Monstruos (prioridad) — ✅ cargados el 2026-11-04
+
+Las 10 caras ya están conectadas en `Database/update_monster_portraits.sql` con los nombres de emoji que subió el dueño (`guanaco_de_sal`, `coloso_de_sal`, `yaguarate_de_humo`, `Sombra_del_Monte`, `sapo_de_brea`, `bestia_del_pantano`, `lobo_de_hielo`, `gigante_de_hielo`, `condor_rayo`, `titan_de_la_tormenta`; no coinciden con la columna «Emoji» de abajo y no hace falta cambiarlos). Los prompts quedan acá por si hay que rehacer alguno: para reemplazar una cara se sube la nueva, se edita su línea en el script y se corre `apply_emojis.sql`.
+
+Los monstruos llevan **fondo con su escenario**, como los de las zonas 1 a 5 (el volcán, la mina con el farol, el trigal): cada prompt trae el suyo al final, después de `background:`. Si la IA te devuelve el monstruo sin fondo, repetí el escenario y agregá `fully painted background, no white or empty areas`. La imagen sale apaisada (3:2) con el monstruo en el centro, para recortarla cuadrada.
 
 Base común (va al principio de cada prompt):
-`A single fantasy RPG monster portrait icon, centered, head and shoulders, facing the viewer, bold clean outlines, vibrant saturated colors, soft rim light, simple dark vignette background, square, game asset, no text, no frame,`
+`A single fantasy RPG monster portrait, wide 3:2 illustration with the monster centered so it can be cropped square, head and shoulders, facing the viewer, bold clean outlines, vibrant saturated colors, soft rim light, a detailed scenic background of its habitat filling the whole image (never a plain or empty background), no text, no frame,`
 
 | Emoji | Monstruo | Prompt (después de la base) |
 |---|---|---|
-| `guanaco_sal` | Guanaco de Sal (Zona 6, cacería) | a fierce guanaco made of white salt crystals, crusty salt fur, glowing pale blue eyes, salt flats sparkle around it |
-| `coloso_sal` | Coloso de Sal (Zona 6, viaje) | a massive golem of stacked white and pink salt crystal blocks, cracked glowing seams, heavy brow, ancient and imposing |
-| `yaguarete_humo` | Yaguareté de Humo (Zona 7, cacería) | a jaguar made of dark grey swirling smoke, spotted pattern drawn in embers, burning orange eyes, wisps of smoke trailing |
-| `sombra_monte` | Sombra del Monte (Zona 7, viaje) | a tall shadow creature from a burning forest, hooded silhouette of black smoke, branches like antlers, two glowing ember eyes |
-| `sapo_brea` | Sapo de Brea (Zona 8, cacería) | a huge toad covered in glossy black tar, dripping tar, yellow bulging eyes, bubbles of tar on its back |
-| `bestia_pantano` | Bestia del Pantano (Zona 8, viaje) | a hulking swamp beast of mud, roots and black tar, moss hanging from its shoulders, sickly green glowing eyes |
-| `lobo_hielo` | Lobo de Hielo (Zona 9, cacería) | a wolf with fur made of ice shards, frost breath, pale cyan glowing eyes, icicles hanging from its jaw |
-| `gigante_escarcha` | Gigante Escarchado (Zona 9, viaje) | a frost giant with blue skin covered in hoarfrost, beard of icicles, cracked ice armor, cold white glowing eyes |
-| `condor_rayo` | Cóndor del Rayo (Zona 10, cacería) | an andean condor with storm-dark feathers, lightning crackling along its wings, electric yellow eyes, storm clouds behind |
-| `titan_tormenta` | Titán de Tormenta (Zona 10, viaje) | a colossal storm titan made of dark thunderclouds, body veined with lightning, crown of electricity, glowing white eyes |
+| `guanaco_sal` | Guanaco de Sal (Zona 6, cacería) | a fierce guanaco made of white salt crystals, crusty salt fur, glowing pale blue eyes, background: a vast white salt flat with shallow pink and pale blue mirror pools, distant Andean peaks and a pale cold sky |
+| `coloso_sal` | Coloso de Sal (Zona 6, viaje) | a massive golem of stacked white and pink salt crystal blocks, cracked glowing seams, heavy brow, ancient and imposing, background: a glittering salt cavern with huge white and pink crystal formations and a soft pale blue light from above |
+| `yaguarete_humo` | Yaguareté de Humo (Zona 7, cacería) | a jaguar made of dark grey swirling smoke, spotted pattern drawn in embers, burning orange eyes, wisps of smoke trailing, background: a dark rocky volcanic valley with glowing lava cracks, jagged black cliffs and drifting smoke |
+| `sombra_monte` | Sombra del Monte (Zona 7, viaje) | a tall shadow creature from a burning forest, hooded silhouette of black smoke, branches like antlers, two glowing ember eyes, background: a forest on fire at night with charred black trunks, falling embers and an orange glow between the trees |
+| `sapo_brea` | Sapo de Brea (Zona 8, cacería) | a huge toad covered in glossy black tar, dripping tar, yellow bulging eyes, bubbles of tar on its back, background: a field of tar pits with bubbling black tar, dead twisted trees and a dim yellow-green sky |
+| `bestia_pantano` | Bestia del Pantano (Zona 8, viaje) | a hulking swamp beast of mud, roots and black tar, moss hanging from its shoulders, sickly green glowing eyes, background: a dark swamp at dusk with tangled roots, moss-covered dead trees, black tar pools and thick sickly green fog |
+| `lobo_hielo` | Lobo de Hielo (Zona 9, cacería) | a wolf with fur made of ice shards, frost breath, pale cyan glowing eyes, icicles hanging from its jaw, background: a frozen tundra at dusk with snowdrifts, jagged ice spikes and a pale blue sky with a faint aurora |
+| `gigante_escarcha` | Gigante Escarchado (Zona 9, viaje) | a frost giant with blue skin covered in hoarfrost, beard of icicles, cracked ice armor, cold white glowing eyes, background: a glacier canyon with towering blue ice walls, falling snow and a cold blue light |
+| `condor_rayo` | Cóndor del Rayo (Zona 10, cacería) | an andean condor with storm-dark feathers, lightning crackling along its wings, electric yellow eyes, background: a stormy mountain sky with dark thunderclouds and lightning bolts striking behind jagged peaks |
+| `titan_tormenta` | Titán de Tormenta (Zona 10, viaje) | a colossal storm titan made of dark thunderclouds, body veined with lightning, crown of electricity, glowing white eyes, background: a barren rocky plain under a huge thunderstorm with swirling dark clouds and lightning striking the ground in the distance |
 
-## Drops (uno por zona)
+## Drops (uno por zona) — ✅ cargados el 2026-11-04
+
+Los 5 están conectados en `Database/update_item_emojis.sql` con los nombres que subió el dueño: `drop_sal` (Cristal de Sal), `colmillo_humo`, `gota_brea`, `escama_hielo1` (Escama de Hielo) y `pluma_rayo`. Los prompts quedan por si hay que rehacer alguno.
 
 Base:
 `A single game item icon for a fantasy RPG, centered, bold clean outlines, vibrant colors, soft glow, transparent background, square, no text,`
@@ -72,9 +78,9 @@ Ejemplo: **Espada de Sal**, emoji `espada_sal`:
 
 Nombres de emoji: `espada_sal`, `dagas_sal`, `arco_sal`, `grimorio_sal`, `amuleto_sal`, y lo mismo con `_humo`, `_brea`, `_hielo`, `_rayo`. Cada zona va un poco más brillante que la anterior: si querés que se note la escalera, sumale a las de la 9 y la 10 `legendary, intricate details`.
 
-## Pesca (v0.48.0): 3 peces y 2 cañas
+## Pesca (v0.48.0): 3 peces y 2 cañas — ✅ cargados el 2026-11-04
 
-Hoy salen con un emoji común de relleno (🐟 🐠 👑 los peces, 🎣 las cañas) y andan bien así. Cuando se suba el arte: se agregan los `UPDATE` por nombre de ítem en `Database/update_item_emojis.sql`, se corre `Database/apply_emojis.sql` en Railway y se sacan los cinco nombres de la lista `provisional` de `tests/portraittest/Program.cs`.
+Salieron con un emoji común de relleno (🐟 🐠 👑 los peces, 🎣 las cañas) y ya tienen el arte del dueño en `Database/update_item_emojis.sql`: `fish_mojarra`, `fish_dorado`, `fish_surubi`, `caa_hierro` y `caa_escoria` (sin la eñe: el portal usa el nombre del archivo). Los prompts quedan por si hay que rehacer alguno.
 
 Estas cinco usan el estilo que prefiere el dueño desde el 2026-10-28 (ilustración limpia, **no pixel art**, **fondo blanco liso** para recortarlo después; las bases de arriba piden fondo transparente: si Bing lo dibuja raro, usá esta). Subirlas a 128×128 con el **nombre de emoji** de la tabla.
 

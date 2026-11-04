@@ -40,6 +40,24 @@ Check(all.All(m => ItemDisplay.ImageUrl(m.Monster.Portrait) is { } u && u.Starts
 Check(all.Select(m => m.Monster.Portrait).Distinct().Count() == 20, "ninguna cara está repetida");
 Check(all.All(m => !string.IsNullOrEmpty(m.Monster.Emoji)), "el emoji de texto de cada monstruo sigue ahí (los mensajes lo usan)");
 
+// 2026-11-04: las caras de los 10 monstruos de las zonas 6 a 10 (arte del dueño, con su escenario de fondo). Los nombres de emoji son los que él subió al portal
+// (sí, "yaguarate" y "Sombra_del_Monte" con mayúscula: el portal se llama como el archivo).
+Console.WriteLine("\n== 1b. Las caras de los 10 monstruos de las Zonas 6 a 10 ==");
+var upperFaces = new Dictionary<string, string>
+{
+    ["Guanaco de Sal"] = "guanaco_de_sal:1567537057176354867", ["Coloso de Sal"] = "coloso_de_sal:1567537058703081634",
+    ["Yaguareté de Humo"] = "yaguarate_de_humo:1567537060896702526", ["Sombra del Monte"] = "Sombra_del_Monte:1567537055456567397",
+    ["Sapo de Brea"] = "sapo_de_brea:1567537053690892418", ["Bestia del Pantano"] = "bestia_del_pantano:1567537051354534078",
+    ["Lobo de Hielo"] = "lobo_de_hielo:1567537049798713497", ["Gigante Escarchado"] = "gigante_de_hielo:1567537047957143712",
+    ["Cóndor del Rayo"] = "condor_rayo:1567537046380224552", ["Titán de Tormenta"] = "titan_de_la_tormenta:1567537044723343390",
+};
+var upper = (await monsterRepo.GetAllAsync()).Where(m => m.ZoneId >= 6).ToList();
+Check(upper.Count == 10, $"hay {upper.Count} monstruos en las zonas 6 a 10 (cacería + viaje en cada una, sin jefe)");
+var wrongUpper = upperFaces.Where(kv => upper.Count(m => m.Monster.Name == kv.Key && m.Monster.Portrait == $"<:{kv.Value}>") != 1).Select(kv => kv.Key).ToList();
+Check(wrongUpper.Count == 0, $"cada uno tiene SU cara ({(wrongUpper.Count == 0 ? "10 de 10" : "mal: " + string.Join(", ", wrongUpper))})");
+Check(upper.All(m => ItemDisplay.ImageUrl(m.Monster.Portrait) is { } u && u.StartsWith("https://cdn.discordapp.com/emojis/")), "y todas dan una URL de imagen para la miniatura");
+Check(all.Concat(upper).Select(m => m.Monster.Portrait).Distinct().Count() == 30, "ninguna de las 30 caras está repetida");
+
 Console.WriteLine("\n== 2. Las 4 Maderas son emojis de la aplicación ==");
 foreach (var (name, code) in new[] { ("Madera de Pino", "madera_pino:1556678837482422392"), ("Madera de Roble", "madera_roble:1556678835339006023"), ("Madera de Nogal", "madera_nogal:1556678833569275914"), ("Madera de Ébano", "madera_ebano:1556678831841091715") })
 {
@@ -99,21 +117,36 @@ var legacy = new[] { "Bombilla de Hierro Maldito", "Botas de Silencio", "Collar 
 await using var rawDb = new Npgsql.NpgsqlConnection(conn);
 await rawDb.OpenAsync();
 var allItems = (await Dapper.SqlMapper.QueryAsync<(string Name, string? Emoji)>(rawDb, "SELECT name, emoji FROM items")).ToList();
-// v0.47.0: lo de las zonas 6 a 10 (sus drops, su equipo y sus Reliquias) todavía no tiene arte.
-var pendingArt = (await Dapper.SqlMapper.QueryAsync<string>(rawDb, "SELECT i.name FROM items i WHERE i.item_id IN (SELECT result_item_id FROM recipes WHERE zone_id BETWEEN 6 AND 10) OR i.item_id IN (SELECT d.item_id FROM monster_drops d JOIN monsters m ON m.monster_id = d.monster_id WHERE m.zone_id BETWEEN 6 AND 10)")).ToHashSet();
-// v0.48.0: los peces y las cañas salieron con emojis PROVISORIOS (unicode); el dueño sube el arte propio después. Cuando llegue, sacar el ítem de esta lista.
-var provisional = new[] { "Mojarra", "Dorado", "Surubí", "Caña de Hierro Forjado", "Caña de Escoria Templada" };
-var noArt = allItems.Where(i => !legacy.Contains(i.Name) && !pendingArt.Contains(i.Name) && !provisional.Contains(i.Name) && !System.Text.RegularExpressions.Regex.IsMatch(i.Emoji ?? string.Empty, @"^<a?:[A-Za-z0-9_]+:[0-9]+>$")).Select(i => i.Name).ToList();
+// v0.47.0: lo de las zonas 6 a 10 (su equipo y sus Reliquias: los resultados de sus recetas) todavía no tiene arte. Sus 5 drops SÍ (2026-11-04), así que ya se les exige.
+var pendingArt = (await Dapper.SqlMapper.QueryAsync<string>(rawDb, "SELECT i.name FROM items i WHERE i.item_id IN (SELECT result_item_id FROM recipes WHERE zone_id BETWEEN 6 AND 10)")).ToHashSet();
+// v0.48.0 sacó los peces y las cañas con emojis PROVISORIOS (unicode); el 2026-11-04 el dueño subió el arte propio y ya se les exige como a todos.
+var noArt = allItems.Where(i => !legacy.Contains(i.Name) && !pendingArt.Contains(i.Name) && !System.Text.RegularExpressions.Regex.IsMatch(i.Emoji ?? string.Empty, @"^<a?:[A-Za-z0-9_]+:[0-9]+>$")).Select(i => i.Name).ToList();
 Check(noArt.Count == 0, $"todo ítem que se puede conseguir tiene arte propio (sin arte: {string.Join(", ", noArt)})");
-Check(provisional.All(n => allItems.Any(i => i.Name == n && !string.IsNullOrWhiteSpace(i.Emoji))), "y los peces y las cañas, que esperan su arte, al menos tienen un emoji provisorio (nunca salen sin ícono)");
+// Los peces y las cañas, con los nombres que subió el dueño (el portal les puso el nombre del archivo: "caa_hierro" y "caa_escoria" sin la eñe).
+var fishArt = new Dictionary<string, string>
+{
+    ["Mojarra"] = "fish_mojarra:1567545577200164935", ["Dorado"] = "fish_dorado:1567545575740539021", ["Surubí"] = "fish_surubi:1567545574247366839",
+    ["Caña de Hierro Forjado"] = "caa_hierro:1567545572280242257", ["Caña de Escoria Templada"] = "caa_escoria:1567545570833334322",
+};
+Check(fishArt.Count == 5 && fishArt.All(kv => allItems.FirstOrDefault(i => i.Name == kv.Key).Emoji == $"<:{kv.Value}>"), "los 3 peces y las 2 cañas tienen el código exacto que pasó el dueño");
+Check(fishArt.All(kv => ItemDisplay.ImageUrl(allItems.First(i => i.Name == kv.Key).Emoji) is { } url && url.StartsWith("https://cdn.discordapp.com/emojis/", StringComparison.Ordinal)), "y arman su miniatura del CDN");
 var nine = new Dictionary<string, string>
 {
-    ["Cofre de Escoria"] = "cofre_escoria:1561758887038820615", ["Brasero del Fogón"] = "brasero:1561758888951418940", ["Huevo de la Pradera"] = "huevo_1:1561758588609888376",
+    // El Cofre de Escoria lleva el id de la v0.46.0 (el dueño rehízo el arte; está en update_item_emojis.sql).
+    ["Cofre de Escoria"] = "cofre_escoria:1562102152090878113", ["Brasero del Fogón"] = "brasero:1561758888951418940", ["Huevo de la Pradera"] = "huevo_1:1561758588609888376",
     ["Huevo del Bosque de Cenizas"] = "huevo_2:1561758586936365086", ["Huevo de las Minas"] = "huevo_3:1561758584994402426", ["Huevo de la Cordillera"] = "huevo_4:1561758583316549642",
     ["Huevo del Cráter"] = "huevo_5:1561758581702008842", ["Huevo del Fogón"] = "huevo_6:1561758579680092312", ["Comida para Mascotas"] = "comida_pets:1561758577952039072",
 };
-Check(nine.All(kv => allItems.FirstOrDefault(i => i.Name == kv.Key).Emoji == $"<:{kv.Value}>"), "los 9 ítems nuevos tienen el código exacto que pasó el dueño (2 cajas, 6 huevos en el orden de las zonas, comida)");
+Check(nine.Count == 9 && nine.All(kv => allItems.FirstOrDefault(i => i.Name == kv.Key).Emoji == $"<:{kv.Value}>"), "los 9 ítems nuevos tienen el código exacto que pasó el dueño (2 cajas, 6 huevos en el orden de las zonas, comida)");
 Check(nine.All(kv => ItemDisplay.ImageUrl(allItems.First(i => i.Name == kv.Key).Emoji) is { } url && url.StartsWith("https://cdn.discordapp.com/emojis/", StringComparison.Ordinal)), "y todos arman su miniatura del CDN");
+// 2026-11-04: los 5 drops de las Zonas 6 a 10, con el nombre de emoji que subió el dueño (el de la sal se llama drop_sal y el del hielo escama_hielo1: el portal les puso el nombre del archivo).
+var drops610 = new Dictionary<string, string>
+{
+    ["Cristal de Sal"] = "drop_sal:1567541433974530118", ["Colmillo de Humo"] = "colmillo_humo:1567541432372301864", ["Gota de Brea"] = "gota_brea:1567541430342262855",
+    ["Escama de Hielo"] = "escama_hielo1:1567541998032785509", ["Pluma de Rayo"] = "pluma_rayo:1567541428664402042",
+};
+Check(drops610.All(kv => allItems.FirstOrDefault(i => i.Name == kv.Key).Emoji == $"<:{kv.Value}>"), "los 5 drops de las Zonas 6 a 10 tienen el código exacto que pasó el dueño");
+Check(drops610.All(kv => ItemDisplay.ImageUrl(allItems.First(i => i.Name == kv.Key).Emoji) is { } url && url.StartsWith("https://cdn.discordapp.com/emojis/", StringComparison.Ordinal)), "y arman su miniatura del CDN");
 Environment.SetEnvironmentVariable("Images__DeepShopkeeper", null);
 var tab = NpcImages.DeepShopkeeper;
 Check(tab is not null && tab.LocalPath is null && tab.Reference == "https://cdn.discordapp.com/emojis/1561756257898209311.png?size=256", $"el Tabernero del Inframundo sale con su foto (el emoji tabernero_deep, a 256 px) sin variable ni archivo ({tab?.Reference})");

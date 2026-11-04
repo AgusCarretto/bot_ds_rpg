@@ -31,4 +31,28 @@ public partial class TextCommandModule
             }
         }
     }
+
+    // "aa adminset dragon tier 5 @amigo" / "aa adminset dragon level 40" — fijar el tier o el nivel de entrenamiento del dragón (v0.48.1, ver AdminSetHandler).
+    [Command("adminset")]
+    [Alias("admin-set", "adminponer")]
+    public async Task AdminSetAsync([Remainder] string args = "")
+    {
+        try
+        {
+            string? reply = await AdminSetHandler.ExecuteAsync(adminAccess, userRepository, adminRepository, gameEvents, Context.User.Id, args);
+            if (reply is not null)
+            {
+                // Solo se mencionan usuarios, como en admingive.
+                await ReplyAsync(reply, allowedMentions: new AllowedMentions(AllowedMentionTypes.Users));
+            }
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            if (adminAccess.IsAdmin(Context.User.Id))
+            {
+                await ReplyAsync(Loc.T("¡Upa! Falló adminset; mirá el registro del servidor."));
+            }
+        }
+    }
 }

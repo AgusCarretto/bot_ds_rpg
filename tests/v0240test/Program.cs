@@ -200,6 +200,9 @@ Check(joined.Title!.Contains(boss0.Name) && joined.Description.Contains("00:00")
 Check(Join(WorldBossJoinStatus.AlreadyJoined).Title!.Contains("Ya estabas") && Join(WorldBossJoinStatus.NoAccount).Description.Contains("/start") && Join(WorldBossJoinStatus.Closed).Title!.Contains("cerró"), "los otros tres resultados, cada uno con su mensaje");
 Check(CooldownModule.WorldBossLine(true, TimeSpan.FromMinutes(95)).Contains("anotado ✅") && CooldownModule.WorldBossLine(true, TimeSpan.FromMinutes(95)).Contains("1h 35m") && CooldownModule.WorldBossLine(false, TimeSpan.FromMinutes(95)).Contains("/miniboss"),
     "v0.46.0: la línea de /cd dice si ya te anotaste (y cuánto falta para la pelea) o que podés anotarte");
+var wbNot = CooldownModule.WorldBossLine(false, TimeSpan.FromMinutes(95));
+Check(wbNot.Contains("⚠️") && wbNot.Contains("**¡todavía no te anotaste!**") && wbNot.Contains("1h 35m") && wbNot.Contains("**/miniboss**") && !wbNot.Contains("✅") && !wbNot.Contains("¡Listo!"),
+    "v0.48.1: sin estar anotado, la línea de /cd avisa con el ⚠️ como la Arena (ya no un «¡Listo! ✅»)");
 var cdWb = await CooldownModule.BuildStatusEmbedAsync(new CooldownRepository(factory), users, Id(1), null, null, false, null, null, null, new FakeWorldBoss { Listing = new WorldBossListing(day1, boss0, [new WorldBossEntry(Id(1), "Uno", DateTime.UtcNow)], TimeSpan.FromHours(2)) });
 var cdLines = cdWb.Description.Split('\n');
 int jefeAt = Array.FindIndex(cdLines, l => l.Contains("**Jefe**"));

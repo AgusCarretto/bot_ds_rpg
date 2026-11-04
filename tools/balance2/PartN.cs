@@ -39,8 +39,37 @@ public static class PartN
         return hi;
     }
 
+    // uso: dotnet run --project tools/balance2 -- N hp [n]
+    // Cuánto pierde un jugador contra el Asador de cada zona tope si se le multiplica la vida (daño sin tocar, llega con el 80 % o con el 100 %, sin comida, con la habilidad):
+    // con el equipo de la zona y con el de la ANTERIOR, a nivel mínimo + 3 (el caso de diseño) y bastante por encima (+10, +20, +30), que es donde el dueño lo liquidó sin equipo de la zona.
+    static void RunAsadorHp(string[] args)
+    {
+        int n = args.Length > 2 && int.TryParse(args[2], out var nn) ? nn : 300;
+        double[] factors = [1.0, 1.5, 2.0, 3.0];
+        int[] offsets = [3, 10, 20, 30];
+        foreach (double start in new[] { 0.8, 1.0 })
+        {
+            Console.WriteLine($"\n===== llega con el {start:P0} de la vida =====");
+            for (int k = 0; k < 5; k++)
+            {
+                var s = AsadorScaling.BaseStatsFor(k + 6)!.Value;
+                int hp = (s.MinHp + s.MaxHp) / 2, dmg = (s.MinDamage + s.MaxDamage) / 2;
+                Console.WriteLine($"\nTope {k + 6} (vida base {hp}, daño {dmg}) — % de derrota con la vida ×{string.Join(" | ×", factors.Select(f => f.ToString("0.0")))}");
+                foreach (var (label, gear) in new[] { ("equipo de la zona   ", Gear(k)), ("equipo de la anterior", Gear(k - 1)) })
+                {
+                    foreach (int off in offsets)
+                    {
+                        var row = string.Join(" | ", factors.Select(f => $"{AsadorDefeat(MinLevel[k] + off, gear, (int)(hp * f), dmg, n, start),4:P0}"));
+                        Console.WriteLine($"  {label} nivel {MinLevel[k] + off,2} (min+{off,-2}): {row}");
+                    }
+                }
+            }
+        }
+    }
+
     public static void Run(string[] args)
     {
+        if (args.Length > 1 && args[1] == "hp") { RunAsadorHp(args); return; }
         int n = args.Length > 1 && int.TryParse(args[1], out var nn) ? nn : 600;
         Console.WriteLine("Zona | nivel | vida del común | daño del común | previo nivel min | propio nivel min+3");
         var commons = new List<(int Hp, int Dmg)>();

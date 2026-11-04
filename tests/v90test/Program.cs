@@ -438,7 +438,13 @@ int materialCount = await db.ExecuteScalarAsync<int>("SELECT count(*)::int FROM 
 var invBig = await GameModule.BuildInventoryEmbedAsync(inventoryRepo, U, "Tester");
 var bigLeft = invBig.Fields.Where((f, i) => i % 3 == 0).ToList(); var bigRight = invBig.Fields.Where((f, i) => i % 3 == 1).ToList();
 var bigDropFields = invBig.Fields.SkipWhile(f => !f.Name.Contains("Drops de monstruo")).TakeWhile((f, i) => i == 0 || f.Name == ZW).Where(f => f.Value != ZW).ToList();   // el campo de los drops y su continuación sin título
-Check(bigLeft[0].Name.Contains("Madera") && bigRight[0].Name.Contains("Mineral") && bigLeft[1].Name.Contains("Drops") && bigRight[1].Name.Contains("Consumibles") && invBig.Fields.All(f => f.Inline), "con todo (v0.36.0: los 10 drops que quedan entran en un campo): Madera | Mineral y debajo Drops | la Comida (con las Cajas)");
+// v0.36.0 dejó 10 drops en el catálogo y entraban en UN campo; desde la v0.47.0 son 15 (los de las Zonas 6 a 10) y, con el emoji propio de cada uno (~45 caracteres por renglón), ya no
+// caben en 1.024: la pantalla los reparte en dos partes PAREJAS una al lado de la otra (la segunda sin título) y la Comida baja a la fila de abajo. Las dos formas son el diseño; lo que
+// no puede pasar es que los drops pisen la Madera o el Mineral o que algún campo deje de ser en línea.
+bool dropsInOneField = bigDropFields.Count == 1;
+Check(bigLeft[0].Name.Contains("Madera") && bigRight[0].Name.Contains("Mineral") && bigLeft[1].Name.Contains("Drops") && invBig.Fields.All(f => f.Inline)
+      && (dropsInOneField ? bigRight[1].Name.Contains("Consumibles") : bigRight[1].Name == ZW && invBig.Fields.Any(f => f.Name.Contains("Consumibles"))),
+    $"con todo: Madera | Mineral y debajo Drops ({(dropsInOneField ? "en un campo, al lado la Comida con las Cajas" : $"repartidos en {bigDropFields.Count} campos lado a lado, la Comida en la fila de abajo")}) [{string.Join(" | ", invBig.Fields.Select(f => f.Name == ZW ? "·" : f.Name))}]");
 int bigDropLines = bigDropFields.Sum(f => f.Value.Split('\n').Length);
 Check(invBig.Length <= 6000 && invBig.Fields.All(f => f.Value.Length <= 1024) && bigDropLines == materialCount && bigDropFields.Skip(1).All(f => f.Name == ZW), $"con todo el catálogo a 9.999 entra ({invBig.Length} de 6000 caracteres), los {materialCount} drops van uno por renglón repartidos en {bigDropFields.Count} campos, los de abajo sin título");
 await db.ExecuteAsync("DELETE FROM inventory WHERE discord_id = @id", new { id = (long)U });

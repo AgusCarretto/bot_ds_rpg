@@ -283,6 +283,13 @@ var fromDungeon = await starter.PrepareAsadorFromDungeonAsync(Id(15), 7, arrival
 var stats7 = AsadorScaling.StatsFor(7)!.Value;
 Check(fromDungeon.State is { PlayerCurrentHp: 50, PlayerStartingHp: 50 } st15 && st15.MonsterMaxHp >= stats7.MinHp && st15.MonsterMaxHp <= stats7.MaxHp, "arranca con la vida con la que salió de la mazmorra (aunque haya comido afuera mientras tanto) y con los números de su zona tope");
 Check(AsadorScaling.FlareDamage(100) == 175 && AsadorScaling.StatsFor(5) is null && AsadorScaling.StatsFor(11) is null, "la llamarada pega ×1,75; fuera de las zonas 6 a 10, el Asador de siempre");
+// v0.48.1: el dueño lo liquidó sin equipo de la zona ni sudar; la vida del Asador de las zonas 6 a 10 sube por un solo multiplicador (el daño no se toca).
+var base6 = AsadorScaling.BaseStatsFor(6)!.Value;
+var scaled6 = AsadorScaling.StatsFor(6)!.Value;
+int Scaled(int hp) => (int)Math.Round(hp * AsadorScaling.HpMultiplier, MidpointRounding.AwayFromZero);
+Check(AsadorScaling.HpMultiplier > 1.0 && scaled6.MinHp == Scaled(base6.MinHp) && scaled6.MaxHp == Scaled(base6.MaxHp) && scaled6.MaxHp > base6.MaxHp && scaled6.MinDamage == base6.MinDamage && scaled6.MaxDamage == base6.MaxDamage && AsadorScaling.BaseStatsFor(5) is null,
+    $"v0.48.1: la vida del Asador de la zona tope 6 sale de la tabla × {AsadorScaling.HpMultiplier:0.0#} ({base6.MinHp}–{base6.MaxHp} → {scaled6.MinHp}–{scaled6.MaxHp}) y el daño queda igual");
+Check(Enumerable.Range(6, 5).All(r => AsadorScaling.StatsFor(r)!.Value.MaxHp > AsadorScaling.BaseStatsFor(r)!.Value.MaxHp), "y lo mismo en las cinco zonas tope (6 a 10)");
 await Make(16, 40, 5, 6, 5);
 await db.ExecuteAsync("UPDATE users SET in_gate = true WHERE discord_id = @id", new { id = Base + 16 });
 var oldGate = await starter.PrepareBossAsync(Id(16));
