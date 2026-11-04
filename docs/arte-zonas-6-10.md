@@ -78,9 +78,9 @@ Ejemplo: **Espada de Sal**, emoji `espada_sal`:
 
 Nombres de emoji: `espada_sal`, `dagas_sal`, `arco_sal`, `grimorio_sal`, `amuleto_sal`, y lo mismo con `_humo`, `_brea`, `_hielo`, `_rayo`. Cada zona va un poco más brillante que la anterior: si querés que se note la escalera, sumale a las de la 9 y la 10 `legendary, intricate details`.
 
-## Pesca (v0.48.0): 3 peces y 2 cañas
+## Pesca (v0.48.0): 3 peces y 2 cañas — ✅ cargados el 2026-11-04
 
-Hoy salen con un emoji común de relleno (🐟 🐠 👑 los peces, 🎣 las cañas) y andan bien así. Cuando se suba el arte: se agregan los `UPDATE` por nombre de ítem en `Database/update_item_emojis.sql`, se corre `Database/apply_emojis.sql` en Railway y se sacan los cinco nombres de la lista `provisional` de `tests/portraittest/Program.cs`.
+Salieron con un emoji común de relleno (🐟 🐠 👑 los peces, 🎣 las cañas) y ya tienen el arte del dueño en `Database/update_item_emojis.sql`: `fish_mojarra`, `fish_dorado`, `fish_surubi`, `caa_hierro` y `caa_escoria` (sin la eñe: el portal usa el nombre del archivo). Los prompts quedan por si hay que rehacer alguno.
 
 Estas cinco usan el estilo que prefiere el dueño desde el 2026-10-28 (ilustración limpia, **no pixel art**, **fondo blanco liso** para recortarlo después; las bases de arriba piden fondo transparente: si Bing lo dibuja raro, usá esta). Subirlas a 128×128 con el **nombre de emoji** de la tabla.
 

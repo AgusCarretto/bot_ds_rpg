@@ -157,5 +157,13 @@ UPDATE items SET emoji = '<:gota_brea:1567541430342262855>' WHERE name = 'Gota d
 UPDATE items SET emoji = '<:escama_hielo1:1567541998032785509>' WHERE name = 'Escama de Hielo';
 UPDATE items SET emoji = '<:pluma_rayo:1567541428664402042>' WHERE name = 'Pluma de Rayo';
 
+-- 🎣 La pesca (v0.48.0): los 3 peces y las 2 cañas del Carpintero, cargados el 2026-11-04 (add_fishing.sql los crea con un unicode de relleno 🐟 🐠 👑 🎣 que esto reemplaza). Los nombres son los que
+-- el dueño subió al portal: "caa_hierro" y "caa_escoria" salieron sin la eñe (el portal usa el nombre del archivo).
+UPDATE items SET emoji = '<:fish_mojarra:1567545577200164935>' WHERE name = 'Mojarra';
+UPDATE items SET emoji = '<:fish_dorado:1567545575740539021>' WHERE name = 'Dorado';
+UPDATE items SET emoji = '<:fish_surubi:1567545574247366839>' WHERE name = 'Surubí';
+UPDATE items SET emoji = '<:caa_hierro:1567545572280242257>' WHERE name = 'Caña de Hierro Forjado';
+UPDATE items SET emoji = '<:caa_escoria:1567545570833334322>' WHERE name = 'Caña de Escoria Templada';
+
 -- Chequeo rápido: cuántos ítems totales todavía están en NULL, por tipo.
 -- SELECT type, COUNT(*) FROM items WHERE emoji IS NULL GROUP BY type ORDER BY type;

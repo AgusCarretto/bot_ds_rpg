@@ -130,7 +130,7 @@ foreach (var rarity in new[] { "Común", "Raro", "Épico" })
 Check(fishItems.Count == 3 && fishItems["Común"].Name == "Mojarra" && fishItems["Raro"].Name == "Dorado" && fishItems["Épico"].Name == "Surubí" && (await itemRepo.GetRandomByTypeAndRarityAsync("Pescado", "Legendario")) is null,
     "hay exactamente 3 peces: Mojarra (Común), Dorado (Raro) y Surubí (Épico), y ninguno Legendario");
 Check(fishItems["Común"].SellPrice == 2 && fishItems["Raro"].SellPrice == 10 && fishItems["Épico"].SellPrice == 30 && fishItems.Values.All(i => !string.IsNullOrEmpty(i.Emoji)),
-    "se venden a 2 / 10 / 30 (como Pino, Roble y Nogal) y ya tienen un emoji provisorio");
+    "se venden a 2 / 10 / 30 (como Pino, Roble y Nogal) y nunca salen sin emoji");
 var rod3 = await recipesRepo.GetByResultItemNameAsync(RodZ3);
 var rod5 = await recipesRepo.GetByResultItemNameAsync(RodZ5);
 Check(rod3 is not null && rod5 is not null && rod3.GoldCost == 0 && rod5.GoldCost == 0 && rod3.Ingredients.Count == 4 && rod5.Ingredients.Count == 4 && rod3.ResultItem.StatValue == 2 && rod5.ResultItem.StatValue == 3
