@@ -2576,7 +2576,7 @@
   "Fallos seguidos con un amigo: **{0}/{1}** · solo: **{2}/{3}**. Al llegar al tope, el siguiente intento de esa forma sale **seguro**: los dos contadores van por separado.": "Failures in a row with a friend: **{0}/{1}** · alone: **{2}/{3}**. When one reaches its cap, the next attempt that way is **guaranteed**: the two counters are separate.",
   "Fallos seguidos criando solo: **{0}/{1}**; con {2} fallos seguidos, el siguiente intento solo sale **seguro** (los de la cría con un amigo se cuentan aparte).{3}\n": "Failures in a row breeding alone: **{0}/{1}**; after {2} failures in a row, the next solo attempt is **guaranteed** (the ones breeding with a friend are counted separately).{3}\n",
   "🌍 **Jefe mundial**: anotado ✅ — se pelea en {0}": "🌍 **World boss**: joined ✅ — the fight is in {0}",
-  "🌍 **Jefe mundial**: **¡Listo!** ✅ Anotate con **/miniboss** (se pelea en {0})": "🌍 **World boss**: **Ready!** ✅ Join with **/miniboss** (the fight is in {0})",
+  "🌍 **Jefe mundial**: **¡todavía no te anotaste!** ⚠️ Se pelea en {0}: **/miniboss**": "🌍 **World boss**: **you haven't signed up yet!** ⚠️ The fight is in {0}: **/miniboss**",
   "El jefe mundial": "The world boss",
   "el jefe del día que pelean todos juntos a la medianoche": "the boss of the day that everybody fights together at midnight",
   "🌍 /miniboss (el jefe mundial)": "🌍 /miniboss (the world boss)",
