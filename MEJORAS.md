@@ -79,7 +79,7 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
   - **El Asador** se calibró para ~30 % de derrota llegando con el 80 % de la vida y el equipo de la zona tope (nivel mínimo + 3), sin comida; la llamarada es 20 % de los turnos ×1,75. Perder contra el Asador cobra la penalidad de muerte como cualquier jefe y obliga a hacer la mazmorra de nuevo (con otra Reliquia).
   - **/zonas** ya anuncia la próxima zona («se abre con el Fuego Nuevo 8») a quien tiene al menos un Fuego Nuevo.
 - **Abierto (del dueño)**: qué hacer con el Trinche y la Brasa desde el FN 5 (no son obligatorios desde la Zona 6). Y lo que venga en el FN 20.
-- **Falta**: arte (emojis de los 5 drops, 5 Reliquias, 25 piezas de equipo y 10 monstruos; hasta que llegue, add_zones_6_10.sql les pone un unicode de relleno —🧂 🦷 🌑 🧊 🪶, 🗝️, 🗡️ 🔪 🏹 📖 📿— sin pisar uno cargado, y los monstruos van sin cara en la pelea; los prompts están en docs/arte-zonas-6-10.md), capítulos de historia, logros y títulos de las mazmorras, medir el ritmo de las recetas nuevas con datos reales.
+- **Falta**: arte (emojis de los 5 drops, 5 Reliquias y 25 piezas de equipo; las caras de los 10 monstruos ya están cargadas desde el 2026-11-04 en `update_monster_portraits.sql`; hasta que llegue el resto, add_zones_6_10.sql les pone un unicode de relleno —🧂 🦷 🌑 🧊 🪶, 🗝️, 🗡️ 🔪 🏹 📖 📿— sin pisar uno cargado; los prompts están en docs/arte-zonas-6-10.md), capítulos de historia, logros y títulos de las mazmorras, medir el ritmo de las recetas nuevas con datos reales.
 
 ## Cría del dragón, jefe mundial, blackjack y Fuego Nuevo (v0.46.0, 2026-11-01)
 

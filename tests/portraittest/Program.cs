@@ -40,6 +40,24 @@ Check(all.All(m => ItemDisplay.ImageUrl(m.Monster.Portrait) is { } u && u.Starts
 Check(all.Select(m => m.Monster.Portrait).Distinct().Count() == 20, "ninguna cara está repetida");
 Check(all.All(m => !string.IsNullOrEmpty(m.Monster.Emoji)), "el emoji de texto de cada monstruo sigue ahí (los mensajes lo usan)");
 
+// 2026-11-04: las caras de los 10 monstruos de las zonas 6 a 10 (arte del dueño, con su escenario de fondo). Los nombres de emoji son los que él subió al portal
+// (sí, "yaguarate" y "Sombra_del_Monte" con mayúscula: el portal se llama como el archivo).
+Console.WriteLine("\n== 1b. Las caras de los 10 monstruos de las Zonas 6 a 10 ==");
+var upperFaces = new Dictionary<string, string>
+{
+    ["Guanaco de Sal"] = "guanaco_de_sal:1567537057176354867", ["Coloso de Sal"] = "coloso_de_sal:1567537058703081634",
+    ["Yaguareté de Humo"] = "yaguarate_de_humo:1567537060896702526", ["Sombra del Monte"] = "Sombra_del_Monte:1567537055456567397",
+    ["Sapo de Brea"] = "sapo_de_brea:1567537053690892418", ["Bestia del Pantano"] = "bestia_del_pantano:1567537051354534078",
+    ["Lobo de Hielo"] = "lobo_de_hielo:1567537049798713497", ["Gigante Escarchado"] = "gigante_de_hielo:1567537047957143712",
+    ["Cóndor del Rayo"] = "condor_rayo:1567537046380224552", ["Titán de Tormenta"] = "titan_de_la_tormenta:1567537044723343390",
+};
+var upper = (await monsterRepo.GetAllAsync()).Where(m => m.ZoneId >= 6).ToList();
+Check(upper.Count == 10, $"hay {upper.Count} monstruos en las zonas 6 a 10 (cacería + viaje en cada una, sin jefe)");
+var wrongUpper = upperFaces.Where(kv => upper.Count(m => m.Monster.Name == kv.Key && m.Monster.Portrait == $"<:{kv.Value}>") != 1).Select(kv => kv.Key).ToList();
+Check(wrongUpper.Count == 0, $"cada uno tiene SU cara ({(wrongUpper.Count == 0 ? "10 de 10" : "mal: " + string.Join(", ", wrongUpper))})");
+Check(upper.All(m => ItemDisplay.ImageUrl(m.Monster.Portrait) is { } u && u.StartsWith("https://cdn.discordapp.com/emojis/")), "y todas dan una URL de imagen para la miniatura");
+Check(all.Concat(upper).Select(m => m.Monster.Portrait).Distinct().Count() == 30, "ninguna de las 30 caras está repetida");
+
 Console.WriteLine("\n== 2. Las 4 Maderas son emojis de la aplicación ==");
 foreach (var (name, code) in new[] { ("Madera de Pino", "madera_pino:1556678837482422392"), ("Madera de Roble", "madera_roble:1556678835339006023"), ("Madera de Nogal", "madera_nogal:1556678833569275914"), ("Madera de Ébano", "madera_ebano:1556678831841091715") })
 {

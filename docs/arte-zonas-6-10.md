@@ -4,7 +4,9 @@ Cada imagen se sube al Developer Portal (la aplicación del bot → Emojis) con 
 
 Consejos: pedí 4 variantes y elegí la que se lea mejor en chiquito (Discord la muestra a 22 px en el texto). Recortala cuadrada y, en los ítems, si podés sacale el fondo antes de subirla (los monstruos NO: llevan su escenario, no se lo saques).
 
-## Monstruos (prioridad)
+## Monstruos (prioridad) — ✅ cargados el 2026-11-04
+
+Las 10 caras ya están conectadas en `Database/update_monster_portraits.sql` con los nombres de emoji que subió el dueño (`guanaco_de_sal`, `coloso_de_sal`, `yaguarate_de_humo`, `Sombra_del_Monte`, `sapo_de_brea`, `bestia_del_pantano`, `lobo_de_hielo`, `gigante_de_hielo`, `condor_rayo`, `titan_de_la_tormenta`; no coinciden con la columna «Emoji» de abajo y no hace falta cambiarlos). Los prompts quedan acá por si hay que rehacer alguno: para reemplazar una cara se sube la nueva, se edita su línea en el script y se corre `apply_emojis.sql`.
 
 Los monstruos llevan **fondo con su escenario**, como los de las zonas 1 a 5 (el volcán, la mina con el farol, el trigal): cada prompt trae el suyo al final, después de `background:`. Si la IA te devuelve el monstruo sin fondo, repetí el escenario y agregá `fully painted background, no white or empty areas`. La imagen sale apaisada (3:2) con el monstruo en el centro, para recortarla cuadrada.
 
