@@ -38,6 +38,10 @@ public interface IUserRepository
     // por eso el orden real es por nivel primero.
     Task<IReadOnlyList<LeaderboardEntry>> GetTopPlayersAsync(int limit, CancellationToken cancellationToken = default);
 
+    // El puesto de un jugador en ese mismo ranking (1 = el primero), o null si no tiene cuenta. Usa EXACTAMENTE el orden de GetTopPlayersAsync (Fuego Nuevo, nivel, XP y, si empatan, el id), así el «Top: #N»
+    // del perfil es el mismo número que se ve en /leaderboard.
+    Task<int?> GetRankAsync(ulong discordId, CancellationToken cancellationToken = default);
+
     // Aplica el delta neto de HP (daño - curación) acumulado en memoria durante un combate por
     // turnos (huida, derrota o timeout: ver CombatState.PlayerStartingHp) sobre el HP REAL más
     // reciente en base, no sobre un snapshot — así una curación con /use a mitad de combate no se

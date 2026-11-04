@@ -352,14 +352,14 @@ await userRepo.GetOrCreateUserAsync(P8);
 await db.ExecuteAsync("UPDATE users SET class = 'Ninja', level = 13, xp = 1646, has_bank = true, bank_gold = 156635, dust = 5, daily_streak = 15, gold = 32013, weapon_id = NULL, amulet_id = NULL WHERE discord_id = @id", new { id = (long)P8 });
 async Task<Embed> ProfileIn(string lang) { using (Loc.Use(lang)) { return await GameModule.BuildProfileEmbedAsync(userRepo, itemRepo8, zoneRepo8, buffRepo8, P8, "T", "https://example.com/a.png"); } }
 var profEs = await ProfileIn("es"); var profEn = await ProfileIn("en");
-Check(profEs.Fields.Select(f => f.Name).SequenceEqual(["XP", "Vida", Zw]) && profEs.Description.Contains("**Zona:**") && ProfileProbe.Line(profEs, "Oro") != string.Empty && profEs.Footer!.Value.Text == "Asado y Acero RPG • Preparando las brasas...",
-    "el perfil en español es el de siempre (campos XP, Vida y el bloque, «Zona:», «Oro:», el pie)");
+Check(profEs.Fields.Select(f => f.Name).SequenceEqual(["XP", "Vida", Zw]) && profEs.Description.Contains("**Zona:**") && ProfileProbe.Line(profEs, "Oro") != string.Empty && System.Text.RegularExpressions.Regex.IsMatch(profEs.Footer!.Value.Text, @"^Top: #[\d.]+$"),
+    "el perfil en español es el de siempre (campos XP, Vida y el bloque, «Zona:», «Oro:») y el pie es el puesto del ranking («Top: #N», desde la v0.48.4)");
 string profEnText = LeakCheck.AllText(profEn);
 Check(profEn.Fields.Select(f => f.Name).SequenceEqual(["XP", "Health", Zw]) && profEn.Description.Contains("**Zone:**") && profEn.Description.Contains("(max. ") && profEn.Description.Contains("Level"), $"el perfil en inglés: campos XP / Health, «Zone:» y «Level» ({profEn.Description.Replace("\n", " | ")})");
 string statsEn = profEn.Fields[2].Value;
 Check(statsEn.Contains("**ATK:**") && statsEn.Contains("**DEF:**") && statsEn.Contains("(no weapon)") && statsEn.Contains("(no amulet)") && statsEn.Contains("**Gold:** 32,013") && statsEn.Contains("**Bank:** 156,635") && statsEn.Contains("**Dust:** 5") && statsEn.Contains("**Streak:** day 15"),
     $"el bloque de números en inglés, con la coma de miles ({statsEn.Replace("\n", " | ")})");
-Check(LeakCheck.NoSpanish(profEnText, allowedNames).Ok && LeakCheck.FitsDiscord(profEn) && profEn.Footer!.Value.Text.Contains("Asado y Acero RPG") && !profEn.Footer!.Value.Text.Contains("brasas"), $"y sin español colado ({LeakCheck.NoSpanish(profEnText, allowedNames).Found})");
+Check(LeakCheck.NoSpanish(profEnText, allowedNames).Ok && LeakCheck.FitsDiscord(profEn) && System.Text.RegularExpressions.Regex.IsMatch(profEn.Footer!.Value.Text, @"^Top: #[\d,]+$"), $"y sin español colado ({LeakCheck.NoSpanish(profEnText, allowedNames).Found})");
 string notRegisteredEn; using (Loc.Use("en")) { notRegisteredEn = GameModule.BuildNotRegisteredMessage("Pepe"); }
 Check(notRegisteredEn.Contains("hasn't started") && notRegisteredEn.Contains("`/start`") && LeakCheck.NoSpanish(notRegisteredEn, allowedNames).Ok && GameModule.BuildNotRegisteredMessage("Pepe").Contains("todavía no arrancó"), "«todavía no arrancó su aventura» en los dos idiomas");
 

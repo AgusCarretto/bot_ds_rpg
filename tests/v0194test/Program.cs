@@ -140,6 +140,33 @@ UiEmojis.Set([]);
 board = await LeaderboardModule.BuildLeaderboardEmbedAsync(users);
 Check(board.Description.Contains($"<@{U}> — 🔥 FN **996** · Nivel **41** (Guerrero)"), "sin emojis subidos el ranking queda como en la v0.19.3");
 
+// El puesto en el ranking, en el pie del perfil (el dueño, 2026-11-04: «en el perfil solamente el ícono de Asado y Acero y rank: #1»; «Top» sirve igual en los dos idiomas).
+// El orden es el MISMO que el de /leaderboard: Fuego Nuevo, nivel, XP y, si empatan, el id.
+const ulong T1 = 999000000000094003UL, T2 = 999000000000094004UL, GHOST = 999000000000094099UL;
+foreach (var id in new[] { T1, T2, GHOST })
+{
+    await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)id });
+}
+foreach (var id in new[] { T1, T2 }) await users.GetOrCreateUserAsync(id);
+await db.ExecuteAsync("UPDATE users SET level = 7, xp = 50, fuego_nuevo = 0 WHERE discord_id IN (@a, @b)", new { a = (long)T1, b = (long)T2 });
+int? rankU = await users.GetRankAsync(U), rankV = await users.GetRankAsync(V), rankT1 = await users.GetRankAsync(T1), rankT2 = await users.GetRankAsync(T2);
+Check(rankU is >= 1 && rankV > rankU && await users.GetRankAsync(GHOST) is null, $"el puesto: U (FN 996) va antes que V (FN 0, nivel 7) y quien no existe no tiene puesto ({rankU} / {rankV})");
+Check(rankT1 is not null && rankT2 == rankT1 + 1, $"con el mismo FN, nivel y XP desempata el id (el menor primero): {rankT1} y {rankT2}");
+var topList = (await users.GetTopPlayersAsync(100000)).ToList();
+Check(topList.FindIndex(e => e.DiscordId == (long)U) + 1 == rankU && topList.FindIndex(e => e.DiscordId == (long)T2) + 1 == rankT2, "el puesto del perfil es el mismo que muestra la lista de /leaderboard");
+
+BotIdentity.AvatarUrl = "https://example.com/bot.png";
+var withRank = await Profile(U);
+Check(withRank.Footer?.Text == $"Top: #{GameHistory.Number(rankU!.Value)}" && withRank.Footer?.IconUrl == "https://example.com/bot.png" && withRank.Timestamp is not null,
+    $"el pie del perfil es el ícono de Asado y Acero y «Top: #N» (y la hora sigue): «{withRank.Footer?.Text}»");
+BotIdentity.AvatarUrl = null;
+var noIcon = await Profile(U);
+Check(noIcon.Footer?.Text == $"Top: #{GameHistory.Number(rankU.Value)}" && noIcon.Footer?.IconUrl is null, "si todavía no se conoce el ícono del bot, el pie lleva solo el texto");
+using (Loc.Use("en"))
+{
+    Check((await Profile(U)).Footer?.Text == $"Top: #{GameHistory.Number(rankU.Value)}", "en inglés el pie dice lo mismo: «Top: #N»");
+}
+
 // La subida de nivel.
 var zones = (await zonesRepo.GetAllAsync()).ToList();
 var cardPlain = LevelUpCard.Compose(U, 7, 1, zones, new Random(1));
@@ -148,7 +175,7 @@ UiEmojis.Set(Full());
 var cardRich = LevelUpCard.Compose(U, 7, 1, zones, new Random(1));
 Check(cardRich.Description.Contains($"⬆️ {UiEmojis.Lv} 6  ➜  {UiEmojis.Lv} **7**"), "con el «LV» subido la subida de nivel muestra «<LV> 6 ➜ <LV> 7»");
 
-foreach (var id in new[] { U, V })
+foreach (var id in new[] { U, V, T1, T2 })
 {
     await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)id });
 }
