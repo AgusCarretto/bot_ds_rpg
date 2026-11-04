@@ -214,6 +214,50 @@ Check((await Panel(ADMIN, "delete NOEXISTE9"))!.Contains("No encontré") && (awa
     "borrar uno que no existe lo dice, y quien no es administrador no recibe respuesta ni borra nada");
 Check(evA.Kinds.Count(k => k == GameEventKinds.AdminCode) == 7, "queda el rastro admin_code de editar y borrar");
 
+Console.WriteLine("\n== 8b. «aa code» escrito en un canal contesta por privado (el dueño, 2026-11-04: el canje debe verlo solo quien lo hace) ==");
+// Un texto escrito no puede ser «efímero» como /code: la respuesta va por mensaje directo y en el canal queda un aviso sin nada adentro. Si no se puede escribir por privado, se contesta en el canal pero SIN el nombre del código.
+await codes.CreateAsync(Spec("TESTV37PRIV", null, null, Gold(777), Item("Cajón de Pino", 2)), ADMIN);
+await codes.CreateAsync(Spec("TESTV37PRIV2", null, null, Gold(888)), ADMIN);
+await Player(P1, gold: 0); await Player(P2, gold: 0);
+Task Grab(List<string> into, string? plain, Embed? embed) { into.Add((plain ?? "") + (embed is null ? "" : embed.Title + "\n" + embed.Description)); return Task.CompletedTask; }
+Task ClosedDm(string? plain, Embed? embed) => throw new InvalidOperationException("DM cerrado");
+
+var okReply = await CodeHandler.RedeemAsync(codes, events, P1, "TESTV37PRIV");
+var dm = new List<string>(); var chan = new List<string>();
+await CodeHandler.DeliverTypedAsync(okReply, false, "<@1>", (p, e) => Grab(dm, p, e), (p, e) => Grab(chan, p, e));
+Check(dm.Count == 1 && dm[0].Contains("TESTV37PRIV") && dm[0].Contains("777"), "por privado llega el cartel entero (el código y los premios)");
+Check(chan.Count == 1 && chan[0].Contains("<@1>") && chan[0].Contains("privado") && !chan[0].Contains("TESTV37PRIV") && !chan[0].Contains("777") && !chan[0].Contains("Cajón"), "en el canal queda solo un aviso con la mención: ni el código ni los premios");
+
+var wrongReply = await CodeHandler.RedeemAsync(codes, events, P1, "TESTV37NOEXISTE");
+dm.Clear(); chan.Clear();
+await CodeHandler.DeliverTypedAsync(wrongReply, false, "<@1>", (p, e) => Grab(dm, p, e), (p, e) => Grab(chan, p, e));
+Check(dm.Count == 1 && dm[0].Contains("no existe") && chan.Count == 1 && chan[0].Contains("privado") && !chan[0].Contains("no existe"), "un código equivocado también se contesta por privado: en el canal no se ve ni si acertó ni si no");
+
+var closedReply = await CodeHandler.RedeemAsync(codes, events, P2, "TESTV37PRIV2");
+chan.Clear();
+await CodeHandler.DeliverTypedAsync(closedReply, false, "<@2>", ClosedDm, (p, e) => Grab(chan, p, e));
+Check(chan.Count == 1 && chan[0].Contains("888") && chan[0].Contains("Canjeaste un código") && !chan[0].Contains("TESTV37PRIV2") && chan[0].Contains("<@2>") && chan[0].Contains("/code"),
+    "con los mensajes directos cerrados: se contesta en el canal con los premios (ya se pagaron) pero SIN el nombre del código, y avisa que /code es privado");
+chan.Clear();
+await CodeHandler.DeliverTypedAsync(wrongReply, false, "<@2>", ClosedDm, (p, e) => Grab(chan, p, e));
+Check(chan.Count == 1 && chan[0].Contains("no existe") && !chan[0].Contains("TESTV37NOEXISTE"), "con los mensajes directos cerrados, un error se dice en el canal (sin repetir lo que se escribió)");
+
+dm.Clear(); chan.Clear();
+await CodeHandler.DeliverTypedAsync(okReply, true, "<@1>", (p, e) => Grab(dm, p, e), (p, e) => Grab(chan, p, e));
+Check(dm.Count == 0 && chan.Count == 1 && chan[0].Contains("TESTV37PRIV") && chan[0].Contains("777"), "quien escribe ya en un chat privado con el bot recibe la respuesta ahí mismo (sin mensaje directo de más)");
+
+using (Loc.Use("en"))
+{
+    dm.Clear(); chan.Clear();
+    await CodeHandler.DeliverTypedAsync(okReply, false, "<@1>", (p, e) => Grab(dm, p, e), (p, e) => Grab(chan, p, e));
+    var enClosed = new List<string>();
+    await codes.CreateAsync(Spec("TESTV37PRIV3", null, null, Gold(999)), ADMIN);
+    var enClosedReply = await CodeHandler.RedeemAsync(codes, events, P2, "TESTV37PRIV3");
+    await CodeHandler.DeliverTypedAsync(enClosedReply, false, "<@2>", ClosedDm, (p, e) => Grab(enClosed, p, e));
+    Check(chan[0].Contains("private message") && enClosed[0].Contains("You redeemed a code and got") && LeakCheck.NoSpanish(chan[0] + "\n" + enClosed[0], allowed).Ok,
+        $"en inglés el aviso y la respuesta sin el código salen sin español ({LeakCheck.NoSpanish(chan[0] + "\n" + enClosed[0], allowed).Found})");
+}
+
 Console.WriteLine("\n== 9. Ruteo con Discord.Net de verdad ==");
 var client = new DiscordSocketClient();
 var interactions = new InteractionService(client);
