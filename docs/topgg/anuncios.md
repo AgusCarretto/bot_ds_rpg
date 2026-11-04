@@ -6,6 +6,22 @@ solo. El más nuevo va arriba. Cada anuncio tiene un título y un texto.
 
 ---
 
+## 2026-11-04 — Arte de las zonas nuevas y retoques (v0.48.1)
+
+**Título:** Las zonas 6 a 10 ya tienen cara, y el Asador viene más duro
+
+**Texto:**
+
+🎨 Los **monstruos de las zonas 6 a 10** ya aparecen con su retrato en la pelea, cada uno con el paisaje de su zona de fondo. También estrenan arte los **drops** de esas zonas y los **peces y las cañas** de la pesca.
+
+🔥 El **Asador** que te espera al final de la última mazmorra viene con **más vida**: ahora hay que llegar bien equipado a la zona, no alcanza con pasarla de nivel.
+
+🌍 Si todavía no te anotaste al **jefe mundial**, `/cd` te lo marca con un ⚠️ y te dice cuánto falta para que se pelee.
+
+¿Te gusta el juego? Dejá tu reseña acá en top.gg.
+
+---
+
 ## 2026-11-03 — La pesca (v0.48.0)
 
 **Título:** ¡Llegó la pesca! Un oficio nuevo para recolectar
