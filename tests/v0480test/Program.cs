@@ -309,7 +309,8 @@ Check(slash.Description.Length is > 0 and <= 100 && slash.Parameters.Count == 1 
 Check(interactions.SlashCommands.Single(c => c.Name == "tools").Description.Length <= 100 && interactions.SlashCommands.Single(c => c.Name == "professions").Description.Length <= 100, "las descripciones nuevas de /tools y /professions entran en los 100 caracteres de Discord");
 var texts = new CommandService();
 await texts.AddModuleAsync<TextCommandModule>(sp);
-Check(new[] { "fish", "pescar", "pesca" }.All(a => texts.Search(a) is { IsSuccess: true } f && f.Commands.Count == 1 && f.Commands[0].Command.Name == "fish"), "aa fish / pescar / pesca son el mismo comando y ningún otro lo pisa");
+Check(new[] { "fish", "pescar", "pesca", "f" }.All(a => texts.Search(a) is { IsSuccess: true } f && f.Commands.Count == 1 && f.Commands[0].Command.Name == "fish"), "aa fish / pescar / pesca / f son el mismo comando y ningún otro lo pisa");
+Check(texts.Search("f avanzada") is { IsSuccess: true } fAdv && fAdv.Commands[0].Command.Name == "fish", "aa f avanzada llega al mismo comando (el parámetro modo sigue ahí)");
 Check(!FightLock.IsAllowed("fish"), "en plena pelea /fish queda bloqueado (como todo lo que no es de la pelea)");
 bool built = true; try { ActivatorUtilities.CreateInstance(sp, typeof(GatheringModule)); ActivatorUtilities.CreateInstance(sp, typeof(ToolsModule)); ActivatorUtilities.CreateInstance(sp, typeof(TextCommandModule)); } catch (Exception ex) { built = false; Console.WriteLine("   " + ex.Message); }
 Check(built, "los módulos se construyen con el DI real");

@@ -17,9 +17,9 @@ public partial class TextCommandModule
     [Summary("Miná materiales cercanos (cooldown de 5 minutos). \"aa mine avanzada\" con el oficio Minero al nivel 100.")]
     public Task MineAsync(string modo = "") => GatherAsync(CooldownCatalog.Mine, itemType: "Mineral", modo);
 
-    // "aa fish" / "aa pescar" — misma lógica que GatheringModule.HandleFishAsync (v0.48.0). "aa fish avanzada" es la pesca avanzada del oficio Pescador al nivel 100.
+    // "aa fish" / "aa f" / "aa pescar" — misma lógica que GatheringModule.HandleFishAsync (v0.48.0; el atajo "f" va como "ch" y "m" de los otros dos). "aa fish avanzada" es la pesca avanzada del oficio Pescador al nivel 100.
     [Command("fish")]
-    [Alias("pescar", "pesca")]
+    [Alias("f", "pescar", "pesca")]
     [Summary("Pescá en el río (cooldown de 5 minutos). \"aa fish avanzada\" con el oficio Pescador al nivel 100.")]
     public Task FishAsync(string modo = "") => GatherAsync(CooldownCatalog.Fish, itemType: "Pescado", modo);
 
