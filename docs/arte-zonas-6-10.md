@@ -2,16 +2,16 @@
 
 Cada imagen se sube al Developer Portal (la aplicación del bot → Emojis) con el **nombre de emoji** de la tabla. Cuando estén subidas, el bot las conecta: los ítems en `Database/update_item_emojis.sql` y las caras de los monstruos en `Database/update_monster_portraits.sql` (después se corre `Database/apply_emojis.sql` en Railway).
 
-Consejos: pedí 4 variantes y elegí la que se lea mejor en chiquito (Discord la muestra a 22 px en el texto). Recortala cuadrada y, si podés, sacale el fondo antes de subirla.
+Consejos: pedí 4 variantes y elegí la que se lea mejor en chiquito (Discord la muestra a 22 px en el texto). Todos los prompts piden **fondo blanco liso** (un generador no hace transparencia de verdad): así el recorte es fácil. Recortala cuadrada, sacale el fondo y bajala a 128×128 antes de subirla.
 
 ## Monstruos (prioridad)
 
 Base común (va al principio de cada prompt):
-`A single fantasy RPG monster portrait icon, centered, head and shoulders, facing the viewer, bold clean outlines, vibrant saturated colors, soft rim light, simple dark vignette background, square, game asset, no text, no frame,`
+`A single fantasy RPG monster portrait icon, centered, head and shoulders, facing the viewer, bold clean outlines, vibrant saturated colors, soft rim light, plain solid white background (#FFFFFF), no vignette, no shadow, no gradient, square, game asset, no text, no frame,`
 
 | Emoji | Monstruo | Prompt (después de la base) |
 |---|---|---|
-| `guanaco_sal` | Guanaco de Sal (Zona 6, cacería) | a fierce guanaco made of white salt crystals, crusty salt fur, glowing pale blue eyes, salt flats sparkle around it |
+| `guanaco_sal` | Guanaco de Sal (Zona 6, cacería) | a fierce guanaco made of white salt crystals, crusty salt fur, glowing pale blue eyes, a few small salt sparkles around it |
 | `coloso_sal` | Coloso de Sal (Zona 6, viaje) | a massive golem of stacked white and pink salt crystal blocks, cracked glowing seams, heavy brow, ancient and imposing |
 | `yaguarete_humo` | Yaguareté de Humo (Zona 7, cacería) | a jaguar made of dark grey swirling smoke, spotted pattern drawn in embers, burning orange eyes, wisps of smoke trailing |
 | `sombra_monte` | Sombra del Monte (Zona 7, viaje) | a tall shadow creature from a burning forest, hooded silhouette of black smoke, branches like antlers, two glowing ember eyes |
@@ -19,13 +19,13 @@ Base común (va al principio de cada prompt):
 | `bestia_pantano` | Bestia del Pantano (Zona 8, viaje) | a hulking swamp beast of mud, roots and black tar, moss hanging from its shoulders, sickly green glowing eyes |
 | `lobo_hielo` | Lobo de Hielo (Zona 9, cacería) | a wolf with fur made of ice shards, frost breath, pale cyan glowing eyes, icicles hanging from its jaw |
 | `gigante_escarcha` | Gigante Escarchado (Zona 9, viaje) | a frost giant with blue skin covered in hoarfrost, beard of icicles, cracked ice armor, cold white glowing eyes |
-| `condor_rayo` | Cóndor del Rayo (Zona 10, cacería) | an andean condor with storm-dark feathers, lightning crackling along its wings, electric yellow eyes, storm clouds behind |
+| `condor_rayo` | Cóndor del Rayo (Zona 10, cacería) | an andean condor with storm-dark feathers, lightning crackling along its wings, electric yellow eyes |
 | `titan_tormenta` | Titán de Tormenta (Zona 10, viaje) | a colossal storm titan made of dark thunderclouds, body veined with lightning, crown of electricity, glowing white eyes |
 
 ## Drops (uno por zona)
 
 Base:
-`A single game item icon for a fantasy RPG, centered, bold clean outlines, vibrant colors, soft glow, transparent background, square, no text,`
+`A single game item icon for a fantasy RPG, clean digital illustration (not pixel art), soft rounded edges, bold clean outlines, vibrant saturated colors, plain solid white background (#FFFFFF), no shadow, no gradient, centered and large, square, no text,`
 
 | Emoji | Ítem | Prompt |
 |---|---|---|
@@ -68,7 +68,7 @@ Misma base que los drops. Se arma el prompt con **la pieza + el tema de la zona*
 | 10 | `_rayo` | made of dark storm-forged steel, crackling with yellow lightning, electric glow |
 
 Ejemplo: **Espada de Sal**, emoji `espada_sal`:
-`A single game item icon for a fantasy RPG, centered, bold clean outlines, vibrant colors, soft glow, transparent background, square, no text, a fantasy longsword made of white salt crystal and pale stone, sparkling pink and white highlights`
+`A single game item icon for a fantasy RPG, clean digital illustration (not pixel art), soft rounded edges, bold clean outlines, vibrant saturated colors, plain solid white background (#FFFFFF), no shadow, no gradient, centered and large, square, no text, a fantasy longsword made of white salt crystal and pale stone, sparkling pink and white highlights`
 
 Nombres de emoji: `espada_sal`, `dagas_sal`, `arco_sal`, `grimorio_sal`, `amuleto_sal`, y lo mismo con `_humo`, `_brea`, `_hielo`, `_rayo`. Cada zona va un poco más brillante que la anterior: si querés que se note la escalera, sumale a las de la 9 y la 10 `legendary, intricate details`.
 
@@ -76,10 +76,7 @@ Nombres de emoji: `espada_sal`, `dagas_sal`, `arco_sal`, `grimorio_sal`, `amulet
 
 Hoy salen con un emoji común de relleno (🐟 🐠 👑 los peces, 🎣 las cañas) y andan bien así. Cuando se suba el arte: se agregan los `UPDATE` por nombre de ítem en `Database/update_item_emojis.sql`, se corre `Database/apply_emojis.sql` en Railway y se sacan los cinco nombres de la lista `provisional` de `tests/portraittest/Program.cs`.
 
-Estas cinco usan el estilo que prefiere el dueño desde el 2026-10-28 (ilustración limpia, **no pixel art**, **fondo blanco liso** para recortarlo después; las bases de arriba piden fondo transparente: si Bing lo dibuja raro, usá esta). Subirlas a 128×128 con el **nombre de emoji** de la tabla.
-
-Base:
-`A single game item icon for a fantasy RPG, clean digital illustration (not pixel art), soft rounded edges, bold clean outlines, vibrant saturated colors, plain solid white background (#FFFFFF), no shadow, no gradient, centered and large, square, no text,`
+Misma base que los drops (ilustración limpia, **no pixel art**, **fondo blanco liso**, el estilo que prefiere el dueño desde el 2026-10-28). Subirlas a 128×128 con el **nombre de emoji** de la tabla.
 
 | Emoji | Ítem | Prompt (después de la base) |
 |---|---|---|
