@@ -206,8 +206,26 @@ public class GameModule(
         // /pet (aa pet), /fuegonuevo (aa fn), /blessings (aa bendiciones) y /professions (aa oficios). La habilidad de la clase tampoco (2026-10-23: «eso con aa hab ya se ve»). El perfil queda con
         // lo básico y el número que pelea: el ataque y la defensa siguen mostrando sus extras (🔥 / ✨) en la misma línea, y el título y el color de la bendición Brasa de Color son cosméticos de acá arriba.
 
+        // El pie es el ícono de Asado y Acero y el puesto en el ranking, «Top: #1» (el dueño, 2026-11-04: «en el perfil solamente el ícono de Asado y Acero y rank: #1»; «Top» vale igual en español y en inglés).
+        // Es el mismo número que /leaderboard. Un perfil nunca se cae por esto: si no se puede leer el puesto queda el pie de siempre.
+        int? rank = null;
+        try
+        {
+            rank = await userRepository.GetRankAsync(discordId);
+        }
+        catch (Exception ex)
+        {
+            BotLog.Warn(ex);
+        }
+
+        var footer = new EmbedFooterBuilder().WithText(rank is int place ? $"Top: #{GameHistory.Number(place)}" : Loc.T("Asado y Acero RPG • Preparando las brasas..."));
+        if (BotIdentity.AvatarUrl is { } botIcon)
+        {
+            footer.WithIconUrl(botIcon);
+        }
+
         return embed
-            .WithFooter(Loc.T("Asado y Acero RPG • Preparando las brasas..."))
+            .WithFooter(footer)
             .WithCurrentTimestamp()
             .Build();
     }

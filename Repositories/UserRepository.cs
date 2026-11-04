@@ -145,6 +145,28 @@ public sealed class UserRepository(IDbConnectionFactory connectionFactory) : IUs
         return rows.AsList();
     }
 
+    public async Task<int?> GetRankAsync(ulong discordId, CancellationToken cancellationToken = default)
+    {
+        // 1 + cuántos están ANTES que él con el orden del ranking (Fuego Nuevo, nivel y XP de mayor a menor; si empatan en todo, el id menor va primero). Sin cuenta no hay fila y queda null.
+        const string sql = """
+            SELECT 1 + (
+                SELECT COUNT(*)
+                FROM users o
+                WHERE o.fuego_nuevo > me.fuego_nuevo
+                   OR (o.fuego_nuevo = me.fuego_nuevo AND (o.level > me.level
+                   OR (o.level = me.level AND (o.xp > me.xp
+                   OR (o.xp = me.xp AND o.discord_id < me.discord_id)))))
+            )
+            FROM users me
+            WHERE me.discord_id = @DiscordId;
+            """;
+
+        using IDbConnection connection = connectionFactory.CreateConnection();
+        var command = new CommandDefinition(sql, new { DiscordId = (long)discordId }, cancellationToken: cancellationToken);
+        long? rank = await connection.QuerySingleOrDefaultAsync<long?>(command);
+        return rank is null ? null : (int)Math.Min(rank.Value, int.MaxValue);
+    }
+
     public async Task<User> ApplyCombatHpDeltaAsync(ulong discordId, int hpDelta, CancellationToken cancellationToken = default)
     {
         using DbConnection connection = connectionFactory.CreateConnection();

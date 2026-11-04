@@ -234,6 +234,9 @@ class Program
     {
         Console.WriteLine($"\n[ÉXITO] ¡Asado y Acero RPG ({_client.CurrentUser.Username}) está en línea!");
 
+        // La foto del bot (el ícono de Asado y Acero) para el pie del perfil, junto al «Top: #N» (GameData/BotIdentity.cs). Se vuelve a leer en cada reconexión por si la cambiaron.
+        BotIdentity.AvatarUrl = _client.CurrentUser.GetAvatarUrl(size: 64) ?? _client.CurrentUser.GetDefaultAvatarUrl();
+
         if (_modulesRegistered)
         {
             return;
