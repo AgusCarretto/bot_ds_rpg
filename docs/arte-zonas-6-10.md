@@ -26,7 +26,9 @@ Base común (va al principio de cada prompt):
 | `condor_rayo` | Cóndor del Rayo (Zona 10, cacería) | an andean condor with storm-dark feathers, lightning crackling along its wings, electric yellow eyes, background: a stormy mountain sky with dark thunderclouds and lightning bolts striking behind jagged peaks |
 | `titan_tormenta` | Titán de Tormenta (Zona 10, viaje) | a colossal storm titan made of dark thunderclouds, body veined with lightning, crown of electricity, glowing white eyes, background: a barren rocky plain under a huge thunderstorm with swirling dark clouds and lightning striking the ground in the distance |
 
-## Drops (uno por zona)
+## Drops (uno por zona) — ✅ cargados el 2026-11-04
+
+Los 5 están conectados en `Database/update_item_emojis.sql` con los nombres que subió el dueño: `drop_sal` (Cristal de Sal), `colmillo_humo`, `gota_brea`, `escama_hielo1` (Escama de Hielo) y `pluma_rayo`. Los prompts quedan por si hay que rehacer alguno.
 
 Base:
 `A single game item icon for a fantasy RPG, centered, bold clean outlines, vibrant colors, soft glow, transparent background, square, no text,`

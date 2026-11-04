@@ -117,8 +117,8 @@ var legacy = new[] { "Bombilla de Hierro Maldito", "Botas de Silencio", "Collar 
 await using var rawDb = new Npgsql.NpgsqlConnection(conn);
 await rawDb.OpenAsync();
 var allItems = (await Dapper.SqlMapper.QueryAsync<(string Name, string? Emoji)>(rawDb, "SELECT name, emoji FROM items")).ToList();
-// v0.47.0: lo de las zonas 6 a 10 (sus drops, su equipo y sus Reliquias) todavía no tiene arte.
-var pendingArt = (await Dapper.SqlMapper.QueryAsync<string>(rawDb, "SELECT i.name FROM items i WHERE i.item_id IN (SELECT result_item_id FROM recipes WHERE zone_id BETWEEN 6 AND 10) OR i.item_id IN (SELECT d.item_id FROM monster_drops d JOIN monsters m ON m.monster_id = d.monster_id WHERE m.zone_id BETWEEN 6 AND 10)")).ToHashSet();
+// v0.47.0: lo de las zonas 6 a 10 (su equipo y sus Reliquias: los resultados de sus recetas) todavía no tiene arte. Sus 5 drops SÍ (2026-11-04), así que ya se les exige.
+var pendingArt = (await Dapper.SqlMapper.QueryAsync<string>(rawDb, "SELECT i.name FROM items i WHERE i.item_id IN (SELECT result_item_id FROM recipes WHERE zone_id BETWEEN 6 AND 10)")).ToHashSet();
 // v0.48.0: los peces y las cañas salieron con emojis PROVISORIOS (unicode); el dueño sube el arte propio después. Cuando llegue, sacar el ítem de esta lista.
 var provisional = new[] { "Mojarra", "Dorado", "Surubí", "Caña de Hierro Forjado", "Caña de Escoria Templada" };
 var noArt = allItems.Where(i => !legacy.Contains(i.Name) && !pendingArt.Contains(i.Name) && !provisional.Contains(i.Name) && !System.Text.RegularExpressions.Regex.IsMatch(i.Emoji ?? string.Empty, @"^<a?:[A-Za-z0-9_]+:[0-9]+>$")).Select(i => i.Name).ToList();
@@ -126,12 +126,20 @@ Check(noArt.Count == 0, $"todo ítem que se puede conseguir tiene arte propio (s
 Check(provisional.All(n => allItems.Any(i => i.Name == n && !string.IsNullOrWhiteSpace(i.Emoji))), "y los peces y las cañas, que esperan su arte, al menos tienen un emoji provisorio (nunca salen sin ícono)");
 var nine = new Dictionary<string, string>
 {
-    ["Cofre de Escoria"] = "cofre_escoria:1561758887038820615", ["Brasero del Fogón"] = "brasero:1561758888951418940", ["Huevo de la Pradera"] = "huevo_1:1561758588609888376",
+    ["Cofre de Escoria"] = "cofre_escoria:1562102152090878113", // el dueño rehízo el arte en la v0.46.0 (id nuevo en update_item_emojis.sql) ["Brasero del Fogón"] = "brasero:1561758888951418940", ["Huevo de la Pradera"] = "huevo_1:1561758588609888376",
     ["Huevo del Bosque de Cenizas"] = "huevo_2:1561758586936365086", ["Huevo de las Minas"] = "huevo_3:1561758584994402426", ["Huevo de la Cordillera"] = "huevo_4:1561758583316549642",
     ["Huevo del Cráter"] = "huevo_5:1561758581702008842", ["Huevo del Fogón"] = "huevo_6:1561758579680092312", ["Comida para Mascotas"] = "comida_pets:1561758577952039072",
 };
 Check(nine.All(kv => allItems.FirstOrDefault(i => i.Name == kv.Key).Emoji == $"<:{kv.Value}>"), "los 9 ítems nuevos tienen el código exacto que pasó el dueño (2 cajas, 6 huevos en el orden de las zonas, comida)");
 Check(nine.All(kv => ItemDisplay.ImageUrl(allItems.First(i => i.Name == kv.Key).Emoji) is { } url && url.StartsWith("https://cdn.discordapp.com/emojis/", StringComparison.Ordinal)), "y todos arman su miniatura del CDN");
+// 2026-11-04: los 5 drops de las Zonas 6 a 10, con el nombre de emoji que subió el dueño (el de la sal se llama drop_sal y el del hielo escama_hielo1: el portal les puso el nombre del archivo).
+var drops610 = new Dictionary<string, string>
+{
+    ["Cristal de Sal"] = "drop_sal:1567541433974530118", ["Colmillo de Humo"] = "colmillo_humo:1567541432372301864", ["Gota de Brea"] = "gota_brea:1567541430342262855",
+    ["Escama de Hielo"] = "escama_hielo1:1567541998032785509", ["Pluma de Rayo"] = "pluma_rayo:1567541428664402042",
+};
+Check(drops610.All(kv => allItems.FirstOrDefault(i => i.Name == kv.Key).Emoji == $"<:{kv.Value}>"), "los 5 drops de las Zonas 6 a 10 tienen el código exacto que pasó el dueño");
+Check(drops610.All(kv => ItemDisplay.ImageUrl(allItems.First(i => i.Name == kv.Key).Emoji) is { } url && url.StartsWith("https://cdn.discordapp.com/emojis/", StringComparison.Ordinal)), "y arman su miniatura del CDN");
 Environment.SetEnvironmentVariable("Images__DeepShopkeeper", null);
 var tab = NpcImages.DeepShopkeeper;
 Check(tab is not null && tab.LocalPath is null && tab.Reference == "https://cdn.discordapp.com/emojis/1561756257898209311.png?size=256", $"el Tabernero del Inframundo sale con su foto (el emoji tabernero_deep, a 256 px) sin variable ni archivo ({tab?.Reference})");

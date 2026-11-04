@@ -149,5 +149,13 @@ UPDATE items SET emoji = '<:pico_escoria:1564654461782204427>' WHERE name = 'Pic
 -- 🍖 Comida de Dragón (v0.32.0), cargada el 2026-10-28 (el dueño la subió con el nombre comida_dragon; add_dragon_food.sql la crea con el 🍖 de relleno).
 UPDATE items SET emoji = '<:comida_dragon:1564690547006775446>' WHERE name = 'Comida de Dragón';
 
+-- 🧂🦷🛢️🧊🪶 Los 5 drops de cacería de las Zonas 6 a 10 (add_zones_6_10.sql los crea con un unicode de relleno), cargados el 2026-11-04 con los nombres que el dueño subió al portal (el de la
+-- sal quedó como "drop_sal" y el del hielo como "escama_hielo1"; se dejan tal cual). Faltan las 5 Reliquias y las 25 piezas de equipo (prompts en docs/arte-zonas-6-10.md).
+UPDATE items SET emoji = '<:drop_sal:1567541433974530118>' WHERE name = 'Cristal de Sal';
+UPDATE items SET emoji = '<:colmillo_humo:1567541432372301864>' WHERE name = 'Colmillo de Humo';
+UPDATE items SET emoji = '<:gota_brea:1567541430342262855>' WHERE name = 'Gota de Brea';
+UPDATE items SET emoji = '<:escama_hielo1:1567541998032785509>' WHERE name = 'Escama de Hielo';
+UPDATE items SET emoji = '<:pluma_rayo:1567541428664402042>' WHERE name = 'Pluma de Rayo';
+
 -- Chequeo rápido: cuántos ítems totales todavía están en NULL, por tipo.
 -- SELECT type, COUNT(*) FROM items WHERE emoji IS NULL GROUP BY type ORDER BY type;
