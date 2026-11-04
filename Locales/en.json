@@ -2118,6 +2118,7 @@
   "Llegaste tarde: ya se cerró.": "You are late: it is already closed.",
   "¡Upa! No pude sumarte, intentá de nuevo.": "Oops! I could not add you, try again.",
   "¡Upa! Falló admingive; mirá el registro del servidor.": "Oops! admingive failed; check the server log.",
+  "¡Upa! Falló adminset; mirá el registro del servidor.": "Oops! adminset failed; check the server log.",
   "No entendí: probá **aa bank**, **aa bank open**, **aa bank deposit 500** o **aa bank withdraw 500**.": "I did not understand: try **aa bank**, **aa bank open**, **aa bank deposit 500** or **aa bank withdraw 500**.",
   "Blackjack: empezá con **aa bj <apuesta>** (por ejemplo `aa bj 10k`, `aa bj 1m` o `aa bj all`). Después **pedís**, **te plantás** o **doblás** con los botones, o con `aa bj hit` / `aa bj stand` / `aa bj double`.": "Blackjack: start with **aa bj <bet>** (for example `aa bj 10k`, `aa bj 1m` or `aa bj all`). Then you **hit**, **stand** or **double** with the buttons, or with `aa bj hit` / `aa bj stand` / `aa bj double`.",
   "¡Upa! Falló admincode; mirá el registro del servidor (¿corriste add_redeem_codes.sql?).": "Oops! admincode failed; check the server log (did you run add_redeem_codes.sql?).",

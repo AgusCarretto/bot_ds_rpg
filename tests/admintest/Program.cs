@@ -152,6 +152,77 @@ var slashNames = interactions.SlashCommands.Select(c => c.Name).ToList();
 Check(found.IsSuccess && found.Commands.All(c => c.Command.Name == "admingive") && new[] { "admin-give", "admindar" }.All(a => texts.Search(a + " gold 1m").IsSuccess), "«aa admingive» (y sus alias) existe en CommandService");
 Check(texts.Commands.Single(c => c.Name == "admingive").Summary is null && !FightLock.IsAllowed("admingive") && !slashNames.Any(n => n.Contains("admin", StringComparison.OrdinalIgnoreCase)), "no tiene resumen ni versión de barra (no figura en ninguna lista) y no vale en plena pelea");
 
+// ---------------------------------------------------------------------------------------------------------------------------------------------
+// «aa adminset» (v0.48.1): el administrador le fija el TIER o el NIVEL de entrenamiento del dragón a un jugador (para arreglar un dragón trabado o probar la cría).
+Console.WriteLine("\n== 5. aa adminset dragon tier|level ==");
+Task<string?> Set(ulong actor, string args, IAdminAccess? who = null) => AdminSetHandler.ExecuteAsync(who ?? access, users, adminRepo, events, actor, args);
+async Task<(int Tier, int Level, int Fail, int SoloFail, string Kind)> DragonOf(ulong id) =>
+    await db.QuerySingleAsync<(int Tier, int Level, int Fail, int SoloFail, string Kind)>("SELECT tier AS Tier, level AS Level, fail_streak AS Fail, solo_fail_streak AS SoloFail, kind AS Kind FROM player_dragons WHERE discord_id = @id", new { id = (long)id });
+
+var s1 = AdminSet.Parse("dragon tier 5");
+Check(s1.Request is { Kind: AdminSetKind.DragonTier, Value: 5, TargetId: null }, "«dragon tier 5» = tier 5, a sí mismo");
+var s2 = AdminSet.Parse($"dragón nivel 40 <@{P1}>");
+Check(s2.Request is { Kind: AdminSetKind.DragonLevel, Value: 40 } s2r && s2r.TargetId == P1, "«dragón nivel 40 @alguien» = nivel 40 de ese jugador (con tilde y en español)");
+Check(AdminSet.Parse("dragon settier 3").Request is { Kind: AdminSetKind.DragonTier, Value: 3 } && AdminSet.Parse("DRAGON SetLevel 12").Request is { Kind: AdminSetKind.DragonLevel, Value: 12 } && AdminSet.Parse($"<@!{P2}> dragon tier 10").Request is { Value: 10 } s3r && s3r.TargetId == P2,
+    "los sinónimos (settier, setlevel), las mayúsculas y la mención antes del texto (con o sin «!»)");
+Check(AdminSet.Parse("dragon tier 1").Request is { Value: 1 } && AdminSet.Parse("dragon tier 10").Request is { Value: 10 } && AdminSet.Parse("dragon level 0").Request is { Value: 0 } && AdminSet.Parse("dragon level 100").Request is { Value: 100 },
+    "los extremos que valen: tier 1 y 10, nivel 0 y 100");
+var badSets = new[] { "", "dragon", "dragon tier", "dragon tier 0", "dragon tier 11", "dragon tier -1", "dragon tier x", "dragon tier 5.5", "dragon tier 5k", "dragon level 101", "dragon level -1", "dragon 5", "dragon tier 5 6", "caballo tier 5", "dragon ritmo 5", $"dragon tier 5 <@{P1}> <@{P2}>" };
+Check(badSets.All(b => AdminSet.Parse(b).Request is null && !string.IsNullOrEmpty(AdminSet.Parse(b).Error)), "lo que no se entiende (nada, sin verbo, sin número, fuera de 1-10 / 0-100, decimales, «5k», sobra algo, otra criatura, dos destinos) se rechaza diciendo por qué");
+Check(AdminSet.Parse("").Error == AdminSet.Usage && AdminSet.Usage.Contains("aa adminset dragon tier") && AdminSet.Usage.Contains("aa adminset dragon level"), "sin nada muestra cómo se usa");
+
+await Clean();
+await Player(ADMIN); await Player(P1); await Player(P2);
+await db.ExecuteAsync("INSERT INTO player_dragons (discord_id, kind, tier, level, fail_streak, solo_fail_streak) VALUES (@a, 'oro', 4, 18, 5, 7), (@b, 'fuerza', 3, 30, 2, 9)", new { a = (long)P1, b = (long)ADMIN });
+
+var denySet = await Set(OUTSIDER, $"dragon tier 10 <@{P1}>");
+Check(denySet is null && (await DragonOf(P1)) == (4, 18, 5, 7, "oro"), "un NO administrador no recibe respuesta y no cambia nada");
+var offSet = await Set(ADMIN, $"dragon tier 10 <@{P1}>", new AdminAccess(null));
+Check(offSet is not null && offSet.Contains("Admin__UserIds") && (await DragonOf(P1)) == (4, 18, 5, 7, "oro"), "sin administradores configurados explica qué variable falta y tampoco cambia nada");
+
+var up = await Set(ADMIN, $"dragon tier 7 <@{P1}>");
+Check(up is not null && up.Contains($"<@{P1}>") && up.Contains("7") && (await DragonOf(P1)) == (7, 18, 0, 0, "oro"), "subir el tier: queda en 7, el nivel de entrenamiento (18, entra en el tope de 70) se queda, los DOS contadores de piedad vuelven a 0 y el tipo no se toca");
+var down = await Set(ADMIN, $"dragon tier 1 <@{P1}>");
+Check(down is not null && down.Contains("recort") && (await DragonOf(P1)) == (1, 10, 0, 0, "oro"), "bajar el tier recorta el nivel al tope del tier nuevo (tier 1 = nivel 10) y el mensaje lo avisa");
+var lvlOver = await Set(ADMIN, $"dragon level 11 <@{P1}>");
+Check(lvlOver is not null && lvlOver.Contains("10") && lvlOver.Contains("tope") && (await DragonOf(P1)).Level == 10, "un nivel por encima del tope del tier actual se rechaza diciendo cuál es el tope (no recorta en silencio)");
+var lvlOk = await Set(ADMIN, $"dragon level 4 <@{P1}>");
+Check(lvlOk is not null && (await DragonOf(P1)).Level == 4 && (await DragonOf(P1)).Tier == 1, "un nivel que entra se fija (4) y el tier no cambia");
+var lvlZero = await Set(ADMIN, $"dragon level 0 <@{P1}>");
+Check(lvlZero is not null && (await DragonOf(P1)).Level == 0, "el nivel 0 también vale (dragón sin entrenar)");
+await Set(ADMIN, $"dragon tier 10 <@{P1}>");
+var lvlMax = await Set(ADMIN, $"dragon level 100 <@{P1}>");
+Check(lvlMax is not null && (await DragonOf(P1)) == (10, 100, 0, 0, "oro"), "tier 10 admite el nivel 100");
+
+var selfSet = await Set(ADMIN, "dragon tier 6");
+Check(selfSet is not null && !selfSet.Contains("<@" + P1) && (await DragonOf(ADMIN)) == (6, 30, 0, 0, "fuerza"), "sin mención se lo fija a sí mismo (tier 6; el nivel 30 entra en el tope de 60)");
+
+var noDragon = await Set(ADMIN, $"dragon tier 5 <@{P2}>");
+Check(noDragon is not null && noDragon.Contains("no tiene dragón") && await db.ExecuteScalarAsync<int>("SELECT count(*) FROM player_dragons WHERE discord_id = @id", new { id = (long)P2 }) == 0, "a quien no tiene dragón no se lo inventa: lo dice y no crea la fila");
+var noAcc = await Set(ADMIN, $"dragon level 5 <@{NOACC}>");
+Check(noAcc is not null && noAcc.Contains("no tiene cuenta") && await db.ExecuteScalarAsync<int>("SELECT count(*) FROM users WHERE discord_id = @id", new { id = (long)NOACC }) == 0, "a quien no tiene cuenta no le crea ni cuenta ni dragón");
+var badSet = await Set(ADMIN, "dragon tier 11");
+Check(badSet is not null && badSet.Contains("1 a 10") && (await DragonOf(ADMIN)).Tier == 6, "un tier fuera de rango dice que va de 1 a 10 y no toca nada");
+
+var setAudit = (await db.QueryAsync<string>("SELECT detail FROM game_events WHERE discord_id = @id AND kind = 'admin_set' ORDER BY event_id", new { id = (long)P1 })).ToList();
+Check(setAudit.Count == 6 && setAudit.All(a => a.Contains($"por {ADMIN}")) && setAudit[0].StartsWith("dragon tier 4->7") && setAudit.Any(a => a.StartsWith("dragon level 10->4")),
+    $"cada cambio deja un evento admin_set con el antes y el después y quién lo hizo ({setAudit.Count} para P1)");
+Check(await db.ExecuteScalarAsync<int>("SELECT count(*) FROM game_events WHERE kind = 'admin_set' AND discord_id = @id", new { id = (long)OUTSIDER }) == 0, "y el rechazado no deja nada");
+
+// Con ráfagas de cambios de tier y de nivel a la vez, la fila nunca queda rota: el nivel de entrenamiento no pasa del tope de SU tier.
+await Set(ADMIN, $"dragon tier 5 <@{P1}>");
+var burst = Enumerable.Range(0, 24).Select(i => i % 2 == 0 ? Set(ADMIN, $"dragon tier {1 + i % 10} <@{P1}>") : Set(ADMIN, $"dragon level {(i * 7) % 101} <@{P1}>")).ToArray();
+await Task.WhenAll(burst);
+var afterBurst = await DragonOf(P1);
+Check(burst.All(t => t.Result is not null) && afterBurst.Tier is >= 1 and <= 10 && afterBurst.Level >= 0 && afterBurst.Level <= afterBurst.Tier * 10, $"24 cambios a la vez (tier y nivel mezclados): ninguno se pisa y el nivel respeta el tope de su tier (tier {afterBurst.Tier}, nivel {afterBurst.Level})");
+
+var textsSet = new CommandService();
+textsSet.AddTypeReader<IUser>(new GuildUserTypeReader(), true);
+await textsSet.AddModuleAsync<TextCommandModule>(sp);
+Check(textsSet.Search("adminset dragon tier 5").IsSuccess && new[] { "admin-set", "adminponer" }.All(a => textsSet.Search(a + " dragon tier 5").IsSuccess) && textsSet.Commands.Count(c => c.Name == "adminset") == 1,
+    "«aa adminset» (y sus alias) existe en CommandService, una sola vez");
+Check(textsSet.Commands.Single(c => c.Name == "adminset").Summary is null && !FightLock.IsAllowed("adminset"), "no tiene resumen (no figura en ninguna lista) y no vale en plena pelea");
+
 await Clean();
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;

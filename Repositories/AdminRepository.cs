@@ -126,4 +126,95 @@ public sealed class AdminRepository(IDbConnectionFactory connectionFactory) : IA
             new { Pattern = $"%{escaped}%", Limit = Math.Clamp(limit, 1, 25) }, cancellationToken: cancellationToken));
         return names.ToList();
     }
+
+    private sealed class DragonLevels
+    {
+        public int Tier { get; set; }
+        public int Level { get; set; }
+    }
+
+    public async Task<AdminDragonSetResult> SetDragonTierAsync(ulong discordId, int tier, CancellationToken cancellationToken = default)
+    {
+        if (tier is < 1 or > DragonRules.MaxTier)
+        {
+            throw new ArgumentOutOfRangeException(nameof(tier), tier, $"El tier va de 1 a {DragonRules.MaxTier}.");
+        }
+
+        using DbConnection connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        using DbTransaction transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            // La fila del dragón bloqueada hasta el commit: un cambio de tier y uno de nivel a la vez se ordenan, así el nivel nunca queda por encima del tope del tier que quedó.
+            var before = await connection.QuerySingleOrDefaultAsync<DragonLevels>(new CommandDefinition(
+                "SELECT tier AS Tier, level AS Level FROM player_dragons WHERE discord_id = @DiscordId FOR UPDATE;",
+                new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
+
+            if (before is null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new AdminDragonSetResult(AdminDragonSetStatus.NoDragon);
+            }
+
+            int cap = DragonRules.LevelCap(tier);
+            int level = Math.Min(before.Level, cap);
+
+            await connection.ExecuteAsync(new CommandDefinition(
+                "UPDATE player_dragons SET tier = @Tier, level = @Level, fail_streak = 0, solo_fail_streak = 0 WHERE discord_id = @DiscordId;",
+                new { DiscordId = (long)discordId, Tier = tier, Level = level }, transaction: transaction, cancellationToken: cancellationToken));
+
+            await transaction.CommitAsync(cancellationToken);
+            return new AdminDragonSetResult(AdminDragonSetStatus.Set, before.Tier, before.Level, tier, level, LevelClamped: level < before.Level, LevelCap: cap);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
+
+    public async Task<AdminDragonSetResult> SetDragonLevelAsync(ulong discordId, int level, CancellationToken cancellationToken = default)
+    {
+        if (level < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(level), level, "El nivel no puede ser negativo.");
+        }
+
+        using DbConnection connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        using DbTransaction transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            var before = await connection.QuerySingleOrDefaultAsync<DragonLevels>(new CommandDefinition(
+                "SELECT tier AS Tier, level AS Level FROM player_dragons WHERE discord_id = @DiscordId FOR UPDATE;",
+                new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
+
+            if (before is null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new AdminDragonSetResult(AdminDragonSetStatus.NoDragon);
+            }
+
+            int cap = DragonRules.LevelCap(before.Tier);
+            if (level > cap)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new AdminDragonSetResult(AdminDragonSetStatus.AboveCap, before.Tier, before.Level, before.Tier, before.Level, LevelCap: cap);
+            }
+
+            await connection.ExecuteAsync(new CommandDefinition(
+                "UPDATE player_dragons SET level = @Level WHERE discord_id = @DiscordId;",
+                new { DiscordId = (long)discordId, Level = level }, transaction: transaction, cancellationToken: cancellationToken));
+
+            await transaction.CommitAsync(cancellationToken);
+            return new AdminDragonSetResult(AdminDragonSetStatus.Set, before.Tier, before.Level, before.Tier, level, LevelCap: cap);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
 }

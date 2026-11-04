@@ -27,14 +27,14 @@ public static class AdminGive
 
     private static readonly Regex Mention = new(@"<@!?(\d+)>", RegexOptions.Compiled);
 
-    public static AdminGiveParse Parse(string? args)
+    // A quién va el comando: saca la mención del texto. Devuelve el destino (null = el administrador mismo), el texto SIN la mención ni las comillas (una caja con nombre de varias palabras se puede escribir entre
+    // comillas o suelta) y, si no se pudo leer, el motivo. Lo comparten «aa admingive» y «aa adminset» (v0.48.1).
+    internal static (ulong? Target, string Cleaned, string? Error) SplitTarget(string text)
     {
-        string text = args ?? string.Empty;
-
         var mentioned = Mention.Matches(text).Select(m => m.Groups[1].Value).Distinct().ToList();
         if (mentioned.Count > 1)
         {
-            return Fail("Mencioná a una sola persona por comando.");
+            return (null, text, "Mencioná a una sola persona por comando.");
         }
 
         ulong? target = null;
@@ -42,14 +42,24 @@ public static class AdminGive
         {
             if (!ulong.TryParse(mentioned[0], out ulong id) || id == 0)
             {
-                return Fail("No entendí a quién mencionaste.");
+                return (null, text, "No entendí a quién mencionaste.");
             }
 
             target = id;
         }
 
-        // Sin la mención y sin comillas (una caja con nombre de varias palabras se puede escribir entre comillas o suelta).
         string cleaned = Mention.Replace(text, " ").Replace('"', ' ').Replace('“', ' ').Replace('”', ' ');
+        return (target, cleaned, null);
+    }
+
+    public static AdminGiveParse Parse(string? args)
+    {
+        var (target, cleaned, targetError) = SplitTarget(args ?? string.Empty);
+        if (targetError is not null)
+        {
+            return Fail(targetError);
+        }
+
         var tokens = cleaned.Split([' ', '\t', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         if (tokens.Length == 0)
         {
