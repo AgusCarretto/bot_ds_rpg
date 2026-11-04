@@ -84,7 +84,7 @@ Console.WriteLine("\n== 2. El catálogo de la base ==");
 var tools = (await recipesRepo.GetAllAsync()).Where(r => ToolRules.IsToolType(r.ResultItem.Type)).ToList();
 int Q(string tool, string item) => tools.Single(t => t.ResultItem.Name == tool).Ingredients.Single(i => i.ItemName == item).Quantity;
 int AxeHierro = Q(AxeZ3, "Hierro");   // cuánto Hierro pide el hacha de la Zona 3 (las pruebas de abajo lo usan para no repetir el número)
-Check(tools.Count == 4&& new[] { AxeZ3, PickZ3, AxeZ5, PickZ5 }.All(n => tools.Any(t => t.ResultItem.Name == n)), "4 herramientas con receta: un hacha y un pico de la Zona 3 y de la Zona 5");
+Check(tools.Count == 6 && new[] { AxeZ3, PickZ3, AxeZ5, PickZ5, "Caña de Hierro Forjado", "Caña de Escoria Templada" }.All(n => tools.Any(t => t.ResultItem.Name == n)), "6 herramientas con receta: un hacha, un pico y (desde la v0.48.0) una caña de la Zona 3 y de la Zona 5");
 var ingredientTypes = (await db.QueryAsync<string>("SELECT DISTINCT type FROM items WHERE item_id = ANY(@ids)", new { ids = tools.SelectMany(t => t.Ingredients).Select(i => i.ItemId).Distinct().ToArray() })).ToList();
 Check(tools.All(t => t.GoldCost == 0 && t.Ingredients.Count == 4 && t.Ingredients.All(i => i.Quantity > 0)) && ingredientTypes.Count > 0 && ingredientTypes.All(t => t is "Madera" or "Mineral"), "todas sin oro, con 4 materiales y SOLO de recolección (madera y mineral)");
 Check(Q(AxeZ3, "Madera de Roble") == 12 && Q(AxeZ3, "Madera de Nogal") == 3 && AxeHierro == 9 && Q(AxeZ3, "Piedra") == 18 && Q(PickZ3, "Hierro") == 6 && Q(PickZ3, "Carbón") == 6 && Q(PickZ3, "Madera de Roble") == 9 && Q(PickZ3, "Piedra") == 18
@@ -157,7 +157,7 @@ var s1 = await Scene(U1);
 var menu1 = s1.Components?.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<SelectMenuComponent>().Single();
 Check(s1.Embed.Title == "🪚 El Carpintero" && s1.Embed.Fields.Length == 0 && s1.Embed.Description.Contains("🪓 **Hacha:**") && s1.Embed.Description.Contains("⛏️ **Pico:**") && s1.Embed.Description.Contains("ninguna · **×1**") && s1.Embed.Length < 1500,
     "la escena es compacta (como la de la taberna): sin campos grandes, con lo que llevás puesto (nada: ×1) en la descripción");
-Check(menu1 is not null && menu1.CustomId == $"tools_pick:{U1}" && menu1.Options.Count == 4 && new[] { AxeZ3, AxeZ5, PickZ3, PickZ5 }.All(n => menu1.Options.Any(o => o.Value == n)), "UNA lista con las 4 mejoras (las de una zona cerrada también)");
+Check(menu1 is not null && menu1.CustomId == $"tools_pick:{U1}" && menu1.Options.Count == 6 && new[] { AxeZ3, AxeZ5, PickZ3, PickZ5, "Caña de Hierro Forjado", "Caña de Escoria Templada" }.All(n => menu1.Options.Any(o => o.Value == n)), "UNA lista con las 6 mejoras (las de una zona cerrada también)");
 string Label(string n) => menu1!.Options.Single(o => o.Value == n).Label;
 string Desc(string n) => menu1!.Options.Single(o => o.Value == n).Description;
 Check(Label(AxeZ3).StartsWith("✅") && Label(PickZ3).StartsWith("❌") && Label(AxeZ5).StartsWith("🔒") && Label(PickZ5).StartsWith("🔒") && Label(AxeZ3).Contains("(×2)") && Label(AxeZ5).Contains("(×3)"), "cada opción dice su estado en la etiqueta: ✅ la que podés armar ahora, ❌ la que te falta y 🔒 las de una zona cerrada");
@@ -165,12 +165,13 @@ Check(Desc(AxeZ3).Contains("Roble 12/12") && Desc(AxeZ3).Contains("Piedra 18/18"
 await db.ExecuteAsync("UPDATE users SET highest_zone_cleared = @h WHERE discord_id = @id", new { id = (long)U1, h = Z4 });
 var s2 = await Scene(U1);
 var menu2 = s2.Components?.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<SelectMenuComponent>().Single();
-Check(menu2 is not null && menu2.Options.Count == 4 && menu2.Options.All(o => !o.Label.StartsWith("🔒")), "al desbloquear la Zona 5 ya no queda ninguna cerrada");
+Check(menu2 is not null && menu2.Options.Count == 6 && menu2.Options.All(o => !o.Label.StartsWith("🔒")), "al desbloquear la Zona 5 ya no queda ninguna cerrada");
 var made = await Make(U1, AxeZ3);
 await GiveRecipe(U1, AxeZ5); await Make(U1, AxeZ5);
 await GiveRecipe(U1, PickZ5); await Make(U1, PickZ5);
+await GiveRecipe(U1, "Caña de Escoria Templada"); await Make(U1, "Caña de Escoria Templada");
 var s3 = await Scene(U1);
-Check(made.Embed is not null && s3.Components is null && s3.Embed.Description.Contains("lo mejor que arma") && s3.Embed.Description.Contains("×3") && s3.Embed.Description.Contains(AxeZ5) && s3.Embed.Description.Contains(PickZ5), "con las dos de la Zona 5 puestas: dice «lo mejor que arma», muestra lo que llevás y no ofrece nada más");
+Check(made.Embed is not null && s3.Components is null && s3.Embed.Description.Contains("lo mejor que arma") && s3.Embed.Description.Contains("×3") && s3.Embed.Description.Contains(AxeZ5) && s3.Embed.Description.Contains(PickZ5), "con las tres de la Zona 5 puestas (hacha, pico y caña): dice «lo mejor que arma», muestra lo que llevás y no ofrece nada más");
 var s4 = await Scene(UGhost);
 Check(s4.Components is null && s4.Embed.Description.Contains("/start"), "sin cuenta: manda a /start");
 UiEmojis.Set([("carpintero", "<:carpintero:123456789012345671>")]);

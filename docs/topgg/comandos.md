@@ -39,10 +39,11 @@ Todo comando también se puede escribir con el prefijo `aa` (por ejemplo `aa hun
 |---|---|
 | `/chop` | Talá madera. |
 | `/mine` | Miná minerales. |
-| `/professions` | Tus oficios (Leñador, Minero, Encantador) y lo que dan. |
+| `/fish` | Pescá en el río. |
+| `/professions` | Tus oficios (Leñador, Minero, Pescador, Encantador) y lo que dan. |
 | `/forge` | La herrería: forjá armas y amuletos. |
 | `/forge-special` | El equipo del Fogón Eterno y qué materiales guardar para él. |
-| `/tools` | El carpintero: hachas y picos para recolectar más. |
+| `/tools` | El carpintero: hachas, picos y cañas para recolectar más. |
 | `/tips` | Qué te falta para tu próxima forja y de dónde sacarlo. |
 | `/dismantle` | Desmantelá materiales para conseguir Polvo. |
 | `/enchant` | Encantá tu arma o tu amuleto con oro y Polvo. |

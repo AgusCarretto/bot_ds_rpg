@@ -5,7 +5,7 @@ using Discord;
 using Discord.Interactions;
 using BotDsRpg.Services;
 
-// /chop y /mine. Desde la v0.13.0 cada uso sube el oficio de su comando (Leñador / Minero, GameData/ProfessionRules.cs: la XP sale del contador de usos, así que acá solo se
+// /chop, /mine y (v0.48.0) /fish. Desde la v0.13.0 cada uso sube el oficio de su comando (Leñador / Minero, GameData/ProfessionRules.cs: la XP sale del contador de usos, así que acá solo se
 // registra el evento) y, con el oficio al nivel 100, el modo "Avanzada" hace 4 sorteos juntos con su propio cooldown. La lógica vive en ExecuteGatherAsync (sin Context) y la
 // comparten el comando de barra y "aa chop"/"aa mine".
 public class GatheringModule(
@@ -27,6 +27,12 @@ public class GatheringModule(
         [Summary("modo", "Normal, o Avanzada (4 sorteos juntos; pide el oficio Minero al nivel 100).")]
         [Choice("Normal", "normal"), Choice("Avanzada", "avanzada")] string modo = "normal") =>
         RunGatheringAsync(CooldownCatalog.Mine, itemType: "Mineral", modo);
+
+    [SlashCommand("fish", "Pescá en el río (cooldown de 5 minutos).")]
+    public Task HandleFishAsync(
+        [Summary("modo", "Normal, o Avanzada (4 sorteos juntos; pide el oficio Pescador al nivel 100).")]
+        [Choice("Normal", "normal"), Choice("Avanzada", "avanzada")] string modo = "normal") =>
+        RunGatheringAsync(CooldownCatalog.Fish, itemType: "Pescado", modo);
 
     private async Task RunGatheringAsync(CooldownDefinition definition, string itemType, string modo)
     {
@@ -70,8 +76,8 @@ public class GatheringModule(
         ICooldownRepository cooldownRepository, IGatheringRepository gatheringRepository, IUserRepository userRepository, IItemRepository itemRepository,
         IPlayerBonusService bonusService, IGameEvents gameEvents, ulong discordId, CooldownDefinition definition, string itemType, bool advanced = false, Random? rng = null)
     {
-        bool isChop = definition.CommandName == CooldownCatalog.Chop.CommandName;
-        var profession = ProfessionCatalog.Get(isChop ? ProfessionCatalog.WoodcutterKey : ProfessionCatalog.MinerKey);
+        string kind = GatherKinds.Of(definition);   // chop, mine o fish (v0.48.0): el oficio, el multiplicador, la herramienta y la tabla de rarezas cambian según cuál sea
+        var profession = ProfessionCatalog.Get(GatherKinds.ProfessionKey(kind));
         var active = advanced ? CooldownCatalog.AdvancedOf(definition)! : definition;
 
         // Si es la primera vez que este usuario ejecuta un comando, se crea acá con los valores por defecto.
@@ -93,15 +99,15 @@ public class GatheringModule(
         }
 
         int rolls = advanced ? ProfessionRules.AdvancedGatherRolls : 1;
-        double multiplier = isChop ? bonuses.ChopMultiplier : bonuses.MineMultiplier;
-        double toolFactor = isChop ? bonuses.ChopToolFactor : bonuses.MineToolFactor;   // el hacha / el pico (v0.29.0): solo para Común, Raro y Épico
-        double upgradeChance = isChop ? bonuses.ChopRarityUpgrade : bonuses.MineRarityUpgrade;
+        double multiplier = kind switch { GatherKinds.Chop => bonuses.ChopMultiplier, GatherKinds.Fish => bonuses.FishMultiplier, _ => bonuses.MineMultiplier };
+        double toolFactor = kind switch { GatherKinds.Chop => bonuses.ChopToolFactor, GatherKinds.Fish => bonuses.FishToolFactor, _ => bonuses.MineToolFactor };   // el hacha / el pico (v0.29.0) / la caña (v0.48.0): solo para Común, Raro y Épico
+        double upgradeChance = kind switch { GatherKinds.Chop => bonuses.ChopRarityUpgrade, GatherKinds.Fish => bonuses.FishRarityUpgrade, _ => bonuses.MineRarityUpgrade };
 
         var drops = new List<(Item Item, int Quantity)>();
         bool upgraded = false;
         for (int i = 0; i < rolls; i++)
         {
-            string rarity = RarityCatalog.RollGatheringRarity();
+            string rarity = kind == GatherKinds.Fish ? RarityCatalog.RollFishRarity() : RarityCatalog.RollGatheringRarity();
             string finalRarity = ProfessionRules.UpgradeRarity(rarity, upgradeChance, rng);
             var item = await itemRepository.GetRandomByTypeAndRarityAsync(itemType, finalRarity);
 

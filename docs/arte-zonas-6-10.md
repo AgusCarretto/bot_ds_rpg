@@ -1,4 +1,4 @@
-# Arte de las Zonas 6 a 10 (prompts para Bing Image Creator)
+# Arte pendiente: Zonas 6 a 10 y la pesca (prompts para Bing Image Creator)
 
 Cada imagen se sube al Developer Portal (la aplicación del bot → Emojis) con el **nombre de emoji** de la tabla. Cuando estén subidas, el bot las conecta: los ítems en `Database/update_item_emojis.sql` y las caras de los monstruos en `Database/update_monster_portraits.sql` (después se corre `Database/apply_emojis.sql` en Railway).
 
@@ -71,3 +71,24 @@ Ejemplo: **Espada de Sal**, emoji `espada_sal`:
 `A single game item icon for a fantasy RPG, centered, bold clean outlines, vibrant colors, soft glow, transparent background, square, no text, a fantasy longsword made of white salt crystal and pale stone, sparkling pink and white highlights`
 
 Nombres de emoji: `espada_sal`, `dagas_sal`, `arco_sal`, `grimorio_sal`, `amuleto_sal`, y lo mismo con `_humo`, `_brea`, `_hielo`, `_rayo`. Cada zona va un poco más brillante que la anterior: si querés que se note la escalera, sumale a las de la 9 y la 10 `legendary, intricate details`.
+
+## Pesca (v0.48.0): 3 peces y 2 cañas
+
+Hoy salen con un emoji común de relleno (🐟 🐠 👑 los peces, 🎣 las cañas) y andan bien así. Cuando se suba el arte: se agregan los `UPDATE` por nombre de ítem en `Database/update_item_emojis.sql`, se corre `Database/apply_emojis.sql` en Railway y se sacan los cinco nombres de la lista `provisional` de `tests/portraittest/Program.cs`.
+
+Estas cinco usan el estilo que prefiere el dueño desde el 2026-10-28 (ilustración limpia, **no pixel art**, **fondo blanco liso** para recortarlo después; las bases de arriba piden fondo transparente: si Bing lo dibuja raro, usá esta). Subirlas a 128×128 con el **nombre de emoji** de la tabla.
+
+Base:
+`A single game item icon for a fantasy RPG, clean digital illustration (not pixel art), soft rounded edges, bold clean outlines, vibrant saturated colors, plain solid white background (#FFFFFF), no shadow, no gradient, centered and large, square, no text,`
+
+| Emoji | Ítem | Prompt (después de la base) |
+|---|---|---|
+| `mojarra` | Mojarra (Común) | a small slim silvery river fish, side view facing right, shiny silver-blue scales with a darker blue-grey back, round black eye, small transparent fins, simple and friendly, no glow |
+| `dorado` | Dorado (Raro) | a powerful golden river fish, side view facing right, shiny golden-orange scales, strong jaw, red-orange tail and fins, body slightly arched as if leaping out of the water, a few small blue sparkles around it |
+| `surubi` | Surubí (Épico) | a big river catfish, long flat head with a wide mouth and long whiskers, cream belly and a grey-brown back with bold dark tiger stripes and spots, side view facing right, a few small violet sparkles around it |
+| `cana_hierro` | Caña de Hierro Forjado (Zona 3, ×2) | a fishing rod placed diagonally from bottom-left to top-right, brown wooden handle with visible grain, blued forged steel reel and line guides, a thin line with a small steel hook hanging from the tip, same blue steel and same wood as the iron axe and pickaxe |
+| `cana_escoria` | Caña de Escoria Templada (Zona 5, ×3) | a fishing rod placed diagonally from bottom-left to top-right, rod made of black-violet volcanic slag like obsidian with glowing orange lava cracks, scorched dark wood handle, a glowing orange reel, a few small embers around it, same materials as the slag axe and pickaxe, clearly more powerful than the iron rod |
+
+La rareza se lee en un detalle chico, como en la madera: los Raros con chispas azules y los Épicos con chispas violetas; el Común va sin brillo. Que las dos cañas compartan forma y que la de la Zona 5 se vea más poderosa sin dejar de ser la misma herramienta.
+
+Las hachas y los picos del Carpintero tienen sus prompts en `docs/tool-emojis/README.md` (están pedidos en pixel art; si el dueño los quiere en este estilo, se cambia la base).

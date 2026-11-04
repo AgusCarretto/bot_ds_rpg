@@ -74,6 +74,8 @@
 \ir rebalance_dust.sql
 -- El hacha y el pico del Carpintero (v0.29.0): usan los materiales de recolección y las zonas, y crean ítems nuevos (su emoji, cuando haya arte, va en update_item_emojis.sql, que corre otra vez abajo).
 \ir add_tools.sql
+-- La pesca (v0.48.0): los 3 peces, la caña del Carpintero y sus recetas. Usa los materiales de recolección y la tabla player_tools de arriba (su emoji, cuando haya arte, va en update_item_emojis.sql, que corre otra vez abajo).
+\ir add_fishing.sql
 -- La Comida de Dragón (v0.32.0): crea un ítem nuevo (su emoji, cuando haya arte, va en update_item_emojis.sql, que corre otra vez abajo).
 \ir add_dragon_food.sql
 -- El /travel deja de soltar un material (v0.36.0): se borran los 5 drops de viaje, las 25 recetas de armas de clase y amuletos pasan a 3 tipos de ingrediente con más drops de cacería, y se cargan las cajas del viaje (zone_boxes, rol travel). Va DESPUÉS de las recetas, las cajas por zona y la Comida de Dragón.

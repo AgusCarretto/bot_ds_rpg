@@ -88,8 +88,8 @@ public sealed class PlayerBonusService(
         int packLevel = levels.TryGetValue(BlessingCatalog.PetsKey, out int level) ? Math.Clamp(level, 0, BlessingCatalog.MaxLevel) : 0;
         var pets = (await petRepository.GetBonusesAsync(discordId, cancellationToken)).Scaled(1 + (BlessingCatalog.PetsPerLevel * packLevel));
 
-        // Las herramientas (v0.29.0): el hacha multiplica /chop y el pico /mine. Sin servicio o si no se puede leer queda en ×1 y la recolección sigue como siempre.
-        double chopTool = 1, mineTool = 1;
+        // Las herramientas (v0.29.0): el hacha multiplica /chop, el pico /mine y (v0.48.0) la caña /fish. Sin servicio o si no se puede leer queda en ×1 y la recolección sigue como siempre.
+        double chopTool = 1, mineTool = 1, fishTool = 1;
         if (toolRepository is not null)
         {
             try
@@ -103,6 +103,10 @@ public sealed class PlayerBonusService(
                     else if (tool.Kind == ToolRules.PickaxeKind)
                     {
                         mineTool = Math.Max(1, tool.Multiplier);
+                    }
+                    else if (tool.Kind == ToolRules.RodKind)
+                    {
+                        fishTool = Math.Max(1, tool.Multiplier);
                     }
                 }
             }
@@ -129,6 +133,6 @@ public sealed class PlayerBonusService(
             }
         }
 
-        return new PlayerBonuses(pets, Math.Max(0, fuegoNuevo), levels.Count == 0 ? null : levels, professionXp, bankPercent, chopTool, mineTool, dragon);
+        return new PlayerBonuses(pets, Math.Max(0, fuegoNuevo), levels.Count == 0 ? null : levels, professionXp, bankPercent, chopTool, mineTool, dragon, fishTool);
     }
 }

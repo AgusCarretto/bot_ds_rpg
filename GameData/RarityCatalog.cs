@@ -47,6 +47,21 @@ public static class RarityCatalog
     public static IReadOnlyList<(string Rarity, double Percent)> GatheringChances =>
         GatheringWeights.Select(w => (w.Rarity, w.Weight / 10.0)).ToList();
 
+    // La pesca (v0.48.0, /fish): solo hay tres peces (Mojarra Común, Dorado Raro, Surubí Épico), así que tiene su propia tabla de tres rarezas, en milésimos: Común 78 % / Raro 19 % / Épico 3 %.
+    // El Legendario y el Mítico no existen en el agua; la mejora de rareza del oficio puede subir un Común a Raro y un Raro a Épico, y un Épico se queda Épico (no hay Legendario que lo reciba).
+    private static readonly (string Rarity, int Weight)[] FishWeights =
+    [
+        ("Común", 780),
+        ("Raro", 190),
+        ("Épico", 30),
+    ];
+
+    public static string RollFishRarity() => Roll(FishWeights);
+
+    // Las chances de rareza de /fish en porcentaje (para listarlas y para probar que suman 100).
+    public static IReadOnlyList<(string Rarity, double Percent)> FishChances =>
+        FishWeights.Select(w => (w.Rarity, w.Weight / 10.0)).ToList();
+
     private static string Roll((string Rarity, int Weight)[] weights)
     {
         int totalWeight = weights.Sum(w => w.Weight);

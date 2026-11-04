@@ -24,8 +24,8 @@ Un RPG por turnos para Discord, profundo y en español (también tiene inglés c
 Cazá monstruos con `/hunt`, enfrentá élites con `/travel` y vencé al jefe de cada zona con `/boss` para abrir la siguiente. Cada zona pide mejor equipo que la anterior: nada se pasa solo subiendo de nivel. Al final te espera **El Fogón Eterno**.
 
 ## 🔨 Recolectá, forjá y mejorá
-- `/chop` y `/mine` para juntar madera y minerales, con oficios que suben de nivel y desbloquean versiones avanzadas.
-- Forjá armas y amuletos en la herrería, y hachas y picos en el carpintero.
+- `/chop`, `/mine` y `/fish` para juntar madera, minerales y pescado, con oficios que suben de nivel y desbloquean versiones avanzadas.
+- Forjá armas y amuletos en la herrería, y hachas, picos y cañas en el carpintero.
 - Desmantelá lo que te sobra en Polvo y encantá tu equipo: Filo, Crítico, Sangre, Guarda, Vida o Esquive.
 
 ## 🐾 Mascotas y dragones

@@ -304,6 +304,7 @@ public class GameModule(
 
         var wood = Lines(entries.Where(e => e.Type == "Madera"));
         var minerals = Lines(entries.Where(e => e.Type == "Mineral"));
+        var fish = Lines(entries.Where(e => e.Type == "Pescado"));   // v0.48.0, /fish
         // La comida de las mascotas va con los consumibles y los huevos con las cajas (v0.10.0): los dos son cosas que se tienen en la mochila para usar después.
         var food = Lines(entries.Where(e => e.Type is "Consumable" or "PetFood" or "DragonFood"));
         var drops = Lines(entries.Where(e => e.Type == "Material"));
@@ -311,7 +312,7 @@ public class GameModule(
         bool hasEggs = entries.Any(e => e.Type == "Huevo" && e.Quantity > 0);
         string boxTitle = hasEggs ? Loc.T("Cajas y huevos") : Loc.T("Cajas");
 
-        if (wood.Count + minerals.Count + food.Count + drops.Count + boxes.Count == 0)
+        if (wood.Count + minerals.Count + fish.Count + food.Count + drops.Count + boxes.Count == 0)
         {
             embed.WithDescription(Loc.T("Todavía no tenés ningún material. ¡Probá /hunt, /chop o /mine!"));
             return embed.Build();
@@ -322,6 +323,7 @@ public class GameModule(
         var woodFields = Fields(Loc.T("Madera"), wood);
         var mineralFields = Fields(Loc.T("Mineral"), minerals);
         var dropFields = Fields(Loc.T("Drops de monstruo"), drops);
+        var fishFields = Fields(Loc.T("Pescado"), fish);
         var foodFields = new List<(string Name, string Value)>();
 
         string stacked = food.Count > 0 && boxes.Count > 0 ? string.Join('\n', food) + $"\n\n**{boxTitle}**\n" + string.Join('\n', boxes) : string.Empty;
@@ -335,7 +337,7 @@ public class GameModule(
             foodFields.AddRange(Fields(boxTitle, boxes));
         }
 
-        var leftBlocks = new[] { woodFields, dropFields }.Where(b => b.Count > 0).ToList();
+        var leftBlocks = new[] { woodFields, dropFields, fishFields }.Where(b => b.Count > 0).ToList();
         var rightBlocks = new[] { mineralFields, foodFields }.Where(b => b.Count > 0).ToList();
 
         if (leftBlocks.Count > 0 && rightBlocks.Count > 0)
@@ -389,7 +391,7 @@ public class GameModule(
 
     public static bool BelongsToTab(string tab, InventoryEntry e) => tab switch
     {
-        InvGather => e.Type is "Madera" or "Mineral",
+        InvGather => e.Type is "Madera" or "Mineral" or "Pescado",
         InvDrops => e.Type == "Material",
         InvFood => e.Type is "Consumable" or "PetFood" or "DragonFood",
         // v0.47.0: las Reliquias de las Zonas 6 a 10 (la llave de su mazmorra) van con las cajas.
@@ -456,7 +458,8 @@ public class GameModule(
                     AddFieldGrid(
                         embed,
                         Fields(Loc.T("Madera"), Lines(mine.Where(e => e.Type == "Madera"))),
-                        Fields(Loc.T("Mineral"), Lines(mine.Where(e => e.Type == "Mineral"))));
+                        Fields(Loc.T("Mineral"), Lines(mine.Where(e => e.Type == "Mineral"))),
+                        Fields(Loc.T("Pescado"), Lines(mine.Where(e => e.Type == "Pescado"))));
                     break;
                 case InvDrops:
                     AddFieldGrid(embed, Fields(Loc.T("Drops de monstruo"), Lines(mine)));

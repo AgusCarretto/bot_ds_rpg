@@ -29,6 +29,8 @@ public static class ReminderCatalog
         new("buybox", "📦", Loc.Mark("Comprar caja"), "/taberna", Loc.Mark("¡Ya podés comprar otra caja! Pasá por la `/taberna`."), null),
         new("chop_adv", "🪓", Loc.Mark("Tala avanzada"), "/chop", Loc.Mark("¡La tala avanzada está lista! `/chop modo:Avanzada`."), null),
         new("mine_adv", "⛏️", Loc.Mark("Minería avanzada"), "/mine", Loc.Mark("¡La minería avanzada está lista! `/mine modo:Avanzada`."), null),
+        new("fish", "🎣", Loc.Mark("Pescar"), "/fish", Loc.Mark("¡Ya podés pescar de nuevo con `/fish`!"), ShortLived),
+        new("fish_adv", "🎣", Loc.Mark("Pesca avanzada"), "/fish", Loc.Mark("¡La pesca avanzada está lista! `/fish modo:Avanzada`."), null),
         new("pet", "🐾", Loc.Mark("Mascotas"), "/pet feed", Loc.Mark("¡Tus mascotas ya pueden comer! Dales de comer con `/pet feed`."), null),
         new("daily", "🎁", Loc.Mark("Diario"), "/daily", Loc.Mark("¡Tu recompensa diaria está lista! Reclamala con `/daily`."), null),
         new("vote", "🗳️", Loc.Mark("Votar"), "/vote", Loc.Mark("¡Ya podés votar de nuevo! Votá en top.gg y cobrá con `/vote`: un Baúl de Roble y el jefe reseteado."), null),
@@ -42,7 +44,7 @@ public static class ReminderCatalog
 
     // Las esperas que viven en la tabla de cooldowns, con su duración (la misma de CooldownCatalog, que es la que cobra cada comando).
     private static readonly IReadOnlyList<CooldownDefinition> StoredCooldowns =
-        [.. CooldownCatalog.All, CooldownCatalog.ChopAdvanced, CooldownCatalog.MineAdvanced, CooldownCatalog.Vote];
+        [.. CooldownCatalog.All, CooldownCatalog.ChopAdvanced, CooldownCatalog.MineAdvanced, CooldownCatalog.FishAdvanced, CooldownCatalog.Vote];
 
     // De las filas de cooldown del jugador (comando, última vez) saca cuáles TODAVÍA corren y cuándo terminan. Lo que ya terminó no genera aviso (el jugador ya puede usarlo).
     // Un cooldown que se guardó con la espera "corta" de un jefe perdido ya viene acomodado en last_executed_at (ver CooldownCatalog.Boss), así que acá es siempre última vez + duración.

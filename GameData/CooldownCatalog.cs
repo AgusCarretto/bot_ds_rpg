@@ -14,6 +14,8 @@ public static class CooldownCatalog
     public static readonly CooldownDefinition Travel = new("travel", Loc.Mark("Viajar"), "🗺️", TimeSpan.FromMinutes(30));
     public static readonly CooldownDefinition Chop = new("chop", Loc.Mark("Talar"), "🪓", TimeSpan.FromMinutes(5));
     public static readonly CooldownDefinition Mine = new("mine", Loc.Mark("Minar"), "⛏️", TimeSpan.FromMinutes(5));
+    // La pesca (v0.48.0, /fish): el tercer comando de recolección, con el mismo ritmo que /chop y /mine. Pesca peces (items.type "Pescado") y sube el oficio Pescador.
+    public static readonly CooldownDefinition Fish = new("fish", Loc.Mark("Pescar"), "🎣", TimeSpan.FromMinutes(5));
     // El jefe de zona solo o en equipo ("/boss @amigo", antes /raid) es EL MISMO combate: un solo cooldown, y /cd lo muestra en una sola línea.
     // Es un hito de progresión, no contenido para repetir: 5 horas (30 minutos hasta la v0.7.0, 5 horas en la v0.7.1, 1 hora en la v0.8.0 y otra vez 5 horas
     // por pedido del dueño: con 1 hora los cofres de jefe eran demasiados). Es el único lugar para cambiarlo.
@@ -33,14 +35,18 @@ public static class CooldownCatalog
     // /cd las muestra solo a quien ya las desbloqueó.
     public static readonly CooldownDefinition ChopAdvanced = new("chop_adv", Loc.Mark("Tala avanzada"), "🪓", ProfessionRules.AdvancedGatherCooldown);
     public static readonly CooldownDefinition MineAdvanced = new("mine_adv", Loc.Mark("Minería avanzada"), "⛏️", ProfessionRules.AdvancedGatherCooldown);
+    public static readonly CooldownDefinition FishAdvanced = new("fish_adv", Loc.Mark("Pesca avanzada"), "🎣", ProfessionRules.AdvancedGatherCooldown);
 
     // Votar por el bot (v0.18.0, GameData/Vote.cs). La fila guarda el momento del último voto COBRADO (el created_at de top.gg), así que "última vez + 12 h" es cuándo se puede votar de nuevo.
     // No está en All a propósito: /cd la muestra solo cuando el voto está habilitado (hay token de top.gg), para no listar algo que todavía no se puede hacer.
     public static readonly CooldownDefinition Vote = new("vote", Loc.Mark("Votar"), "🗳️", VoteRules.Interval);
 
-    public static readonly IReadOnlyList<CooldownDefinition> All = [Hunt, Travel, Chop, Mine, Boss, BoxBuy];
+    public static readonly IReadOnlyList<CooldownDefinition> All = [Hunt, Travel, Chop, Mine, Fish, Boss, BoxBuy];
 
     // La versión avanzada de un cooldown de recolección (null si no tiene).
     public static CooldownDefinition? AdvancedOf(CooldownDefinition definition) =>
-        definition.CommandName == Chop.CommandName ? ChopAdvanced : definition.CommandName == Mine.CommandName ? MineAdvanced : null;
+        definition.CommandName == Chop.CommandName ? ChopAdvanced
+        : definition.CommandName == Mine.CommandName ? MineAdvanced
+        : definition.CommandName == Fish.CommandName ? FishAdvanced
+        : null;
 }

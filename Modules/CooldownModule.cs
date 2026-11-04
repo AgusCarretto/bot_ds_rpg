@@ -73,6 +73,11 @@ public class CooldownModule(
             {
                 await AddLineAsync(CooldownCatalog.MineAdvanced);
             }
+
+            if (ProfessionRules.AdvancedUnlocked(bonuses.ProfessionLevel(ProfessionCatalog.FisherKey)))
+            {
+                await AddLineAsync(CooldownCatalog.FishAdvanced);
+            }
         }
 
         if (voteEnabled)

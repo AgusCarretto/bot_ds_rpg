@@ -4,11 +4,11 @@ using BotDsRpg.Services;
 using Discord;
 using Discord.Interactions;
 
-// /professions (aa professions|oficios|profesiones|prof): los oficios (v0.13.0, GameData/ProfessionRules.cs). Leñador, Minero y Encantador suben usando /chop, /mine y /enchant; cada nivel
+// /professions (aa professions|oficios|profesiones|prof): los oficios (v0.13.0, GameData/ProfessionRules.cs). Leñador, Minero, Pescador y Encantador suben usando /chop, /mine, /fish y /enchant; cada nivel
 // da un poco más y al 100 se desbloquea la versión avanzada del comando. Esta pantalla solo MUESTRA: la XP sale de los contadores (PlayerBonusService), no se guarda en ningún lado.
 public class ProfessionModule(IUserRepository userRepository, IPlayerBonusService bonusService) : InteractionModuleBase<SocketInteractionContext>
 {
-    [SlashCommand("professions", "Tus oficios (Leñador, Minero, Encantador): nivel, XP y lo que dan.")]
+    [SlashCommand("professions", "Tus oficios (Leñador, Minero, Pescador, Encantador): nivel, XP y lo que dan.")]
     public async Task HandleProfessionsAsync()
     {
         // Efímero: es tu avance, no hace falta mostrárselo al canal.
