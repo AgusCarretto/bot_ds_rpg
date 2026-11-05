@@ -20,9 +20,9 @@ using Npgsql;
 int fails = 0;
 void Check(bool ok, string what) { Console.WriteLine($"  [{(ok ? "OK" : "FALLA")}] {what}"); if (!ok) fails++; }
 
-const ulong U1 = 999000000000098201UL, U2 = 999000000000098202UL, U3 = 999000000000098203UL, UFn = 999000000000098204UL, UEn = 999000000000098205UL, UGhost = 999000000000098299UL;
+const ulong U1 = 999000000000098201UL, U2 = 999000000000098202UL, U3 = 999000000000098203UL, UFn = 999000000000098204UL, UEn = 999000000000098205UL, UEmpty = 999000000000098206UL, UGhost = 999000000000098299UL;
 const BindingFlags AnyS = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
-ulong[] all = [U1, U2, U3, UFn, UEn, UGhost];
+ulong[] all = [U1, U2, U3, UFn, UEn, UEmpty, UGhost];
 
 Loc.LoadEmbedded();
 string conn = TestEnv.Connection();
@@ -330,7 +330,9 @@ var amuletS = await itemsRepo.GetByIdAsync(amuletId);
 var buffS = await buffRepo.GetActiveAttackAsync(U1);
 var combatS = PlayerCombatProfileCalculator.Resolve(meS, weaponS, amuletS, buffS?.AttackPercent ?? 0, bonS);
 var stats = await StatsModule.BuildStatsAsync(users, itemsRepo, buffRepo, bonusService, cooking, dragonRepo, U1);
-string statsText = stats.Embed is null ? string.Empty : stats.Embed.Title + "\n" + stats.Embed.Description + "\n" + string.Join("\n", stats.Embed.Fields.Select(f => f.Name + " " + f.Value));
+var statsMore = await StatsModule.BuildStatsAsync(users, itemsRepo, buffRepo, bonusService, cooking, dragonRepo, U1, null, 1);
+string statsText = stats.Embed is null ? string.Empty : stats.Embed.Title + "\n" + stats.Embed.Description + "\n" + string.Join("\n", stats.Embed.Fields.Select(f => f.Name + " " + f.Value))
+    + "\n" + statsMore.Embed!.Title + "\n" + string.Join("\n", statsMore.Embed.Fields.Select(f => f.Name + " " + f.Value));
 Check(stats.PlainMessage is null && stats.Embed is not null && stats.Embed.Description.Contains($"# ⚔️ Ataque **{combatS.Damage}**") && stats.Embed.Description.Contains($"# 🛡️ Defensa **{combatS.Defense}**") && stats.Embed.Description.Contains($"# ❤️ Vida máxima **{combatS.CombatMaxHp}**"),
     $"la ficha muestra los MISMOS totales que pelean, en grande y en negrita (ATQ {combatS.Damage}, DEF {combatS.Defense}, vida {combatS.CombatMaxHp})");
 // Base + cada agregado = el total EXACTO, en los tres bloques (lo que multiplica se reparte en puntos y el último absorbe el redondeo).
@@ -352,11 +354,12 @@ Check(stats.Embed.Description.IndexOf("# 🎯 Crítico") < stats.Embed.Descripti
     "el orden es ataque, defensa, vida, crítico, esquive y, separado por su título, las chances de drop");
 var statsNoAccount = await StatsModule.BuildStatsAsync(users, itemsRepo, buffRepo, bonusService, cooking, dragonRepo, UGhost);
 Check(statsNoAccount.Embed is null && statsNoAccount.PlainMessage!.Contains("/start") && await db.ExecuteScalarAsync<int>("SELECT count(*)::int FROM users WHERE discord_id = @id", new { id = (long)UGhost }) == 0, "sin cuenta manda a /start y NO le crea una");
-Check(stats.Embed!.Length <= 6000 && stats.Embed.Fields.All(f => f.Value.Length <= 1024), $"la ficha entra en los límites de Discord ({stats.Embed.Length} de 6000)");
+Check(stats.Embed!.Length <= 6000 && stats.Embed.Fields.All(f => f.Value.Length <= 1024) && statsMore.Embed!.Length <= 6000 && statsMore.Embed.Fields.All(f => f.Value.Length <= 1024), $"las dos pantallas de la ficha entran en los límites de Discord ({stats.Embed.Length} y {statsMore.Embed.Length} de 6000)");
 using (Loc.Use("en"))
 {
     var statsEn = await StatsModule.BuildStatsAsync(users, itemsRepo, buffRepo, bonusService, cooking, dragonRepo, U1);
-    string enStats = statsEn.Embed is null ? string.Empty : LeakCheck.AllText(statsEn.Embed);
+    var statsEnMore = await StatsModule.BuildStatsAsync(users, itemsRepo, buffRepo, bonusService, cooking, dragonRepo, U1, null, 1);
+    string enStats = statsEn.Embed is null ? string.Empty : LeakCheck.AllText(statsEn.Embed) + " " + LeakCheck.AllText(statsEnMore.Embed!);
     var allowedS = dishes.Select(d => d.Name).Concat(dishes.SelectMany(d => d.Ingredients.Select(i => i.ItemName))).Concat([CookingCatalog.FuelItemName, weaponS!.Name, amuletS!.Name, "Hechicero", "Cría", "Dragoncito", "Joven", "Adolescente", "Adulto", "Curtido", "Anciano", "Ancestral", "Legendario", "Eterno"]).ToArray();
     var leakS = LeakCheck.NoSpanish(enStats, allowedS);
     Check(statsEn.Embed is not null && enStats.Contains("Attack **") && enStats.Contains("Max HP **") && enStats.Contains("➕ Dishes") && leakS.Ok, $"en inglés la ficha sale sin español colado ({leakS.Found})");
@@ -437,6 +440,27 @@ Check(critN is { } cn && Math.Abs(cn.Total - Math.Round(critReal, 1)) < 1e-9 && 
     $"crítico {critN?.Base}+{string.Join("+", critN?.Adds ?? [])}={critN?.Total} (pelea {critReal:0.#}) y esquive {dodgeN?.Base}+{string.Join("+", dodgeN?.Adds ?? [])}={dodgeN?.Total} (pelea {dodgeReal:0.#}): base + agregados = el total que pelea");
 Check(statsN.Embed.Description.Contains("➕ Encantamiento **+") && statsN.Embed.Description.Contains("➕ Clase **+15 %**"), "y aparecen el encantamiento de Crítico y el +15 de esquive de la clase Ninja como agregados");
 
+// «Más stats» (v0.50.3, el dueño: «otra pestaña para todo ese resto, desde la cocina hasta abajo»): la ficha principal lleva solo los números del combate y del drop, y lo de la cocina, el dragón, las mascotas y el Fuego
+// Nuevo con las bendiciones va en una segunda pantalla; un botón pasa de una a la otra en el mismo mensaje.
+Console.WriteLine("\n== 6d. «Más stats»: la segunda pantalla ==");
+ButtonComponent? ButtonOf(StatsReply r) => r.Components?.Components.OfType<ActionRowComponent>().SelectMany(x => x.Components).OfType<ButtonComponent>().SingleOrDefault();
+var page0 = await StatsModule.BuildStatsAsync(users, itemsRepo, buffRepo, bonusService, cooking, dragonRepo, U1);
+Check(page0.Embed!.Title == "📊 Tus stats" && page0.Embed.Fields.Length == 0 && page0.Embed.Description.Contains("# ⚔️ Ataque") && page0.Embed.Description.Contains("## 🎲 Chances de drop") && ButtonOf(page0) is { Label: "Ver más stats" } btnMore && btnMore.CustomId == $"stats_page:{U1}:1",
+    "la ficha principal ya no lleva los campos de abajo (solo los números del combate y del drop) y trae el botón «Ver más stats»");
+Check(statsMore.Embed!.Title == "📊 Más stats" && statsMore.Embed.Description is null or "" && statsMore.Embed.Fields.Any(f => f.Name.Contains("Cocina") && f.Value.Contains("Surubí al Disco")) && statsMore.Embed.Fields.Any(f => f.Name.Contains("lvl")) && statsMore.Embed.Fields.Length >= 2
+    && ButtonOf(statsMore) is { Label: "Volver a las stats" } btnBack && btnBack.CustomId == $"stats_page:{U1}:0",
+    "la segunda pantalla trae la cocina y el dragón (y lo que haya) con el botón «Volver a las stats»");
+await users.GetOrCreateUserAsync(UEmpty);
+var emptyP0 = await StatsModule.BuildStatsAsync(users, itemsRepo, buffRepo, bonusService, cooking, dragonRepo, UEmpty);
+var emptyP1 = await StatsModule.BuildStatsAsync(users, itemsRepo, buffRepo, bonusService, cooking, dragonRepo, UEmpty, null, 1);
+Check(emptyP0.Components is null && emptyP1.Embed!.Title == "📊 Tus stats" && emptyP1.Components is null, "quien no tiene nada para mostrar ahí no ve el botón, y pedir la segunda pantalla le devuelve la primera");
+using (Loc.Use("en"))
+{
+    var enP0 = await StatsModule.BuildStatsAsync(users, itemsRepo, buffRepo, bonusService, cooking, dragonRepo, U1);
+    var enP1 = await StatsModule.BuildStatsAsync(users, itemsRepo, buffRepo, bonusService, cooking, dragonRepo, U1, null, 1);
+    Check(ButtonOf(enP0)?.Label == "See more stats" && ButtonOf(enP1)?.Label == "Back to the stats" && enP1.Embed!.Title == "📊 More stats", "en inglés los botones y el título de la segunda pantalla salen en inglés");
+}
+
 // El perfil NO se carga: la línea de ATQ no lleva la marca del dragón (el número ya la incluye); la 🔥 queda solo para la bendición de ataque.
 var profile = await GameModule.BuildProfileEmbedAsync(users, itemsRepo, zonesRepo, buffRepo, U1, "T", "https://example.com/a.png", petRepo, bonusService, dragonRepo);
 string atqLine = ProfileProbe.Line(profile, "ATQ");
@@ -455,6 +479,10 @@ Check(!FightLock.IsAllowed("cook"), "en plena pelea /cook queda bloqueado (como 
 Check(interactions.SlashCommands.Single(c => c.Name == "stats").Description.Length is > 0 and <= 100 && new[] { "stats", "estadisticas", "ficha" }.All(a => texts.Search(a) is { IsSuccess: true } f && f.Commands.Count == 1 && f.Commands[0].Command.Name == "stats"),
     "/stats está registrado (descripción ≤ 100) y aa stats / estadisticas / ficha llegan a un solo comando; aa equipamiento sigue siendo del Carpintero");
 Check(texts.Search("equipamiento") is { IsSuccess: true } eq && eq.Commands.Count == 1 && eq.Commands[0].Command.Name == "tools", "aa equipamiento NO se tocó: sigue siendo el Carpintero");
+IComponentInteraction ClickS(string id) => FakeProxy.Make<IComponentInteraction>(new() { ["Data"] = FakeProxy.Make<IComponentInteractionData>(new() { ["CustomId"] = id }) });
+var routedStats = interactions.SearchComponentCommand(ClickS($"stats_page:{U1}:1"));
+Check(routedStats.IsSuccess && routedStats.Command.MethodName == "HandlePageAsync" && routedStats.Command.Module.Name == "StatsModule", "el botón stats_page:{dueño}:{pantalla} llega a su método");
+Check(texts.Search("stats mas") is { IsSuccess: true } sm && sm.Commands.First().Command.Name == "stats" && texts.Search("ficha more") is { IsSuccess: true }, "«aa stats mas» (y «aa ficha more») llegan al mismo comando");
 bool built = true; try { ActivatorUtilities.CreateInstance(sp, typeof(StatsModule)); ActivatorUtilities.CreateInstance(sp, typeof(CookModule)); ActivatorUtilities.CreateInstance(sp, typeof(TextCommandModule)); } catch (Exception ex) { built = false; Console.WriteLine("   " + ex.Message); }
 Check(built, "los módulos se construyen con el DI real");
 
@@ -467,4 +495,21 @@ sealed class RecordingEvents : IGameEvents
     public List<string> Kinds { get; } = [];
     public Task RecordAsync(ulong discordId, string kind, int? zoneId = null, long amount = 1, string? detail = null) { Kinds.Add(kind); return Task.CompletedTask; }
     public IReadOnlyList<GameNotice> TakeNotices(ulong discordId) => [];
+}
+
+// Un click falso para probar el enrutado de los botones con el InteractionService de verdad.
+public class FakeProxy : DispatchProxy
+{
+    public Dictionary<string, object?> Values = new();
+    protected override object? Invoke(MethodInfo? method, object?[]? args)
+    {
+        if (method!.Name.StartsWith("get_") && Values.TryGetValue(method.Name[4..], out var v)) return v;
+        return method.ReturnType.IsValueType && method.ReturnType != typeof(void) ? Activator.CreateInstance(method.ReturnType) : null;
+    }
+    public static T Make<T>(Dictionary<string, object?> values) where T : class
+    {
+        var proxy = DispatchProxy.Create<T, FakeProxy>();
+        ((FakeProxy)(object)proxy).Values = values;
+        return proxy;
+    }
 }

@@ -9,12 +9,12 @@ public partial class TextCommandModule
     [Command("stats")]
     [Alias("estadisticas", "ficha")]
     [Summary("Tu ataque, defensa y vida con cuánto aporta cada cosa (equipo, platos, dragón...).")]
-    public async Task StatsAsync()
+    public async Task StatsAsync(string page = "")
     {
         try
         {
-            var reply = await StatsModule.BuildStatsAsync(userRepository, itemRepository, buffRepository, bonusService, cookingRepository, dragonRepository, Context.User.Id, zoneBoxService);
-            await ReplyAsync(reply.PlainMessage, embed: reply.Embed);
+            var reply = await StatsModule.BuildStatsAsync(userRepository, itemRepository, buffRepository, bonusService, cookingRepository, dragonRepository, Context.User.Id, zoneBoxService, IsMoreWord(page) ? 1 : 0);
+            await ReplyAsync(reply.PlainMessage, embed: reply.Embed, components: reply.Components);
         }
         catch (Exception ex)
         {
@@ -22,4 +22,7 @@ public partial class TextCommandModule
             await ReplyAsync(Loc.T("¡Upa! No pude armar tus stats ahora mismo, intentá de nuevo en un momento."));
         }
     }
+
+    // «aa stats mas» (también «más», «more», «extra», «2») abre directo la segunda pantalla.
+    private static bool IsMoreWord(string? word) => (word ?? string.Empty).Trim().ToLowerInvariant() is "mas" or "más" or "more" or "extra" or "2";
 }

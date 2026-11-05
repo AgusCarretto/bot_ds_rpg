@@ -103,9 +103,9 @@ for (int tier = 1; tier <= 5; tier++)
     hashes.Add(Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes)));
     bool sig = bytes.Length > 33 && bytes[0] == 137 && bytes[1] == 80 && bytes[2] == 78 && bytes[3] == 71;
     int w = (bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19], h = (bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23];
-    if (!sig || w != 300 || h != 100 || bytes.Length > 60_000) { allPng = false; pngWhy = $"tier {tier}: firma {sig}, {w}x{h}, {bytes.Length} bytes"; }
+    if (!sig || w != 300 || h < 90 || h > 200 || bytes.Length > 120_000) { allPng = false; pngWhy = $"tier {tier}: firma {sig}, {w}x{h}, {bytes.Length} bytes"; }
 }
-Check(allPng, $"son PNG de 300x100 (el tamaño decide cuánto ocupan en Discord) y livianos (cada perfil los sube) {pngWhy}");
+Check(allPng, $"son PNG de 300 de ancho (lo que decide cuánto ocupan en Discord) y entre 90 y 200 de alto (el alto sale de la placa con las llamas), y livianos (cada perfil los sube) {pngWhy}");
 Check(hashes.Count == 5, "los 5 tiers son imágenes DISTINTAS: el banner evoluciona con el nivel");
 Check(File.Exists(ProfileBanners.PathOf(ProfileBanners.FileName(Key, 1))), "y el bot los encuentra donde los busca en ejecución (Assets/banners junto al programa)");
 
