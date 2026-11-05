@@ -331,9 +331,20 @@ var buffS = await buffRepo.GetActiveAttackAsync(U1);
 var combatS = PlayerCombatProfileCalculator.Resolve(meS, weaponS, amuletS, buffS?.AttackPercent ?? 0, bonS);
 var stats = await StatsModule.BuildStatsAsync(users, itemsRepo, buffRepo, bonusService, cooking, dragonRepo, U1);
 string statsText = stats.Embed is null ? string.Empty : stats.Embed.Title + "\n" + stats.Embed.Description + "\n" + string.Join("\n", stats.Embed.Fields.Select(f => f.Name + " " + f.Value));
-Check(stats.PlainMessage is null && stats.Embed is not null && stats.Embed.Fields.Any(f => f.Name == $"⚔️ Ataque: {combatS.Damage}") && stats.Embed.Fields.Any(f => f.Name == $"🛡️ Defensa: {combatS.Defense}") && stats.Embed.Fields.Any(f => f.Name == $"❤️ Vida máxima: {combatS.CombatMaxHp}"),
-    $"la ficha muestra los MISMOS totales que pelean (ATQ {combatS.Damage}, DEF {combatS.Defense}, vida {combatS.CombatMaxHp})");
-Check(statsText.Contains("platos +6") && statsText.Contains("platos +100") && statsText.Contains("banquete +15 %") && statsText.Contains("dragón +") && statsText.Contains("Surubí al Disco ×10") && statsText.Contains("Brocheta de Dorado") && statsText.Contains("Mojarras en Escabeche ×3"),
+Check(stats.PlainMessage is null && stats.Embed is not null && stats.Embed.Description.Contains($"# ⚔️ Ataque **{combatS.Damage}**") && stats.Embed.Description.Contains($"# 🛡️ Defensa **{combatS.Defense}**") && stats.Embed.Description.Contains($"# ❤️ Vida máxima **{combatS.CombatMaxHp}**"),
+    $"la ficha muestra los MISMOS totales que pelean, en grande y en negrita (ATQ {combatS.Damage}, DEF {combatS.Defense}, vida {combatS.CombatMaxHp})");
+// Base + cada agregado = el total EXACTO, en los tres bloques (lo que multiplica se reparte en puntos y el último absorbe el redondeo).
+(int Total, int Base, int Adds, int Lines)? Block(string description, string word)
+{
+    var m = System.Text.RegularExpressions.Regex.Match(description, @"# [^\n]*?" + word + @" \*\*(\d+)\*\*\nBase \*\*(\d+)\*\*[^\n]*((?:\n➕ [^\n]*)*)");
+    if (!m.Success) return null;
+    var adds = System.Text.RegularExpressions.Regex.Matches(m.Groups[3].Value, @"\*\*([+-]?\d+)\*\*").Select(x => int.Parse(x.Groups[1].Value)).ToList();
+    return (int.Parse(m.Groups[1].Value), int.Parse(m.Groups[2].Value), adds.Sum(), adds.Count);
+}
+var bAtk = Block(stats.Embed!.Description, "Ataque"); var bDef = Block(stats.Embed.Description, "Defensa"); var bHp = Block(stats.Embed.Description, "Vida máxima");
+Check(bAtk is { } a1 && a1.Base + a1.Adds == a1.Total && a1.Lines >= 4 && bDef is { } d1 && d1.Base + d1.Adds == d1.Total && bHp is { } h1 && h1.Base + h1.Adds == h1.Total && h1.Lines >= 1,
+    $"base + agregados = total exacto: ATQ {bAtk?.Base}+{bAtk?.Adds}={bAtk?.Total}, DEF {bDef?.Base}+{bDef?.Adds}={bDef?.Total}, vida {bHp?.Base}+{bHp?.Adds}={bHp?.Total}");
+Check(statsText.Contains("➕ Platos **+6**") && statsText.Contains("➕ Platos **+100**") && statsText.Contains("➕ Banquete **+") && statsText.Contains("+15 %") && statsText.Contains("➕ Dragón **+") && statsText.Contains("➕ Arma **+") && statsText.Contains("Surubí al Disco ×10") && statsText.Contains("Brocheta de Dorado") && statsText.Contains("Mojarras en Escabeche ×3"),
     "desglosa lo que aporta cada cosa: platos (+6 ATQ y +100 de vida), banquete, dragón, y lista lo cocinado y lo que corre");
 Check(statsText.Contains("Crítico") && statsText.Contains("20 %") && statsText.Contains("platos +10") && statsText.Contains("Esquive"), "muestra el crítico (base 10 + 10 de la Brocheta = 20 %) y el esquive");
 var statsNoAccount = await StatsModule.BuildStatsAsync(users, itemsRepo, buffRepo, bonusService, cooking, dragonRepo, UGhost);
@@ -345,8 +356,21 @@ using (Loc.Use("en"))
     string enStats = statsEn.Embed is null ? string.Empty : LeakCheck.AllText(statsEn.Embed);
     var allowedS = dishes.Select(d => d.Name).Concat(dishes.SelectMany(d => d.Ingredients.Select(i => i.ItemName))).Concat([CookingCatalog.FuelItemName, weaponS!.Name, amuletS!.Name, "Hechicero", "Cría", "Dragoncito", "Joven", "Adolescente", "Adulto", "Curtido", "Anciano", "Ancestral", "Legendario", "Eterno"]).ToArray();
     var leakS = LeakCheck.NoSpanish(enStats, allowedS);
-    Check(statsEn.Embed is not null && enStats.Contains("Attack:") && enStats.Contains("Max HP:") && leakS.Ok, $"en inglés la ficha sale sin español colado ({leakS.Found})");
+    Check(statsEn.Embed is not null && enStats.Contains("Attack **") && enStats.Contains("Max HP **") && enStats.Contains("➕ Dishes") && leakS.Ok, $"en inglés la ficha sale sin español colado ({leakS.Found})");
 }
+
+await Player(UEn);
+await db.ExecuteAsync("DELETE FROM player_dragons WHERE discord_id = @id", new { id = (long)UEn });
+await db.ExecuteAsync("UPDATE users SET class = 'Guerrero', level = 25, max_hp = 420, current_hp = 420, weapon_id = @w, amulet_id = @a, amulet_enchant = 3, amulet_enchant_kind = 'vida' WHERE discord_id = @id", new { id = (long)UEn, w = weaponId, a = amuletId });
+await db.ExecuteAsync("INSERT INTO player_dragons (discord_id, kind, tier, level) VALUES (@id, 'defensa', 5, 20)", new { id = (long)UEn });
+var meW = (await users.GetByDiscordIdAsync(UEn))!;
+var combatW = PlayerCombatProfileCalculator.Resolve(meW, weaponS, amuletS, 0, await bonusService.GetAsync(UEn, 0));
+var statsW = await StatsModule.BuildStatsAsync(users, itemsRepo, buffRepo, bonusService, cooking, dragonRepo, UEn);
+var wAtk = Block(statsW.Embed!.Description, "Ataque"); var wDef = Block(statsW.Embed.Description, "Defensa"); var wHp = Block(statsW.Embed.Description, "Vida máxima");
+Check(wAtk is { } a2 && a2.Base + a2.Adds == a2.Total && a2.Total == combatW.Damage && wDef is { } d2 && d2.Base + d2.Adds == d2.Total && d2.Total == combatW.Defense && wHp is { } h2 && h2.Base + h2.Adds == h2.Total && h2.Total == combatW.CombatMaxHp,
+    $"un Guerrero con dragón de defensa y encantamiento Vida: la suma sigue exacta y coincide con lo que pelea (ATQ {wAtk?.Total}/{combatW.Damage}, DEF {wDef?.Total}/{combatW.Defense}, vida {wHp?.Total}/{combatW.CombatMaxHp})");
+Check(statsW.Embed.Description.Contains("➕ Clase **+") && statsW.Embed.Description.Contains("Guerrero ×1,2") && statsW.Embed.Description.Contains("➕ Encantamiento **+") && statsW.Embed.Description.Contains("➕ Dragón **+") && statsW.Embed.Description.Contains("➕ Amuleto **+"),
+    "y en el Guerrero aparecen la clase (×1,2), el encantamiento de Vida, el dragón y el amuleto como agregados");
 
 // El perfil NO se carga: la línea de ATQ no lleva la marca del dragón (el número ya la incluye); la 🔥 queda solo para la bendición de ataque.
 var profile = await GameModule.BuildProfileEmbedAsync(users, itemsRepo, zonesRepo, buffRepo, U1, "T", "https://example.com/a.png", petRepo, bonusService, dragonRepo);

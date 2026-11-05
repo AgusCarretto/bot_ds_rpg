@@ -106,7 +106,8 @@ public class CookModule(ICookingRepository cooking, IInventoryRepository invento
             string total = string.Join(" · ", new[] { hp > 0 ? Loc.F($"+{hp} de vida máxima") : null, def > 0 ? Loc.F($"+{def} de DEF") : null, atk > 0 ? Loc.F($"+{atk} de ATQ") : null }.Where(t => t is not null));
             embed.WithDescription(
                 Loc.T("Cada plato se **cocina y se come en el momento**: **/cook** plato:… (o **aa cook <plato> [veces]**). Los permanentes se apilan hasta el próximo Fuego Nuevo.") + "\n" +
-                Loc.F($"Los de tiempo duran {CookingCatalog.TimedMinutes} minutos, corren a la vez y comer el mismo otra vez suma otros {CookingCatalog.TimedMinutes}.") +
+                Loc.F($"Los de tiempo duran {CookingCatalog.TimedMinutes} minutos, corren a la vez y comer el mismo otra vez suma otros {CookingCatalog.TimedMinutes}.") + "\n" +
+                Loc.T("Cada ingrediente muestra **lo que tenés / lo que pide** (✅ alcanza, ❌ falta); el combustible es el carbón que se gasta al cocinar.") +
                 (total.Length == 0 ? string.Empty : "\n\n" + Loc.F($"Llevás cocinado en esta vuelta: **{total}**.")));
 
             foreach (var dish in CookingCatalog.All)
