@@ -6,8 +6,9 @@ using Discord;
 using Discord.Interactions;
 
 // /stats (aa stats) — la ficha de lo que tenés AHORA contra monstruos (v0.49.0, el dueño: «un comando nuevo aa stats que te muestre las cosas actuales con encantamientos actuales y bufos actuales, pero nada de cargar el
-// perfil»). El perfil muestra los números ya con todo adentro; acá se ve CUÁNTO aporta cada cosa: el nivel, el arma y el amuleto con su encantamiento, lo cocinado, el banquete, el dragón, las mascotas y las bendiciones. Solo mira
-// (está en la lista de FightLock) y no crea cuentas. Todo se arma con las mismas cuentas del combate (PlayerCombatProfileCalculator.Resolve), así que el total que se ve es el que pelea.
+// perfil»; v0.49.2: «el total con letra más grande, en negrita, el base y después los agregados, pero que sean parte del total, desglosados»). Para ATAQUE, DEFENSA y VIDA: un título grande con el TOTAL (el mismo que pelea:
+// sale de PlayerCombatProfileCalculator.Resolve), la BASE (el nivel) y cada AGREGADO con lo que sumó en puntos, de modo que base + agregados = total EXACTO (lo que multiplica, como el banquete, el dragón o las bendiciones,
+// se reparte en puntos y el último absorbe el redondeo). Abajo, en campos chicos: crítico y esquive, lo que corre de la cocina, el dragón, las mascotas y el Fuego Nuevo. Solo mira (está en la lista de FightLock) y no crea cuentas.
 public sealed record StatsReply(string? PlainMessage, Embed? Embed);
 
 public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepository buffs, IPlayerBonusService bonusService, ICookingRepository cooking, IDragonRepository dragons) : InteractionModuleBase<SocketInteractionContext>
@@ -55,62 +56,77 @@ public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepo
             BotLog.Warn(ex);
         }
 
+        // ---- ATAQUE: nivel + arma + platos (lo que se tiene puesto), después el banquete y lo que multiplican el dragón y las bendiciones.
+        int weaponAtk = weapon is null ? 0 : PlayerCombatProfileCalculator.WeaponDamage(player, weapon);
+        int cookedAtk = bonuses.CookedAttack;
+        int attackGear = CombatStats.TotalAttack(player.Level, weaponAtk + cookedAtk);
+        int attackBase = attackGear - weaponAtk - cookedAtk;
+        int attackWithBuff = AttackBuff.Apply(attackGear, buff?.AttackPercent ?? 0);
+        double blessingAtkPct = (BlessingAttackFactor(bonuses) - 1) * 100;
+        double dragonAtkPct = bonuses.Dragon?.AttackPercent ?? 0;
+        var attackShares = Share(combat.Damage - attackWithBuff, dragonAtkPct, blessingAtkPct);
+        var attackAdds = new List<string>();
+        if (weapon is not null) attackAdds.Add(Loc.F($"➕ Arma **+{weaponAtk}** · {weapon.Name}{EnchantTail(player.WeaponEnchantKind, player.WeaponEnchant)}"));
+        if (cookedAtk > 0) attackAdds.Add(Loc.F($"➕ Platos **+{cookedAtk}**"));
+        if (buff is not null && attackWithBuff - attackGear > 0) attackAdds.Add(Loc.F($"➕ Banquete **+{attackWithBuff - attackGear}** · +{buff.AttackPercent} % ({Math.Max(1, (int)Math.Ceiling(buff.Remaining.TotalMinutes))} min)"));
+        if (attackShares[0] > 0) attackAdds.Add(Loc.F($"➕ Dragón **+{attackShares[0]}**"));
+        if (attackShares[1] > 0) attackAdds.Add(Loc.F($"➕ Bendición **+{attackShares[1]}**"));
+        string attackBlock = Block(Loc.F($"# ⚔️ Ataque **{combat.Damage}**"),
+            weapon is null ? Loc.F($"Base **{attackBase}** · nivel {player.Level} · sin arma") : Loc.F($"Base **{attackBase}** · nivel {player.Level}"), attackAdds);
+
+        // ---- DEFENSA: nivel + amuleto + platos, después lo que multiplican la mascota, las bendiciones y el dragón.
+        int amuletDef = amulet is null ? 0 : PlayerCombatProfileCalculator.AmuletDefense(player, amulet);
+        int cookedDef = bonuses.CookedDefense;
+        int defenseGear = CombatStats.TotalDefense(player.Level, amuletDef + cookedDef);
+        int defenseBase = defenseGear - amuletDef - cookedDef;
+        double petDefPct = bonuses.Pets.DefensePercent;
+        double blessingDefPct = ((1 + (BlessingCatalog.DefensePerLevel * bonuses.BlessingLevel(BlessingCatalog.DefenseKey))) - 1) * 100;
+        double dragonDefPct = bonuses.Dragon?.DefensePercent ?? 0;
+        var defenseShares = Share(combat.Defense - defenseGear, petDefPct, dragonDefPct, blessingDefPct);
+        var defenseAdds = new List<string>();
+        if (amulet is not null) defenseAdds.Add(Loc.F($"➕ Amuleto **+{amuletDef}** · {amulet.Name}{EnchantTail(player.AmuletEnchantKind, player.AmuletEnchant)}"));
+        if (cookedDef > 0) defenseAdds.Add(Loc.F($"➕ Platos **+{cookedDef}**"));
+        if (defenseShares[0] > 0) defenseAdds.Add(Loc.F($"➕ Mascota **+{defenseShares[0]}**"));
+        if (defenseShares[1] > 0) defenseAdds.Add(Loc.F($"➕ Dragón **+{defenseShares[1]}**"));
+        if (defenseShares[2] > 0) defenseAdds.Add(Loc.F($"➕ Bendición **+{defenseShares[2]}**"));
+        string defenseBlock = Block(Loc.F($"# 🛡️ Defensa **{combat.Defense}**"),
+            amulet is null ? Loc.F($"Base **{defenseBase}** · nivel {player.Level} · sin amuleto") : Loc.F($"Base **{defenseBase}** · nivel {player.Level}"), defenseAdds);
+
+        // ---- VIDA MÁXIMA (la que se ve): la vida del nivel por el factor de la clase, el encantamiento Vida, las bendiciones y el dragón, y los platos EXACTOS al final (CombatPassives los suma así).
+        var classBase = ClassPassives.For(player.Class);
+        var withEnchants = Enchantments.ApplyEffects(classBase, player);
+        double classFactor = classBase.MaxHpMultiplier * PveTuning.HpFactor(player.Class);
+        double enchantFactor = withEnchants.MaxHpMultiplier / classBase.MaxHpMultiplier;
+        double blessingDragonFactor = Math.Max(1.0, bonuses.MaxHpMultiplier);
+        int hpBase = player.MaxHp;
+        int hpClass = HpDisplay.Scale(hpBase, classFactor);
+        int hpEnchant = HpDisplay.Scale(hpBase, classFactor * enchantFactor);
+        int hpBlessingDragon = HpDisplay.Scale(hpBase, classFactor * enchantFactor * blessingDragonFactor);
+        double blessingHpPct = BlessingCatalog.HpPerLevel * bonuses.BlessingLevel(BlessingCatalog.HpKey) * 100;
+        double dragonHpPct = bonuses.Dragon?.HpPercent ?? 0;
+        var hpShares = Share(hpBlessingDragon - hpEnchant, dragonHpPct, blessingHpPct);
+        var hpAdds = new List<string>();
+        if (hpClass - hpBase != 0) hpAdds.Add(Loc.F($"➕ Clase **{Signed(hpClass - hpBase)}** · {player.Class} ×{Loc.Decimal(classFactor, 2)}"));
+        if (hpEnchant - hpClass > 0) hpAdds.Add(Loc.F($"➕ Encantamiento **+{hpEnchant - hpClass}**"));
+        if (hpShares[0] > 0) hpAdds.Add(Loc.F($"➕ Dragón **+{hpShares[0]}**"));
+        if (hpShares[1] > 0) hpAdds.Add(Loc.F($"➕ Bendición **+{hpShares[1]}**"));
+        if (bonuses.CookedMaxHp > 0) hpAdds.Add(Loc.F($"➕ Platos **+{bonuses.CookedMaxHp}**"));
+        string hpBlock = Block(Loc.F($"# ❤️ Vida máxima **{combat.CombatMaxHp}**"), Loc.F($"Base **{hpBase}** · nivel {player.Level}"), hpAdds);
+
         var embed = new EmbedBuilder()
             .WithTitle(Loc.T("📊 Tus stats"))
             .WithColor(Color.Orange)
-            .WithDescription(Loc.T("Lo que cuenta **contra monstruos**. Los números del perfil ya incluyen todo esto; acá ves cuánto aporta cada cosa. En duelos y en la Arena cuentan solo el nivel, el equipo y la clase."));
-
-        // ---- Ataque
-        var attackParts = new List<string>
-        {
-            Loc.F($"nivel {CombatStats.BaseAttack(player.Level)}"),
-            weapon is null ? Loc.T("sin arma") : $"{weapon.Name} {PlayerCombatProfileCalculator.WeaponDamage(player, weapon)}" + EnchantTail(player.WeaponEnchantKind, player.WeaponEnchant),
-        };
-        if (bonuses.CookedAttack > 0) attackParts.Add(Loc.F($"platos +{bonuses.CookedAttack}"));
-        var attackMults = new List<string>();
-        if (bonuses.Dragon is { AttackPercent: > 0 } dragonAtk) attackMults.Add(Loc.F($"dragón {FuegoNuevoRules.PercentText(1 + (dragonAtk.AttackPercent / 100.0))}"));
-        double blessingAtk = 1 + (BlessingCatalog.AttackPerLevel * bonuses.BlessingLevel(BlessingCatalog.AttackKey));
-        if (blessingAtk > 1.0) attackMults.Add(Loc.F($"bendición {FuegoNuevoRules.PercentText(blessingAtk)}"));
-        if (buff is not null) attackMults.Add(Loc.F($"banquete +{buff.AttackPercent} % ({Math.Max(1, (int)Math.Ceiling(buff.Remaining.TotalMinutes))} min)"));
-        embed.AddField(Loc.F($"⚔️ Ataque: {combat.Damage}"), Breakdown(attackParts, attackMults), false);
-
-        // ---- Defensa
-        var defenseParts = new List<string>
-        {
-            Loc.F($"nivel {CombatStats.BaseDefense(player.Level)}"),
-            amulet is null ? Loc.T("sin amuleto") : $"{amulet.Name} {PlayerCombatProfileCalculator.AmuletDefense(player, amulet)}" + EnchantTail(player.AmuletEnchantKind, player.AmuletEnchant),
-        };
-        if (bonuses.CookedDefense > 0) defenseParts.Add(Loc.F($"platos +{bonuses.CookedDefense}"));
-        var defenseMults = new List<string>();
-        if (bonuses.Pets.DefensePercent > 0) defenseMults.Add(Loc.F($"mascota {FuegoNuevoRules.PercentText(1 + (bonuses.Pets.DefensePercent / 100.0))}"));
-        double blessingDef = 1 + (BlessingCatalog.DefensePerLevel * bonuses.BlessingLevel(BlessingCatalog.DefenseKey));
-        if (blessingDef > 1.0) defenseMults.Add(Loc.F($"bendición {FuegoNuevoRules.PercentText(blessingDef)}"));
-        if (bonuses.Dragon is { DefensePercent: > 0 } dragonDef) defenseMults.Add(Loc.F($"dragón {FuegoNuevoRules.PercentText(1 + (dragonDef.DefensePercent / 100.0))}"));
-        embed.AddField(Loc.F($"🛡️ Defensa: {combat.Defense}"), Breakdown(defenseParts, defenseMults), false);
-
-        // ---- Vida (lo que se VE: la vida base por el factor de la clase y los encantamientos, más lo cocinado exacto)
-        var classBase = ClassPassives.For(player.Class);
-        var withEnchants = Enchantments.ApplyEffects(classBase, player);
-        var hpParts = new List<string> { Loc.F($"base {player.MaxHp}") };
-        double classFactor = classBase.MaxHpMultiplier * PveTuning.HpFactor(player.Class);
-        if (Math.Abs(classFactor - 1.0) > 0.0001) hpParts.Add(Loc.F($"clase {player.Class} ×{Loc.Decimal(classFactor, 2)}"));
-        double enchantHp = withEnchants.MaxHpMultiplier / classBase.MaxHpMultiplier;
-        if (enchantHp > 1.0) hpParts.Add(Loc.F($"encantamiento {FuegoNuevoRules.PercentText(enchantHp)}"));
-        if (bonuses.MaxHpMultiplier > 1.0) hpParts.Add(Loc.F($"bendición y dragón {FuegoNuevoRules.PercentText(bonuses.MaxHpMultiplier)}"));
-        if (bonuses.CookedMaxHp > 0) hpParts.Add(Loc.F($"platos +{bonuses.CookedMaxHp}"));
-        embed.AddField(Loc.F($"❤️ Vida máxima: {combat.CombatMaxHp}"), Breakdown(hpParts, []), false);
+            .WithDescription(attackBlock + "\n\n" + defenseBlock + "\n\n" + hpBlock)
+            .WithFooter(Loc.T("Todo cuenta contra monstruos (en duelos y en la Arena, solo el nivel, el equipo y la clase). El perfil ya muestra estos totales."));
 
         // ---- Crítico y esquive
+        var classCrit = classBase.CritChanceBonus * 100;
         double critTotal = (CombatMath.CritChance + combat.Passives.CritChanceBonus) * 100;
         double dodgeTotal = (CombatMath.DodgeChance + combat.Passives.DodgeChanceBonus) * 100;
         embed.AddField(Loc.T("🎯 Crítico y esquive"),
-            Loc.F($"Crítico **{Pct(critTotal)}** (base {Pct(CombatMath.CritChance * 100)}{Points(Loc.Mark("clase"), classBase.CritChanceBonus * 100)}{Points(Loc.Mark("encantamiento"), (withEnchants.CritChanceBonus - classBase.CritChanceBonus) * 100)}{Points(Loc.Mark("platos"), bonuses.CookedCritPoints)})") + "\n" +
+            Loc.F($"Crítico **{Pct(critTotal)}** (base {Pct(CombatMath.CritChance * 100)}{Points(Loc.Mark("clase"), classCrit)}{Points(Loc.Mark("encantamiento"), (withEnchants.CritChanceBonus - classBase.CritChanceBonus) * 100)}{Points(Loc.Mark("platos"), bonuses.CookedCritPoints)})") + "\n" +
             Loc.F($"Esquive **{Pct(dodgeTotal)}** (base {Pct(CombatMath.DodgeChance * 100)}{Points(Loc.Mark("clase"), classBase.DodgeChanceBonus * 100)}{Points(Loc.Mark("encantamiento"), (withEnchants.DodgeChanceBonus - classBase.DodgeChanceBonus) * 100)}{Points(Loc.Mark("platos"), bonuses.CookedDodgePoints)})"),
             false);
-
-        // ---- Encantamientos
-        embed.AddField(Loc.T("✨ Encantamientos"),
-            Loc.F($"Arma: {EnchantLine(player.WeaponEnchantKind, weapon is null ? 0 : player.WeaponEnchant)}") + "\n" + Loc.F($"Amuleto: {EnchantLine(player.AmuletEnchantKind, amulet is null ? 0 : player.AmuletEnchant)}"), false);
 
         // ---- Cocina: lo apilado de esta vuelta y los platos de tiempo que corren
         var cookLines = new List<string>();
@@ -186,16 +202,44 @@ public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepo
         return new StatsReply(null, embed.Build());
     }
 
-    // «nivel 39 · Espada 48 (✨…) · platos +2», y debajo «Además multiplica: dragón +7 % · …» solo si hay algo.
-    private static string Breakdown(IReadOnlyList<string> parts, IReadOnlyList<string> multipliers) =>
-        string.Join(" + ", parts) + (multipliers.Count == 0 ? string.Empty : "\n" + Loc.F($"Además multiplica: {string.Join(" · ", multipliers)}"));
+    // Un bloque: el título grande con el total, la línea de la base y cada agregado en su renglón.
+    private static string Block(string heading, string baseLine, IReadOnlyList<string> adds) =>
+        heading + "\n" + baseLine + (adds.Count == 0 ? string.Empty : "\n" + string.Join("\n", adds));
+
+    // Reparte `total` puntos entre varias fuentes en proporción a su porcentaje, sin perder ni inventar ninguno: cada una recibe la parte entera de lo suyo y los que sobran van a las de mayor resto.
+    // Así base + agregados da EXACTO el total que pelea (lo que multiplican el dragón, la mascota o las bendiciones sale de un solo redondeo en el combate).
+    private static int[] Share(int total, params double[] weights)
+    {
+        var shares = new int[weights.Length];
+        double sum = weights.Sum();
+        if (total <= 0 || sum <= 0)
+        {
+            return shares;
+        }
+
+        var exact = weights.Select(w => total * w / sum).ToArray();
+        for (int i = 0; i < shares.Length; i++)
+        {
+            shares[i] = (int)Math.Floor(exact[i]);
+        }
+
+        int rest = total - shares.Sum();
+        foreach (int i in Enumerable.Range(0, shares.Length).OrderByDescending(i => exact[i] - shares[i]).Take(rest))
+        {
+            shares[i]++;
+        }
+
+        return shares;
+    }
+
+    private static double BlessingAttackFactor(PlayerBonuses bonuses) => 1 + (BlessingCatalog.AttackPerLevel * bonuses.BlessingLevel(BlessingCatalog.AttackKey));
+
+    // «+12» o «-3» (la clase puede restar vida: el Mago ×0,9 en algún ajuste).
+    private static string Signed(int value) => value >= 0 ? $"+{value}" : value.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
     private static string EnchantTail(string? kind, int tier) => Enchantments.IsValidTier(tier) ? $" (✨{Enchantments.ShortText(kind, tier)})" : string.Empty;
 
-    private static string EnchantLine(string? kind, int tier) =>
-        Enchantments.IsValidTier(tier) ? $"{Enchantments.KindLabel(kind, tier)} · {Enchantments.ShortText(kind, tier)}" : Loc.T("sin encantar");
-
-    // «, clase +15», o nada si no suma: una fuente de puntos de crítico o de esquive dentro del paréntesis de la ficha.
+    // «, clase +15», o nada si no suma: una fuente de puntos de crítico o de esquive dentro del paréntesis.
     private static string Points(string label, double points) =>
         points <= 0.0001 ? string.Empty : $", {Loc.Tr(label)} +{Num(points)}";
 

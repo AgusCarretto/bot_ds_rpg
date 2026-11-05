@@ -14,7 +14,7 @@ solo. El más nuevo va arriba. Cada anuncio tiene un título y un texto.
 
 🍳 Los peces por fin sirven para algo: con **/cook** cocinás platos con tus peces, materiales raros y carbón (las recetas están en **aa cook recipes**). Hay platos que **se apilan** hasta tu próximo Fuego Nuevo y otros que te dan un **bufo por una hora**, y se pueden tener varios a la vez. Son caros de hacer, así que no te apures: ¡a descubrirlos!
 
-📊 Con **/stats** (o **aa stats**) ves tu ataque, defensa y vida, y **cuánto aporta cada cosa**: tu equipo y sus encantamientos, los platos, el dragón, las mascotas y las bendiciones.
+📊 Con **/stats** (o **aa stats**) ves tu **ataque, defensa y vida** con el total bien grande y, abajo, de dónde sale: tu base más lo que suma cada cosa (equipo y encantamientos, platos, dragón, mascotas, bendiciones). Todo suma justo hasta el total.
 
 🐾 Además, en **aa pets** las mascotas ahora se ven separadas, más ordenadas.
 
