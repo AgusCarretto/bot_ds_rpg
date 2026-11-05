@@ -3,7 +3,8 @@ namespace BotDsRpg.GameData;
 // Lo que cada jugador puede configurar (v0.26.1, /config): cómo quiere VER el bot. Nada de esto toca el juego (ni números, ni cooldowns, ni recompensas): solo qué se muestra.
 // Sumar una opción: un campo acá con su valor de siempre por defecto, una columna en player_settings (Database/add_player_settings.sql, add_recipe_book_setting.sql...) y su botón en Modules/ConfigModule.cs.
 // FullRecipeBook (v0.28.1): qué recetario ve en la herrería. false (lo de siempre) = el CLÁSICO, una zona por página con lo que tenés de cada material; true = el COMPLETO de la v0.27.0, todas las zonas juntas.
-public sealed record PlayerSettings(bool ShowFightSummary = true, bool FullRecipeBook = false)
+// ProfileBanner (v0.50.0): la clave de la bendición cuyo banner (GameData/ProfileBanners.cs) se ve al pie del /profile; null = ninguno.
+public sealed record PlayerSettings(bool ShowFightSummary = true, bool FullRecipeBook = false, string? ProfileBanner = null)
 {
     // Lo que ve quien nunca tocó nada (o cuando la base no responde): todo como siempre.
     public static readonly PlayerSettings Default = new();
@@ -14,12 +15,14 @@ public enum SettingKey
 {
     FightSummary,
     RecipeBook,
+    Banner,
 }
 
 public static class SettingWords
 {
     private static readonly string[] FightSummaryWords = ["summary", "fightsummary", "fight summary", "resumen", "resumen del combate", "resumendelcombate", "tabla", "tablita", "stats"];
     private static readonly string[] RecipeBookWords = ["recipes", "recipe", "recipebook", "recipe book", "recetas", "receta", "recetario", "forge", "herreria", "herrería"];
+    private static readonly string[] BannerWords = ["banner", "banners", "bg", "background", "backgrounds", "fondo", "fondos", "perfil", "profile"];
     private static readonly string[] FullBookWords = ["completo", "completa", "full", "todo", "todas", "all", "libro", "book"];
     private static readonly string[] ClassicBookWords = ["clasico", "clásico", "clasica", "clásica", "classic", "simple", "normal", "zona", "zone", "pagina", "página", "page"];
 
@@ -29,6 +32,11 @@ public static class SettingWords
         if (FightSummaryWords.Contains(word))
         {
             return SettingKey.FightSummary;
+        }
+
+        if (BannerWords.Contains(word))
+        {
+            return SettingKey.Banner;
         }
 
         return RecipeBookWords.Contains(word) ? SettingKey.RecipeBook : null;

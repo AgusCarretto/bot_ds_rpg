@@ -13,4 +13,7 @@ public interface ISettingsRepository
 
     // Guarda (o pisa) qué recetario ve en la herrería: true = el completo, false = el clásico (v0.28.1). No toca las demás opciones del jugador.
     Task SetFullRecipeBookAsync(ulong discordId, bool value, CancellationToken cancellationToken = default);
+
+    // Guarda (o pisa) el banner del perfil: la clave de una bendición, o null para no usar ninguno (v0.50.0). No toca las demás opciones del jugador.
+    Task SetProfileBannerAsync(ulong discordId, string? blessingKey, CancellationToken cancellationToken = default);
 }

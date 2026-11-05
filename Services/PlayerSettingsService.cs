@@ -15,6 +15,9 @@ public interface IPlayerSettingsService
 
     // Qué recetario ve en la herrería (v0.28.1): true = el completo, false = el clásico. Misma regla: no atrapa errores.
     Task SetFullRecipeBookAsync(ulong discordId, bool value);
+
+    // El banner del perfil (v0.50.0): la clave de la bendición, o null para ninguno. Misma regla: no atrapa errores.
+    Task SetProfileBannerAsync(ulong discordId, string? blessingKey);
 }
 
 public sealed class PlayerSettingsService(ISettingsRepository repository) : IPlayerSettingsService
@@ -63,6 +66,12 @@ public sealed class PlayerSettingsService(ISettingsRepository repository) : IPla
     public async Task SetFullRecipeBookAsync(ulong discordId, bool value)
     {
         await repository.SetFullRecipeBookAsync(discordId, value);
+        await RefreshAsync(discordId);
+    }
+
+    public async Task SetProfileBannerAsync(ulong discordId, string? blessingKey)
+    {
+        await repository.SetProfileBannerAsync(discordId, blessingKey);
         await RefreshAsync(discordId);
     }
 

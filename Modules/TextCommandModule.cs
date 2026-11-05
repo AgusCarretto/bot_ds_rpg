@@ -151,8 +151,17 @@ public partial class TextCommandModule(
 
             string avatarUrl = target.GetAvatarUrl() ?? target.GetDefaultAvatarUrl();
             var embed = await GameModule.BuildProfileEmbedAsync(
-                userRepository, itemRepository, zoneRepository, buffRepository, target.Id, GameModule.GetDisplayName(target), avatarUrl, petRepository, bonusService, dragonRepository);
-            await ReplyAsync(embed: embed);
+                userRepository, itemRepository, zoneRepository, buffRepository, target.Id, GameModule.GetDisplayName(target), avatarUrl, petRepository, bonusService, dragonRepository, settingsService);
+
+            // Con banner (v0.50.0) el archivo viaja adjunto al mensaje; sin banner sale como siempre.
+            if (ProfileBanners.AttachmentPathFor(embed) is { } bannerFile)
+            {
+                await Context.Channel.SendFileAsync(bannerFile, embed: embed);
+            }
+            else
+            {
+                await ReplyAsync(embed: embed);
+            }
         }
         catch (Exception ex)
         {

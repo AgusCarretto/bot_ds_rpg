@@ -10,7 +10,7 @@ using BotDsRpg.Services;
 
 public class GameModule(
     IUserRepository userRepository, IInventoryRepository inventoryRepository, IItemRepository itemRepository, IZoneRepository zoneRepository, IBuffRepository buffRepository,
-    IPetRepository petRepository, IPlayerBonusService bonusService, IDragonRepository dragonRepository)
+    IPetRepository petRepository, IPlayerBonusService bonusService, IDragonRepository dragonRepository, IPlayerSettingsService settingsService)
     : InteractionModuleBase<SocketInteractionContext>
 {
     // Comando barra: /profile [jugador]
@@ -36,8 +36,17 @@ public class GameModule(
 
             var embed = await BuildProfileEmbedAsync(
                 userRepository, itemRepository, zoneRepository, buffRepository, target.Id, GetDisplayName(target),
-                target.GetAvatarUrl() ?? target.GetDefaultAvatarUrl(), petRepository, bonusService, dragonRepository);
-            await FollowupAsync(embed: embed);
+                target.GetAvatarUrl() ?? target.GetDefaultAvatarUrl(), petRepository, bonusService, dragonRepository, settingsService);
+
+            // Con banner (v0.50.0) el archivo viaja adjunto al mensaje; sin banner sale como siempre.
+            if (ProfileBanners.AttachmentPathFor(embed) is { } bannerFile)
+            {
+                await FollowupWithFileAsync(bannerFile, embed: embed);
+            }
+            else
+            {
+                await FollowupAsync(embed: embed);
+            }
         }
         catch (Exception ex)
         {
@@ -70,7 +79,8 @@ public class GameModule(
     // embed en "aa profile" — acá vive tanto la lectura de datos como el embed.
     public static async Task<Embed> BuildProfileEmbedAsync(
         IUserRepository userRepository, IItemRepository itemRepository, IZoneRepository zoneRepository, IBuffRepository buffRepository,
-        ulong discordId, string username, string avatarUrl, IPetRepository? petRepository = null, IPlayerBonusService? bonusService = null, IDragonRepository? dragonRepository = null)
+        ulong discordId, string username, string avatarUrl, IPetRepository? petRepository = null, IPlayerBonusService? bonusService = null, IDragonRepository? dragonRepository = null,
+        IPlayerSettingsService? settingsService = null)
     {
         // Si es la primera vez que este usuario ejecuta un comando, se crea acá
         // automáticamente con los valores por defecto (Nivel 1, 0 EXP, 50 de oro, 100/100 HP, Guerrero).
@@ -227,6 +237,24 @@ public class GameModule(
         if (BotIdentity.AvatarUrl is { } botIcon)
         {
             footer.WithIconUrl(botIcon);
+        }
+
+        // El banner del perfil (v0.50.0): el que ELIGIÓ este jugador en /config, mostrado al pie con el archivo del tier que le corresponde al nivel de su bendición. Solo vale si la bendición es suya (un banner
+        // elegido y ya no desbloqueado no se ve) y un perfil nunca se cae por esto: sin servicio, sin elección o sin archivo, sale sin banner.
+        if (settingsService is not null)
+        {
+            try
+            {
+                string? chosen = (await settingsService.GetAsync(discordId)).ProfileBanner;
+                if (ProfileBanners.FileFor(chosen, bonuses.BlessingLevel(chosen ?? string.Empty)) is { } bannerName)
+                {
+                    embed.WithImageUrl(ProfileBanners.AttachmentUrl(bannerName));
+                }
+            }
+            catch (Exception ex)
+            {
+                BotLog.Warn(ex);
+            }
         }
 
         return embed

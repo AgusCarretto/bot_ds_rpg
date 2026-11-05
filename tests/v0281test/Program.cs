@@ -225,6 +225,7 @@ sealed class ThrowingRepo : ISettingsRepository
     public Task<PlayerSettings?> GetAsync(ulong discordId, CancellationToken ct = default) => throw new InvalidOperationException("simulado: la tabla no existe");
     public Task SetShowFightSummaryAsync(ulong discordId, bool value, CancellationToken ct = default) => throw new InvalidOperationException("simulado");
     public Task SetFullRecipeBookAsync(ulong discordId, bool value, CancellationToken ct = default) => throw new InvalidOperationException("simulado");
+    public Task SetProfileBannerAsync(ulong discordId, string? blessingKey, CancellationToken ct = default) => throw new InvalidOperationException("simulado");
 }
 
 public class FakeProxy : DispatchProxy
