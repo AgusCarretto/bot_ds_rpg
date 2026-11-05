@@ -2865,5 +2865,10 @@
   "✅ Listo: tu perfil lleva el banner de la Brasa de Color, **tier {0}**.": "✅ Done: your profile carries the Brasa de Color banner, **tier {0}**.",
   "✅ Listo: tu perfil lleva el **mejor banner de la Brasa de Color** (el de tu nivel, mejora solo).": "✅ Done: your profile carries the **best Brasa de Color banner** (the one for your level, it improves by itself).",
   "Las bendiciones son permanentes: se quedan con cada Fuego Nuevo. Lo de ataque, defensa y vida solo vale contra monstruos. La Brasa de Color desbloquea además un banner para tu perfil que mejora con su nivel (se elige en /config).": "Blessings are permanent: they stay through every Fuego Nuevo. Attack, defense and HP only count against monsters. Brasa de Color also unlocks a banner for your profile that improves with its level (pick it in /config).",
-  "cosmética, no da poder: cambia el color de tu perfil, desbloquea un título (se pone en /titles) y el banner del perfil, que mejora con cada nivel (se activa en /config)": "cosmetic, gives no power: changes your profile color, unlocks a title (equip it in /titles) and the profile banner, which improves with every level (turn it on in /config)"
+  "cosmética, no da poder: cambia el color de tu perfil, desbloquea un título (se pone en /titles) y el banner del perfil, que mejora con cada nivel (se activa en /config)": "cosmetic, gives no power: changes your profile color, unlocks a title (equip it in /titles) and the profile banner, which improves with every level (turn it on in /config)",
+  "Esa ficha es de otra persona: abrí la tuya con **/stats**.": "That sheet belongs to someone else: open yours with **/stats**.",
+  "📊 Más stats": "📊 More stats",
+  "Todo esto ya está sumado en los totales de la primera pantalla.": "All of this is already included in the totals of the first screen.",
+  "Volver a las stats": "Back to the stats",
+  "Ver más stats": "See more stats"
 }

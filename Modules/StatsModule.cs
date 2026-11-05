@@ -8,8 +8,10 @@ using Discord.Interactions;
 // /stats (aa stats) — la ficha de lo que tenés AHORA contra monstruos (v0.49.0, el dueño: «un comando nuevo aa stats que te muestre las cosas actuales con encantamientos actuales y bufos actuales, pero nada de cargar el
 // perfil»; v0.49.2: «el total con letra más grande, en negrita, el base y después los agregados, pero que sean parte del total, desglosados»). Para ATAQUE, DEFENSA y VIDA: un título grande con el TOTAL (el mismo que pelea:
 // sale de PlayerCombatProfileCalculator.Resolve), la BASE (el nivel) y cada AGREGADO con lo que sumó en puntos, de modo que base + agregados = total EXACTO (lo que multiplica, como el banquete, el dragón o las bendiciones,
-// se reparte en puntos y el último absorbe el redondeo). Abajo, en campos chicos: crítico y esquive, lo que corre de la cocina, el dragón, las mascotas y el Fuego Nuevo. Solo mira (está en la lista de FightLock) y no crea cuentas.
-public sealed record StatsReply(string? PlainMessage, Embed? Embed);
+// se reparte en puntos y el último absorbe el redondeo). Después, en la MISMA pantalla, crítico y esquive y las chances de drop. Lo demás (lo que corre de la cocina, el dragón, las mascotas y el Fuego Nuevo con las bendiciones) va en una
+// SEGUNDA pantalla, «Más stats» (v0.50.3, el dueño: «hacer otra pestaña para todo ese resto, desde la cocina hasta abajo»): un botón cambia de una a la otra en el mismo mensaje. Solo mira (está en la lista de FightLock) y no crea cuentas.
+// Components (v0.50.3): el botón «Ver más stats» / «Volver a las stats» cuando hay una segunda pantalla.
+public sealed record StatsReply(string? PlainMessage, Embed? Embed, MessageComponent? Components = null);
 
 public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepository buffs, IPlayerBonusService bonusService, ICookingRepository cooking, IDragonRepository dragons, IZoneBoxService zoneBoxes) : InteractionModuleBase<SocketInteractionContext>
 {
@@ -21,7 +23,7 @@ public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepo
         try
         {
             var reply = await BuildStatsAsync(users, items, buffs, bonusService, cooking, dragons, Context.User.Id, zoneBoxes);
-            await FollowupAsync(reply.PlainMessage, embed: reply.Embed);
+            await FollowupAsync(reply.PlainMessage, embed: reply.Embed, components: reply.Components);
         }
         catch (Exception ex)
         {
@@ -30,9 +32,40 @@ public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepo
         }
     }
 
-    // Estático y sin Discord: lo comparte «aa stats». No crea cuentas (GetByDiscordIdAsync).
+    // El botón de cambiar de pantalla: «stats_page:{dueño}:{0|1}» (el valor es la pantalla a la que PASA). Solo lo toca el dueño de la ficha.
+    public const string PageButton = "stats_page";
+
+    [ComponentInteraction($"{PageButton}:*:*")]
+    public async Task HandlePageAsync(string ownerRaw, string pageRaw)
+    {
+        await DeferAsync();
+
+        try
+        {
+            if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
+            {
+                await FollowupAsync(Loc.T("Esa ficha es de otra persona: abrí la tuya con **/stats**."), ephemeral: true);
+                return;
+            }
+
+            var reply = await BuildStatsAsync(users, items, buffs, bonusService, cooking, dragons, ownerId, zoneBoxes, pageRaw == "1" ? 1 : 0);
+            await ModifyOriginalResponseAsync(p =>
+            {
+                p.Content = reply.PlainMessage;
+                p.Embed = reply.Embed;
+                p.Components = reply.Components ?? new ComponentBuilder().Build();
+            });
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            await FollowupAsync(Loc.T("¡Upa! No pude armar tus stats ahora mismo, intentá de nuevo en un momento."), ephemeral: true);
+        }
+    }
+
+    // Estático y sin Discord: lo comparte «aa stats». No crea cuentas (GetByDiscordIdAsync). page = 0 la ficha de siempre, 1 «Más stats» (si no hay nada que mostrar ahí, siempre sale la primera).
     public static async Task<StatsReply> BuildStatsAsync(
-        IUserRepository users, IItemRepository items, IBuffRepository buffs, IPlayerBonusService bonusService, ICookingRepository cooking, IDragonRepository dragons, ulong discordId, IZoneBoxService? zoneBoxes = null)
+        IUserRepository users, IItemRepository items, IBuffRepository buffs, IPlayerBonusService bonusService, ICookingRepository cooking, IDragonRepository dragons, ulong discordId, IZoneBoxService? zoneBoxes = null, int page = 0)
     {
         var player = await users.GetByDiscordIdAsync(discordId);
         if (player is null)
@@ -152,6 +185,12 @@ public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepo
             .WithDescription(attackBlock + "\n\n" + defenseBlock + "\n\n" + hpBlock + "\n\n" + critBlock + "\n\n" + dodgeBlock + dropSection)
             .WithFooter(Loc.T("Todo cuenta contra monstruos (en duelos y en la Arena, solo el nivel, el equipo y la clase). El perfil ya muestra estos totales. En el drop, cada ➕ cuenta sobre lo que ya llevás acumulado más arriba."));
 
+        // ---- La segunda pantalla, «Más stats»: lo que se cocinó, el dragón, las mascotas y el Fuego Nuevo con las bendiciones (cada campo solo si hay algo que contar).
+        var more = new EmbedBuilder()
+            .WithTitle(Loc.T("📊 Más stats"))
+            .WithColor(Color.Orange)
+            .WithFooter(Loc.T("Todo esto ya está sumado en los totales de la primera pantalla."));
+
         // ---- Cocina: lo apilado de esta vuelta y los platos de tiempo que corren
         var cookLines = new List<string>();
         foreach (var dish in CookingCatalog.All.Where(d => d.Kind == DishKind.Permanent))
@@ -172,7 +211,7 @@ public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepo
 
         if (cookLines.Count > 0)
         {
-            embed.AddField(Loc.T("🍳 Cocina (hasta el próximo Fuego Nuevo)"), string.Join("\n", cookLines), false);
+            more.AddField(Loc.T("🍳 Cocina (hasta el próximo Fuego Nuevo)"), string.Join("\n", cookLines), false);
         }
 
         // ---- Dragón
@@ -201,13 +240,13 @@ public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepo
                 BotLog.Warn(ex);
             }
 
-            embed.AddField(title, string.Join(" · ", parts), false);
+            more.AddField(title, string.Join(" · ", parts), false);
         }
 
         // ---- Mascotas
         if (!bonuses.Pets.IsNone)
         {
-            embed.AddField(Loc.T("🐾 Mascotas"), PetModule.BonusSummary(bonuses.Pets), false);
+            more.AddField(Loc.T("🐾 Mascotas"), PetModule.BonusSummary(bonuses.Pets), false);
         }
 
         // ---- Fuego Nuevo y bendiciones
@@ -220,10 +259,19 @@ public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepo
             string fnLine = player.FuegoNuevo > 0
                 ? Loc.F($"Fuego Nuevo {player.FuegoNuevo}: EXP {FuegoNuevoRules.PercentText(FuegoNuevoRules.XpMultiplier(player.FuegoNuevo))} · drop de cacería {FuegoNuevoRules.PercentText(FuegoNuevoRules.HuntDropMultiplier(player.FuegoNuevo))} · drop de viaje {FuegoNuevoRules.PercentText(FuegoNuevoRules.TravelDropMultiplier(player.FuegoNuevo))} · recolección {FuegoNuevoRules.PercentText(FuegoNuevoRules.GatherMultiplier(player.FuegoNuevo))}")
                 : string.Empty;
-            embed.AddField(Loc.T("🔥 Fuego Nuevo y bendiciones"), string.Join("\n", new[] { fnLine, string.Join(" · ", blessingNames) }.Where(t => t.Length > 0)), false);
+            more.AddField(Loc.T("🔥 Fuego Nuevo y bendiciones"), string.Join("\n", new[] { fnLine, string.Join(" · ", blessingNames) }.Where(t => t.Length > 0)), false);
         }
 
-        return new StatsReply(null, embed.Build());
+        // Un botón para pasar de una pantalla a la otra (solo si hay segunda pantalla). Siempre lleva el dueño en el id.
+        bool hasMore = more.Fields.Count > 0;
+        if (page == 1 && hasMore)
+        {
+            var back = new ComponentBuilder().WithButton(Loc.T("Volver a las stats"), $"{PageButton}:{discordId}:0", ButtonStyle.Secondary, new Emoji("↩"));
+            return new StatsReply(null, more.Build(), back.Build());
+        }
+
+        var next = hasMore ? new ComponentBuilder().WithButton(Loc.T("Ver más stats"), $"{PageButton}:{discordId}:1", ButtonStyle.Primary, new Emoji("➕")).Build() : null;
+        return new StatsReply(null, embed.Build(), next);
     }
 
     // La chance de drop con cada fuente aplicada UNA TRAS OTRA sobre lo acumulado (Fuego Nuevo, mascota, bendición, dragón y, al final, los platos). Cada paso se redondea en décimas sobre el acumulado, así que la

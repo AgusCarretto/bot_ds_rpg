@@ -25,8 +25,40 @@ La idea es que **crezca con el nivel**: el tier I sencillo (un elemento, pocos c
 | IV | Ascua Violeta | violeta `#9C36B5` |
 | V | Sol del Fogón | rojo `#F03E3E` |
 
-## Prompt base
+## Los 5 prompts
 
-> Wide banner illustration, 3:1 aspect ratio (it will be shrunk to 300x100), for a Discord RPG profile. Theme: **campfire embers and living flames, Argentine asado mood**. Color: **<el del tier>**. Strong readable shapes, no text, no letters, no watermark, important elements centered (the sides can be cropped). **Tier <I a V>**: <tier I: simple, one main flame, limited palette | tier III: richer, several flames and lighting | tier V: epic, glowing, golden details, very detailed>.
+Cada uno está completo (se pega entero). Los cinco comparten la misma base para que se reconozcan como **el mismo banner que va creciendo**: una placa ancha con marco de madera quemada y un círculo de brasa al centro; lo que cambia es el color, la cantidad de llamas, chispas y estrellitas que **sobresalen** por arriba, las esquinas y los costados, y lo elaborado del marco. Fondo blanco liso para recortarlo (así lo que sobresale queda suelto, sin rectángulo detrás).
 
-Un banner por prompt. Si la imagen sale con otra proporción, se recorta y se achica a 300 × 100 antes de guardarla.
+**Tip:** armá primero el tier I y dale esa imagen como referencia de estilo a los otros cuatro, así no cambia el dibujo de la placa entre tiers.
+
+**Después de generarlos:** recortá el fondo blanco (PNG con transparencia), achicá a **300 × 100** y guardalos como `banner_brasa_de_color_1.png` … `banner_brasa_de_color_5.png` en `Assets/banners/`. Como se ve tan chico, la placa tiene que ocupar la parte de abajo (~70 %) y las llamas la de arriba (~30 %).
+
+### Tier I — Brasa Viva (naranja rojizo)
+
+```
+Wide horizontal profile banner illustration for an RPG game, 3:1 aspect ratio (for example 1500x500 px), on a flat solid pure white background that I will cut out. Clean painterly digital illustration with bold readable shapes, NOT pixel art. A rounded rectangular banner plaque with a dark charred-wood frame and a glowing circular ember emblem in the center, placed in the lower 70% of the canvas. Tier 1 of 5, the simplest of the series: palette of warm orange-red and dark brown, a plain frame, a couple of small flame tongues rising from the top edge and about six tiny glowing embers drifting up and out past the frame, so the silhouette is not a plain rectangle. Argentine asado / campfire mood. No text, no letters, no watermark, no characters. It will be shrunk to 300x100 px, so keep the shapes big, simple and high-contrast, with no fine detail.
+```
+
+### Tier II — Llama Dorada (dorado)
+
+```
+Wide horizontal profile banner illustration for an RPG game, 3:1 aspect ratio (for example 1500x500 px), on a flat solid pure white background that I will cut out. Clean painterly digital illustration with bold readable shapes, NOT pixel art. A rounded rectangular banner plaque with a dark charred-wood frame and a glowing circular ember emblem in the center, placed in the lower 70% of the canvas; the emblem now has an extra thin ring around it. Tier 2 of 5, a little richer than tier 1: palette of golden yellow and amber with dark brown, a row of small golden flame tongues rising along the top edge and over the corners, plus a handful of sparks and three small four-point stars floating up and out past the frame, so the silhouette is not a plain rectangle. Argentine asado / campfire mood. No text, no letters, no watermark, no characters. It will be shrunk to 300x100 px, so keep the shapes big, simple and high-contrast, with no fine detail.
+```
+
+### Tier III — Fuego Azul (azul)
+
+```
+Wide horizontal profile banner illustration for an RPG game, 3:1 aspect ratio (for example 1500x500 px), on a flat solid pure white background that I will cut out. Clean painterly digital illustration with bold readable shapes, NOT pixel art. A rounded rectangular banner plaque with a dark charred-wood frame and a glowing circular ember emblem in the center, placed in the lower 70% of the canvas, with a thin ring around the emblem and two small diamond ornaments on each side of it. Tier 3 of 5, clearly richer than tier 2: palette of vivid blue with ice-white highlights and dark navy, blue flames of different heights bursting up from the top edge and the corners, many glowing sparks and several small four-point stars floating up and out past the frame, a soft blue glow around the plaque, so the silhouette is not a plain rectangle. Argentine asado / campfire mood. No text, no letters, no watermark, no characters. It will be shrunk to 300x100 px, so keep the shapes big, simple and high-contrast, with no fine detail.
+```
+
+### Tier IV — Ascua Violeta (violeta)
+
+```
+Wide horizontal profile banner illustration for an RPG game, 3:1 aspect ratio (for example 1500x500 px), on a flat solid pure white background that I will cut out. Clean painterly digital illustration with bold readable shapes, NOT pixel art. A rounded rectangular banner plaque with a dark charred-wood frame and a glowing circular ember emblem in the center, placed in the lower 70% of the canvas, with a thin ring around the emblem, diamond ornaments on both sides, and ornate carved corner pieces on the frame. Tier 4 of 5, very rich: palette of deep violet and magenta with bright lilac highlights, swirling violet flames curling out beyond the top edge and both sides of the plaque, lots of drifting embers and star shapes escaping the frame, a strong glowing aura behind the emblem, so the silhouette is clearly not a rectangle. Argentine asado / campfire mood. No text, no letters, no watermark, no characters. It will be shrunk to 300x100 px, so keep the shapes big, simple and high-contrast, with no fine detail.
+```
+
+### Tier V — Sol del Fogón (rojo y oro)
+
+```
+Wide horizontal profile banner illustration for an RPG game, 3:1 aspect ratio (for example 1500x500 px), on a flat solid pure white background that I will cut out. Clean painterly digital illustration with bold readable shapes, NOT pixel art. A rounded rectangular banner plaque, the most elaborate of the series: an ornate GOLDEN frame with golden corner flourishes, a blazing golden sun emblem with short rays in the center instead of a plain ember circle, a ring around it and diamond ornaments on both sides, placed in the lower 70% of the canvas. Tier 5 of 5, epic: palette of crimson red and bright gold with dark brown, big tall flames and many golden four-point stars and sparks bursting out of the top edge, the sides and the corners, an intense golden glow, so the silhouette is dramatic and clearly not a rectangle. Argentine asado / campfire mood. No text, no letters, no watermark, no characters. It will be shrunk to 300x100 px, so keep the shapes big, simple and high-contrast, with no fine detail.
+```
