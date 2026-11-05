@@ -66,11 +66,17 @@ public class CookModule(ICookingRepository cooking, IInventoryRepository invento
             : Loc.F($"Cocinaste y te comiste **{times}×** {dish.Name}: {CookingCatalog.EffectLine(dish, times)}.") + "\n\n" +
               Loc.F($"Llevás **{outcome.NewCount}** de este plato en esta vuelta: **{CookingCatalog.EffectLine(dish, outcome.NewCount)}** en total, hasta el próximo Fuego Nuevo.");
 
+        // El título va en texto plano (un emoji propio no se garantiza en un título) y el arte del plato, que es el protagonista del mensaje, va grande de miniatura.
         var embed = new EmbedBuilder()
-            .WithTitle($"{dish.Icon} {dish.Name}")
+            .WithTitle($"🍳 {dish.Name}")
             .WithColor(Color.Orange)
             .WithDescription(detail)
             .WithFooter(Loc.T("Solo cuenta contra monstruos"));
+        if (ItemDisplay.ImageUrl(dish.Icon, 256) is { } dishImage)
+        {
+            embed.WithThumbnailUrl(dishImage);
+        }
+
         return new CookReply(null, embed.Build());
     }
 
@@ -105,8 +111,9 @@ public class CookModule(ICookingRepository cooking, IInventoryRepository invento
 
             foreach (var dish in CookingCatalog.All)
             {
-                string lines = string.Join("\n", dish.Ingredients.Select(Line)) + "\n" + Loc.F($"🔥 Combustible: {Line(new DishIngredient(CookingCatalog.FuelItemName, dish.Fuel))}");
-                string title = $"{dish.Icon} {dish.Name} · {CookingCatalog.EffectLine(dish)}";
+                // El nombre del campo es texto plano; el ícono del plato (un emoji propio) va en el VALOR, en la primera línea, junto a lo que suma.
+                string lines = $"{dish.Icon} **{CookingCatalog.EffectLine(dish)}**\n" + string.Join("\n", dish.Ingredients.Select(Line)) + "\n" + Loc.F($"🔥 Combustible: {Line(new DishIngredient(CookingCatalog.FuelItemName, dish.Fuel))}");
+                string title = dish.Name;
                 if (dish.Kind == DishKind.Timed)
                 {
                     title += $" · {CookingCatalog.TimedMinutes} min";

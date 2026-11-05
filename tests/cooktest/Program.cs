@@ -291,6 +291,23 @@ using (Loc.Use("en"))
     Check(enOk.Embed is not null && enMiss.PlainMessage!.Contains("You are missing") && leak.Ok && LeakCheck.FitsDiscord(enRecipes), $"en inglés las pantallas salen sin español colado ({leak.Found})");
 }
 
+// El arte de los platos (emojis de la aplicación subidos con el nombre plato_<clave>): el bot los lee por nombre. En el resultado el arte va de MINIATURA grande y el título es texto plano; en las recetas el ícono
+// va en el VALOR de cada campo y nunca en su nombre (un emoji propio no se garantiza ahí); con todo cargado las 10 recetas siguen entrando en los 6000 de Discord.
+UiEmojis.Set(dishes.Select((d, i) => (d.IconName, $"<:{d.IconName}:15679038{i:00}000000000>")));
+await Player(UEn);
+await Stock(UEn, disco, 1);
+var withArt = await CookModule.ExecuteCookAsync(cooking, new RecordingEvents(), UEn, "surubi al disco", 1);
+await Give(UEn, "Surubí", 7);
+var recipesArt = await CookModule.BuildRecipesEmbedAsync(inventory, cooking, UEn);
+ItemEmojiRegistry.Set(allItemNames.Select((n, i) => (n, (string?)$"<:item_with_a_long_emoji_name_{i:00}:123456789012345678>")));
+var recipesArtAll = await CookModule.BuildRecipesEmbedAsync(inventory, cooking, UEn);
+ItemEmojiRegistry.Set([]);
+Check(withArt.Embed is not null && withArt.Embed.Thumbnail?.Url is { } thumbUrl && thumbUrl.Contains("/emojis/") && thumbUrl.Contains("size=256") && !withArt.Embed.Title.Contains("<:"),
+    "al cocinar el arte del plato va de miniatura grande y el título es texto plano");
+Check(recipesArt.Fields.All(f => !f.Name.Contains("<:")) && recipesArt.Fields.All(f => f.Value.Split('\n')[0].Contains("<:plato_")) && recipesArtAll.Length <= 6000 && recipesArtAll.Fields.All(f => f.Value.Length <= 1024),
+    $"en las recetas el ícono de cada plato va en el valor (nunca en el nombre del campo) y con todos los emojis cargados entran en Discord ({recipesArtAll.Length} de 6000)");
+UiEmojis.Set([]);
+
 Console.WriteLine("\n== 6b. /stats y el perfil ==");
 // Un jugador con arma, amuleto, un banquete, un dragón de fuerza, platos apilados y uno de tiempo corriendo.
 await Player(U1);
