@@ -366,10 +366,13 @@ var offerText = AllText(FuegoNuevoModule.BuildStatusEmbed(prev2, offerNow, new D
 Check(offerText.Contains("Manada V") && offerText.Contains("sube de nivel") && offerText.Contains("Filo Antiguo I"), "la oferta dice qué da cada una y marca la que sube de nivel");
 var bEmbed0 = FuegoNuevoModule.BuildBlessingsEmbed(new Dictionary<string, int>(), null);
 var bEmbedMax = FuegoNuevoModule.BuildBlessingsEmbed(lv5, offerNow);
-Check(bEmbed0.Description.Contains("Todavía no tenés ninguna") && bEmbed0.Fields.Single().Name.Contains("existen") && bEmbed0.Length <= 6000 && bEmbed0.Fields.All(f => f.Value.Length <= 1024), "/blessings sin ninguna lo explica y lista las 13 que existen");
-Check(bEmbedMax.Length <= 6000 && bEmbedMax.Description.Length <= 4096 && bEmbedMax.Fields.All(f => f.Value.Length <= 1024) && bEmbedMax.Description.Split('\n').Length == 13, $"con las 13 al máximo y una oferta entra en los límites ({bEmbedMax.Length})");
-var bTitles = bEmbedMax.Fields.Single(f => f.Name.Contains("existen")).Value;
-Check(all.All(b => bTitles.Contains(b.Name)), "y el campo de «las que existen» nombra todas");
+Check(bEmbed0.Description.Contains("Todavía no tenés ninguna") && bEmbed0.Fields.Length == 0 && bEmbed0.Length <= 6000, "/blessings sin ninguna lo explica y ya NO lista las que existen (el dueño: solo las que tiene cada uno)");
+Check(bEmbedMax.Length <= 6000 && bEmbedMax.Description.Length <= 4096 && bEmbedMax.Fields.All(f => f.Value.Length <= 1024) && bEmbedMax.Description.Split("\n\n").Length == 13, $"con las 13 al máximo y una oferta entra en los límites ({bEmbedMax.Length})");
+Check(all.All(b => bEmbedMax.Description.Contains($"**{b.Emoji} {b.Name} V**")) && !bEmbedMax.Fields.Any(f => f.Name.Contains("existen")), "con las 13 cada una sale en su bloque (nombre y nivel en negrita) y no hay campo de «las que existen»");
+var blessParts = bEmbedMax.Description.Split("\n\n");
+var oneOwned = FuegoNuevoModule.BuildBlessingsEmbed(new Dictionary<string, int> { ["manada"] = 3, ["pico_fino"] = 1 }, null);
+Check(oneOwned.Description.Split("\n\n").Length == 2 && blessParts.All(p => p.Split('\n').Length == 2) && oneOwned.Description.Contains("**🐾 Manada III**") && !oneOwned.Description.Contains("Filo Antiguo") && oneOwned.Fields.Length == 0,
+    "solo salen las que tiene el jugador (Manada y Pico Fino), cada una con su nombre y nivel arriba, lo que da abajo y una línea en blanco entre una y otra");
 
 Console.WriteLine("\n== 17. Los pasos del comando de punta a punta ==");
 await Reset();
@@ -395,7 +398,7 @@ var chosen2 = await FuegoNuevoModule.ExecuteChooseAsync(blessings, evts, U, 1, d
 var chosen3 = await FuegoNuevoModule.ExecuteChooseAsync(blessings, evts, U, 1, "no_existe");
 Check(chosen2.Embed is null && chosen2.PlainMessage!.Contains("ya está elegida") && chosen3.Embed is null && chosen3.PlainMessage!.Contains("no estaba"), "elegir otra de la misma oferta o una que no estaba: se rechaza con texto (no pisa la pantalla)");
 var blessView = await FuegoNuevoModule.ExecuteBlessingsAsync(blessings, U);
-Check(blessView.Embed is not null && blessView.Embed.Description.Split('\n').Length == 1 && blessView.Components!.Components.Count == 0, "/blessings ahora muestra la elegida y ya no hay botones");
+Check(blessView.Embed is not null && blessView.Embed.Description.Split("\n\n").Length == 1 && blessView.Embed.Description.Split('\n').Length == 2 && blessView.Components!.Components.Count == 0, "/blessings ahora muestra la elegida y ya no hay botones");
 
 Console.WriteLine("\n== 18. Comandos registrados, botones y DI (InteractionService real) ==");
 var client = new Discord.WebSocket.DiscordSocketClient();

@@ -415,22 +415,28 @@ public class FuegoNuevoModule(
 
     public static Embed BuildBlessingsEmbed(IReadOnlyDictionary<string, int> levels, BlessingOffer? offer)
     {
-        var owned = BlessingCatalog.OwnedLines(levels);
+        // Solo las que TIENE el jugador (el dueño, 2026-11-05: «sacá las que existen, dejá solo las que tiene cada uno y separalas un poquito, todo amontonado no está bueno»): cada una en su bloque, con el nombre y
+        // el nivel en negrita y lo que da abajo, y una línea en blanco entre una y otra. Lo que existe y lo que da cada nivel se ve en la oferta de cada Fuego Nuevo («Elegí una»).
+        var owned = BlessingCatalog.All
+            .Where(b => levels.TryGetValue(b.Key, out int have) && have > 0)
+            .Select(b =>
+            {
+                int level = Math.Min(levels[b.Key], BlessingCatalog.MaxLevel);
+                return $"**{BlessingCatalog.Label(b, level)}**\n{BlessingCatalog.Describe(b, level)}";
+            })
+            .ToList();
         var embed = new EmbedBuilder()
             .WithTitle(Loc.T("🙏 Tus bendiciones"))
             .WithColor(Color.Gold)
             .WithDescription(owned.Count == 0
                 ? Loc.T("Todavía no tenés ninguna. Llega **una por cada Fuego Nuevo** (**/fuegonuevo**), elegida entre 3. Si repetís una, sube de nivel (hasta el ") + BlessingCatalog.RomanLevel(BlessingCatalog.MaxLevel) + ")."
-                : string.Join('\n', owned));
+                : string.Join("\n\n", owned));
 
         if (offer is not null)
         {
             embed.AddField(Loc.T("🎁 Elegí una"), Cut(OfferText(offer, levels)), false);
         }
 
-        // Todas las que existen, con lo que da cada NIVEL (para decidir qué conviene). Las del poder son chicas a propósito y no cuentan en duelos ni en la Arena.
-        string pool = string.Join('\n', BlessingCatalog.All.Select(b => $"{b.Emoji} **{b.Name}** — {BlessingCatalog.Describe(b, 1)}"));
-        embed.AddField(Loc.T("📖 Las que existen (por nivel)"), Cut(pool), false);
         return embed.WithFooter(Loc.T("Las bendiciones son permanentes: se quedan con cada Fuego Nuevo. Lo de ataque, defensa y vida solo vale contra monstruos. La Brasa de Color desbloquea además un banner para tu perfil que mejora con su nivel (se elige en /config).")).Build();
     }
 
