@@ -329,6 +329,14 @@ UiEmojis.Set(new[] { "l_f", "l_e", "m_f", "m_e", "r_f", "r_e" }.Select(p => ($"b
 var sixPets = species.Take(6).Select(sp => P(sp, 10, 1, 40)).ToList();
 var bigView = PetModule.BuildViewEmbed(new PetModule.PetViewData(species, sixPets, 100, new HashSet<string>(), DateTime.UtcNow, null, 1.0, species.ToDictionary(sp => sp.EggName, _ => 3)));
 Check(bigView.Length <= 6000 && bigView.Fields.All(f => f.Value.Length <= 1024) && bigView.Fields.Any(f => f.Value.Contains("<:bar_xp_m_f:")), $"con las barras de emoji de verdad, las 6 mascotas en el tope de su tier (2 barras cada una) entran en Discord ({bigView.Length} de 6000)");
+// Un espacio entre una mascota y la siguiente (el dueño, 2026-11-05: «dejá un espacio entre cada mascota en aa pets, que está medio entreverado»): cada campo de mascota termina con un salto de línea + un
+// carácter de ancho cero (como el recetario, ForgeModule.SectionGap: Discord recorta los espacios comunes del final de un campo, ese no), menos el último campo de todos.
+const string PetGapMark = "\n​";
+Check(bigView.Fields.Length == 6 && bigView.Fields.Take(5).All(f => f.Value.EndsWith(PetGapMark, StringComparison.Ordinal)) && !bigView.Fields[5].Value.EndsWith(PetGapMark, StringComparison.Ordinal),
+    "entre una mascota y la siguiente queda un espacio (cada campo termina con el salto + el carácter invisible) y el último campo no lleva uno de más");
+var fiveAndEgg = PetModule.BuildViewEmbed(new PetModule.PetViewData(species, sixPets.Take(5).ToList(), 100, new HashSet<string> { species[5].EggName }, DateTime.UtcNow, null, 1.0, species.ToDictionary(sp => sp.EggName, _ => 3)));
+Check(fiveAndEgg.Fields.Length == 6 && fiveAndEgg.Fields.Take(5).All(f => f.Value.EndsWith(PetGapMark, StringComparison.Ordinal)) && fiveAndEgg.Fields[5].Name.Contains("Huevos sin abrir") && !fiveAndEgg.Fields[5].Value.EndsWith(PetGapMark, StringComparison.Ordinal),
+    "si después de las mascotas viene el aviso del huevo sin abrir, la última mascota también lleva su espacio");
 UiEmojis.Set([]);
 Check(AllText(PetModule.BuildViewEmbed(View(P(gSpecies, 10, 1, 0), 0))).Length < 6000 && PetModule.EvolutionText(P(gSpecies, 10, 1, 0), null).Contains("0/5"), "sin información de huevos (null) la pantalla no se rompe");
 
