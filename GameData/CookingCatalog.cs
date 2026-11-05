@@ -11,7 +11,10 @@ public enum DishKind { Permanent, Timed }
 public sealed record DishIngredient(string ItemName, int Quantity);
 
 // MaxHp, Defense y Attack: lo que suma CADA plato de un permanente (planos, no porcentajes: +1 DEF vale casi como +1 % de vida efectiva contra un jefe porque la defensa se resta plana de cada golpe).
-public sealed record Dish(string Key, string Name, DishKind Kind, IReadOnlyList<DishIngredient> Ingredients, int Fuel, int MaxHp = 0, int Defense = 0, int Attack = 0)
+// Los de tiempo (Kind = Timed) dan su efecto mientras corre su reloj (CookingCatalog.TimedMinutes por plato; comerlo otra vez suma otro tanto) y NO se multiplican entre sí: GoldPercent, XpPercent, DropPercent
+// y GatherPercent son % sobre lo que ya recibe el jugador; CritPoints y DodgePoints, puntos de chance; LastStand, sobrevivir un golpe mortal con 1 de vida (una vez por pelea).
+public sealed record Dish(string Key, string Name, DishKind Kind, IReadOnlyList<DishIngredient> Ingredients, int Fuel, int MaxHp = 0, int Defense = 0, int Attack = 0,
+    int GoldPercent = 0, int XpPercent = 0, int DropPercent = 0, int GatherPercent = 0, int CritPoints = 0, int DodgePoints = 0, bool LastStand = false)
 {
     // El emoji del plato se sube al portal con este nombre y el bot lo lee por nombre (como los del dragón): sin subir, sale el 🍳 común.
     public string IconName => CookingCatalog.IconPrefix + Key;
@@ -30,11 +33,21 @@ public static class CookingCatalog
     // Cuántos platos se pueden cocinar en un solo pedido.
     public const int MaxTimes = 10;
 
+    // Cuánto dura UN plato de tiempo (comer el mismo otra vez suma otro tanto, el efecto no se multiplica).
+    public const int TimedMinutes = 60;
+
     public const string SurubiDisco = "surubi_disco";
     public const string DoradoParrilla = "dorado_parrilla";
     public const string MojarrasEscabeche = "mojarras_escabeche";
+    public const string EmpanadaSurubi = "empanada_surubi";
+    public const string LocroPescador = "locro_pescador";
+    public const string ChupinDorado = "chupin_dorado";
+    public const string PastelMojarra = "pastel_mojarra";
+    public const string BrochetaDorado = "brocheta_dorado";
+    public const string SurubiManteca = "surubi_manteca";
+    public const string CaldoUltimoAliento = "caldo_ultimo_aliento";
 
-    // Tanda 1: los 3 permanentes. Las horas de farmeo de cada uno (FN 7, herramientas de Zona 3) están en el diseño: Surubí al Disco ~4,8, Dorado a la Parrilla ~6,2 (la más cara a propósito, la DEF es lo más fuerte por punto)
+    // Los 3 permanentes (tanda 1) y los 7 de tiempo (tanda 2). Las horas de farmeo de cada uno (FN 7, herramientas de Zona 3) están en el diseño: Surubí al Disco ~4,8, Dorado a la Parrilla ~6,2 (la más cara a propósito, la DEF es lo más fuerte por punto)
     // y Mojarras en Escabeche ~5,1.
     public static readonly IReadOnlyList<Dish> All =
     [
@@ -44,6 +57,15 @@ public static class CookingCatalog
             [new("Dorado", 40), new("Surubí", 1), new("Madera de Ébano", 4), new("Madera de Nogal", 8)], Fuel: 20, Defense: 1),
         new(MojarrasEscabeche, "Mojarras en Escabeche", DishKind.Permanent,
             [new("Mojarra", 150), new("Dorado", 10), new("Madera de Ébano", 3), new("Gema de Zafiro", 3)], Fuel: 20, Attack: 2),
+
+        // Tanda 2: los de 60 minutos. Horas aproximadas de farmeo (FN 7, herramientas de Zona 3) al final de cada línea.
+        new(EmpanadaSurubi, "Empanada de Surubí", DishKind.Timed, [new("Surubí", 3), new("Gema de Zafiro", 1), new("Oro Puro", 2)], Fuel: 6, GoldPercent: 20),                          // 2,0
+        new(LocroPescador, "Locro del Pescador", DishKind.Timed, [new("Dorado", 20), new("Madera de Ébano", 1), new("Madera de Nogal", 4)], Fuel: 6, XpPercent: 20),                    // 1,9
+        new(ChupinDorado, "Chupín de Dorado", DishKind.Timed, [new("Dorado", 15), new("Surubí", 2), new("Madera de Nogal", 3)], Fuel: 6, DropPercent: 15),                             // 1,5 (el más flojo)
+        new(PastelMojarra, "Pastel de Mojarra", DishKind.Timed, [new("Mojarra", 60), new("Gema de Zafiro", 1), new("Madera de Ébano", 1)], Fuel: 4, GatherPercent: 25),                 // 1,5
+        new(BrochetaDorado, "Brocheta de Dorado", DishKind.Timed, [new("Dorado", 10), new("Oro Puro", 2), new("Gema de Zafiro", 1)], Fuel: 4, CritPoints: 10),                          // 1,9
+        new(SurubiManteca, "Surubí a la Manteca", DishKind.Timed, [new("Surubí", 3), new("Dorado", 6), new("Madera de Ébano", 1)], Fuel: 4, DodgePoints: 10),                          // 1,4
+        new(CaldoUltimoAliento, "Caldo del Último Aliento", DishKind.Timed, [new("Surubí", 6), new("Gema de Zafiro", 2), new("Madera de Ébano", 2)], Fuel: 10, LastStand: true),      // 3,1 (el más fuerte)
     ];
 
     // Un plato por su clave o su nombre, sin importar mayúsculas, tildes ni espacios ("surubi al disco", "SURUBÍ AL DISCO", "surubi_disco"). Null si no existe.
@@ -65,10 +87,21 @@ public static class CookingCatalog
             .Select(g => new DishIngredient(g.Key, g.Sum(n => n.Quantity)))
             .ToList();
 
-    // «+10 de vida máxima», «+1 de DEF» o «+2 de ATQ», para `times` platos (por defecto uno).
+    // Los platos de tiempo que están activos, dadas las claves que tiene el jugador (null o vacío = ninguno).
+    public static IReadOnlyList<Dish> ActiveTimed(IReadOnlyCollection<string>? activeKeys) =>
+        activeKeys is null || activeKeys.Count == 0 ? [] : All.Where(d => d.Kind == DishKind.Timed && activeKeys.Contains(d.Key)).ToList();
+
+    // «+10 de vida máxima», «+1 de DEF» o «+2 de ATQ» para `times` platos permanentes (por defecto uno). En un plato de tiempo `times` no multiplica: el efecto es siempre el mismo (lo que suma es el reloj).
     public static string EffectLine(Dish dish, int times = 1)
     {
         var parts = new List<string>();
+        if (dish.GoldPercent > 0) parts.Add(Loc.F($"+{dish.GoldPercent} % de oro en peleas"));
+        if (dish.XpPercent > 0) parts.Add(Loc.F($"+{dish.XpPercent} % de EXP en peleas"));
+        if (dish.DropPercent > 0) parts.Add(Loc.F($"+{dish.DropPercent} % de chance de drop"));
+        if (dish.GatherPercent > 0) parts.Add(Loc.F($"+{dish.GatherPercent} % de cantidad al recolectar"));
+        if (dish.CritPoints > 0) parts.Add(Loc.F($"+{dish.CritPoints} puntos de crítico"));
+        if (dish.DodgePoints > 0) parts.Add(Loc.F($"+{dish.DodgePoints} puntos de esquive"));
+        if (dish.LastStand) parts.Add(Loc.T("sobrevivís un golpe mortal con 1 de vida (una vez por pelea)"));
         if (dish.MaxHp > 0) parts.Add(Loc.F($"+{dish.MaxHp * times} de vida máxima"));
         if (dish.Defense > 0) parts.Add(Loc.F($"+{dish.Defense * times} de DEF"));
         if (dish.Attack > 0) parts.Add(Loc.F($"+{dish.Attack * times} de ATQ"));

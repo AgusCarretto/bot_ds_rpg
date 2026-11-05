@@ -82,8 +82,13 @@ var dishes = CookingCatalog.All;
 var disco = CookingCatalog.Find("surubi al disco")!;
 var parrilla = CookingCatalog.Find("Dorado a la Parrilla")!;
 var escabeche = CookingCatalog.Find("MOJARRAS EN ESCABECHE")!;
-Check(dishes.Count == 3 && dishes.Select(d => d.Key).Distinct().Count() == 3 && dishes.All(d => d.Kind == DishKind.Permanent && d.Ingredients.Count is >= 1 and <= 4 && d.Fuel > 0 && d.Name.Length > 3),
-    "hay 3 platos permanentes, con clave distinta, hasta 4 tipos de ingrediente y combustible");
+Check(dishes.Count == 10 && dishes.Select(d => d.Key).Distinct().Count() == 10 && dishes.Count(d => d.Kind == DishKind.Permanent) == 3 && dishes.Count(d => d.Kind == DishKind.Timed) == 7
+    && dishes.All(d => d.Ingredients.Count is >= 1 and <= 4 && d.Fuel > 0 && d.Name.Length > 3),
+    "hay 10 platos (3 permanentes y 7 de tiempo), con clave distinta, hasta 4 tipos de ingrediente y combustible");
+Check(CookingCatalog.TimedMinutes == 60 && dishes.Where(d => d.Kind == DishKind.Timed).All(d => d.MaxHp == 0 && d.Defense == 0 && d.Attack == 0)
+    && CookingCatalog.Find("empanada de surubi")!.GoldPercent == 20 && CookingCatalog.Find("locro del pescador")!.XpPercent == 20 && CookingCatalog.Find("chupin de dorado")!.DropPercent == 15
+    && CookingCatalog.Find("pastel de mojarra")!.GatherPercent == 25 && CookingCatalog.Find("brocheta de dorado")!.CritPoints == 10 && CookingCatalog.Find("surubi a la manteca")!.DodgePoints == 10
+    && CookingCatalog.Find("caldo del ultimo aliento")!.LastStand, "los 7 de tiempo dan lo del diseño: oro +20 %, EXP +20 %, drop +15 %, cantidad +25 %, crítico +10, esquive +10 y el último aliento");
 Check(disco.MaxHp == 10 && disco.Defense == 0 && disco.Attack == 0 && parrilla.Defense == 1 && parrilla.MaxHp == 0 && escabeche.Attack == 2 && escabeche.Defense == 0,
     "cada plato suma lo suyo: Surubí al Disco +10 vida máx, Dorado a la Parrilla +1 DEF, Mojarras en Escabeche +2 ATQ");
 Check(disco.Fuel == 16 && disco.Ingredients.Single(i => i.ItemName == "Surubí").Quantity == 7 && disco.Ingredients.Single(i => i.ItemName == "Gema de Zafiro").Quantity == 2 && disco.Ingredients.Single(i => i.ItemName == "Oro Puro").Quantity == 6
@@ -154,10 +159,66 @@ Console.WriteLine("\n== 4. El Fuego Nuevo los borra ==");
 await Player(UFn);
 await Stock(UFn, parrilla, 2);
 await cooking.CookAsync(UFn, parrilla, 2);
+var empFn = CookingCatalog.Find("empanada de surubi")!;
+await Stock(UFn, empFn, 1);
+await cooking.CookAsync(UFn, empFn, 1);
+Check((await cooking.GetActiveBuffsAsync(UFn)).Count == 1, "antes del Fuego Nuevo tiene un plato de tiempo corriendo");
 await db.ExecuteAsync("UPDATE users SET gate_cleared = true WHERE discord_id = @id", new { id = (long)UFn });
 var renewed = await fnRepo.RenewAsync(UFn, 0, "Guerrero");
-Check(renewed.Status == RenewStatus.Ok && await Cooked(UFn, parrilla) == 0 && await db.ExecuteScalarAsync<int>("SELECT count(*)::int FROM player_cooked WHERE discord_id = @id", new { id = (long)UFn }) == 0,
-    "después del Fuego Nuevo no queda nada cocinado (los bufos de la vuelta anterior no están)");
+Check(renewed.Status == RenewStatus.Ok && await Cooked(UFn, parrilla) == 0 && await db.ExecuteScalarAsync<int>("SELECT count(*)::int FROM player_cooked WHERE discord_id = @id", new { id = (long)UFn }) == 0
+    && await db.ExecuteScalarAsync<int>("SELECT count(*)::int FROM player_cook_buffs WHERE discord_id = @id", new { id = (long)UFn }) == 0,
+    "después del Fuego Nuevo no queda nada cocinado, ni permanente ni de tiempo (los bufos de la vuelta anterior no están)");
+
+Console.WriteLine("\n== 4b. Los platos de tiempo ==");
+var empanada = CookingCatalog.Find("empanada de surubi")!;
+var locro = CookingCatalog.Find("locro del pescador")!;
+var chupin = CookingCatalog.Find("chupin de dorado")!;
+await Player(U1);
+await db.ExecuteAsync("DELETE FROM player_cook_buffs WHERE discord_id = @id", new { id = (long)U1 });
+await Stock(U1, empanada, 3);
+var t1 = await cooking.CookAsync(U1, empanada, 1);
+Check(t1.Status == CookStatus.Cooked && t1.Remaining is { } rem1 && rem1 > TimeSpan.FromMinutes(59) && rem1 <= TimeSpan.FromMinutes(60) && (await cooking.GetActiveBuffsAsync(U1)).ContainsKey(empanada.Key) && await Cooked(U1, empanada) == 0,
+    "un plato de tiempo corre 60 minutos y NO se cuenta como permanente");
+var t2 = await cooking.CookAsync(U1, empanada, 2);
+Check(t2.Remaining is { } rem2 && rem2 > TimeSpan.FromMinutes(179) && rem2 <= TimeSpan.FromMinutes(180), "comer el mismo otra vez SUMA el reloj (60 + 120 = 180 minutos)");
+await Stock(U1, locro, 1);
+await cooking.CookAsync(U1, locro, 1);
+var act = await cooking.GetActiveBuffsAsync(U1);
+Check(act.Count == 2 && act.ContainsKey(locro.Key) && act.ContainsKey(empanada.Key), "varios platos distintos corren a la vez");
+await db.ExecuteAsync("UPDATE player_cook_buffs SET expires_at = now() - interval '5 minutes' WHERE discord_id = @id AND dish_key = @k", new { id = (long)U1, k = empanada.Key });
+Check(!(await cooking.GetActiveBuffsAsync(U1)).ContainsKey(empanada.Key) && (await cooking.GetActiveBuffsAsync(U1)).ContainsKey(locro.Key), "un plato vencido ya no cuenta (y el otro sigue)");
+await Stock(U1, empanada, 1);
+var t3 = await cooking.CookAsync(U1, empanada, 1);
+Check(t3.Remaining is { } rem3 && rem3 > TimeSpan.FromMinutes(59) && rem3 <= TimeSpan.FromMinutes(60), "si ya se había vencido, el reloj arranca de AHORA (no de cuando se venció)");
+
+await Player(U3);
+await db.ExecuteAsync("DELETE FROM player_cook_buffs WHERE discord_id = @id", new { id = (long)U3 });
+await Stock(U3, empanada, 4);
+var race2 = await Task.WhenAll(Enumerable.Range(0, 12).Select(_ => cooking.CookAsync(U3, empanada, 1)));
+var left3 = (await cooking.GetActiveBuffsAsync(U3))[empanada.Key];
+Check(race2.Count(r => r.Status == CookStatus.Cooked) == 4 && race2.Count(r => r.Status == CookStatus.Missing) == 8 && left3 > TimeSpan.FromMinutes(239) && left3 <= TimeSpan.FromMinutes(240),
+    "12 pedidos a la vez con materiales para 4: se cocinan 4 y el reloj suma exacto 4 horas");
+
+// Lo que hacen en el combate: todos activos a la vez contra la fila de un jugador sin nada.
+await Player(U2);
+await db.ExecuteAsync("DELETE FROM player_cook_buffs WHERE discord_id = @id", new { id = (long)U2 });
+var meT = (await users.GetByDiscordIdAsync(U2))!;
+var b0 = await bonusService.GetAsync(U2, 0);
+foreach (var d in CookingCatalog.All.Where(x => x.Kind == DishKind.Timed)) { await Stock(U2, d, 1); await cooking.CookAsync(U2, d, 1); }
+await Stock(U2, chupin, 1);
+await cooking.CookAsync(U2, chupin, 1); // el MISMO otra vez: suma tiempo, no efecto
+var bAll = await bonusService.GetAsync(U2, 0);
+bool Near(double a, double b) => Math.Abs(a - b) < 1e-9;
+Check(Near(bAll.GoldMultiplier / b0.GoldMultiplier, 1.20) && Near(bAll.XpMultiplier / b0.XpMultiplier, 1.20) && Near(bAll.HuntDropMultiplier / b0.HuntDropMultiplier, 1.15) && Near(bAll.TravelDropMultiplier / b0.TravelDropMultiplier, 1.15)
+    && Near(bAll.ChopMultiplier / b0.ChopMultiplier, 1.25) && Near(bAll.MineMultiplier / b0.MineMultiplier, 1.25) && Near(bAll.FishMultiplier / b0.FishMultiplier, 1.25),
+    "con los platos activos: oro ×1,20, EXP ×1,20, drop ×1,15 (cacería y viaje) y cantidad ×1,25 (/chop, /mine y /fish); el mismo plato dos veces NO multiplica el efecto");
+var pBase = PlayerCombatProfileCalculator.Resolve(meT, null, null, 0, b0);
+var pAll = PlayerCombatProfileCalculator.Resolve(meT, null, null, 0, bAll);
+var pDuel = PlayerCombatProfileCalculator.Resolve(meT, null, null, 0, null);
+Check(Near(pAll.Passives.CritChanceBonus - pBase.Passives.CritChanceBonus, 0.10) && Near(pAll.Passives.DodgeChanceBonus - pBase.Passives.DodgeChanceBonus, 0.10) && pAll.Passives.LastStand && !pBase.Passives.LastStand,
+    "el crítico sube 10 puntos, el esquive 10 y el Caldo da el último aliento (solo con los platos activos)");
+Check(!pDuel.Passives.LastStand && Near(pDuel.Passives.CritChanceBonus, pBase.Passives.CritChanceBonus) && Near(pDuel.Passives.DodgeChanceBonus, pBase.Passives.DodgeChanceBonus) && !bAll.IsNone,
+    "en un duelo o en la Arena (sin bonuses) los platos de tiempo no cuentan");
 
 Console.WriteLine("\n== 5. Las pantallas ==");
 var recorder = new RecordingEvents();
@@ -176,10 +237,21 @@ Check(unknown.Embed is null && unknown.PlainMessage!.Contains("recipes") && noAc
 await Stock(U1, escabeche, 1);
 var recipes = await CookModule.BuildRecipesEmbedAsync(inventory, cooking, U1);
 string recipesText = recipes.Title + "\n" + recipes.Description + "\n" + string.Join("\n", recipes.Fields.Select(f => f.Name + " " + f.Value));
-Check(recipes.Fields.Length == 3 && recipesText.Contains("Surubí al Disco") && recipesText.Contains("Dorado a la Parrilla") && recipesText.Contains("Mojarras en Escabeche") && recipesText.Contains("✅") && recipesText.Contains("❌") && recipes.Length <= 6000,
+Check(recipes.Fields.Length == dishes.Count && recipesText.Contains("Surubí al Disco") && recipesText.Contains("Dorado a la Parrilla") && recipesText.Contains("Mojarras en Escabeche") && recipesText.Contains("✅") && recipesText.Contains("❌") && recipes.Length <= 6000,
     $"las recetas muestran los 3 platos con ✅/❌ de lo que tenés ({recipes.Length} de 6000)");
 var recipesFresh = await CookModule.BuildRecipesEmbedAsync(inventory, cooking, U1);
 Check(recipesFresh.Fields.All(f => f.Value.Length <= 1024), "cada campo entra en los 1024 de Discord");
+await Stock(U1, locro, 1);
+var timedReply = await CookModule.ExecuteCookAsync(cooking, recorder, U1, "locro del pescador", 1);
+var withActive = await CookModule.BuildRecipesEmbedAsync(inventory, cooking, U1);
+Check(timedReply.Embed is not null && timedReply.Embed.Description.Contains("Locro del Pescador") && timedReply.Embed.Description.Contains("Te quedan") && withActive.Fields.Any(f => f.Value.Contains("🟢") && f.Name.Contains("Locro del Pescador")),
+    "cocinar uno de tiempo dice cuánto te queda y las recetas lo marcan como activo (🟢)");
+// Con el emoji propio de cada ítem (cada código ronda los 40 caracteres) las 10 recetas siguen entrando en los 6000 de Discord.
+var allItemNames = dishes.SelectMany(d => d.Ingredients.Select(i => i.ItemName)).Append(CookingCatalog.FuelItemName).Distinct().ToList();
+ItemEmojiRegistry.Set(allItemNames.Select((n, i) => (n, (string?)$"<:item_with_a_long_emoji_name_{i:00}:123456789012345678>")));
+var withEmojis = await CookModule.BuildRecipesEmbedAsync(inventory, cooking, U1);
+ItemEmojiRegistry.Set([]);
+Check(withEmojis.Length <= 6000 && withEmojis.Fields.All(f => f.Value.Length <= 1024), $"con los emojis propios de los ítems las 10 recetas entran en Discord ({withEmojis.Length} de 6000)");
 
 await Player(UEn);
 await Stock(UEn, parrilla, 1);

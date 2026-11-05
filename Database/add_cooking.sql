@@ -7,3 +7,12 @@ CREATE TABLE IF NOT EXISTS player_cooked (
     count      INTEGER NOT NULL DEFAULT 0 CHECK (count >= 0),
     PRIMARY KEY (discord_id, dish_key)
 );
+
+-- Los platos de TIEMPO (v0.49.0, tanda 2): cuándo se le vence el efecto de cada uno. Comer el mismo otra vez SUMA 60 minutos a lo que le quede (GREATEST(vencimiento, ahora) + 60 min por plato, con el reloj de
+-- la base); varios platos distintos corren a la vez. El Fuego Nuevo borra las filas del jugador.
+CREATE TABLE IF NOT EXISTS player_cook_buffs (
+    discord_id BIGINT      NOT NULL REFERENCES users(discord_id) ON DELETE CASCADE,
+    dish_key   TEXT        NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY (discord_id, dish_key)
+);

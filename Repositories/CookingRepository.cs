@@ -34,6 +34,22 @@ public sealed class CookingRepository(IDbConnectionFactory connectionFactory) : 
         return rows.ToDictionary(r => r.DishKey, r => r.Count, StringComparer.Ordinal);
     }
 
+    private sealed class BuffRow
+    {
+        public string DishKey { get; set; } = string.Empty;
+        public TimeSpan Remaining { get; set; }
+    }
+
+    public async Task<IReadOnlyDictionary<string, TimeSpan>> GetActiveBuffsAsync(ulong discordId, CancellationToken cancellationToken = default)
+    {
+        // Con el reloj de la base (no el del servidor): lo vencido no vuelve.
+        using DbConnection connection = connectionFactory.CreateConnection();
+        var rows = await connection.QueryAsync<BuffRow>(new CommandDefinition(
+            "SELECT dish_key AS DishKey, expires_at - now() AS Remaining FROM player_cook_buffs WHERE discord_id = @DiscordId AND expires_at > now();",
+            new { DiscordId = (long)discordId }, cancellationToken: cancellationToken));
+        return rows.ToDictionary(r => r.DishKey, r => r.Remaining, StringComparer.Ordinal);
+    }
+
     public async Task<CookOutcome> CookAsync(ulong discordId, Dish dish, int times, CancellationToken cancellationToken = default)
     {
         times = Math.Clamp(times, 1, CookingCatalog.MaxTimes);
@@ -90,6 +106,23 @@ public sealed class CookingRepository(IDbConnectionFactory connectionFactory) : 
             await connection.ExecuteAsync(new CommandDefinition(
                 "DELETE FROM inventory WHERE discord_id = @DiscordId AND quantity <= 0;",
                 new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
+
+            if (dish.Kind == DishKind.Timed)
+            {
+                // Un plato de tiempo SUMA su reloj: lo que le quedaba (o ahora, si ya se había vencido) más 60 minutos por plato, todo con el reloj de la base.
+                TimeSpan remaining = await connection.QuerySingleAsync<TimeSpan>(new CommandDefinition(
+                    """
+                    INSERT INTO player_cook_buffs (discord_id, dish_key, expires_at)
+                    VALUES (@DiscordId, @DishKey, now() + make_interval(mins => @Minutes))
+                    ON CONFLICT (discord_id, dish_key) DO UPDATE
+                        SET expires_at = GREATEST(player_cook_buffs.expires_at, now()) + make_interval(mins => @Minutes)
+                    RETURNING expires_at - now();
+                    """,
+                    new { DiscordId = (long)discordId, DishKey = dish.Key, Minutes = CookingCatalog.TimedMinutes * times }, transaction: transaction, cancellationToken: cancellationToken));
+
+                await transaction.CommitAsync(cancellationToken);
+                return new CookOutcome(CookStatus.Cooked, 0, [], remaining);
+            }
 
             int count = await connection.QuerySingleAsync<int>(new CommandDefinition(
                 """

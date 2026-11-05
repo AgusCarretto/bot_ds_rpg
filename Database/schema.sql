@@ -498,6 +498,14 @@ CREATE TABLE IF NOT EXISTS player_cooked (
     PRIMARY KEY (discord_id, dish_key)
 );
 
+-- Los platos de TIEMPO (v0.49.0, tanda 2): cuándo se vence cada uno; comer el mismo otra vez suma 60 minutos. El Fuego Nuevo borra las filas.
+CREATE TABLE IF NOT EXISTS player_cook_buffs (
+    discord_id BIGINT      NOT NULL REFERENCES users(discord_id) ON DELETE CASCADE,
+    dish_key   TEXT        NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY (discord_id, dish_key)
+);
+
 -- El dragón de cada jugador (v0.30.0, Database/add_dragons.sql): uno por jugador, tipo, tier (1 a 10, sube criando) y nivel (0 hasta tier x 10, sube entrenando con oro). El Fuego Nuevo no lo toca.
 CREATE TABLE IF NOT EXISTS player_dragons (
     discord_id   BIGINT PRIMARY KEY REFERENCES users(discord_id) ON DELETE CASCADE,

@@ -149,6 +149,21 @@ public sealed class PlayerBonusService(
             }
         }
 
-        return new PlayerBonuses(pets, Math.Max(0, fuegoNuevo), levels.Count == 0 ? null : levels, professionXp, bankPercent, chopTool, mineTool, dragon, fishTool, cooked);
+        // Los platos de tiempo que siguen corriendo (el reloj de la base ya descartó los vencidos).
+        IReadOnlyCollection<string>? cookBuffs = null;
+        if (cookingRepository is not null)
+        {
+            try
+            {
+                var active = await cookingRepository.GetActiveBuffsAsync(discordId, cancellationToken);
+                cookBuffs = active.Count == 0 ? null : active.Keys.ToList();
+            }
+            catch (Exception ex)
+            {
+                BotLog.Warn(ex);
+            }
+        }
+
+        return new PlayerBonuses(pets, Math.Max(0, fuegoNuevo), levels.Count == 0 ? null : levels, professionXp, bankPercent, chopTool, mineTool, dragon, fishTool, cooked, cookBuffs);
     }
 }

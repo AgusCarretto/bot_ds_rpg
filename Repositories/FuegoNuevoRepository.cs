@@ -119,6 +119,9 @@ public sealed class FuegoNuevoRepository(IDbConnectionFactory connectionFactory)
             await connection.ExecuteAsync(new CommandDefinition(
                 "DELETE FROM player_cooked WHERE discord_id = @DiscordId;",
                 new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
+            await connection.ExecuteAsync(new CommandDefinition(
+                "DELETE FROM player_cook_buffs WHERE discord_id = @DiscordId;",
+                new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
 
             // Todo lo que empieza de cero usa el DEFAULT de la columna (nivel 1, 0 EXP, la vida de un jugador nuevo...) en vez de repetir los números acá: si el esquema cambia, el
             // reinicio sigue dejando al jugador igual que un /start. El oro, el banco, la racha diaria y las mascotas NO se tocan.

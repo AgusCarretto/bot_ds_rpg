@@ -58,6 +58,25 @@ public static class PlayerCombatProfileCalculator
             passives = passives with { MaxHpMultiplier = passives.MaxHpMultiplier * pveFactor };
         }
 
+        // Los platos de tiempo (v0.49.0): puntos de crítico y de esquive y el «último aliento» (una vez por pelea, como el del dragón), SOLO contra monstruos.
+        if (bonuses is not null)
+        {
+            if (bonuses.CookedCritPoints > 0)
+            {
+                passives = passives with { CritChanceBonus = passives.CritChanceBonus + (bonuses.CookedCritPoints / 100.0) };
+            }
+
+            if (bonuses.CookedDodgePoints > 0)
+            {
+                passives = passives with { DodgeChanceBonus = passives.DodgeChanceBonus + (bonuses.CookedDodgePoints / 100.0) };
+            }
+
+            if (bonuses.CookedLastStand)
+            {
+                passives = passives with { LastStand = true };
+            }
+        }
+
         // La vida cocinada (v0.49.0, +10 por Surubí al Disco) se suma AL FINAL y en vida que se VE: el multiplicador sube cookedHp / vidaBase, así la vida mostrada es la de siempre + lo cocinado exacto, sin que la clase ni
         // los encantamientos lo multipliquen. Va dentro del mismo MaxHpMultiplier para que ToDbHpDelta (que desescala con él) siga devolviendo vida REAL y el perfil, /heal y la pelea no se separen.
         if (bonuses is not null && bonuses.CookedMaxHp > 0 && player.MaxHp > 0)

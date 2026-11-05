@@ -5,8 +5,8 @@ using Discord;
 using Discord.Interactions;
 
 // /cook (aa cook, aa cook recipes) — la cocina (v0.49.0, diseño: docs/superpowers/specs/2026-11-05-cocina-design.md). Un plato se cocina y se come en el momento; los permanentes suman su stat y se apilan hasta el
-// próximo Fuego Nuevo (GameData/CookingCatalog.cs). Las reglas y el descuento están en CookingRepository (una transacción); esto es la cara del comando: pedir, contestar y registrar el evento. El comando de texto
-// llama exactamente a ExecuteCookAsync y a BuildRecipesEmbedAsync.
+// próximo Fuego Nuevo y los de 60 minutos dan un bufo que corre por reloj (GameData/CookingCatalog.cs). Las reglas y el descuento están en CookingRepository (una transacción); esto es la cara del comando: pedir,
+// contestar y registrar el evento. El comando de texto llama exactamente a ExecuteCookAsync y a BuildRecipesEmbedAsync.
 public sealed record CookReply(string? PlainMessage, Embed? Embed);
 
 public class CookModule(ICookingRepository cooking, IInventoryRepository inventory, IGameEvents gameEvents) : InteractionModuleBase<SocketInteractionContext>
@@ -59,49 +59,75 @@ public class CookModule(ICookingRepository cooking, IInventoryRepository invento
 
         await events.RecordAsync(discordId, GameEventKinds.Cook, null, times, dish.Key);
 
+        // Permanente: lo que llevás apilado. De tiempo: cuánto te queda (cada plato suma su reloj, el efecto no se multiplica).
+        string detail = dish.Kind == DishKind.Timed
+            ? Loc.F($"Cocinaste y te comiste **{times}×** {dish.Name}: {CookingCatalog.EffectLine(dish)}.") + "\n\n" +
+              Loc.F($"Te quedan **{TimeFormat.Remaining(outcome.Remaining ?? TimeSpan.Zero)}** de este efecto (cada plato suma {CookingCatalog.TimedMinutes} minutos y se pueden tener varios platos a la vez).")
+            : Loc.F($"Cocinaste y te comiste **{times}×** {dish.Name}: {CookingCatalog.EffectLine(dish, times)}.") + "\n\n" +
+              Loc.F($"Llevás **{outcome.NewCount}** de este plato en esta vuelta: **{CookingCatalog.EffectLine(dish, outcome.NewCount)}** en total, hasta el próximo Fuego Nuevo.");
+
         var embed = new EmbedBuilder()
             .WithTitle($"{dish.Icon} {dish.Name}")
             .WithColor(Color.Orange)
-            .WithDescription(
-                Loc.F($"Cocinaste y te comiste **{times}×** {dish.Name}: {CookingCatalog.EffectLine(dish, times)}.") + "\n\n" +
-                Loc.F($"Llevás **{outcome.NewCount}** de este plato en esta vuelta: **{CookingCatalog.EffectLine(dish, outcome.NewCount)}** en total, hasta el próximo Fuego Nuevo."))
+            .WithDescription(detail)
             .WithFooter(Loc.T("Solo cuenta contra monstruos"));
         return new CookReply(null, embed.Build());
     }
 
-    // Las recetas: cada plato con su efecto y los ingredientes con lo que tenés y lo que pide (✅/❌), el combustible aparte, y lo que ya cocinaste esta vuelta.
+    // Las recetas: cada plato con su efecto y los ingredientes con lo que tenés y lo que pide (✅/❌), el combustible aparte, lo que ya cocinaste esta vuelta y, en los de tiempo, cuánto les queda. Si con los emojis de los
+    // ítems el mensaje se pasara de los 6000 caracteres de Discord, se rehace con solo los nombres (nunca se rompe).
     public static async Task<Embed> BuildRecipesEmbedAsync(IInventoryRepository inventory, ICookingRepository cooking, ulong discordId)
     {
         var have = (await inventory.GetByDiscordIdAsync(discordId)).GroupBy(e => e.ItemName).ToDictionary(g => g.Key, g => g.Sum(e => e.Quantity), StringComparer.Ordinal);
         var cooked = await cooking.GetCookedAsync(discordId);
+        var active = await cooking.GetActiveBuffsAsync(discordId);
 
-        string Line(DishIngredient ing)
+        Embed Build(bool withEmojis)
         {
-            int owned = have.GetValueOrDefault(ing.ItemName);
-            return $"{(owned >= ing.Quantity ? "✅" : "❌")} {ItemEmojiRegistry.Label(ing.ItemName, string.Empty)} {owned}/{ing.Quantity}";
+            string Name(string item) => withEmojis ? ItemEmojiRegistry.Label(item, string.Empty) : item;
+            string Line(DishIngredient ing)
+            {
+                int owned = have.GetValueOrDefault(ing.ItemName);
+                return $"{(owned >= ing.Quantity ? "✅" : "❌")} {Name(ing.ItemName)} {owned}/{ing.Quantity}";
+            }
+
+            var embed = new EmbedBuilder()
+                .WithTitle(Loc.T("🍳 La cocina"))
+                .WithColor(Color.Orange)
+                .WithFooter(Loc.T("Solo cuentan contra monstruos; el Fuego Nuevo borra lo cocinado"));
+
+            int hp = CookingCatalog.Sum(cooked, d => d.MaxHp), def = CookingCatalog.Sum(cooked, d => d.Defense), atk = CookingCatalog.Sum(cooked, d => d.Attack);
+            string total = string.Join(" · ", new[] { hp > 0 ? Loc.F($"+{hp} de vida máxima") : null, def > 0 ? Loc.F($"+{def} de DEF") : null, atk > 0 ? Loc.F($"+{atk} de ATQ") : null }.Where(t => t is not null));
+            embed.WithDescription(
+                Loc.T("Cada plato se **cocina y se come en el momento**: **/cook** plato:… (o **aa cook <plato> [veces]**). Los permanentes se apilan hasta el próximo Fuego Nuevo.") + "\n" +
+                Loc.F($"Los de tiempo duran {CookingCatalog.TimedMinutes} minutos, corren a la vez y comer el mismo otra vez suma otros {CookingCatalog.TimedMinutes}.") +
+                (total.Length == 0 ? string.Empty : "\n\n" + Loc.F($"Llevás cocinado en esta vuelta: **{total}**.")));
+
+            foreach (var dish in CookingCatalog.All)
+            {
+                string lines = string.Join("\n", dish.Ingredients.Select(Line)) + "\n" + Loc.F($"🔥 Combustible: {Line(new DishIngredient(CookingCatalog.FuelItemName, dish.Fuel))}");
+                string title = $"{dish.Icon} {dish.Name} · {CookingCatalog.EffectLine(dish)}";
+                if (dish.Kind == DishKind.Timed)
+                {
+                    title += $" · {CookingCatalog.TimedMinutes} min";
+                    if (active.TryGetValue(dish.Key, out var left))
+                    {
+                        lines += "\n" + Loc.F($"🟢 Activo: te quedan {TimeFormat.Remaining(left)}");
+                    }
+                }
+                else if (cooked.GetValueOrDefault(dish.Key) is int count and > 0)
+                {
+                    lines += "\n" + Loc.F($"🍽️ Llevás {count} cocinados");
+                }
+
+                embed.AddField(title, lines, false);
+            }
+
+            return embed.Build();
         }
 
-        var embed = new EmbedBuilder()
-            .WithTitle(Loc.T("🍳 La cocina"))
-            .WithColor(Color.Orange)
-            .WithFooter(Loc.T("Los platos duran hasta el próximo Fuego Nuevo y solo cuentan contra monstruos"));
-
-        int hp = CookingCatalog.Sum(cooked, d => d.MaxHp), def = CookingCatalog.Sum(cooked, d => d.Defense), atk = CookingCatalog.Sum(cooked, d => d.Attack);
-        string total = string.Join(" · ", new[] { hp > 0 ? Loc.F($"+{hp} de vida máxima") : null, def > 0 ? Loc.F($"+{def} de DEF") : null, atk > 0 ? Loc.F($"+{atk} de ATQ") : null }.Where(t => t is not null));
-        embed.WithDescription(
-            Loc.T("Cada plato se **cocina y se come en el momento**: **/cook** plato:… (o **aa cook <plato> [veces]**). Se apilan: cuantos más cocinás, más sumás.") +
-            (total.Length == 0 ? string.Empty : "\n\n" + Loc.F($"Llevás cocinado en esta vuelta: **{total}**.")));
-
-        foreach (var dish in CookingCatalog.All)
-        {
-            int count = cooked.GetValueOrDefault(dish.Key);
-            string lines = string.Join("\n", dish.Ingredients.Select(Line)) + "\n" +
-                Loc.F($"🔥 Combustible: {Line(new DishIngredient(CookingCatalog.FuelItemName, dish.Fuel))}") +
-                (count > 0 ? "\n" + Loc.F($"🍽️ Llevás {count} cocinados") : string.Empty);
-            embed.AddField($"{dish.Icon} {dish.Name} · {CookingCatalog.EffectLine(dish)}", lines, false);
-        }
-
-        return embed.Build();
+        var full = Build(withEmojis: true);
+        return full.Length <= 5800 ? full : Build(withEmojis: false);
     }
 }
 

@@ -12,13 +12,16 @@ public enum CookStatus
 // Lo que falta de un ítem: lo que tiene y lo que pide.
 public sealed record CookShortage(string ItemName, int Have, int Need);
 
-// NewCount: cuántos lleva de ESE plato en esta vuelta, ya con lo recién cocinado (0 si no se cocinó).
-public sealed record CookOutcome(CookStatus Status, int NewCount, IReadOnlyList<CookShortage> Missing);
+// NewCount: cuántos lleva de ESE plato en esta vuelta, ya con lo recién cocinado (0 si no se cocinó; en un plato de tiempo no se cuenta). Remaining: en un plato de TIEMPO, cuánto le queda ahora (con lo que se sumó).
+public sealed record CookOutcome(CookStatus Status, int NewCount, IReadOnlyList<CookShortage> Missing, TimeSpan? Remaining = null);
 
 public interface ICookingRepository
 {
     // Clave del plato → cuántos lleva cocinados en esta vuelta (vacío sin ninguno).
     Task<IReadOnlyDictionary<string, int>> GetCookedAsync(ulong discordId, CancellationToken cancellationToken = default);
+
+    // Los platos de TIEMPO que siguen corriendo: clave → lo que le queda (con el reloj de la base; los vencidos no vuelven).
+    Task<IReadOnlyDictionary<string, TimeSpan>> GetActiveBuffsAsync(ulong discordId, CancellationToken cancellationToken = default);
 
     // Cocina `times` veces el plato y se lo come: en UNA transacción bloquea la fila del jugador, descuenta cada ingrediente y el combustible con el UPDATE protegido de siempre (si algo no alcanza se deshace TODO y dice
     // qué falta) y suma al contador. Varios pedidos a la vez del mismo jugador se ordenan por el bloqueo y nada queda en negativo.
