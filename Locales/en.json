@@ -1969,7 +1969,6 @@
   "-{0} min de espera para alimentar a cada mascota": "-{0} min of waiting to feed each pet",
   "+{0} de oro en las peleas": "+{0} gold in fights",
   "{0} Comidas para Mascotas y {1} {2} al renacer": "{0} Pet Food and {1} {2} when you are reborn",
-  "🏹 Chance de drop en /hunt: **{0}**\n": "🏹 Drop chance on /hunt: **{0}**\n",
   "🗺️ Chance de caja en /travel: **{0}**\n": "🗺️ Box chance on /travel: **{0}**\n",
   "🪓⛏️ Cantidad en /chop y /mine: **{0}**\n": "🪓⛏️ Quantity on /chop and /mine: **{0}**\n",
   "📊 EXP de las peleas: **{0}**": "📊 Fight EXP: **{0}**",
@@ -2842,9 +2841,13 @@
   "➕ Clase **{0}** · {1} ×{2}": "➕ Class **{0}** · {1} ×{2}",
   "➕ Encantamiento **+{0}**": "➕ Enchantment **+{0}**",
   "# ❤️ Vida máxima **{0}**": "# ❤️ Max HP **{0}**",
-  "Todo cuenta contra monstruos (en duelos y en la Arena, solo el nivel, el equipo y la clase). El perfil ya muestra estos totales.": "Everything counts against monsters (in duels and the Arena, only level, gear and class). Your profile already shows these totals.",
   "✨ Encantamientos": "✨ Enchantments",
   "Cada ingrediente muestra **lo que tenés / lo que pide** (✅ alcanza, ❌ falta); el combustible es el carbón que se gasta al cocinar.": "Each ingredient shows **what you have / what it needs** (✅ enough, ❌ missing); the fuel is the coal burned when cooking.",
   "Base **{0}** · sin arma": "Base **{0}** · no weapon",
-  "Base **{0}** · sin amuleto": "Base **{0}** · no amulet"
+  "Base **{0}** · sin amuleto": "Base **{0}** · no amulet",
+  "🏹 Chance de drop en /hunt: **{0}** (de {1} a **{2}**)\n": "🏹 Drop chance on /hunt: **{0}** (from {1} to **{2}**)\n",
+  "➕ Fuego Nuevo **+{0}**": "➕ Fuego Nuevo **+{0}**",
+  "# 🏹 Drop en /hunt **{0}**": "# 🏹 Drop on /hunt **{0}**",
+  "# 🗺️ Caja en /travel **{0}**": "# 🗺️ Box on /travel **{0}**",
+  "Todo cuenta contra monstruos (en duelos y en la Arena, solo el nivel, el equipo y la clase). El perfil ya muestra estos totales. En el drop, cada ➕ cuenta sobre lo que ya llevás acumulado más arriba.": "Everything counts against monsters (in duels and the Arena, only level, gear and class). Your profile already shows these totals. For drops, each ➕ counts on top of what you already have above it."
 }

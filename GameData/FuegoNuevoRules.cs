@@ -61,10 +61,17 @@ public static class FuegoNuevoRules
 
     // Lo que da hoy ese Fuego Nuevo, un renglón por cosa (para el perfil y /fuegonuevo). Son los multiplicadores sobre la base; la chance real de /travel la topa el 100 %.
     public static string BonusLines(int fuegoNuevo) =>
-        Loc.F($"🏹 Chance de drop en /hunt: **{PercentText(HuntDropMultiplier(fuegoNuevo))}**\n") +
+        Loc.F($"🏹 Chance de drop en /hunt: **{PercentText(HuntDropMultiplier(fuegoNuevo))}** (de {PlainPercent(CombatRewardCalculator.HuntDropChancePercent)} a **{PlainPercent(Math.Min(100.0, CombatRewardCalculator.HuntDropChancePercent * HuntDropMultiplier(fuegoNuevo)))}**)\n") +
         Loc.F($"🗺️ Chance de caja en /travel: **{PercentText(TravelDropMultiplier(fuegoNuevo))}**\n") +
         Loc.F($"🪓⛏️ Cantidad en /chop y /mine: **{PercentText(GatherMultiplier(fuegoNuevo))}**\n") +
         Loc.F($"📊 EXP de las peleas: **{PercentText(XpMultiplier(fuegoNuevo))}**");
+
+    // Un porcentaje a secas, sin signo: 6 → "6 %", 14.94 → "14,9 %" (coma decimal en español, punto y sin espacio en inglés; un decimal como mucho).
+    public static string PlainPercent(double percent)
+    {
+        string text = percent.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+        return Loc.Current == Loc.English ? text + "%" : text.Replace('.', ',') + " %";
+    }
 
     // "+30 %" de un multiplicador (1,3 → "+30 %"), con coma decimal y un decimal como mucho.
     public static string PercentText(double multiplier) =>

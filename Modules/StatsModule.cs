@@ -11,7 +11,7 @@ using Discord.Interactions;
 // se reparte en puntos y el último absorbe el redondeo). Abajo, en campos chicos: crítico y esquive, lo que corre de la cocina, el dragón, las mascotas y el Fuego Nuevo. Solo mira (está en la lista de FightLock) y no crea cuentas.
 public sealed record StatsReply(string? PlainMessage, Embed? Embed);
 
-public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepository buffs, IPlayerBonusService bonusService, ICookingRepository cooking, IDragonRepository dragons) : InteractionModuleBase<SocketInteractionContext>
+public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepository buffs, IPlayerBonusService bonusService, ICookingRepository cooking, IDragonRepository dragons, IZoneBoxService zoneBoxes) : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("stats", "Tu ataque, defensa y vida, y cuánto aporta cada cosa (equipo, platos, dragón...).")]
     public async Task HandleAsync()
@@ -20,7 +20,7 @@ public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepo
 
         try
         {
-            var reply = await BuildStatsAsync(users, items, buffs, bonusService, cooking, dragons, Context.User.Id);
+            var reply = await BuildStatsAsync(users, items, buffs, bonusService, cooking, dragons, Context.User.Id, zoneBoxes);
             await FollowupAsync(reply.PlainMessage, embed: reply.Embed);
         }
         catch (Exception ex)
@@ -32,7 +32,7 @@ public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepo
 
     // Estático y sin Discord: lo comparte «aa stats». No crea cuentas (GetByDiscordIdAsync).
     public static async Task<StatsReply> BuildStatsAsync(
-        IUserRepository users, IItemRepository items, IBuffRepository buffs, IPlayerBonusService bonusService, ICookingRepository cooking, IDragonRepository dragons, ulong discordId)
+        IUserRepository users, IItemRepository items, IBuffRepository buffs, IPlayerBonusService bonusService, ICookingRepository cooking, IDragonRepository dragons, ulong discordId, IZoneBoxService? zoneBoxes = null)
     {
         var player = await users.GetByDiscordIdAsync(discordId);
         if (player is null)
@@ -113,11 +113,34 @@ public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepo
         if (bonuses.CookedMaxHp > 0) hpAdds.Add(Loc.F($"➕ Platos **+{bonuses.CookedMaxHp}**"));
         string hpBlock = Block(Loc.F($"# ❤️ Vida máxima **{combat.CombatMaxHp}**"), $"Base **{hpBase}**", hpAdds);
 
+        // ---- DROP: la chance base de /hunt (6 %) y de la caja de /travel con TODO lo extra. Las fuentes se multiplican entre sí, así que cada ➕ cuenta sobre lo ya acumulado más arriba (el plato va último: su % es del
+        // acumulado, no de la base). Si el desglose no se puede armar, la ficha sale igual sin estos bloques.
+        string dropBlocks = string.Empty;
+        try
+        {
+            var (huntTotal, huntAdds) = DropSteps(CombatRewardCalculator.HuntDropChancePercent, bonuses.HuntDropFactors);
+            dropBlocks += "\n\n" + Block(Loc.F($"# 🏹 Drop en /hunt **{Pct(huntTotal)}**"), $"Base **{Pct(CombatRewardCalculator.HuntDropChancePercent)}**", huntAdds);
+
+            if (zoneBoxes is not null)
+            {
+                var (travelBase, _) = await TravelBox.ChanceAsync(zoneBoxes, player.CurrentZoneId);
+                if (travelBase > 0)
+                {
+                    var (travelTotal, travelAdds) = DropSteps(travelBase, bonuses.TravelDropFactors);
+                    dropBlocks += "\n\n" + Block(Loc.F($"# 🗺️ Caja en /travel **{Pct(travelTotal)}**"), $"Base **{Pct(travelBase)}**", travelAdds);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            BotLog.Warn(ex);
+        }
+
         var embed = new EmbedBuilder()
             .WithTitle(Loc.T("📊 Tus stats"))
             .WithColor(Color.Orange)
-            .WithDescription(attackBlock + "\n\n" + defenseBlock + "\n\n" + hpBlock)
-            .WithFooter(Loc.T("Todo cuenta contra monstruos (en duelos y en la Arena, solo el nivel, el equipo y la clase). El perfil ya muestra estos totales."));
+            .WithDescription(attackBlock + "\n\n" + defenseBlock + "\n\n" + hpBlock + dropBlocks)
+            .WithFooter(Loc.T("Todo cuenta contra monstruos (en duelos y en la Arena, solo el nivel, el equipo y la clase). El perfil ya muestra estos totales. En el drop, cada ➕ cuenta sobre lo que ya llevás acumulado más arriba."));
 
         // ---- Crítico y esquive
         var classCrit = classBase.CritChanceBonus * 100;
@@ -200,6 +223,42 @@ public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepo
         }
 
         return new StatsReply(null, embed.Build());
+    }
+
+    // La chance de drop con cada fuente aplicada UNA TRAS OTRA sobre lo acumulado (Fuego Nuevo, mascota, bendición, dragón y, al final, los platos). Cada paso se redondea en décimas sobre el acumulado, así que la
+    // suma de los agregados da EXACTO el total que se muestra (el último paso lleva el redondeo). Con el tope en 100 % también: los factores nunca bajan de 1, el tope se alcanza una vez y ahí quedan quietos.
+    private static (double Total, List<string> Adds) DropSteps(double basePercent, DropFactors factors)
+    {
+        var steps = new (double Factor, Func<string, string> Line)[]
+        {
+            (factors.FuegoNuevo, x => Loc.F($"➕ Fuego Nuevo **+{x}**")),
+            (factors.Pet, x => Loc.F($"➕ Mascota **+{x}**")),
+            (factors.Blessing, x => Loc.F($"➕ Bendición **+{x}**")),
+            (factors.Dragon, x => Loc.F($"➕ Dragón **+{x}**")),
+            (factors.Cook, x => Loc.F($"➕ Platos **+{x}**")),
+        };
+
+        var adds = new List<string>();
+        double running = basePercent;
+        long previous = (long)Math.Round(basePercent * 10, MidpointRounding.AwayFromZero);
+        foreach (var (factor, line) in steps)
+        {
+            if (factor <= 1.0)
+            {
+                continue;
+            }
+
+            running = Math.Min(100.0, running * factor);
+            long tenths = (long)Math.Round(running * 10, MidpointRounding.AwayFromZero);
+            if (tenths > previous)
+            {
+                adds.Add(line(Pct((tenths - previous) / 10.0)));
+            }
+
+            previous = tenths;
+        }
+
+        return (previous / 10.0, adds);
     }
 
     // Un bloque: el título grande con el total, la línea de la base y cada agregado en su renglón.

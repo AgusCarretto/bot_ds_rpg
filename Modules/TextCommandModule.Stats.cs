@@ -13,7 +13,7 @@ public partial class TextCommandModule
     {
         try
         {
-            var reply = await StatsModule.BuildStatsAsync(userRepository, itemRepository, buffRepository, bonusService, cookingRepository, dragonRepository, Context.User.Id);
+            var reply = await StatsModule.BuildStatsAsync(userRepository, itemRepository, buffRepository, bonusService, cookingRepository, dragonRepository, Context.User.Id, zoneBoxService);
             await ReplyAsync(reply.PlainMessage, embed: reply.Embed);
         }
         catch (Exception ex)
