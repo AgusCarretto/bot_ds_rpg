@@ -7,7 +7,7 @@ namespace BotDsRpg.GameData;
 // (tier I a V) de la bendición, mejor banner. Se elige en /config (o «aa banner»); sin elegir no hay banner. El perfil lo adjunta como archivo (attachment://), igual que las fotos de los personajes (NpcImages): nada que alojar.
 //
 // ARCHIVOS: Assets/banners/banner_{clave de la bendición}_{tier 1..5}.png (ver docs/arte-banners.md). El arte llega de a tandas: de cada bendición se usa el archivo del tier más alto que EXISTA y no pase del nivel que tiene el
-// jugador (un nivel III sin arte de tier II ni III muestra el del tier I). Si no existe ninguno, no hay banner y el perfil sale como siempre.
+// jugador (un nivel III sin arte de tier II ni III muestra el del tier I; hoy los 5 tiers de las 13 bendiciones tienen arte provisorio, tools/ui-art/make-banners.js). Si no existe ninguno, no hay banner y el perfil sale como siempre.
 public static class ProfileBanners
 {
     public const string Folder = "banners";
