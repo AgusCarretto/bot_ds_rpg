@@ -431,7 +431,7 @@ public class FuegoNuevoModule(
         // Todas las que existen, con lo que da cada NIVEL (para decidir qué conviene). Las del poder son chicas a propósito y no cuentan en duelos ni en la Arena.
         string pool = string.Join('\n', BlessingCatalog.All.Select(b => $"{b.Emoji} **{b.Name}** — {BlessingCatalog.Describe(b, 1)}"));
         embed.AddField(Loc.T("📖 Las que existen (por nivel)"), Cut(pool), false);
-        return embed.WithFooter(Loc.T("Las bendiciones son permanentes: se quedan con cada Fuego Nuevo. Lo de ataque, defensa y vida solo vale contra monstruos. Cada una desbloquea además un banner para tu perfil (se elige en /config).")).Build();
+        return embed.WithFooter(Loc.T("Las bendiciones son permanentes: se quedan con cada Fuego Nuevo. Lo de ataque, defensa y vida solo vale contra monstruos. La Brasa de Color desbloquea además un banner para tu perfil que mejora con su nivel (se elige en /config).")).Build();
     }
 
     // Los botones de la oferta (uno por bendición), en la fila 0 de su mensaje. Sin oferta pendiente no hay botones.
