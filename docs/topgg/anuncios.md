@@ -2,26 +2,38 @@
 
 Lo que se publica en top.gg (panel del bot → *Announcements*) y, adaptado, en el canal de anuncios de Discord. **Uno por DÍA, como
 mucho** (el dueño cuenta con que las plataformas dejan un anuncio por día): si ese día salieron varias versiones, se juntan en un
-solo anuncio con todo lo que el jugador nota, lo más importante primero; los arreglos internos no se anuncian. Solo el último queda
+solo anuncio con todo lo que el jugador nota, lo más importante primero (si el anuncio del día ya se publicó, lo que sale después va en el del día siguiente); los arreglos internos no se anuncian. Solo el último queda
 fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo va arriba. Cada anuncio tiene un título y un texto.
 
 ---
 
-## 2026-11-05 — La cocina, los banners del perfil y stats más claras (v0.49.0 a v0.50.5)
+## 2026-11-06 — Banners del perfil y stats mucho más completas (v0.50.5) — PARA PUBLICAR MAÑANA
 
-**Título:** ¡Llegó la cocina, los banners del perfil y stats mucho más claras!
+**Título:** ¡Banners para tu perfil y stats mucho más completas!
+
+**Texto:**
+
+🖼️ Si tenés la bendición **Brasa de Color**, ahora desbloqueás un **banner para tu perfil** que mejora con cada nivel de la bendición: son 5 (Brasa Viva, Llama Dorada, Fuego Azul, Ascua Violeta y Sol del Fogón). Lo activás en **/config** (o con **aa banner**) y elegís cuál mostrar, o «el mejor», que sube solo.
+
+📊 **/stats** ahora también desglosa el **crítico y el esquive**, y suma una sección de **chances de drop**: tu 6 % de drop en /hunt y la caja de /travel con todo lo extra (Fuego Nuevo, mascotas, bendiciones, dragón y platos), viendo cuánto suma cada cosa. El % de los platos cuenta sobre lo que ya llevás acumulado. Y con el botón **Ver más stats** (o **aa stats mas**) ves la cocina, el dragón, las mascotas y el Fuego Nuevo con tus bendiciones, en otra pantalla.
+
+🙏 **/blessings** ahora muestra solo las bendiciones que tenés, más ordenadas, y la **Brasa de Color** explica claro qué hace.
+
+✨ Y además: **aa f** es atajo de /fish, **aa code** te responde por mensaje privado y en tu perfil aparece tu puesto, **Top #N**.
+
+---
+
+## 2026-11-05 — La cocina y la ficha de stats (v0.49.0)
+
+**Título:** ¡Llegó la cocina! Cociná con tus peces y mirá tus stats al detalle
 
 **Texto:**
 
 🍳 Los peces por fin sirven para algo: con **/cook** cocinás platos con tus peces, materiales raros y carbón (las recetas están en **aa cook recipes**). Hay platos que **se apilan** hasta tu próximo Fuego Nuevo y otros que te dan un **bufo por una hora**, y se pueden tener varios a la vez. Son caros de hacer, así que no te apures: ¡a descubrirlos!
 
-🖼️ Si tenés la bendición **Brasa de Color**, ahora desbloqueás un **banner para tu perfil** que mejora con cada nivel de la bendición: son 5 (Brasa Viva, Llama Dorada, Fuego Azul, Ascua Violeta y Sol del Fogón). Lo activás en **/config** (o con **aa banner**) y elegís cuál mostrar, o «el mejor», que sube solo.
+📊 Con **/stats** (o **aa stats**) ves tu **ataque, defensa y vida** con el total bien grande y, abajo, de dónde sale: tu base más lo que suma cada cosa (equipo y encantamientos, platos, dragón, mascotas, bendiciones). Todo suma justo hasta el total.
 
-📊 Nuevo comando **/stats** (o **aa stats**): tu **ataque, defensa, vida, crítico y esquive** con el total bien grande y, abajo, de dónde sale cada punto (equipo y encantamientos, platos, dragón, mascotas, bendiciones). También las **chances de drop**: tu 6 % en /hunt y la caja de /travel con todo lo extra, y el % de los platos cuenta sobre lo que ya llevás acumulado. Con el botón **Ver más stats** (o **aa stats mas**) ves la cocina, el dragón, las mascotas y el Fuego Nuevo con tus bendiciones.
-
-🙏 **/blessings** ahora muestra solo las bendiciones que tenés, más ordenadas, y **aa pets** separa mejor a cada mascota.
-
-✨ Y además: **aa f** es atajo de /fish, **aa code** te responde por mensaje privado y en tu perfil aparece tu puesto, **Top #N**.
+🐾 Además, en **aa pets** las mascotas ahora se ven separadas, más ordenadas.
 
 ---
 
