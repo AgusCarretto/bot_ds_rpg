@@ -39,7 +39,8 @@ public static class PlayerBonusExtensions
 // userRepository y zoneRepository son opcionales: con ellos se calcula el minibuff del banco (v0.21.0); sin ellos (algunas pruebas) el banco no suma.
 public sealed class PlayerBonusService(
     IPetRepository petRepository, IBlessingRepository blessingRepository, IGameEventRepository eventRepository,
-    IUserRepository? userRepository = null, IZoneRepository? zoneRepository = null, IToolRepository? toolRepository = null, IDragonRepository? dragonRepository = null) : IPlayerBonusService
+    IUserRepository? userRepository = null, IZoneRepository? zoneRepository = null, IToolRepository? toolRepository = null, IDragonRepository? dragonRepository = null,
+    ICookingRepository? cookingRepository = null) : IPlayerBonusService
 {
     public async Task<PlayerBonuses> GetAsync(ulong discordId, int fuegoNuevo, CancellationToken cancellationToken = default)
     {
@@ -133,6 +134,36 @@ public sealed class PlayerBonusService(
             }
         }
 
-        return new PlayerBonuses(pets, Math.Max(0, fuegoNuevo), levels.Count == 0 ? null : levels, professionXp, bankPercent, chopTool, mineTool, dragon, fishTool);
+        // Lo cocinado en esta vuelta (v0.49.0, /cook): vida, defensa y ataque planos. Sin servicio, sin la tabla o si no se puede leer queda sin efecto y la pelea sigue.
+        IReadOnlyDictionary<string, int>? cooked = null;
+        if (cookingRepository is not null)
+        {
+            try
+            {
+                var rows = await cookingRepository.GetCookedAsync(discordId, cancellationToken);
+                cooked = rows.Count == 0 ? null : rows;
+            }
+            catch (Exception ex)
+            {
+                BotLog.Warn(ex);
+            }
+        }
+
+        // Los platos de tiempo que siguen corriendo (el reloj de la base ya descartó los vencidos).
+        IReadOnlyCollection<string>? cookBuffs = null;
+        if (cookingRepository is not null)
+        {
+            try
+            {
+                var active = await cookingRepository.GetActiveBuffsAsync(discordId, cancellationToken);
+                cookBuffs = active.Count == 0 ? null : active.Keys.ToList();
+            }
+            catch (Exception ex)
+            {
+                BotLog.Warn(ex);
+            }
+        }
+
+        return new PlayerBonuses(pets, Math.Max(0, fuegoNuevo), levels.Count == 0 ? null : levels, professionXp, bankPercent, chopTool, mineTool, dragon, fishTool, cooked, cookBuffs);
     }
 }

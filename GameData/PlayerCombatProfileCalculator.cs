@@ -17,8 +17,9 @@ public static class PlayerCombatProfileCalculator
     // La vida extra de las bendiciones se suma al MaxHpMultiplier de la clase (Guerrero ×1,2): así ToDbHpDelta, que desescala con ese mismo multiplicador, sigue devolviendo vida real.
     public static PlayerCombatProfile Resolve(User player, Item? weapon, Item? amulet, int attackBuffPercent = 0, PlayerBonuses? bonuses = null)
     {
-        int damage = PlayerBonuses.Scale(AttackBuff.Apply(CombatStats.TotalAttack(player.Level, WeaponDamage(player, weapon)), attackBuffPercent), bonuses?.AttackMultiplier ?? 1.0);
-        int defense = PlayerBonuses.Scale(CombatStats.TotalDefense(player.Level, AmuletDefense(player, amulet)), bonuses?.DefenseMultiplier ?? 1.0);
+        // Lo cocinado (v0.49.0) suma plano al ataque y a la defensa ANTES de los porcentajes, como el arma y el amuleto: es parte de lo que se tiene puesto. Solo contra monstruos (sin bonuses suma 0).
+        int damage = PlayerBonuses.Scale(AttackBuff.Apply(CombatStats.TotalAttack(player.Level, WeaponDamage(player, weapon) + (bonuses?.CookedAttack ?? 0)), attackBuffPercent), bonuses?.AttackMultiplier ?? 1.0);
+        int defense = PlayerBonuses.Scale(CombatStats.TotalDefense(player.Level, AmuletDefense(player, amulet) + (bonuses?.CookedDefense ?? 0)), bonuses?.DefenseMultiplier ?? 1.0);
 
         var passives = CombatPassives(player, bonuses);
 
@@ -55,6 +56,32 @@ public static class PlayerCombatProfileCalculator
         if (bonuses is not null && PveTuning.HpFactor(player.Class) is var pveFactor && pveFactor != 1.0)
         {
             passives = passives with { MaxHpMultiplier = passives.MaxHpMultiplier * pveFactor };
+        }
+
+        // Los platos de tiempo (v0.49.0): puntos de crítico y de esquive y el «último aliento» (una vez por pelea, como el del dragón), SOLO contra monstruos.
+        if (bonuses is not null)
+        {
+            if (bonuses.CookedCritPoints > 0)
+            {
+                passives = passives with { CritChanceBonus = passives.CritChanceBonus + (bonuses.CookedCritPoints / 100.0) };
+            }
+
+            if (bonuses.CookedDodgePoints > 0)
+            {
+                passives = passives with { DodgeChanceBonus = passives.DodgeChanceBonus + (bonuses.CookedDodgePoints / 100.0) };
+            }
+
+            if (bonuses.CookedLastStand)
+            {
+                passives = passives with { LastStand = true };
+            }
+        }
+
+        // La vida cocinada (v0.49.0, +10 por Surubí al Disco) se suma AL FINAL y en vida que se VE: el multiplicador sube cookedHp / vidaBase, así la vida mostrada es la de siempre + lo cocinado exacto, sin que la clase ni
+        // los encantamientos lo multipliquen. Va dentro del mismo MaxHpMultiplier para que ToDbHpDelta (que desescala con él) siga devolviendo vida REAL y el perfil, /heal y la pelea no se separen.
+        if (bonuses is not null && bonuses.CookedMaxHp > 0 && player.MaxHp > 0)
+        {
+            passives = passives with { MaxHpMultiplier = passives.MaxHpMultiplier + ((double)bonuses.CookedMaxHp / player.MaxHp) };
         }
 
         return passives;

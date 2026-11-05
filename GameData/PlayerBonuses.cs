@@ -7,9 +7,27 @@ namespace BotDsRpg.GameData;
 // multiplicadores" del spec. Las cuentas están acá y no repartidas: si una fuente cambia, cambia en un solo lugar.
 public sealed record PlayerBonuses(
     PetBonuses Pets, int FuegoNuevo = 0, IReadOnlyDictionary<string, int>? BlessingLevels = null, IReadOnlyDictionary<string, long>? ProfessionXp = null, double BankGoldPercent = 0,
-    double ChopToolFactor = 1, double MineToolFactor = 1, DragonBonuses? Dragon = null, double FishToolFactor = 1)
+    double ChopToolFactor = 1, double MineToolFactor = 1, DragonBonuses? Dragon = null, double FishToolFactor = 1, IReadOnlyDictionary<string, int>? Cooked = null,
+    IReadOnlyCollection<string>? CookBuffs = null)
 {
     public static readonly PlayerBonuses None = new(PetBonuses.None);
+
+    // Lo cocinado en esta vuelta (v0.49.0, GameData/CookingCatalog.cs): sumas PLANAS a la vida máxima, la defensa y el ataque. Entran en PlayerCombatProfileCalculator (solo contra monstruos, como todo lo de acá).
+    public int CookedMaxHp => CookingCatalog.Sum(Cooked, d => d.MaxHp);
+
+    public int CookedDefense => CookingCatalog.Sum(Cooked, d => d.Defense);
+
+    public int CookedAttack => CookingCatalog.Sum(Cooked, d => d.Attack);
+
+    // Los platos de TIEMPO activos (v0.49.0): sus claves las saca PlayerBonusService de player_cook_buffs (solo las que no se vencieron). Cada efecto es % sobre lo que ya recibe el jugador, puntos de crítico o esquive, o el
+    // «último aliento»; no se multiplican entre sí (comer el mismo otra vez suma tiempo, no efecto).
+    private double CookFactor(Func<Dish, int> percent) => 1 + (CookingCatalog.ActiveTimed(CookBuffs).Sum(percent) / 100.0);
+
+    public double CookedCritPoints => CookingCatalog.ActiveTimed(CookBuffs).Sum(d => d.CritPoints);
+
+    public double CookedDodgePoints => CookingCatalog.ActiveTimed(CookBuffs).Sum(d => d.DodgePoints);
+
+    public bool CookedLastStand => CookingCatalog.ActiveTimed(CookBuffs).Any(d => d.LastStand);
 
     // Para las llamadas que solo conocen mascotas (y las pruebas): un PetBonuses es un PlayerBonuses sin Fuegos Nuevos ni bendiciones.
     public static implicit operator PlayerBonuses(PetBonuses pets) => new(pets);
@@ -21,16 +39,16 @@ public sealed record PlayerBonuses(
 
     // La chance de drop de /hunt y de /travel se multiplica por esto (relativo: +24 % sobre un 6 % da 7,44 %); el cofre del jefe no.
     public double HuntDropMultiplier =>
-        FuegoNuevoRules.HuntDropMultiplier(FuegoNuevo) * PetDrop * (1 + (BlessingCatalog.HuntDropPerLevel * BlessingLevel(BlessingCatalog.HuntDropKey))) * DragonFactor(d => d.DropPercent);
+        FuegoNuevoRules.HuntDropMultiplier(FuegoNuevo) * PetDrop * (1 + (BlessingCatalog.HuntDropPerLevel * BlessingLevel(BlessingCatalog.HuntDropKey))) * DragonFactor(d => d.DropPercent) * CookFactor(d => d.DropPercent);
 
     public double TravelDropMultiplier =>
-        FuegoNuevoRules.TravelDropMultiplier(FuegoNuevo) * PetDrop * (1 + (BlessingCatalog.TravelDropPerLevel * BlessingLevel(BlessingCatalog.TravelDropKey))) * DragonFactor(d => d.DropPercent);
+        FuegoNuevoRules.TravelDropMultiplier(FuegoNuevo) * PetDrop * (1 + (BlessingCatalog.TravelDropPerLevel * BlessingLevel(BlessingCatalog.TravelDropKey))) * DragonFactor(d => d.DropPercent) * CookFactor(d => d.DropPercent);
 
     public double XpMultiplier =>
-        FuegoNuevoRules.XpMultiplier(FuegoNuevo) * (1 + (Pets.XpPercent / 100.0)) * (1 + (BlessingCatalog.XpPerLevel * BlessingLevel(BlessingCatalog.XpKey))) * DragonFactor(d => d.XpPercent);
+        FuegoNuevoRules.XpMultiplier(FuegoNuevo) * (1 + (Pets.XpPercent / 100.0)) * (1 + (BlessingCatalog.XpPerLevel * BlessingLevel(BlessingCatalog.XpKey))) * DragonFactor(d => d.XpPercent) * CookFactor(d => d.XpPercent);
 
     public double GoldMultiplier =>
-        (1 + (Pets.GoldPercent / 100.0)) * (1 + (BlessingCatalog.GoldPerLevel * BlessingLevel(BlessingCatalog.GoldKey))) * (1 + (Math.Clamp(BankGoldPercent, 0, BankRules.MaxGoldBonusPercent) / 100.0)) * DragonFactor(d => d.GoldPercent);
+        (1 + (Pets.GoldPercent / 100.0)) * (1 + (BlessingCatalog.GoldPerLevel * BlessingLevel(BlessingCatalog.GoldKey))) * (1 + (Math.Clamp(BankGoldPercent, 0, BankRules.MaxGoldBonusPercent) / 100.0)) * DragonFactor(d => d.GoldPercent) * CookFactor(d => d.GoldPercent);
 
     // El minibuff del banco (v0.21.0, GameData/BankRules.cs): lo saca PlayerBonusService del saldo y la zona del jugador, y ya está sumado a GoldMultiplier.
     // Poder (solo contra monstruos): el ataque y la defensa TOTALES (nivel + equipo) y la vida máxima de combate.
@@ -49,11 +67,11 @@ public sealed record PlayerBonuses(
     // Recolección: cuántas unidades da un /chop o un /mine (se redondea al azar, ver GatheringYield.RollScaled). Multiplica Fuego Nuevo × bendición × oficio × la mascota del Fogón.
     public double ChopMultiplier =>
         FuegoNuevoRules.GatherMultiplier(FuegoNuevo) * (1 + (BlessingCatalog.ChopPerLevel * BlessingLevel(BlessingCatalog.ChopKey)))
-        * ProfessionRules.QuantityMultiplier(ProfessionLevel(ProfessionCatalog.WoodcutterKey)) * PetGather * DragonFactor(d => d.GatherPercent);
+        * ProfessionRules.QuantityMultiplier(ProfessionLevel(ProfessionCatalog.WoodcutterKey)) * PetGather * DragonFactor(d => d.GatherPercent) * CookFactor(d => d.GatherPercent);
 
     public double MineMultiplier =>
         FuegoNuevoRules.GatherMultiplier(FuegoNuevo) * (1 + (BlessingCatalog.MinePerLevel * BlessingLevel(BlessingCatalog.MineKey)))
-        * ProfessionRules.QuantityMultiplier(ProfessionLevel(ProfessionCatalog.MinerKey)) * PetGather * DragonFactor(d => d.GatherPercent);
+        * ProfessionRules.QuantityMultiplier(ProfessionLevel(ProfessionCatalog.MinerKey)) * PetGather * DragonFactor(d => d.GatherPercent) * CookFactor(d => d.GatherPercent);
 
     private double PetGather => 1 + (Pets.GatherPercent / 100.0);
 
@@ -71,7 +89,7 @@ public sealed record PlayerBonuses(
     // La pesca (v0.48.0, /fish): cuántas unidades da cada tirada (Fuego Nuevo × oficio Pescador × la mascota del Fogón × el dragón; no hay bendición de pesca) y la chance de que el pez suba de rareza.
     // La caña (FishToolFactor) va aparte, como el hacha y el pico: se aplica por rareza con ToolRules.QuantityFactor.
     public double FishMultiplier =>
-        FuegoNuevoRules.GatherMultiplier(FuegoNuevo) * ProfessionRules.QuantityMultiplier(ProfessionLevel(ProfessionCatalog.FisherKey)) * PetGather * DragonFactor(d => d.GatherPercent);
+        FuegoNuevoRules.GatherMultiplier(FuegoNuevo) * ProfessionRules.QuantityMultiplier(ProfessionLevel(ProfessionCatalog.FisherKey)) * PetGather * DragonFactor(d => d.GatherPercent) * CookFactor(d => d.GatherPercent);
 
     public double FishRarityUpgrade => ProfessionRules.RarityUpgradeChance(ProfessionLevel(ProfessionCatalog.FisherKey));
 
@@ -87,7 +105,8 @@ public sealed record PlayerBonuses(
 
     public bool IsNone =>
         Pets.IsNone && FuegoNuevo == 0 && (BlessingLevels is null || BlessingLevels.Count == 0)
-        && ProfessionCatalog.All.All(p => ProfessionLevel(p.Key) == 0) && BankGoldPercent <= 0 && ChopToolFactor <= 1 && MineToolFactor <= 1 && FishToolFactor <= 1 && (Dragon is null || Dragon.IsNone);
+        && ProfessionCatalog.All.All(p => ProfessionLevel(p.Key) == 0) && BankGoldPercent <= 0 && ChopToolFactor <= 1 && MineToolFactor <= 1 && FishToolFactor <= 1 && (Dragon is null || Dragon.IsNone)
+        && CookedMaxHp == 0 && CookedDefense == 0 && CookedAttack == 0 && (CookBuffs is null || CookBuffs.Count == 0);
 
     // Aplica un multiplicador a una cantidad entera (oro, EXP, ataque, defensa), redondeando al más cercano. Con 1,0 o menos no toca nada.
     public static int Scale(int amount, double multiplier) =>

@@ -143,8 +143,15 @@ public partial class PetModule(
                 Loc.F($"Alimentalas con **/pet feed** (una vez cada {PetRules.CooldownText(data.FeedCooldown)} cada una)."));
         }
 
-        foreach (var pet in data.Owned)
+        // El aviso del huevo sin abrir (si hay) va DESPUÉS de las mascotas; se calcula acá para saber si la última mascota todavía tiene algo debajo.
+        var eggsToOpen = data.Species
+            .Where(s => data.Owned.All(o => o.Species.SpeciesId != s.SpeciesId) && data.EggNamesHeld.Contains(s.EggName))
+            .Select(s => $"**{ItemEmojiRegistry.Label(s.EggName, string.Empty)}**")
+            .ToList();
+
+        for (int i = 0; i < data.Owned.Count; i++)
         {
+            var pet = data.Owned[i];
             int level = PetRules.LevelFor(pet.FeedPoints);
             int cap = PetRules.LevelCap(pet.Tier);
             var species = pet.Species;
@@ -164,15 +171,14 @@ public partial class PetModule(
                 state = EvolutionText(pet, data.EggCounts);
             }
 
-            embed.AddField(Loc.F($"{species.Emoji} {PetRules.DisplayName(pet)} · nivel {level}/{cap}"), $"{bonus}\n{state}", false);
+            // Un espacio entre una mascota y lo que sigue (el dueño, 2026-11-05: «dejá un espacio entre cada mascota en aa pets, que está medio entreverado»): el salto de línea + un carácter de ancho cero
+            // al final del campo, porque Discord recorta los espacios comunes de ahí (la misma maña del recetario, ForgeModule.SectionGap). La última cosa de todas no lleva uno de más.
+            bool somethingBelow = i < data.Owned.Count - 1 || eggsToOpen.Count > 0;
+            embed.AddField(Loc.F($"{species.Emoji} {PetRules.DisplayName(pet)} · nivel {level}/{cap}"), $"{bonus}\n{state}" + (somethingBelow ? PetGap : string.Empty), false);
         }
 
         // Las mascotas que todavía no tenés NO se listan (el dueño no quiere spoilers: cuántas hay, cómo se llaman y qué dan se descubre jugando). Solo se avisa de un huevo
         // que ya tenés en la mochila sin abrir, que es algo que el jugador ya conoce.
-        var eggsToOpen = data.Species
-            .Where(s => data.Owned.All(o => o.Species.SpeciesId != s.SpeciesId) && data.EggNamesHeld.Contains(s.EggName))
-            .Select(s => $"**{ItemEmojiRegistry.Label(s.EggName, string.Empty)}**")
-            .ToList();
         if (eggsToOpen.Count > 0)
         {
             embed.AddField(Loc.T("🥚 Huevos sin abrir"), Loc.F($"Tenés {string.Join(Loc.T(" y "), eggsToOpen)} en la mochila: abrilo con **/open**."), false);
@@ -184,6 +190,9 @@ public partial class PetModule(
     // El largo de las barras de /pet view (campos de ancho completo, una mascota por campo). Con las piezas de emoji de verdad cada una es un código de ~35 caracteres: 6 piezas por barra y hasta 2 barras por mascota
     // dejan las 6 mascotas muy por debajo de los 6000 caracteres del mensaje (v0400test lo mide).
     private const int ViewBarSegments = 6;
+
+    // Salto de línea + un carácter de ancho cero (U+200B): lo que separa una mascota de la siguiente en /pet view.
+    private const string PetGap = "\n​";
 
     // El ícono de cada tipo de bonus (los mismos de BonusSummary).
     public static string KindIcon(string bonusKind) => bonusKind switch

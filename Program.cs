@@ -571,6 +571,7 @@ public static class ServiceProviderBuilder
             .AddSingleton<IBlessingRepository, BlessingRepository>()
             .AddSingleton<IFuegoNuevoRepository, FuegoNuevoRepository>()
             .AddSingleton<IToolRepository, ToolRepository>()
+            .AddSingleton<ICookingRepository, CookingRepository>()
             .AddSingleton<IDragonRepository, DragonRepository>()
             .AddSingleton<IDragonBreedOfferService, DragonBreedOfferService>()
             .AddSingleton<IDragonBoardService>(_ => new DragonBoardService())

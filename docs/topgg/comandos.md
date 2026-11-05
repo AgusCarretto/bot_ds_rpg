@@ -17,6 +17,7 @@ Todo comando también se puede escribir con el prefijo `aa` (por ejemplo `aa hun
 | `/tutorial` | Aprendé lo básico: recolectar, forjar, pelear y sobrevivir. |
 | `/info` | La lista de comandos, o cómo funciona un sistema (`/info tema:enchant`). |
 | `/profile` | Tu nivel, vida, ataque, defensa y oro (o los de otro jugador). |
+| `/stats` | Tu ataque, defensa y vida y cuánto aporta cada cosa (equipo, platos, dragón...). |
 | `/inventory` | Tus materiales, comida y cajas, por pestañas. |
 | `/language` | Cambiá el idioma: español o English. |
 | `/config` | Ajustá cómo ves el bot. |
@@ -40,6 +41,7 @@ Todo comando también se puede escribir con el prefijo `aa` (por ejemplo `aa hun
 | `/chop` | Talá madera. |
 | `/mine` | Miná minerales. |
 | `/fish` | Pescá en el río. |
+| `/cook` | Cociná platos con tus peces y materiales (sin plato, ves las recetas). |
 | `/professions` | Tus oficios (Leñador, Minero, Pescador, Encantador) y lo que dan. |
 | `/forge` | La herrería: forjá armas y amuletos. |
 | `/forge-special` | El equipo del Fogón Eterno y qué materiales guardar para él. |

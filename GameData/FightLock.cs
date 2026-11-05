@@ -15,11 +15,13 @@ public static class FightLock
         // v0.47.0: la jugada escrita de la mazmorra («aa dg agua»).
         "dungeon",
         "profile", "inventory", "cd", "info", "tutorial",
+        // v0.49.0: la ficha de stats solo mira.
+        "stats",
     };
 
     // En una mazmorra (v0.47.0) no se come: valen la jugada escrita y lo que solo mira, pero no «use» (ni atacar o huir, que son de las peleas).
     public static bool IsAllowedInDungeon(string? commandName) =>
-        !string.IsNullOrWhiteSpace(commandName) && commandName.Trim().ToLowerInvariant() is "dungeon" or "profile" or "inventory" or "cd" or "info" or "tutorial";
+        !string.IsNullOrWhiteSpace(commandName) && commandName.Trim().ToLowerInvariant() is "dungeon" or "profile" or "inventory" or "cd" or "info" or "tutorial" or "stats";
 
     public static bool IsAllowed(string? commandName) =>
         !string.IsNullOrWhiteSpace(commandName) && Allowed.Contains(commandName.Trim());
