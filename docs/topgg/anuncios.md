@@ -19,6 +19,8 @@ fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo
 
 🙏 **/blessings** ahora muestra solo las bendiciones que tenés, más ordenadas, y la **Brasa de Color** explica claro qué hace.
 
+⏱️ **/cd** a tu gusto: en **/config** elegís qué cooldowns ver (destildás los que no querés) y cuál va primero, o lo hacés escribiendo: **aa cd orden cazar 1**, **aa cd ocultar viajar**, **aa cd reset**.
+
 ✨ Y además: **aa f** es atajo de /fish, **aa code** te responde por mensaje privado y en tu perfil aparece tu puesto, **Top #N**.
 
 ---

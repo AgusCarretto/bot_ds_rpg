@@ -474,12 +474,13 @@ CREATE TABLE IF NOT EXISTS player_language (
 );
 
 -- La configuración de cada jugador (v0.26.1, Database/add_player_settings.sql): mostrar u ocultar la tablita del resumen del combate y (v0.28.1, Database/add_recipe_book_setting.sql) qué recetario ve en la herrería
--- (false = el clásico, una zona por página; true = el completo) y (v0.50.0, Database/add_profile_banner.sql) qué banner del perfil usa (la clave de la bendición; NULL = ninguno). Sin clave foránea (como player_language).
+-- (false = el clásico, una zona por página; true = el completo) y (v0.50.0, Database/add_profile_banner.sql) qué banner del perfil usa (la clave de la bendición; NULL = ninguno) y (v0.51.0, Database/add_cd_layout.sql) qué líneas de /cd ve y en qué orden (NULL = todas, como siempre). Sin clave foránea (como player_language).
 CREATE TABLE IF NOT EXISTS player_settings (
     discord_id         BIGINT PRIMARY KEY,
     show_fight_summary BOOLEAN NOT NULL DEFAULT TRUE,
     full_recipe_book   BOOLEAN NOT NULL DEFAULT FALSE,
     profile_banner     TEXT NULL,
+    cd_layout          TEXT NULL,
     updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

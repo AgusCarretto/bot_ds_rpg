@@ -4,7 +4,8 @@ namespace BotDsRpg.GameData;
 // Sumar una opción: un campo acá con su valor de siempre por defecto, una columna en player_settings (Database/add_player_settings.sql, add_recipe_book_setting.sql...) y su botón en Modules/ConfigModule.cs.
 // FullRecipeBook (v0.28.1): qué recetario ve en la herrería. false (lo de siempre) = el CLÁSICO, una zona por página con lo que tenés de cada material; true = el COMPLETO de la v0.27.0, todas las zonas juntas.
 // ProfileBanner (v0.50.0): la clave de la bendición cuyo banner (GameData/ProfileBanners.cs) se ve al pie del /profile; null = ninguno.
-public sealed record PlayerSettings(bool ShowFightSummary = true, bool FullRecipeBook = false, string? ProfileBanner = null)
+// CdLayout (v0.51.0): qué líneas de /cd ve y en qué orden (GameData/CooldownLayout.cs); null = todas, en el orden de siempre.
+public sealed record PlayerSettings(bool ShowFightSummary = true, bool FullRecipeBook = false, string? ProfileBanner = null, string? CdLayout = null)
 {
     // Lo que ve quien nunca tocó nada (o cuando la base no responde): todo como siempre.
     public static readonly PlayerSettings Default = new();

@@ -97,9 +97,9 @@ ConfigScreen screenFullEn; using (Loc.Use("en")) { screenFullEn = await ConfigMo
 await service.SetFullRecipeBookAsync(U4, false);
 ConfigScreen screenClassicEn; using (Loc.Use("en")) { screenClassicEn = await ConfigModule.BuildScreenAsync(service, U4); }
 List<ButtonComponent> ButtonsOf(ConfigScreen s) => s.Components.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<ButtonComponent>().ToList();
-Check(screenClassic.Embed.Fields.Length == 2 && screenClassic.Embed.Fields[0].Name == "📋 Resumen del combate" && screenClassic.Embed.Fields[1].Name == "📜 Recetario de la herrería" && screenClassic.Embed.Fields[1].Value.Contains("**Clásico**") && ButtonsOf(screenClassic).Count == 2
+Check(screenClassic.Embed.Fields.Length == 3 && screenClassic.Embed.Fields[0].Name == "📋 Resumen del combate" && screenClassic.Embed.Fields[1].Name == "📜 Recetario de la herrería" && screenClassic.Embed.Fields[2].Name == "⏱️ Cooldowns (/cd)" && screenClassic.Embed.Fields[1].Value.Contains("**Clásico**") && ButtonsOf(screenClassic).Count == 2
     && ButtonsOf(screenClassic)[0].CustomId.StartsWith("config_summary:") && ButtonsOf(screenClassic)[1] is { Label: "Recetario completo" } b1 && b1.CustomId == $"config_recipes:{U4}:full",
-    "dos opciones: el resumen y, abajo, el recetario («Clásico» por defecto) con un botón que pasa al completo (el id lleva al dueño y el valor al que pasa)");
+    "tres opciones: el resumen, el recetario («Clásico» por defecto) con un botón que pasa al completo (el id lleva al dueño y el valor al que pasa) y, abajo, los cooldowns de /cd (v0.51.0)");
 Check(screenFull.Embed.Fields[1].Value.Contains("**Completo**") && ButtonsOf(screenFull)[1] is { Label: "Recetario clásico" } b2 && b2.CustomId == $"config_recipes:{U4}:classic", "con el completo elegido: dice «Completo» y el botón vuelve al clásico");
 Check(screenFullEn.Embed.Fields[1].Name == "📜 Forge recipe book" && screenFullEn.Embed.Fields[1].Value.Contains("**Full**") && ButtonsOf(screenFullEn)[1].Label == "Classic recipe book" && screenClassicEn.Embed.Fields[1].Value.Contains("**Classic**") && ButtonsOf(screenClassicEn)[1].Label == "Full recipe book",
     $"y en inglés ({screenFullEn.Embed.Fields[1].Name} | {screenFullEn.Embed.Fields[1].Value})");
@@ -226,6 +226,7 @@ sealed class ThrowingRepo : ISettingsRepository
     public Task SetShowFightSummaryAsync(ulong discordId, bool value, CancellationToken ct = default) => throw new InvalidOperationException("simulado");
     public Task SetFullRecipeBookAsync(ulong discordId, bool value, CancellationToken ct = default) => throw new InvalidOperationException("simulado");
     public Task SetProfileBannerAsync(ulong discordId, string? blessingKey, CancellationToken ct = default) => throw new InvalidOperationException("simulado");
+    public Task SetCdLayoutAsync(ulong discordId, string? layout, CancellationToken ct = default) => throw new InvalidOperationException("simulado");
 }
 
 public class FakeProxy : DispatchProxy

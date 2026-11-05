@@ -16,4 +16,7 @@ public interface ISettingsRepository
 
     // Guarda (o pisa) el banner del perfil: la clave de una bendición, o null para no usar ninguno (v0.50.0). No toca las demás opciones del jugador.
     Task SetProfileBannerAsync(ulong discordId, string? blessingKey, CancellationToken cancellationToken = default);
+
+    // Guarda (o pisa) qué líneas de /cd ve y en qué orden (v0.51.0, GameData/CooldownLayout.cs); null = todas, como siempre. No toca las demás opciones del jugador.
+    Task SetCdLayoutAsync(ulong discordId, string? layout, CancellationToken cancellationToken = default);
 }

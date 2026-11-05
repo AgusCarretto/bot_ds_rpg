@@ -18,6 +18,9 @@ public interface IPlayerSettingsService
 
     // El banner del perfil (v0.50.0): la clave de la bendición, o null para ninguno. Misma regla: no atrapa errores.
     Task SetProfileBannerAsync(ulong discordId, string? blessingKey);
+
+    // Qué líneas de /cd ve y en qué orden (v0.51.0): null = todas, como siempre. Misma regla: no atrapa errores.
+    Task SetCdLayoutAsync(ulong discordId, string? layout);
 }
 
 public sealed class PlayerSettingsService(ISettingsRepository repository) : IPlayerSettingsService
@@ -72,6 +75,12 @@ public sealed class PlayerSettingsService(ISettingsRepository repository) : IPla
     public async Task SetProfileBannerAsync(ulong discordId, string? blessingKey)
     {
         await repository.SetProfileBannerAsync(discordId, blessingKey);
+        await RefreshAsync(discordId);
+    }
+
+    public async Task SetCdLayoutAsync(ulong discordId, string? layout)
+    {
+        await repository.SetCdLayoutAsync(discordId, layout);
         await RefreshAsync(discordId);
     }
 
