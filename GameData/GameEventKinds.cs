@@ -32,6 +32,8 @@ public static class GameEventKinds
     public const string Fish = "fish";
     public const string FishXp = "fish_xp";
     public const string FishCaught = "fish_caught";
+    // v0.49.0: la cocina (/cook). amount = cuántos platos se cocinaron en ese pedido, detail = la clave del plato.
+    public const string Cook = "cook";
     public const string GatheredUnits = "gathered_units";   // unidades que dio la recolección; amount = cantidad
     public const string Craft = "craft";                    // forjó un ítem; detail = nombre del ítem
 

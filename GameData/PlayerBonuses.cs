@@ -7,9 +7,16 @@ namespace BotDsRpg.GameData;
 // multiplicadores" del spec. Las cuentas están acá y no repartidas: si una fuente cambia, cambia en un solo lugar.
 public sealed record PlayerBonuses(
     PetBonuses Pets, int FuegoNuevo = 0, IReadOnlyDictionary<string, int>? BlessingLevels = null, IReadOnlyDictionary<string, long>? ProfessionXp = null, double BankGoldPercent = 0,
-    double ChopToolFactor = 1, double MineToolFactor = 1, DragonBonuses? Dragon = null, double FishToolFactor = 1)
+    double ChopToolFactor = 1, double MineToolFactor = 1, DragonBonuses? Dragon = null, double FishToolFactor = 1, IReadOnlyDictionary<string, int>? Cooked = null)
 {
     public static readonly PlayerBonuses None = new(PetBonuses.None);
+
+    // Lo cocinado en esta vuelta (v0.49.0, GameData/CookingCatalog.cs): sumas PLANAS a la vida máxima, la defensa y el ataque. Entran en PlayerCombatProfileCalculator (solo contra monstruos, como todo lo de acá).
+    public int CookedMaxHp => CookingCatalog.Sum(Cooked, d => d.MaxHp);
+
+    public int CookedDefense => CookingCatalog.Sum(Cooked, d => d.Defense);
+
+    public int CookedAttack => CookingCatalog.Sum(Cooked, d => d.Attack);
 
     // Para las llamadas que solo conocen mascotas (y las pruebas): un PetBonuses es un PlayerBonuses sin Fuegos Nuevos ni bendiciones.
     public static implicit operator PlayerBonuses(PetBonuses pets) => new(pets);
@@ -87,7 +94,8 @@ public sealed record PlayerBonuses(
 
     public bool IsNone =>
         Pets.IsNone && FuegoNuevo == 0 && (BlessingLevels is null || BlessingLevels.Count == 0)
-        && ProfessionCatalog.All.All(p => ProfessionLevel(p.Key) == 0) && BankGoldPercent <= 0 && ChopToolFactor <= 1 && MineToolFactor <= 1 && FishToolFactor <= 1 && (Dragon is null || Dragon.IsNone);
+        && ProfessionCatalog.All.All(p => ProfessionLevel(p.Key) == 0) && BankGoldPercent <= 0 && ChopToolFactor <= 1 && MineToolFactor <= 1 && FishToolFactor <= 1 && (Dragon is null || Dragon.IsNone)
+        && CookedMaxHp == 0 && CookedDefense == 0 && CookedAttack == 0;
 
     // Aplica un multiplicador a una cantidad entera (oro, EXP, ataque, defensa), redondeando al más cercano. Con 1,0 o menos no toca nada.
     public static int Scale(int amount, double multiplier) =>

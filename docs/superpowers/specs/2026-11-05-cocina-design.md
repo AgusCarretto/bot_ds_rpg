@@ -8,7 +8,7 @@ Etapa 2 de la pesca. Pedido del dueño (2026-11-05): «el comando puede ser cook
 - **Cocinar = comer en el momento.** No existe el ítem «plato»: no hay mochila, ni `/use`, ni pestaña del inventario. Cada ejecución es UNA transacción: bloquea la fila del jugador, descuenta cada ingrediente con el `UPDATE … WHERE quantity >= n` de siempre (si falta algo, se deshace TODO y dice qué falta) y suma el efecto. 12 pedidos a la vez no dejan nada en negativo.
 - **Combustible**: todo plato gasta Carbón (un ingrediente más del plato, mostrado aparte como «combustible»). Máximo 4 tipos de ingrediente además del combustible.
 - **Solo contra monstruos** (como los encantamientos Vida/Esquive y el dragón): entra por `PlayerBonuses`, que los duelos y la Arena nunca reciben. No toca ningún cooldown.
-- **Fuego Nuevo**: borra todo lo cocinado, permanente y de tiempo (junto con la mochila). El aviso previo del `/fuegonuevo` lo cuenta.
+- **Fuego Nuevo**: borra todo lo cocinado, permanente y de tiempo (junto con la mochila). (El aviso previo del `/fuegonuevo` todavía NO lo cuenta: queda pendiente.)
 
 ## Los platos permanentes (se apilan sin tope, hasta el próximo Fuego Nuevo)
 

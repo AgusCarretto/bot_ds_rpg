@@ -43,7 +43,7 @@ public static class HelpTopics
         new("pets", "🐾", Loc.Mark("Mascotas"), Loc.Mark("huevos, bonus pasivos y cómo alimentarlas"), ["mascota", "mascotas", "pet", "huevo", "huevos", "egg", "eggs"], Pets, InEnglish: true),
         new("dragon", "🐲", Loc.Mark("Dragón"), Loc.Mark("comprarlo, entrenarlo y criarlo: tipo, tiers y comida"), ["dragones", "dragons", "criar", "cria", "cría", "breed", "horse", "caballo", "comida de dragon", "comida de dragón"], Dragon, InEnglish: true),
         new("classes", "🎭", Loc.Mark("Clases y habilidades"), Loc.Mark("qué hace cada clase"), ["clase", "clases", "class", "habilidad", "habilidades"], Classes, InEnglish: true),
-        new("gather", "🪓", Loc.Mark("Recolección"), Loc.Mark("talar y minar: unidades y rarezas"), ["chop", "mine", "fish", "talar", "minar", "pescar", "pesca", "recolectar", "recoleccion", "madera", "mineral"], Gather, InEnglish: true),
+        new("gather", "🪓", Loc.Mark("Recolección"), Loc.Mark("talar y minar: unidades y rarezas"), ["chop", "mine", "fish", "talar", "minar", "pescar", "pesca", "cook", "cocinar", "cocina", "plato", "platos", "recolectar", "recoleccion", "madera", "mineral"], Gather, InEnglish: true),
         new("daily", "🎁", Loc.Mark("Diario y regalos"), Loc.Mark("la recompensa diaria, la racha y regalar oro"), ["diario", "racha", "give", "dar", "regalo", "regalar"], Daily, InEnglish: true),
         new("stats", "📊", Loc.Mark("Nivel y estadísticas"), Loc.Mark("EXP, vida, ataque y defensa"), ["nivel", "exp", "xp", "ataque", "defensa", "vida", "hp", "perfil", "level"], Stats, InEnglish: true),
         new("reminders", "⏰", Loc.Mark("Recordatorios"), Loc.Mark("los avisos del bot cuando termina una espera"), ["recordatorio", "recordatorios", "reminder", "reminders", "aviso", "avisos", "alarma", "alarmas"], Reminders, InEnglish: true),
@@ -549,6 +549,8 @@ public static class HelpTopics
             Loc.T("Solo hay tres peces; la rareza sale así: ") +
             string.Join(" · ", RarityCatalog.FishChances.Select(c => Loc.F($"{RarityCatalog.DisplayName(c.Rarity)} {LDec(c.Percent)} %"))) + "\n" +
             Loc.T("La caña del Carpintero (**/tools**) multiplica lo que sacás. Los peces se venden o se desmantelan para sacar Polvo.")),
+        (Loc.T("🍳 Cocina"),
+            Loc.T("Con los peces y los materiales raros cocinás platos con **/cook** (las recetas: **aa cook recipes**). El plato se cocina y se come en el momento: suma vida máxima, defensa o ataque y se **apila** hasta el próximo Fuego Nuevo. Solo cuenta contra monstruos.")),
         (Loc.T("🔁 Después"), Loc.T("Lo que juntás sirve para forjar (**/info tema:forge**), para cambiar con otros jugadores (**/info tema:trade**) o para desmantelar y sacar Polvo (**/info tema:dismantle**).")));
 
     private static Embed Daily() => Topic(Self("daily"),

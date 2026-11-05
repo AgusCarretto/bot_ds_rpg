@@ -71,7 +71,8 @@ public partial class TextCommandModule(
     IAdminRepository adminRepository,
     IRedeemCodeRepository redeemCodeRepository,
     IReferralRepository referralRepository,
-    IDungeonService dungeonService) : ModuleBase<SocketCommandContext>
+    IDungeonService dungeonService,
+    ICookingRepository cookingRepository) : ModuleBase<SocketCommandContext>
 {
     // ---- Onboarding / clase ----
 
