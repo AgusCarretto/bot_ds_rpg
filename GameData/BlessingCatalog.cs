@@ -62,7 +62,7 @@ public static class BlessingCatalog
         new(PetFeedKey, "Buen Pienso", "🍖", BlessingKind.Pets, $"-{(int)PetFeedReductionPerLevel.TotalMinutes} min de espera para alimentar a cada mascota"),
         new(GoldKey, "Bolsillo Hondo", "💰", BlessingKind.Economy, $"+{Pct(GoldPerLevel)} de oro en las peleas"),
         new(SatchelKey, "Alforja del Fogonero", "🎒", BlessingKind.Items, $"{SatchelPetFoodPerLevel} Comidas para Mascotas y {SatchelBoxesPerLevel} {SatchelBoxName} al elegirla y cada vez que renacés"),
-        new(ColorKey, "Brasa de Color", "🌈", BlessingKind.Cosmetic, Loc.Mark("un título y un color nuevo para tu perfil")),
+        new(ColorKey, "Brasa de Color", "🌈", BlessingKind.Cosmetic, Loc.Mark("cosmética, no da poder: cambia el color de tu perfil y desbloquea un título (se pone en /titles)")),
     ];
 
     public static BlessingDefinition? Find(string? key) => All.FirstOrDefault(b => string.Equals(b.Key, key, StringComparison.Ordinal));
