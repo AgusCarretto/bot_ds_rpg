@@ -15,7 +15,7 @@ using Npgsql;
 
 // v0.50.0: los BANNERS del perfil (el dueño, tomando los «backgrounds» de EPIC RPG): cada bendición que tenés desbloquea UN banner y, a mejor tier (nivel de la bendición), mejor banner; se elige en /config o con
 // «aa banner»; el /profile lo muestra al pie, adjunto como archivo. Lo que se prueba: las reglas puras (el archivo del tier más alto que exista, qué desbloquea cada nivel, cómo se entiende lo que se escribe, que un
-// nombre de adjunto raro no abre rutas del disco), que los 13 banners provisorios de Assets/banners existen y son PNG de 720x240, la configuración contra la base LOCAL (la columna nueva, que elegir un banner no pisa las
+// nombre de adjunto raro no abre rutas del disco), que los 65 banners provisorios de Assets/banners (los 5 tiers de cada una de las 13 bendiciones) existen, son PNG de 300x100 y cada tier se ve distinto, la configuración contra la base LOCAL (la columna nueva, que elegir un banner no pisa las
 // otras opciones y que la lectura sigue andando si la columna todavía no existe), el perfil (solo con una bendición suya, el de QUIEN se mira, sin banner si no hay servicio) y /config (el campo, el menú y las palabras
 // escritas), los dos idiomas y el registro con Discord.Net de verdad.
 int fails = 0;
@@ -85,20 +85,30 @@ Check(ProfileBanners.AttachmentPathFor(WithImage("attachment://banner_manada_1.p
     && ProfileBanners.AttachmentPathFor(WithImage("https://example.com/banner_manada_1.png")) is null && ProfileBanners.AttachmentPathFor(WithImage(null)) is null,
     "el archivo a adjuntar sale solo de un nombre banner_<clave>_<1-5>.png: una ruta rara o una URL no abren nada del disco");
 
-Console.WriteLine("\n== 2. Los 13 banners provisorios ==");
-var missingFiles = ProfileBanners.All.Where(b => !File.Exists(Path.Combine(TestEnv.RepoRoot, "Assets", "banners", ProfileBanners.FileName(b.Key, 1)))).Select(b => b.Key).ToList();
-Check(missingFiles.Count == 0, $"existe el banner de tier I de las 13 bendiciones en Assets/banners ({(missingFiles.Count == 0 ? "todos" : "faltan: " + string.Join(", ", missingFiles))})");
+Console.WriteLine("\n== 2. Los 65 banners provisorios (5 tiers por bendición) ==");
+string BannerFile(string key, int tier) => Path.Combine(TestEnv.RepoRoot, "Assets", "banners", ProfileBanners.FileName(key, tier));
+var missingFiles = ProfileBanners.All.SelectMany(b => Enumerable.Range(1, BlessingCatalog.MaxLevel).Select(t => (b.Key, t))).Where(x => !File.Exists(BannerFile(x.Key, x.t))).Select(x => $"{x.Key}_{x.t}").ToList();
+Check(missingFiles.Count == 0, $"existe el banner de CADA tier (I a V) de las 13 bendiciones en Assets/banners ({(missingFiles.Count == 0 ? "los 65" : "faltan: " + string.Join(", ", missingFiles))})");
 bool allPng = true; string pngWhy = string.Empty;
+var distinctPerBlessing = true; string distinctWhy = string.Empty;
 foreach (var b in ProfileBanners.All)
 {
-    string file = Path.Combine(TestEnv.RepoRoot, "Assets", "banners", ProfileBanners.FileName(b.Key, 1));
-    if (!File.Exists(file)) continue;
-    var bytes = await File.ReadAllBytesAsync(file);
-    bool sig = bytes.Length > 33 && bytes[0] == 137 && bytes[1] == 80 && bytes[2] == 78 && bytes[3] == 71;
-    int w = (bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19], h = (bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23];
-    if (!sig || w != 720 || h != 240 || bytes.Length > 200_000) { allPng = false; pngWhy = $"{b.Key}: firma {sig}, {w}x{h}, {bytes.Length} bytes"; }
+    var hashes = new HashSet<string>();
+    for (int tier = 1; tier <= BlessingCatalog.MaxLevel; tier++)
+    {
+        string file = BannerFile(b.Key, tier);
+        if (!File.Exists(file)) continue;
+        var bytes = await File.ReadAllBytesAsync(file);
+        hashes.Add(Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes)));
+        bool sig = bytes.Length > 33 && bytes[0] == 137 && bytes[1] == 80 && bytes[2] == 78 && bytes[3] == 71;
+        int w = (bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19], h = (bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23];
+        if (!sig || w != 300 || h != 100 || bytes.Length > 60_000) { allPng = false; pngWhy = $"{b.Key}_{tier}: firma {sig}, {w}x{h}, {bytes.Length} bytes"; }
+    }
+
+    if (hashes.Count != BlessingCatalog.MaxLevel) { distinctPerBlessing = false; distinctWhy = $"{b.Key}: {hashes.Count} imágenes distintas"; }
 }
-Check(allPng, $"son PNG de 720x240 y livianos (cada mensaje del perfil los sube) {pngWhy}");
+Check(allPng, $"son PNG de 300x100 (el tamaño decide cuánto ocupan en Discord) y livianos (cada perfil los sube) {pngWhy}");
+Check(distinctPerBlessing, $"los 5 tiers de cada bendición son imágenes DISTINTAS: el banner evoluciona con el nivel {distinctWhy}");
 Check(File.Exists(ProfileBanners.PathOf(ProfileBanners.FileName("manada", 1))), "y el bot los encuentra donde los busca en ejecución (Assets/banners junto al programa)");
 
 Console.WriteLine("\n== 3. La configuración (base LOCAL) ==");
@@ -130,8 +140,8 @@ async Task<Embed> Profile(ulong id, bool withSettings = true) => await GameModul
 Check((await Profile(U1)).Image is null, "sin banner elegido el perfil sale como siempre (sin imagen)");
 await settingsService.SetProfileBannerAsync(U1, "manada");
 var withBanner = await Profile(U1);
-Check(withBanner.Image?.Url == "attachment://banner_manada_1.png" && ProfileBanners.AttachmentPathFor(withBanner) is { } bannerPath && File.Exists(bannerPath),
-    "con una bendición suya elegida el perfil lleva el banner al pie como adjunto (nivel III sin arte de II ni III → el de tier I)");
+Check(withBanner.Image?.Url == "attachment://banner_manada_3.png" && ProfileBanners.AttachmentPathFor(withBanner) is { } bannerPath && File.Exists(bannerPath),
+    "con una bendición suya elegida el perfil lleva el banner al pie como adjunto (la manada está en nivel III → el banner de tier III)");
 Check((await Profile(U1, withSettings: false)).Image is null, "sin el servicio de configuración (los arneses viejos) no hay banner y nada se rompe");
 await settingsService.SetProfileBannerAsync(U1, "filo_antiguo");
 Check((await Profile(U1)).Image is null, "un banner elegido de una bendición que NO tiene no se ve (solo vale el desbloqueado)");
