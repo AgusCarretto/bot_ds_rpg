@@ -37,12 +37,17 @@ public sealed record PlayerBonuses(
 
     private double PetDrop => 1 + (Pets.DropPercent / 100.0);
 
-    // La chance de drop de /hunt y de /travel se multiplica por esto (relativo: +24 % sobre un 6 % da 7,44 %); el cofre del jefe no.
-    public double HuntDropMultiplier =>
-        FuegoNuevoRules.HuntDropMultiplier(FuegoNuevo) * PetDrop * (1 + (BlessingCatalog.HuntDropPerLevel * BlessingLevel(BlessingCatalog.HuntDropKey))) * DragonFactor(d => d.DropPercent) * CookFactor(d => d.DropPercent);
+    // La chance de drop de /hunt y de /travel se multiplica por esto (relativo: +24 % sobre un 6 % da 7,44 %); el cofre del jefe no. Cada fuente es un factor y se MULTIPLICAN entre sí, así que un plato de +15 %
+    // suma el 15 % de lo que ya tenés acumulado (Fuego Nuevo, mascotas, bendición, dragón) y no el 15 % de la base. Están separados (DropFactors) para que /stats muestre el desglose con la MISMA cuenta que se tira.
+    public DropFactors HuntDropFactors =>
+        new(FuegoNuevoRules.HuntDropMultiplier(FuegoNuevo), PetDrop, 1 + (BlessingCatalog.HuntDropPerLevel * BlessingLevel(BlessingCatalog.HuntDropKey)), DragonFactor(d => d.DropPercent), CookFactor(d => d.DropPercent));
 
-    public double TravelDropMultiplier =>
-        FuegoNuevoRules.TravelDropMultiplier(FuegoNuevo) * PetDrop * (1 + (BlessingCatalog.TravelDropPerLevel * BlessingLevel(BlessingCatalog.TravelDropKey))) * DragonFactor(d => d.DropPercent) * CookFactor(d => d.DropPercent);
+    public DropFactors TravelDropFactors =>
+        new(FuegoNuevoRules.TravelDropMultiplier(FuegoNuevo), PetDrop, 1 + (BlessingCatalog.TravelDropPerLevel * BlessingLevel(BlessingCatalog.TravelDropKey)), DragonFactor(d => d.DropPercent), CookFactor(d => d.DropPercent));
+
+    public double HuntDropMultiplier => HuntDropFactors.Total;
+
+    public double TravelDropMultiplier => TravelDropFactors.Total;
 
     public double XpMultiplier =>
         FuegoNuevoRules.XpMultiplier(FuegoNuevo) * (1 + (Pets.XpPercent / 100.0)) * (1 + (BlessingCatalog.XpPerLevel * BlessingLevel(BlessingCatalog.XpKey))) * DragonFactor(d => d.XpPercent) * CookFactor(d => d.XpPercent);
@@ -111,4 +116,10 @@ public sealed record PlayerBonuses(
     // Aplica un multiplicador a una cantidad entera (oro, EXP, ataque, defensa), redondeando al más cercano. Con 1,0 o menos no toca nada.
     public static int Scale(int amount, double multiplier) =>
         multiplier <= 1.0 ? amount : (int)Math.Round(amount * multiplier, MidpointRounding.AwayFromZero);
+}
+
+// Las fuentes de la chance de drop, una por factor (1,0 = no suma nada). El total es su producto: cada una cuenta sobre lo que dejan las anteriores (v0.49.3, para el desglose de /stats).
+public readonly record struct DropFactors(double FuegoNuevo, double Pet, double Blessing, double Dragon, double Cook)
+{
+    public double Total => FuegoNuevo * Pet * Blessing * Dragon * Cook;
 }

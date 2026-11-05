@@ -372,6 +372,46 @@ Check(wAtk is { } a2 && a2.Base + a2.Adds == a2.Total && a2.Total == combatW.Dam
 Check(statsW.Embed.Description.Contains("➕ Clase **+") && statsW.Embed.Description.Contains("Guerrero ×1,2") && statsW.Embed.Description.Contains("➕ Encantamiento **+") && statsW.Embed.Description.Contains("➕ Dragón **+") && statsW.Embed.Description.Contains("➕ Amuleto **+"),
     "y en el Guerrero aparecen la clase (×1,2), el encantamiento de Vida, el dragón y el amuleto como agregados");
 
+// El drop TOTAL (v0.49.3, el dueño: «que se vea el total, pensando en el 6 %… y el % de los cooks es de lo que tenés acumulado, no del 6 %»): FN 5 (×2,5), el dragón (Ojo de tesoro ×1,04) y un Chupín (×1,15).
+Console.WriteLine("\n== 6c. El drop total ==");
+await db.ExecuteAsync("UPDATE users SET fuego_nuevo = 5 WHERE discord_id = @id", new { id = (long)UEn });
+await Stock(UEn, chupin, 1);
+await cooking.CookAsync(UEn, chupin, 1);
+var zoneBoxSvc = sp.GetRequiredService<IZoneBoxService>();
+var meD = (await users.GetByDiscordIdAsync(UEn))!;
+var bonD = await bonusService.GetAsync(UEn, meD.FuegoNuevo);
+double realHunt = CombatRewardCalculator.HuntDropChance(bonD);
+double expectedHunt = CombatRewardCalculator.HuntDropChancePercent * 2.5 * 1.04 * 1.15;
+Check(Math.Abs(realHunt - expectedHunt) < 1e-9 && Math.Abs(bonD.HuntDropFactors.Cook - 1.15) < 1e-9 && Math.Abs(bonD.HuntDropMultiplier - (2.5 * 1.04 * 1.15)) < 1e-9,
+    $"la chance REAL multiplica todo: 6 % × FN 2,5 × dragón 1,04 × plato 1,15 = {realHunt:0.###} % (el plato va sobre lo acumulado, no sobre el 6 %: sobre la base daría {6 * 1.15:0.##} %)");
+var statsD = await StatsModule.BuildStatsAsync(users, itemsRepo, buffRepo, bonusService, cooking, dragonRepo, UEn, zoneBoxSvc);
+(double Total, double Base, List<double> Adds)? DropBlock(string description, string heading)
+{
+    var m = System.Text.RegularExpressions.Regex.Match(description, System.Text.RegularExpressions.Regex.Escape(heading) + @" \*\*([\d,]+) %\*\*\nBase \*\*([\d,]+) %\*\*((?:\n➕ [^\n]*)*)");
+    if (!m.Success) return null;
+    double Parse(string t) => double.Parse(t.Replace(',', '.'), System.Globalization.CultureInfo.InvariantCulture);
+    var adds = System.Text.RegularExpressions.Regex.Matches(m.Groups[3].Value, @"\*\*\+([\d,]+) %\*\*").Select(x => Parse(x.Groups[1].Value)).ToList();
+    return (Parse(m.Groups[1].Value), Parse(m.Groups[2].Value), adds);
+}
+var dropHunt = DropBlock(statsD.Embed!.Description, "# 🏹 Drop en /hunt");
+Check(dropHunt is { } dh && Math.Abs(dh.Total - Math.Round(realHunt, 1)) < 1e-9 && Math.Abs(dh.Base - 6) < 1e-9 && Math.Abs(dh.Base + dh.Adds.Sum() - dh.Total) < 1e-9 && dh.Adds.Count == 3,
+    $"/stats muestra el drop de cacería: {dropHunt?.Base} % de base + {string.Join(" + ", dropHunt?.Adds ?? [])} = {dropHunt?.Total} % (lo que se tira es {realHunt:0.###} %)");
+double dishAdd = dropHunt?.Adds.Last() ?? 0;
+Check(statsD.Embed.Description.Contains("➕ Platos **+") && dishAdd is > 2.2 and < 2.5 && dishAdd > 6 * 0.15 * 2,
+    $"el plato suma {dishAdd} puntos = el 15 % de lo ya acumulado (15,6 %), y no el 15 % de la base ({6 * 0.15:0.#} punto)");
+var (travelBaseD, _) = await TravelBox.ChanceAsync(zoneBoxSvc, meD.CurrentZoneId);
+var dropTravel = DropBlock(statsD.Embed.Description, "# 🗺️ Caja en /travel");
+Check(travelBaseD > 0 && dropTravel is { } dt && Math.Abs(dt.Base - travelBaseD) < 1e-9 && Math.Abs(dt.Total - Math.Round(CombatRewardCalculator.TravelBoxChance(travelBaseD, bonD), 1)) < 1e-9 && Math.Abs(dt.Base + dt.Adds.Sum() - dt.Total) < 1e-9,
+    $"y la caja de /travel: {dropTravel?.Base} % de base → {dropTravel?.Total} % con todo (lo que se tira es {CombatRewardCalculator.TravelBoxChance(travelBaseD, bonD):0.###} %)");
+Check(FuegoNuevoRules.BonusLines(5).Contains("(de 6 % a **15 %**)"), "/fuegonuevo dice lo que hace el FN con el 6 %: de 6 % a 15 %");
+using (Loc.Use("en"))
+{
+    var statsDEn = await StatsModule.BuildStatsAsync(users, itemsRepo, buffRepo, bonusService, cooking, dragonRepo, UEn, zoneBoxSvc);
+    string enDrop = statsDEn.Embed is null ? string.Empty : LeakCheck.AllText(statsDEn.Embed);
+    var leakD = LeakCheck.NoSpanish(enDrop, dishes.Select(d => d.Name).Concat(dishes.SelectMany(d => d.Ingredients.Select(i => i.ItemName))).Concat([CookingCatalog.FuelItemName, weaponS!.Name, amuletS!.Name, "Guerrero", "Fuego Nuevo", "Cajón de Pino", "Baúl de Roble", "Arcón de Hierro"]));
+    Check(enDrop.Contains("Drop on /hunt **17.9%**") && enDrop.Contains("Box on /travel") && FuegoNuevoRules.BonusLines(5).Contains("(from 6% to **15%**)") && leakD.Ok, $"en inglés el drop sale como 17.9% y sin español colado ({leakD.Found})");
+}
+
 // El perfil NO se carga: la línea de ATQ no lleva la marca del dragón (el número ya la incluye); la 🔥 queda solo para la bendición de ataque.
 var profile = await GameModule.BuildProfileEmbedAsync(users, itemsRepo, zonesRepo, buffRepo, U1, "T", "https://example.com/a.png", petRepo, bonusService, dragonRepo);
 string atqLine = ProfileProbe.Line(profile, "ATQ");
