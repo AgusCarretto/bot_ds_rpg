@@ -1,8 +1,27 @@
 # Anuncios de top.gg
 
-Lo que se publica en top.gg (panel del bot → *Announcements*). Uno por versión que traiga algo que el jugador note;
-los arreglos internos no se anuncian. Solo el último queda fijado en la página, así que cada uno tiene que entenderse
-solo. El más nuevo va arriba. Cada anuncio tiene un título y un texto.
+Lo que se publica en top.gg (panel del bot → *Announcements*) y, adaptado, en el canal de anuncios de Discord. **Uno por DÍA, como
+mucho** (el dueño cuenta con que las plataformas dejan un anuncio por día): si ese día salieron varias versiones, se juntan en un
+solo anuncio con todo lo que el jugador nota, lo más importante primero (si el anuncio del día ya se publicó, lo que sale después va en el del día siguiente); los arreglos internos no se anuncian. Solo el último queda
+fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo va arriba. Cada anuncio tiene un título y un texto.
+
+---
+
+## 2026-11-06 — Banners del perfil y stats mucho más completas (v0.50.5) — PARA PUBLICAR MAÑANA
+
+**Título:** ¡Banners para tu perfil y stats mucho más completas!
+
+**Texto:**
+
+🖼️ Si tenés la bendición **Brasa de Color**, ahora desbloqueás un **banner para tu perfil** que mejora con cada nivel de la bendición: son 5 (Brasa Viva, Llama Dorada, Fuego Azul, Ascua Violeta y Sol del Fogón). Lo activás en **/config** (o con **aa banner**) y elegís cuál mostrar, o «el mejor», que sube solo.
+
+📊 **/stats** ahora también desglosa el **crítico y el esquive**, y suma una sección de **chances de drop**: tu 6 % de drop en /hunt y la caja de /travel con todo lo extra (Fuego Nuevo, mascotas, bendiciones, dragón y platos), viendo cuánto suma cada cosa. El % de los platos cuenta sobre lo que ya llevás acumulado. Y con el botón **Ver más stats** (o **aa stats mas**) ves la cocina, el dragón, las mascotas y el Fuego Nuevo con tus bendiciones, en otra pantalla.
+
+🙏 **/blessings** ahora muestra solo las bendiciones que tenés, más ordenadas, y la **Brasa de Color** explica claro qué hace.
+
+⏱️ **/cd** a tu gusto: en **/config** elegís qué cooldowns ver (destildás los que no querés) y cuál va primero, o lo hacés escribiendo: **aa cd orden cazar 1**, **aa cd ocultar viajar**, **aa cd reset**.
+
+✨ Y además: **aa f** es atajo de /fish, **aa code** te responde por mensaje privado y en tu perfil aparece tu puesto, **Top #N**.
 
 ---
 

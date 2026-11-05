@@ -7,7 +7,7 @@ using BotDsRpg.Services;
 
 public class CooldownModule(
     ICooldownRepository cooldownRepository, IUserRepository userRepository, IArenaService arenaService, IPlayerBonusService bonusService, ITopGgVoteClient voteClient, IPetRepository petRepository, IDragonRepository dragonRepository, IPetExpeditionRepository expeditionRepository,
-    IWorldBossService worldBossService)
+    IWorldBossService worldBossService, IPlayerSettingsService settings)
     : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("cd", "Mirá tus cooldowns: cazar, viajar, talar, minar, jefe, cajas, mascotas, diario y la Arena de hoy.")]
@@ -17,7 +17,7 @@ public class CooldownModule(
 
         try
         {
-            var embed = await BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id, arenaService, bonusService, voteClient.Enabled, petRepository, dragonRepository, expeditionRepository, worldBossService);
+            var embed = await BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id, arenaService, bonusService, voteClient.Enabled, petRepository, dragonRepository, expeditionRepository, worldBossService, (await settings.GetAsync(Context.User.Id)).CdLayout);
             await FollowupAsync(embed: embed, ephemeral: true);
         }
         catch (Exception ex)
@@ -38,9 +38,10 @@ public class CooldownModule(
     // sin mascotas que puedan subir de nivel la línea no sale, y si falla leerlas tampoco: /cd nunca se rompe por esto.
     public static async Task<Embed> BuildStatusEmbedAsync(
         ICooldownRepository cooldownRepository, IUserRepository userRepository, ulong discordId, IArenaService? arenaService = null, IPlayerBonusService? bonusService = null, bool voteEnabled = false,
-        IPetRepository? petRepository = null, IDragonRepository? dragonRepository = null, IPetExpeditionRepository? expeditionRepository = null, IWorldBossService? worldBossService = null)
+        IPetRepository? petRepository = null, IDragonRepository? dragonRepository = null, IPetExpeditionRepository? expeditionRepository = null, IWorldBossService? worldBossService = null, string? layout = null)
     {
-        var lines = new List<string>();
+        // Cada línea lleva su clave (CooldownLayout.Known) para que el jugador pueda ocultarla o cambiarla de lugar (v0.51.0); sin nada guardado salen todas, en el orden de siempre.
+        var lines = new List<(string Key, string Text)>();
         var player = await userRepository.GetOrCreateUserAsync(discordId);
 
         async Task AddLineAsync(CooldownDefinition definition)
@@ -50,7 +51,7 @@ public class CooldownModule(
                 ? Loc.T("**¡Listo!** ✅")
                 : Loc.F($"{TimeFormat.Remaining(remaining.Value)} restantes");
 
-            lines.Add($"{definition.Emoji} **{Loc.Tr(definition.DisplayName)}**: {status}");
+            lines.Add((definition.CommandName, $"{definition.Emoji} **{Loc.Tr(definition.DisplayName)}**: {status}"));
         }
 
         // El jefe va abajo de todo, con el jefe mundial y la Arena (el dueño, v0.46.0): los tres son las peleas «grandes» del día.
@@ -88,19 +89,19 @@ public class CooldownModule(
         // La comida de las mascotas: una hora por mascota (menos con la bendición Buen Pienso), y no vive en la tabla cooldowns sino en player_pets.
         if (await TryBuildPetLineAsync(petRepository, discordId, bonuses?.PetFeedCooldown) is { } petLine)
         {
-            lines.Add(petLine);
+            lines.Add((CooldownLayout.PetsKey, petLine));
         }
 
         // El dragón (v0.30.0): cuándo puede volver a criar (el descanso de 12 h vive en player_dragons, no en la tabla cooldowns). Sin dragón, o en el tier máximo (no hay nada que criar), no sale.
         if (await TryBuildDragonLineAsync(dragonRepository, discordId) is { } dragonLine)
         {
-            lines.Add(dragonLine);
+            lines.Add((CooldownLayout.DragonKey, dragonLine));
         }
 
         // La expedición de la mascota (v0.39.0): vive en pet_expeditions. Sin expedición en curso la línea no sale; si falla leerla, tampoco.
         if (await TryBuildExpeditionLineAsync(expeditionRepository, discordId) is { } expeditionLine)
         {
-            lines.Add(expeditionLine);
+            lines.Add((CooldownLayout.ExpeditionKey, expeditionLine));
         }
 
         // /daily no usa la tabla cooldowns (tiene su propia columna last_daily_claim con
@@ -109,26 +110,124 @@ public class CooldownModule(
         string dailyStatus = dailyCalculation.Status == DailyClaimStatus.TooSoon
             ? Loc.F($"{TimeFormat.Remaining(dailyCalculation.RemainingCooldown!.Value)} restantes")
             : Loc.T("**¡Listo!** ✅");
-        lines.Add($"🎁 **{Loc.T("Diario")}**: {dailyStatus}");
+        lines.Add((CooldownLayout.DailyKey, $"🎁 **{Loc.T("Diario")}**: {dailyStatus}"));
 
         // Abajo de todo: el jefe, el jefe mundial (v0.46.0: su propio límite, uno por día, no gasta el cooldown del jefe) y la Arena.
         await AddLineAsync(CooldownCatalog.Boss);
         if (await TryBuildWorldBossLineAsync(worldBossService, discordId) is { } worldBossLine)
         {
-            lines.Add(worldBossLine);
+            lines.Add((CooldownLayout.WorldBossKey, worldBossLine));
         }
 
         if (await TryBuildArenaLineAsync(arenaService, discordId) is { } arenaLine)
         {
-            lines.Add(arenaLine);
+            lines.Add((CooldownLayout.ArenaKey, arenaLine));
         }
 
+        // Lo que el jugador eligió ver y en qué orden (v0.51.0, /config y «aa cd orden»). Si ocultó todo, la pantalla lo dice en vez de quedar vacía.
+        var shown = CooldownLayout.Apply(lines, layout);
         return new EmbedBuilder()
             .WithTitle(Loc.T("⏱️ Tus cooldowns"))
             .WithColor(Color.Teal)
-            .WithDescription(string.Join('\n', lines))
+            .WithDescription(shown.Count == 0 ? Loc.T("Tenés todas las líneas ocultas. Mostralas en **/config** o con `aa cd mostrar todo`.") : string.Join('\n', shown))
+            .WithFooter(Loc.T("Elegí qué líneas ver y en qué orden en /config (o con `aa cd orden`)."))
             .Build();
     }
+
+    // Lo que se escribe después de «aa cd» (v0.51.0): «orden <línea> <puesto>» (1 = primera; cuenta solo las que ves), «ocultar <línea>», «mostrar <línea|todo>» y «reset». Devuelve el aviso de lo que se hizo (o qué no
+    // se entendió) y null si no se escribió nada (entonces solo se muestra /cd). Nunca tira: si la base falla, lo dice.
+    public static async Task<string?> ExecuteLayoutAsync(IPlayerSettingsService settings, ulong discordId, string? action, string? rest)
+    {
+        string word = (action ?? string.Empty).Trim().ToLowerInvariant();
+        if (word.Length == 0)
+        {
+            return null;
+        }
+
+        string argument = (rest ?? string.Empty).Trim();
+        string? current = (await settings.GetAsync(discordId)).CdLayout;
+        string? next;
+        string note;
+
+        switch (word)
+        {
+            case "orden" or "order" or "mover" or "move" or "posicion" or "posición" or "position":
+            {
+                // La última palabra es el puesto y lo que va antes, la línea («jefe mundial 2»).
+                int cut = argument.LastIndexOf(' ');
+                string lineText = cut < 0 ? argument : argument[..cut];
+                string numberText = cut < 0 ? string.Empty : argument[(cut + 1)..];
+                var line = CooldownLayout.Find(lineText);
+                if (line is null || !int.TryParse(numberText, out int position) || position < 1)
+                {
+                    return Loc.T("Decime qué línea y en qué puesto: `aa cd orden cazar 1` (1 = primera).");
+                }
+
+                next = CooldownLayout.MoveTo(current, line.Key, position);
+                var visible = CooldownLayout.VisibleKeys(next).ToList();
+                int placed = visible.IndexOf(line.Key) + 1;
+                note = placed > 0
+                    ? Loc.F($"✅ Listo: **{Loc.Tr(line.Name)}** pasó al puesto **{placed}**.")
+                    : Loc.F($"✅ Listo: **{Loc.Tr(line.Name)}** quedó en ese lugar, pero está oculta: mostrala con `aa cd mostrar {line.Key}`.");
+                break;
+            }
+
+            case "ocultar" or "hide" or "sacar" or "esconder":
+            {
+                var line = CooldownLayout.Find(argument);
+                if (line is null)
+                {
+                    return UnknownLineNote();
+                }
+
+                next = CooldownLayout.SetLineVisible(current, line.Key, false);
+                note = Loc.F($"✅ Listo: **{Loc.Tr(line.Name)}** ya no se ve en /cd.");
+                break;
+            }
+
+            case "mostrar" or "show" or "ver" or "poner":
+            {
+                if (argument.ToLowerInvariant() is "todo" or "todas" or "todos" or "all")
+                {
+                    next = CooldownLayout.ShowAll(current);
+                    note = Loc.T("✅ Listo: ahora se ven todas las líneas.");
+                    break;
+                }
+
+                var line = CooldownLayout.Find(argument);
+                if (line is null)
+                {
+                    return UnknownLineNote();
+                }
+
+                next = CooldownLayout.SetLineVisible(current, line.Key, true);
+                note = Loc.F($"✅ Listo: **{Loc.Tr(line.Name)}** vuelve a verse en /cd.");
+                break;
+            }
+
+            case "reset" or "restablecer" or "reiniciar" or "default" or "normal":
+                next = null;
+                note = Loc.T("✅ Listo: /cd vuelve a mostrar todas las líneas, en el orden de siempre.");
+                break;
+
+            default:
+                return Loc.T("No entendí. Probá `aa cd orden cazar 1`, `aa cd ocultar viajar`, `aa cd mostrar todo` o `aa cd reset`.");
+        }
+
+        try
+        {
+            await settings.SetCdLayoutAsync(discordId, next);
+            return note;
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            return Loc.T("No pude guardar el cambio, intentá de nuevo en un momento.");
+        }
+    }
+
+    private static string UnknownLineNote() =>
+        Loc.T("No conozco esa línea. Probá con: cazar, viajar, talar, minar, pescar, cajas, mascotas, dragón, expedición, diario, jefe, jefe mundial o arena.");
 
     private static async Task<string?> TryBuildExpeditionLineAsync(IPetExpeditionRepository? expeditionRepository, ulong discordId)
     {

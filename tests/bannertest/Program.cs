@@ -156,7 +156,7 @@ var plain = await Profile(U3);
 Check(plain.Image is null && plain.Fields.Length == best.Fields.Length, "el banner no agrega ni saca campos del perfil: es solo la imagen del pie");
 
 Console.WriteLine("\n== 5. /config y «aa banner» ==");
-SelectMenuComponent? MenuOf(ConfigScreen screen) => screen.Components.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<SelectMenuComponent>().SingleOrDefault();
+SelectMenuComponent? MenuOf(ConfigScreen screen) => screen.Components.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<SelectMenuComponent>().SingleOrDefault(m => m.CustomId.StartsWith("config_banner:"));
 var screen0 = await ConfigModule.BuildScreenAsync(settingsService, U3, blessings);
 Check(screen0.Embed.Fields.Any(f => f.Name == "🖼️ Banner del perfil" && f.Value.Contains("Se desbloquea con la bendición **Brasa de Color**")) && MenuOf(screen0) is null, "sin la bendición el campo explica cómo se desbloquea y no hay menú");
 var screenOld = await ConfigModule.BuildScreenAsync(settingsService, U1);
@@ -175,7 +175,7 @@ await settingsService.SetProfileBannerAsync(U1, $"{Key}:2");
 var sTier = await ConfigModule.BuildScreenAsync(settingsService, U1, blessings);
 Check(MenuOf(sTier)!.Options.Single(o => o.IsDefault == true).Value == "2" && sTier.Embed.Fields.Any(f => f.Value.Contains("**Tier II**") && f.Value.Contains("hasta el III")), "con el tier II elegido el menú lo marca y el campo lo dice");
 Check(MenuOf(sTier)!.Options.All(o => o.Label.Length <= 100 && (o.Description?.Length ?? 0) <= 100) && MenuOf(sTier)!.Options.Skip(1).All(o => o.Emote is Emoji)
-    && sTier.Components.Components.OfType<ActionRowComponent>().ToList() is { Count: 2 } rows && rows[0].Components.Count == 2, "las opciones entran en los límites de Discord y llevan emoji (de texto); los dos botones de antes siguen en su fila");
+    && sTier.Components.Components.OfType<ActionRowComponent>().ToList() is { Count: 4 } rows && rows[0].Components.Count == 2, "las opciones entran en los límites de Discord y llevan emoji (de texto); los dos botones de antes siguen en su fila");
 
 async Task<string?> Stored(ulong id) => (await settingsService.GetAsync(id)).ProfileBanner;
 await settingsService.SetProfileBannerAsync(U1, null);

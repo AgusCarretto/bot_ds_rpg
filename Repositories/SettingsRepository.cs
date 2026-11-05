@@ -14,28 +14,37 @@ public sealed class SettingsRepository(IDbConnectionFactory connectionFactory) :
         public bool ShowFightSummary { get; set; }
         public bool FullRecipeBook { get; set; }
         public string? ProfileBanner { get; set; }
+        public string? CdLayout { get; set; }
     }
 
     public async Task<PlayerSettings?> GetAsync(ulong discordId, CancellationToken cancellationToken = default)
     {
         using DbConnection connection = connectionFactory.CreateConnection();
 
-        SettingsRow? row;
-        try
+        // De la más nueva a la más vieja: una base a la que todavía le faltan las columnas nuevas (los scripts add_*.sql se corren a mano) sigue leyendo lo que tiene en vez de dejar a todos sin su configuración.
+        string[] columnSets =
+        [
+            "show_fight_summary AS ShowFightSummary, full_recipe_book AS FullRecipeBook, profile_banner AS ProfileBanner, cd_layout AS CdLayout",
+            "show_fight_summary AS ShowFightSummary, full_recipe_book AS FullRecipeBook, profile_banner AS ProfileBanner",
+            "show_fight_summary AS ShowFightSummary, full_recipe_book AS FullRecipeBook",
+        ];
+        SettingsRow? row = null;
+        for (int i = 0; i < columnSets.Length; i++)
         {
-            row = await connection.QuerySingleOrDefaultAsync<SettingsRow>(new CommandDefinition(
-                "SELECT show_fight_summary AS ShowFightSummary, full_recipe_book AS FullRecipeBook, profile_banner AS ProfileBanner FROM player_settings WHERE discord_id = @DiscordId;",
-                new { DiscordId = (long)discordId }, cancellationToken: cancellationToken));
-        }
-        catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.UndefinedColumn)
-        {
-            // La columna del banner (Database/add_profile_banner.sql) todavía no existe en esta base: se lee como antes, sin banner, en vez de dejar a todos sin su configuración hasta que se corra el script.
-            row = await connection.QuerySingleOrDefaultAsync<SettingsRow>(new CommandDefinition(
-                "SELECT show_fight_summary AS ShowFightSummary, full_recipe_book AS FullRecipeBook FROM player_settings WHERE discord_id = @DiscordId;",
-                new { DiscordId = (long)discordId }, cancellationToken: cancellationToken));
+            try
+            {
+                row = await connection.QuerySingleOrDefaultAsync<SettingsRow>(new CommandDefinition(
+                    $"SELECT {columnSets[i]} FROM player_settings WHERE discord_id = @DiscordId;",
+                    new { DiscordId = (long)discordId }, cancellationToken: cancellationToken));
+                break;
+            }
+            catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.UndefinedColumn && i < columnSets.Length - 1)
+            {
+                // falta una columna: se prueba con las que ya existen
+            }
         }
 
-        return row is null ? null : new PlayerSettings(row.ShowFightSummary, row.FullRecipeBook, row.ProfileBanner);
+        return row is null ? null : new PlayerSettings(row.ShowFightSummary, row.FullRecipeBook, row.ProfileBanner, row.CdLayout);
     }
 
     // Cada guardado toca SOLO su columna: el INSERT deja el valor por defecto de las demás (una fila nueva) y el UPDATE de un conflicto no las nombra, así que elegir una opción nunca pisa otra.
@@ -76,5 +85,18 @@ public sealed class SettingsRepository(IDbConnectionFactory connectionFactory) :
             ON CONFLICT (discord_id) DO UPDATE SET profile_banner = EXCLUDED.profile_banner, updated_at = now();
             """,
             new { DiscordId = (long)discordId, Value = blessingKey }, cancellationToken: cancellationToken));
+    }
+
+    public async Task SetCdLayoutAsync(ulong discordId, string? layout, CancellationToken cancellationToken = default)
+    {
+        using DbConnection connection = connectionFactory.CreateConnection();
+
+        await connection.ExecuteAsync(new CommandDefinition(
+            """
+            INSERT INTO player_settings (discord_id, cd_layout)
+            VALUES (@DiscordId, @Value)
+            ON CONFLICT (discord_id) DO UPDATE SET cd_layout = EXCLUDED.cd_layout, updated_at = now();
+            """,
+            new { DiscordId = (long)discordId, Value = layout }, cancellationToken: cancellationToken));
     }
 }

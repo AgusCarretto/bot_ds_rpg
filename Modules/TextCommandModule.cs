@@ -199,13 +199,16 @@ public partial class TextCommandModule(
 
     // "aa cd" — misma lógica que CooldownModule.HandleCooldownsAsync.
     [Command("cd")]
-    [Summary("Mostrá el estado de tus cooldowns.")]
-    public async Task CooldownsAsync()
+    [Summary("Mostrá el estado de tus cooldowns; con \"aa cd orden cazar 1\", \"aa cd ocultar viajar\" o \"aa cd reset\" elegís qué líneas ver y en qué orden.")]
+    public async Task CooldownsAsync(string action = "", [Remainder] string rest = "")
     {
         try
         {
-            var embed = await CooldownModule.BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id, arenaService, bonusService, voteClient.Enabled, petRepository, dragonRepository, petExpeditionRepository, worldBossService);
-            await ReplyAsync(embed: embed);
+            // Lo que se escribe después de «aa cd» cambia qué líneas se ven y en qué orden (v0.51.0); sin nada solo se muestra el estado.
+            string? note = await CooldownModule.ExecuteLayoutAsync(settingsService, Context.User.Id, action, rest);
+            var embed = await CooldownModule.BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id, arenaService, bonusService, voteClient.Enabled, petRepository, dragonRepository, petExpeditionRepository, worldBossService,
+                (await settingsService.GetAsync(Context.User.Id)).CdLayout);
+            await ReplyAsync(note, embed: embed);
         }
         catch (Exception ex)
         {

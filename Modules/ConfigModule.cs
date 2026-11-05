@@ -21,6 +21,8 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
     public const string SummaryButton = "config_summary";
     public const string RecipesButton = "config_recipes";
     public const string BannerSelect = "config_banner";
+    public const string CdShowSelect = "config_cdshow";
+    public const string CdFirstSelect = "config_cdfirst";
 
     [SlashCommand("config", "Configurá cómo ves el bot: resumen del combate, recetario de la herrería y banner del perfil.")]
     public async Task HandleConfigAsync()
@@ -59,6 +61,19 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
             BannerSetStatus.TierTooHigh => Loc.T("Todavía no llegaste a ese tier: se desbloquea al subir de nivel la Brasa de Color."),
             _ => Loc.T("No pude guardar el cambio, intentá de nuevo en un momento."),
         });
+    }
+
+    // El menú de qué líneas de /cd ver (v0.51.0): lo tildado se ve, lo demás se oculta. No cambia el orden.
+    [ComponentInteraction($"{CdShowSelect}:*")]
+    public async Task HandleCdShowAsync(string ownerRaw, string[] selected) =>
+        await ApplyButtonAsync(ownerRaw, owner => TrySetCdLayoutAsync(settings, owner, current => CooldownLayout.SetVisible(current, selected)));
+
+    // El menú de «poner primera» (v0.51.0): la línea elegida pasa al puesto 1; «reset» deja /cd como siempre (todas las líneas, en el orden de siempre).
+    [ComponentInteraction($"{CdFirstSelect}:*")]
+    public async Task HandleCdFirstAsync(string ownerRaw, string[] selected)
+    {
+        string picked = selected.FirstOrDefault() ?? string.Empty;
+        await ApplyButtonAsync(ownerRaw, owner => TrySetCdLayoutAsync(settings, owner, current => picked == CooldownLayout.ResetChoice ? null : CooldownLayout.MoveTo(current, picked, 1)));
     }
 
     // Lo que tienen en común los botones: solo el dueño de la pantalla, guardar, y actualizar la pantalla en su lugar.
@@ -147,6 +162,8 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
             embed = AddBannerField(embed, bannerLevel, bannerOn, bannerTier);
         }
 
+        embed = AddCdField(embed, current.CdLayout);
+
         var buttons = new ComponentBuilder()
             .WithButton(
                 on ? Loc.T("Ocultar el resumen") : Loc.T("Mostrar el resumen"),
@@ -176,6 +193,42 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
 
             buttons.WithSelectMenu(menu, row: 1);
         }
+
+        // Los cooldowns de /cd (v0.51.0): un menú con TODAS las líneas (lo tildado se ve) y otro para poner una primera. Para un puesto exacto, `aa cd orden cazar 3`.
+        var cdMaterial = CooldownLayout.Materialize(current.CdLayout);
+        var showMenu = new SelectMenuBuilder()
+            .WithCustomId($"{CdShowSelect}:{discordId}")
+            .WithPlaceholder(Loc.T("Qué líneas ver en /cd"))
+            .WithMinValues(0)
+            .WithMaxValues(CooldownLayout.Known.Count);
+        foreach (var (key, hidden) in cdMaterial)
+        {
+            var line = CooldownLayout.LineOf(key)!;
+            showMenu.AddOption(Loc.Tr(line.Name), key, null, new Emoji(line.Emoji), isDefault: !hidden);
+        }
+
+        buttons.WithSelectMenu(showMenu, row: buttons.ActionRows.Count);
+
+        var firstMenu = new SelectMenuBuilder()
+            .WithCustomId($"{CdFirstSelect}:{discordId}")
+            .WithPlaceholder(Loc.T("Poner una línea primera en /cd"))
+            .WithMinValues(1)
+            .WithMaxValues(1);
+        int place = 0;
+        foreach (var (key, hidden) in cdMaterial)
+        {
+            if (hidden)
+            {
+                continue;
+            }
+
+            place++;
+            var line = CooldownLayout.LineOf(key)!;
+            firstMenu.AddOption(Loc.Tr(line.Name), key, Loc.F($"Ahora en el puesto {place}"), new Emoji(line.Emoji));
+        }
+
+        firstMenu.AddOption(Loc.T("Volver al orden de siempre"), CooldownLayout.ResetChoice, Loc.T("Se ven todas las líneas, como antes."), new Emoji("↩"));
+        buttons.WithSelectMenu(firstMenu, row: buttons.ActionRows.Count);
 
         return new ConfigScreen(embed, buttons.Build());
     }
@@ -232,6 +285,33 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
         {
             BotLog.Error(ex);
             return BannerSetStatus.Failed;
+        }
+    }
+
+    // El campo de los cooldowns: cuántas líneas ve y si es el orden de siempre.
+    private static Embed AddCdField(Embed embed, string? layout)
+    {
+        int total = CooldownLayout.Known.Count;
+        int visible = CooldownLayout.VisibleKeys(layout).Count;
+        string text = CooldownLayout.IsDefault(layout)
+            ? Loc.T("Ves **todas** las líneas, en el orden de siempre. Destildá las que no quieras ver en el primer menú y elegí cuál va primera en el segundo. Para otro puesto: `aa cd orden cazar 3`.")
+            : Loc.F($"Ves **{visible} de {total}** líneas, en **tu orden**. Podés cambiarlo en los menús de abajo, con `aa cd orden cazar 3` o volver a lo de siempre con la última opción del segundo menú.");
+        return Discord.EmbedBuilderExtensions.ToEmbedBuilder(embed).AddField(Loc.T("⏱️ Cooldowns (/cd)"), text, false).Build();
+    }
+
+    // Guarda las líneas de /cd (v0.51.0): `change` recibe lo guardado hoy y devuelve lo nuevo. Nunca tira: si la base falla se registra y devuelve false (la pantalla de después muestra lo que de verdad quedó).
+    public static async Task<bool> TrySetCdLayoutAsync(IPlayerSettingsService service, ulong discordId, Func<string?, string?> change)
+    {
+        try
+        {
+            string? current = (await service.GetAsync(discordId)).CdLayout;
+            await service.SetCdLayoutAsync(discordId, change(current));
+            return true;
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            return false;
         }
     }
 
