@@ -72,7 +72,7 @@ public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepo
         if (attackShares[0] > 0) attackAdds.Add(Loc.F($"➕ Dragón **+{attackShares[0]}**"));
         if (attackShares[1] > 0) attackAdds.Add(Loc.F($"➕ Bendición **+{attackShares[1]}**"));
         string attackBlock = Block(Loc.F($"# ⚔️ Ataque **{combat.Damage}**"),
-            weapon is null ? Loc.F($"Base **{attackBase}** · nivel {player.Level} · sin arma") : Loc.F($"Base **{attackBase}** · nivel {player.Level}"), attackAdds);
+            weapon is null ? Loc.F($"Base **{attackBase}** · sin arma") : $"Base **{attackBase}**", attackAdds);
 
         // ---- DEFENSA: nivel + amuleto + platos, después lo que multiplican la mascota, las bendiciones y el dragón.
         int amuletDef = amulet is null ? 0 : PlayerCombatProfileCalculator.AmuletDefense(player, amulet);
@@ -90,7 +90,7 @@ public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepo
         if (defenseShares[1] > 0) defenseAdds.Add(Loc.F($"➕ Dragón **+{defenseShares[1]}**"));
         if (defenseShares[2] > 0) defenseAdds.Add(Loc.F($"➕ Bendición **+{defenseShares[2]}**"));
         string defenseBlock = Block(Loc.F($"# 🛡️ Defensa **{combat.Defense}**"),
-            amulet is null ? Loc.F($"Base **{defenseBase}** · nivel {player.Level} · sin amuleto") : Loc.F($"Base **{defenseBase}** · nivel {player.Level}"), defenseAdds);
+            amulet is null ? Loc.F($"Base **{defenseBase}** · sin amuleto") : $"Base **{defenseBase}**", defenseAdds);
 
         // ---- VIDA MÁXIMA (la que se ve): la vida del nivel por el factor de la clase, el encantamiento Vida, las bendiciones y el dragón, y los platos EXACTOS al final (CombatPassives los suma así).
         var classBase = ClassPassives.For(player.Class);
@@ -111,7 +111,7 @@ public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepo
         if (hpShares[0] > 0) hpAdds.Add(Loc.F($"➕ Dragón **+{hpShares[0]}**"));
         if (hpShares[1] > 0) hpAdds.Add(Loc.F($"➕ Bendición **+{hpShares[1]}**"));
         if (bonuses.CookedMaxHp > 0) hpAdds.Add(Loc.F($"➕ Platos **+{bonuses.CookedMaxHp}**"));
-        string hpBlock = Block(Loc.F($"# ❤️ Vida máxima **{combat.CombatMaxHp}**"), Loc.F($"Base **{hpBase}** · nivel {player.Level}"), hpAdds);
+        string hpBlock = Block(Loc.F($"# ❤️ Vida máxima **{combat.CombatMaxHp}**"), $"Base **{hpBase}**", hpAdds);
 
         var embed = new EmbedBuilder()
             .WithTitle(Loc.T("📊 Tus stats"))
