@@ -115,11 +115,11 @@ public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepo
 
         // ---- DROP: la chance base de /hunt (6 %) y de la caja de /travel con TODO lo extra. Las fuentes se multiplican entre sí, así que cada ➕ cuenta sobre lo ya acumulado más arriba (el plato va último: su % es del
         // acumulado, no de la base). Si el desglose no se puede armar, la ficha sale igual sin estos bloques.
-        string dropBlocks = string.Empty;
+        var dropBlockList = new List<string>();
         try
         {
             var (huntTotal, huntAdds) = DropSteps(CombatRewardCalculator.HuntDropChancePercent, bonuses.HuntDropFactors);
-            dropBlocks += "\n\n" + Block(Loc.F($"# 🏹 Drop en /hunt **{Pct(huntTotal)}**"), $"Base **{Pct(CombatRewardCalculator.HuntDropChancePercent)}**", huntAdds);
+            dropBlockList.Add(Block(Loc.F($"# 🏹 Drop en /hunt **{Pct(huntTotal)}**"), $"Base **{Pct(CombatRewardCalculator.HuntDropChancePercent)}**", huntAdds));
 
             if (zoneBoxes is not null)
             {
@@ -127,7 +127,7 @@ public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepo
                 if (travelBase > 0)
                 {
                     var (travelTotal, travelAdds) = DropSteps(travelBase, bonuses.TravelDropFactors);
-                    dropBlocks += "\n\n" + Block(Loc.F($"# 🗺️ Caja en /travel **{Pct(travelTotal)}**"), $"Base **{Pct(travelBase)}**", travelAdds);
+                    dropBlockList.Add(Block(Loc.F($"# 🗺️ Caja en /travel **{Pct(travelTotal)}**"), $"Base **{Pct(travelBase)}**", travelAdds));
                 }
             }
         }
@@ -136,20 +136,21 @@ public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepo
             BotLog.Warn(ex);
         }
 
-        var embed = new EmbedBuilder()
-            .WithTitle(Loc.T("📊 Tus stats"))
-            .WithColor(Color.Orange)
-            .WithDescription(attackBlock + "\n\n" + defenseBlock + "\n\n" + hpBlock + dropBlocks)
-            .WithFooter(Loc.T("Todo cuenta contra monstruos (en duelos y en la Arena, solo el nivel, el equipo y la clase). El perfil ya muestra estos totales. En el drop, cada ➕ cuenta sobre lo que ya llevás acumulado más arriba."));
-
-        // ---- Crítico y esquive
+        // ---- CRÍTICO y ESQUIVE: del combate, junto al ataque, la defensa y la vida, en el mismo formato (el total grande, la base y cada agregado en puntos). Los porcentajes de DROP van aparte, en su propia sección.
         var classCrit = classBase.CritChanceBonus * 100;
         double critTotal = (CombatMath.CritChance + combat.Passives.CritChanceBonus) * 100;
         double dodgeTotal = (CombatMath.DodgeChance + combat.Passives.DodgeChanceBonus) * 100;
-        embed.AddField(Loc.T("🎯 Crítico y esquive"),
-            Loc.F($"Crítico **{Pct(critTotal)}** (base {Pct(CombatMath.CritChance * 100)}{Points(Loc.Mark("clase"), classCrit)}{Points(Loc.Mark("encantamiento"), (withEnchants.CritChanceBonus - classBase.CritChanceBonus) * 100)}{Points(Loc.Mark("platos"), bonuses.CookedCritPoints)})") + "\n" +
-            Loc.F($"Esquive **{Pct(dodgeTotal)}** (base {Pct(CombatMath.DodgeChance * 100)}{Points(Loc.Mark("clase"), classBase.DodgeChanceBonus * 100)}{Points(Loc.Mark("encantamiento"), (withEnchants.DodgeChanceBonus - classBase.DodgeChanceBonus) * 100)}{Points(Loc.Mark("platos"), bonuses.CookedDodgePoints)})"),
-            false);
+        var critAdds = PointSteps(CombatMath.CritChance * 100, (classCrit, x => Loc.F($"➕ Clase **+{x}**")), ((withEnchants.CritChanceBonus - classBase.CritChanceBonus) * 100, x => Loc.F($"➕ Encantamiento **+{x}**")), (bonuses.CookedCritPoints, x => Loc.F($"➕ Platos **+{x}**")));
+        var dodgeAdds = PointSteps(CombatMath.DodgeChance * 100, (classBase.DodgeChanceBonus * 100, x => Loc.F($"➕ Clase **+{x}**")), ((withEnchants.DodgeChanceBonus - classBase.DodgeChanceBonus) * 100, x => Loc.F($"➕ Encantamiento **+{x}**")), (bonuses.CookedDodgePoints, x => Loc.F($"➕ Platos **+{x}**")));
+        string critBlock = Block(Loc.F($"# 🎯 Crítico **{Pct(critTotal)}**"), $"Base **{Pct(CombatMath.CritChance * 100)}**", critAdds);
+        string dodgeBlock = Block(Loc.F($"# 💨 Esquive **{Pct(dodgeTotal)}**"), $"Base **{Pct(CombatMath.DodgeChance * 100)}**", dodgeAdds);
+        string dropSection = dropBlockList.Count == 0 ? string.Empty : "\n\n" + Loc.T("## 🎲 Chances de drop") + "\n" + string.Join("\n\n", dropBlockList);
+
+        var embed = new EmbedBuilder()
+            .WithTitle(Loc.T("📊 Tus stats"))
+            .WithColor(Color.Orange)
+            .WithDescription(attackBlock + "\n\n" + defenseBlock + "\n\n" + hpBlock + "\n\n" + critBlock + "\n\n" + dodgeBlock + dropSection)
+            .WithFooter(Loc.T("Todo cuenta contra monstruos (en duelos y en la Arena, solo el nivel, el equipo y la clase). El perfil ya muestra estos totales. En el drop, cada ➕ cuenta sobre lo que ya llevás acumulado más arriba."));
 
         // ---- Cocina: lo apilado de esta vuelta y los platos de tiempo que corren
         var cookLines = new List<string>();
@@ -298,9 +299,32 @@ public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepo
 
     private static string EnchantTail(string? kind, int tier) => Enchantments.IsValidTier(tier) ? $" (✨{Enchantments.ShortText(kind, tier)})" : string.Empty;
 
-    // «, clase +15», o nada si no suma: una fuente de puntos de crítico o de esquive dentro del paréntesis.
-    private static string Points(string label, double points) =>
-        points <= 0.0001 ? string.Empty : $", {Loc.Tr(label)} +{Num(points)}";
+    // Los agregados en PUNTOS de una chance (crítico, esquive): cada fuente suma sobre la base y se redondea en décimas sobre lo acumulado, así que la base más los ➕ da EXACTO el total que se muestra.
+    // Lo que no suma (cero o negativo) no sale.
+    private static List<string> PointSteps(double basePercent, params (double Points, Func<string, string> Line)[] steps)
+    {
+        var adds = new List<string>();
+        double running = basePercent;
+        long previous = (long)Math.Round(basePercent * 10, MidpointRounding.AwayFromZero);
+        foreach (var (points, line) in steps)
+        {
+            if (points <= 0.0001)
+            {
+                continue;
+            }
+
+            running += points;
+            long tenths = (long)Math.Round(running * 10, MidpointRounding.AwayFromZero);
+            if (tenths > previous)
+            {
+                adds.Add(line(Pct((tenths - previous) / 10.0)));
+            }
+
+            previous = tenths;
+        }
+
+        return adds;
+    }
 
     // Un número con un decimal solo si hace falta, escrito como el idioma del jugador (4,5 en español, 4.5 en inglés).
     private static string Num(double value) => Loc.Decimal(value, Math.Abs(value - Math.Round(value)) < 0.05 ? 0 : 1);

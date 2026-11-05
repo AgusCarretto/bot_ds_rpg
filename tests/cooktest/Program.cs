@@ -346,7 +346,10 @@ Check(bAtk is { } a1 && a1.Base + a1.Adds == a1.Total && a1.Lines >= 4 && bDef i
     $"base + agregados = total exacto: ATQ {bAtk?.Base}+{bAtk?.Adds}={bAtk?.Total}, DEF {bDef?.Base}+{bDef?.Adds}={bDef?.Total}, vida {bHp?.Base}+{bHp?.Adds}={bHp?.Total}");
 Check(statsText.Contains("➕ Platos **+6**") && statsText.Contains("➕ Platos **+100**") && statsText.Contains("➕ Banquete **+") && statsText.Contains("+15 %") && statsText.Contains("➕ Dragón **+") && statsText.Contains("➕ Arma **+") && statsText.Contains("Surubí al Disco ×10") && statsText.Contains("Brocheta de Dorado") && statsText.Contains("Mojarras en Escabeche ×3"),
     "desglosa lo que aporta cada cosa: platos (+6 ATQ y +100 de vida), banquete, dragón, y lista lo cocinado y lo que corre");
-Check(statsText.Contains("Crítico") && statsText.Contains("20 %") && statsText.Contains("platos +10") && statsText.Contains("Esquive"), "muestra el crítico (base 10 + 10 de la Brocheta = 20 %) y el esquive");
+Check(stats.Embed.Description.Contains("# 🎯 Crítico **20 %**") && stats.Embed.Description.Contains("➕ Platos **+10 %**") && stats.Embed.Description.Contains("# 💨 Esquive **5 %**") && !stats.Embed.Fields.Any(f => f.Name.Contains("Crítico")),
+    "el crítico y el esquive van como bloques del combate (20 % = base 10 + 10 de la Brocheta) y ya no en un campo aparte");
+Check(stats.Embed.Description.IndexOf("# 🎯 Crítico") < stats.Embed.Description.IndexOf("## 🎲 Chances de drop") && stats.Embed.Description.IndexOf("# 💨 Esquive") < stats.Embed.Description.IndexOf("## 🎲 Chances de drop") && stats.Embed.Description.IndexOf("# ❤️ Vida máxima") < stats.Embed.Description.IndexOf("# 🎯 Crítico"),
+    "el orden es ataque, defensa, vida, crítico, esquive y, separado por su título, las chances de drop");
 var statsNoAccount = await StatsModule.BuildStatsAsync(users, itemsRepo, buffRepo, bonusService, cooking, dragonRepo, UGhost);
 Check(statsNoAccount.Embed is null && statsNoAccount.PlainMessage!.Contains("/start") && await db.ExecuteScalarAsync<int>("SELECT count(*)::int FROM users WHERE discord_id = @id", new { id = (long)UGhost }) == 0, "sin cuenta manda a /start y NO le crea una");
 Check(stats.Embed!.Length <= 6000 && stats.Embed.Fields.All(f => f.Value.Length <= 1024), $"la ficha entra en los límites de Discord ({stats.Embed.Length} de 6000)");
@@ -411,6 +414,28 @@ using (Loc.Use("en"))
     var leakD = LeakCheck.NoSpanish(enDrop, dishes.Select(d => d.Name).Concat(dishes.SelectMany(d => d.Ingredients.Select(i => i.ItemName))).Concat([CookingCatalog.FuelItemName, weaponS!.Name, amuletS!.Name, "Guerrero", "Fuego Nuevo", "Cajón de Pino", "Baúl de Roble", "Arcón de Hierro"]));
     Check(enDrop.Contains("Drop on /hunt **17.9%**") && enDrop.Contains("Box on /travel") && FuegoNuevoRules.BonusLines(5).Contains("(from 6% to **15%**)") && leakD.Ok, $"en inglés el drop sale como 17.9% y sin español colado ({leakD.Found})");
 }
+
+// Crítico y esquive en bloque: base + cada ➕ = el total que pelea (Ninja +15 de esquive de clase, arma con Crítico, Brocheta +10 de crítico).
+await db.ExecuteAsync("UPDATE users SET class = 'Ninja', weapon_enchant = 4, weapon_enchant_kind = 'critico' WHERE discord_id = @id", new { id = (long)UEn });
+await Stock(UEn, brochetaS, 1);
+await cooking.CookAsync(UEn, brochetaS, 1);
+var meN = (await users.GetByDiscordIdAsync(UEn))!;
+var bonN = await bonusService.GetAsync(UEn, meN.FuegoNuevo);
+var combatN = PlayerCombatProfileCalculator.Resolve(meN, weaponS, amuletS, 0, bonN);
+var statsN = await StatsModule.BuildStatsAsync(users, itemsRepo, buffRepo, bonusService, cooking, dragonRepo, UEn);
+(double Total, double Base, List<double> Adds)? ChanceBlock(string description, string heading)
+{
+    var m = System.Text.RegularExpressions.Regex.Match(description, System.Text.RegularExpressions.Regex.Escape(heading) + @" \*\*([\d,]+) %\*\*\nBase \*\*([\d,]+) %\*\*((?:\n➕ [^\n]*)*)");
+    if (!m.Success) return null;
+    double Parse(string t) => double.Parse(t.Replace(',', '.'), System.Globalization.CultureInfo.InvariantCulture);
+    return (Parse(m.Groups[1].Value), Parse(m.Groups[2].Value), System.Text.RegularExpressions.Regex.Matches(m.Groups[3].Value, @"\*\*\+([\d,]+) %\*\*").Select(x => Parse(x.Groups[1].Value)).ToList());
+}
+var critN = ChanceBlock(statsN.Embed!.Description, "# 🎯 Crítico"); var dodgeN = ChanceBlock(statsN.Embed.Description, "# 💨 Esquive");
+double critReal = (CombatMath.CritChance + combatN.Passives.CritChanceBonus) * 100, dodgeReal = (CombatMath.DodgeChance + combatN.Passives.DodgeChanceBonus) * 100;
+Check(critN is { } cn && Math.Abs(cn.Total - Math.Round(critReal, 1)) < 1e-9 && Math.Abs(cn.Base + cn.Adds.Sum() - cn.Total) < 1e-9 && cn.Adds.Count == 2
+    && dodgeN is { } dn && Math.Abs(dn.Total - Math.Round(dodgeReal, 1)) < 1e-9 && Math.Abs(dn.Base + dn.Adds.Sum() - dn.Total) < 1e-9 && dn.Adds.Count >= 1,
+    $"crítico {critN?.Base}+{string.Join("+", critN?.Adds ?? [])}={critN?.Total} (pelea {critReal:0.#}) y esquive {dodgeN?.Base}+{string.Join("+", dodgeN?.Adds ?? [])}={dodgeN?.Total} (pelea {dodgeReal:0.#}): base + agregados = el total que pelea");
+Check(statsN.Embed.Description.Contains("➕ Encantamiento **+") && statsN.Embed.Description.Contains("➕ Clase **+15 %**"), "y aparecen el encantamiento de Crítico y el +15 de esquive de la clase Ninja como agregados");
 
 // El perfil NO se carga: la línea de ATQ no lleva la marca del dragón (el número ya la incluye); la 🔥 queda solo para la bendición de ataque.
 var profile = await GameModule.BuildProfileEmbedAsync(users, itemsRepo, zonesRepo, buffRepo, U1, "T", "https://example.com/a.png", petRepo, bonusService, dragonRepo);
