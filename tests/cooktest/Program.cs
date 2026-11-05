@@ -35,6 +35,11 @@ var cooking = sp.GetRequiredService<ICookingRepository>();
 var inventory = sp.GetRequiredService<IInventoryRepository>();
 var bonusService = sp.GetRequiredService<IPlayerBonusService>();
 var fnRepo = sp.GetRequiredService<IFuegoNuevoRepository>();
+var itemsRepo = sp.GetRequiredService<IItemRepository>();
+var buffRepo = sp.GetRequiredService<IBuffRepository>();
+var dragonRepo = sp.GetRequiredService<IDragonRepository>();
+var zonesRepo = sp.GetRequiredService<IZoneRepository>();
+var petRepo = sp.GetRequiredService<IPetRepository>();
 await using var db = new NpgsqlConnection(conn);
 await db.OpenAsync();
 
@@ -269,6 +274,52 @@ using (Loc.Use("en"))
     Check(enOk.Embed is not null && enMiss.PlainMessage!.Contains("You are missing") && leak.Ok && LeakCheck.FitsDiscord(enRecipes), $"en inglés las pantallas salen sin español colado ({leak.Found})");
 }
 
+Console.WriteLine("\n== 6b. /stats y el perfil ==");
+// Un jugador con arma, amuleto, un banquete, un dragón de fuerza, platos apilados y uno de tiempo corriendo.
+await Player(U1);
+await db.ExecuteAsync("DELETE FROM player_cook_buffs WHERE discord_id = @id", new { id = (long)U1 });
+await db.ExecuteAsync("DELETE FROM player_cooked WHERE discord_id = @id", new { id = (long)U1 });
+await db.ExecuteAsync("DELETE FROM player_dragons WHERE discord_id = @id", new { id = (long)U1 });
+await db.ExecuteAsync("DELETE FROM player_buffs WHERE discord_id = @id", new { id = (long)U1 });
+int weaponId = await db.ExecuteScalarAsync<int>("SELECT item_id FROM items WHERE type = 'Weapon' ORDER BY item_id LIMIT 1");
+int amuletId = await db.ExecuteScalarAsync<int>("SELECT item_id FROM items WHERE type = 'Amulet' ORDER BY item_id LIMIT 1");
+await db.ExecuteAsync("UPDATE users SET weapon_id = @w, amulet_id = @a WHERE discord_id = @id", new { id = (long)U1, w = weaponId, a = amuletId });
+await db.ExecuteAsync("INSERT INTO player_buffs (discord_id, buff_key, percent, expires_at) VALUES (@id, 'attack', 15, now() + interval '30 minutes')", new { id = (long)U1 });
+await db.ExecuteAsync("INSERT INTO player_dragons (discord_id, kind, tier, level) VALUES (@id, 'fuerza', 3, 0)", new { id = (long)U1 });
+var brochetaS = CookingCatalog.Find("brocheta de dorado")!;
+await Stock(U1, disco, 10); await Stock(U1, escabeche, 3); await Stock(U1, brochetaS, 1);
+await cooking.CookAsync(U1, disco, 10); await cooking.CookAsync(U1, escabeche, 3); await cooking.CookAsync(U1, brochetaS, 1);
+var meS = (await users.GetByDiscordIdAsync(U1))!;
+var bonS = await bonusService.GetAsync(U1, meS.FuegoNuevo);
+var weaponS = await itemsRepo.GetByIdAsync(weaponId);
+var amuletS = await itemsRepo.GetByIdAsync(amuletId);
+var buffS = await buffRepo.GetActiveAttackAsync(U1);
+var combatS = PlayerCombatProfileCalculator.Resolve(meS, weaponS, amuletS, buffS?.AttackPercent ?? 0, bonS);
+var stats = await StatsModule.BuildStatsAsync(users, itemsRepo, buffRepo, bonusService, cooking, dragonRepo, U1);
+string statsText = stats.Embed is null ? string.Empty : stats.Embed.Title + "\n" + stats.Embed.Description + "\n" + string.Join("\n", stats.Embed.Fields.Select(f => f.Name + " " + f.Value));
+Check(stats.PlainMessage is null && stats.Embed is not null && stats.Embed.Fields.Any(f => f.Name == $"⚔️ Ataque: {combatS.Damage}") && stats.Embed.Fields.Any(f => f.Name == $"🛡️ Defensa: {combatS.Defense}") && stats.Embed.Fields.Any(f => f.Name == $"❤️ Vida máxima: {combatS.CombatMaxHp}"),
+    $"la ficha muestra los MISMOS totales que pelean (ATQ {combatS.Damage}, DEF {combatS.Defense}, vida {combatS.CombatMaxHp})");
+Check(statsText.Contains("platos +6") && statsText.Contains("platos +100") && statsText.Contains("banquete +15 %") && statsText.Contains("dragón +") && statsText.Contains("Surubí al Disco ×10") && statsText.Contains("Brocheta de Dorado") && statsText.Contains("Mojarras en Escabeche ×3"),
+    "desglosa lo que aporta cada cosa: platos (+6 ATQ y +100 de vida), banquete, dragón, y lista lo cocinado y lo que corre");
+Check(statsText.Contains("Crítico") && statsText.Contains("20 %") && statsText.Contains("platos +10") && statsText.Contains("Esquive"), "muestra el crítico (base 10 + 10 de la Brocheta = 20 %) y el esquive");
+var statsNoAccount = await StatsModule.BuildStatsAsync(users, itemsRepo, buffRepo, bonusService, cooking, dragonRepo, UGhost);
+Check(statsNoAccount.Embed is null && statsNoAccount.PlainMessage!.Contains("/start") && await db.ExecuteScalarAsync<int>("SELECT count(*)::int FROM users WHERE discord_id = @id", new { id = (long)UGhost }) == 0, "sin cuenta manda a /start y NO le crea una");
+Check(stats.Embed!.Length <= 6000 && stats.Embed.Fields.All(f => f.Value.Length <= 1024), $"la ficha entra en los límites de Discord ({stats.Embed.Length} de 6000)");
+using (Loc.Use("en"))
+{
+    var statsEn = await StatsModule.BuildStatsAsync(users, itemsRepo, buffRepo, bonusService, cooking, dragonRepo, U1);
+    string enStats = statsEn.Embed is null ? string.Empty : LeakCheck.AllText(statsEn.Embed);
+    var allowedS = dishes.Select(d => d.Name).Concat(dishes.SelectMany(d => d.Ingredients.Select(i => i.ItemName))).Concat([CookingCatalog.FuelItemName, weaponS!.Name, amuletS!.Name, "Hechicero", "Cría", "Dragoncito", "Joven", "Adolescente", "Adulto", "Curtido", "Anciano", "Ancestral", "Legendario", "Eterno"]).ToArray();
+    var leakS = LeakCheck.NoSpanish(enStats, allowedS);
+    Check(statsEn.Embed is not null && enStats.Contains("Attack:") && enStats.Contains("Max HP:") && leakS.Ok, $"en inglés la ficha sale sin español colado ({leakS.Found})");
+}
+
+// El perfil NO se carga: la línea de ATQ no lleva la marca del dragón (el número ya la incluye); la 🔥 queda solo para la bendición de ataque.
+var profile = await GameModule.BuildProfileEmbedAsync(users, itemsRepo, zonesRepo, buffRepo, U1, "T", "https://example.com/a.png", petRepo, bonusService, dragonRepo);
+string atqLine = ProfileProbe.Line(profile, "ATQ");
+Check(atqLine.Contains(combatS.Damage.ToString()) && !atqLine.Contains("🔥") && atqLine.Contains("🍖+15"), $"el perfil muestra el ATQ con el dragón y los platos ya adentro, sin la marca 🔥 del dragón (y el 🍖 del banquete sigue): «{atqLine}»");
+Check(!FightLock.IsAllowed("cook") && FightLock.IsAllowed("stats") && FightLock.IsAllowedInDungeon("stats"), "/stats se puede usar en plena pelea (solo mira) y en una mazmorra; /cook no");
+
 Console.WriteLine("\n== 6. Registro con Discord.Net de verdad ==");
 await interactions.AddModulesAsync(typeof(CookModule).Assembly, sp);
 var slash = interactions.SlashCommands.Single(c => c.Name == "cook");
@@ -278,7 +329,10 @@ await texts.AddModuleAsync<TextCommandModule>(sp);
 Check(new[] { "cook", "cocinar" }.All(a => texts.Search(a) is { IsSuccess: true } f && f.Commands.Count == 1 && f.Commands[0].Command.Name == "cook") && texts.Search("cook recipes") is { IsSuccess: true },
     "aa cook y aa cocinar son el mismo comando y ningún otro lo pisa");
 Check(!FightLock.IsAllowed("cook"), "en plena pelea /cook queda bloqueado (como todo lo que no es de la pelea)");
-bool built = true; try { ActivatorUtilities.CreateInstance(sp, typeof(CookModule)); ActivatorUtilities.CreateInstance(sp, typeof(TextCommandModule)); } catch (Exception ex) { built = false; Console.WriteLine("   " + ex.Message); }
+Check(interactions.SlashCommands.Single(c => c.Name == "stats").Description.Length is > 0 and <= 100 && new[] { "stats", "estadisticas", "ficha" }.All(a => texts.Search(a) is { IsSuccess: true } f && f.Commands.Count == 1 && f.Commands[0].Command.Name == "stats"),
+    "/stats está registrado (descripción ≤ 100) y aa stats / estadisticas / ficha llegan a un solo comando; aa equipamiento sigue siendo del Carpintero");
+Check(texts.Search("equipamiento") is { IsSuccess: true } eq && eq.Commands.Count == 1 && eq.Commands[0].Command.Name == "tools", "aa equipamiento NO se tocó: sigue siendo el Carpintero");
+bool built = true; try { ActivatorUtilities.CreateInstance(sp, typeof(StatsModule)); ActivatorUtilities.CreateInstance(sp, typeof(CookModule)); ActivatorUtilities.CreateInstance(sp, typeof(TextCommandModule)); } catch (Exception ex) { built = false; Console.WriteLine("   " + ex.Message); }
 Check(built, "los módulos se construyen con el DI real");
 
 await Clean();

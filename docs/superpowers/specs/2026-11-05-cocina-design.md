@@ -1,4 +1,4 @@
-# La cocina: `/cook` (diseño, 2026-11-05)
+# La cocina: `/cook` (diseño, 2026-11-05) — HECHO en develop (v0.49.0, tandas 1 a 3; falta subirlo a main y cargar el arte)
 
 Etapa 2 de la pesca. Pedido del dueño (2026-11-05): «el comando puede ser cook y las recetas con cook recipes… que sean cosas caras, mats legendarios y épicos, con fishes varios… pensá en cualquiera y que sea algo que ayude a futuro»; los permanentes **se apilan** («en FN 5 comés 10 Surubí al Disco y tenés +100 de vida máx; en el FN 6 esos bufos no están»), «el plato se cocina y se come en el momento», «nada de cargar el perfil», y un comando `aa stats` con las cosas actuales.
 

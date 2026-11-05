@@ -63,6 +63,9 @@ public class GameModule(
     // como un renglón en blanco y separa el bloque de las barras. Los arneses buscan el campo por esta constante.
     public const string ProfileStatsFieldName = "​";
 
+    // Lo que sube el ataque la bendición Filo Antiguo (1,0 sin ella): lo único que lleva marca 🔥 en la línea de ATQ del perfil.
+    private static double BlessingAttackMultiplier(PlayerBonuses bonuses) => 1 + (BlessingCatalog.AttackPerLevel * bonuses.BlessingLevel(BlessingCatalog.AttackKey));
+
     // Estático (sin dependencia de Context) para que Modules/TextCommandModule.cs arme el mismo
     // embed en "aa profile" — acá vive tanto la lectura de datos como el embed.
     public static async Task<Embed> BuildProfileEmbedAsync(
@@ -124,7 +127,9 @@ public class GameModule(
 
         string attackLine = $"{PieceIcon(weapon, "⚔️")} **{Loc.T("ATQ")}:** {attack}{PieceTail(weapon, Loc.T("sin arma"))}"
             + (buff is null ? string.Empty : Loc.F($" 🍖+{buff.AttackPercent} % ({Math.Max(1, (int)Math.Ceiling(buff.Remaining.TotalMinutes))} min)"))
-            + (bonuses.AttackMultiplier > 1.0 ? $" 🔥{FuegoNuevoRules.PercentText(bonuses.AttackMultiplier)}" : string.Empty)
+            // La marca 🔥 es SOLO de la bendición de ataque (el dueño, 2026-11-05: «el % del dragón que no aparezca al lado del encantamiento, que aparezca reflejado en el ataque»): lo del dragón, los platos y todo lo demás
+            // ya está dentro del número y se ve desglosado en /stats.
+            + (BlessingAttackMultiplier(bonuses) > 1.0 ? $" 🔥{FuegoNuevoRules.PercentText(BlessingAttackMultiplier(bonuses))}" : string.Empty)
             + EnchantMark(player.WeaponEnchantKind, weapon is null ? 0 : player.WeaponEnchant);
         string defenseLine = $"{PieceIcon(amulet, "🛡️")} **{Loc.T("DEF")}:** {defense}{PieceTail(amulet, Loc.T("sin amuleto"))}"
             + (bonuses.BlessingLevel(BlessingCatalog.DefenseKey) > 0 ? $" 🔥{FuegoNuevoRules.PercentText(1 + (BlessingCatalog.DefensePerLevel * bonuses.BlessingLevel(BlessingCatalog.DefenseKey)))}" : string.Empty)
