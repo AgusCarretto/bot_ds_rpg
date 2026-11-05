@@ -1,12 +1,14 @@
 #!/usr/bin/env node
-// Genera los banners PROVISORIOS del perfil (v0.50.0): los 5 tiers de cada bendición (13 × 5 = 65 archivos), 300x100 (3:1), en Assets/banners/banner_<clave>_<tier>.png.
+// Genera el banner PROVISORIO del perfil (v0.50.0): hay UN solo banner en todo el juego, el de la bendición Brasa de Color, y mejora con cada nivel (tier I a V) de esa bendición: son 5 archivos de 300x100 (3:1) en
+// Assets/banners/banner_brasa_de_color_<tier>.png.
 //
 //   node tools/ui-art/make-banners.js            # escribe Assets/banners/*.png
 //   node tools/ui-art/make-banners.js <carpeta>  # o en otra carpeta
 //
-// Cada bendición tiene UN banner que EVOLUCIONA con su nivel (tier I a V): el I es un degradé del color de la bendición con una trama de rombos y un círculo al centro; el II suma un aro por fuera; el III, cuatro
-// rombos al costado; el IV, un brillo que sale del centro; el V, el marco dorado, las esquinas doradas y el punto del centro dorado. Son provisorios a propósito: sirven para ver la evolución andando en el perfil y en /config.
-// Cuando haya arte propio se reemplaza el archivo con el MISMO nombre (ver docs/arte-banners.md). Sin dependencias: codificador PNG mínimo (zlib).
+// El banner EVOLUCIONA: cada tier lleva el color de ese nivel de la bendición (Brasa Viva, Llama Dorada, Fuego Azul, Ascua Violeta, Sol del Fogón: los de GameData/BlessingCatalog.cs, ColorValues) y más adornos que el
+// anterior: el I es un degradé con una trama de rombos y un círculo al centro; el II suma un aro por fuera; el III, cuatro rombos al costado; el IV, un brillo que sale del centro; el V, el marco dorado, las esquinas
+// doradas y el punto del centro dorado. Son provisorios a propósito: sirven para ver la evolución andando en el perfil y en /config. Cuando haya arte propio se reemplaza el archivo con el MISMO nombre
+// (ver docs/arte-banners.md). Sin dependencias: codificador PNG mínimo (zlib).
 //
 // EL TAMAÑO (300x100) es lo que decide cuánto ocupa en Discord: en la compu un adjunto chico se muestra en su tamaño y uno grande se achica a unos 400 px; con 720x240 salía a todo el ancho y quedaba enorme (el dueño,
 // 2026-11-05: «para pc está recontra ancho»). Para cambiarlo, tocar W y H acá (todo lo demás se escala solo) y volver a correr el script; GameData/ProfileBanners.cs no depende del tamaño.
@@ -19,23 +21,9 @@ const OUT = path.resolve(process.argv[2] || path.join(__dirname, '..', '..', 'As
 const W = 300, H = 100;
 const S = W / 720; // todo se dibujó pensando en 720 de ancho: S lo escala
 
-// Las claves son las de GameData/BlessingCatalog.cs (player_blessings.blessing_key); el color, el de la idea de cada una.
-const BLESSINGS = {
-  mano_lenador: '#8b5a2b',
-  pico_fino: '#6b7a8f',
-  brasa_vieja: '#d9480f',
-  ojo_de_halcon: '#3b82c4',
-  aprendiz: '#5b5bd6',
-  filo_antiguo: '#9aa5b1',
-  piel_curtida: '#c08a4a',
-  corazon_de_brasa: '#c92a2a',
-  manada: '#2f9e44',
-  buen_pienso: '#f08c00',
-  bolsillo_hondo: '#e0a800',
-  alforja_del_fogonero: '#0ca678',
-  brasa_de_color: '#e8590c', // el color del tier I de la bendición (GameData/BlessingCatalog.cs, ColorValues)
-};
-const TIERS = [1, 2, 3, 4, 5];
+// La clave es la de la bendición (GameData/BlessingCatalog.cs, ColorKey = player_blessings.blessing_key) y el color de cada tier, el de ese nivel (ColorValues: 0xE8590C, 0xFFB000, 0x1C7ED6, 0x9C36B5, 0xF03E3E).
+const KEY = 'brasa_de_color';
+const TIER_COLORS = ['#e8590c', '#ffb000', '#1c7ed6', '#9c36b5', '#f03e3e'];
 
 // ---------- PNG ----------
 const crcTable = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
@@ -110,12 +98,11 @@ function render(color, tier) {
 
 fs.mkdirSync(OUT, { recursive: true });
 let total = 0;
-for (const [key, color] of Object.entries(BLESSINGS)) {
-  for (const tier of TIERS) {
-    const file = path.join(OUT, `banner_${key}_${tier}.png`);
-    fs.writeFileSync(file, render(color, tier));
-    total += fs.statSync(file).size;
-  }
-  console.log(`${key}: ${TIERS.length} tiers`);
-}
-console.log(`${Object.keys(BLESSINGS).length * TIERS.length} archivos de ${W}x${H}, ${(total / 1024).toFixed(0)} KB en total`);
+TIER_COLORS.forEach((color, i) => {
+  const tier = i + 1;
+  const file = path.join(OUT, `banner_${KEY}_${tier}.png`);
+  fs.writeFileSync(file, render(color, tier));
+  total += fs.statSync(file).size;
+  console.log(`${path.basename(file)}  ${(fs.statSync(file).size / 1024).toFixed(1)} KB`);
+});
+console.log(`${TIER_COLORS.length} archivos de ${W}x${H}, ${(total / 1024).toFixed(0)} KB en total`);

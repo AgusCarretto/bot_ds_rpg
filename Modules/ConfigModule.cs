@@ -9,10 +9,11 @@ using Discord.Interactions;
 // juntas). Nada de esto toca el juego, solo lo que se muestra. Se arma como una pantalla con un botón por opción (un click la cambia y la pantalla se actualiza en su lugar) y también se puede escribir:
 // «aa config resumen off», «aa config recetas completo». Las opciones viven en GameData/PlayerSettings.cs y se guardan en player_settings (Services/PlayerSettingsService.cs); el idioma tiene su propio comando
 // (/language). La lógica es estática y sin Context: el slash, el botón y el comando de texto llaman a lo mismo.
-// Banner del perfil (v0.50.0): un menú con los banners que desbloqueaste (uno por bendición que tenés, GameData/ProfileBanners.cs) y «Sin banner»; también «aa config banner mano de leñador» y «aa banner ninguno».
+// Banner del perfil (v0.50.0): hay UN banner en todo el juego, el de la bendición Brasa de Color, que mejora con su nivel (GameData/ProfileBanners.cs). Quien la tiene elige en un menú: sin banner, el mejor (el de su nivel,
+// mejora solo) o uno de los tiers que ya desbloqueó; también «aa banner on», «aa banner 3» y «aa banner off».
 public sealed record ConfigScreen(Embed Embed, MessageComponent Components);
 
-public enum BannerSetStatus { Saved, NotOwned, Failed }
+public enum BannerSetStatus { Saved, NotOwned, TierTooHigh, Failed }
 
 public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository blessings) : InteractionModuleBase<SocketInteractionContext>
 {
@@ -46,16 +47,16 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
     public async Task HandleRecipesButtonAsync(string ownerRaw, string valueRaw) =>
         await ApplyButtonAsync(ownerRaw, owner => TrySetRecipeBookAsync(settings, owner, valueRaw == "full"));
 
-    // El menú del banner (v0.50.0): el valor es la clave de la bendición, o «none» para no usar ninguno.
+    // El menú del banner (v0.50.0): el valor es «none» (sin banner), «auto» (el mejor: el de tu nivel, mejora solo) o el número de tier (1 a 5) que elegiste.
     [ComponentInteraction($"{BannerSelect}:*")]
     public async Task HandleBannerSelectAsync(string ownerRaw, string[] selected)
     {
-        string picked = selected.FirstOrDefault() ?? ProfileBanners.NoneValue;
-        string? key = picked == ProfileBanners.NoneValue ? null : picked;
-        await ApplyAsync(ownerRaw, async owner => await TrySetBannerAsync(settings, blessings, owner, key) switch
+        string? stored = ProfileBanners.StoredFor(selected.FirstOrDefault());
+        await ApplyAsync(ownerRaw, async owner => await TrySetBannerAsync(settings, blessings, owner, stored) switch
         {
             BannerSetStatus.Saved => null,
-            BannerSetStatus.NotOwned => Loc.T("Todavía no tenés esa bendición: cada una desbloquea su banner."),
+            BannerSetStatus.NotOwned => Loc.T("Todavía no tenés la bendición Brasa de Color: es la que desbloquea el banner."),
+            BannerSetStatus.TierTooHigh => Loc.T("Todavía no llegaste a ese tier: se desbloquea al subir de nivel la Brasa de Color."),
             _ => Loc.T("No pude guardar el cambio, intentá de nuevo en un momento."),
         });
     }
@@ -139,10 +140,11 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
             .Build();
 
         IReadOnlyList<(BlessingDefinition Blessing, int Level)> unlocked = levels is null ? [] : ProfileBanners.Unlocked(levels);
-        var chosen = unlocked.FirstOrDefault(u => u.Blessing.Key == current.ProfileBanner);
+        int? bannerLevel = unlocked.Count == 0 ? null : unlocked[0].Level;
+        var (bannerOn, bannerTier) = ProfileBanners.Parse(current.ProfileBanner);
         if (levels is not null)
         {
-            embed = AddBannerField(embed, unlocked, chosen);
+            embed = AddBannerField(embed, bannerLevel, bannerOn, bannerTier);
         }
 
         var buttons = new ComponentBuilder()
@@ -157,18 +159,19 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
                 ButtonStyle.Secondary,
                 new Emoji(full ? "📖" : "📜"));
 
-        // El menú para elegir el banner (v0.50.0), en su propia fila: «Sin banner» y uno por bendición desbloqueada.
-        if (unlocked.Count > 0)
+        // El menú para elegir el banner (v0.50.0), en su propia fila y solo para quien tiene la Brasa de Color: «Sin banner», «El mejor» (el de su nivel, mejora solo) y un tier por cada nivel que ya tiene la bendición.
+        if (bannerLevel is int unlockedTiers)
         {
             var menu = new SelectMenuBuilder()
                 .WithCustomId($"{BannerSelect}:{discordId}")
                 .WithPlaceholder(Loc.T("Elegí el banner de tu perfil"))
                 .WithMinValues(1)
                 .WithMaxValues(1)
-                .AddOption(Loc.T("Sin banner"), ProfileBanners.NoneValue, Loc.T("El perfil sale como siempre."), new Emoji("🚫"), isDefault: chosen.Blessing is null);
-            foreach (var (blessing, level) in unlocked)
+                .AddOption(Loc.T("Sin banner"), ProfileBanners.NoneChoice, Loc.T("El perfil sale como siempre."), new Emoji("🚫"), isDefault: !bannerOn)
+                .AddOption(Loc.T("El mejor (automático)"), ProfileBanners.AutoChoice, Loc.T("Siempre el de tu nivel: mejora solo al subir la bendición."), new Emoji("✨"), isDefault: bannerOn && bannerTier is null);
+            for (int tier = 1; tier <= unlockedTiers; tier++)
             {
-                menu.AddOption($"{blessing.Name} {BlessingCatalog.RomanLevel(level)}", blessing.Key, Loc.F($"Tier {BlessingCatalog.RomanLevel(level)}: cuanto más sube la bendición, mejor el banner"), new Emoji(blessing.Emoji), isDefault: chosen.Blessing?.Key == blessing.Key);
+                menu.AddOption(Loc.F($"Tier {BlessingCatalog.RomanLevel(tier)}"), $"{tier}", Loc.F($"El banner de la Brasa de Color en su tier {BlessingCatalog.RomanLevel(tier)}."), new Emoji("🌈"), isDefault: bannerOn && bannerTier == tier);
             }
 
             buttons.WithSelectMenu(menu, row: 1);
@@ -177,41 +180,52 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
         return new ConfigScreen(embed, buttons.Build());
     }
 
-    // El campo del banner: cuál usa, o cómo se desbloquean.
-    private static Embed AddBannerField(Embed embed, IReadOnlyList<(BlessingDefinition Blessing, int Level)> unlocked, (BlessingDefinition Blessing, int Level) chosen)
+    // El campo del banner: cómo se desbloquea, o cuál tenés puesto (level = el nivel de la bendición Brasa de Color; null = no la tiene).
+    private static Embed AddBannerField(Embed embed, int? level, bool on, int? tier)
     {
         string text;
-        if (unlocked.Count == 0)
+        if (level is null)
         {
-            text = Loc.T("Todavía no tenés ninguna bendición. Cada una desbloquea un banner para tu `/profile`, y cuanto más sube de nivel, mejor se ve (se consiguen con el Fuego Nuevo).");
+            text = Loc.T("Se desbloquea con la bendición **Brasa de Color** (se consigue con el Fuego Nuevo). Es el banner de tu `/profile`: mejora con cada nivel de la bendición y vos elegís cuál tier mostrar.");
         }
-        else if (chosen.Blessing is null)
+        else if (!on)
         {
-            text = Loc.F($"Sin banner. Tenés {unlocked.Count} desbloqueados: elegí uno en el menú de abajo.");
+            text = Loc.F($"❌ **Sin banner.** Tu Brasa de Color está en el tier {BlessingCatalog.RomanLevel(level.Value)}: elegí uno en el menú de abajo.");
+        }
+        else if (tier is null)
+        {
+            text = Loc.F($"✅ **El mejor (automático)**: tier {BlessingCatalog.RomanLevel(level.Value)} ahora, y mejora solo cada vez que sube la bendición.");
         }
         else
         {
-            text = Loc.F($"{chosen.Blessing.Emoji} **{chosen.Blessing.Name}** (tier {BlessingCatalog.RomanLevel(chosen.Level)}): se ve al pie de tu perfil. Cuanto más sube la bendición, mejor el banner.");
+            text = Loc.F($"✅ **Tier {BlessingCatalog.RomanLevel(Math.Min(tier.Value, level.Value))}**, al pie de tu perfil (tenés desbloqueados hasta el {BlessingCatalog.RomanLevel(level.Value)}).");
         }
 
         return Discord.EmbedBuilderExtensions.ToEmbedBuilder(embed).AddField(Loc.T("🖼️ Banner del perfil"), text, false).Build();
     }
 
-    // Guarda el banner (la clave de una bendición, o null para ninguno). Solo deja elegir uno que esté desbloqueado. Nunca tira: si la base falla se registra y devuelve Failed.
-    public static async Task<BannerSetStatus> TrySetBannerAsync(IPlayerSettingsService service, IBlessingRepository blessings, ulong discordId, string? key)
+    // Guarda el banner (null = sin banner; «brasa_de_color» = el mejor; «brasa_de_color:3» = ese tier). Solo lo deja poner a quien tiene la bendición Brasa de Color y solo hasta el tier que ya desbloqueó.
+    // Nunca tira: si la base falla se registra y devuelve Failed.
+    public static async Task<BannerSetStatus> TrySetBannerAsync(IPlayerSettingsService service, IBlessingRepository blessings, ulong discordId, string? stored)
     {
         try
         {
-            if (key is not null)
+            if (stored is not null)
             {
+                var (valid, tier) = ProfileBanners.Parse(stored);
                 var levels = await blessings.GetLevelsAsync(discordId);
-                if (BlessingCatalog.Find(key) is null || !levels.TryGetValue(key, out int level) || level <= 0)
+                if (!valid || !levels.TryGetValue(ProfileBanners.BannerKey, out int level) || level <= 0)
                 {
                     return BannerSetStatus.NotOwned;
                 }
+
+                if (tier is int wanted && wanted > Math.Min(level, BlessingCatalog.MaxLevel))
+                {
+                    return BannerSetStatus.TierTooHigh;
+                }
             }
 
-            await service.SetProfileBannerAsync(discordId, key);
+            await service.SetProfileBannerAsync(discordId, stored);
             return BannerSetStatus.Saved;
         }
         catch (Exception ex)
@@ -266,11 +280,12 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
             SettingKey.FightSummary => await ExecuteSummaryTypedAsync(service, discordId, value),
             SettingKey.RecipeBook => await ExecuteRecipeBookTypedAsync(service, discordId, value),
             SettingKey.Banner => await ExecuteBannerTypedAsync(service, blessings, discordId, value),
-            _ => (Loc.T("No conozco esa opción. Probá `aa config resumen off`, `aa config recetas completo` o `aa banner`."), await BuildScreenAsync(service, discordId, blessings)),
+            _ => (Loc.T("No conozco esa opción. Probá `aa config resumen off`, `aa config recetas completo` o `aa banner on`."), await BuildScreenAsync(service, discordId, blessings)),
         };
     }
 
-    // «aa banner» (o «aa config banner») sin nombre abre el panel; con el nombre de una bendición suya la pone de banner; «ninguno» lo saca.
+    // «aa banner» (o «aa config banner») sin nada abre el panel; «on» o «auto» pone el mejor (el de tu nivel, mejora solo), «3» (también «tier 3», «iii») fija ese tier, «off» (también «ninguno», «sacar», «no») lo
+    // saca y «toggle» lo invierte.
     private static async Task<(string? Note, ConfigScreen Screen)> ExecuteBannerTypedAsync(IPlayerSettingsService service, IBlessingRepository? blessings, ulong discordId, string? value)
     {
         if (blessings is null || string.IsNullOrWhiteSpace(value))
@@ -278,27 +293,39 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
             return (null, await BuildScreenAsync(service, discordId, blessings));
         }
 
-        string? key = null;
-        BlessingDefinition? wanted = null;
-        if (!ProfileBanners.IsNoneWord(value))
+        int? tier = ProfileBanners.IsNoneWord(value) ? null : ProfileBanners.TierFrom(value);
+        string? stored;
+        if (ProfileBanners.IsNoneWord(value))
         {
-            wanted = ProfileBanners.Find(value);
-            if (wanted is null)
-            {
-                return (Loc.T("No conozco ese banner. Escribí el nombre de una de tus bendiciones (`aa banner mano de leñador`) o `aa banner ninguno`."), await BuildScreenAsync(service, discordId, blessings));
-            }
-
-            key = wanted.Key;
+            stored = null;
+        }
+        else if (tier is int fixedTier)
+        {
+            stored = ProfileBanners.StoredFor(fixedTier);
+        }
+        else if (ProfileBanners.IsOnWord(value))
+        {
+            stored = ProfileBanners.BannerKey;
+        }
+        else if (SettingWords.ParseSwitch(value).Toggle)
+        {
+            stored = ProfileBanners.Parse((await service.GetAsync(discordId)).ProfileBanner).On ? null : ProfileBanners.BannerKey;
+        }
+        else
+        {
+            return (Loc.T("Decime qué querés: `aa banner on` (el mejor), `aa banner 3` (ese tier) o `aa banner off`."), await BuildScreenAsync(service, discordId, blessings));
         }
 
-        var status = await TrySetBannerAsync(service, blessings, discordId, key);
+        var status = await TrySetBannerAsync(service, blessings, discordId, stored);
         var screen = await BuildScreenAsync(service, discordId, blessings);
         return status switch
         {
-            BannerSetStatus.NotOwned => (Loc.F($"Todavía no tenés la bendición **{wanted?.Name}**: cada una desbloquea su banner."), screen),
+            BannerSetStatus.NotOwned => (Loc.T("Todavía no tenés la bendición Brasa de Color: es la que desbloquea el banner."), screen),
+            BannerSetStatus.TierTooHigh => (Loc.T("Todavía no llegaste a ese tier: se desbloquea al subir de nivel la Brasa de Color."), screen),
             BannerSetStatus.Failed => (Loc.T("No pude guardar el cambio, intentá de nuevo en un momento."), screen),
-            _ when wanted is null => (Loc.T("✅ Listo: tu perfil va **sin banner**."), screen),
-            _ => (Loc.F($"✅ Listo: tu banner es **{wanted.Name}**."), screen),
+            _ when stored is null => (Loc.T("✅ Listo: tu perfil va **sin banner**."), screen),
+            _ when tier is int shown => (Loc.F($"✅ Listo: tu perfil lleva el banner de la Brasa de Color, **tier {BlessingCatalog.RomanLevel(shown)}**."), screen),
+            _ => (Loc.T("✅ Listo: tu perfil lleva el **mejor banner de la Brasa de Color** (el de tu nivel, mejora solo)."), screen),
         };
     }
 
