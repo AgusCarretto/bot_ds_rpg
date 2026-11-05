@@ -1,8 +1,11 @@
 #!/usr/bin/env node
+// YA NO SE USA PARA EL JUEGO: desde el 2026-11-05 los 5 tiers de Assets/banners son arte propio del dueño (ver docs/arte-banners.md). Queda como generador de placeholders (escribe en docs/banners-provisorios/, nunca en
+// Assets/banners, para no pisar el arte de verdad).
+//
 // Genera el banner PROVISORIO del perfil (v0.50.0): hay UN solo banner en todo el juego, el de la bendición Brasa de Color, y mejora con cada nivel (tier I a V) de esa bendición: son 5 archivos de 300x100 (3:1) en
 // Assets/banners/banner_brasa_de_color_<tier>.png.
 //
-//   node tools/ui-art/make-banners.js            # escribe Assets/banners/*.png
+//   node tools/ui-art/make-banners.js            # escribe docs/banners-provisorios/*.png (NO Assets/banners: ahí está el arte de verdad del dueño)
 //   node tools/ui-art/make-banners.js <carpeta>  # o en otra carpeta
 //
 // El banner EVOLUCIONA: cada tier lleva el color de ese nivel de la bendición (Brasa Viva, Llama Dorada, Fuego Azul, Ascua Violeta, Sol del Fogón: los de GameData/BlessingCatalog.cs, ColorValues) y más adornos que el
@@ -17,7 +20,7 @@ const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 
-const OUT = path.resolve(process.argv[2] || path.join(__dirname, '..', '..', 'Assets', 'banners'));
+const OUT = path.resolve(process.argv[2] || path.join(__dirname, '..', '..', 'docs', 'banners-provisorios'));
 const W = 300, H = 100;
 const S = W / 720; // todo se dibujó pensando en 720 de ancho: S lo escala
 
