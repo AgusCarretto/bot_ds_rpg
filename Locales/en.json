@@ -450,9 +450,6 @@
   "🍽️ Llevás {0} cocinados": "🍽️ You have cooked {0}",
   "¡Upa! No pude armar tus stats ahora mismo, intentá de nuevo en un momento.": "Oops! I couldn't build your stats right now, try again in a moment.",
   "📊 Tus stats": "📊 Your stats",
-  "🎯 Crítico y esquive": "🎯 Crit and dodge",
-  "Crítico **{0}** (base {1}{2}{3}{4})": "Crit **{0}** (base {1}{2}{3}{4})",
-  "Esquive **{0}** (base {1}{2}{3}{4})": "Dodge **{0}** (base {1}{2}{3}{4})",
   "🍳 Cocina (hasta el próximo Fuego Nuevo)": "🍳 Cooking (until the next Fuego Nuevo)",
   "ATQ {0}": "ATK {0}",
   "DEF {0}": "DEF {0}",
@@ -466,9 +463,6 @@
   "🐾 Mascotas": "🐾 Pets",
   "Fuego Nuevo {0}: EXP {1} · drop de cacería {2} · drop de viaje {3} · recolección {4}": "Fuego Nuevo {0}: EXP {1} · hunt drops {2} · travel drops {3} · gathering {4}",
   "🔥 Fuego Nuevo y bendiciones": "🔥 Fuego Nuevo and blessings",
-  "clase": "class",
-  "encantamiento": "enchantment",
-  "platos": "dishes",
   "Se cocinan de 1 a {0} platos por vez.": "You can cook from 1 to {0} dishes at a time.",
   "Te quedan **{0}** de este efecto (cada plato suma {1} minutos y se pueden tener varios platos a la vez).": "You have **{0}** left of this effect (each dish adds {1} minutes and you can have several dishes at once).",
   "Solo cuentan contra monstruos; el Fuego Nuevo borra lo cocinado": "They only count against monsters; the Fuego Nuevo wipes what you cooked",
@@ -2849,5 +2843,9 @@
   "➕ Fuego Nuevo **+{0}**": "➕ Fuego Nuevo **+{0}**",
   "# 🏹 Drop en /hunt **{0}**": "# 🏹 Drop on /hunt **{0}**",
   "# 🗺️ Caja en /travel **{0}**": "# 🗺️ Box on /travel **{0}**",
-  "Todo cuenta contra monstruos (en duelos y en la Arena, solo el nivel, el equipo y la clase). El perfil ya muestra estos totales. En el drop, cada ➕ cuenta sobre lo que ya llevás acumulado más arriba.": "Everything counts against monsters (in duels and the Arena, only level, gear and class). Your profile already shows these totals. For drops, each ➕ counts on top of what you already have above it."
+  "Todo cuenta contra monstruos (en duelos y en la Arena, solo el nivel, el equipo y la clase). El perfil ya muestra estos totales. En el drop, cada ➕ cuenta sobre lo que ya llevás acumulado más arriba.": "Everything counts against monsters (in duels and the Arena, only level, gear and class). Your profile already shows these totals. For drops, each ➕ counts on top of what you already have above it.",
+  "➕ Clase **+{0}**": "➕ Class **+{0}**",
+  "# 🎯 Crítico **{0}**": "# 🎯 Crit **{0}**",
+  "# 💨 Esquive **{0}**": "# 💨 Dodge **{0}**",
+  "## 🎲 Chances de drop": "## 🎲 Drop chances"
 }
