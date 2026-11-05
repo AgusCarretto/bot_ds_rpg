@@ -6,6 +6,20 @@ solo. El más nuevo va arriba. Cada anuncio tiene un título y un texto.
 
 ---
 
+## 2026-11-05 — La cocina y la ficha de stats (v0.49.0)
+
+**Título:** ¡Llegó la cocina! Cociná con tus peces y mirá tus stats al detalle
+
+**Texto:**
+
+🍳 Los peces por fin sirven para algo: con **/cook** cocinás platos con tus peces, materiales raros y carbón (las recetas están en **aa cook recipes**). Hay platos que **se apilan** hasta tu próximo Fuego Nuevo y otros que te dan un **bufo por una hora**, y se pueden tener varios a la vez. Son caros de hacer, así que no te apures: ¡a descubrirlos!
+
+📊 Con **/stats** (o **aa stats**) ves tu ataque, defensa y vida, y **cuánto aporta cada cosa**: tu equipo y sus encantamientos, los platos, el dragón, las mascotas y las bendiciones.
+
+🐾 Además, en **aa pets** las mascotas ahora se ven separadas, más ordenadas.
+
+---
+
 ## 2026-11-04 — Arte de las zonas nuevas y retoques (v0.48.1)
 
 **Título:** Las zonas 6 a 10 ya tienen cara, y el Asador viene más duro

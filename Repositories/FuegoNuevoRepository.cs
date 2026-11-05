@@ -115,13 +115,19 @@ public sealed class FuegoNuevoRepository(IDbConnectionFactory connectionFactory)
                 "DELETE FROM player_tools WHERE discord_id = @DiscordId;",
                 new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
 
-            // Lo cocinado (v0.49.0) dura hasta el próximo Fuego Nuevo: en la vuelta nueva esos bonus no están.
-            await connection.ExecuteAsync(new CommandDefinition(
-                "DELETE FROM player_cooked WHERE discord_id = @DiscordId;",
-                new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
-            await connection.ExecuteAsync(new CommandDefinition(
-                "DELETE FROM player_cook_buffs WHERE discord_id = @DiscordId;",
-                new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
+            // Lo cocinado (v0.49.0) dura hasta el próximo Fuego Nuevo: en la vuelta nueva esos bonus no están. Solo se borra si la tabla EXISTE: una base viva que todavía no corrió Database/add_cooking.sql no
+            // puede romper el Fuego Nuevo (sin la tabla no hay nada cocinado que borrar). Los nombres son constantes de acá, nunca texto de un jugador.
+            foreach (string cookTable in new[] { "player_cooked", "player_cook_buffs" })
+            {
+                bool tableExists = await connection.ExecuteScalarAsync<bool>(new CommandDefinition(
+                    "SELECT to_regclass(@Name) IS NOT NULL;", new { Name = cookTable }, transaction: transaction, cancellationToken: cancellationToken));
+                if (tableExists)
+                {
+                    await connection.ExecuteAsync(new CommandDefinition(
+                        $"DELETE FROM {cookTable} WHERE discord_id = @DiscordId;",
+                        new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken));
+                }
+            }
 
             // Todo lo que empieza de cero usa el DEFAULT de la columna (nivel 1, 0 EXP, la vida de un jugador nuevo...) en vez de repetir los números acá: si el esquema cambia, el
             // reinicio sigue dejando al jugador igual que un /start. El oro, el banco, la racha diaria y las mascotas NO se tocan.

@@ -187,6 +187,30 @@
   },
   {
     "type": 1,
+    "name": "cook",
+    "description": "Cociná un plato con tus pescados y materiales (sin plato, mirá las recetas).",
+    "options": [
+      {
+        "type": 3,
+        "name": "plato",
+        "description": "Qué cocinar (si lo dejás vacío ves las recetas).",
+        "required": false,
+        "autocomplete": true,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      },
+      {
+        "type": 4,
+        "name": "veces",
+        "description": "Cuántos platos (de 1 a 10).",
+        "required": false,
+        "min_value": 1,
+        "max_value": 10
+      }
+    ]
+  },
+  {
+    "type": 1,
     "name": "daily",
     "description": "Reclamá tu recompensa diaria: más oro y EXP con la racha, y cajas desde el día 6."
   },
@@ -916,6 +940,11 @@
     "type": 1,
     "name": "start",
     "description": "Empezá tu aventura en Asado y Acero RPG: elegí tu clase inicial."
+  },
+  {
+    "type": 1,
+    "name": "stats",
+    "description": "Tu ataque, defensa y vida, y cuánto aporta cada cosa (equipo, platos, dragón...)."
   },
   {
     "type": 1,

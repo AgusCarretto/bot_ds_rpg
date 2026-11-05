@@ -174,6 +174,23 @@ Check(renewed.Status == RenewStatus.Ok && await Cooked(UFn, parrilla) == 0 && aw
     && await db.ExecuteScalarAsync<int>("SELECT count(*)::int FROM player_cook_buffs WHERE discord_id = @id", new { id = (long)UFn }) == 0,
     "después del Fuego Nuevo no queda nada cocinado, ni permanente ni de tiempo (los bufos de la vuelta anterior no están)");
 
+// Una base viva sin Database/add_cooking.sql todavía: el Fuego Nuevo NO se rompe (las tablas se renombran un momento para simular que no existen y se devuelven siempre).
+await Player(UEn);
+await db.ExecuteAsync("UPDATE users SET gate_cleared = true WHERE discord_id = @id", new { id = (long)UEn });
+await db.ExecuteAsync("ALTER TABLE player_cooked RENAME TO player_cooked_tmp_test");
+await db.ExecuteAsync("ALTER TABLE player_cook_buffs RENAME TO player_cook_buffs_tmp_test");
+RenewStatus noTablesStatus;
+try
+{
+    noTablesStatus = (await fnRepo.RenewAsync(UEn, 0, "Guerrero")).Status;
+}
+finally
+{
+    await db.ExecuteAsync("ALTER TABLE player_cooked_tmp_test RENAME TO player_cooked");
+    await db.ExecuteAsync("ALTER TABLE player_cook_buffs_tmp_test RENAME TO player_cook_buffs");
+}
+Check(noTablesStatus == RenewStatus.Ok, "sin las tablas de la cocina (base que todavía no corrió add_cooking.sql) el Fuego Nuevo igual se hace");
+
 Console.WriteLine("\n== 4b. Los platos de tiempo ==");
 var empanada = CookingCatalog.Find("empanada de surubi")!;
 var locro = CookingCatalog.Find("locro del pescador")!;
