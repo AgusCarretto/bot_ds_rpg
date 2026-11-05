@@ -6,6 +6,22 @@ solo. El más nuevo va arriba. Cada anuncio tiene un título y un texto.
 
 ---
 
+## 2026-11-05 — Banners del perfil, stats más claras y drops (v0.50.5)
+
+**Título:** ¡Banners para tu perfil y stats más claras!
+
+**Texto:**
+
+🖼️ Si tenés la bendición **Brasa de Color**, ahora desbloqueás un **banner para tu perfil** que mejora con cada nivel de la bendición: son 5 (Brasa Viva, Llama Dorada, Fuego Azul, Ascua Violeta y Sol del Fogón). Lo activás en **/config** (o con **aa banner**) y elegís cuál mostrar, o «el mejor», que sube solo.
+
+📊 **/stats** ahora desglosa también el **crítico y el esquive**, y tiene una sección de **chances de drop**: tu 6 % de drop en /hunt y la caja de /travel con todo lo extra (Fuego Nuevo, mascotas, bendiciones, dragón y platos), viendo cuánto suma cada cosa. El % de los platos cuenta sobre lo que ya llevás acumulado. Con el botón **Ver más stats** (o **aa stats mas**) ves la cocina, el dragón, las mascotas y el Fuego Nuevo con tus bendiciones.
+
+🙏 **/blessings** ahora muestra solo las bendiciones que tenés, más ordenadas.
+
+✨ Y además: **aa f** es atajo de /fish, **aa code** te responde por mensaje privado y en tu perfil aparece tu puesto, **Top #N**.
+
+---
+
 ## 2026-11-05 — La cocina y la ficha de stats (v0.49.0)
 
 **Título:** ¡Llegó la cocina! Cociná con tus peces y mirá tus stats al detalle
