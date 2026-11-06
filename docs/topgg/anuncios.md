@@ -7,9 +7,9 @@ fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo
 
 ---
 
-## 2026-11-06 — Banners del perfil y stats mucho más completas (v0.50.5) — PARA PUBLICAR MAÑANA
+## 2026-11-06 — Banners del perfil, stats más completas y /cd a tu gusto (v0.50.0 a v0.51.0)
 
-**Título:** ¡Banners para tu perfil y stats mucho más completas!
+**Título:** ¡Banners para tu perfil, stats más completas y /cd a tu gusto!
 
 **Texto:**
 
