@@ -5,22 +5,22 @@ using BotDsRpg.Services;
 // Tercera parte de TextCommandModule (ver el comentario en TextCommandModule.cs): recolección.
 public partial class TextCommandModule
 {
-    // "aa chop" / "aa ch" — misma lógica que GatheringModule.HandleChopAsync. "aa chop avanzada" (o "adv") es la tala avanzada del oficio Leñador al nivel 100.
+    // "aa chop" / "aa ch" — misma lógica que GatheringModule.HandleChopAsync. "aa chop avanzada" (o "adv", o solo "a": «aa ch a») es la tala avanzada del oficio Leñador al nivel 100.
     [Command("chop")]
     [Alias("ch")]
-    [Summary("Talá madera cercana (cooldown de 5 minutos). \"aa chop avanzada\" con el oficio Leñador al nivel 100.")]
+    [Summary("Talá madera cercana (cooldown de 5 minutos). \"aa chop avanzada\" (o \"aa ch a\") con el oficio Leñador al nivel 100.")]
     public Task ChopAsync(string modo = "") => GatherAsync(CooldownCatalog.Chop, itemType: "Madera", modo);
 
-    // "aa mine" / "aa m" — misma lógica que GatheringModule.HandleMineAsync. "aa mine avanzada" es la minería avanzada del oficio Minero al nivel 100.
+    // "aa mine" / "aa m" — misma lógica que GatheringModule.HandleMineAsync. "aa mine avanzada" (o «aa m a») es la minería avanzada del oficio Minero al nivel 100.
     [Command("mine")]
     [Alias("m")]
-    [Summary("Miná materiales cercanos (cooldown de 5 minutos). \"aa mine avanzada\" con el oficio Minero al nivel 100.")]
+    [Summary("Miná materiales cercanos (cooldown de 5 minutos). \"aa mine avanzada\" (o \"aa m a\") con el oficio Minero al nivel 100.")]
     public Task MineAsync(string modo = "") => GatherAsync(CooldownCatalog.Mine, itemType: "Mineral", modo);
 
-    // "aa fish" / "aa f" / "aa pescar" — misma lógica que GatheringModule.HandleFishAsync (v0.48.0; el atajo "f" va como "ch" y "m" de los otros dos). "aa fish avanzada" es la pesca avanzada del oficio Pescador al nivel 100.
+    // "aa fish" / "aa f" / "aa pescar" — misma lógica que GatheringModule.HandleFishAsync (v0.48.0; el atajo "f" va como "ch" y "m" de los otros dos). "aa fish avanzada" (o «aa f a») es la pesca avanzada del oficio Pescador al nivel 100.
     [Command("fish")]
     [Alias("f", "pescar", "pesca")]
-    [Summary("Pescá en el río (cooldown de 5 minutos). \"aa fish avanzada\" con el oficio Pescador al nivel 100.")]
+    [Summary("Pescá en el río (cooldown de 5 minutos). \"aa fish avanzada\" (o \"aa f a\") con el oficio Pescador al nivel 100.")]
     public Task FishAsync(string modo = "") => GatherAsync(CooldownCatalog.Fish, itemType: "Pescado", modo);
 
     private async Task GatherAsync(CooldownDefinition definition, string itemType, string modo)

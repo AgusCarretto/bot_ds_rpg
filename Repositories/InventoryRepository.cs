@@ -17,7 +17,8 @@ public sealed class InventoryRepository(IDbConnectionFactory connectionFactory) 
                    inv.quantity AS "Quantity",
                    i.emoji    AS "Emoji",
                    i.sell_price AS "SellPrice",
-                   i.dust_value AS "DustValue"
+                   i.dust_value AS "DustValue",
+                   (SELECT MIN(m.zone_id) FROM monster_drops md JOIN monsters m ON m.monster_id = md.monster_id WHERE md.item_id = i.item_id AND NOT m.is_boss) AS "DropZone"
             FROM inventory inv
             JOIN items i ON i.item_id = inv.item_id
             WHERE inv.discord_id = @DiscordId

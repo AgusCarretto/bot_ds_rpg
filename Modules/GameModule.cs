@@ -594,8 +594,10 @@ public class GameModule(
             .Select(e => $"{Icon(e)} **{e.ItemName}**: {GameHistory.Number(e.Quantity)}")
             .ToList();
 
+    // Primero la zona de la que sale el drop (solo los drops de monstruo la traen: lo demás queda junto, sin zona, y se ordena como siempre), después la rareza y el nombre. Sin esto un drop de la Zona 7
+    // quedaba en el medio de los de la Zona 4 y 5 porque lo etiquetaba una rareza parecida (v0.51.1, el dueño: «ordenar los drops de zona 6 y 7 en adelante, que vayan abajo en orden»).
     private static IEnumerable<InventoryEntry> Ordered(IEnumerable<InventoryEntry> entries) =>
-        entries.OrderBy(e => RarityCatalog.RankOf(e.Rarity)).ThenBy(e => e.ItemName, StringComparer.Ordinal);
+        entries.OrderBy(e => e.DropZone ?? int.MaxValue).ThenBy(e => RarityCatalog.RankOf(e.Rarity)).ThenBy(e => e.ItemName, StringComparer.Ordinal);
 
     private static string Icon(InventoryEntry e) => string.IsNullOrWhiteSpace(e.Emoji) ? RarityDot(e.Rarity) : e.Emoji;
 

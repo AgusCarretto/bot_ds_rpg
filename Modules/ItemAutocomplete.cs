@@ -47,10 +47,13 @@ public static class ItemChoices
     private static bool FitsAsValue(Item item) => AutocompleteText.FitsAsValue(item.Name);
 
     // Solo las cajas (y los huevos de mascota, que /open también abre) que el jugador TIENE, con cuántas, de la más rara a la más común (lo que quiere abrir primero).
-    public static IReadOnlyList<AutocompleteResult> ForOwnedBoxes(IEnumerable<OwnedItem> owned, string typed)
+    // hatchedEggNames (v0.51.1, el dueño: «una vez abro el primero que no aparezcan más en /open, me corta todo»): los huevos de las especies que el jugador YA tiene. Esos no se pueden abrir (nace una sola mascota
+    // de cada especie, el huevo no se gasta) y son de repuesto para evolucionar, así que no se ofrecen acá; siguen en la mochila y se cuentan en /pet. null = no se filtra nada (los llamadores viejos).
+    public static IReadOnlyList<AutocompleteResult> ForOwnedBoxes(IEnumerable<OwnedItem> owned, string typed, IReadOnlySet<string>? hatchedEggNames = null)
     {
         return owned
-            .Where(o => o.Item.Type is "Caja" or "Huevo" && o.Quantity > 0 && FitsAsValue(o.Item) && Matches(o.Item.Name, typed))
+            .Where(o => o.Item.Type is "Caja" or "Huevo" && o.Quantity > 0 && FitsAsValue(o.Item) && Matches(o.Item.Name, typed)
+                && !(o.Item.Type == "Huevo" && hatchedEggNames is not null && hatchedEggNames.Contains(o.Item.Name)))
             .OrderBy(o => Relevance(o.Item.Name, typed))
             .ThenByDescending(o => RarityCatalog.RankOf(o.Item.Rarity))
             .ThenBy(o => o.Item.Name, StringComparer.Ordinal)
@@ -197,6 +200,18 @@ public sealed class BoxAutocompleteHandler : SafeAutocompleteHandler
     {
         var inventory = services.GetRequiredService<IInventoryRepository>();
         var owned = (await inventory.GetOwnedByTypeAsync(userId, "Caja")).Concat(await inventory.GetOwnedByTypeAsync(userId, "Huevo")).ToList();
-        return ItemChoices.ForOwnedBoxes(owned, typed);
+
+        // Los huevos de las mascotas que ya nacieron no se ofrecen (son de repuesto). Si no se pueden leer las mascotas la lista sale igual, solo que sin ese filtro.
+        IReadOnlySet<string>? hatchedEggs = null;
+        try
+        {
+            hatchedEggs = (await services.GetRequiredService<IPetRepository>().GetOwnedAsync(userId)).Select(p => p.Species.EggName).ToHashSet();
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+        }
+
+        return ItemChoices.ForOwnedBoxes(owned, typed, hatchedEggs);
     }
 }

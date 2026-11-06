@@ -54,6 +54,20 @@ Check(dDrops.Description == "🪵⛏️ 10 · **🩸 11** · 🍖 7 · 📦 2", 
 Console.WriteLine("\n== 3. Cada pestaña trae lo suyo ==");
 Check(dDrops.Fields.Length == 1 && !dDrops.Fields[0].Inline && dDrops.Fields[0].Name.Contains("Drops de monstruo") && dDrops.Fields[0].Value.Contains("Cuero Curtido de Pradera") && dDrops.Fields[0].Value.Contains("Colmillo de Lobisón") && !Joined(dDrops).Contains("Madera"),
     "Drops: un campo a ancho completo con los dos drops y nada de madera");
+// v0.51.1: los drops van por la zona de la que salen (la 6 en adelante abajo, en orden), no por la rareza con que los etiqueta el catálogo (el Colmillo de Humo, de la Zona 7, quedaba antes que el Cristal de Sal, de la 6).
+var zoned = new List<InventoryEntry>
+{
+    new() { ItemName = "Cristal de Sal", Type = "Material", Quantity = 1, Rarity = "Mítico", DropZone = 6 },
+    new() { ItemName = "Pluma de Ñandú", Type = "Material", Quantity = 2, Rarity = "Común", DropZone = 1 },
+    new() { ItemName = "Colmillo de Humo", Type = "Material", Quantity = 3, Rarity = "Legendario", DropZone = 7 },
+    new() { ItemName = "Corazón de Titán", Type = "Material", Quantity = 4, Rarity = "Mítico", DropZone = 5 },
+    new() { ItemName = "Garra de Puma Cenizo", Type = "Material", Quantity = 5, Rarity = "Raro", DropZone = 2 },
+};
+var (dZoned, _) = GameModule.BuildInventoryView(zoned, "Agus", VIEWER, TARGET, GameModule.InvDrops);
+string zonedText = Joined(dZoned);
+int PosOf(string name) => zonedText.IndexOf(name, StringComparison.Ordinal);
+Check(PosOf("Pluma de Ñandú") is >= 0 && PosOf("Pluma de Ñandú") < PosOf("Garra de Puma Cenizo") && PosOf("Garra de Puma Cenizo") < PosOf("Corazón de Titán") && PosOf("Corazón de Titán") < PosOf("Cristal de Sal") && PosOf("Cristal de Sal") < PosOf("Colmillo de Humo"),
+    "los drops salen de la Zona 1 a la 7 en ese orden (la 6 y la 7 abajo), aunque la rareza de catálogo diga otra cosa");
 var (dFood, _) = GameModule.BuildInventoryView(sample, "Agus", VIEWER, TARGET, GameModule.InvFood);
 Check(Joined(dFood).Contains("Mate Amargo") && Joined(dFood).Contains("Comida para Mascotas") && Joined(dFood).Contains("Comida de Dragón") && !Joined(dFood).Contains("Cajón") && dFood.Fields[0].Name.Contains("Consumibles"),
     "Consumibles: la comida común, la de mascotas y la de dragón juntas (y las cajas no)");
