@@ -64,7 +64,8 @@ public class GatheringModule(
         return text switch
         {
             "" or "normal" => false,
-            "avanzada" or "avanzado" or "adv" or "advanced" => true,
+            // «a» es el atajo (v0.51.1, el dueño): «aa ch a», «aa m a», «aa f a».
+            "a" or "avanzada" or "avanzado" or "adv" or "advanced" => true,
             _ => null,
         };
     }

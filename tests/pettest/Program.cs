@@ -256,6 +256,12 @@ var legacy = await BoxModule.ExecuteOpenAsync(itemsRepo, null!, null!, combat, e
 Check(legacy.PlainMessage!.Contains("no es una caja") && await Have("Huevo del Bosque de Cenizas") == 1, "un llamador sin repositorio de mascotas no abre huevos (no rompe nada)");
 var boxList = ItemChoices.ForOwnedBoxes(await inventoryRepo.GetOwnedByTypeAsync(U, "Huevo"), "");
 Check(boxList.Count == 2 && boxList.All(c => c.Name.StartsWith("🥚") && c.Name.Contains("nace tu mascota")) && boxList.Select(c => c.Value.ToString()).OrderBy(n => n).SequenceEqual(["Huevo de la Pradera", "Huevo del Bosque de Cenizas"]), "la lista de /open ofrece los huevos que tenés");
+// v0.51.1: el huevo de una especie que YA nació no se ofrece en /open (es de repuesto, no se puede abrir) y se cuenta en /pet.
+var hatchedEggNames = (await pets.GetOwnedAsync(U)).Select(p => p.Species.EggName).ToHashSet();
+var boxListNoSpare = ItemChoices.ForOwnedBoxes(await inventoryRepo.GetOwnedByTypeAsync(U, "Huevo"), "", hatchedEggNames);
+Check(boxListNoSpare.Count == 1 && boxListNoSpare[0].Value.ToString() == "Huevo del Bosque de Cenizas", "la lista de /open ya no ofrece el huevo de la especie que ya nació (Ñandusito) y sí el del Bosque, que todavía no abriste");
+var vSpare = await PetModule.ExecuteViewAsync(users, pets, inventoryRepo, U);
+Check(AllText(vSpare.Embed!).Contains("Huevos de repuesto: 1"), "/pet view cuenta el huevo de repuesto de Ñandusito");
 
 // alimentar
 await Give(PetRules.FoodItemName, 5);

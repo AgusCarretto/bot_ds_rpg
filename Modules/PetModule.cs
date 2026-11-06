@@ -171,6 +171,12 @@ public partial class PetModule(
                 state = EvolutionText(pet, data.EggCounts);
             }
 
+            // Los huevos de repuesto se cuentan acá (v0.51.1): ya no se ofrecen en /open. En el tope de su tier el contador ya está dentro de lo que falta para evolucionar, así que no se repite.
+            if (level < cap && data.EggCounts is not null && data.EggCounts.TryGetValue(species.EggName, out int spareEggs) && spareEggs > 0)
+            {
+                state += "\n" + Loc.F($"🥚 Huevos de repuesto: {spareEggs}");
+            }
+
             // Un espacio entre una mascota y lo que sigue (el dueño, 2026-11-05: «dejá un espacio entre cada mascota en aa pets, que está medio entreverado»): el salto de línea + un carácter de ancho cero
             // al final del campo, porque Discord recorta los espacios comunes de ahí (la misma maña del recetario, ForgeModule.SectionGap). La última cosa de todas no lleva uno de más.
             bool somethingBelow = i < data.Owned.Count - 1 || eggsToOpen.Count > 0;

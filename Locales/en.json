@@ -1252,6 +1252,7 @@
   "⏳ Vuelve a comer en {0}": "⏳ Eats again in {0}",
   "{0} {1} · nivel {2}/{3}": "{0} {1} · level {2}/{3}",
   "🥚 Huevos sin abrir": "🥚 Unopened eggs",
+  "🥚 Huevos de repuesto: {0}": "🥚 Spare eggs: {0}",
   "Tenés {0} en la mochila: abrilo con **/open**.": "You have {0} in your bag: open it with **/open**.",
   " y ": " and ",
   "🦴 {0} en tu mochila: {1} · se compra en la taberna": "🦴 {0} in your bag: {1} · sold at the tavern",
