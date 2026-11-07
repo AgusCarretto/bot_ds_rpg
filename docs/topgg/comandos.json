@@ -183,7 +183,7 @@
   {
     "type": 1,
     "name": "config",
-    "description": "Configurá cómo ves el bot: el resumen del combate y el recetario de la herrería."
+    "description": "Configurá cómo ves el bot: resumen del combate, recetario de la herrería y banner del perfil."
   },
   {
     "type": 1,
@@ -648,7 +648,17 @@
   {
     "type": 1,
     "name": "leaderboard",
-    "description": "El ranking del server: primero por Fuego Nuevo y después por nivel."
+    "description": "El ranking del server: primero por Fuego Nuevo y después por nivel.",
+    "options": [
+      {
+        "type": 4,
+        "name": "pagina",
+        "description": "Qué página ver (1 a 5, de a 10 jugadores).",
+        "required": false,
+        "min_value": 1,
+        "max_value": 5
+      }
+    ]
   },
   {
     "type": 1,

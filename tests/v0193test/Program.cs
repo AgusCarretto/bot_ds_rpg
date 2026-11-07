@@ -130,6 +130,30 @@ Check(footer.Contains("Fuego Nuevo") && !footer.Contains("ordena por nivel;"), "
 var slashAttr = typeof(LeaderboardModule).GetMethod("HandleLeaderboardAsync")!.GetCustomAttributes(typeof(Discord.Interactions.SlashCommandAttribute), false).Cast<Discord.Interactions.SlashCommandAttribute>().Single();
 Check(slashAttr.Description.Length <= 100 && slashAttr.Description.Contains("Fuego Nuevo"), $"la descripción del slash ({slashAttr.Description.Length} caracteres) entra en los 100 de Discord y dice el criterio");
 
+// Páginas (v0.51.2, el dueño: «del 1 al 50 pero cada 10 personas una página nueva», y el total de gente en chiquito).
+// 15 cuentas descartables para que haya al menos dos páginas aunque la base local tenga poca gente.
+var filler = Enumerable.Range(0, 15).Select(i => 999000000000193100UL + (ulong)i).ToList();
+foreach (var id in filler)
+{
+    await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)id });
+    await users.GetOrCreateUserAsync(id);
+}
+ids = [.. ids, .. filler];
+board = await LeaderboardModule.BuildLeaderboardEmbedAsync(users);
+footer = board.Footer?.Text ?? string.Empty;
+Check(LeaderboardModule.PageCount(0) == 1 && LeaderboardModule.PageCount(10) == 1 && LeaderboardModule.PageCount(11) == 2 && LeaderboardModule.PageCount(50) == 5 && LeaderboardModule.PageCount(5000) == 5,
+    "de a 10 por página y como mucho 5 páginas (los 50 primeros)");
+int totalPlayers = await users.CountPlayersAsync();
+Check(footer.StartsWith($"👥 {GameHistory.Number(totalPlayers)} aventureros · Página 1/{LeaderboardModule.PageCount(totalPlayers)}"), $"el pie dice cuántos aventureros hay y la página ({footer})");
+var page2 = await LeaderboardModule.BuildLeaderboardEmbedAsync(users, 2);
+var top20 = await users.GetTopPlayersAsync(20);
+Check(totalPlayers <= 10 || (page2.Description.StartsWith($"11. <@{top20[10].DiscordId}>") && !page2.Description.Contains("🥇")), "la página 2 arranca en el puesto 11 (sin medallas) y sigue el mismo orden");
+var (_, buttons) = await LeaderboardModule.BuildLeaderboardAsync(users, 42UL, 99);
+var buttonRow = (buttons?.Components.FirstOrDefault() as Discord.ActionRowComponent)?.Components.OfType<Discord.ButtonComponent>().ToList();
+Check(totalPlayers <= 10 ? buttons is null : buttonRow is { Count: 3 } && buttonRow[2].IsDisabled && !buttonRow[0].IsDisabled && buttonRow[0].CustomId == $"lb_page:42:{LeaderboardModule.PageCount(totalPlayers) - 1}",
+    "una página de más se recorta a la última: ▶ apagado y ◀ lleva a la anterior, con el dueño en el id");
+Check(FuegoNuevoModule.PercentNote().Contains("+30 % a un drop del 6 % lo deja en 7,8 %, no en 36 %"), $"la letra chica del Fuego Nuevo explica que el % es sobre lo que ya tenés ({FuegoNuevoModule.PercentNote()})");
+
 foreach (var id in ids)
 {
     await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)id });

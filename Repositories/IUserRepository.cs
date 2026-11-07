@@ -36,7 +36,11 @@ public interface IUserRepository
     // Top jugadores por progreso (nivel, y XP dentro del nivel actual como desempate).
     // "xp" es el progreso hacia el próximo nivel (resetea al subir), no un total histórico,
     // por eso el orden real es por nivel primero.
-    Task<IReadOnlyList<LeaderboardEntry>> GetTopPlayersAsync(int limit, CancellationToken cancellationToken = default);
+    // offset: cuántos saltear desde arriba (las páginas de /leaderboard).
+    Task<IReadOnlyList<LeaderboardEntry>> GetTopPlayersAsync(int limit, CancellationToken cancellationToken = default, int offset = 0);
+
+    // Cuántas cuentas hay (todas las que hicieron /start): el total del pie de /leaderboard y de «aa admininfo».
+    Task<int> CountPlayersAsync(CancellationToken cancellationToken = default);
 
     // El puesto de un jugador en ese mismo ranking (1 = el primero), o null si no tiene cuenta. Usa EXACTAMENTE el orden de GetTopPlayersAsync (Fuego Nuevo, nivel, XP y, si empatan, el id), así el «Top: #N»
     // del perfil es el mismo número que se ve en /leaderboard.

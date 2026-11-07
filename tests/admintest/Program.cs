@@ -223,6 +223,19 @@ Check(textsSet.Search("adminset dragon tier 5").IsSuccess && new[] { "admin-set"
     "«aa adminset» (y sus alias) existe en CommandService, una sola vez");
 Check(textsSet.Commands.Single(c => c.Name == "adminset").Summary is null && !FightLock.IsAllowed("adminset"), "no tiene resumen (no figura en ninguna lista) y no vale en plena pelea");
 
+Console.WriteLine("\n== 6. aa admininfo ==");
+await Player(P1);
+var stats = await adminRepo.GetBotStatsAsync();
+int realPlayers = await db.ExecuteScalarAsync<int>("SELECT count(*)::int FROM users");
+Check(stats.Players == realPlayers && stats.Players == await users.CountPlayersAsync() && stats.Active7d >= stats.Active24h && stats.WithFuegoNuevo <= stats.Players,
+    $"las cuentas son las filas de users ({stats.Players}), los activos en 7 días son al menos los de 24 h y los que hicieron Fuego Nuevo no pasan del total");
+var info = await AdminInfoHandler.ExecuteAsync(access, adminRepo, ADMIN, 3, 1234);
+Check(info is not null && info.Contains($"**{GameHistory.Number(stats.Players)}**") && info.Contains("Servidores: **3**") && info.Contains("**1.234**"), $"el administrador ve cuentas, activos y servidores ({info?.Replace('\n', ' ')})");
+Check(await AdminInfoHandler.ExecuteAsync(access, adminRepo, OUTSIDER, 3, 1234) is null && (await AdminInfoHandler.ExecuteAsync(new AdminAccess(null), adminRepo, ADMIN, 3, 1234))!.Contains("Admin__UserIds"),
+    "a un NO administrador no le contesta nada; sin administradores configurados dice qué variable falta");
+Check(textsSet.Search("admininfo").IsSuccess && textsSet.Commands.Count(c => c.Name == "admininfo") == 1 && textsSet.Commands.Single(c => c.Name == "admininfo").Summary is null && !FightLock.IsAllowed("admininfo"),
+    "«aa admininfo» existe una sola vez, sin resumen (no figura en listas) y no vale en plena pelea");
+
 await Clean();
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;

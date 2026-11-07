@@ -130,19 +130,25 @@ public sealed class UserRepository(IDbConnectionFactory connectionFactory) : IUs
         return await connection.QuerySingleAsync<User>(command);
     }
 
-    public async Task<IReadOnlyList<LeaderboardEntry>> GetTopPlayersAsync(int limit, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<LeaderboardEntry>> GetTopPlayersAsync(int limit, CancellationToken cancellationToken = default, int offset = 0)
     {
         const string sql = """
             SELECT discord_id AS "DiscordId", class AS "Class", level AS "Level", xp AS "Xp", fuego_nuevo AS "FuegoNuevo"
             FROM users
             ORDER BY fuego_nuevo DESC, level DESC, xp DESC, discord_id
-            LIMIT @Limit;
+            LIMIT @Limit OFFSET @Offset;
             """;
 
         using IDbConnection connection = connectionFactory.CreateConnection();
-        var command = new CommandDefinition(sql, new { Limit = limit }, cancellationToken: cancellationToken);
+        var command = new CommandDefinition(sql, new { Limit = limit, Offset = Math.Max(0, offset) }, cancellationToken: cancellationToken);
         var rows = await connection.QueryAsync<LeaderboardEntry>(command);
         return rows.AsList();
+    }
+
+    public async Task<int> CountPlayersAsync(CancellationToken cancellationToken = default)
+    {
+        using IDbConnection connection = connectionFactory.CreateConnection();
+        return await connection.ExecuteScalarAsync<int>(new CommandDefinition("SELECT count(*)::int FROM users;", cancellationToken: cancellationToken));
     }
 
     public async Task<int?> GetRankAsync(ulong discordId, CancellationToken cancellationToken = default)
