@@ -110,6 +110,19 @@ public sealed class AdminRepository(IDbConnectionFactory connectionFactory) : IA
         }
     }
 
+    public async Task<AdminBotStats> GetBotStatsAsync(CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT (SELECT count(*)::int FROM users) AS "Players",
+                   (SELECT count(DISTINCT discord_id)::int FROM game_events WHERE occurred_at > now() - interval '24 hours') AS "Active24h",
+                   (SELECT count(DISTINCT discord_id)::int FROM game_events WHERE occurred_at > now() - interval '7 days') AS "Active7d",
+                   (SELECT count(*)::int FROM users WHERE fuego_nuevo > 0) AS "WithFuegoNuevo";
+            """;
+        using DbConnection connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        return await connection.QuerySingleAsync<AdminBotStats>(new CommandDefinition(sql, cancellationToken: cancellationToken));
+    }
+
     public async Task<IReadOnlyList<string>> SearchItemNamesAsync(string typed, int limit, CancellationToken cancellationToken = default)
     {
         // Lo escrito va como texto literal dentro del patrón: se escapan \, % y _ (si no, «100%» o «_» harían de comodín).

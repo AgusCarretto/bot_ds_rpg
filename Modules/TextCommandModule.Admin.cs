@@ -32,6 +32,30 @@ public partial class TextCommandModule
         }
     }
 
+    // "aa admininfo" — cuántas cuentas hay, cuántos juegan y en cuántos servidores está el bot (ver AdminInfoHandler).
+    [Command("admininfo")]
+    [Alias("admin-info", "admininformacion")]
+    public async Task AdminInfoAsync()
+    {
+        try
+        {
+            var guilds = Context.Client.Guilds;
+            string? reply = await AdminInfoHandler.ExecuteAsync(adminAccess, adminRepository, Context.User.Id, guilds.Count, guilds.Sum(g => (long)g.MemberCount));
+            if (reply is not null)
+            {
+                await ReplyAsync(reply, allowedMentions: AllowedMentions.None);
+            }
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            if (adminAccess.IsAdmin(Context.User.Id))
+            {
+                await ReplyAsync("¡Upa! Falló admininfo; mirá el registro del servidor.");
+            }
+        }
+    }
+
     // "aa adminset dragon tier 5 @amigo" / "aa adminset dragon level 40" — fijar el tier o el nivel de entrenamiento del dragón (v0.48.1, ver AdminSetHandler).
     [Command("adminset")]
     [Alias("admin-set", "adminponer")]

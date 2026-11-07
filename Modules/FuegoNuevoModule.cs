@@ -283,6 +283,17 @@ public class FuegoNuevoModule(
 
     // ---- Armado de pantallas (puro: se prueba sin Discord) ----
 
+    // La letra chica de los porcentajes (el dueño, 2026-11-07: «explicar que es % a lo que ya se tiene… así nadie se confunde»): el % multiplica lo que ya tenés, no se le suma, y cada número es el TOTAL
+    // con ese Fuego Nuevo (no lo que agrega uno más). El ejemplo sale de las constantes: con el primer Fuego Nuevo el 6 % de drop de /hunt pasa a 7,8 %, no a 36 %.
+    public static string PercentNote()
+    {
+        double multiplier = FuegoNuevoRules.HuntDropMultiplier(1);
+        double basePercent = CombatRewardCalculator.HuntDropChancePercent;
+        string bonus = FuegoNuevoRules.PercentText(multiplier), from = FuegoNuevoRules.PlainPercent(basePercent);
+        string to = FuegoNuevoRules.PlainPercent(basePercent * multiplier), wrong = FuegoNuevoRules.PlainPercent(basePercent + (multiplier - 1) * 100);
+        return Loc.F($"Los % se aplican sobre lo que ya tenés, no se suman: {bonus} a un drop del {from} lo deja en {to}, no en {wrong}. Y cada número es el total con ese Fuego Nuevo, no lo que agrega uno más.");
+    }
+
     public static Embed BuildStatusEmbed(RenewPreview preview, BlessingOffer? offer, IReadOnlyDictionary<string, int> levels)
     {
         int next = preview.FuegoNuevo + 1;
@@ -299,7 +310,7 @@ public class FuegoNuevoModule(
                 .AddField(Loc.F($"🔥 Lo que ganás (Fuego Nuevo ×{next})"), FuegoNuevoRules.BonusLines(next) + Loc.T("\n🙏 Una bendición a elegir entre 3"), false)
                 .AddField(Loc.T("💨 Lo que se va"), Cut(LostText(preview)), false)
                 .AddField(Loc.T("🔒 Lo que se queda"), Cut(KeptText(preview)), false)
-                .WithFooter(Loc.T("No se puede deshacer, y lo que se va no se reembolsa."));
+                .WithFooter(Loc.T("No se puede deshacer, y lo que se va no se reembolsa.") + " " + PercentNote());
 
             // Lo que ya te da hoy (desde la v0.14.3 el perfil no lo muestra: se mira acá).
             if (preview.FuegoNuevo > 0)
@@ -316,7 +327,8 @@ public class FuegoNuevoModule(
 
             if (preview.FuegoNuevo > 0)
             {
-                embed.AddField(Loc.F($"🔥 Lo que te da hoy (Fuego Nuevo ×{preview.FuegoNuevo})"), FuegoNuevoRules.BonusLines(preview.FuegoNuevo), false);
+                embed.AddField(Loc.F($"🔥 Lo que te da hoy (Fuego Nuevo ×{preview.FuegoNuevo})"), FuegoNuevoRules.BonusLines(preview.FuegoNuevo), false)
+                    .WithFooter(PercentNote());
             }
         }
 

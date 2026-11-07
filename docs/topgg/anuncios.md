@@ -7,6 +7,22 @@ fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo
 
 ---
 
+## 2026-11-07 — Ranking por páginas y atajos (v0.51.1 y v0.51.2)
+
+**Título:** El ranking ahora muestra el top 50
+
+**Texto:**
+
+🏆 **/leaderboard** muestra ahora los **50 primeros**, de a 10 por página: pasá de página con los botones ◀ ▶, o directo con **/leaderboard pagina:3** o **aa lb 3**. Abajo, en chiquito, cuántos aventureros hay en total.
+
+🔥 En **/fuegonuevo** quedó aclarado cómo funcionan los porcentajes: se aplican sobre lo que ya tenés, no se suman. Un +30 % sobre un 6 % de drop te deja en 7,8 %, no en 36 %.
+
+⚡ **Atajos para lo avanzado**: **aa ch a**, **aa m a** y **aa f a** hacen la versión avanzada de talar, minar y pescar.
+
+🥚 **/open** ya no te ofrece huevos de mascotas que ya abriste (esos son de repuesto, para evolucionar, y los ves contados en **/pet**), y en el **inventario** los drops de monstruo van agrupados por zona.
+
+---
+
 ## 2026-11-06 — Banners del perfil, stats más completas y /cd a tu gusto (v0.50.0 a v0.51.0)
 
 **Título:** ¡Banners para tu perfil, stats más completas y /cd a tu gusto!

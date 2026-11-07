@@ -217,16 +217,16 @@ public partial class TextCommandModule(
         }
     }
 
-    // "aa leaderboard" / "aa lb" — misma lógica que LeaderboardModule.HandleLeaderboardAsync.
+    // "aa leaderboard [página]" / "aa lb 2" — misma lógica que LeaderboardModule.HandleLeaderboardAsync (5 páginas de 10).
     [Command("leaderboard")]
     [Alias("lb")]
-    [Summary("Mostrá a los jugadores con más nivel/experiencia del server.")]
-    public async Task LeaderboardAsync()
+    [Summary("Mostrá a los jugadores con más nivel/experiencia del server (aa lb 2 para la página 2, hasta la 5).")]
+    public async Task LeaderboardAsync(int page = 1)
     {
         try
         {
-            var embed = await LeaderboardModule.BuildLeaderboardEmbedAsync(userRepository);
-            await ReplyAsync(embed: embed);
+            var (embed, components) = await LeaderboardModule.BuildLeaderboardAsync(userRepository, Context.User.Id, page);
+            await ReplyAsync(embed: embed, components: components);
         }
         catch (Exception ex)
         {

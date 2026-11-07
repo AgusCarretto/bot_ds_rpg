@@ -31,7 +31,13 @@ public interface IAdminRepository
 
     // «aa adminset dragon level»: fija el nivel de entrenamiento (0 hasta el tope de su tier actual). Por encima del tope devuelve AboveCap sin cambiar nada (no recorta en silencio).
     Task<AdminDragonSetResult> SetDragonLevelAsync(ulong discordId, int level, CancellationToken cancellationToken = default);
+
+    // «aa admininfo» (v0.51.2): cuánta gente juega. Players = cuentas (todos los que hicieron /start); Active24h / Active7d = jugadores distintos con algún evento en game_events en ese tiempo;
+    // WithFuegoNuevo = cuentas que ya hicieron al menos un Fuego Nuevo. Solo lee.
+    Task<AdminBotStats> GetBotStatsAsync(CancellationToken cancellationToken = default);
 }
+
+public sealed record AdminBotStats(int Players, int Active24h, int Active7d, int WithFuegoNuevo);
 
 public enum AdminDragonSetStatus { Set, NoDragon, AboveCap }
 
