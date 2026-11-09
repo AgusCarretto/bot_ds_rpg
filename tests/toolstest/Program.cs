@@ -72,6 +72,9 @@ const string AxeZ3 = "Hacha de Hierro Forjado", PickZ3 = "Pico de Hierro Forjado
 
 Console.WriteLine("== 1. Las reglas puras ==");
 Check(ToolRules.KindOfItemType("Hacha") == "axe" && ToolRules.KindOfItemType("Pico") == "pickaxe" && ToolRules.KindOfItemType("Weapon") is null && ToolRules.IsToolType("Pico") && !ToolRules.IsToolType(null), "«Hacha» es el hacha, «Pico» el pico y nada más es una herramienta");
+Check(ToolRules.Tiers.Select(t => t.ZoneRank).SequenceEqual([3, 5]) && ToolRules.UnlockNotice(2) is { } toolNote3 && toolNote3.Contains("Zona 3") && toolNote3.Contains("/tools") && toolNote3.Contains("Hierro Forjado") && toolNote3.Contains("×2")
+    && ToolRules.UnlockNotice(4) is { } toolNote5 && toolNote5.Contains("Zona 5") && toolNote5.Contains("Escoria Templada") && toolNote5.Contains("×3") && new[] { 0, 1, 3, 5, 6, 10 }.All(r => ToolRules.UnlockNotice(r) is null),
+    "v0.52.1: el aviso de herramientas es para quien vence al jefe de la Zona 2 (se abre la 3) y al de la Zona 4 (se abre la 5), y para nadie más");
 Check(new[] { "Común", "Raro", "Épico" }.All(r => ToolRules.QuantityFactor(r, 3) == 3 && ToolRules.QuantityFactor(r, 2) == 2) && new[] { "Legendario", "Mítico", "xyz" }.All(r => ToolRules.QuantityFactor(r, 3) == 1) && ToolRules.QuantityFactor("Común", 1) == 1 && ToolRules.QuantityFactor("Común", 0) == 1,
     "la herramienta multiplica Común, Raro y Épico; Legendario y Mítico siguen en 1; sin herramienta (×1) no cambia nada");
 Check(Enumerable.Range(0, 500).All(_ => GatheringYield.RollScaled("Legendario", 1.2 * ToolRules.QuantityFactor("Legendario", 3), new Random()) is 1 or 2), "con el hacha ×3 un Legendario sigue saliendo de a uno (solo lo escala el Fuego Nuevo)");
@@ -92,6 +95,9 @@ Check(Q(AxeZ3, "Madera de Roble") == 12 && Q(AxeZ3, "Madera de Nogal") == 3 && A
     "v0.30.2 («salen muy baratos para como multiplican las cosas, pedí más»): las 4 herramientas piden el TRIPLE de materiales (la Zona 3: unas 4 a 5 horas de recolección sin herramienta; la Zona 5: unas 6 a 13)");
 Check(tools.Where(t => t.ResultItem.Name.Contains("Hierro")).All(t => t.ResultItem.StatValue == 2 && t.ZoneId == zones[2].ZoneId) && tools.Where(t => t.ResultItem.Name.Contains("Escoria")).All(t => t.ResultItem.StatValue == 3 && t.ZoneId == zones[4].ZoneId),
     "las de la Zona 3 multiplican ×2 y se desbloquean en la 3; las de la Zona 5, ×3 y en la 5");
+Check(ToolRules.Tiers.All(t => tools.Any(x => x.ZoneId == zones[t.ZoneRank - 1].ZoneId) && tools.Where(x => x.ZoneId == zones[t.ZoneRank - 1].ZoneId).All(x => x.ResultItem.StatValue == t.Multiplier && x.ResultItem.Name.EndsWith(t.Name)))
+    && tools.Select(x => x.ZoneId).Distinct().Count() == ToolRules.Tiers.Count,
+    "ToolRules.Tiers (lo que usa el aviso) coincide con las recetas de la base: las zonas que abren herramientas, su multiplicador y su nombre");
 var shown = RecipeCatalog.BookFor(await recipesRepo.GetAllAsync(), await zonesRepo.GetAllAsync(), "Guerrero", true).SelectMany(s => s.Recipes);
 var viewed = RecipeCatalog.ViewFor(await recipesRepo.GetAllAsync(), await zonesRepo.GetAllAsync(), "Guerrero", zones[2].ZoneId, true).Recipes;
 Check(!shown.Concat(viewed).Any(r => ToolRules.IsToolType(r.ResultItem.Type)), "el herrero no las ve: ni el recetario ni la lista para forjar traen herramientas");

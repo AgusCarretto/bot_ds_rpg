@@ -2742,6 +2742,8 @@
   "Hachazo": "Axe chop",
   "Ráfaga": "Gust",
   "🚪 ¡Encontraste la salida! El humo se queda atrás.": "🚪 You found the exit! The smoke stays behind.",
+  "🔨 ¡Herramientas nuevas!": "🔨 New tools!",
+  "Al entrar a la **Zona {0}** vas a poder hacer en el Carpintero (`/tools`) el hacha, el pico y la caña de **{1}**: ×{2} de lo que recolectás. Se hacen solo con materiales.": "When you enter **Zone {0}** you will be able to make the axe, the pickaxe and the fishing rod of **{1}** at the Carpenter (`/tools`): ×{2} of what you gather. They are made from materials only.",
   "🔥 ¡Una brasa! Ese camino no lleva a la salida: volvé.": "🔥 An ember! That way doesn't lead to the exit: turn back.",
   "🧱 Ahí hay una pared.": "🧱 There's a wall there.",
   "Buscá la salida 🚪 entre el humo. 🧍 sos vos · 🟩 por donde pasaste · ⬜ camino · ⬛ pared · 🌫️ humo. Una brasa se ve como cualquier camino.": "Find the exit 🚪 in the smoke. 🧍 is you · 🟩 where you've been · ⬜ path · ⬛ wall · 🌫️ smoke. An ember looks like any other path.",

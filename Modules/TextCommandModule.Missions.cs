@@ -8,7 +8,7 @@ public partial class TextCommandModule
     // "aa missions" muestra tus misiones (con el botón de reclamar); "aa missions claim" cobra lo que esté listo.
     // Misma lógica que /missions.
     [Command("missions")]
-    [Alias("misiones", "mision")]
+    [Alias("misiones", "mision", "mission")]
     [Summary("Tus misiones del día y de la semana: \"aa missions\" para verlas, \"aa missions claim\" para cobrar.")]
     public async Task MissionsAsync([Remainder] string accion = "")
     {

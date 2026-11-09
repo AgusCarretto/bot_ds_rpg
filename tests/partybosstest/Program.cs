@@ -636,6 +636,23 @@ try
     Check(await Gold(A) > goldA && await Gold(B) > goldB, "los dos cobran la recompensa entera");
     Check(await Left(A) is { } l5a && l5a > TimeSpan.FromHours(4.9) && await Left(B) is { } l5b && l5b > TimeSpan.FromHours(4.9), "y el cooldown del jefe de los dos queda en las 5 horas de una victoria");
     Check(!svc5.IsInAnyRaid(A) && !svc5.IsInAnyRaid(B), "y quedan libres");
+    Check(!AllText(t5.Updates.Last()).Contains("Herramientas"), "v0.52.1: la victoria de grupo sobre el jefe de la Zona 1 no avisa de herramientas");
+
+    // v0.52.1: el jefe de la Zona 2 en grupo: quien lo vence por primera vez se entera de que con la Zona 3 se abren las herramientas.
+    await ResetAll();
+    var zoneIdsT = ZoneRanking.OrderByDifficulty(await zones.GetAllAsync()).Select(z => z.ZoneId).ToList();
+    var svcT = new RaidSessionService(); var targetT = new FakeTarget();
+    var sessionT = new RaidSession
+    {
+        RaidId = Guid.NewGuid(), BossName = "Lobisón Alfa", BossEmoji = "🐺", BossBaseHp = 300, ZoneRank = 2, BossMaxHp = 300, BossCurrentHp = 300, BossDamage = 1, BossDropItemNames = [],
+        BossGoldBonus = 0, BossXpBonus = 0, ZoneId = zoneIdsT[1], ZoneName = "Bosque de Cenizas", StarterId = A, ReplyTarget = targetT, Phase = RaidPhase.Active, TurnIndex = 0, TurnNumber = 1,
+    };
+    foreach (var m in new[] { Member(A, damage: 100), Member(B, damage: 100) }) { sessionT.Participants.Add(m); svcT.TryRegisterParticipant(m.DiscordId, sessionT.RaidId); }
+    svcT.TryAdd(sessionT);
+    var oT = new FakeOutput();
+    for (int i = 0; i < 40 && sessionT.Phase == RaidPhase.Active; i++) await Attack(sessionT, svcT, sessionT.Participants[sessionT.TurnIndex].DiscordId, oT);
+    string finalT = AllText(targetT.Updates.Last());
+    Check(sessionT.Phase == RaidPhase.Resolved && finalT.Contains("Herramientas") && finalT.Contains("Zona 3") && finalT.Contains("/tools"), "v0.52.1: la victoria de grupo sobre el jefe de la Zona 2 avisa que con la Zona 3 se abren las herramientas");
 
     // ===========================================================================================================================================================================
     // La pantalla de un clic usa la interacción de ESE clic (el token de la primera dura 15 minutos y un combate por turnos puede pasarse): el final re-apunta la sesión a ella.

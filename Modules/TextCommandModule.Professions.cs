@@ -5,9 +5,9 @@ using Discord.Commands;
 // Parte de TextCommandModule (ver el comentario en TextCommandModule.cs): los oficios (v0.13.0).
 public partial class TextCommandModule
 {
-    // "aa professions" (alias "aa oficios", "aa profesiones", "aa prof") — misma lógica que /professions.
+    // "aa professions" (alias "aa oficios", "aa profesiones", "aa prof", "aa pr") — misma lógica que /professions.
     [Command("professions")]
-    [Alias("oficios", "oficio", "profesiones", "profesion", "prof")]
+    [Alias("oficios", "oficio", "profesiones", "profesion", "prof", "pr")]
     [Summary("Tus oficios (Leñador, Minero, Pescador, Encantador): nivel, XP, lo que dan y la versión avanzada del nivel 100.")]
     public async Task ProfessionsAsync()
     {

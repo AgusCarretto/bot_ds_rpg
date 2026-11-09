@@ -172,6 +172,28 @@ await Reset(highestCleared: zones[^1].ZoneId, gateCleared: false);
 var asador = await Win(Boss(FogonRules.BossName, FogonRules.GateZoneId));
 Check(asador.Events.Items.Contains((GameEventKinds.StoryChapter, "cap6")) && BossField(asador.Out).Contains(Lore.Chapters[5].FirstClearLine), "ganarle al Asador por primera vez abre el capítulo 6 y cuenta su escena");
 
+// v0.52.1: al desbloquear la Zona 3 (jefe de la Zona 2) y la Zona 5 (jefe de la Zona 4) se avisa que ya hay herramientas en el Carpintero: el Fuego Nuevo las borra y se perdía el tenerlas.
+string ToolsField(FakeOutput o) => o.Shown.Single().Embed.Fields.Where(f => f.Name.Contains("Herramientas")).Select(f => f.Value).DefaultIfEmpty(string.Empty).First();
+await Reset(highestCleared: 0);
+var toolsZ2 = await Win(Boss(Lore.Chapters[1].BossName, z2.ZoneId));
+Check(ToolsField(toolsZ2.Out).Contains("Zona 3") && ToolsField(toolsZ2.Out).Contains("/tools") && BossField(toolsZ2.Out).Contains("/zona"), "la primera victoria sobre el jefe de la Zona 2 avisa que con la Zona 3 se abren las herramientas (y la línea de la próxima zona sigue igual)");
+var toolsZ2Again = await Win(Boss(Lore.Chapters[1].BossName, z2.ZoneId));
+Check(ToolsField(toolsZ2Again.Out) == string.Empty && BossField(toolsZ2Again.Out).Contains("Volviste a ganarle"), "la repetición no lo vuelve a decir: esa zona ya estaba abierta");
+await Reset(highestCleared: 0);
+var toolsZ4 = await Win(Boss(Lore.Chapters[3].BossName, zones[3].ZoneId));
+Check(ToolsField(toolsZ4.Out).Contains("Zona 5") && ToolsField(toolsZ4.Out).Contains("Escoria Templada") && ToolsField(toolsZ4.Out).Contains("/tools"), "el jefe de la Zona 4 avisa que con la Zona 5 llegan las herramientas de Escoria Templada");
+bool noOtherTools = true;
+foreach (int bossIdx in new[] { 0, 2, 4 })
+{
+    await Reset(highestCleared: 0);
+    var w = await Win(Boss(Lore.Chapters[bossIdx].BossName, zones[bossIdx].ZoneId));
+    noOtherTools &= ToolsField(w.Out) == string.Empty;
+}
+Check(noOtherTools, "los jefes de las Zonas 1, 3 y 5 no avisan nada de herramientas (la 2 y la 4 no abren ninguna)");
+await Reset(fuegoNuevo: 1, highestCleared: 0);
+var toolsLap2 = await Win(Boss(Lore.Chapters[1].BossName, z2.ZoneId));
+Check(ToolsField(toolsLap2.Out).Contains("Zona 3"), "en la segunda vuelta también avisa: el Fuego Nuevo borra las herramientas y hay que volver a hacerlas");
+
 Console.WriteLine("\n== 8. RecordStoryChapterAsync (la regla sola) ==");
 var recX = new Rec();
 var outcomeFn0 = new LevelUpOutcome(new User { FuegoNuevo = 0, CurrentZoneId = 1 }, 0);
