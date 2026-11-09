@@ -271,7 +271,8 @@ var texts = new Discord.Commands.CommandService(new Discord.Commands.CommandServ
 texts.AddTypeReader<IUser>(new GuildUserTypeReader(), true);
 var textMods = await texts.AddModulesAsync(typeof(BoxModule).Assembly, sp);
 var textNames = textMods.SelectMany(x => x.Commands).SelectMany(c => c.Aliases).Select(a => a.ToLowerInvariant()).ToList();
-Check(new[] { "professions", "oficios", "oficio", "profesiones", "profesion", "prof" }.All(textNames.Contains) && textNames.Count(n => n == "prof") == 1 && textNames.Count(n => n == "oficios") == 1, "aa professions / oficios / profesiones / prof están registrados, sin repetirse");
+Check(new[] { "professions", "oficios", "oficio", "profesiones", "profesion", "prof", "pr" }.All(textNames.Contains) && textNames.Count(n => n == "prof") == 1 && textNames.Count(n => n == "oficios") == 1 && textNames.Count(n => n == "pr") == 1, "aa professions / oficios / profesiones / prof / pr están registrados, sin repetirse");
+Check(new[] { "missions", "misiones", "mision", "mission" }.All(textNames.Contains) && textNames.Count(n => n == "mission") == 1 && textNames.Count(n => n == "missions") == 1, "aa missions / misiones / mision / mission están registrados, sin repetirse");
 Check(interactions.SlashCommands.Select(c => c.Module.SlashGroupName ?? c.Name).Distinct().Count() <= 100, "siguen entrando en el tope de 100 comandos de nivel superior");
 int built = 0; var buildFails = new List<string>();
 foreach (var t in typeof(BoxModule).Assembly.GetTypes().Where(t => !t.IsAbstract && t.IsClass && (t.Name.EndsWith("Module") || typeof(IInteractionModuleBase).IsAssignableFrom(t) || typeof(Discord.Commands.IModuleBase).IsAssignableFrom(t))))

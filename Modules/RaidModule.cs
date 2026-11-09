@@ -1771,6 +1771,7 @@ public class RaidModule(
         var repeat = await BossChest.RepeatAsync(zoneBoxService, session.ZoneId);
 
         var results =new List<(RaidParticipant Participant, CombatReward Reward, Item? Drop, LevelUpOutcome Outcome)>();
+        bool anyFirstClear = false;   // alguien lo venció por primera vez de esta vuelta: la pantalla puede avisar de las herramientas que abre esa zona
 
         // Solo cobra quien contribuyó (pegó al menos un golpe) y no se retiró — huir siempre
         // renuncia a la recompensa, igual que en combate solitario. Cada uno se lleva TODO, no se
@@ -1781,6 +1782,7 @@ public class RaidModule(
             // "Primera vez" por participante: el cofre de la zona es 100% solo para quien nunca había derrotado a este jefe en esta vuelta (se mira ANTES de aplicar la victoria);
             // las repeticiones dan la caja más chica de zone_boxes con su chance.
             bool firstClear = BossChest.IsFirstClear(await userRepository.GetByDiscordIdAsync(participant.DiscordId), session.ZoneId);
+            anyFirstClear |= firstClear;
             var reward = CombatRewardCalculator.RollBossReward(
                 participant.Level, session.BossGoldBonus, session.BossXpBonus, firstClear, participant.Bonuses, firstClear ? 0 : repeat.ChancePercent);
 
@@ -1810,7 +1812,7 @@ public class RaidModule(
             results.Add((participant, reward, drop, outcome));
         }
 
-        await session.ReplyTarget.UpdateAsync(BuildVictoryEmbed(session, logLine, results), new ComponentBuilder().Build());
+        await session.ReplyTarget.UpdateAsync(BuildVictoryEmbed(session, logLine, results, anyFirstClear), new ComponentBuilder().Build());
 
         // La victoria dejó el cooldown del jefe en su espera larga: se vuelve a armar el aviso de cada participante (el que pegó el último golpe lo arma también su interacción).
         await SyncRemindersAsync(session, session.Participants.Select(p => p.DiscordId).ToList());
@@ -1966,7 +1968,7 @@ public class RaidModule(
     }
 
     private static Embed BuildVictoryEmbed(
-        RaidSession session, string logLine, IReadOnlyList<(RaidParticipant Participant, CombatReward Reward, Item? Drop, LevelUpOutcome Outcome)> results)
+        RaidSession session, string logLine, IReadOnlyList<(RaidParticipant Participant, CombatReward Reward, Item? Drop, LevelUpOutcome Outcome)> results, bool anyFirstClear = false)
     {
         var embed = new EmbedBuilder()
             .WithTitle(Loc.F($"🏆 ¡{session.BossName} {session.BossEmoji} derrotado!"))
@@ -1990,6 +1992,12 @@ public class RaidModule(
                 participant.DisplayName,
                 Loc.F($"💰 {reward.Gold} oro · 📊 {reward.Xp} XP{dropLine}{eggLine}{levelLine}"),
                 true);
+        }
+
+        // v0.52.1: abrir la Zona 3 o la 5 abre las herramientas del Carpintero (ver ToolRules.UnlockNotice); se avisa si alguien del grupo lo venció por primera vez de esta vuelta.
+        if (anyFirstClear && Lore.ChapterForBoss(session.BossName) is { } bossChapter && ToolRules.UnlockNotice(bossChapter.Number) is { } toolsNotice)
+        {
+            embed.AddField(ToolRules.UnlockTitle, toolsNotice, false);
         }
 
         return embed.Build();

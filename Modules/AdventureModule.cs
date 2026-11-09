@@ -908,6 +908,12 @@ public class AdventureModule(
                         ? Loc.T("¡Se abrió el camino! Ya podés avanzar a la próxima zona con `/zona`.")
                         : Loc.T("¡Volviste a ganarle! El camino a la próxima zona ya lo tenías abierto.");
                 embed.AddField(Loc.T("👑 ¡Jefe de Zona derrotado!"), $"{MonsterSays(state, NpcDialogue.BossLine.Defeated)}{StoryScene(openedChapter)}\n\n{zoneLine}", false);
+
+                // v0.52.1: abrir la Zona 3 o la 5 abre las herramientas del Carpintero; el aviso va en su propio campo (el del jefe ya puede venir largo por la escena de la historia).
+                if (firstBossClear && Lore.ChapterForBoss(state.MonsterName) is { } bossChapter && ToolRules.UnlockNotice(bossChapter.Number) is { } toolsNotice)
+                {
+                    embed.AddField(ToolRules.UnlockTitle, toolsNotice, false);
+                }
             }
         }
 

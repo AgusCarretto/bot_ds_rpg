@@ -7,7 +7,7 @@ fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo
 
 ---
 
-## 2026-11-09 — Laberinto libre, responder en vez de mencionar y top 50 (v0.51.1 a v0.52.0)
+## 2026-11-09 — Laberinto libre, responder en vez de mencionar y top 50 (v0.51.1 a v0.52.1)
 
 **Título:** ¡Laberinto libre, responder en vez de mencionar y ranking top 50!
 
@@ -21,7 +21,9 @@ fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo
 
 🏆 **/leaderboard** muestra ahora los **50 primeros**, de a 10 por página: pasá de página con los botones ◀ ▶, o directo con **/leaderboard pagina:3** o **aa lb 3**. Abajo, en chiquito, cuántos aventureros hay en total.
 
-⚡ **Atajos para lo avanzado**: **aa ch a**, **aa m a** y **aa f a** hacen la versión avanzada de talar, minar y pescar.
+⚡ **Atajos**: **aa ch a**, **aa m a** y **aa f a** hacen la versión avanzada de talar, minar y pescar; **aa mission** abre tus misiones y **aa pr**, tus oficios.
+
+🔨 **Aviso de herramientas:** cuando vencés por primera vez al jefe de la Zona 2 y al de la Zona 4, el juego ahora te avisa que con la Zona 3 y la Zona 5 se abren las herramientas del Carpintero (**/tools**): hacha, pico y caña que multiplican lo que recolectás. Así no se te pasa hacerlas después de cada Fuego Nuevo.
 
 🥚 **/open** ya no te ofrece huevos de mascotas que ya abriste (esos son de repuesto, para evolucionar, y los ves contados en **/pet**), en el **inventario** los drops de monstruo van agrupados por zona, y **/fuegonuevo** aclara que los porcentajes se aplican sobre lo que ya tenés, no se suman: un +30 % sobre un 6 % de drop te deja en 7,8 %, no en 36 %.
 
