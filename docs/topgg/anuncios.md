@@ -7,6 +7,22 @@ fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo
 
 ---
 
+## 2026-11-10 — El laberinto de humo, renovado (v0.52.0)
+
+**Título:** El laberinto de humo (Zona 7) ahora es libre y más largo
+
+**Texto:**
+
+🧭 **Movete para donde quieras.** Las 4 flechas siempre andan: si apretás una contra una pared no pasa nada y no te cuesta nada, solo te avisa.
+
+🧱 **Las paredes se ven.** El mapa dibuja las paredes (⬛) entre las casillas: ves los 4 lados de donde estás parado, y lo que ya recorriste queda marcado en verde 🟩.
+
+🔥 **Las brasas se esconden en los desvíos** y se ven como un camino más. Si te quemás, esa rama no lleva a la salida: volvé y probá por el otro lado. Ya no hay aviso de calor.
+
+📏 **Más largo y sin límite de pasos.** El laberinto es más grande y no hay tope de pasos: lo único que te saca vida son las brasas.
+
+---
+
 ## 2026-11-09 — Responder en vez de mencionar y el cd de otros (v0.51.3)
 
 **Título:** Respondé un mensaje en vez de mencionar, y mirá los cooldowns de otros

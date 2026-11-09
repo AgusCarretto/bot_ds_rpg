@@ -1,3 +1,4 @@
+using System.Globalization;
 using BotDsRpg.Data;
 using BotDsRpg.GameData;
 using BotDsRpg.GameData.Dungeons;
@@ -111,23 +112,180 @@ Check(DungeonRules.ForZoneRank(6) == DungeonKind.FirePattern && DungeonRules.For
     Check(FirePattern.Counter("F") == "W" && FirePattern.Counter("W") == "S" && FirePattern.Counter("S") == "F", "💧 apaga 🔥, 🪨 frena 💧, 🔥 derrite 🪨");
 }
 {
-    bool allOk = true; int traps = 0;
-    for (int seed = 0; seed < 40; seed++)
+    // ---- El laberinto de humo (v0.52.0, el dueño: «que sea libre, que se vean las paredes y los cuadrados que vienen, y que las trampas se las coman: si no, no tiene sentido») ----
+    // Paredes dibujadas entre las celdas, las 4 casillas de al lado a la vista (camino ⬜, pared ⬛; la brasa se ve ⬜ como cualquier camino), las 4 flechas siempre activas, SIN límite de pasos, SIN aviso
+    // de calor, de 5 de ancho por 7 de alto, y las brasas en la BOCA de las ramas que salen del camino corto: cada giro equivocado quema.
+    static string[][] GridOf(string render)
+    {
+        var allowed = new HashSet<string> { "⬛", "⬜", "🌫️", "🟩", "🔥", "🧍", "🚪" };
+        var rows = new List<string[]>();
+        foreach (var line in render.Split('\n'))
+        {
+            var items = new List<string>();
+            var it = StringInfo.GetTextElementEnumerator(line);
+            while (it.MoveNext()) items.Add((string)it.Current);
+            if (items.Count == (2 * SmokeMaze.Cols) + 1 && items.All(allowed.Contains)) rows.Add(items.ToArray());
+        }
+        return rows.ToArray();
+    }
+    int Opp(int d) => d switch { 0 => 1, 1 => 0, 2 => 3, _ => 2 };
+    int Step(int c, int d) => d switch { 0 => c - SmokeMaze.Cols, 1 => c + SmokeMaze.Cols, 2 => c - 1, _ => c + 1 };
+    bool Inside(int c, int d) => d switch { 0 => c / SmokeMaze.Cols > 0, 1 => c / SmokeMaze.Cols < SmokeMaze.Rows - 1, 2 => c % SmokeMaze.Cols > 0, _ => c % SmokeMaze.Cols < SmokeMaze.Cols - 1 };
+    string Btn(int d) => d switch { 0 => SmokeMaze.Up, 1 => SmokeMaze.Down, 2 => SmokeMaze.Left, _ => SmokeMaze.Right };
+    (int R, int C) CellAt(int c) => ((2 * (c / SmokeMaze.Cols)) + 1, (2 * (c % SmokeMaze.Cols)) + 1);
+    (int R, int C) EdgeAt(int c, int d) { var (r, k) = CellAt(c); return d switch { 0 => (r - 1, k), 1 => (r + 1, k), 2 => (r, k - 1), _ => (r, k + 1) }; }
+    (List<int> Dirs, int Reached) RouteTo(SmokeMaze mz, int target)
+    {
+        var prev = new Dictionary<int, (int From, int Dir)> { [0] = (-1, -1) }; var q = new Queue<int>(); q.Enqueue(0);
+        while (q.Count > 0) { int c = q.Dequeue(); for (int d = 0; d < 4; d++) { if (!Inside(c, d) || !mz.IsOpen(c, d)) continue; int n = Step(c, d); if (prev.ContainsKey(n)) continue; prev[n] = (c, d); q.Enqueue(n); } }
+        var dirs = new List<int>(); for (int c = target; prev[c].From != -1; c = prev[c].From) dirs.Insert(0, prev[c].Dir);
+        return (dirs, prev.Count);
+    }
+    // Las celdas del camino corto y las «bocas»: celdas fuera del camino pegadas a él por un paso abierto (la primera celda de cada rama que se desvía).
+    (HashSet<int> Route, List<int> Mouths) RouteAndMouths(SmokeMaze mz)
+    {
+        var route = new HashSet<int> { 0 }; int cur = 0;
+        foreach (int d in RouteTo(mz, mz.Exit).Dirs) { cur = Step(cur, d); route.Add(cur); }
+        var mouths = new List<int>();
+        foreach (int c in route) for (int d = 0; d < 4; d++) if (Inside(c, d) && mz.IsOpen(c, d) && !route.Contains(Step(c, d))) mouths.Add(Step(c, d));
+        return (route, mouths);
+    }
+
+    bool genOk = true; int routeTotal = 0, trapTotal = 0;
+    for (int seed = 0; seed < 200; seed++)
     {
         var mz = new SmokeMaze(new Random(seed));
-        var prev = new Dictionary<int, (int From, int Dir)>(); var q = new Queue<int>(); q.Enqueue(0); prev[0] = (-1, -1);
-        while (q.Count > 0) { int c = q.Dequeue(); for (int d = 0; d < 4; d++) { if (!mz.IsOpen(c, d)) continue; int n = d switch { 0 => c - 5, 1 => c + 5, 2 => c - 1, _ => c + 1 }; if (prev.ContainsKey(n)) continue; prev[n] = (c, d); q.Enqueue(n); } }
-        var dirs = new List<int>(); for (int c = mz.Exit; prev[c].From != -1; c = prev[c].From) dirs.Insert(0, prev[c].Dir);
+        var (dirs, reached) = RouteTo(mz, mz.Exit);
+        var (_, mouths) = RouteAndMouths(mz);
         DungeonStep st = DungeonStep.Ok; bool mistake = false;
-        foreach (int d in dirs) { st = mz.Apply(d switch { 0 => SmokeMaze.Up, 1 => SmokeMaze.Down, 2 => SmokeMaze.Left, _ => SmokeMaze.Right }); mistake |= st == DungeonStep.Mistake; }
-        traps += Enumerable.Range(0, 25).Count(mz.IsTrap);
-        allOk &= prev.Count == 25 && mz.Exit != 0 && dirs.Count == mz.ShortestPath && st == DungeonStep.Solved && !mistake && mz.StepLimit == mz.ShortestPath + SmokeMaze.StepSlack;
+        foreach (int d in dirs) { st = mz.Apply(Btn(d)); mistake |= st == DungeonStep.Mistake; }
+        var traps = Enumerable.Range(0, SmokeMaze.Cells).Where(mz.IsTrap).ToList();
+        routeTotal += dirs.Count; trapTotal += traps.Count;
+        genOk &= reached == SmokeMaze.Cells && mz.Exit != 0 && dirs.Count == mz.ShortestPath && mouths.Count >= SmokeMaze.MinBranches
+            && traps.Count == Math.Min(SmokeMaze.MaxTraps, mouths.Count) && traps.All(mouths.Contains)
+            && st == DungeonStep.Solved && !mistake && !mz.IsTrap(0) && !mz.IsTrap(mz.Exit);
     }
-    Check(allOk && traps > 40 && traps <= 40 * SmokeMaze.Traps, $"laberinto: en 40 sorteos llega a las 25 celdas, la salida nunca es la entrada y el camino corto la resuelve SIN pisar brasas (hasta 3 por laberinto, fuera del camino corto: {traps})");
-    var mz2 = new SmokeMaze(new Random(1));
-    int blocked = Enumerable.Range(0, 4).First(d => !mz2.CanMove(d));
-    Check(mz2.Apply(blocked switch { 0 => SmokeMaze.Up, 1 => SmokeMaze.Down, 2 => SmokeMaze.Left, _ => SmokeMaze.Right }) == DungeonStep.Ignored && mz2.Steps == 0 && mz2.Buttons()[blocked].Disabled,
-        "contra una pared no se camina (y esa flecha sale apagada)");
+    Check(genOk && SmokeMaze.Cols == 5 && SmokeMaze.Rows == 7, "laberinto de 5×7: en 200 sorteos llega a las 35 celdas, la salida nunca es la entrada, hay al menos 4 ramas que se desvían del camino corto, TODAS sus bocas con brasa (hasta 6) y el camino corto se resuelve SIN pisar brasas");
+    Check(routeTotal / 200.0 >= 20 && trapTotal / 200.0 >= 4, $"el camino corto es largo ({routeTotal / 200.0:0.0} pasos de media) y hay {trapTotal / 200.0:0.0} brasas por laberinto");
+
+    var mzf = new SmokeMaze(new Random(1));
+    Check(mzf.Buttons().Count == 4 && mzf.Buttons().All(b => !b.Disabled), "las 4 flechas siempre andan: ninguna sale apagada, haya pared o no");
+    var upAtStart = mzf.Apply(SmokeMaze.Up);
+    Check(upAtStart == DungeonStep.Ok && mzf.Position == 0 && mzf.Steps == 0 && mzf.Note is not null && mzf.Note.Contains("pared"), "chocar contra el borde no mueve, no gasta un paso, no quema y avisa que hay una pared");
+    int wallSeed = Enumerable.Range(0, 200).First(s => { var t = new SmokeMaze(new Random(s)); return !t.IsOpen(0, 1) || !t.IsOpen(0, 3); });
+    var mzw = new SmokeMaze(new Random(wallSeed)); int wd = !mzw.IsOpen(0, 1) ? 1 : 3;
+    var (er, ec) = EdgeAt(0, wd);
+    bool wallSeen = GridOf(mzw.Render())[er][ec] == "⬛";
+    bool wallBump = mzw.Apply(Btn(wd)) == DungeonStep.Ok && mzw.Position == 0 && mzw.Steps == 0 && GridOf(mzw.Render())[er][ec] == "⬛";
+    Check(wallSeen && wallBump, "una pared de al lado ya se ve dibujada (⬛) desde el principio, y apretar esa flecha no cuesta nada");
+
+    // La visión se verifica CAMINANDO el camino corto: ahí aparecen las paredes, los desvíos y las brasas de al lado.
+    bool visionOk = true, noLeak = true; int trapNeighbors = 0, wallsSeen = 0, forks = 0, rowsOk = 0;
+    for (int seed = 0; seed < 100; seed++)
+    {
+        var mz = new SmokeMaze(new Random(seed));
+        var (route, _) = RouteTo(mz, mz.Exit);
+        var walked = new HashSet<int> { 0 };
+        int pos = 0;
+        for (int i = 0; i < route.Count; i++)
+        {
+            string text = mz.Render(); var g = GridOf(text);
+            if (g.Length != (2 * SmokeMaze.Rows) + 1) { visionOk = false; break; }
+            rowsOk++;
+            var (pr, pc) = CellAt(pos);
+            visionOk &= g[pr][pc] == "🧍";
+            if (i == 0) { var (fr, fc) = CellAt(SmokeMaze.Cells - 1); visionOk &= g[fr][fc] == "🌫️"; }
+            int openSides = 0;
+            for (int d = 0; d < 4; d++)
+            {
+                if (!Inside(pos, d)) continue;
+                var (r, c) = EdgeAt(pos, d);
+                if (!mz.IsOpen(pos, d)) { visionOk &= g[r][c] == "⬛"; wallsSeen++; continue; }
+                openSides++;
+                int n = Step(pos, d); var (nr, nc) = CellAt(n);
+                if (walked.Contains(n)) { visionOk &= g[r][c] == "🟩"; continue; }
+                visionOk &= g[r][c] == "⬜" && g[nr][nc] == (n == mz.Exit ? "🚪" : "⬜");
+                if (mz.IsTrap(n)) trapNeighbors++;
+            }
+            if (openSides >= 3) forks++;
+            noLeak &= !text.Contains("🔸") && !text.Contains("🔥") && !text.Contains("🌡️");
+            mz.Apply(Btn(route[i])); pos = Step(pos, route[i]); walked.Add(pos);
+        }
+    }
+    Check(visionOk && wallsSeen > 500 && forks > 100, $"desde donde estás ves los 4 lados: camino abierto ⬜ (y la casilla de atrás), pared ⬛, lo recorrido 🟩; lo lejano sigue en humo 🌫️ ({wallsSeen} paredes y {forks} bifurcaciones vistas, grilla de 15 filas)");
+    Check(noLeak && trapNeighbors > 200, $"una brasa se ve ⬜ como cualquier camino hasta que la pisás (y no hay aviso de calor): nunca sale dibujada antes ({trapNeighbors} brasas en la boca de una rama en 100 sorteos)");
+
+    bool burnOk = true; int burnCases = 0;
+    for (int seed = 0; seed < 60; seed++)
+    {
+        var probe = new SmokeMaze(new Random(seed));
+        int target = -1; List<int> route = [];
+        foreach (int t in Enumerable.Range(0, SmokeMaze.Cells).Where(probe.IsTrap))
+        {
+            var (dirs, _) = RouteTo(probe, t); int cur = 0; bool clean = true;
+            for (int i = 0; i < dirs.Count - 1; i++) { cur = Step(cur, dirs[i]); if (probe.IsTrap(cur)) clean = false; }
+            if (clean) { target = t; route = dirs; break; }
+        }
+        if (target < 0) continue;
+        burnCases++;
+        var mz = new SmokeMaze(new Random(seed)); DungeonStep last = DungeonStep.Ok; bool early = false;
+        for (int i = 0; i < route.Count; i++) { last = mz.Apply(Btn(route[i])); if (i < route.Count - 1) early |= last != DungeonStep.Ok; }
+        bool burned = !early && last == DungeonStep.Mistake && mz.Position == target && mz.Note is not null && mz.Note.Contains("no lleva a la salida");
+        var back = mz.Apply(Btn(Opp(route[^1])));
+        var (tr, tc) = CellAt(target);
+        bool marked = back == DungeonStep.Ok && GridOf(mz.Render())[tr][tc] == "🔥";
+        bool once = mz.Apply(Btn(route[^1])) == DungeonStep.Ok;
+        burnOk &= burned && marked && once;
+    }
+    Check(burnOk && burnCases > 30, $"pisar una brasa quema UNA vez, avisa que esa rama no sale, queda marcada 🔥 al irte y volver a pisarla no quema de nuevo ({burnCases} casos)");
+
+    var mzn = new SmokeMaze(new Random(3));
+    int nd = Enumerable.Range(0, 4).First(d => Inside(0, d) && mzn.IsOpen(0, d) && !mzn.IsTrap(Step(0, d)));
+    bool noLimit = true;
+    for (int i = 0; i < 300; i++) noLimit &= mzn.Apply(Btn(i % 2 == 0 ? nd : Opp(nd))) == DungeonStep.Ok;
+    Check(noLimit && mzn.Steps == 300 && mzn.Position == 0 && !mzn.Solved && !mzn.Render().Contains("aguantabas"), "sin límite de pasos: 300 pasos de ida y vuelta no cuestan nada");
+    Check(mzn.Apply("zz") == DungeonStep.Ignored, "una acción que no es una flecha no juega");
+
+    // El equilibrio: alguien que explora AL AZAR entre los caminos blancos (solo ve lo que ve el jugador: los pasos abiertos) y vuelve atrás cuando se quema debe comerse unas 2 brasas por corrida
+    // (~20 % de la vida), casi nunca 6, en unos 30 pasos. Si esto se sale de rango, las brasas dejaron de picar (o duelen demasiado): revisar Rows, MinBranches y MaxTraps.
+    {
+        const int Mazes = 400; double burnsTotal = 0, movesTotal = 0; int heavy = 0, zero = 0; var pick = new Random(2024);
+        for (int seed = 0; seed < Mazes; seed++)
+        {
+            var mz = new SmokeMaze(new Random(seed));
+            var visited = new HashSet<int> { 0 }; var stack = new Stack<int>(); stack.Push(0);
+            int pos = 0, burns = 0, moves = 0; bool turnBack = false;
+            while (!mz.Solved && moves < 2000)
+            {
+                var options = Enumerable.Range(0, 4).Where(d => Inside(pos, d) && mz.IsOpen(pos, d) && !visited.Contains(Step(pos, d))).ToList();
+                if (options.Count > 0 && !turnBack)
+                {
+                    int d = options[pick.Next(options.Count)];
+                    var st = mz.Apply(Btn(d)); moves++; pos = Step(pos, d); visited.Add(pos); stack.Push(pos);
+                    if (st == DungeonStep.Mistake) { burns++; turnBack = true; }
+                }
+                else
+                {
+                    turnBack = false; stack.Pop(); int back = stack.Peek();
+                    int d = Enumerable.Range(0, 4).First(x => Inside(pos, x) && Step(pos, x) == back && mz.IsOpen(pos, x));
+                    mz.Apply(Btn(d)); moves++; pos = back;
+                }
+            }
+            burnsTotal += burns; movesTotal += moves; if (burns >= 6) heavy++; if (burns == 0) zero++;
+        }
+        double meanBurns = burnsTotal / Mazes, meanMoves = movesTotal / Mazes;
+        Check(meanBurns is >= 1.7 and <= 2.6 && heavy * 100.0 / Mazes < 1.5 && zero * 100.0 / Mazes < 12 && meanMoves is >= 22 and <= 40,
+            $"equilibrio: quien explora al azar se come {meanBurns:0.00} brasas por corrida (pide 1,7-2,6), 6 o más en {heavy * 100.0 / Mazes:0.0} % (pide <1,5 %), ninguna en {zero * 100.0 / Mazes:0} % (pide <12 %) y camina {meanMoves:0} pasos (pide 22-40)");
+    }
+
+    using (Loc.Use("en"))
+    {
+        var mze = new SmokeMaze(new Random(1));
+        mze.Apply(SmokeMaze.Up);
+        string textEn = mze.Render() + "\n" + mze.Note + "\n" + DungeonRules.HowTo(DungeonKind.SmokeMaze);
+        var (okEn, foundEn) = LeakCheck.NoSpanish(textEn, []);
+        Check(okEn && textEn.Contains("Steps:") && textEn.Contains("wall"), $"en inglés: el laberinto, el aviso de la pared y la ayuda no dejan nada en español ({foundEn})");
+    }
 }
 {
     bool Solvable(Embers e)
