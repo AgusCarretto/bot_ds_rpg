@@ -7,49 +7,23 @@ fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo
 
 ---
 
-## 2026-11-10 — El laberinto de humo, renovado (v0.52.0)
+## 2026-11-09 — Laberinto libre, responder en vez de mencionar y top 50 (v0.51.1 a v0.52.0)
 
-**Título:** El laberinto de humo (Zona 7) ahora es libre y más largo
-
-**Texto:**
-
-🧭 **Movete para donde quieras.** Las 4 flechas siempre andan: si apretás una contra una pared no pasa nada y no te cuesta nada, solo te avisa.
-
-🧱 **Las paredes se ven.** El mapa dibuja las paredes (⬛) entre las casillas: ves los 4 lados de donde estás parado, y lo que ya recorriste queda marcado en verde 🟩.
-
-🔥 **Las brasas se esconden en los desvíos** y se ven como un camino más. Si te quemás, esa rama no lleva a la salida: volvé y probá por el otro lado. Ya no hay aviso de calor.
-
-📏 **Más largo y sin límite de pasos.** El laberinto es más grande y no hay tope de pasos: lo único que te saca vida son las brasas.
-
----
-
-## 2026-11-09 — Responder en vez de mencionar y el cd de otros (v0.51.3)
-
-**Título:** Respondé un mensaje en vez de mencionar, y mirá los cooldowns de otros
+**Título:** ¡Laberinto libre, responder en vez de mencionar y ranking top 50!
 
 **Texto:**
 
-💬 **Responder = mencionar.** Respondé el mensaje de alguien y escribí el comando sin nombrarlo: **aa p** te muestra SU perfil, **aa dragon breed** le arma la cría con él. Funciona con **aa p**, **aa i**, **aa history**, **aa duels**, **aa fight**, **aa give**, **aa trade**, **aa invitedby**, **aa boss** y **aa cd**. Si ya mencionaste a alguien, manda lo que escribiste.
+💬 **Responder = mencionar.** Respondé el mensaje de alguien y escribí el comando sin nombrarlo: **aa p** te muestra SU perfil, **aa dragon breed** le arma la cría con él. Funciona con **aa p**, **aa i**, **aa history**, **aa duels**, **aa fight**, **aa give**, **aa trade**, **aa invitedby**, **aa boss** y **aa cd**. Si ya mencionaste a alguien, manda lo que escribiste. Y ahora los nombres tienen que ser **exactos** (o mencionar, o responder el mensaje): antes, escribir solo el principio de un nombre agarraba a la primera persona que empezaba así.
 
-⏱️ **El cd de otro jugador:** **/cd jugador:@alguien**, **aa cd @alguien**, o respondiendo su mensaje con **aa cd**. Lo ves con las líneas que vos elegiste en /config.
+⏱️ **El cd de otro jugador:** **/cd jugador:@alguien**, **aa cd @alguien**, o respondiendo su mensaje con **aa cd**. Lo ves con las líneas que elegiste en /config.
 
-🛡️ **Nombres exactos:** antes, escribir solo el principio de un nombre (por ejemplo **aa dragon breed po**) agarraba a la primera persona que empezaba así. Ahora hay que mencionarlo, escribir el nombre completo (entre comillas si tiene espacios) o responder su mensaje. Así un comando como **aa give** nunca le cae a quien no era.
-
----
-
-## 2026-11-07 — Ranking por páginas y atajos (v0.51.1 y v0.51.2)
-
-**Título:** El ranking ahora muestra el top 50
-
-**Texto:**
+🧩 **El laberinto de humo (Zona 7), renovado:** ahora te movés para donde quieras (las 4 flechas siempre andan y chocar contra una pared no cuesta nada), el mapa dibuja las paredes y ves los 4 lados de donde estás parado, y lo que recorriste queda en verde 🟩. Es más largo y no tiene límite de pasos. Ojo con las brasas: se esconden en los desvíos y se ven como un camino más; si te quemás, esa rama no lleva a la salida.
 
 🏆 **/leaderboard** muestra ahora los **50 primeros**, de a 10 por página: pasá de página con los botones ◀ ▶, o directo con **/leaderboard pagina:3** o **aa lb 3**. Abajo, en chiquito, cuántos aventureros hay en total.
 
-🔥 En **/fuegonuevo** quedó aclarado cómo funcionan los porcentajes: se aplican sobre lo que ya tenés, no se suman. Un +30 % sobre un 6 % de drop te deja en 7,8 %, no en 36 %.
-
 ⚡ **Atajos para lo avanzado**: **aa ch a**, **aa m a** y **aa f a** hacen la versión avanzada de talar, minar y pescar.
 
-🥚 **/open** ya no te ofrece huevos de mascotas que ya abriste (esos son de repuesto, para evolucionar, y los ves contados en **/pet**), y en el **inventario** los drops de monstruo van agrupados por zona.
+🥚 **/open** ya no te ofrece huevos de mascotas que ya abriste (esos son de repuesto, para evolucionar, y los ves contados en **/pet**), en el **inventario** los drops de monstruo van agrupados por zona, y **/fuegonuevo** aclara que los porcentajes se aplican sobre lo que ya tenés, no se suman: un +30 % sobre un 6 % de drop te deja en 7,8 %, no en 36 %.
 
 ---
 
