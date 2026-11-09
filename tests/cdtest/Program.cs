@@ -202,6 +202,64 @@ bool built = true; try { ActivatorUtilities.CreateInstance(sp, typeof(CooldownMo
 Check(built, "los módulos se construyen con el DI real");
 Check(FightLock.IsAllowed("cd"), "/cd se puede mirar en plena pelea (solo mira); cambiar el orden con «aa cd orden» también (el comando es el mismo)");
 
+// v0.51.3 (el dueño: «responder el mensaje de alguien y poner aa dragon breed → ya activa el breed con él; así con cualquier cosa; poder ver el cd de otra persona; y "aa dragon breed po" activa el breed con Polar Frost»).
+Console.WriteLine("\n== 7. El cd de otro jugador, el nombre exacto y «responder = mencionar» ==");
+var fantasmaId = 999000000000098496UL;
+var polar = FakeProxy.Make<IUser>(new() { ["Id"] = U2, ["Username"] = "Polar Frost" });
+var robot = FakeProxy.Make<IUser>(new() { ["Id"] = 999000000000098497UL, ["Username"] = "Robot", ["IsBot"] = true });
+var fantasma = FakeProxy.Make<IUser>(new() { ["Id"] = fantasmaId, ["Username"] = "Fantasma" });
+await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)fantasmaId });
+var cdOther = await CooldownModule.BuildOtherStatusAsync(cooldowns, users, polar);
+Check(cdOther.Message is null && cdOther.Embed is { } otherEmbed && otherEmbed.Title == "⏱️ Cooldowns de Polar Frost" && otherEmbed.Description.Split('\n')[0].Contains("Cazar") && otherEmbed.Footer?.Text == "Con las líneas que elegiste ver en /config.",
+    "el /cd de otro jugador tiene su nombre en el título, las mismas líneas y un pie que habla de TUS líneas");
+Check((await Cd(U1)).Title == "⏱️ Tus cooldowns", "el propio sigue diciendo «Tus cooldowns»");
+var cdOtherHidden = await CooldownModule.BuildOtherStatusAsync(cooldowns, users, polar, layout: "-hunt");
+Check(cdOtherHidden.Embed is { } hiddenEmbed && !hiddenEmbed.Description.Contains("Cazar") && hiddenEmbed.Description.Contains("Viajar"), "el que mira ve SUS líneas elegidas: con «cazar» oculta no sale en el cd del otro");
+var cdGhost = await CooldownModule.BuildOtherStatusAsync(cooldowns, users, fantasma);
+Check(cdGhost.Embed is null && cdGhost.Message!.Contains("todavía no tiene personaje") && await users.GetByDiscordIdAsync(fantasmaId) is null, "un jugador sin personaje lo dice y NO se le crea una cuenta");
+var cdBot = await CooldownModule.BuildOtherStatusAsync(cooldowns, users, robot);
+Check(cdBot.Embed is null && cdBot.Message!.Contains("es un bot"), "un bot no tiene cooldowns");
+using (Loc.Use("en"))
+{
+    var cdOtherEn = await CooldownModule.BuildOtherStatusAsync(cooldowns, users, polar);
+    Check(cdOtherEn.Embed is { } enEmbed && enEmbed.Title == "⏱️ Polar Frost's cooldowns" && enEmbed.Footer?.Text == "With the lines you chose to see in /config.", "en inglés: «Polar Frost's cooldowns» y su pie");
+}
+
+TimeSpan twoHours = TimeSpan.FromHours(2);
+Check(CooldownModule.WorldBossLine(false, twoHours, true).Contains("todavía no se anotó") && !CooldownModule.WorldBossLine(false, twoHours, true).Contains("/miniboss") && CooldownModule.ArenaLine(false, twoHours, true).Contains("todavía no se anotó") && !CooldownModule.ArenaLine(false, twoHours, true).Contains("/arena join"),
+    "mirando a otro, el jefe mundial y la Arena hablan de ÉL («todavía no se anotó») y no le dan la orden de anotarse");
+Check(CooldownModule.WorldBossLine(false, twoHours).Contains("/miniboss") && CooldownModule.ArenaLine(false, twoHours).Contains("/arena join") && CooldownModule.WorldBossLine(true, twoHours, true).Contains("anotado ✅"), "para uno mismo las líneas son las de siempre (y anotado se dice igual)");
+
+string[] layoutWords = ["orden", "order", "mover", "move", "posicion", "posición", "position", "ocultar", "hide", "sacar", "esconder", "mostrar", "show", "ver", "poner", "reset", "restablecer", "reiniciar", "default", "normal"];
+var layoutDrift = new List<string>();
+foreach (string w in layoutWords)
+{
+    var answer = await CooldownModule.ExecuteLayoutAsync(new FailingSetService(), U1, w, "");
+    if (!CooldownModule.IsLayoutWord(w) || answer is null || answer.StartsWith("No entendí")) layoutDrift.Add(w);
+}
+
+Check(layoutDrift.Count == 0 && !CooldownModule.IsLayoutWord("polar") && !CooldownModule.IsLayoutWord("<@123>") && !CooldownModule.IsLayoutWord(""), $"las palabras de «aa cd» que la lista conoce son exactamente las que el comando entiende ({string.Join(", ", layoutDrift)})");
+
+// El nombre tiene que ser EXACTO (usuario, apodo del servidor o nombre para mostrar): «po» ya no resuelve a «Polar Frost».
+var polarGuild = FakeProxy.Make<IGuildUser>(new() { ["Username"] = "polarfrost", ["Nickname"] = "Polar Frost", ["GlobalName"] = "Polar" });
+Check(GuildUserTypeReader.IsExactName(polarGuild, "polarfrost") && GuildUserTypeReader.IsExactName(polarGuild, "POLAR FROST") && GuildUserTypeReader.IsExactName(polarGuild, "polar")
+    && !GuildUserTypeReader.IsExactName(polarGuild, "po") && !GuildUserTypeReader.IsExactName(polarGuild, "Polar Fr") && !GuildUserTypeReader.IsExactName(polarGuild, "frost"),
+    "por nombre solo vale el exacto (usuario, apodo o nombre para mostrar, sin importar mayúsculas): «po», «Polar Fr» y «frost» no resuelven a nadie");
+Check(GuildUserTypeReader.NotFoundMessage().Contains("nombre exacto") && GuildUserTypeReader.NotFoundMessage().Contains("respondé a su mensaje"), "cuando no encuentra a nadie, el aviso dice cómo escribirlo bien");
+
+// Responder el mensaje de alguien = mencionarlo: el texto del comando con la mención puesta (o null si no corresponde).
+IReadOnlyList<CommandMatch> Found(string input) => texts.Search(input) is { IsSuccess: true } s ? s.Commands : [];
+string? Rw(string input) => ReplyUserInjection.Rewrite(input, Found(input), 777UL);
+Check(Rw("p") == "p <@777>" && Rw("profile") == "profile <@777>" && Rw("Dragon Breed") == "Dragon Breed <@777>" && Rw("dragon breed") == "dragon breed <@777>" && Rw("fight") == "fight <@777>" && Rw("boss") == "boss <@777>",
+    "respondiendo, «aa p», «aa dragon breed», «aa fight» y «aa boss» sin nadie le ponen la mención del que respondiste");
+Check(Rw("p polar") is null && Rw("p <@5>") is null && Rw("dragon breed po") is null && Rw("boss <@5>") is null, "si ya escribiste a alguien (mención o nombre) NO se toca: manda lo tuyo");
+Check(Rw("give 5k") == "give <@777> 5k" && Rw("give polar 5k") is null && Rw("give <@5> 5k") is null, "«aa give 5k» respondiendo: la mención va primero y el monto queda («give <@777> 5k»); con jugador escrito no se toca");
+Check(Rw("trade \"Madera de Roble\" Hierro") == "trade <@777> \"Madera de Roble\" Hierro" && Rw("trade a b c") is null && Rw("trade <@5> a b") is null, "«aa trade» respondiendo: la mención va primero (las comillas cuentan como UN argumento)");
+Check(Rw("cd") == "cd <@777>" && Rw("cd orden cazar 1") is null && Rw("cd orden") is null && Rw("cd reset") is null, "«aa cd» respondiendo muestra el del otro; con «orden», «reset»... sigue siendo lo de siempre");
+Check(Rw("hunt") is null && Rw("daily") is null && ReplyUserInjection.Rewrite("p", [], 777UL) is null, "un comando que no recibe jugadores no se toca (aa hunt, aa daily) y sin comando encontrado tampoco");
+Check(ReplyUserInjection.CountArguments("") == 0 && ReplyUserInjection.CountArguments("5k") == 1 && ReplyUserInjection.CountArguments("a b") == 2 && ReplyUserInjection.CountArguments("\"Cuero Curtido\" 5") == 2 && ReplyUserInjection.CountArguments("“a b” c") == 2 && ReplyUserInjection.CountArguments("«a b»") == 1,
+    "los argumentos se cuentan como Discord.Net: con comillas (también las curvas del celular) es uno solo");
+
 await Clean();
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;

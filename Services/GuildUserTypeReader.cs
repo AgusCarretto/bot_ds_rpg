@@ -1,3 +1,4 @@
+using BotDsRpg.GameData;
 using Discord;
 using Discord.Commands;
 
@@ -20,51 +21,67 @@ namespace BotDsRpg.Services;
 // directo) no siempre toma efecto — overridear la interfaz base sí funciona siempre. Como todo lo
 // que consumimos de este resultado es .Id/.Username (y un cast opcional a IGuildUser para el
 // apodo, ver GameModule.GetDisplayName), alcanza con IUser.
+//
+// Por NOMBRE solo vale el nombre EXACTO (v0.51.3, el dueño: «aa dragon breed po ya me activa el breed con Polar Frost»): hasta la v0.51.2 se tomaba el PRIMER jugador cuyo nombre arrancaba con
+// lo escrito, y con comandos que mueven plata (aa give po 5k) o mandan invitaciones, un typo o una palabra suelta le caía a cualquiera. Ahora un nombre parcial no resuelve a nadie y el aviso dice
+// cómo hacerlo bien (mención, nombre completo entre comillas, o responder su mensaje).
 public sealed class GuildUserTypeReader : TypeReader
 {
     public override async Task<TypeReaderResult> ReadAsync(ICommandContext context, string input, IServiceProvider services)
     {
         if (context.Guild is null)
         {
-            return TypeReaderResult.FromError(CommandError.ObjectNotFound, "Este comando necesita ejecutarse en un canal de servidor.");
+            return TypeReaderResult.FromError(CommandError.ObjectNotFound, Loc.T("Este comando necesita ejecutarse en un canal de servidor."));
+        }
+
+        var user = await ResolveAsync(context.Guild, input);
+        return user is not null
+            ? TypeReaderResult.FromSuccess(user)
+            : TypeReaderResult.FromError(CommandError.ObjectNotFound, NotFoundMessage());
+    }
+
+    // El aviso cuando no se encontró a nadie: dice cómo escribirlo bien (el dueño no quiere que una palabra suelta le caiga a un desconocido).
+    public static string NotFoundMessage() =>
+        Loc.T("No encontré a ningún jugador con ese nombre exacto. Mencionalo con @, escribí su nombre completo (entre comillas si tiene espacios) o respondé a su mensaje.");
+
+    // Mención «<@id>», ID crudo o nombre EXACTO (usuario, apodo del servidor o nombre para mostrar; sin importar mayúsculas). null si no hay nadie. Sirve también a los comandos que
+    // leen a quién mirar de un texto libre (aa cd @alguien).
+    public static async Task<IGuildUser?> ResolveAsync(IGuild guild, string input)
+    {
+        input = (input ?? string.Empty).Trim();
+        if (input.Length == 0)
+        {
+            return null;
         }
 
         // Por mención "<@id>" / "<@!id>"
         if (MentionUtils.TryParseUser(input, out ulong id))
         {
-            var mentioned = await context.Guild.GetUserAsync(id, CacheMode.AllowDownload);
+            var mentioned = await guild.GetUserAsync(id, CacheMode.AllowDownload);
             if (mentioned is not null)
             {
-                return TypeReaderResult.FromSuccess(mentioned);
+                return mentioned;
             }
         }
 
         // Por ID crudo
         if (ulong.TryParse(input, out id))
         {
-            var byId = await context.Guild.GetUserAsync(id, CacheMode.AllowDownload);
+            var byId = await guild.GetUserAsync(id, CacheMode.AllowDownload);
             if (byId is not null)
             {
-                return TypeReaderResult.FromSuccess(byId);
+                return byId;
             }
         }
 
-        // Por nombre de usuario o apodo (prefijo, vía REST — funciona aunque no esté en caché).
-        var matches = await context.Guild.SearchUsersAsync(input, limit: 5, mode: CacheMode.AllowDownload);
-        var exact = matches.FirstOrDefault(u =>
-            string.Equals(u.Username, input, StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(u.Nickname, input, StringComparison.OrdinalIgnoreCase));
-
-        if (exact is not null)
-        {
-            return TypeReaderResult.FromSuccess(exact);
-        }
-
-        if (matches.Count > 0)
-        {
-            return TypeReaderResult.FromSuccess(matches.First());
-        }
-
-        return TypeReaderResult.FromError(CommandError.ObjectNotFound, "No encontré a ningún jugador con esa mención/nombre en este server.");
+        // Por nombre: la búsqueda de Discord devuelve los que ARRANCAN con lo escrito (vía REST, funciona aunque no esté en caché), pero solo se acepta el que se llama EXACTAMENTE así.
+        var matches = await guild.SearchUsersAsync(input, limit: 10, mode: CacheMode.AllowDownload);
+        return matches.FirstOrDefault(u => IsExactName(u, input));
     }
+
+    // Pura (se prueba sin Discord): el nombre de usuario, el apodo del servidor o el nombre para mostrar es EXACTAMENTE lo escrito, sin importar mayúsculas.
+    public static bool IsExactName(IGuildUser user, string input) =>
+        string.Equals(user.Username, input, StringComparison.OrdinalIgnoreCase)
+        || string.Equals(user.Nickname, input, StringComparison.OrdinalIgnoreCase)
+        || string.Equals(user.GlobalName, input, StringComparison.OrdinalIgnoreCase);
 }

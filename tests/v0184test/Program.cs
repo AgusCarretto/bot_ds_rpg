@@ -172,7 +172,8 @@ var interactions = new InteractionService(client.Rest);
 var sp = (IServiceProvider)typeof(BoxModule).Assembly.GetType("ServiceProviderBuilder")!.GetMethod("BuildServiceProvider", AnyS)!.Invoke(null, [client, interactions, cfg])!;
 await interactions.AddModulesAsync(typeof(BoxModule).Assembly, sp);
 var cdCmd = interactions.SlashCommands.Single(c => c.Name == "cd");
-Check(cdCmd.Description.Length is >= 1 and <= 100 && cdCmd.Description.Contains("mascotas") && cdCmd.Parameters.Count == 0, $"/cd sigue siendo un comando sin parámetros y su descripción (que ahora nombra las mascotas) entra en Discord ({cdCmd.Description.Length} caracteres)");
+Check(cdCmd.Description.Length is >= 1 and <= 100 && cdCmd.Description.Contains("mascotas") && cdCmd.Parameters.Count == 1 && cdCmd.Parameters[0].Name == "jugador" && !cdCmd.Parameters[0].IsRequired && cdCmd.Parameters[0].Description.Length is >= 1 and <= 100,
+    $"/cd tiene UN parámetro opcional, «jugador» (v0.51.3: ver el cd de otro; antes no tenía ninguno) y su descripción (que nombra las mascotas) entra en Discord ({cdCmd.Description.Length} caracteres)");
 int built = 0; var buildFails = new List<string>();
 foreach (var t in typeof(BoxModule).Assembly.GetTypes().Where(t => !t.IsAbstract && t.IsClass && (t.Name.EndsWith("Module") || typeof(IInteractionModuleBase).IsAssignableFrom(t) || typeof(Discord.Commands.IModuleBase).IsAssignableFrom(t))))
 {

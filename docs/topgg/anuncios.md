@@ -7,6 +7,20 @@ fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo
 
 ---
 
+## 2026-11-09 — Responder en vez de mencionar y el cd de otros (v0.51.3)
+
+**Título:** Respondé un mensaje en vez de mencionar, y mirá los cooldowns de otros
+
+**Texto:**
+
+💬 **Responder = mencionar.** Respondé el mensaje de alguien y escribí el comando sin nombrarlo: **aa p** te muestra SU perfil, **aa dragon breed** le arma la cría con él. Funciona con **aa p**, **aa i**, **aa history**, **aa duels**, **aa fight**, **aa give**, **aa trade**, **aa invitedby**, **aa boss** y **aa cd**. Si ya mencionaste a alguien, manda lo que escribiste.
+
+⏱️ **El cd de otro jugador:** **/cd jugador:@alguien**, **aa cd @alguien**, o respondiendo su mensaje con **aa cd**. Lo ves con las líneas que vos elegiste en /config.
+
+🛡️ **Nombres exactos:** antes, escribir solo el principio de un nombre (por ejemplo **aa dragon breed po**) agarraba a la primera persona que empezaba así. Ahora hay que mencionarlo, escribir el nombre completo (entre comillas si tiene espacios) o responder su mensaje. Así un comando como **aa give** nunca le cae a quien no era.
+
+---
+
 ## 2026-11-07 — Ranking por páginas y atajos (v0.51.1 y v0.51.2)
 
 **Título:** El ranking ahora muestra el top 50
