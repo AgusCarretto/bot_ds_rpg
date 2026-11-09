@@ -11,13 +11,24 @@ public class CooldownModule(
     : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("cd", "Mirá tus cooldowns: cazar, viajar, talar, minar, jefe, cajas, mascotas, diario y la Arena de hoy.")]
-    public async Task HandleCooldownsAsync()
+    public async Task HandleCooldownsAsync(
+        [Summary("jugador", "Opcional: de qué jugador del server querés ver los cooldowns.")] Discord.WebSocket.SocketGuildUser? targetUser = null)
     {
         await DeferAsync(ephemeral: true);
 
         try
         {
-            var embed = await BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id, arenaService, bonusService, voteClient.Enabled, petRepository, dragonRepository, expeditionRepository, worldBossService, (await settings.GetAsync(Context.User.Id)).CdLayout);
+            string? layout = (await settings.GetAsync(Context.User.Id)).CdLayout;
+
+            // Los de OTRO jugador (v0.51.3): con las líneas que cada uno eligió ver en /config, las del que mira.
+            if (targetUser is not null && targetUser.Id != Context.User.Id)
+            {
+                var other = await BuildOtherStatusAsync(cooldownRepository, userRepository, targetUser, arenaService, bonusService, voteClient.Enabled, petRepository, dragonRepository, expeditionRepository, worldBossService, layout);
+                await FollowupAsync(other.Message, embed: other.Embed, ephemeral: true);
+                return;
+            }
+
+            var embed = await BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id, arenaService, bonusService, voteClient.Enabled, petRepository, dragonRepository, expeditionRepository, worldBossService, layout);
             await FollowupAsync(embed: embed, ephemeral: true);
         }
         catch (Exception ex)
@@ -36,13 +47,19 @@ public class CooldownModule(
     // voteEnabled (v0.18.0): con el voto habilitado (hay token de top.gg), la lista suma la línea de "Votar"; mientras no se pueda votar no se muestra.
     // petRepository (v0.18.4, sugerencia de Adiofh en #sugerencias): con él, la línea de "Mascotas" dice si ya se puede alimentar o cuánto falta (con la espera propia del jugador, la del Buen Pienso);
     // sin mascotas que puedan subir de nivel la línea no sale, y si falla leerlas tampoco: /cd nunca se rompe por esto.
+    // targetName (v0.51.3): el nombre de OTRO jugador cuyos cooldowns se miran («aa cd @alguien», «/cd jugador:»). Con él el título lo nombra, el jugador NO se crea si no existe (quien llama ya lo comprobó) y las líneas
+    // que le hablan al dueño («todavía no te anotaste») pasan a hablar de él. Sin él es /cd de siempre.
     public static async Task<Embed> BuildStatusEmbedAsync(
         ICooldownRepository cooldownRepository, IUserRepository userRepository, ulong discordId, IArenaService? arenaService = null, IPlayerBonusService? bonusService = null, bool voteEnabled = false,
-        IPetRepository? petRepository = null, IDragonRepository? dragonRepository = null, IPetExpeditionRepository? expeditionRepository = null, IWorldBossService? worldBossService = null, string? layout = null)
+        IPetRepository? petRepository = null, IDragonRepository? dragonRepository = null, IPetExpeditionRepository? expeditionRepository = null, IWorldBossService? worldBossService = null, string? layout = null,
+        string? targetName = null)
     {
         // Cada línea lleva su clave (CooldownLayout.Known) para que el jugador pueda ocultarla o cambiarla de lugar (v0.51.0); sin nada guardado salen todas, en el orden de siempre.
         var lines = new List<(string Key, string Text)>();
-        var player = await userRepository.GetOrCreateUserAsync(discordId);
+        bool other = targetName is not null;
+        var player = other
+            ? await userRepository.GetByDiscordIdAsync(discordId) ?? throw new InvalidOperationException("El jugador no tiene personaje.")
+            : await userRepository.GetOrCreateUserAsync(discordId);
 
         async Task AddLineAsync(CooldownDefinition definition)
         {
@@ -114,12 +131,12 @@ public class CooldownModule(
 
         // Abajo de todo: el jefe, el jefe mundial (v0.46.0: su propio límite, uno por día, no gasta el cooldown del jefe) y la Arena.
         await AddLineAsync(CooldownCatalog.Boss);
-        if (await TryBuildWorldBossLineAsync(worldBossService, discordId) is { } worldBossLine)
+        if (await TryBuildWorldBossLineAsync(worldBossService, discordId, other) is { } worldBossLine)
         {
             lines.Add((CooldownLayout.WorldBossKey, worldBossLine));
         }
 
-        if (await TryBuildArenaLineAsync(arenaService, discordId) is { } arenaLine)
+        if (await TryBuildArenaLineAsync(arenaService, discordId, other) is { } arenaLine)
         {
             lines.Add((CooldownLayout.ArenaKey, arenaLine));
         }
@@ -127,12 +144,40 @@ public class CooldownModule(
         // Lo que el jugador eligió ver y en qué orden (v0.51.0, /config y «aa cd orden»). Si ocultó todo, la pantalla lo dice en vez de quedar vacía.
         var shown = CooldownLayout.Apply(lines, layout);
         return new EmbedBuilder()
-            .WithTitle(Loc.T("⏱️ Tus cooldowns"))
+            .WithTitle(other ? Loc.F($"⏱️ Cooldowns de {targetName}") : Loc.T("⏱️ Tus cooldowns"))
             .WithColor(Color.Teal)
             .WithDescription(shown.Count == 0 ? Loc.T("Tenés todas las líneas ocultas. Mostralas en **/config** o con `aa cd mostrar todo`.") : string.Join('\n', shown))
-            .WithFooter(Loc.T("Elegí qué líneas ver y en qué orden en /config (o con `aa cd orden`)."))
+            .WithFooter(other ? Loc.T("Con las líneas que elegiste ver en /config.") : Loc.T("Elegí qué líneas ver y en qué orden en /config (o con `aa cd orden`)."))
             .Build();
     }
+
+    // Los cooldowns de OTRO jugador (v0.51.3, el dueño: «poder ver el cd de otra persona»): nunca le crea una cuenta (si no tiene personaje lo dice) y los bots no tienen. Con el mensaje o con la pantalla, uno de los dos.
+    public static async Task<(string? Message, Embed? Embed)> BuildOtherStatusAsync(
+        ICooldownRepository cooldownRepository, IUserRepository userRepository, IUser target, IArenaService? arenaService = null, IPlayerBonusService? bonusService = null, bool voteEnabled = false,
+        IPetRepository? petRepository = null, IDragonRepository? dragonRepository = null, IPetExpeditionRepository? expeditionRepository = null, IWorldBossService? worldBossService = null, string? layout = null)
+    {
+        string name = GameModule.GetDisplayName(target);
+        if (target.IsBot)
+        {
+            return (Loc.F($"**{name}** es un bot: no tiene cooldowns."), null);
+        }
+
+        if (await userRepository.GetByDiscordIdAsync(target.Id) is null)
+        {
+            return (Loc.F($"**{name}** todavía no tiene personaje."), null);
+        }
+
+        var embed = await BuildStatusEmbedAsync(cooldownRepository, userRepository, target.Id, arenaService, bonusService, voteEnabled, petRepository, dragonRepository, expeditionRepository, worldBossService, layout, name);
+        return (null, embed);
+    }
+
+    // Las palabras que «aa cd» entiende para elegir qué líneas ver (ExecuteLayoutAsync): si lo que se escribió después de «aa cd» no es una de estas, se lee como un jugador («aa cd @alguien»).
+    public static bool IsLayoutWord(string? word) =>
+        (word ?? string.Empty).Trim().ToLowerInvariant() is
+            "orden" or "order" or "mover" or "move" or "posicion" or "posición" or "position"
+            or "ocultar" or "hide" or "sacar" or "esconder"
+            or "mostrar" or "show" or "ver" or "poner"
+            or "reset" or "restablecer" or "reiniciar" or "default" or "normal";
 
     // Lo que se escribe después de «aa cd» (v0.51.0): «orden <línea> <puesto>» (1 = primera; cuenta solo las que ves), «ocultar <línea>», «mostrar <línea|todo>» y «reset». Devuelve el aviso de lo que se hizo (o qué no
     // se entendió) y null si no se escribió nada (entonces solo se muestra /cd). Nunca tira: si la base falla, lo dice.
@@ -328,7 +373,7 @@ public class CooldownModule(
         return $"🐾 **{Loc.T("Mascotas")}**: " + Loc.F($"{TimeFormat.Remaining(next)} restantes") + (growing.Count > 1 ? Loc.T(" (la primera)") : string.Empty);
     }
 
-    private static async Task<string?> TryBuildWorldBossLineAsync(IWorldBossService? worldBossService, ulong discordId)
+    private static async Task<string?> TryBuildWorldBossLineAsync(IWorldBossService? worldBossService, ulong discordId, bool other = false)
     {
         if (worldBossService is null)
         {
@@ -338,7 +383,7 @@ public class CooldownModule(
         try
         {
             var listing = await worldBossService.ListAsync(DateTime.UtcNow);
-            return WorldBossLine(listing.Entries.Any(e => e.DiscordId == discordId), listing.UntilPlay);
+            return WorldBossLine(listing.Entries.Any(e => e.DiscordId == discordId), listing.UntilPlay, other);
         }
         catch (Exception ex)
         {
@@ -348,12 +393,15 @@ public class CooldownModule(
     }
 
     // La línea del jefe mundial: anotado ✅ con lo que falta para la pelea de las 00:00, o el aviso ⚠️ de que todavía no te anotaste (como la Arena). Pública y pura para probarla sin base.
-    public static string WorldBossLine(bool joined, TimeSpan untilPlay) =>
+    // other (v0.51.3): al mirar a OTRO jugador la línea habla de él («todavía no se anotó») y no le da la orden de anotarse.
+    public static string WorldBossLine(bool joined, TimeSpan untilPlay, bool other = false) =>
         joined
             ? Loc.F($"🌍 **Jefe mundial**: anotado ✅ — se pelea en {TimeFormat.Remaining(untilPlay)}")
-            : Loc.F($"🌍 **Jefe mundial**: **¡todavía no te anotaste!** ⚠️ Se pelea en {TimeFormat.Remaining(untilPlay)}: **/miniboss**");
+            : other
+                ? Loc.F($"🌍 **Jefe mundial**: **todavía no se anotó** ⚠️ Se pelea en {TimeFormat.Remaining(untilPlay)}")
+                : Loc.F($"🌍 **Jefe mundial**: **¡todavía no te anotaste!** ⚠️ Se pelea en {TimeFormat.Remaining(untilPlay)}: **/miniboss**");
 
-    private static async Task<string?> TryBuildArenaLineAsync(IArenaService? arenaService, ulong discordId)
+    private static async Task<string?> TryBuildArenaLineAsync(IArenaService? arenaService, ulong discordId, bool other = false)
     {
         if (arenaService is null)
         {
@@ -363,7 +411,7 @@ public class CooldownModule(
         try
         {
             var listing = await arenaService.ListAsync(DateTime.UtcNow);
-            return ArenaLine(listing.Entries.Any(e => e.DiscordId == discordId), listing.UntilPlay);
+            return ArenaLine(listing.Entries.Any(e => e.DiscordId == discordId), listing.UntilPlay, other);
         }
         catch (Exception ex)
         {
@@ -374,8 +422,10 @@ public class CooldownModule(
 
     // La línea de la Arena (el torneo de hoy se juega a la medianoche de Uruguay): anotado ✅ con lo que falta, o el aviso de que todavía no te anotaste.
     // Pública y pura para probarla sin base.
-    public static string ArenaLine(bool joined, TimeSpan untilPlay) =>
+    public static string ArenaLine(bool joined, TimeSpan untilPlay, bool other = false) =>
         joined
             ? Loc.F($"🏟️ **Arena**: anotado ✅ — se juega en {TimeFormat.Remaining(untilPlay)}")
-            : Loc.F($"🏟️ **Arena**: **¡todavía no te anotaste!** ⚠️ Se juega en {TimeFormat.Remaining(untilPlay)}: **/arena join**");
+            : other
+                ? Loc.F($"🏟️ **Arena**: **todavía no se anotó** ⚠️ Se juega en {TimeFormat.Remaining(untilPlay)}")
+                : Loc.F($"🏟️ **Arena**: **¡todavía no te anotaste!** ⚠️ Se juega en {TimeFormat.Remaining(untilPlay)}: **/arena join**");
 }

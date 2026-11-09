@@ -199,11 +199,36 @@ public partial class TextCommandModule(
 
     // "aa cd" — misma lógica que CooldownModule.HandleCooldownsAsync.
     [Command("cd")]
-    [Summary("Mostrá el estado de tus cooldowns; con \"aa cd orden cazar 1\", \"aa cd ocultar viajar\" o \"aa cd reset\" elegís qué líneas ver y en qué orden.")]
+    [AcceptsReplyUser]
+    [Summary("Mostrá el estado de tus cooldowns (\"aa cd @jugador\", o respondiendo su mensaje, los de otro); con \"aa cd orden cazar 1\", \"aa cd ocultar viajar\" o \"aa cd reset\" elegís qué líneas ver y en qué orden.")]
     public async Task CooldownsAsync(string action = "", [Remainder] string rest = "")
     {
         try
         {
+            // Los cooldowns de OTRO jugador (v0.51.3): lo que se escribe después de «aa cd» no es una de las palabras de abajo, así que es a quién mirar (mención, ID o su nombre exacto; respondiendo su mensaje
+            // la mención se pone sola, ver Services/ReplyUserInjection.cs).
+            if (!string.IsNullOrWhiteSpace(action) && !CooldownModule.IsLayoutWord(action))
+            {
+                var target = Context.Guild is null ? null : await GuildUserTypeReader.ResolveAsync(Context.Guild, $"{action} {rest}".Trim());
+                if (target is null)
+                {
+                    await ReplyAsync(Loc.T("No encontré a ese jugador ni entendí esa opción. Probá `aa cd @jugador`, `aa cd orden cazar 1`, `aa cd ocultar viajar` o `aa cd reset`."));
+                    return;
+                }
+
+                // Mirarse a uno mismo («aa cd @yo») es el /cd de siempre.
+                if (target.Id != Context.User.Id)
+                {
+                    var other = await CooldownModule.BuildOtherStatusAsync(cooldownRepository, userRepository, target, arenaService, bonusService, voteClient.Enabled, petRepository, dragonRepository, petExpeditionRepository, worldBossService,
+                        (await settingsService.GetAsync(Context.User.Id)).CdLayout);
+                    await ReplyAsync(other.Message, embed: other.Embed);
+                    return;
+                }
+
+                action = string.Empty;
+                rest = string.Empty;
+            }
+
             // Lo que se escribe después de «aa cd» cambia qué líneas se ven y en qué orden (v0.51.0); sin nada solo se muestra el estado.
             string? note = await CooldownModule.ExecuteLayoutAsync(settingsService, Context.User.Id, action, rest);
             var embed = await CooldownModule.BuildStatusEmbedAsync(cooldownRepository, userRepository, Context.User.Id, arenaService, bonusService, voteClient.Enabled, petRepository, dragonRepository, petExpeditionRepository, worldBossService,

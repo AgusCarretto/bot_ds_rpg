@@ -403,7 +403,17 @@ class Program
                 }
             }
 
-            var result = await _textCommands.ExecuteAsync(context, argPos, _services);
+            // Responder el mensaje de alguien = mencionarlo (v0.51.3; Services/ReplyUserInjection.cs): «aa p» respondiendo a Polar Frost muestra SU perfil, «aa dragon breed» le arma la cría con él.
+            // Solo toca comandos que reciben un jugador y a los que no se les escribió ninguno; si no corresponde, se ejecuta lo escrito como siempre.
+            string? withReplyUser = null;
+            if (found.IsSuccess && found.Commands.Count > 0 && message.Channel is SocketGuildChannel && await ReplyTargetAsync(message) is ulong replyUserId)
+            {
+                withReplyUser = ReplyUserInjection.Rewrite(message.Content[argPos..].TrimStart(), found.Commands, replyUserId);
+            }
+
+            var result = withReplyUser is null
+                ? await _textCommands.ExecuteAsync(context, argPos, _services)
+                : await _textCommands.ExecuteAsync(context, withReplyUser, _services);
 
             if (!result.IsSuccess)
             {
@@ -432,6 +442,31 @@ class Program
         catch (Exception ex)
         {
             BotLog.Error(ex);
+        }
+    }
+
+    // A quién le respondió este mensaje: el autor del mensaje respondido, si es una persona (no un bot ni un webhook) y no es el mismo que escribe. null en cualquier otro caso. Nunca tira.
+    private static async Task<ulong?> ReplyTargetAsync(SocketUserMessage message)
+    {
+        try
+        {
+            IMessage? referenced = message.ReferencedMessage;
+            if (referenced is null && message.Reference?.MessageId.IsSpecified == true)
+            {
+                referenced = await message.Channel.GetMessageAsync(message.Reference.MessageId.Value);
+            }
+
+            if (referenced is null || referenced.Author.IsBot || referenced.Author.IsWebhook || referenced.Author.Id == message.Author.Id)
+            {
+                return null;
+            }
+
+            return referenced.Author.Id;
+        }
+        catch (Exception ex)
+        {
+            BotLog.Warn(ex);
+            return null;
         }
     }
 
@@ -467,7 +502,8 @@ class Program
                     ? searchResult.Commands[0].Command
                     : null;
 
-                await message.Channel.SendMessageAsync(embed: BuildUsageErrorEmbed(command));
+                // Si no se encontró al jugador, el motivo dice cómo escribirlo bien (mención, nombre exacto o responder el mensaje); en los demás errores el uso correcto alcanza.
+                await message.Channel.SendMessageAsync(embed: BuildUsageErrorEmbed(command, result.Error == CommandError.ObjectNotFound ? result.ErrorReason : null));
                 return;
 
             default:
@@ -482,11 +518,16 @@ class Program
         }
     }
 
-    private static Embed BuildUsageErrorEmbed(CommandInfo? command)
+    private static Embed BuildUsageErrorEmbed(CommandInfo? command, string? reason = null)
     {
         var embed = new EmbedBuilder()
             .WithTitle(Loc.T("⚠️ Faltan parámetros o son incorrectos"))
             .WithColor(Color.Orange);
+
+        if (!string.IsNullOrWhiteSpace(reason))
+        {
+            embed.WithDescription(reason);
+        }
 
         if (command is not null)
         {

@@ -133,7 +133,17 @@
   {
     "type": 1,
     "name": "cd",
-    "description": "Mirá tus cooldowns: cazar, viajar, talar, minar, jefe, cajas, mascotas, diario y la Arena de hoy."
+    "description": "Mirá tus cooldowns: cazar, viajar, talar, minar, jefe, cajas, mascotas, diario y la Arena de hoy.",
+    "options": [
+      {
+        "type": 6,
+        "name": "jugador",
+        "description": "Opcional: de qué jugador del server querés ver los cooldowns.",
+        "required": false,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      }
+    ]
   },
   {
     "type": 1,
