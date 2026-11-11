@@ -150,12 +150,46 @@ UPDATE items SET emoji = '<:pico_escoria:1564654461782204427>' WHERE name = 'Pic
 UPDATE items SET emoji = '<:comida_dragon:1564690547006775446>' WHERE name = 'Comida de Dragón';
 
 -- 🧂🦷🛢️🧊🪶 Los 5 drops de cacería de las Zonas 6 a 10 (add_zones_6_10.sql los crea con un unicode de relleno), cargados el 2026-11-04 con los nombres que el dueño subió al portal (el de la
--- sal quedó como "drop_sal" y el del hielo como "escama_hielo1"; se dejan tal cual). Faltan las 5 Reliquias y las 25 piezas de equipo (prompts en docs/arte-zonas-6-10.md).
+-- sal quedó como "drop_sal" y el del hielo como "escama_hielo1"; se dejan tal cual). Faltan las 25 piezas de equipo (prompts en docs/arte-zonas-6-10.md).
 UPDATE items SET emoji = '<:drop_sal:1567541433974530118>' WHERE name = 'Cristal de Sal';
 UPDATE items SET emoji = '<:colmillo_humo:1567541432372301864>' WHERE name = 'Colmillo de Humo';
 UPDATE items SET emoji = '<:gota_brea:1567541430342262855>' WHERE name = 'Gota de Brea';
 UPDATE items SET emoji = '<:escama_hielo1:1567541998032785509>' WHERE name = 'Escama de Hielo';
 UPDATE items SET emoji = '<:pluma_rayo:1567541428664402042>' WHERE name = 'Pluma de Rayo';
+
+-- 🗝️ Las 5 Reliquias de las mazmorras de las Zonas 6 a 10 (la llave de cada una; add_zones_6_10.sql las crea con un unicode de relleno), cargadas el 2026-11-10 con los nombres e ids que subió el dueño.
+UPDATE items SET emoji = '<:reliquia_sal:1569727036124176394>' WHERE name = 'Reliquia de Sal';
+UPDATE items SET emoji = '<:reliquia_humo:1569727034140393482>' WHERE name = 'Reliquia de Humo';
+UPDATE items SET emoji = '<:reliquia_brea:1569727032244437064>' WHERE name = 'Reliquia de Brea';
+UPDATE items SET emoji = '<:reliquia_hielo:1569727030558457907>' WHERE name = 'Reliquia de Hielo';
+UPDATE items SET emoji = '<:reliquia_rayo:1569727028683608236>' WHERE name = 'Reliquia de Rayo';
+
+-- ⚔️ El equipo de las Zonas 6 a 10 (4 armas de clase y 1 amuleto por zona = 25 piezas; add_zones_6_10.sql los crea con un unicode de relleno), cargado el 2026-11-11 con los nombres e ids que subió el dueño.
+UPDATE items SET emoji = '<:espada_sal:1570114861831168152>' WHERE name = 'Espada de Sal';
+UPDATE items SET emoji = '<:dagas_sal:1570114860262498384>' WHERE name = 'Dagas de Sal';
+UPDATE items SET emoji = '<:arco_sal:1570114858622648482>' WHERE name = 'Arco de Sal';
+UPDATE items SET emoji = '<:grimorio_sal:1570114897810030663>' WHERE name = 'Grimorio de Sal';
+UPDATE items SET emoji = '<:amuleto_sal:1570114856630358076>' WHERE name = 'Amuleto de Sal';
+UPDATE items SET emoji = '<:espada_humo:1570114854948311204>' WHERE name = 'Espada de Humo';
+UPDATE items SET emoji = '<:dagas_humo:1570114853383704666>' WHERE name = 'Dagas de Humo';
+UPDATE items SET emoji = '<:arco_humo:1570114851559317656>' WHERE name = 'Arco de Humo';
+UPDATE items SET emoji = '<:grimorio_humo:1570114850154094733>' WHERE name = 'Grimorio de Humo';
+UPDATE items SET emoji = '<:amuleto_humo:1570114848053010476>' WHERE name = 'Amuleto de Humo';
+UPDATE items SET emoji = '<:espada_brea:1570114846098333696>' WHERE name = 'Espada de Brea';
+UPDATE items SET emoji = '<:dagas_brea:1570114844018090045>' WHERE name = 'Dagas de Brea';
+UPDATE items SET emoji = '<:arco_brea:1570114841849630752>' WHERE name = 'Arco de Brea';
+UPDATE items SET emoji = '<:grimorio_brea:1570114839638966393>' WHERE name = 'Grimorio de Brea';
+UPDATE items SET emoji = '<:amuleto_brea:1570114837759918201>' WHERE name = 'Amuleto de Brea';
+UPDATE items SET emoji = '<:espada_hielo:1570134216795234334>' WHERE name = 'Espada de Hielo';
+UPDATE items SET emoji = '<:dagas_hielo:1570134215021035541>' WHERE name = 'Dagas de Hielo';
+UPDATE items SET emoji = '<:arco_hielo:1570134213594714213>' WHERE name = 'Arco de Hielo';
+UPDATE items SET emoji = '<:grimorio_hielo:1570134211757875291>' WHERE name = 'Grimorio de Hielo';
+UPDATE items SET emoji = '<:amuleto_hielo:1570134210016972851>' WHERE name = 'Amuleto de Hielo';
+UPDATE items SET emoji = '<:espada_rayo:1570134208297312457>' WHERE name = 'Espada de Rayo';
+UPDATE items SET emoji = '<:dagas_rayo:1570134206481440928>' WHERE name = 'Dagas de Rayo';
+UPDATE items SET emoji = '<:arco_rayo:1570134204820230245>' WHERE name = 'Arco de Rayo';
+UPDATE items SET emoji = '<:grimorio_rayo:1570134202286874675>' WHERE name = 'Grimorio de Rayo';
+UPDATE items SET emoji = '<:amuleto_rayo:1570134200311615498>' WHERE name = 'Amuleto de Rayo';
 
 -- 🎣 La pesca (v0.48.0): los 3 peces y las 2 cañas del Carpintero, cargados el 2026-11-04 (add_fishing.sql los crea con un unicode de relleno 🐟 🐠 👑 🎣 que esto reemplaza). Los nombres son los que
 -- el dueño subió al portal: "caa_hierro" y "caa_escoria" salieron sin la eñe (el portal usa el nombre del archivo).

@@ -7,7 +7,7 @@ fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo
 
 ---
 
-## 2026-11-09 — Laberinto libre, responder en vez de mencionar y top 50 (v0.51.1 a v0.52.1)
+## 2026-11-11 — Laberinto libre, responder en vez de mencionar y top 50 (v0.51.1 a v0.52.2)
 
 **Título:** ¡Laberinto libre, responder en vez de mencionar y ranking top 50!
 
@@ -17,13 +17,15 @@ fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo
 
 ⏱️ **El cd de otro jugador:** **/cd jugador:@alguien**, **aa cd @alguien**, o respondiendo su mensaje con **aa cd**. Lo ves con las líneas que elegiste en /config.
 
-🧩 **El laberinto de humo (Zona 7), renovado:** ahora te movés para donde quieras (las 4 flechas siempre andan y chocar contra una pared no cuesta nada), el mapa dibuja las paredes y ves los 4 lados de donde estás parado, y lo que recorriste queda en verde 🟩. Es más largo y no tiene límite de pasos. Ojo con las brasas: se esconden en los desvíos y se ven como un camino más; si te quemás, esa rama no lleva a la salida.
+🧩 **El laberinto de humo (Zona 7), renovado:** ahora te movés para donde quieras (las 4 flechas siempre andan y chocar contra una pared no cuesta nada), el mapa dibuja las paredes y ves los 4 lados de donde estás parado, y lo que recorriste queda en verde 🟩. Es más largo, no tiene límite de pasos y ahora hay **varios caminos a la salida**. Ojo con las brasas: hay 6 repartidas por esos caminos, se ven como un camino más y cada una quema una vez; siempre queda un camino sin ninguna, pero no sabés cuál.
 
 🏆 **/leaderboard** muestra ahora los **50 primeros**, de a 10 por página: pasá de página con los botones ◀ ▶, o directo con **/leaderboard pagina:3** o **aa lb 3**. Abajo, en chiquito, cuántos aventureros hay en total.
 
 ⚡ **Atajos**: **aa ch a**, **aa m a** y **aa f a** hacen la versión avanzada de talar, minar y pescar; **aa mission** abre tus misiones y **aa pr**, tus oficios.
 
 🔨 **Aviso de herramientas:** cuando vencés por primera vez al jefe de la Zona 2 y al de la Zona 4, el juego ahora te avisa que con la Zona 3 y la Zona 5 se abren las herramientas del Carpintero (**/tools**): hacha, pico y caña que multiplican lo que recolectás. Así no se te pasa hacerlas después de cada Fuego Nuevo.
+
+🎨 **Arte nuevo:** las 5 **Reliquias** de las mazmorras y todo el **equipo de las Zonas 6 a 10** (las 4 armas de clase y el amuleto de cada zona) ya tienen su propio dibujo.
 
 🥚 **/open** ya no te ofrece huevos de mascotas que ya abriste (esos son de repuesto, para evolucionar, y los ves contados en **/pet**), en el **inventario** los drops de monstruo van agrupados por zona, y **/fuegonuevo** aclara que los porcentajes se aplican sobre lo que ya tenés, no se suman: un +30 % sobre un 6 % de drop te deja en 7,8 %, no en 36 %.
 

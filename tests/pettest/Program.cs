@@ -228,7 +228,7 @@ var noEgg = CallE(typeof(AdventureModule), "BuildVictoryEmbed", Boss(), turn, rw
 Check(AllText(withEgg).Contains("🥚") && AllText(withEgg).Contains("Huevo de la Pradera") && AllText(withEgg).Contains("/open") && !AllText(noEgg).Contains("🥚") && withEgg.Length <= 6000, "el mensaje de victoria del jefe anuncia el huevo solo cuando llegó");
 var session = new RaidSession { RaidId = Guid.NewGuid(), BossName = "Rey Jabalí", BossEmoji = "👑", BossBaseHp = 100, ZoneRank = 1, BossMaxHp = 200, BossDamage = 20, BossDropItemNames = [], BossGoldBonus = 0, BossXpBonus = 0, ZoneId = 1, ZoneName = "Praderas", StarterId = 1 };
 var rp = new RaidParticipant { DiscordId = 1, DisplayName = "Tester", Damage = 20, Defense = 5, Level = 5, PlayerClass = "Guerrero", Passives = ClassPassives.For("Guerrero"), MaxHp = 100, StartingHp = 100, CurrentHp = 100 };
-var raidEmbed = CallE(typeof(RaidModule), "BuildVictoryEmbed", session, "log", new List<(RaidParticipant, CombatReward, Item?, LevelUpOutcome)> { (rp, rw, null, new LevelUpOutcome(playerU, 0, z1)) });
+var raidEmbed = CallE(typeof(RaidModule), "BuildVictoryEmbed", session, "log", new List<(RaidParticipant, CombatReward, Item?, LevelUpOutcome)> { (rp, rw, null, new LevelUpOutcome(playerU, 0, z1)) }, false);
 Check(AllText(raidEmbed).Contains("🥚 Huevo de la Pradera"), "el raid también lo anuncia en el campo de quien lo recibió");
 
 Console.WriteLine("\n== 5. /pet, /open, la tienda y el inventario ==");
