@@ -101,7 +101,7 @@ string bossUrl = ItemDisplay.ImageUrl(session.BossPortrait)!;
 Check(Thumb(RaidModule.BuildLobbyEmbed(session)) == bossUrl && Thumb(RaidModule.BuildCombatEmbed(session, "log")) == bossUrl, "raid: la sala de espera y la pelea llevan la cara del jefe");
 Check(Thumb(Call(typeof(RaidModule), "BuildWipeEmbed", session, "log")) == bossUrl, "raid: si el grupo cae también");
 var results = new List<(RaidParticipant, CombatReward, Item?, LevelUpOutcome)>();
-Check(Thumb(Call(typeof(RaidModule), "BuildVictoryEmbed", session, "log", results)) == bossUrl, "raid: al derrotarlo, el jefe vencido");
+Check(Thumb(Call(typeof(RaidModule), "BuildVictoryEmbed", session, "log", results, false)) == bossUrl, "raid: al derrotarlo, el jefe vencido");
 
 Console.WriteLine("\n== 4. El banner de nivel dice cuánto subís de ATQ y DEF ==");
 var one = LevelUpCard.Compose(1UL, 7, 1, []);
@@ -147,6 +147,51 @@ var drops610 = new Dictionary<string, string>
 };
 Check(drops610.All(kv => allItems.FirstOrDefault(i => i.Name == kv.Key).Emoji == $"<:{kv.Value}>"), "los 5 drops de las Zonas 6 a 10 tienen el código exacto que pasó el dueño");
 Check(drops610.All(kv => ItemDisplay.ImageUrl(allItems.First(i => i.Name == kv.Key).Emoji) is { } url && url.StartsWith("https://cdn.discordapp.com/emojis/", StringComparison.Ordinal)), "y arman su miniatura del CDN");
+// 2026-11-10: las 5 Reliquias de las mazmorras (la llave de cada una), con los nombres e ids que pasó el dueño.
+var relics610 = new Dictionary<string, string>
+{
+    ["Reliquia de Sal"] = "reliquia_sal:1569727036124176394", ["Reliquia de Humo"] = "reliquia_humo:1569727034140393482", ["Reliquia de Brea"] = "reliquia_brea:1569727032244437064",
+    ["Reliquia de Hielo"] = "reliquia_hielo:1569727030558457907", ["Reliquia de Rayo"] = "reliquia_rayo:1569727028683608236",
+};
+Check(relics610.Count == 5 && relics610.All(kv => allItems.FirstOrDefault(i => i.Name == kv.Key).Emoji == $"<:{kv.Value}>"), "las 5 Reliquias de las mazmorras tienen el código exacto que pasó el dueño");
+Check(relics610.All(kv => ItemDisplay.ImageUrl(allItems.First(i => i.Name == kv.Key).Emoji) is { } url && url.StartsWith("https://cdn.discordapp.com/emojis/", StringComparison.Ordinal)), "y arman su miniatura del CDN");
+// 2026-11-11: el equipo de las Zonas 6, 7 y 8 (4 armas de clase y el amuleto de cada una), con los nombres e ids que subió el dueño.
+var gear678 = new Dictionary<string, string>
+{
+    ["Espada de Sal"] = "espada_sal:1570114861831168152",
+    ["Dagas de Sal"] = "dagas_sal:1570114860262498384",
+    ["Arco de Sal"] = "arco_sal:1570114858622648482",
+    ["Grimorio de Sal"] = "grimorio_sal:1570114897810030663",
+    ["Amuleto de Sal"] = "amuleto_sal:1570114856630358076",
+    ["Espada de Humo"] = "espada_humo:1570114854948311204",
+    ["Dagas de Humo"] = "dagas_humo:1570114853383704666",
+    ["Arco de Humo"] = "arco_humo:1570114851559317656",
+    ["Grimorio de Humo"] = "grimorio_humo:1570114850154094733",
+    ["Amuleto de Humo"] = "amuleto_humo:1570114848053010476",
+    ["Espada de Brea"] = "espada_brea:1570114846098333696",
+    ["Dagas de Brea"] = "dagas_brea:1570114844018090045",
+    ["Arco de Brea"] = "arco_brea:1570114841849630752",
+    ["Grimorio de Brea"] = "grimorio_brea:1570114839638966393",
+    ["Amuleto de Brea"] = "amuleto_brea:1570114837759918201",
+};
+Check(gear678.Count == 15 && gear678.All(kv => allItems.FirstOrDefault(i => i.Name == kv.Key).Emoji == $"<:{kv.Value}>"), "las 15 piezas de equipo de las Zonas 6, 7 y 8 tienen el código exacto que pasó el dueño");
+Check(gear678.All(kv => ItemDisplay.ImageUrl(allItems.First(i => i.Name == kv.Key).Emoji) is { } url && url.StartsWith("https://cdn.discordapp.com/emojis/", StringComparison.Ordinal)), "y arman su miniatura del CDN");
+// 2026-11-11: el equipo de las Zonas 9 y 10 (4 armas de clase y el amuleto de cada una): con esto las 25 piezas de equipo de las Zonas 6 a 10 tienen su arte.
+var gear910 = new Dictionary<string, string>
+{
+    ["Espada de Hielo"] = "espada_hielo:1570134216795234334",
+    ["Dagas de Hielo"] = "dagas_hielo:1570134215021035541",
+    ["Arco de Hielo"] = "arco_hielo:1570134213594714213",
+    ["Grimorio de Hielo"] = "grimorio_hielo:1570134211757875291",
+    ["Amuleto de Hielo"] = "amuleto_hielo:1570134210016972851",
+    ["Espada de Rayo"] = "espada_rayo:1570134208297312457",
+    ["Dagas de Rayo"] = "dagas_rayo:1570134206481440928",
+    ["Arco de Rayo"] = "arco_rayo:1570134204820230245",
+    ["Grimorio de Rayo"] = "grimorio_rayo:1570134202286874675",
+    ["Amuleto de Rayo"] = "amuleto_rayo:1570134200311615498",
+};
+Check(gear910.Count == 10 && gear910.All(kv => allItems.FirstOrDefault(i => i.Name == kv.Key).Emoji == $"<:{kv.Value}>"), "las 10 piezas de equipo de las Zonas 9 y 10 tienen el código exacto que pasó el dueño");
+Check(gear910.All(kv => ItemDisplay.ImageUrl(allItems.First(i => i.Name == kv.Key).Emoji) is { } url && url.StartsWith("https://cdn.discordapp.com/emojis/", StringComparison.Ordinal)), "y arman su miniatura del CDN");
 Environment.SetEnvironmentVariable("Images__DeepShopkeeper", null);
 var tab = NpcImages.DeepShopkeeper;
 Check(tab is not null && tab.LocalPath is null && tab.Reference == "https://cdn.discordapp.com/emojis/1561756257898209311.png?size=256", $"el Tabernero del Inframundo sale con su foto (el emoji tabernero_deep, a 256 px) sin variable ni archivo ({tab?.Reference})");

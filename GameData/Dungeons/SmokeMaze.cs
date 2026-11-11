@@ -2,25 +2,35 @@ using System.Text;
 
 namespace BotDsRpg.GameData.Dungeons;
 
-// Zona 7 — El laberinto de humo. Un laberinto de 5 de ancho por 7 de alto tallado al azar en cada corrida (siempre tiene camino: es un laberinto «perfecto», un árbol), con el humo tapando todo lo que
-// no viste.
+// Zona 7 — El laberinto de humo. Un laberinto de 5 de ancho por 8 de alto, tallado al azar en cada corrida, con el humo tapando todo lo que no viste.
 // v0.52.0 (el dueño: «que sea libre, que se vean las paredes y los cuadrados que vienen, y que las trampas se las coman: si no se comen las trampas no tiene sentido»):
 //   • Las 4 flechas SIEMPRE andan (antes las que daban contra una pared salían apagadas y los botones te guiaban). Apretar una contra una pared no mueve, no gasta un paso ni quema: solo avisa.
-//   • El mapa dibuja las PAREDES entre las celdas (una grilla de 11 de ancho por 15 de alto: celdas en los lugares impares, paredes y pasos en los pares). Desde donde estás ves los 4 lados: camino
-//     abierto ⬜ (y la casilla de atrás) o pared ⬛; lo que ya viste queda dibujado, lo demás sigue en humo 🌫️. El recorrido (🟩) se ve entero.
-//   • Las BRASAS están en la BOCA de las ramas que se desvían del camino corto a la salida (la primera celda de cada desvío; hasta MaxTraps) y se ven ⬜ como cualquier camino hasta que las pisás:
-//     cada giro equivocado quema. Pisar una quema (una vez) y, como ninguna está en el camino a la salida, esa rama no sale: hay que volver. Antes eran 3 brasas sueltas fuera del camino y casi
-//     nadie las pisaba (quien elegía al azar se comía ~1 por corrida; ahora ~2, medido en el arnés).
+//   • El mapa dibuja las PAREDES entre las celdas (una grilla de 11 de ancho: celdas en los lugares impares, paredes y pasos en los pares). Desde donde estás ves los 4 lados: camino abierto ⬜ (y la
+//     casilla de atrás) o pared ⬛; lo que ya viste queda dibujado, lo demás sigue en humo 🌫️. Los pasos que diste se ven 🟩.
 //   • SIN límite de pasos y SIN aviso de calor: lo único que cuesta vida son las brasas.
-// El ancho es lo que importa para el celu (11 emojis por fila caben; 13 puede partirse), así que el laberinto crece hacia abajo. Para que haya bifurcaciones el laberinto se vuelve a sortear hasta que
-// tenga al menos MinBranches desvíos del camino corto (≈ 1 de cada 4 sorteos).
+// v0.52.2 (el dueño, tras jugarlo: «es muy obvio los callejones sin salida y el camino a tomar, no hay duda de cuál elegir… estaría bueno tener más bifurcaciones, dos caminos que lleguen a la salida
+// igual pero por uno tenés una llama… ayer no me comí ninguna», y después «dejá 6 brasas»):
+//   • El laberinto es TRENZADO: se talla el árbol de siempre y después se abren `Loops` paredes al azar. Cada una cierra un lazo, así que hay más de un camino a la salida y quedan menos
+//     callejones sin salida (~1,8 contra ~3,3 del árbol); ya no se adivina el camino mirando cuáles terminan en pared.
+//   • Las `Traps` BRASAS caen en celdas de esos caminos (a lo sumo `Slack` pasos de desvío sobre el camino corto, nunca en la entrada ni en la salida) y se ven ⬜ como cualquier camino hasta que las
+//     pisás. Se acepta el sorteo solo si, con todas las brasas puestas, todavía se llega a la salida sin pisar ninguna: SIEMPRE queda un camino limpio, pero no se sabe cuál. Antes estaban en la boca de
+//     cada rama que se desviaba y bastaba con no entrar a las ramas que se ven sin salida.
+//   • Pisar una quema UNA vez y la casilla queda marcada 🔥: ya no quema y se puede cruzar. Como con lazos una brasa no tapa un callejón, ya no se dice «esa rama no sale».
+// El ancho es lo que importa para el celu (11 emojis por fila caben; 13 puede partirse), así que el laberinto crece hacia abajo. El sorteo se repite hasta que el camino corto mide al menos
+// `MinShortest` pasos y entran las 6 brasas con camino limpio (≈ 8 sorteos de media, medido).
 public sealed class SmokeMaze : IDungeonPuzzle
 {
     public const int Cols = 5;
-    public const int Rows = 7;
+    public const int Rows = 8;
     public const int Cells = Cols * Rows;
-    public const int MaxTraps = 6;
-    public const int MinBranches = 4;
+    // Las paredes que se abren después de tallar el árbol: cada una cierra un lazo (otro camino).
+    public const int Loops = 6;
+    // Las brasas por laberinto.
+    public const int Traps = 6;
+    // Una brasa solo cae en una celda cuyo camino entrada→celda→salida mide a lo sumo esto de más que el camino corto: está «en los caminos», no escondida lejos.
+    public const int Slack = 6;
+    // El camino corto de la entrada a la salida mide al menos esto (si no, se vuelve a sortear).
+    public const int MinShortest = 20;
     private const int MaxAttempts = 500;
 
     public const string Up = "u", Down = "d", Left = "l", Right = "r";
@@ -33,56 +43,41 @@ public sealed class SmokeMaze : IDungeonPuzzle
     private readonly HashSet<int> _visited = [];
     private readonly HashSet<int> _burned = [];
     private readonly HashSet<int> _seen = [];
+    // Los pasos que diste de verdad (con lazos, dos celdas pisadas pueden estar unidas por un paso que NO recorriste).
+    private readonly HashSet<(int, int)> _walked = [];
     private int _position;
 
     public SmokeMaze(Random rng)
     {
-        // Laberinto perfecto por búsqueda en profundidad desde la entrada (arriba a la izquierda); se vuelve a sortear si no tiene desvíos suficientes.
-        int[] distance;
-        int[] parent;
-        int exit;
-        List<int> mouths;
-        int attempts = 0;
-        do
+        int exit = 0, shortest = 0;
+        for (int attempt = 1; ; attempt++)
         {
             Array.Clear(_open);
+            _traps.Clear();
             Carve(rng);
-            distance = Distances(0, out parent);
+            Braid(rng);
 
-            // La salida: la celda más lejana a la entrada (así nunca queda al lado), y el camino corto a ella.
-            exit = distance.Select((d, i) => (d, i)).Where(x => x.i != 0).OrderByDescending(x => x.d).ThenBy(_ => rng.Next()).First().i;
-            var path = new HashSet<int>();
-            for (int c = exit; c != -1; c = parent[c])
+            // La salida: la celda más lejana a la entrada (así nunca queda al lado).
+            int[] fromStart = Distances(0);
+            exit = fromStart.Select((d, i) => (d, i)).Where(x => x.i != 0).OrderByDescending(x => x.d).ThenBy(_ => rng.Next()).First().i;
+            shortest = fromStart[exit];
+            if (shortest >= MinShortest)
             {
-                path.Add(c);
-            }
-
-            // Las bocas: celdas fuera del camino corto pegadas a él por un paso abierto = la primera celda de cada rama que se desvía.
-            mouths = [];
-            foreach (int pc in path)
-            {
-                for (int d = 0; d < 4; d++)
+                PlaceTraps(rng, exit, fromStart, shortest);
+                if (_traps.Count == Traps)
                 {
-                    if (_open[pc, d] && Neighbor(pc, d) is int n && !path.Contains(n))
-                    {
-                        mouths.Add(n);
-                    }
+                    break;
                 }
             }
 
-            attempts++;
+            if (attempt >= MaxAttempts)
+            {
+                break;   // no pasa en la práctica; el laberinto igual es válido (con las brasas que hayan entrado)
+            }
         }
-        while (mouths.Count < MinBranches && attempts < MaxAttempts);
 
         Exit = exit;
-        ShortestPath = distance[exit];
-
-        // Una brasa en la boca de cada desvío (si hay más de MaxTraps, en MaxTraps al azar): ninguna está en el camino corto, así que siempre hay una ruta limpia, y cada giro equivocado quema.
-        foreach (int mouth in mouths.OrderBy(_ => rng.Next()).Take(MaxTraps))
-        {
-            _traps.Add(mouth);
-        }
-
+        ShortestPath = shortest;
         _position = 0;
         _visited.Add(0);
         See(0);
@@ -130,8 +125,10 @@ public sealed class SmokeMaze : IDungeonPuzzle
             return DungeonStep.Ok;
         }
 
+        int from = _position;
         _position = Neighbor(_position, dir)!.Value;
         _visited.Add(_position);
+        _walked.Add(Edge(from, _position));
         Steps++;
         See(_position);
 
@@ -144,7 +141,7 @@ public sealed class SmokeMaze : IDungeonPuzzle
 
         if (_traps.Contains(_position) && _burned.Add(_position))
         {
-            Note = Loc.T("🔥 ¡Una brasa! Ese camino no lleva a la salida: volvé.");
+            Note = Loc.T("🔥 ¡Una brasa! Te quemaste: esa casilla queda marcada y ya no quema.");
             return DungeonStep.Mistake;
         }
 
@@ -233,8 +230,8 @@ public sealed class SmokeMaze : IDungeonPuzzle
             return "⬛";
         }
 
-        // En un laberinto perfecto (un árbol) el paso entre dos celdas pisadas es siempre un paso que diste.
-        return _visited.Contains(cell) && _visited.Contains(other) ? "🟩" : "⬜";
+        // Con lazos, dos celdas pisadas pueden estar unidas por un paso que no diste: solo los pasos que recorriste son 🟩.
+        return _walked.Contains(Edge(cell, other)) ? "🟩" : "⬜";
     }
 
     private string CellTile(int cell)
@@ -268,6 +265,7 @@ public sealed class SmokeMaze : IDungeonPuzzle
         return _seen.Contains(cell) ? "⬜" : "🌫️";
     }
 
+    // El árbol: laberinto perfecto por búsqueda en profundidad desde la entrada (arriba a la izquierda).
     private void Carve(Random rng)
     {
         var stack = new Stack<int>();
@@ -292,6 +290,53 @@ public sealed class SmokeMaze : IDungeonPuzzle
         }
     }
 
+    // Trenzar: abrir `Loops` paredes interiores al azar. En un árbol toda pared entre dos celdas vecinas cierra un lazo, así que cada una da otro camino.
+    private void Braid(Random rng)
+    {
+        var walls = new List<(int Cell, int Dir)>();
+        for (int c = 0; c < Cells; c++)
+        {
+            foreach (int d in new[] { 1, 3 })
+            {
+                if (Neighbor(c, d) is not null && !_open[c, d])
+                {
+                    walls.Add((c, d));
+                }
+            }
+        }
+
+        foreach (var (cell, dir) in walls.OrderBy(_ => rng.Next()).Take(Loops))
+        {
+            _open[cell, dir] = true;
+            _open[Neighbor(cell, dir)!.Value, Opposite(dir)] = true;
+        }
+    }
+
+    // Las brasas: celdas de los caminos a la salida (entrada→celda→salida a lo sumo `Slack` más largo que el camino corto), una por una, y solo se queda la que deja un camino sin brasas.
+    private void PlaceTraps(Random rng, int exit, int[] fromStart, int shortest)
+    {
+        int[] fromExit = Distances(exit);
+        var candidates = Enumerable.Range(0, Cells)
+            .Where(c => c != 0 && c != exit && fromStart[c] + fromExit[c] <= shortest + Slack)
+            .OrderBy(_ => rng.Next())
+            .ToList();
+        foreach (int c in candidates)
+        {
+            if (_traps.Count >= Traps)
+            {
+                break;
+            }
+
+            _traps.Add(c);
+            if (Distances(0, _traps)[exit] == int.MaxValue)
+            {
+                _traps.Remove(c);   // taparía el último camino limpio
+            }
+        }
+    }
+
+    private static (int, int) Edge(int a, int b) => (Math.Min(a, b), Math.Max(a, b));
+
     private static int? Neighbor(int cell, int dir)
     {
         int row = cell / Cols, col = cell % Cols;
@@ -307,10 +352,15 @@ public sealed class SmokeMaze : IDungeonPuzzle
 
     private static int Opposite(int dir) => dir switch { 0 => 1, 1 => 0, 2 => 3, _ => 2 };
 
-    private int[] Distances(int from, out int[] parent)
+    // Distancia en pasos desde `from` por los pasos abiertos, sin pisar las celdas `blocked` (int.MaxValue = no se llega).
+    private int[] Distances(int from, HashSet<int>? blocked = null)
     {
         var dist = Enumerable.Repeat(int.MaxValue, Cells).ToArray();
-        parent = Enumerable.Repeat(-1, Cells).ToArray();
+        if (blocked?.Contains(from) == true)
+        {
+            return dist;
+        }
+
         var queue = new Queue<int>();
         dist[from] = 0;
         queue.Enqueue(from);
@@ -319,10 +369,9 @@ public sealed class SmokeMaze : IDungeonPuzzle
             int c = queue.Dequeue();
             for (int d = 0; d < 4; d++)
             {
-                if (_open[c, d] && Neighbor(c, d) is int n && dist[n] == int.MaxValue)
+                if (_open[c, d] && Neighbor(c, d) is int n && dist[n] == int.MaxValue && blocked?.Contains(n) != true)
                 {
                     dist[n] = dist[c] + 1;
-                    parent[n] = c;
                     queue.Enqueue(n);
                 }
             }

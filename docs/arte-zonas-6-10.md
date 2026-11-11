@@ -41,9 +41,9 @@ Base:
 | `escama_hielo` | Escama de Hielo | a single translucent ice-blue scale, frosted edges, cold sparkle |
 | `pluma_rayo` | Pluma de Rayo | a dark storm-grey feather crackling with yellow lightning |
 
-## Reliquias (la llave de cada mazmorra)
+## Reliquias (la llave de cada mazmorra) — ✅ cargadas el 2026-11-10
 
-Misma base que los drops. Las cinco comparten forma (un medallón antiguo de piedra con una llama en el centro) y cambian el elemento, para que se reconozcan como una familia.
+Las 5 están conectadas en `Database/update_item_emojis.sql` con los nombres que subió el dueño (`reliquia_sal`, `reliquia_humo`, `reliquia_brea`, `reliquia_hielo`, `reliquia_rayo`, los de la tabla de abajo); los prompts quedan por si hay que rehacer alguna. Misma base que los drops. Las cinco comparten forma (un medallón antiguo de piedra con una llama en el centro) y cambian el elemento, para que se reconozcan como una familia.
 
 | Emoji | Ítem | Prompt |
 |---|---|---|
@@ -53,7 +53,27 @@ Misma base que los drops. Las cinco comparten forma (un medallón antiguo de pie
 | `reliquia_hielo` | Reliquia de Hielo | an ancient round stone relic medallion with a small flame in the center, covered in frost and icicles, runes glowing cyan |
 | `reliquia_rayo` | Reliquia de Rayo | an ancient round stone relic medallion with a small flame in the center, crackling with lightning, runes glowing electric yellow |
 
-## Equipo (25 piezas: 4 armas de clase y 1 amuleto por zona)
+## Equipo (25 piezas: 4 armas de clase y 1 amuleto por zona) — ✅ las 25 piezas cargadas el 2026-11-11 (zonas 6, 7 y 8 por la mañana, 9 y 10 después)
+
+### Un solo prompt por zona (las 5 piezas en una imagen) — el recomendado
+
+Una imagen = la zona entera (espada, dagas, arco, grimorio y amuleto), con el mismo estilo y la misma luz, y después se recortan. **Siempre el mismo prompt: solo cambia el tema del final** (una línea de la tabla de temas de más abajo). Son 5 imágenes para las 25 piezas; para empezar, las de las zonas 6, 7 y 8 (15 piezas).
+
+Prompt (copialo tal cual y pegale el tema al final):
+
+`A game item icon sheet for a fantasy RPG: five separate items in one single horizontal row, wide panoramic image, on a plain solid white background (#FFFFFF), all the same size, same lighting and same art style, evenly spaced with a wide empty white gap between each one so they can be cropped apart, clean digital illustration (not pixel art), bold clean outlines, vibrant saturated colors, no shadow, no gradient, no text, no labels, no frame. From left to right: 1) a fantasy longsword, 2) a pair of crossed fantasy daggers, 3) a fantasy recurve bow, 4) a fantasy spellbook grimoire with an ornate cover, 5) a fantasy amulet pendant on a chain. All five items are` + el tema de la zona.
+
+Ejemplo completo, zona 6 (Sal), listo para pegar:
+
+`A game item icon sheet for a fantasy RPG: five separate items in one single horizontal row, wide panoramic image, on a plain solid white background (#FFFFFF), all the same size, same lighting and same art style, evenly spaced with a wide empty white gap between each one so they can be cropped apart, clean digital illustration (not pixel art), bold clean outlines, vibrant saturated colors, no shadow, no gradient, no text, no labels, no frame. From left to right: 1) a fantasy longsword, 2) a pair of crossed fantasy daggers, 3) a fantasy recurve bow, 4) a fantasy spellbook grimoire with an ornate cover, 5) a fantasy amulet pendant on a chain. All five items are made of white salt crystal and pale stone, sparkling pink and white highlights`
+
+**Orden para recortar, de izquierda a derecha → nombre del emoji** (con el sufijo de la zona): `espada_X`, `dagas_X`, `arco_X`, `grimorio_X`, `amuleto_X`. Ejemplo de la zona 6: `espada_sal`, `dagas_sal`, `arco_sal`, `grimorio_sal`, `amuleto_sal`.
+
+Si tu generador solo hace imágenes cuadradas, cambiá `in one single horizontal row, wide panoramic image` por `arranged in two rows, three on top and two on the bottom` (el orden sigue siendo de izquierda a derecha y de arriba a abajo). Si una pieza sale mal o falta, tirá la hoja de nuevo (pedí 4 variantes) o rehacé esa sola con el prompt individual de más abajo. En las zonas 9 y 10, sumale `legendary, intricate details` al tema.
+
+Cuando las tengas, pasame los nombres que les pongas en el portal y las conecto en `Database/update_item_emojis.sql` (después corrés `apply_emojis.sql` en Railway).
+
+### Una pieza sola (para rehacer alguna)
 
 Misma base que los drops. Se arma el prompt con **la pieza + el tema de la zona**:
 
