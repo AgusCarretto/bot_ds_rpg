@@ -59,6 +59,12 @@ public static class GameEventKinds
     // PvP.
     public const string DuelWin = "duel_win";               // ganó un duelo amistoso; detail = el nombre del rival
     public const string DuelLoss = "duel_loss";             // perdió un duelo amistoso; detail = el nombre del rival
+    // Piedra, papel o tijera apostando (v0.54.0). Win/Loss cuentan partidas (amount 1, para el logro «Mano Ganadora»); GoldWon/GoldLost
+    // llevan el oro (amount = la apuesta) para /history. detail = el nombre del rival en los cuatro.
+    public const string RpsWin = "rps_win";
+    public const string RpsLoss = "rps_loss";
+    public const string RpsGoldWon = "rps_gold_won";
+    public const string RpsGoldLost = "rps_gold_lost";
     public const string CodeRedeem = "code_redeem";         // canjeó un código (v0.37.0, `aa code`); detail = el código
     public const string AdminCode = "admin_code";           // el administrador creó, prendió o apagó un código con «aa admincode»; detail = qué hizo: es el rastro para auditar
     public const string AdminSet = "admin_set";             // el administrador le fijó un valor con «aa adminset» (v0.48.1; hoy el tier o el nivel del dragón); amount = el valor nuevo, detail = qué cambió (antes->después) y quién lo hizo

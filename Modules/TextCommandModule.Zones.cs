@@ -25,14 +25,15 @@ public partial class TextCommandModule
     }
 
     // "aa drops" — misma lógica que DropsModule.HandleDropsAsync.
+    // v0.53.2: abre en tu zona; "aa drops 3" abre la Zona 3 (si tu escalera la tiene). El desplegable pasa a otra.
     [Command("drops")]
     [Summary("Mirá qué suelta cada monstruo de cada zona (cazar, viajar y jefe) y con qué chance.")]
-    public async Task DropsAsync()
+    public async Task DropsAsync(int? zona = null)
     {
         try
         {
-            var message = await DropsModule.BuildDropsMessageAsync(userRepository, zoneRepository, monsterRepository, itemRepository, Context.User.Id, zoneBoxService);
-            await ReplyAsync(message.Text, embeds: message.Embeds);
+            var message = await DropsModule.BuildDropsMessageAsync(userRepository, zoneRepository, monsterRepository, itemRepository, Context.User.Id, zoneBoxService, zona);
+            await ReplyAsync(DropsModule.NullIfEmpty(message.Text), embeds: message.Embeds, components: message.Components);
         }
         catch (Exception ex)
         {

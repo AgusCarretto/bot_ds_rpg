@@ -182,12 +182,13 @@ var ownedMix = new[] { new OwnedPet(chispa, 0, null), new OwnedPet(species[0], 0
 Check(PetChoices.ForFeed(ownedMix, DateTime.UtcNow, "").Select(c => c.Value.ToString()).SequenceEqual([species[0].Name, "Chispa del Asador"]), "la lista de /pet feed pone a la Chispa (zona 0) DESPUÉS de las de la escalera, no primera por su id");
 
 Console.WriteLine("\n== 8. Pantallas ==");
-var drops = await DropsModule.BuildDropsMessageAsync(users, zonesRepo, monstersRepo, itemsRepo, U, svc);
-string z4Text = string.Join("\n", drops.Embeds[3].Fields.Select(f => f.Name + "\n" + f.Value));
-Check(drops.Embeds.Length == 5 && z4Text.Contains("100% la 1.ª vez") && z4Text.Contains("60%") && z4Text.Contains("Arcón de Hierro") && !z4Text.Contains("% después"), "/drops: el jefe de la Zona 4 dice 100 % la primera vez y 60 % de Arcón de Hierro después");
-Check(drops.Embeds.Sum(e => e.Length) < 6000, $"los embeds de /drops siguen bajo los 6000 caracteres ({drops.Embeds.Sum(e => e.Length)})");
-var dropsOld = await DropsModule.BuildDropsMessageAsync(users, zonesRepo, monstersRepo, itemsRepo, U);
-Check(!string.Join("\n", dropsOld.Embeds[3].Fields.Select(f => f.Value)).Contains("Si ya lo vencías"), "sin el servicio de cajas, /drops no inventa la caja de repetición");
+// v0.53.2: /drops muestra UNA zona por mensaje (se elige con el desplegable o pidiéndola).
+var drops = await DropsModule.BuildDropsMessageAsync(users, zonesRepo, monstersRepo, itemsRepo, U, svc, 4);
+string z4Text = string.Join("\n", drops.Embeds[0].Fields.Select(f => f.Name + "\n" + f.Value));
+Check(drops.Embeds.Length == 1 && drops.Embeds[0].Title!.Contains("Zona 4") && z4Text.Contains("100% la 1.ª vez") && z4Text.Contains("Después: 60%") && z4Text.Contains("Arcón de Hierro"), "/drops: el jefe de la Zona 4 dice 100 % la primera vez y 60 % de Arcón de Hierro después");
+Check(drops.Embeds.Sum(e => e.Length) < 6000, $"el embed de /drops sigue bajo los 6000 caracteres ({drops.Embeds.Sum(e => e.Length)})");
+var dropsOld = await DropsModule.BuildDropsMessageAsync(users, zonesRepo, monstersRepo, itemsRepo, U, null, 4);
+Check(!string.Join("\n", dropsOld.Embeds[0].Fields.Select(f => f.Value)).Contains("Después:"), "sin el servicio de cajas, /drops no inventa la caja de repetición");
 var pets6 = PetModule.BuildViewEmbed(new PetModule.PetViewData(species, [new OwnedPet(chispa, 4, null)], 0, new HashSet<string>(), DateTime.UtcNow));
 Check(pets6.Length < 6000 && string.Join(" ", pets6.Fields.Select(f => f.Name + f.Value)).Contains("Chispa del Asador"), $"/pet view con 6 especies nombra a la Chispa y cabe en un embed ({pets6.Length} caracteres)");
 var helpPets = HelpTopics.Find("pets");

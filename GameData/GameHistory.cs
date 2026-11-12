@@ -23,6 +23,7 @@ public static class GameHistory
         GameEventKinds.HuntWin, GameEventKinds.TravelWin, GameEventKinds.BossWin, GameEventKinds.RaidWin, GameEventKinds.FightLost,
         GameEventKinds.DuelWin, GameEventKinds.DuelLoss, GameEventKinds.ArenaJoin, GameEventKinds.ArenaWin,
         GameEventKinds.CasinoWin, GameEventKinds.CasinoLoss,
+        GameEventKinds.RpsWin, GameEventKinds.RpsLoss, GameEventKinds.RpsGoldWon, GameEventKinds.RpsGoldLost,
     ];
 
     public static GameHistoryReport Build(IReadOnlyList<EventTotal> totals)
@@ -32,6 +33,8 @@ public static class GameHistory
 
         long Gold(string kind, string detail) =>
             totals.Where(t => t.Kind == kind && string.Equals(t.Detail, detail, StringComparison.OrdinalIgnoreCase)).Sum(t => t.Amount);
+
+        long AllGold(string kind) => totals.Where(t => t.Kind == kind).Sum(t => t.Amount);
 
         var games = new List<GameRecord>
         {
@@ -46,6 +49,9 @@ public static class GameHistory
                 Gold(GameEventKinds.CasinoWin, "coinflip"), Gold(GameEventKinds.CasinoLoss, "coinflip"), IsCasino: true),
             new("🃏", "Blackjack", Count(GameEventKinds.CasinoWin, "blackjack"), Count(GameEventKinds.CasinoLoss, "blackjack"),
                 Gold(GameEventKinds.CasinoWin, "blackjack"), Gold(GameEventKinds.CasinoLoss, "blackjack"), IsCasino: true),
+            // v0.54.0: el detail es el rival, así que el oro se suma de todos los rivales.
+            new("✊", Loc.T("Piedra, papel o tijera"), Count(GameEventKinds.RpsWin), Count(GameEventKinds.RpsLoss),
+                AllGold(GameEventKinds.RpsGoldWon), AllGold(GameEventKinds.RpsGoldLost), IsCasino: true),
         };
 
         return new GameHistoryReport(
