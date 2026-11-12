@@ -138,9 +138,11 @@ public class DeepShopModule(
             }
 
             int have = await dustRepository.GetQuantityAsync(discordId, item.ItemId);
+            // El ícono va en el VALOR del campo: en el nombre Discord no dibuja los emojis propios.
+            string icon = string.IsNullOrWhiteSpace(item.Emoji) ? string.Empty : item.Emoji + " ";
             embed.AddField(
-                Loc.F($"{ItemDisplay.Format(item.Emoji, item.Name)} — {GameHistory.Number(DeepShop.PricePerUnit)} de Polvo"),
-                Loc.F($"{entry.UseLine}\nTenés **{GameHistory.Number(have)}**."),
+                Loc.F($"{item.Name} — {GameHistory.Number(DeepShop.PricePerUnit)} de Polvo"),
+                icon + Loc.F($"{entry.UseLine}\nTenés **{GameHistory.Number(have)}**."),
                 false);
             menu.AddItemOption(item.Name, item.Name, entry.Key, Loc.F($"{GameHistory.Number(DeepShop.PricePerUnit)} de Polvo · tenés {GameHistory.Number(have)}"));
         }

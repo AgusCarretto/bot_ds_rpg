@@ -150,7 +150,7 @@ public partial class PetModule
 
         var lines = new List<string>
         {
-            Loc.F($"Estuvo **{PetExpeditions.HoursText(done.Hours)}** afuera y trajo: {MissionRewards.Describe(receipt.Reward)}"),
+            Loc.F($"Estuvo **{PetExpeditions.HoursText(done.Hours)}** afuera y trajo:\n{MissionRewards.DescribeLines(receipt.Reward)}"),
         };
         if (outcome.Find is { } find)
         {
@@ -179,14 +179,15 @@ public partial class PetModule
     // Lo que dice el hallazgo, ya con las cantidades que salieron.
     public static string FindResultText(ExpeditionFindResult find)
     {
-        string items = string.Join(", ", find.Items.Select(i => $"{ItemEmojiRegistry.IconOf(i.ItemName, string.Empty)} {i.Quantity}× **{i.ItemName}**".Trim()));
+        // Un ítem por renglón, como el inventario (auditoría de UI, M9).
+        string items = string.Join('\n', find.Items.Select(i => MissionRewards.ItemLine(ItemEmojiRegistry.IconOf(i.ItemName, string.Empty), i.ItemName, i.Quantity)));
         return find.Kind switch
         {
             ExpeditionFindKind.GoldBag => Loc.F($"✨ ¡Encontró una bolsa extra! El **oro** de la expedición subió un {PetExpeditions.FindBonusPercent} %."),
             ExpeditionFindKind.XpBoost => Loc.F($"✨ ¡Tuvo una inspiración! La **EXP** de la expedición subió un {PetExpeditions.FindBonusPercent} %."),
             ExpeditionFindKind.Dust => Loc.F($"✨ ¡Encontró **{find.Amount}** de Polvo!"),
-            ExpeditionFindKind.HuntDrops => find.Items.Count > 0 ? Loc.F($"✨ ¡Encontró un drop de cacería!: {items}") : Loc.T("✨ Encontró algo, pero tu zona no tiene drops cargados."),
-            ExpeditionFindKind.Gather => find.Items.Count > 0 ? Loc.F($"✨ ¡Volvió con materiales!: {items}") : Loc.T("✨ Volvió con las manos vacías de materiales."),
+            ExpeditionFindKind.HuntDrops => find.Items.Count > 0 ? Loc.F($"✨ ¡Encontró un drop de cacería!\n{items}") : Loc.T("✨ Encontró algo, pero tu zona no tiene drops cargados."),
+            ExpeditionFindKind.Gather => find.Items.Count > 0 ? Loc.F($"✨ ¡Volvió con materiales!\n{items}") : Loc.T("✨ Volvió con las manos vacías de materiales."),
             _ => string.Empty,
         };
     }

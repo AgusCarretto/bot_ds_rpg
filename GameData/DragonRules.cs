@@ -45,7 +45,10 @@ public static class DragonRules
     public static string KindName(string kind) => kind switch { Strength => "Fuerza", Defense => "Defensa", Gold => "Oro", _ => "Especial" };
 
     // El emoji de cada tipo: el dragón propio que se haya subido al portal (dragon_fuerza…, ver docs/dragon-emojis/README.md) o, mientras no esté, el de siempre.
-    public static string KindEmoji(string kind) => UiEmojis.DragonKind(kind, kind switch { Strength => "🗡️", Defense => "🛡️", Gold => "💰", _ => "✨" });
+    public static string KindEmoji(string kind) => UiEmojis.DragonKind(kind, KindEmojiPlain(kind));
+
+    // El mismo ícono pero SIEMPRE unicode, para donde Discord no dibuja emojis propios (títulos, nombres de campo, footers, opciones de menú).
+    public static string KindEmojiPlain(string kind) => kind switch { Strength => "🗡️", Defense => "🛡️", Gold => "💰", _ => "✨" };
 
     // Qué mejora cada tipo, para frases como «+12 % de ATQ contra monstruos».
     public static string KindEffect(string kind) => kind switch

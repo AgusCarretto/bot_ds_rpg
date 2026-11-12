@@ -299,7 +299,7 @@ Console.WriteLine("\n== 15. La apertura de cajas sin rareza (v0.15.1) ==");
     var box = new Item { ItemId = 1, Name = "Cofre de Oro", Type = "Caja", Rarity = "Legendario", BoxMinItems = 25, BoxMaxItems = 60 };
     var opened = BoxModule.BuildOpenedEmbed(box, 1, 1, 0, [new LootedItem(1, "Ceniza del Abismo", "Mítico", null, 3), new LootedItem(2, "Cuero Grueso", "Común", null, 5), new LootedItem(3, "Gema de Zafiro", "Legendario", null, 1)], 100);
     string text = opened.Description;
-    Check(text.Contains("3×") && text.Contains("Ceniza del Abismo") && text.Contains("Cuero Grueso") && text.Contains("Gema de Zafiro"), "la lista sigue mostrando cantidad y nombre de cada ítem");
+    Check(text.Contains("**Ceniza del Abismo**: 3") && text.Split('\n').Length == 3 && text.Contains("Cuero Grueso") && text.Contains("Gema de Zafiro"), "la lista sigue mostrando cantidad y nombre de cada ítem");
     Check(!new[] { "Común", "Raro", "Épico", "Legendario", "Mítico" }.Any(r => text.Contains(r)) && !text.Contains("_("), "y ya no escribe la rareza al lado de ninguno");
     Check(text.IndexOf("Ceniza del Abismo") < text.IndexOf("Cuero Grueso"), "el orden por rareza del catálogo se mantiene (lo más alto arriba)");
 }

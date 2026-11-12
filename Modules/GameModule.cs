@@ -212,9 +212,9 @@ public class GameModule(
             .WithColor(colorLevel > 0 ? new Color((uint)BlessingCatalog.ColorValue(colorLevel)) : Color.Orange) // Color cálido acorde al asado
             .WithThumbnailUrl(avatarUrl)
             // Los nombres de campo van en texto plano («XP», «Vida») y el ícono al final de la línea de números: un emoji propio no se garantiza en el nombre de un campo.
-            .AddField("XP", Loc.F($"{ProgressBar.Render(player.Xp, requiredXp, ProfileBarSegments, UiEmojis.BarXp)}\n{player.Xp} / {requiredXp} {UiEmojis.Xp}"), false)
+            .AddField("XP", Loc.F($"{ProgressBar.Render(player.Xp, requiredXp, ProfileBarSegments, UiEmojis.BarXp)}\n{GameHistory.Number(player.Xp)} / {GameHistory.Number(requiredXp)} {UiEmojis.Xp}"), false)
             // La vida con el factor de clase (la misma de la pelea, v0.25.3): un Ninja de 340 de vida base se ve de 323 acá y peleando, no 340 en una pantalla y 323 en la otra.
-            .AddField(Loc.T("Vida"), $"{ProgressBar.Render(combat.CombatCurrentHp, combat.CombatMaxHp, ProfileBarSegments, UiEmojis.BarHp)}\n{combat.CombatCurrentHp} / {combat.CombatMaxHp} HP ❤️", false)
+            .AddField(Loc.T("Vida"), $"{ProgressBar.Render(combat.CombatCurrentHp, combat.CombatMaxHp, ProfileBarSegments, UiEmojis.BarHp)}\n{GameHistory.Number(combat.CombatCurrentHp)} / {GameHistory.Number(combat.CombatMaxHp)} HP ❤️", false)
             .AddField(ProfileStatsFieldName, string.Join("\n\n", statGroups), false);
 
         // Las mascotas, los porcentajes del Fuego Nuevo, las bendiciones y los oficios YA NO van en el perfil (el dueño, 2026-10-07: «dejalas aparte»): cada uno tiene su comando propio,

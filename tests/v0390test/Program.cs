@@ -299,7 +299,7 @@ Check(tryOther.Embed!.Title.Contains("está de expedición") && await Food() == 
 await Finish();
 int goldBefore = (await Me()).Gold;
 var back = await Run(null, null, new ScriptedRandom(99));
-Check(back.Embed!.Title.Contains("volvió de la expedición") && AllText(back.Embed).Contains("oro") && AllText(back.Embed).Contains("XP") && AllText(back.Embed).Contains("No encontró nada") && (await Me()).Gold == goldBefore + 30_000 && await Rows() == 0,
+Check(back.Embed!.Title.Contains("volvió de la expedición") && AllText(back.Embed).Contains("**Oro**: 30.000") && AllText(back.Embed).Contains("**XP**: ") && AllText(back.Embed).Contains("No encontró nada") && (await Me()).Gold == goldBefore + 30_000 && await Rows() == 0,
     "cuando ya volvió, el mismo comando recoge el premio: oro, XP y «no encontró nada especial» sin hallazgo");
 var foundScreen = await PetModule.ClaimExpeditionAsync(expRepo, events, (await users.GetByDiscordIdAsync(U))!, new ScriptedRandom(0));
 Check(foundScreen.PlainMessage!.Contains("No tenés ninguna"), "recoger sin expedición: lo dice");

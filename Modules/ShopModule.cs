@@ -179,7 +179,7 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
 
         return new ShopActionResult(null, new EmbedBuilder()
             .WithTitle(Loc.T("🛒 ¡Compra realizada!"))
-            .WithDescription(Loc.F($"{NpcDialogue.Shopkeeper(ShopkeeperLine.BuySuccess)}\n\nCompraste **{ItemDisplay.Format(item.Emoji, item.Name)}** x{quantity} por **{totalCost}** de oro.\nOro restante: **{buyer.Gold}**."))
+            .WithDescription(Loc.F($"{NpcDialogue.Shopkeeper(ShopkeeperLine.BuySuccess)}\n\nCompraste **{ItemDisplay.Format(item.Emoji, item.Name)}** x{quantity} por **{GameHistory.Number(totalCost)}** de oro.\nOro restante: **{GameHistory.Number(buyer.Gold)}**."))
             .WithColor(Color.Green)
             .Build());
     }
@@ -224,11 +224,11 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
                 // Una frase entera por pieza (no se arma con "equipad{a/o}"): el género del español no existe en inglés.
                 bool weapon = item.Type == "Weapon";
                 string soldLine = weapon
-                    ? Loc.F($"\n\nVendiste tu arma equipada **{ItemDisplay.Format(item.Emoji, item.Name)}** por **{item.SellPrice}** de oro.\n")
-                    : Loc.F($"\n\nVendiste tu amuleto equipado **{ItemDisplay.Format(item.Emoji, item.Name)}** por **{item.SellPrice}** de oro.\n");
+                    ? Loc.F($"\n\nVendiste tu arma equipada **{ItemDisplay.Format(item.Emoji, item.Name)}** por **{GameHistory.Number(item.SellPrice)}** de oro.\n")
+                    : Loc.F($"\n\nVendiste tu amuleto equipado **{ItemDisplay.Format(item.Emoji, item.Name)}** por **{GameHistory.Number(item.SellPrice)}** de oro.\n");
                 string goldLine = weapon
-                    ? Loc.F($"Oro total: **{soldGear.Gold}**.\n\n_Te quedaste sin arma: forjá otra en **/forge**._")
-                    : Loc.F($"Oro total: **{soldGear.Gold}**.\n\n_Te quedaste sin amuleto: forjá otro en **/forge**._");
+                    ? Loc.F($"Oro total: **{GameHistory.Number(soldGear.Gold)}**.\n\n_Te quedaste sin arma: forjá otra en **/forge**._")
+                    : Loc.F($"Oro total: **{GameHistory.Number(soldGear.Gold)}**.\n\n_Te quedaste sin amuleto: forjá otro en **/forge**._");
                 return new ShopActionResult(null, new EmbedBuilder()
                     .WithTitle(Loc.T("💰 ¡Venta realizada!"))
                     .WithDescription(NpcDialogue.Shopkeeper(ShopkeeperLine.SellSuccess) + soldLine + goldLine)
@@ -254,7 +254,7 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
 
         return new ShopActionResult(null, new EmbedBuilder()
             .WithTitle(Loc.T("💰 ¡Venta realizada!"))
-            .WithDescription(Loc.F($"{NpcDialogue.Shopkeeper(ShopkeeperLine.SellSuccess)}\n\nVendiste **{ItemDisplay.Format(item.Emoji, item.Name)}** x{quantity} por **{totalRefund}** de oro.\nOro total: **{seller.Gold}**."))
+            .WithDescription(Loc.F($"{NpcDialogue.Shopkeeper(ShopkeeperLine.SellSuccess)}\n\nVendiste **{ItemDisplay.Format(item.Emoji, item.Name)}** x{quantity} por **{GameHistory.Number(totalRefund)}** de oro.\nOro total: **{GameHistory.Number(seller.Gold)}**."))
             .WithColor(Color.Green)
             .Build());
     }

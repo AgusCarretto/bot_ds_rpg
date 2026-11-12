@@ -249,7 +249,7 @@ public class MissionsModule(
             .WithTitle(Loc.T("🎁 ¡Premios reclamados!"))
             .WithColor(Color.Green)
             .WithDescription($"{string.Join('\n', lines)}\n\n**Total:** {totals.Describe()}")
-            .AddField(Loc.T("💰 Tu oro ahora"), totals.GoldAfter.ToString(), true);
+            .AddField(Loc.T("💰 Tu oro ahora"), GameHistory.Number(totals.GoldAfter), true);
 
         // La subida de nivel sale como mensaje propio (GameData/LevelUpCard.cs), no como una línea más acá.
         return embed.Build();

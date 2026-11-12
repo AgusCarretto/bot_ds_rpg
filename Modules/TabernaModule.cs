@@ -436,7 +436,7 @@ public class TabernaModule(
         {
             components.WithSelectMenu(Menu(
                 BuyFood, discordId, Loc.T("Comprar comida"),
-                foodForSale.Select(i => (i.Name, i.Type == ShopCatalog.PetFoodType ? ShopModule.PetFoodLine(i) : i.Type == ShopCatalog.DragonFoodType ? ShopModule.DragonFoodLine(i) : Loc.F($"Cura {i.StatValue} HP{BuffText(i, buffs)} · {i.BuyPrice} oro"), i.Name))), row++);
+                foodForSale.Select(i => (i.Name, i.Type == ShopCatalog.PetFoodType ? ShopModule.PetFoodLine(i) : i.Type == ShopCatalog.DragonFoodType ? ShopModule.DragonFoodLine(i) : Loc.F($"Cura {i.StatValue} HP{BuffText(i, buffs)} · {GameHistory.Number(i.BuyPrice)} oro"), i.Name))), row++);
         }
 
         // El dragón (v0.30.0) se compra en la misma lista que las cajas, mientras no tengas uno.
@@ -463,8 +463,8 @@ public class TabernaModule(
         {
             components.WithSelectMenu(Menu(
                 Sell, discordId, Loc.T("Vender algo (de a una unidad)"),
-                equippedGear.Select(i => (i.Type == "Weapon" ? Loc.F($"{GearMark(i)}{i.Name} (equipada)") : Loc.F($"{GearMark(i)}{i.Name} (equipado)"), Loc.F($"⚠️ Lo que llevás puesto · {i.SellPrice} oro"), i.Name))
-                    .Concat(sellable.Select(e => ($"{e.ItemName} ×{e.Quantity}", Loc.F($"{e.SellPrice} oro c/u"), e.ItemName)))), row++);
+                equippedGear.Select(i => (i.Type == "Weapon" ? Loc.F($"{GearMark(i)}{i.Name} (equipada)") : Loc.F($"{GearMark(i)}{i.Name} (equipado)"), Loc.F($"⚠️ Lo que llevás puesto · {GameHistory.Number(i.SellPrice)} oro"), i.Name))
+                    .Concat(sellable.Select(e => ($"{e.ItemName} ×{e.Quantity}", Loc.F($"{GameHistory.Number(e.SellPrice)} oro c/u"), e.ItemName)))), row++);
         }
 
         // El trueque (GameData/DropExchange.cs): solo aparece si tenés al menos 3 de algún drop de monstruo. Es la quinta y última fila que admite Discord.

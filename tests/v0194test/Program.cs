@@ -49,6 +49,13 @@ UiEmojis.Set([]);
 var samples = new (int c, int m, int s)[] { (0, 100, 10), (1, 100, 10), (50, 100, 10), (55, 100, 10), (99, 100, 10), (100, 100, 10), (150, 100, 10), (-5, 100, 10), (5, 0, 10), (5, -1, 10), (30, 100, 20), (7, 9, 4), (0, 0, 20) };
 Check(samples.All(x => ProgressBar.Render(x.c, x.m, x.s) == OldRender(x.c, x.m, x.s) && ProgressBar.Render(x.c, x.m, x.s, "hp") == OldRender(x.c, x.m, x.s)),
     "sin emojis subidos la barra es idéntica a la de antes, también pidiendo un tipo (13 casos, incluidos vida cero, de más, negativa y máximo cero)");
+
+// El recorte de un campo largo corta por renglón entero (GameData/FieldText.cs): nunca parte un emoji propio ni una negrita.
+string longField = string.Join("\n", Enumerable.Range(0, 60).Select(i => $"<:item_{i}:123456789012345678> **Ítem número {i}**: 1.234"));
+string fitted = FieldText.FitLines(longField);
+Check(FieldText.FitLines("corto") == "corto" && longField.Length > 1024 && fitted.Length <= 1024 && fitted.EndsWith("\n…")
+    && fitted[..^2].Split('\n').All(l => l.StartsWith("<:item_") && l.EndsWith(": 1.234")) && FieldText.FitLines(new string('x', 2000)).Length == 1024,
+    $"un campo de más de 1024 se corta por renglón entero y cierra con «…» ({fitted.Length} caracteres), y un renglón único larguísimo también entra");
 UiEmojis.Set(Full());
 var bp = UiEmojis.Bar("hp")!;
 string Bar(int c, int m, int segs = 10, string kind = "hp") => ProgressBar.Render(c, m, segs, kind);

@@ -443,11 +443,11 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
             false);
         if (otherTiers.Count > 0)
         {
-            embed.AddField(Loc.T("En otros tiers"), string.Join(" · ", otherTiers.Select(t => Loc.F($"Tier {t.Key}: {t.Value}"))), false);
+            // Un tier por renglón (nunca fichas con « · »); sin footer: repetía el texto del menú de abajo.
+            embed.AddField(Loc.T("En otros tiers"), FieldText.FitLines(string.Join('\n', otherTiers.Select(t => Loc.F($"**Tier {t.Key}**: {t.Value}")))), false);
         }
 
         bool canInvite = sameTier.Count > 0 && mine.CanBreed;
-        embed.WithFooter(canInvite ? Loc.T("Elegí a alguien de la lista para mandarle la invitación a criar.") : Loc.T("Cuando haya alguien de tu tier y tu dragón pueda criar, lo invitás desde acá."));
 
         var components = new ComponentBuilder();
         int row = 0;
@@ -588,17 +588,17 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
         // Una mejora nueva por tier: ✅ las que ya desbloqueó, 🔒 las que le faltan.
         var perkLines = DragonRules.Perks.Select(p => $"{(p.Tier <= dragon.Tier ? "✅" : "🔒")} **{DragonRules.TierNumeral(p.Tier)}** {p.Name}: {DragonRules.PerkText(p.Tier)}");
         string perks = string.Join('\n', perkLines);
-        embed.AddField(Loc.T("Una mejora nueva en cada tier"), perks.Length <= 1024 ? perks : perks[..1023] + "…", false);
+        embed.AddField(Loc.T("Una mejora nueva en cada tier"), FieldText.FitLines(perks), false);
 
         if (dragon.Level >= cap)
         {
-            embed.AddField("Entrenar", Loc.F($"Llegó al nivel máximo de su tier (**{cap}**).") + (maxTier ? Loc.T(" ¡Es lo más alto que se puede!") : Loc.T(" Para seguir entrenándolo, subilo de tier criándolo (**/dragon-breed**): cada tier suma 10 niveles más.")), false);
+            embed.AddField(Loc.T("Entrenar"), Loc.F($"Llegó al nivel máximo de su tier (**{cap}**).") + (maxTier ? Loc.T(" ¡Es lo más alto que se puede!") : Loc.T(" Para seguir entrenándolo, subilo de tier criándolo (**/dragon-breed**): cada tier suma 10 niveles más.")), false);
         }
         else
         {
             long toCap = DragonRules.TrainCostBetween(dragon.Level, cap);
             embed.AddField(
-                "Entrenar",
+                Loc.T("Entrenar"),
                 Loc.F($"Próximo nivel: **{GameHistory.Number(DragonRules.TrainCost(dragon.Level))}** de oro (cada nivel sale más caro). Hasta el tope de este tier ({cap}): **{GameHistory.Number(toCap)}** de oro. ") +
                 Loc.F($"Cada nivel suma **+{DragonRules.Percent(DragonRules.MaxPercent(kind) * DragonRules.LevelShare)} %** {DragonRules.KindEffect(kind)}. Con el botón de abajo o con **/dragon-train**."),
                 false);
@@ -608,22 +608,26 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
         {
             int pityCap = DragonRules.PityCap(dragon.Tier);
             int soloCap = DragonRules.SoloPityCap(dragon.Tier);
-            string pity = pityCap == 0
-                ? Loc.F($"En este tier la cría con un amigo es **segura**. Solo: fallos seguidos **{dragon.SoloFailStreak}/{soloCap}** (al llegar, el siguiente sale seguro).")
-                : Loc.F($"Fallos seguidos con un amigo: **{dragon.FailStreak}/{pityCap}** · solo: **{dragon.SoloFailStreak}/{soloCap}**. Al llegar al tope, el siguiente intento de esa forma sale **seguro**: los dos contadores van por separado.");
+            // Solo los datos de HOY, uno por renglón (auditoría de UI, M8): la explicación larga vive en /info tema:dragon.
+            string friendPity = pityCap == 0
+                ? Loc.T("🙏 **Fallos seguidos con un amigo**: no hacen falta, en este tier sale **seguro**")
+                : Loc.F($"🙏 **Fallos seguidos con un amigo**: {dragon.FailStreak}/{pityCap}");
             embed.AddField(
-                "Criar",
-                Loc.F($"Chance de subir de tier: **{DragonRules.Percent(Math.Round(DragonRules.BreedChance(dragon.Tier) * 100, 2))} %** por intento · en promedio, unos **{DragonRules.ExpectedAttempts(dragon.Tier):0.#}** intentos.\n{pity}\n") +
-                Loc.F($"Se cría con un amigo que tenga tu mismo tier: **/dragon-breed @amigo**. Cada dragón tira su propia suerte, así que puede subir uno y el otro no. Cada intento los hace descansar {TimeFormat.Remaining(DragonRules.BreedCooldown)}; cuánto falta para el próximo lo ves en **/cd**.\n") +
-                Loc.F($"También podés criarlo **solo**, sin amigo (**/dragon-breed** a secas): cuenta como intento, pero con **un tercio** de la chance ({DragonRules.Percent(Math.Round(DragonRules.SoloBreedChance(dragon.Tier) * 100, 2))} %) y en promedio unos **{DragonRules.ExpectedAttempts(dragon.Tier, DragonRules.SoloChanceFactor):0.#}** intentos."),
+                Loc.T("Criar"),
+                Loc.F($"👥 **Con un amigo de tu tier**: {DragonRules.Percent(Math.Round(DragonRules.BreedChance(dragon.Tier) * 100, 2))} % (**/dragon-breed @amigo**)\n") +
+                Loc.F($"👤 **Solo**: {DragonRules.Percent(Math.Round(DragonRules.SoloBreedChance(dragon.Tier) * 100, 2))} %, un tercio (**/dragon-breed** a secas)\n") +
+                friendPity + "\n" +
+                Loc.F($"🙏 **Fallos seguidos solo**: {dragon.SoloFailStreak}/{soloCap}\n") +
+                Loc.T("_Al llegar al tope de fallos, el siguiente intento de esa forma sale seguro._\n") +
+                Loc.T("📖 Cómo funciona: **/info tema:dragon**"),
                 false);
 
             int food = await dragonRepository.CountFoodAsync(discordId);
             embed.AddField(
                 Loc.T("Tipo y comida"),
-                Loc.T("En **cada cría** (cada intento de criar, salga bien o mal) tu dragón **cambia de tipo al azar** (🗡️ Fuerza, 🛡️ Defensa, 💰 Oro o ✨ Especial; puede tocarte el mismo). Los niveles entrenados se quedan y rinden según el tipo nuevo.\n") +
-                Loc.F($"Para **conservar el tipo** tené {ItemEmojiRegistry.Label(DragonRules.FoodItemName, "🍖")} en la mochila: se gasta **una por cría**, sola. ") +
-                (food > 0 ? Loc.F($"Ahora tenés **{food}**.") : Loc.T("Ahora no tenés: se compra en la **/taberna**.")),
+                Loc.T("🎲 En cada cría tu dragón **cambia de tipo al azar**.\n") +
+                Loc.F($"{ItemEmojiRegistry.IconOf(DragonRules.FoodItemName, "🍖")} **{DragonRules.FoodItemName}**: {GameHistory.Number(food)}\n") +
+                (food > 0 ? Loc.T("_Conserva el tipo: se gasta una por cría, sola._") : Loc.T("_Conserva el tipo (una por cría): se compra en la **/taberna**._")),
                 false);
         }
 
@@ -815,7 +819,7 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
                 Loc.F($"Cada dragón tira su propia suerte: la chance de subir al tier {mine.Tier + 1} (**{perk.Name}**: {DragonRules.PerkText(perk.Tier)}) es de **{DragonRules.Percent(Math.Round(DragonRules.BreedChance(mine.Tier) * 100, 2))} %** para cada uno, así que puede subir uno y el otro no.") +
                 certain +
                 Loc.F($" Pase lo que pase, los dos descansan {TimeFormat.Remaining(DragonRules.BreedCooldown)}.\n\n") +
-                Loc.F($"Cada dragón **cambia de tipo al azar** en este intento (salga bien o mal), salvo que su dueño tenga {ItemEmojiRegistry.Label(DragonRules.FoodItemName, "🍖")} en la mochila (se gasta una). El {ItemEmojiRegistry.IconOf(DragonRules.FoodItemName, "🍖")} al lado del nombre dice quién la tiene.\n\n<@{toId}>, ¿aceptás? Tenés 2 minutos."))
+                Loc.F($"Cada dragón **cambia de tipo al azar**, salvo el de quien tenga {ItemEmojiRegistry.Label(DragonRules.FoodItemName, "🍖")} (el {ItemEmojiRegistry.IconOf(DragonRules.FoodItemName, "🍖")} al lado del nombre).\n\n<@{toId}>, ¿aceptás? Tenés 2 minutos."))
             .Build();
         var buttons = new ComponentBuilder()
             .WithButton(Loc.T("Aceptar"), $"{AcceptPrefix}:{offer.Id}", ButtonStyle.Success, new Emoji("🥚"))

@@ -245,14 +245,16 @@ public static class ForgeModule
                     ? $"• {i.Quantity}× {ItemDisplay.Format(i.Emoji, i.ItemName)}"
                     : $"{(owned.GetValueOrDefault(i.ItemName) >= i.Quantity ? "✅" : "❌")} {ItemDisplay.Format(i.Emoji, i.ItemName)} — {owned.GetValueOrDefault(i.ItemName)}/{i.Quantity}"));
             string goldText = playerGold is int gold
-                ? Loc.F($"{(gold >= recipe.GoldCost ? "✅" : "❌")} 💰 {recipe.GoldCost} oro (tenés {gold})")
-                : Loc.F($"💰 {recipe.GoldCost} oro");
-            string value = Loc.F($"**{stat}** · _{groupLabel}_\n{goldText}\n\n{ingredients}");
+                ? Loc.F($"{(gold >= recipe.GoldCost ? "✅" : "❌")} 💰 {GameHistory.Number(recipe.GoldCost)} oro (tenés {GameHistory.Number(gold)})")
+                : Loc.F($"💰 {GameHistory.Number(recipe.GoldCost)} oro");
+            // El ícono del ítem va adelante de la primera línea del VALOR: en el nombre de un campo Discord no dibuja los emojis propios.
+            string icon = string.IsNullOrWhiteSpace(recipe.ResultItem.Emoji) ? string.Empty : recipe.ResultItem.Emoji + " ";
+            string value = icon + Loc.F($"**{stat}** · _{groupLabel}_\n{goldText}\n\n{ingredients}");
 
             // Defensa: un campo de más de 1024 caracteres haría reventar todo el mensaje.
             embed.AddField(
-                ItemDisplay.Format(recipe.ResultItem.Emoji, recipe.ResultItem.Name),
-                value.Length <= 1024 ? value : value[..1023] + "…",
+                recipe.ResultItem.Name,
+                FieldText.FitLines(value),
                 false);
         }
     }
@@ -347,7 +349,7 @@ public static class ForgeModule
 
         return new ForgeMakeResult(null, new EmbedBuilder()
             .WithTitle(outcome.EquippedSlot is null ? Loc.T("⚒️ ¡Forjado con éxito!") : Loc.T("⚒️ ¡Forjado y equipado!"))
-            .WithDescription(Loc.F($"{NpcDialogue.Blacksmith(BlacksmithLine.Success)}\n\n{madeLine}\nOro restante: **{outcome.Player!.Gold}**."))
+            .WithDescription(Loc.F($"{NpcDialogue.Blacksmith(BlacksmithLine.Success)}\n\n{madeLine}\nOro restante: **{GameHistory.Number(outcome.Player!.Gold)}**."))
             .WithItemThumbnail(recipe.ResultItem.Emoji)
             .WithColor(Color.Green)
             .Build());
