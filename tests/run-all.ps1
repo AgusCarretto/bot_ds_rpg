@@ -26,8 +26,13 @@ if ($LASTEXITCODE -ne 0) { throw "No compila el bot: arreglalo antes de correr l
 $bad = @()
 foreach ($p in $projects) {
     $log = Join-Path $logs "$($p.Name).log"
+    # En Windows PowerShell 5.1, con "Stop" cualquier línea que el arnés escriba en stderr se vuelve una excepción y corta
+    # TODA la corrida (v0281test escribe un error simulado a propósito). Mientras corre el arnés se baja a "Continue":
+    # lo que decide si pasó es su código de salida y las líneas [FALLA], no el stderr.
+    $ErrorActionPreference = "Continue"
     dotnet run --project (Join-Path $p.FullName "$($p.Name).csproj") *> $log
     $exit = $LASTEXITCODE
+    $ErrorActionPreference = "Stop"
     $falla = (Select-String -Path $log -Pattern "\[FALLA\]" -SimpleMatch:$false | Measure-Object).Count
     if ($exit -eq 0 -and $falla -eq 0) {
         Write-Host ("OK     " + $p.Name) -ForegroundColor Green

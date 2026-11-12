@@ -41,14 +41,26 @@ bool everyEmojiShown = sample.Fields.SelectMany(f => RecipeLines(f.Value)).All(l
 Check(emojiMissing.Count == 0 && everyEmojiShown, $"los emojis: el resultado y cada ingrediente de cada línea van con su emoji propio ({(emojiMissing.Count == 0 ? "todas las recetas tienen emoji en todo" : "sin emoji en: " + string.Join(", ", emojiMissing))})");
 
 Console.WriteLine("\n== /drops ==");
-var msg = await DropsModule.BuildDropsMessageAsync(new UserRepository(factory), zoneRepo, new MonsterRepository(factory), new ItemRepository(factory), 1UL, new ZoneBoxService(factory, zoneRepo));
-int dropsTotal = msg.Text.Length + msg.Embeds.Sum(Total);
-Check(msg.Embeds.Length == 5 && msg.Embeds.All(e => e.Fields.All(f => f.Value.Length <= 1024 && f.Name.Length <= 256) && e.Fields.Length == 3), "5 tarjetas (una por zona), cada una con sus 3 bloques Cazar / Viajar / Jefe");
-Check(dropsTotal < 6000, $"el mensaje entero mide {dropsTotal} de 6000");
-Check(msg.Embeds.All(e => e.Fields.Where(f => !f.Name.Contains("Viajar")).All(f => f.Value.Contains("\n└ "))), "cada monstruo de cacería y de jefe en dos líneas: nombre y, abajo, lo que suelta");
-Check(msg.Embeds.All(e => e.Fields.Single(f => f.Name.Contains("Viajar")).Name.Contains("% de caja") && e.Fields.Single(f => f.Name.Contains("Viajar")).Value.Contains("📦") && !e.Fields.Single(f => f.Name.Contains("Viajar")).Value.Contains("\n└ ")), "el viaje (v0.36.0) no suelta material: el bloque dice la chance de caja y qué caja");
-Check(msg.Embeds.Select(e => e.Color).Distinct().Count() == 5, "cada zona con su color");
-foreach (var e in msg.Embeds.Take(2)) { Console.WriteLine($"\n--- {e.Title} ({e.Description})"); foreach (var f in e.Fields) Console.WriteLine($"{f.Name}\n{f.Value}\n"); }
+// v0.53.2: una zona por mensaje, con un desplegable para pasar a otra; un renglón por monstruo y solo el emoji del ítem.
+var dropUsers = new UserRepository(factory);
+var dropMonsters = new MonsterRepository(factory);
+var dropItems = new ItemRepository(factory);
+var dropBoxes = new ZoneBoxService(factory, zoneRepo);
+var ladder = ZoneRanking.ForPlayer(await zoneRepo.GetAllAsync(), 0);
+var perZone = new List<DropsModule.DropsMessage>();
+foreach (var z in ladder) perZone.Add(await DropsModule.BuildDropsMessageAsync(dropUsers, zoneRepo, dropMonsters, dropItems, 1UL, dropBoxes, z.ZoneId));
+var msg = perZone[0];
+Check(perZone.All(m => m.Embeds.Length == 1 && m.Embeds[0].Fields.Length == 3 && m.Embeds[0].Fields.All(f => f.Value.Length <= 1024 && f.Name.Length <= 256)), $"{perZone.Count} zonas, cada una en su mensaje con sus 3 bloques Cazar / Viajar / Jefe");
+Check(perZone.Select((m, i) => m.Embeds[0].Title!.Contains($"Zona {ladder[i].ZoneId} ")).All(x => x), "cada pedido abre la zona pedida");
+Check(perZone.Max(m => m.Text.Length + m.Embeds.Sum(Total)) < 2000, $"cada mensaje es corto (el más largo mide {perZone.Max(m => m.Text.Length + m.Embeds.Sum(Total))})");
+Check(perZone.All(m => m.Embeds[0].Fields.All(f => f.Value.Split('\n').Where(l => l.StartsWith("**")).All(l => l.Contains(" → ")) && !f.Value.Contains("└"))), "cada monstruo es UN renglón «**Monstruo** → ítem», sin └");
+Check(perZone.All(m => m.Embeds[0].Fields.Single(f => f.Name.Contains("Viajar")).Name.Contains("% de caja") && m.Embeds[0].Fields.Single(f => f.Name.Contains("Viajar")).Value.Contains(" → ") && !m.Embeds[0].Fields.Single(f => f.Name.Contains("Viajar")).Value.Contains("📦")), "el viaje (v0.36.0) no suelta material: dice la chance de caja y qué caja, sin el 📦 de adorno");
+Check(perZone.Select(m => m.Embeds[0].Color).Distinct().Count() == Math.Min(5, ladder.Count), "cada zona con su color");
+var menuJson = msg.Components!.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<SelectMenuComponent>().Single();
+Check(menuJson.CustomId == "drops_zone:1" && menuJson.Options.Count == ladder.Count && menuJson.Options.Count(o => o.IsDefault == true) == 1 && menuJson.Options.All(o => o.Emote is null), "el desplegable lleva una opción por zona, marca la que se ve y no lleva emojis");
+var fallback = await DropsModule.BuildDropsMessageAsync(dropUsers, zoneRepo, dropMonsters, dropItems, 1UL, dropBoxes, 999);
+Check(fallback.Embeds[0].Title!.Contains($"Zona {ladder[0].ZoneId} "), "una zona que no está en la escalera abre la primera");
+foreach (var e in perZone.Take(2).Select(m => m.Embeds[0])) { Console.WriteLine($"\n--- {e.Title} ({e.Description})"); foreach (var f in e.Fields) Console.WriteLine($"{f.Name}\n{f.Value}\n"); }
 
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;

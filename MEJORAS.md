@@ -13,7 +13,7 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 
 **Pedidos del dueño sin hacer**
 - ~~**Subir la vida del jefe de la Zona 5**~~ **hecho en la v0.53.0** (+10 % de vida y +5 % de daño, el raid igual): a nivel 55-60 sigue sin arriesgar nada, lo único que lo cambia es que el jefe escale con el nivel del jugador (sin construir). Ver «Anotado el 2026-11-12».
-- **`aa drops` (y `/drops`) está feo y hay que rehacerlo**: el dueño lo dijo así, sin detalle; antes de diseñar hay que preguntarle qué le molesta. Hay además un riesgo de tamaño sin medir con las 10 zonas abiertas (FN 17): 10 embeds y 6.000 caracteres. Dirección probable: una zona por página con un desplegable.
+- ~~**`aa drops` (y `/drops`) está feo y hay que rehacerlo**~~ **hecho en la v0.53.2** (2026-11-12): una zona por mensaje (abre en la tuya, `aa drops 3` abre otra) con un desplegable, y un renglón por monstruo con solo el emoji del ítem («es mucho emoji junto»). Ya no hay riesgo de pasar los 6.000 caracteres con 10 zonas. Además `tests/run-all.ps1` ya no se corta en v0281test.
 - **Bestiario** (el dueño, 2026-11-12): una pantalla para ver todos los monstruos por zona, con los desbloqueados y los que no como `???`. Hoy no hay de dónde sacar qué monstruo venciste (las victorias guardan la zona, no el monstruo): necesita un registro nuevo. Preguntas y diseño en «Anotado el 2026-11-12».
 - **Canal `#eventos-random`** con más chance de mini-evento y un cooldown más corto (ver «Anotado el 2026-11-06»): tres variables nuevas y un deploy.
 - **Arte**: completo para las zonas 6 a 10. Las 5 Reliquias (2026-11-10) y las 25 piezas de equipo (2026-11-11) están cargadas; los prompts quedan en `docs/arte-zonas-6-10.md` por si hay que rehacer alguna.

@@ -88,10 +88,12 @@ foreach (var z in zones)
     Check(hunt.Count == 2 && hunt.All(m => m.Monster.DropItemNames.Count == 1), $"Zona {z.ZoneId}: /hunt sale de un pool de 2 monstruos, cada uno con su drop ({string.Join(", ", hunt.Select(m => m.Monster.Name))})");
 }
 
-var dropsMsg = await DropsModule.BuildDropsMessageAsync(userRepo, zoneRepo, monsterRepo, itemRepo, 1UL);
-int dropsTotal = dropsMsg.Embeds.Sum(e => (e.Title?.Length ?? 0) + (e.Description?.Length ?? 0) + e.Fields.Sum(f => f.Name.Length + f.Value.Length));
-Check(dropsMsg.Embeds.Length == 5 && dropsTotal < 6000, $"/drops: 5 embeds (uno por zona) y {dropsTotal} caracteres en total (límite 6000)");
-Check(dropsMsg.Embeds.SelectMany(e => e.Fields).Any(f => f.Name.Contains("Jefe") && f.Name.Contains("100%") && f.Name.Contains("cofre")), "/drops: el bloque del jefe dice cofre 100% la primera vez (lo de las repeticiones sale de zone_boxes: lo prueba cofrestest)");
+// v0.53.2: una zona por mensaje.
+var dropsAll = new List<Discord.Embed>();
+foreach (var z in zones) dropsAll.AddRange((await DropsModule.BuildDropsMessageAsync(userRepo, zoneRepo, monsterRepo, itemRepo, 1UL, null, z.ZoneId)).Embeds);
+int dropsMax = dropsAll.Max(e => (e.Title?.Length ?? 0) + (e.Description?.Length ?? 0) + e.Fields.Sum(f => f.Name.Length + f.Value.Length));
+Check(dropsAll.Count == zones.Count && dropsMax < 6000, $"/drops: un embed por zona pedida y el más largo mide {dropsMax} caracteres (límite 6000)");
+Check(dropsAll.SelectMany(e => e.Fields).Any(f => f.Name.Contains("Jefe") && f.Name.Contains("100%") && f.Name.Contains("cofre")), "/drops: el bloque del jefe dice cofre 100% la primera vez (lo de las repeticiones sale de zone_boxes: lo prueba cofrestest)");
 
 // El jefe da su cofre y llega a la mochila por la ruta de siempre (ApplyBossVictoryAsync); el primer jefe de la zona sube highest_zone_cleared.
 const ulong T = 999000000000009001UL;

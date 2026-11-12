@@ -169,7 +169,7 @@ await db.ExecuteAsync("DELETE FROM inventory WHERE discord_id = @id", new { id =
 await SetGold(0);
 await Give("Baúl de Roble", 4);
 var res = await BoxModule.ExecuteOpenAsync(items, boxes, boxCtx, combat, events, U, "Baúl de Roble", 3, new Random(5));
-Check(res.Embed is not null && res.Embed.Title.Contains("3×") && res.Embed.Description.Contains("×") && res.Embed.Footer?.Text.Contains("entre 5 y 10 ítems") == true, $"abrir 3: {res.Embed?.Title} · {res.Embed?.Footer?.Text}");
+Check(res.Embed is not null && res.Embed.Title.Contains("3×") && res.Embed.Description.Contains("**: ") && res.Embed.Footer?.Text.Contains("entre 5 y 10 ítems") == true, $"abrir 3: {res.Embed?.Title} · {res.Embed?.Footer?.Text}");
 Check(await Have("Baúl de Roble") == 1, "gastó exactamente 3 cajas (quedó 1)");
 var stat = await eventsRepo.GetStatsAsync(U);
 Check(stat.GetValueOrDefault("box_opened") == 3, $"queda registrado: box_opened = {stat.GetValueOrDefault("box_opened")}");

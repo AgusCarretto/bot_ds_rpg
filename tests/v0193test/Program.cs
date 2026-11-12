@@ -95,7 +95,7 @@ Check(AllText(view).Contains($"{huevoReal} Huevo de la Pradera") && huevoReal.St
 // /drops: el cofre del jefe con SU emoji (sale de la base).
 var zones = new ZoneRepository(factory);
 var monsters = new MonsterRepository(factory);
-var drops = await DropsModule.BuildDropsMessageAsync(users, zones, monsters, items, 999000000000093999UL);
+var drops = await DropsModule.BuildDropsMessageAsync(users, zones, monsters, items, 999000000000093999UL, null, 5); // v0.53.2: una zona por mensaje; el cofre de escoria es de la Zona 5
 string dropsText = string.Join("\n", drops.Embeds.Select(AllText));
 Check(dropsText.Contains($"{escoria} Cofre de Escoria"), "/drops muestra el Cofre de Escoria con su emoji propio (si en la base viva sale otra cosa, falta correr apply_emojis.sql)");
 Check(!dropsText.Contains("📦"), "/drops no escribe ningún 📦 genérico delante de un cofre");
