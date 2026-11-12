@@ -411,7 +411,7 @@ var failEmbed = await DragonModule.ExecuteSoloBreedAsync(dragons, A, new FixedRa
 Check(winEmbed.Description.Contains("¡Lo lograste solo!") && winEmbed.Description.Contains("Tier 3") && failEmbed.Description.Contains("un tercio") && failEmbed.Description.Contains("Fallos seguidos") && (await DragonModule.ExecuteSoloBreedAsync(dragons, GHOST)).Description.Contains("/taberna") && (await DragonModule.ExecuteSoloBreedAsync(dragons, A)).Description.Contains("descansando"),
     "los mensajes de criar solo: éxito, fallo (dice que la chance es un tercio), sin dragón y descansando");
 var viewSolo = await DragonModule.BuildDragonViewAsync(dragons, A);
-Check(viewSolo.Embed.Fields.Single(f => f.Name == "Criar").Value.Contains("**solo**") && viewSolo.Embed.Fields.Single(f => f.Name == "Criar").Value.Contains("un tercio"), "la pantalla del dragón avisa que se puede criar solo y con un tercio de la chance");
+Check(viewSolo.Embed.Fields.Single(f => f.Name == "Criar").Value.Contains("**Solo**") && viewSolo.Embed.Fields.Single(f => f.Name == "Criar").Value.Contains("un tercio"), "la pantalla del dragón avisa que se puede criar solo y con un tercio de la chance");
 var slashBreed2 = interactions.SlashCommands.Single(c => c.Name == "dragon-breed");
 Check(slashBreed2.Parameters.Count == 1 && !slashBreed2.Parameters[0].IsRequired && slashBreed2.Description.Length <= 100 && texts.Search("dragon breed").Commands.Any(c => c.Command.Name == "dragon breed"), "/dragon-breed y «aa dragon breed» sin amigo son criar solo (el parámetro es opcional)");
 
@@ -459,7 +459,7 @@ var invite2 = await DragonModule.PrepareBreedAsync(dragons, offers, A, B, false)
 Check(invite2.Embed!.Description.Contains("uno y el otro no") && invite2.Embed.Description.Contains("60"), "la invitación avisa que cada dragón tira su suerte (puede subir uno y el otro no)");
 await Dragon(D, "oro", 6, streak: 5);
 var viewD = (await DragonModule.BuildDragonViewAsync(dragons, D)).Embed.Fields.Single(f => f.Name == "Criar").Value;
-Check(viewD.Contains($"Fallos seguidos con un amigo: **5/{DragonRules.PityCap(6)}**") && viewD.Contains($"solo: **0/{DragonRules.SoloPityCap(6)}**") && viewD.Contains("van por separado"), "la pantalla muestra los fallos seguidos del dragón y los dos topes: con un amigo y solo (el triple)");
+Check(viewD.Contains($"**Fallos seguidos con un amigo**: 5/{DragonRules.PityCap(6)}") && viewD.Contains($"**Fallos seguidos solo**: 0/{DragonRules.SoloPityCap(6)}") && viewD.Contains("de esa forma sale seguro") && viewD.Contains("/info tema:dragon"), "la pantalla muestra los fallos seguidos del dragón y los dos topes: con un amigo y solo (el triple)");
 
 Console.WriteLine("\n== 17. Al subir de tier cambia el tipo; la Comida de Dragón lo conserva ==");
 var foodItem = await items.GetByNameAsync(DragonRules.FoodItemName);
@@ -519,9 +519,9 @@ await SetFood(A, 0); await SetFood(B, 0);
 
 await Dragon(D, "oro", 3); await SetFood(D, 2);
 var typeFields = (await DragonModule.BuildDragonViewAsync(dragons, D)).Embed.Fields.Where(f => f.Name == "Tipo y comida").ToList();
-Check(typeFields.Count == 1 && typeFields[0].Value.Contains("cambia de tipo") && typeFields[0].Value.Contains("tenés **2**"), "la pantalla del dragón explica el cambio de tipo y cuántas comidas tenés");
+Check(typeFields.Count == 1 && typeFields[0].Value.Contains("cambia de tipo") && typeFields[0].Value.Contains("**Comida de Dragón**: 2"), "la pantalla del dragón explica el cambio de tipo y cuántas comidas tenés");
 await SetFood(D, 0);
-Check((await DragonModule.BuildDragonViewAsync(dragons, D)).Embed.Fields.Single(f => f.Name == "Tipo y comida").Value.Contains("no tenés"), "y si no tenés, manda a la taberna");
+Check((await DragonModule.BuildDragonViewAsync(dragons, D)).Embed.Fields.Single(f => f.Name == "Tipo y comida").Value.Contains("**Comida de Dragón**: 0\n_Conserva el tipo (una por cría): se compra en la **/taberna**._"), "y si no tenés, manda a la taberna");
 await Dragon(D, "oro", 10);
 Check(!(await DragonModule.BuildDragonViewAsync(dragons, D)).Embed.Fields.Any(f => f.Name == "Tipo y comida"), "en el tier 10 ya no hay nada que criar: la pantalla no lo ofrece");
 
@@ -574,7 +574,7 @@ var buttons19 = rows19.OfType<ButtonComponent>().ToList();
 var sameField = view19.Embed.Fields.Single(f => f.Name.StartsWith("Buscan pareja"));
 Check(view19.Candidates.SequenceEqual([B]) && sameField.Name.Contains("(1)") && sameField.Value.Contains($"<@{B}>") && !sameField.Value.Contains($"<@{C}>") && !sameField.Value.Contains($"<@{E}>") && !sameField.Value.Contains($"<@{F}>"),
     "el tablón muestra solo a los anotados de este servidor, de tu tier y que pueden criar ya (no al que descansa, al de otro tier, al que no se anotó ni al de otro servidor)");
-Check(view19.Embed.Fields.Single(f => f.Name == "En otros tiers").Value.Contains("Tier 3: 1") && menu19 is not null && menu19.CustomId == $"dragon_board_pick:{A}" && menu19.Options.Count == 1 && menu19.Options.Single().Value == B.ToString() && menu19.Options.Single().Label == $"Jugador{B % 1000}"
+Check(view19.Embed.Fields.Single(f => f.Name == "En otros tiers").Value.Contains("**Tier 3**: 1") && menu19 is not null && menu19.CustomId == $"dragon_board_pick:{A}" && menu19.Options.Count == 1 && menu19.Options.Single().Value == B.ToString() && menu19.Options.Single().Label == $"Jugador{B % 1000}"
     && buttons19.Count == 2 && buttons19[0].CustomId == $"dragon_board_toggle:{A}" && buttons19[0].Label.StartsWith("Anotarme") && buttons19[1].CustomId == $"dragon_board_refresh:{A}" && view19.Embed.Length < 6000,
     "cuenta los de otros tiers, ofrece la lista para invitar (con el nombre de cada uno) y los botones Anotarme y Actualizar");
 string joined = await DragonModule.ExecuteBoardToggleAsync(dragons, board, A, GUILD);

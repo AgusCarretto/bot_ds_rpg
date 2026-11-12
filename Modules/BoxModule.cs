@@ -137,13 +137,14 @@ public class BoxModule(
 
         if (gold > 0)
         {
-            lines.Add(Loc.F($"💰 **+{gold}** monedas"));
+            lines.Add(MissionRewards.GoldLine(gold));
         }
 
         foreach (var looted in items.OrderByDescending(i => RarityCatalog.RankOf(i.Rarity)).ThenBy(i => i.Name))
         {
             string shine = RarityCatalog.RankOf(looted.Rarity) >= RarityCatalog.RankOf("Épico") ? " ✨" : string.Empty;
-            lines.Add($"• **{looted.Quantity}×** {ItemDisplay.Format(looted.Emoji, looted.Name)}{shine}");
+            // El mismo renglón que el inventario: `icono **Nombre**: 3` (auditoría de UI, M9).
+            lines.Add($"{MissionRewards.ItemLine(looted.Emoji, looted.Name, looted.Quantity)}{shine}");
         }
 
         if (lines.Count == 0)
@@ -151,20 +152,21 @@ public class BoxModule(
             lines.Add(Loc.T("_La caja estaba vacía._"));
         }
 
+        // Solo el nombre: un emoji propio no se dibuja en el título de un embed (saldría el código crudo). La caja ya se ve en la miniatura.
         string title = opened == 1
-            ? Loc.F($"📦 ¡Abriste {ItemDisplay.Format(box.Emoji, box.Name)}!")
-            : Loc.F($"📦 ¡Abriste {opened}× {ItemDisplay.Format(box.Emoji, box.Name)}!");
+            ? Loc.F($"📦 ¡Abriste {box.Name}!")
+            : Loc.F($"📦 ¡Abriste {opened}× {box.Name}!");
 
         var embed = new EmbedBuilder()
             .WithTitle(title)
             .WithColor(GatheringModule.RarityColor(box.Rarity))
             .WithDescription(string.Join('\n', lines))
             .WithItemThumbnail(box.Emoji)
-            .AddField(Loc.T("💰 Tu oro ahora"), goldAfter.ToString(), true);
+            .AddField(Loc.T("💰 Tu oro ahora"), GameHistory.Number(goldAfter), true);
 
         if (newTrophies is { Count: > 0 })
         {
-            embed.AddField(Loc.T("🏺 ¡Nuevo en tu colección!"), string.Join(", ", newTrophies));
+            embed.AddField(Loc.T("🏺 ¡Nuevo en tu colección!"), string.Join('\n', newTrophies));
         }
 
         string range = BoxCatalog.RangeText(box.BoxMinItems, box.BoxMaxItems);

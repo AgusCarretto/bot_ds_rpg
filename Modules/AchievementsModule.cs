@@ -166,7 +166,7 @@ public class AchievementsModule(
             .WithTitle(Loc.T("🏆 ¡Logros reclamados!"))
             .WithColor(Color.Gold)
             .WithDescription(Loc.F($"{string.Join('\n', lines)}\n\n**Total:** {totals.Describe()}"))
-            .AddField(Loc.T("💰 Tu oro ahora"), totals.GoldAfter.ToString(), true);
+            .AddField(Loc.T("💰 Tu oro ahora"), GameHistory.Number(totals.GoldAfter), true);
 
         // La subida de nivel sale como mensaje propio (GameData/LevelUpCard.cs), no como una línea más acá.
         return new AchievementClaimResult(null, embed.Build());
@@ -235,13 +235,13 @@ public class AchievementsModule(
         string progress;
         if (row.Reached >= row.Definition.Tiers.Count)
         {
-            progress = Loc.F($"✨ ¡Completo! ({row.Value})");
+            progress = Loc.F($"✨ ¡Completo! ({GameHistory.Number(row.Value)})");
         }
         else
         {
             int next = (int)row.Definition.Tiers[row.Reached].Threshold;
             int shown = (int)Math.Min(row.Value, next);
-            progress = $"{ProgressBar.Render(shown, next)} {shown}/{next}";
+            progress = $"{ProgressBar.Render(shown, next)} {GameHistory.Number(shown)}/{GameHistory.Number(next)}";
         }
 
         return $"{row.Definition.Emoji} **{row.Definition.Name}** — {tiers}\n   {progress}";

@@ -736,7 +736,7 @@ Check(soldGearEn!.Contains("You sold your equipped weapon") && soldGearEn.Contai
 var shopItems11 = await ShopModule.LoadShopItemsAsync(itemSvc10); var buffs11 = await buffRepo11.GetItemBuffsAsync();
 Embed viewEs = ShopModule.BuildViewEmbed(shopItems11, buffs11, null, 1234, 1); Embed viewEn; using (Loc.Use("en")) { viewEn = ShopModule.BuildViewEmbed(shopItems11, buffs11, null, 1234, 1); }
 string viewEnText = LeakCheck.AllText(viewEn);
-Check(viewEs.Fields.Select(f => f.Name).SequenceEqual(["Comida", "Cajas", "Mascotas"]) && viewEn.Fields.Select(f => f.Name).SequenceEqual(["Food", "Boxes", "Pets"]) && viewEnText.Contains("Your gold: **1234**") && viewEnText.Contains("gold") && LeakCheck.NoSpanish(viewEnText, allowedNames).Ok && LeakCheck.FitsDiscord(viewEn),
+Check(viewEs.Fields.Select(f => f.Name).SequenceEqual(["Comida", "Cajas", "Mascotas"]) && viewEn.Fields.Select(f => f.Name).SequenceEqual(["Food", "Boxes", "Pets"]) && viewEnText.Contains("Your gold: **1,234**") && LeakCheck.AllText(viewEs).Contains("Tu oro: **1.234**") && viewEnText.Contains("gold") && LeakCheck.NoSpanish(viewEnText, allowedNames).Ok && LeakCheck.FitsDiscord(viewEn),
     $"/shop view en inglés: columnas, tu oro y sin español ({LeakCheck.NoSpanish(viewEnText, allowedNames).Found})");
 Check(viewEnText.Contains("🔒 Zone 2") && viewEnText.Contains("between 1 and"), "las cajas cerradas y el rango de ítems de cada caja en inglés");
 await db.ExecuteAsync("DELETE FROM inventory WHERE discord_id = @id", new { id = (long)T11 });

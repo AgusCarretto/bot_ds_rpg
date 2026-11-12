@@ -9,6 +9,9 @@ public sealed class ShopRepository(IDbConnectionFactory connectionFactory) : ISh
 {
     public async Task<User?> BuyItemAsync(ulong discordId, int itemId, int quantity, int totalCost, CancellationToken cancellationToken = default)
     {
+        // Defensa en profundidad (auditoría 2026-11-12): un total negativo en el UPDATE guardado SUMARÍA oro; quien llama ya lo valida (ShopModule.TotalOrNull).
+        ArgumentOutOfRangeException.ThrowIfLessThan(quantity, 1);
+        ArgumentOutOfRangeException.ThrowIfNegative(totalCost);
         using DbConnection connection = connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
         using DbTransaction transaction = await connection.BeginTransactionAsync(cancellationToken);
@@ -52,6 +55,9 @@ public sealed class ShopRepository(IDbConnectionFactory connectionFactory) : ISh
         ulong discordId, int itemId, int quantity, int totalCost, string cooldownCommand, TimeSpan cooldownDuration,
         CancellationToken cancellationToken = default)
     {
+        // Defensa en profundidad (auditoría 2026-11-12): un total negativo en el UPDATE guardado SUMARÍA oro; quien llama ya lo valida (ShopModule.TotalOrNull).
+        ArgumentOutOfRangeException.ThrowIfLessThan(quantity, 1);
+        ArgumentOutOfRangeException.ThrowIfNegative(totalCost);
         using DbConnection connection = connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
         using DbTransaction transaction = await connection.BeginTransactionAsync(cancellationToken);
@@ -140,6 +146,9 @@ public sealed class ShopRepository(IDbConnectionFactory connectionFactory) : ISh
 
     public async Task<User?> SellItemAsync(ulong discordId, int itemId, int quantity, int totalRefund, CancellationToken cancellationToken = default)
     {
+        // Defensa en profundidad (auditoría 2026-11-12): un total negativo en el UPDATE guardado SUMARÍA oro; quien llama ya lo valida (ShopModule.TotalOrNull).
+        ArgumentOutOfRangeException.ThrowIfLessThan(quantity, 1);
+        ArgumentOutOfRangeException.ThrowIfNegative(totalRefund);
         using DbConnection connection = connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
         using DbTransaction transaction = await connection.BeginTransactionAsync(cancellationToken);

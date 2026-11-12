@@ -95,4 +95,37 @@ public static class MissionRewards
 
         return parts.Count == 0 ? "—" : string.Join(" · ", parts);
     }
+
+    // El mismo premio, pero UN renglón por cosa con el formato del inventario (`icono **Nombre**: 1.234`), para las pantallas de botín (auditoría de UI, M9).
+    // Describe queda como está: lo usan misiones, logros y Arena, donde el premio va en una sola línea.
+    public static string DescribeLines(ResolvedReward reward)
+    {
+        var lines = new List<string>();
+
+        if (reward.Gold > 0)
+        {
+            lines.Add(GoldLine(reward.Gold));
+        }
+
+        if (reward.Xp > 0)
+        {
+            lines.Add(XpLine(reward.Xp));
+        }
+
+        if (reward.BoxName is not null)
+        {
+            lines.Add($"{ItemEmojiRegistry.IconOf(reward.BoxName, "📦")} **{reward.BoxName}**: {GameHistory.Number(Math.Max(1, reward.BoxQuantity))}");
+        }
+
+        return lines.Count == 0 ? "—" : string.Join('\n', lines);
+    }
+
+    // Los dos renglones que se repiten en todo botín, con el ícono de interfaz (o el 💰/📊 de siempre si el arte no está cargado).
+    public static string GoldLine(long gold) => Loc.F($"{UiEmojis.Gold} **Oro**: {GameHistory.Number(gold)}");
+
+    public static string XpLine(long xp) => Loc.F($"{UiEmojis.Xp} **XP**: {GameHistory.Number(xp)}");
+
+    // Un ítem del botín: su emoji propio (si lo tiene), el nombre en negrita y la cantidad.
+    public static string ItemLine(string? emoji, string name, long quantity) =>
+        $"{ItemDisplay.Format(emoji, $"**{name}**")}: {GameHistory.Number(quantity)}";
 }

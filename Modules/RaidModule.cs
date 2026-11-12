@@ -1890,10 +1890,9 @@ public class RaidModule(
             .WithMonsterPortrait(session.BossPortrait) // la cara del jefe en todos los mensajes del grupo
             .WithDescription(
                 Loc.F($"**{starterName}** arma un grupo para enfrentar al jefe de **{session.ZoneName}**.\n\n") +
-                Loc.T("Pegan **por turnos**: pega uno, el jefe le responde a ese jugador y después le toca al siguiente. Cada uno que le pegue cobra su recompensa completa. ") +
-                Loc.T("La vida del jefe crece con cada jugador.\n\n") +
-                Loc.F($"Los invitados aceptan con los botones. Arranca cuando contestan todos, a los {(int)LobbyDuration.TotalSeconds} s, ") +
-                Loc.F($"o cuando {starterName} toque **Empezar ya** (mínimo {MinParticipantsToStart} jugadores)."))
+                // Una sola línea de reglas (auditoría de UI, M10): así la lista del grupo queda arriba; el detalle está en /info tema:boss.
+                Loc.T("Pegan **por turnos** y cada uno que le pegue cobra su recompensa completa. Más en **/info tema:boss**.\n\n") +
+                Loc.F($"Arranca cuando contestan todos, a los {(int)LobbyDuration.TotalSeconds} s o con **Empezar ya** (mínimo {MinParticipantsToStart} jugadores)."))
             .AddField(Loc.F($"👥 Grupo ({participants.Count}/{MaxParticipants})"), string.Join('\n', lines), false)
             .Build();
     }
@@ -1937,11 +1936,23 @@ public class RaidModule(
         {
             // ▶️ marca a quien le toca; los demás, su estado.
             string status = p.DiscordId == turnOf ? "▶️" : p.HasFled ? "🏃" : p.IsKnockedOut ? "💀" : "✅";
-            // Estado de la habilidad de cada uno (el botón "Habilidad" es compartido y genérico).
-            string abilityLine = p.IsActive
-                ? "\n" + string.Join(" · ", new[] { AdventureModule.BuildAbilityStatusLine(p.PlayerClass, p.Ability), p.MealsEaten >= RaidSettings.MealsPerFight ? Loc.T("🍖 comida usada") : Loc.T("🍖 comida lista") }.Where(x => x.Length > 0))
-                : string.Empty;
-            return $"{status} **{p.DisplayName}** — {HpLine(p.CurrentHp, p.MaxHp)}{abilityLine}";
+            // Estado de cada uno con íconos en SU renglón (auditoría de UI, M10; antes era un segundo renglón «Habilidad: lista · 🍖 comida lista»):
+            // ✨ = habilidad lista, ⏳ N = turnos que le faltan, 🍖 = todavía puede comer. El footer lleva la leyenda. Quien no tiene habilidad no lleva marca.
+            string marks = string.Empty;
+            if (p.IsActive)
+            {
+                if (ClassAbilities.For(p.PlayerClass) is not null)
+                {
+                    marks += p.Ability.CooldownRemaining > 0 ? $" ⏳ {p.Ability.CooldownRemaining}" : " ✨";
+                }
+
+                if (p.MealsEaten < RaidSettings.MealsPerFight)
+                {
+                    marks += " 🍖";
+                }
+            }
+
+            return $"{status} **{p.DisplayName}** — {HpLine(p.CurrentHp, p.MaxHp)}{marks}";
         }));
 
         string turnLine = turnOf is { } id ? Loc.F($"\n\n🎯 Le toca a <@{id}>") : string.Empty;
@@ -1953,7 +1964,7 @@ public class RaidModule(
             .WithDescription(logLine + turnLine)
             .AddField(Loc.F($"{session.BossEmoji} HP de {session.BossName}"), HpLine(bossHp, session.BossMaxHp, UiEmojis.BarHp), false)
             .AddField(Loc.T("👥 Participantes"), roster, false)
-            .WithFooter(Loc.F($"Pegan por turnos · {(int)RaidSettings.TurnTimeout.TotalSeconds} s para jugar el tuyo · {RaidSettings.MealsPerFight} comida por jugador (gasta el turno)"))
+            .WithFooter(Loc.F($"{(int)RaidSettings.TurnTimeout.TotalSeconds} s para jugar tu turno. ✨ habilidad lista, ⏳ turnos que le faltan, 🍖 todavía puede comer."))
             .Build();
     }
 
@@ -1990,7 +2001,8 @@ public class RaidModule(
 
             embed.AddField(
                 participant.DisplayName,
-                Loc.F($"💰 {reward.Gold} oro · 📊 {reward.Xp} XP{dropLine}{eggLine}{levelLine}"),
+                // Oro y XP en renglones propios y con el ícono de interfaz, como en el resto del botín (auditoría de UI, M9).
+                $"{MissionRewards.GoldLine(reward.Gold)}\n{MissionRewards.XpLine(reward.Xp)}{dropLine}{eggLine}{levelLine}",
                 true);
         }
 

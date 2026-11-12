@@ -502,7 +502,9 @@ try
     Check(ate.Contains("Comiste") && a9.MealsEaten == 1 && await Qty(A, mate) == 2, "A come en su turno: se gasta UNA comida y queda anotado");
     Check(a9.CurrentHp > 20 && a9.CurrentHp <= 20 + mate.StatValue, $"cura de verdad la vida de la pelea (20 → {a9.CurrentHp}, con el golpe del jefe ya descontado)");
     Check(s9.TurnIndex == 1 && a9.TurnsTaken == 1 && !a9.Contributed, "comer gasta el turno (pasa a B) y no cuenta como pegarle al jefe");
-    Check(AllText(t9.Updates.Last()).Contains("comió") && AllText(t9.Updates.Last()).Contains("comida usada") && AllText(t9.Updates.Last()).Contains("comida lista"),
+    // Desde la mejora M10 de la auditoría de UI el estado va con íconos en el renglón de cada jugador: 🍖 al final = todavía puede comer.
+    var roster9 = t9.Updates.Last().Fields.Single(f => f.Name.Contains("Participantes")).Value.Split('\n').Where(l => l.Contains("/100")).ToArray(); // el renglón de la vida de cada jugador, que es donde van las marcas
+    Check(AllText(t9.Updates.Last()).Contains("comió") && roster9.Length == s9.Participants.Count && !roster9[0].Contains("🍖") && roster9[1].EndsWith("🍖") && (t9.Updates.Last().Footer?.Text ?? "").Contains("🍖 todavía puede comer"),
         "el mensaje del combate lo cuenta y el roster marca quién ya comió y quién no");
     await Attack(s9, svc9, B, new FakeOutput()); // pasa B, vuelve a A
     Check((await Eat(svc9, A, "Mate Amargo")).Contains("Ya comiste") && await Qty(A, mate) == 2, "una sola vez por pelea (la segunda no se gasta)");

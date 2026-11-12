@@ -62,12 +62,12 @@ public partial class ShopModule
             return embed.Build();
         }
 
-        string goldLine = gold is int g ? Loc.F($"\n\nTu oro: **{g}**") : string.Empty;
+        string goldLine = gold is int g ? Loc.F($"\n\nTu oro: **{GameHistory.Number(g)}**") : string.Empty;
         embed.WithDescription(
             $"{talk ?? NpcDialogue.Shopkeeper(ShopkeeperLine.Greeting)}{goldLine}\n\n" +
             Loc.T("Las cajas se compran **de a una y una vez cada 2 horas**; abrilas con `/open`."));
 
-        AddColumn(embed, Loc.T("Comida"), items.Where(i => i.Type is not ("Caja" or ShopCatalog.PetFoodType or ShopCatalog.DragonFoodType)), i => Loc.F($"Cura {i.StatValue} HP{BuffText(i, buffs)} · {i.BuyPrice} oro"));
+        AddColumn(embed, Loc.T("Comida"), items.Where(i => i.Type is not ("Caja" or ShopCatalog.PetFoodType or ShopCatalog.DragonFoodType)), i => Loc.F($"Cura {i.StatValue} HP{BuffText(i, buffs)} · {GameHistory.Number(i.BuyPrice)} oro"));
         AddColumn(embed, Loc.T("Cajas"), items.Where(i => i.Type == "Caja"), i => BoxLine(i, unlockedZoneRank));
         // La comida de las mascotas va en su propia columna (es la tercera del renglón, que quedaba vacía): no cura, se le da a una mascota con /pet feed.
         AddColumn(embed, Loc.T("Mascotas"), items.Where(i => i.Type is ShopCatalog.PetFoodType or ShopCatalog.DragonFoodType), i => i.Type == ShopCatalog.DragonFoodType ? DragonFoodLine(i) : PetFoodLine(i));
@@ -116,7 +116,7 @@ public partial class ShopModule
         if (lines.Count > 0)
         {
             string text = string.Join("\n\n", lines);
-            embed.AddField(title, text.Length <= 1024 ? text : text[..1023] + "…", true);
+            embed.AddField(title, FieldText.FitLines(text), true);
         }
     }
 }

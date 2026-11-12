@@ -296,7 +296,7 @@ public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepo
             {
                 if (await dragons.GetAsync(discordId) is { } owned)
                 {
-                    title = $"{DragonRules.KindEmoji(owned.Kind)} {owned.Name ?? DragonRules.TierName(owned.Tier)} ({DragonRules.TierNumeral(owned.Tier)}) lvl {owned.Level}";
+                    title = $"{DragonRules.KindEmojiPlain(owned.Kind)} {owned.Name ?? DragonRules.TierName(owned.Tier)} ({DragonRules.TierNumeral(owned.Tier)}) lvl {owned.Level}";
                 }
             }
             catch (Exception ex)
