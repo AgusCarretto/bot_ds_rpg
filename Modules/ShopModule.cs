@@ -140,7 +140,13 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
                 Loc.F($"Las cajas se compran **de a {ShopCatalog.BoxesPerPurchase}** y una compra cada 2 horas: pedí **{ItemDisplay.Format(item.Emoji, item.Name)}** con cantidad {ShopCatalog.BoxesPerPurchase}."), null);
         }
 
-        int totalCost = item.BuyPrice * quantity;
+        // El total se calcula en long: en int, una cantidad enorme daba la vuelta (8 × 536.870.912 = 0, y 8 × 375.000.000 un número NEGATIVO) y la compra salía gratis o SUMABA oro
+        // (auditoría 2026-11-12, tests/audittest). Lo que no entra en un int se rechaza antes de tocar nada.
+        if (TotalOrNull(item.BuyPrice, quantity) is not int totalCost)
+        {
+            return new ShopActionResult(TooManyMessage(), null);
+        }
+
         User? buyer;
         if (item.Type == "Caja")
         {
@@ -177,6 +183,15 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
             .WithColor(Color.Green)
             .Build());
     }
+
+    // precio × cantidad sin desbordar: null si el total no entra en un int (o si algo vino negativo). Público para probarlo.
+    public static int? TotalOrNull(int unitPrice, int quantity)
+    {
+        long total = (long)unitPrice * quantity;
+        return unitPrice < 0 || quantity < 1 || total > int.MaxValue ? null : (int)total;
+    }
+
+    private static string TooManyMessage() => Loc.T("Esa cantidad es demasiado grande: probá con una más chica.");
 
     public static async Task<ShopActionResult> ExecuteSellAsync(
         IItemRepository itemRepository, IShopRepository shopRepository, IGameEvents gameEvents, ulong discordId, string itemName, int quantity)
@@ -222,7 +237,12 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
             }
         }
 
-        int totalRefund = item.SellPrice * quantity;
+        // Igual que al comprar: el total en long, y si no entra en un int no se vende nada.
+        if (TotalOrNull(item.SellPrice, quantity) is not int totalRefund)
+        {
+            return new ShopActionResult(TooManyMessage(), null);
+        }
+
         var seller = await shopRepository.SellItemAsync(discordId, item.ItemId, quantity, totalRefund);
 
         if (seller is null)

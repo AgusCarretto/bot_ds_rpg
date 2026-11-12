@@ -515,6 +515,7 @@
   "¡Upa! No pude procesar la venta, intentá de nuevo en un momento.": "Oops! I couldn't process the sale, try again in a moment.",
   "No podés ir de compras en medio de un combate. Terminalo (atacando o huyendo) antes de pasar por la tienda.": "You can't go shopping in the middle of a fight. Finish it (attacking or fleeing) before going by the shop.",
   "La cantidad tiene que ser al menos 1.": "The quantity must be at least 1.",
+  "Esa cantidad es demasiado grande: probá con una más chica.": "That quantity is too big: try a smaller one.",
   "{0}\n**{1}** no está disponible en la tienda (se vende comida y cajas: mirá **/shop view**).": "{0}\n**{1}** isn't available in the shop (food and boxes are sold: see **/shop view**).",
   "{0}\n🔒 **{1}** es una caja de la **Zona {2}** y todavía no la desbloqueaste ": "{0}\n🔒 **{1}** is a box from **Zone {2}** and you haven't unlocked it yet ",
   "(llegaste hasta la Zona {0}): avanzá de zona para poder comprarla.": "(you've reached Zone {0}): advance zones to be able to buy it.",
