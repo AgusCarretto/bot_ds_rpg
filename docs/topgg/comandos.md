@@ -17,7 +17,7 @@ Todo comando también se puede escribir con el prefijo `aa` (por ejemplo `aa hun
 | `/tutorial` | Aprendé lo básico: recolectar, forjar, pelear y sobrevivir. |
 | `/info` | La lista de comandos, o cómo funciona un sistema (`/info tema:enchant`). |
 | `/profile` | Tu nivel, vida, ataque, defensa y oro (o los de otro jugador). |
-| `/stats` | Tu ataque, defensa y vida y cuánto aporta cada cosa (equipo, platos, dragón...). |
+| `/stats` | Tu ataque, defensa y vida y cuánto aporta cada cosa (equipo, platos, dragón...); con `jugador:` mirás las de otra persona. |
 | `/inventory` | Tus materiales, comida y cajas, por pestañas. |
 | `/language` | Cambiá el idioma: español o English. |
 | `/config` | Ajustá cómo ves el bot. |
@@ -71,7 +71,7 @@ Todo comando también se puede escribir con el prefijo `aa` (por ejemplo `aa hun
 | `/shop view` | La tienda: comida y cajas en venta. |
 | `/shop buy` | Comprá en la tienda. |
 | `/shop sell` | Vendé ítems a cambio de oro. |
-| `/shop sellall` | Vendé toda tu mochila de una vez. |
+| `/shop sellall` | Vendé tu mochila y el equipo que llevás puesto de una vez (te pregunta antes). |
 | `/bank` | Guardá oro a salvo de la penalidad por morir. |
 | `/give` | Dale oro a otro jugador. |
 | `/trade` | Cambiá un material por otro de la misma rareza con otro jugador. |

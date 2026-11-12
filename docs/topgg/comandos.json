@@ -947,7 +947,7 @@
       {
         "type": 1,
         "name": "sellall",
-        "description": "Vendé todo tu inventario de una sola vez a cambio de oro."
+        "description": "Vendé tu mochila y el equipo que llevás puesto a cambio de oro (te pregunta antes)."
       },
       {
         "type": 1,
@@ -964,7 +964,17 @@
   {
     "type": 1,
     "name": "stats",
-    "description": "Tu ataque, defensa y vida, y cuánto aporta cada cosa (equipo, platos, dragón...)."
+    "description": "Tu ataque, defensa y vida, y cuánto aporta cada cosa (equipo, platos, dragón...).",
+    "options": [
+      {
+        "type": 6,
+        "name": "jugador",
+        "description": "Opcional: de qué jugador del server querés ver las stats.",
+        "required": false,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      }
+    ]
   },
   {
     "type": 1,

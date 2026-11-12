@@ -15,7 +15,7 @@ public sealed record CoinflipRequest(string Amount, string Side);
 public static class TextShortcuts
 {
     public static string SellHelp =>
-        Loc.T("Vendé sin pasar por la tienda: **aa sell all** (todo lo vendible de tu mochila), **aa sell arma**, **aa sell amuleto** (lo que llevás puesto), **aa sell <ítem>** o **aa sell <cantidad> <ítem>** (también **aa sell all <ítem>** para todas las unidades de ese ítem).");
+        Loc.T("Vendé sin pasar por la tienda: **aa sell all** (todo lo vendible de tu mochila y lo que llevás puesto, te pregunta antes), **aa sell arma**, **aa sell amuleto** (solo lo que llevás puesto), **aa sell <ítem>** o **aa sell <cantidad> <ítem>** (también **aa sell all <ítem>** para todas las unidades de ese ítem).");
 
     public static string CoinflipHelp => Loc.T("Cara o cruz: **aa cf h 100** (h = heads, t = tails) y la apuesta puede ser un número, **10k**, **1m** o **all**.");
 
@@ -101,8 +101,9 @@ public static class TextShortcuts
             case SellKind.Help:
                 return new ShopModule.ShopActionResult(SellHelp, null);
 
+            // «aa sell all» pregunta antes (v0.53.0): la venta la hace el botón «Sí» (ShopButtonsModule).
             case SellKind.All:
-                return await ShopModule.ExecuteSellAllAsync(shopRepository, gameEvents, discordId);
+                return await ShopModule.BuildSellAllConfirmAsync(shopRepository, discordId);
 
             case SellKind.Weapon or SellKind.Amulet:
             {

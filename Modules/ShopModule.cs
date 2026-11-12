@@ -60,15 +60,17 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
     }
 
     // Comando barra: /shop sellall
-    [SlashCommand("sellall", "Vendé todo tu inventario de una sola vez a cambio de oro.")]
+    [SlashCommand("sellall", "Vendé tu mochila y el equipo que llevás puesto a cambio de oro (te pregunta antes).")]
     public async Task HandleSellAllAsync()
     {
-        await DeferAsync();
+        // v0.53.0: «vender todo» pregunta antes (el dueño: «preguntar por las dudas si estás seguro en vender todo») y ahora también vende el arma y el amuleto puestos. La pregunta es PRIVADA y se contesta con
+        // sus dos botones (ShopButtonsModule), que dejan el resultado en ese mismo mensaje.
+        await DeferAsync(ephemeral: true);
 
         try
         {
-            var result = await ExecuteSellAllAsync(shopRepository, gameEvents, Context.User.Id);
-            await FollowupAsync(result.PlainMessage, embed: result.Embed, ephemeral: result.Embed is null);
+            var result = await BuildSellAllConfirmAsync(shopRepository, Context.User.Id);
+            await FollowupAsync(result.PlainMessage, embed: result.Embed, components: result.Components, ephemeral: true);
         }
         catch (Exception ex)
         {
@@ -82,7 +84,8 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
     // Todo lo que sigue es estático (sin dependencia de Context) para que
     // Modules/TextCommandModule.cs comparta exactamente la misma lógica en "aa shop buy/sell/sellall".
     // Exactamente uno de los dos campos del resultado viene con valor.
-    public sealed record ShopActionResult(string? PlainMessage, Embed? Embed);
+    // Components (v0.53.0): los botones de la pregunta de «vender todo»; el resto de los resultados no lleva.
+    public sealed record ShopActionResult(string? PlainMessage, Embed? Embed, MessageComponent? Components = null);
 
     public static async Task<ShopActionResult> ExecuteBuyAsync(
         IUserRepository userRepository, IItemRepository itemRepository, IShopRepository shopRepository, ICombatSessionService combatSessions,
@@ -236,20 +239,116 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
             .Build());
     }
 
-    public static async Task<ShopActionResult> ExecuteSellAllAsync(IShopRepository shopRepository, IGameEvents gameEvents, ulong discordId)
+    // La pregunta de «vender todo» (v0.53.0): qué se vende (la mochila y el arma y el amuleto puestos, con lo que paga cada cosa) y el total, con «No» (verde, primero) y «Sí» (rojo). El total viaja en el id del «Sí» para que
+    // lo que se venda sea EXACTAMENTE lo que se mostró: si cambió algo en el medio, no se vende nada (ver ResolveSellAllConfirmAsync). Todas las puertas (/shop sellall, aa shop sellall, aa sell all) pasan por acá.
+    public const string SellAllYesId = "shop_sellall_yes";
+    public const string SellAllNoId = "shop_sellall_no";
+
+    private static string NothingToSellMessage() =>
+        NpcDialogue.Shopkeeper(ShopkeeperLine.NothingToSell) + Loc.T("\nNo tenés nada en tu inventario para vender (las cajas y los premios no se venden, ni lo que se queda en el Fuego Nuevo: huevos y comida de mascotas y de dragón).");
+
+    public static async Task<ShopActionResult> BuildSellAllConfirmAsync(IShopRepository shopRepository, ulong discordId)
     {
-        var outcome = await shopRepository.SellAllAsync(discordId);
+        var preview = await shopRepository.PreviewSellAllAsync(discordId);
+        if (preview.IsEmpty)
+        {
+            return new ShopActionResult(NothingToSellMessage(), null);
+        }
+
+        var lines = new List<string>();
+        if (preview.ItemsCount > 0)
+        {
+            lines.Add(Loc.F($"🎒 Vas a vender **{preview.ItemsCount}** ítems de tu mochila por **{preview.BagGold}** de oro."));
+        }
+
+        // Una frase entera por pieza (no se arma con «puest{a/o}»): el género del español no existe en inglés.
+        foreach (var piece in preview.Gear)
+        {
+            string name = ItemDisplay.Format(piece.Emoji, piece.Name);
+            lines.Add(piece.IsWeapon
+                ? Loc.F($"⚔️ Tu arma puesta: **{name}** por **{piece.SellPrice}** de oro (pierde su encantamiento).")
+                : Loc.F($"🛡️ Tu amuleto puesto: **{name}** por **{piece.SellPrice}** de oro (pierde su encantamiento)."));
+        }
+
+        string footer = Loc.T("Forjar el equipo de nuevo cuesta mucho más de lo que paga la venta. No se venden las cajas ni los premios.") +
+            (preview.KeptCount > 0 ? Loc.F($" Se quedan {preview.KeptCount} unidades que se conservan en el Fuego Nuevo (huevos y comida de mascotas y de dragón).") : string.Empty);
+
+        var embed = new EmbedBuilder()
+            .WithTitle(Loc.T("⚠️ ¿Vender todo?"))
+            .WithDescription(string.Join("\n", lines) + "\n\n" + Loc.F($"Total: **{preview.TotalGold}** de oro."))
+            .WithColor(Color.Orange)
+            .WithFooter(footer)
+            .Build();
+
+        // «No» primero y en verde, «Sí» en rojo: lo mismo que la pregunta de huir (un toque sin querer no vende).
+        var buttons = new ComponentBuilder()
+            .WithButton(Loc.T("No, cancelar"), $"{SellAllNoId}:{discordId}", ButtonStyle.Success)
+            .WithButton(Loc.T("Sí, vender todo"), $"{SellAllYesId}:{discordId}:{preview.TotalGold}", ButtonStyle.Danger)
+            .Build();
+        return new ShopActionResult(null, embed, buttons);
+    }
+
+    // Lo que pasa al apretar «Sí»: solo lo puede apretar quien pidió la pregunta, y se vende con el total que vio (si ya no es ese, no se vende nada).
+    public static async Task<ShopActionResult> ResolveSellAllConfirmAsync(IShopRepository shopRepository, IGameEvents gameEvents, ulong ownerId, ulong clickerId, int expectedGold)
+    {
+        if (clickerId != ownerId)
+        {
+            return new ShopActionResult(Loc.T("Esa pregunta es de otra persona: pedí la tuya con **/shop sellall**."), null);
+        }
+
+        return await ExecuteSellAllAsync(shopRepository, gameEvents, ownerId, includeEquipped: true, expectedGold);
+    }
+
+    // La venta en sí. A secas (includeEquipped false) vende solo la mochila, como siempre; las puertas de los jugadores ya no la llaman directo: preguntan primero (BuildSellAllConfirmAsync) y el «Sí» llama con
+    // includeEquipped y el total mostrado.
+    public static async Task<ShopActionResult> ExecuteSellAllAsync(IShopRepository shopRepository, IGameEvents gameEvents, ulong discordId, bool includeEquipped = false, int? expectedGold = null)
+    {
+        var outcome = await shopRepository.SellAllAsync(discordId, includeEquipped, expectedGold);
 
         if (outcome is null)
         {
-            return new ShopActionResult(NpcDialogue.Shopkeeper(ShopkeeperLine.NothingToSell) + Loc.T("\nNo tenés nada en tu inventario para vender (las cajas y los premios no se venden, ni lo que se queda en el Fuego Nuevo: huevos y comida de mascotas y de dragón)."), null);
+            return new ShopActionResult(NothingToSellMessage(), null);
+        }
+
+        if (outcome.Changed)
+        {
+            return new ShopActionResult(Loc.T("Algo cambió en tu mochila o en tu equipo desde que miraste (el total ya no es el mismo), así que no vendí nada. Volvé a pedirlo con **/shop sellall**."), null);
         }
 
         await gameEvents.RecordAsync(discordId, GameEventKinds.ShopGoldEarned, amount: outcome.GoldEarned, detail: "sellall");
 
+        var gear = outcome.GearSold ?? [];
+        string description;
+        if (gear.Count == 0)
+        {
+            description = Loc.F($"{NpcDialogue.Shopkeeper(ShopkeeperLine.SellAll)}\n\nVendiste {outcome.ItemsSoldCount} ítems por **{outcome.GoldEarned}** de oro.\nOro total: **{outcome.Player.Gold}**.");
+        }
+        else
+        {
+            // Con equipo vendido (v0.53.0): la mochila, cada pieza puesta con su precio y el oro total; una frase entera por caso (el género no existe en inglés).
+            var lines = new List<string>();
+            if (outcome.ItemsSoldCount > 0)
+            {
+                lines.Add(Loc.F($"Vendiste {outcome.ItemsSoldCount} ítems de la mochila por **{outcome.GoldEarned - gear.Sum(g => g.SellPrice)}** de oro."));
+            }
+
+            foreach (var piece in gear)
+            {
+                string name = ItemDisplay.Format(piece.Emoji, piece.Name);
+                lines.Add(piece.IsWeapon
+                    ? Loc.F($"⚔️ Vendiste tu arma puesta **{name}** por **{piece.SellPrice}** de oro.")
+                    : Loc.F($"🛡️ Vendiste tu amuleto puesto **{name}** por **{piece.SellPrice}** de oro."));
+            }
+
+            lines.Add(Loc.F($"Oro total: **{outcome.Player.Gold}**."));
+            bool weapon = gear.Any(g => g.IsWeapon), amulet = gear.Any(g => !g.IsWeapon);
+            lines.Add(weapon && amulet ? Loc.T("_Te quedaste sin arma ni amuleto: forjá otros en **/forge**._") : weapon ? Loc.T("_Te quedaste sin arma: forjá otra en **/forge**._") : Loc.T("_Te quedaste sin amuleto: forjá otro en **/forge**._"));
+            description = NpcDialogue.Shopkeeper(ShopkeeperLine.SellAll) + "\n\n" + string.Join("\n", lines);
+        }
+
         return new ShopActionResult(null, new EmbedBuilder()
             .WithTitle(Loc.T("💰 ¡Inventario liquidado!"))
-            .WithDescription(Loc.F($"{NpcDialogue.Shopkeeper(ShopkeeperLine.SellAll)}\n\nVendiste {outcome.ItemsSoldCount} ítems por **{outcome.GoldEarned}** de oro.\nOro total: **{outcome.Player.Gold}**."))
+            .WithDescription(description)
             .WithColor(Color.Green)
             // v0.38.0: lo que se conserva en el Fuego Nuevo no se vende con «todo»; si el jugador tiene de eso, se le avisa dónde quedó.
             .WithFooter(outcome.KeptCount > 0 ? Loc.F($"🐾 No se vendieron {outcome.KeptCount} unidades que se conservan en el Fuego Nuevo (huevos y comida de mascotas y de dragón). Para venderlas, una por una: /shop sell.") : null)

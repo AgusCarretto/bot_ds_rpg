@@ -18,14 +18,14 @@ var rows = (await db.QueryAsync<(string Name, int MinHp, int MaxHp, int MinDmg, 
 (string, int, int, int, int)[] expected =
 [
     ("Rey Jabalí", 175, 245, 23, 37), ("Lobisón Alfa", 624, 794, 71, 96), ("Capataz de Hierro", 929, 1161, 108, 142),
-    ("Señor del Volcán", 1340, 1638, 151, 188), ("Soberano de la Escoria", 1925, 2309, 202, 248), ("El Asador Eterno", 2503, 3001, 233, 289),
+    ("Señor del Volcán", 1340, 1638, 151, 188), ("Soberano de la Escoria", 2118, 2540, 212, 260), ("El Asador Eterno", 2503, 3001, 233, 289),
 ];
-Check(rows.Count == 6 && rows.Select(r => (r.Name, r.MinHp, r.MaxHp, r.MinDmg, r.MaxDmg)).SequenceEqual(expected.Select(e => (e.Item1, e.Item2, e.Item3, e.Item4, e.Item5))), "los seis jefes tienen la vida nueva (×1,25) y el daño de la v0.15.1 sin tocar");
+Check(rows.Count == 6 && rows.Select(r => (r.Name, r.MinHp, r.MaxHp, r.MinDmg, r.MaxDmg)).SequenceEqual(expected.Select(e => (e.Item1, e.Item2, e.Item3, e.Item4, e.Item5))), "los seis jefes tienen la vida nueva (×1,25) y el daño de la v0.15.1 sin tocar, salvo el de la Zona 5, que desde la v0.53.0 tiene +10 % de vida y +5 % de daño más");
 (string Name, int MinHp, int MaxHp)[] old =
 [
     ("Rey Jabalí", 140, 196), ("Lobisón Alfa", 499, 635), ("Capataz de Hierro", 743, 929), ("Señor del Volcán", 1072, 1310), ("Soberano de la Escoria", 1540, 1847), ("El Asador Eterno", 2002, 2401),
 ];
-Check(old.All(o => { var n = rows.Single(r => r.Name == o.Name); return Math.Abs(n.MinHp - o.MinHp * 1.25) <= 0.5 && Math.Abs(n.MaxHp - o.MaxHp * 1.25) <= 0.5; }), "cada jefe tiene exactamente ×1,25 de lo que tenía (redondeado)");
+Check(old.All(o => { var n = rows.Single(r => r.Name == o.Name); double f = o.Name == "Soberano de la Escoria" ? 1.25 * RaidDifficulty.ZoneFiveBossHpBoost : 1.25; return Math.Abs(n.MinHp - o.MinHp * f) <= 0.5 && Math.Abs(n.MaxHp - o.MaxHp * f) <= 0.5; }), "cada jefe tiene exactamente ×1,25 de lo que tenía (redondeado); el de la Zona 5, además ×1,10 (v0.53.0)");
 Check(rows.All(r => r.MinHp < r.MaxHp), "mínimo menor que máximo en todos");
 var nonBossHp = await db.ExecuteScalarAsync<int>("SELECT count(*)::int FROM monsters WHERE NOT is_boss AND (min_hp > 400 AND zone_id = 1)");
 Check(nonBossHp == 0, "los monstruos comunes y de viaje NO se tocaron (solo los jefes)");
@@ -46,8 +46,14 @@ for (int rank = 1; rank <= 5; rank++)
         }
 }
 Check(same, $"la vida del jefe de raid (1 a 4 jugadores, las 5 zonas) es la de la v0.17.1 (sin el ×0,75 de la v0.18.6), con ±2 de redondeo {worst}");
-Check(RaidDifficulty.ForZoneRank(1).HpMultiplier == 1.76 && RaidDifficulty.ForZoneRank(2).HpMultiplier == 1.2 && RaidDifficulty.ForZoneRank(5).HpMultiplier == 1.2 && RaidDifficulty.ForZoneRank(1).DamageMultiplier == 1.35 && RaidDifficulty.ForZoneRank(3).DamageMultiplier == 1.1,
+Check(RaidDifficulty.ForZoneRank(1).HpMultiplier == 1.76 && RaidDifficulty.ForZoneRank(2).HpMultiplier == 1.2 && RaidDifficulty.ForZoneRank(4).HpMultiplier == 1.2 && RaidDifficulty.ForZoneRank(1).DamageMultiplier == 1.35 && RaidDifficulty.ForZoneRank(3).DamageMultiplier == 1.1,
     "los multiplicadores de VIDA del raid son 1,76 y 1,2 (el dueño no quiso bajarlos: v0.19.0); los de DAÑO no cambiaron");
+// v0.53.0: el jefe de la Zona 5 subió +10 % de vida y +5 % de daño y su raid divide sus multiplicadores por lo mismo: queda con la vida y el daño de antes, en cualquier cantidad de jugadores.
+var five = RaidDifficulty.ForZoneRank(5);
+Check(Math.Abs(five.HpMultiplier - (1.2 / 1.10)) < 1e-9 && Math.Abs(five.DamageMultiplier - (1.1 / 1.05)) < 1e-9 && RaidDifficulty.ForZoneRank(6).HpMultiplier == 1.2,
+    "el raid de la Zona 5 usa 1,2 / 1,10 de vida y 1,1 / 1,05 de daño (y el rango 6 en adelante, los de siempre)");
+bool fiveSame = Math.Abs(RaidDifficulty.BossHp(2118, 1, 5) - Math.Round(1925 * 1.2)) <= 2 && Math.Abs(RaidDifficulty.BossHp(2540, 3, 5) - Math.Round(2309 * 1.2 * 2)) <= 3 && Math.Abs(RaidDifficulty.BossDamage(212, 5) - Math.Round(202 * 1.1)) <= 1 && Math.Abs(RaidDifficulty.BossDamage(260, 5) - Math.Round(248 * 1.1)) <= 1;
+Check(fiveSame, "el jefe de raid de la Zona 5 sale con la misma vida y el mismo daño que antes del cambio (1 y 3 jugadores, el mínimo y el máximo)");
 
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;

@@ -22,6 +22,9 @@
 -- 499-635 → 624-794, 743-929 → 929-1161, 1072-1310 → 1340-1638, 1540-1847 → 1925-2309. Para una base viva está Database/rebalance_boss_hp.sql (valores absolutos, re-ejecutable). Los multiplicadores del RAID
 -- (GameData/RaidDifficulty.cs) se dividieron por 1,25 en el mismo cambio, así que el raid queda exactamente igual de difícil que antes.
 --
+-- v0.53.0: el Soberano de la Escoria (Zona 5) sube +10 % de vida y +5 % de daño (1925-2309 → 2118-2540 de vida, 202-248 → 212-260 de daño; el dueño: «sumale unos puntos de vida y daño»). Para una base viva está
+-- Database/rebalance_zone5_boss.sql (absoluto, re-ejecutable). El raid de esa zona queda igual de difícil: RaidDifficulty divide sus multiplicadores por los mismos factores.
+--
 -- gold_reward / xp_reward de un jefe son un BONUS que se suma a la fórmula normal de /hunt
 -- (GameData/CombatRewardCalculator.RollHuntReward), y el total se multiplica x6 (CombatRewardCalculator.BossRewardMultiplier: desde la v0.6.0 el
 -- jefe paga ~3,2 veces un /travel de su zona; con x1 pagaba la mitad). Triplicados respecto de los originales: un jefe
@@ -143,7 +146,7 @@ ON CONFLICT DO NOTHING;
 -- ---------------------------------------------------------
 WITH monster AS (
     INSERT INTO monsters (zone_id, name, emoji, min_hp, max_hp, min_damage, max_damage, gold_reward, xp_reward, is_boss)
-    SELECT zone_id, 'Soberano de la Escoria', '👑☠️', 1925, 2309, 202, 248, 1500, 1500, true FROM zones WHERE name = 'Cráter de la Escoria'
+    SELECT zone_id, 'Soberano de la Escoria', '👑☠️', 2118, 2540, 212, 260, 1500, 1500, true FROM zones WHERE name = 'Cráter de la Escoria'
     ON CONFLICT (name) DO UPDATE SET zone_id = EXCLUDED.zone_id, emoji = EXCLUDED.emoji,
         min_hp = EXCLUDED.min_hp, max_hp = EXCLUDED.max_hp, min_damage = EXCLUDED.min_damage,
         max_damage = EXCLUDED.max_damage, gold_reward = EXCLUDED.gold_reward, xp_reward = EXCLUDED.xp_reward,

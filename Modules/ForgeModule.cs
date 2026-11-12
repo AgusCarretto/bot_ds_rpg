@@ -49,7 +49,7 @@ public static class ForgeModule
 
         // El Fogón Eterno (v0.11.0): si ya venció al jefe de la última zona, el recetario suma, en su propio bloque, las recetas del equipo del Fogón.
         var orderedZones = ZoneRanking.OrderByDifficulty(zones);
-        bool gateOpen = highestZoneCleared is int cleared && FogonRules.IsGateOpen(orderedZones, cleared);
+        bool gateOpen = highestZoneCleared is int cleared && FogonRules.OffersKeyGear(orderedZones, cleared);
         var sections = RecipeCatalog.BookFor(recipes, zones, playerClass, gateOpen, zoneId);
 
         if (sections.Count == 0)
@@ -110,7 +110,7 @@ public static class ForgeModule
 
         // El Fogón Eterno (v0.11.0): si ya venció al jefe de la última zona, la página de ESA zona suma, en su propio bloque, las recetas del equipo del Fogón.
         var orderedZones = ZoneRanking.OrderByDifficulty(zones);
-        bool gateOpen = highestZoneCleared is int cleared && FogonRules.IsGateOpen(orderedZones, cleared);
+        bool gateOpen = highestZoneCleared is int cleared && FogonRules.OffersKeyGear(orderedZones, cleared);
         var view = RecipeCatalog.PageFor(recipes, zones, playerClass, currentZoneId, gateOpen);
         if (view.Zone is null)
         {
@@ -263,7 +263,7 @@ public static class ForgeModule
 
     public static async Task<ForgeMakeResult> ExecuteMakeAsync(
         IUserRepository userRepository, IRecipeRepository recipeRepository, ICraftingRepository craftingRepository, IGameEvents gameEvents,
-        ulong discordId, string itemName)
+        ulong discordId, string itemName, IZoneRepository? zoneRepository = null)
     {
         var recipe = await recipeRepository.GetByResultItemNameAsync(itemName);
         if (recipe is null)
@@ -283,6 +283,13 @@ public static class ForgeModule
 
         // Si es la primera vez que este usuario ejecuta un comando, se crea acá con los valores por defecto.
         var player = await userRepository.GetOrCreateUserAsync(discordId);
+
+        // El equipo del Fogón (el Trinche y la Brasa) ya no hace falta desde el Fuego Nuevo 5 (v0.53.0): al Asador se llega pasando la mazmorra, sin equipo especial. Antes de gastar nada se le dice.
+        if (recipe.ZoneId == FogonRules.GateZoneId && zoneRepository is not null && !FogonRules.KeyGearNeeded(ZoneRanking.ForPlayer(await zoneRepository.GetAllAsync(), player.FuegoNuevo)))
+        {
+            return new ForgeMakeResult(
+                Loc.F($"{NpcDialogue.Blacksmith(BlacksmithLine.UnknownRecipe)}\n**{ItemDisplay.Format(recipe.ResultItem.Emoji, recipe.ResultItem.Name)}** ya no hace falta con tu Fuego Nuevo: a El Fogón se llega pasando la **mazmorra** de tu zona más alta (**/info tema:fogon**)."), null);
+        }
 
         if (recipe.ResultItem.ClassRequirement is not null
             && !string.Equals(recipe.ResultItem.ClassRequirement, player.Class, StringComparison.OrdinalIgnoreCase))

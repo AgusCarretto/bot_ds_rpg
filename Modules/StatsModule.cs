@@ -11,18 +11,24 @@ using Discord.Interactions;
 // se reparte en puntos y el último absorbe el redondeo). Después, en la MISMA pantalla, crítico y esquive y las chances de drop. Lo demás (lo que corre de la cocina, el dragón, las mascotas y el Fuego Nuevo con las bendiciones) va en una
 // SEGUNDA pantalla, «Más stats» (v0.50.3, el dueño: «hacer otra pestaña para todo ese resto, desde la cocina hasta abajo»): un botón cambia de una a la otra en el mismo mensaje. Solo mira (está en la lista de FightLock) y no crea cuentas.
 // Components (v0.50.3): el botón «Ver más stats» / «Volver a las stats» cuando hay una segunda pantalla.
+// De OTRO jugador (v0.53.0, el dueño: «que se pueda ver stats de otra persona»): /stats jugador:@x, «aa stats @x» (mención, ID o nombre exacto) o respondiendo su mensaje con «aa stats». Son SUS números (los mismos que usa su pelea),
+// con su nombre en el título; no crea la cuenta de nadie y los botones de pasar de pantalla llevan quién mira y de quién son («stats_view:{quien mira}:{pantalla}:{de quién}»).
 public sealed record StatsReply(string? PlainMessage, Embed? Embed, MessageComponent? Components = null);
 
 public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepository buffs, IPlayerBonusService bonusService, ICookingRepository cooking, IDragonRepository dragons, IZoneBoxService zoneBoxes) : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("stats", "Tu ataque, defensa y vida, y cuánto aporta cada cosa (equipo, platos, dragón...).")]
-    public async Task HandleAsync()
+    public async Task HandleAsync(
+        [Summary("jugador", "Opcional: de qué jugador del server querés ver las stats.")] Discord.WebSocket.SocketGuildUser? targetUser = null)
     {
         await DeferAsync();
 
         try
         {
-            var reply = await BuildStatsAsync(users, items, buffs, bonusService, cooking, dragons, Context.User.Id, zoneBoxes);
+            // Mirarse a uno mismo («/stats jugador:@yo») es el /stats de siempre.
+            var reply = targetUser is not null && targetUser.Id != Context.User.Id
+                ? await BuildStatsAsync(users, items, buffs, bonusService, cooking, dragons, targetUser.Id, zoneBoxes, 0, GameModule.GetDisplayName(targetUser), Context.User.Id)
+                : await BuildStatsAsync(users, items, buffs, bonusService, cooking, dragons, Context.User.Id, zoneBoxes);
             await FollowupAsync(reply.PlainMessage, embed: reply.Embed, components: reply.Components);
         }
         catch (Exception ex)
@@ -63,14 +69,72 @@ public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepo
         }
     }
 
+    // El botón de cambiar de pantalla en las stats de OTRO jugador: «stats_view:{quien mira}:{pantalla}:{de quién}». Es otro prefijo (no un tercer comodín de stats_page) para que Discord.Net nunca confunda los dos ids.
+    // Solo lo toca quien pidió la ficha.
+    public const string OtherPageButton = "stats_view";
+
+    [ComponentInteraction($"{OtherPageButton}:*:*:*")]
+    public async Task HandleOtherPageAsync(string viewerRaw, string pageRaw, string targetRaw)
+    {
+        await DeferAsync();
+
+        try
+        {
+            if (!ulong.TryParse(viewerRaw, out ulong viewerId) || viewerId != Context.User.Id || !ulong.TryParse(targetRaw, out ulong targetId))
+            {
+                await FollowupAsync(Loc.T("Esa ficha es de otra persona: abrí la tuya con **/stats**."), ephemeral: true);
+                return;
+            }
+
+            // El nombre del otro: el del server si está a mano; si no, el de Discord; si no, «ese jugador».
+            string name = Context.Guild?.GetUser(targetId) is { } member ? GameModule.GetDisplayName(member) : Context.Client.GetUser(targetId)?.Username ?? Loc.T("ese jugador");
+            var reply = await BuildStatsAsync(users, items, buffs, bonusService, cooking, dragons, targetId, zoneBoxes, pageRaw == "1" ? 1 : 0, name, viewerId);
+            await ModifyOriginalResponseAsync(p =>
+            {
+                p.Content = reply.PlainMessage;
+                p.Embed = reply.Embed;
+                p.Components = reply.Components ?? new ComponentBuilder().Build();
+            });
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            await FollowupAsync(Loc.T("¡Upa! No pude armar esas stats ahora mismo, intentá de nuevo en un momento."), ephemeral: true);
+        }
+    }
+
+    // «aa stats» después del nombre del comando: la palabra de «más» (mas, más, more, extra, 2) y/o el jugador (una mención, un ID o su nombre exacto, con comillas o sin ellas) en cualquier orden. Devuelve la pantalla
+    // (0 la de siempre, 1 «Más stats») y a quién mirar (null = a uno mismo). Pura: la prueba el arnés.
+    public static (int Page, string? Player) ParseTextArgs(string? first, string? rest)
+    {
+        var words = $"{first} {rest}".Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+        int page = 0;
+        if (words.Count > 0 && IsMoreWord(words[0]))
+        {
+            page = 1;
+            words.RemoveAt(0);
+        }
+        else if (words.Count > 1 && IsMoreWord(words[^1]))
+        {
+            page = 1;
+            words.RemoveAt(words.Count - 1);
+        }
+
+        string player = string.Join(' ', words).Trim().Trim('"', '“', '”', '„', '«', '»').Trim();
+        return (page, player.Length == 0 ? null : player);
+    }
+
+    public static bool IsMoreWord(string? word) => (word ?? string.Empty).Trim().ToLowerInvariant() is "mas" or "más" or "more" or "extra" or "2";
+
     // Estático y sin Discord: lo comparte «aa stats». No crea cuentas (GetByDiscordIdAsync). page = 0 la ficha de siempre, 1 «Más stats» (si no hay nada que mostrar ahí, siempre sale la primera).
     public static async Task<StatsReply> BuildStatsAsync(
-        IUserRepository users, IItemRepository items, IBuffRepository buffs, IPlayerBonusService bonusService, ICookingRepository cooking, IDragonRepository dragons, ulong discordId, IZoneBoxService? zoneBoxes = null, int page = 0)
+        IUserRepository users, IItemRepository items, IBuffRepository buffs, IPlayerBonusService bonusService, ICookingRepository cooking, IDragonRepository dragons, ulong discordId, IZoneBoxService? zoneBoxes = null, int page = 0, string? targetName = null, ulong? viewerId = null)
     {
+        // targetName y viewerId (v0.53.0): con un nombre, son las stats de OTRO jugador (viewerId = quien mira, para los botones); sin él, las de uno mismo como siempre.
         var player = await users.GetByDiscordIdAsync(discordId);
         if (player is null)
         {
-            return new StatsReply(Loc.T("Primero creá tu personaje con **/start**."), null);
+            return new StatsReply(targetName is null ? Loc.T("Primero creá tu personaje con **/start**.") : Loc.F($"**{targetName}** todavía no tiene personaje."), null);
         }
 
         var weapon = player.WeaponId is int weaponId ? await items.GetByIdAsync(weaponId) : null;
@@ -180,14 +244,14 @@ public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepo
         string dropSection = dropBlockList.Count == 0 ? string.Empty : "\n\n" + Loc.T("## 🎲 Chances de drop") + "\n" + string.Join("\n\n", dropBlockList);
 
         var embed = new EmbedBuilder()
-            .WithTitle(Loc.T("📊 Tus stats"))
+            .WithTitle(targetName is null ? Loc.T("📊 Tus stats") : Loc.F($"📊 Stats de {targetName}"))
             .WithColor(Color.Orange)
             .WithDescription(attackBlock + "\n\n" + defenseBlock + "\n\n" + hpBlock + "\n\n" + critBlock + "\n\n" + dodgeBlock + dropSection)
             .WithFooter(Loc.T("Todo cuenta contra monstruos (en duelos y en la Arena, solo el nivel, el equipo y la clase). El perfil ya muestra estos totales. En el drop, cada ➕ cuenta sobre lo que ya llevás acumulado más arriba."));
 
         // ---- La segunda pantalla, «Más stats»: lo que se cocinó, el dragón, las mascotas y el Fuego Nuevo con las bendiciones (cada campo solo si hay algo que contar).
         var more = new EmbedBuilder()
-            .WithTitle(Loc.T("📊 Más stats"))
+            .WithTitle(targetName is null ? Loc.T("📊 Más stats") : Loc.F($"📊 Más stats de {targetName}"))
             .WithColor(Color.Orange)
             .WithFooter(Loc.T("Todo esto ya está sumado en los totales de la primera pantalla."));
 
@@ -264,13 +328,15 @@ public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepo
 
         // Un botón para pasar de una pantalla a la otra (solo si hay segunda pantalla). Siempre lleva el dueño en el id.
         bool hasMore = more.Fields.Count > 0;
+        // Las propias: «stats_page:{dueño}:{pantalla}». Las de otro: «stats_view:{quien mira}:{pantalla}:{de quién}».
+        string ButtonId(int toPage) => targetName is null ? $"{PageButton}:{discordId}:{toPage}" : $"{OtherPageButton}:{viewerId ?? discordId}:{toPage}:{discordId}";
         if (page == 1 && hasMore)
         {
-            var back = new ComponentBuilder().WithButton(Loc.T("Volver a las stats"), $"{PageButton}:{discordId}:0", ButtonStyle.Secondary, new Emoji("↩"));
+            var back = new ComponentBuilder().WithButton(Loc.T("Volver a las stats"), ButtonId(0), ButtonStyle.Secondary, new Emoji("↩"));
             return new StatsReply(null, more.Build(), back.Build());
         }
 
-        var next = hasMore ? new ComponentBuilder().WithButton(Loc.T("Ver más stats"), $"{PageButton}:{discordId}:1", ButtonStyle.Primary, new Emoji("➕")).Build() : null;
+        var next = hasMore ? new ComponentBuilder().WithButton(Loc.T("Ver más stats"), ButtonId(1), ButtonStyle.Primary, new Emoji("➕")).Build() : null;
         return new StatsReply(null, embed.Build(), next);
     }
 

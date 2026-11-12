@@ -26,7 +26,8 @@ const ulong U = 999000000000015000UL;
 async Task Clean() => await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)U });
 
 var recipes = await recipesRepo.GetAllAsync();
-var zones = await zonesRepo.GetAllAsync();
+// La escalera DEL JUGADOR (ForPlayer, como la arma el módulo): con el Fuego Nuevo 0 son las cinco zonas de siempre y a El Fogón se entra caminando (v0.53.0: con la zona tope en las 6 a 10 el equipo del Fogón ya no hace falta).
+var zones = ZoneRanking.ForPlayer(await zonesRepo.GetAllAsync(), 0);
 var ordered = ZoneRanking.OrderByDifficulty(zones);
 var gate = recipes.Where(r => r.ZoneId == FogonRules.GateZoneId).ToList();
 

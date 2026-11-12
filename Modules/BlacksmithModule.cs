@@ -68,7 +68,7 @@ public class BlacksmithModule(
             }
 
             var result = await ForgeModule.ExecuteMakeAsync(
-                userRepository, recipeRepository, craftingRepository, gameEvents, Context.User.Id, selected.FirstOrDefault() ?? string.Empty);
+                userRepository, recipeRepository, craftingRepository, gameEvents, Context.User.Id, selected.FirstOrDefault() ?? string.Empty, zoneRepository);
 
             // La escena se refresca (tus materiales y tu oro al día) y lo que contestó el herrero va en un mensaje aparte.
             var scene = await BuildSceneAsync(userRepository, recipeRepository, zoneRepository, inventoryRepository, Context.User.Id, fullBook: (await settingsService.GetAsync(Context.User.Id)).FullRecipeBook);

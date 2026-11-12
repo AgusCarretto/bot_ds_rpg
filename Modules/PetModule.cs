@@ -171,6 +171,12 @@ public partial class PetModule(
                 state = EvolutionText(pet, data.EggCounts);
             }
 
+            // v0.53.0: una mascota que ya puede salir de expedición pero todavía no está en el tope de su tier (la de tier II o III en los niveles de en medio) avisa que sus horas aún no cuentan para evolucionar.
+            if (level >= PetExpeditions.RequiredLevel && level < cap)
+            {
+                state += "\n" + Loc.T("⏱️ Sus horas de expedición solo cuentan para evolucionar en el nivel tope.");
+            }
+
             // Los huevos de repuesto se cuentan acá (v0.51.1): ya no se ofrecen en /open. En el tope de su tier el contador ya está dentro de lo que falta para evolucionar, así que no se repite.
             if (level < cap && data.EggCounts is not null && data.EggCounts.TryGetValue(species.EggName, out int spareEggs) && spareEggs > 0)
             {

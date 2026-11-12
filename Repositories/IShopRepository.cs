@@ -29,6 +29,10 @@ public interface IShopRepository
     // sentencia (así un doble click no paga dos veces). Devuelve null si ese ítem no es lo que tiene equipado.
     Task<User?> SellEquippedAsync(ulong discordId, int itemId, int refund, CancellationToken cancellationToken = default);
 
-    // Vende TODO el inventario del jugador de una sola vez (no toca lo equipado). Devuelve null si no tenía nada para vender.
-    Task<SellAllOutcome?> SellAllAsync(ulong discordId, CancellationToken cancellationToken = default);
+    // Lo que «vender todo» vendería ahora (la mochila vendible y el arma y el amuleto puestos), SIN vender nada: es lo que la pantalla de confirmación le muestra al jugador (v0.53.0).
+    Task<SellAllPreview> PreviewSellAllAsync(ulong discordId, CancellationToken cancellationToken = default);
+
+    // Vende TODO el inventario del jugador de una sola vez. Con includeEquipped (v0.53.0) también vende el arma y el amuleto PUESTOS (pierden el encantamiento). Con expectedGold, si el total real ya no es ese (cambió
+    // la mochila o el equipo desde que el jugador miró la confirmación) no vende nada y devuelve Changed. Todo en UNA transacción. Devuelve null si no tenía nada para vender.
+    Task<SellAllOutcome?> SellAllAsync(ulong discordId, bool includeEquipped = false, int? expectedGold = null, CancellationToken cancellationToken = default);
 }

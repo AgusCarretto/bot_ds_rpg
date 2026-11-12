@@ -305,7 +305,7 @@ public static class HelpTopics
     private static Embed Shop() => Topic(Self("shop"),
         Loc.T("Acá se compra y se vende todo lo que no se forja, y se cura la vida."),
         (Loc.T("🍺 /taberna (aa taberna)"), Loc.T("El tabernero te atiende con menús: comés algo de tu mochila, comprás comida y cajas, y vendés. Cada elección es de **una** unidad. También vende la **Comida para Mascotas** (**/info tema:pets**).")),
-        (Loc.T("🛒 /shop"), Loc.T("**view** muestra los precios, **buy** y **sell** compran y venden por nombre y cantidad, **sellall** vende todo lo vendible de la mochila (no lo que llevás puesto). En texto, sin escribir shop: `aa sell all`, `aa sell arma`, `aa sell amuleto` (lo que llevás puesto) o `aa sell <ítem>`.")),
+        (Loc.T("🛒 /shop"), Loc.T("**view** muestra los precios, **buy** y **sell** compran y venden por nombre y cantidad, **sellall** vende todo lo vendible de la mochila y también el arma y el amuleto que llevás puestos (te pregunta antes y te muestra qué vende y cuánto paga). En texto, sin escribir shop: `aa sell all` (también pregunta), `aa sell arma`, `aa sell amuleto` (lo que llevás puesto) o `aa sell <ítem>`.")),
         (Loc.T("🍖 Consumibles"),
             Loc.T("La comida cura HP y los **banquetes** (los Míticos) además dan un bonus de ataque por un rato: se comen con **/use** (el valor figura en **/shop view** y en tu **/profile** mientras dura; uno nuevo reemplaza al anterior).")),
         (Loc.T("💊 /heal"), Loc.T("Te cura **todo** lo que te falta comiendo lo justo de tu mochila, sin pasarte (no sirve en combate ni gasta banquetes). Con **/heal comida:<nombre>** usás una sola comida.")));

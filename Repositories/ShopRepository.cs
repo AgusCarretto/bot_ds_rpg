@@ -195,7 +195,53 @@ public sealed class ShopRepository(IDbConnectionFactory connectionFactory) : ISh
         }
     }
 
-    public async Task<SellAllOutcome?> SellAllAsync(ulong discordId, CancellationToken cancellationToken = default)
+    public async Task<SellAllPreview> PreviewSellAllAsync(ulong discordId, CancellationToken cancellationToken = default)
+    {
+        using DbConnection connection = connectionFactory.CreateConnection();
+        string[] keptTypes = BotDsRpg.GameData.FuegoNuevoRules.KeptItemTypes.ToArray();
+
+        // Solo mira: sin transacción y sin bloquear nada (lo que de verdad se vende lo decide SellAllAsync, que vuelve a medir todo dentro de su transacción).
+        var bag = await connection.QuerySingleAsync<(long Items, long Gold)>(new CommandDefinition(
+            """
+            SELECT COALESCE(SUM(inv.quantity), 0)::bigint AS "Items", COALESCE(SUM(inv.quantity::bigint * i.sell_price), 0)::bigint AS "Gold"
+            FROM inventory inv
+            JOIN items i ON i.item_id = inv.item_id
+            WHERE inv.discord_id = @DiscordId AND i.sell_price > 0 AND i.type <> ALL(@KeptTypes);
+            """,
+            new { DiscordId = (long)discordId, KeptTypes = keptTypes }, cancellationToken: cancellationToken));
+
+        int kept = await connection.ExecuteScalarAsync<int>(new CommandDefinition(
+            """
+            SELECT COALESCE(SUM(inv.quantity), 0)::int FROM inventory inv JOIN items i ON i.item_id = inv.item_id
+            WHERE inv.discord_id = @DiscordId AND i.sell_price > 0 AND i.type = ANY(@KeptTypes);
+            """,
+            new { DiscordId = (long)discordId, KeptTypes = keptTypes }, cancellationToken: cancellationToken));
+
+        var gear = await QueryEquippedGearAsync(connection, null, discordId, cancellationToken);
+        return new SellAllPreview((int)Math.Min(bag.Items, int.MaxValue), (int)Math.Min(bag.Gold, int.MaxValue), kept, gear);
+    }
+
+    // El arma y el amuleto puestos que la tienda compra (sell_price > 0), el arma primero.
+    private static async Task<IReadOnlyList<SellAllGear>> QueryEquippedGearAsync(DbConnection connection, DbTransaction? transaction, ulong discordId, CancellationToken cancellationToken)
+    {
+        const string weaponSql = """
+            SELECT i.item_id AS "ItemId", i.name AS "Name", i.emoji AS "Emoji", TRUE AS "IsWeapon", i.sell_price AS "SellPrice"
+            FROM users u JOIN items i ON i.item_id = u.weapon_id
+            WHERE u.discord_id = @DiscordId AND i.sell_price > 0;
+            """;
+        const string amuletSql = """
+            SELECT i.item_id AS "ItemId", i.name AS "Name", i.emoji AS "Emoji", FALSE AS "IsWeapon", i.sell_price AS "SellPrice"
+            FROM users u JOIN items i ON i.item_id = u.amulet_id
+            WHERE u.discord_id = @DiscordId AND i.sell_price > 0;
+            """;
+
+        var gear = new List<SellAllGear>();
+        gear.AddRange(await connection.QueryAsync<SellAllGear>(new CommandDefinition(weaponSql, new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken)));
+        gear.AddRange(await connection.QueryAsync<SellAllGear>(new CommandDefinition(amuletSql, new { DiscordId = (long)discordId }, transaction: transaction, cancellationToken: cancellationToken)));
+        return gear;
+    }
+
+    public async Task<SellAllOutcome?> SellAllAsync(ulong discordId, bool includeEquipped = false, int? expectedGold = null, CancellationToken cancellationToken = default)
     {
         using DbConnection connection = connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
@@ -221,23 +267,51 @@ public sealed class ShopRepository(IDbConnectionFactory connectionFactory) : ISh
             var rows = (await connection.QueryAsync<InventoryValueRow>(new CommandDefinition(
                 selectInventorySql, new { DiscordId = (long)discordId, KeptTypes = keptTypes }, transaction: transaction, cancellationToken: cancellationToken))).AsList();
 
-            if (rows.Count == 0)
+            // v0.53.0: con includeEquipped también entran el arma y el amuleto PUESTOS. Se leen DESPUÉS de bloquear la mochila (el mismo orden que el resto: primero inventory, después users).
+            var gear = includeEquipped ? await QueryEquippedGearAsync(connection, transaction, discordId, cancellationToken) : [];
+
+            if (rows.Count == 0 && gear.Count == 0)
             {
                 await transaction.RollbackAsync(cancellationToken);
                 return null;
             }
 
-            int totalRefund = rows.Sum(row => row.Quantity * row.SellPrice);
+            int totalRefund = rows.Sum(row => row.Quantity * row.SellPrice) + gear.Sum(g => g.SellPrice);
             int itemsSoldCount = rows.Sum(row => row.Quantity);
 
+            // Lo que el jugador vio en la confirmación ya no es lo real (cambió la mochila o el equipo): no se vende nada y se le pide que vuelva a mirar.
+            if (expectedGold is { } expected && expected != totalRefund)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return await ChangedOutcomeAsync(connection, discordId, cancellationToken);
+            }
+
             // Solo lo que se vendió (la misma condición de arriba, y las filas ya están bloqueadas por el SELECT ... FOR UPDATE).
-            const string clearInventorySql = """
-                DELETE FROM inventory inv
-                USING items i
-                WHERE inv.discord_id = @DiscordId AND i.item_id = inv.item_id AND i.sell_price > 0 AND i.type <> ALL(@KeptTypes);
-                """;
-            await connection.ExecuteAsync(new CommandDefinition(
-                clearInventorySql, new { DiscordId = (long)discordId, KeptTypes = keptTypes }, transaction: transaction, cancellationToken: cancellationToken));
+            if (rows.Count > 0)
+            {
+                const string clearInventorySql = """
+                    DELETE FROM inventory inv
+                    USING items i
+                    WHERE inv.discord_id = @DiscordId AND i.item_id = inv.item_id AND i.sell_price > 0 AND i.type <> ALL(@KeptTypes);
+                    """;
+                await connection.ExecuteAsync(new CommandDefinition(
+                    clearInventorySql, new { DiscordId = (long)discordId, KeptTypes = keptTypes }, transaction: transaction, cancellationToken: cancellationToken));
+            }
+
+            // El equipo se desequipa con la guarda de siempre (WHERE sigue siendo ESA pieza): si en el medio la cambió o la vendió en otro clic, no se vende nada. El encantamiento es de la PIEZA y se pierde.
+            foreach (var piece in gear)
+            {
+                string unequipSql = piece.IsWeapon
+                    ? "UPDATE users SET weapon_id = NULL, weapon_enchant = 0, weapon_enchant_kind = 'filo' WHERE discord_id = @DiscordId AND weapon_id = @ItemId;"
+                    : "UPDATE users SET amulet_id = NULL, amulet_enchant = 0, amulet_enchant_kind = 'guarda' WHERE discord_id = @DiscordId AND amulet_id = @ItemId;";
+                int unequipped = await connection.ExecuteAsync(new CommandDefinition(
+                    unequipSql, new { DiscordId = (long)discordId, ItemId = piece.ItemId }, transaction: transaction, cancellationToken: cancellationToken));
+                if (unequipped == 0)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    return await ChangedOutcomeAsync(connection, discordId, cancellationToken);
+                }
+            }
 
             // Cuántas unidades vendibles se quedaron por eso (para decirlo en la pantalla).
             int keptCount = await connection.ExecuteScalarAsync<int>(new CommandDefinition(
@@ -258,13 +332,21 @@ public sealed class ShopRepository(IDbConnectionFactory connectionFactory) : ISh
                 creditGoldSql, new { DiscordId = (long)discordId, Refund = totalRefund }, transaction: transaction, cancellationToken: cancellationToken));
 
             await transaction.CommitAsync(cancellationToken);
-            return new SellAllOutcome(seller, itemsSoldCount, totalRefund, keptCount);
+            return new SellAllOutcome(seller, itemsSoldCount, totalRefund, keptCount, gear);
         }
         catch
         {
             await transaction.RollbackAsync(cancellationToken);
             throw;
         }
+    }
+
+    // El resultado de «no se vendió nada porque cambió algo»: lleva al jugador tal cual está (ya revertida la transacción).
+    private static async Task<SellAllOutcome> ChangedOutcomeAsync(DbConnection connection, ulong discordId, CancellationToken cancellationToken)
+    {
+        var player = await connection.QuerySingleAsync<User>(new CommandDefinition(
+            $"SELECT {UserSql.SelectColumns} FROM users WHERE discord_id = @DiscordId;", new { DiscordId = (long)discordId }, cancellationToken: cancellationToken));
+        return new SellAllOutcome(player, 0, 0, 0, null, Changed: true);
     }
 
     private sealed record InventoryValueRow(int Quantity, int SellPrice);

@@ -40,7 +40,7 @@ public sealed class FarmAdviceService(
             var statics = await GetStaticsAsync(cancellationToken);
             // Con la puerta abierta (venció al jefe de la última zona) también aconseja el equipo del Fogón (GameData/FogonRules.cs).
             var playerZones = ZoneRanking.ForPlayer(statics.Zones, player.FuegoNuevo);
-            bool gateOpen = FogonRules.IsGateOpen(playerZones, player.HighestZoneCleared);
+            bool gateOpen = FogonRules.OffersKeyGear(playerZones, player.HighestZoneCleared);
             var view = RecipeCatalog.ViewFor(statics.Recipes, playerZones, player.Class, player.CurrentZoneId, gateOpen);
             if (view.Zone is null || view.Recipes.Count == 0)
             {

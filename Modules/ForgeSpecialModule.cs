@@ -60,6 +60,15 @@ public class ForgeSpecialModule(
         var lastZone = FogonRules.LastZone(ordered);
         bool gateOpen = player is not null && FogonRules.IsGateOpen(ordered, player.HighestZoneCleared);
 
+        // v0.53.0: desde el Fuego Nuevo 5 (la zona tope ya es una de las 6 a 10) a El Fogón no se entra caminando: se llega pasando la mazmorra de la zona más alta, sin equipo especial. El Trinche y la Brasa ya no hacen falta,
+        // así que no se listan sus recetas ni se pide guardar los materiales (el dueño: «pensá una solución para el trinche y la brasa»).
+        if (player is not null && !FogonRules.KeyGearNeeded(ordered))
+        {
+            return embed.WithDescription(
+                Loc.F($"**El Trinche del Asador Eterno** y **la Brasa del Fogón Eterno** eran la llave para entrar caminando a El Fogón, y con tu Fuego Nuevo **ya no hacen falta**: a El Fogón se llega pasando la **mazmorra** de {lastZone?.Emoji ?? "🗺️"} **{lastZone?.Name ?? Loc.T("tu zona más alta")}**, y del otro lado te espera el Asador sin que lleves ningún equipo especial.\n\n") +
+                Loc.T("Por eso el herrero ya no las ofrece. Los drops de cacería de las zonas que pedían los podés usar en el equipo de cada zona, y **/dismantle** y **/shop sell** vuelven a ser seguros con ellos. Cómo funciona todo: **/info tema:fogon**.")).Build();
+        }
+
         string status = player is null
             ? Loc.T("Empezá con **/start** para ver cuánto te falta de cada cosa.")
             : gateOpen

@@ -24,7 +24,7 @@ public static class ForgeChoices
         // + la Hoja de Acero Puro (la única arma general, sin zona y solo con materiales) mientras no lleves NINGUNA arma puesta: es la base de quien empieza; con un arma puesta
         //   sería una opción más cada vez ("🔁 vendé tu arma primero") para algo que ya no sirve.
         zones = ZoneRanking.ForPlayer(zones, player.FuegoNuevo);
-        bool gateOpen = FogonRules.IsGateOpen(zones, player.HighestZoneCleared);
+        bool gateOpen = FogonRules.OffersKeyGear(zones, player.HighestZoneCleared);
         return RecipeCatalog.ViewFor(recipes, zones, player.Class, player.CurrentZoneId, gateOpen).Recipes
             .Where(recipe => !(recipe.ZoneId is null && recipe.ResultItem.Type == "Weapon" && player.WeaponId is not null))
             .Where(recipe => FitsAsValue(recipe.ResultItem.Name) && Matches(recipe.ResultItem.Name, typed))

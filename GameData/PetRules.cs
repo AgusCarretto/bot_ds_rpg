@@ -117,6 +117,10 @@ public static class PetRules
     // En el tope de SU tier (10, 20 o 30): ya no come hasta que evolucione.
     public static bool IsMaxLevel(OwnedPet pet) => LevelFor(pet.FeedPoints) >= LevelCap(pet.Tier);
 
+    // Las horas de una expedición solo suman para evolucionar si, al volver, la mascota está en el nivel tope de su tier (v0.53.0, el dueño: «mientras no llegás al nivel tope las horas que hagas de expedición no cuentan
+    // para la evolución»). El tier I sale desde el 10, que ya es su tope, así que solo cambia para el tier II (niveles 11 a 19) y el III (21 a 29).
+    public static bool CountsForEvolution(int feedPoints, int tier) => LevelFor(feedPoints) >= LevelCap(tier);
+
     // Puede comer ahora: no está en el tope de su tier y pasó la hora desde la última comida.
     public static bool CanEat(OwnedPet pet, DateTime nowUtc, TimeSpan? cooldown = null) => !IsMaxLevel(pet) && RemainingCooldown(pet, nowUtc, cooldown) == TimeSpan.Zero;
 

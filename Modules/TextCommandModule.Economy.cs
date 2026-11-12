@@ -110,13 +110,14 @@ public partial class TextCommandModule
     // "aa shop sellall" / "aa sa" — misma lógica que /shop sellall.
     [Command("shop sellall")]
     [Alias("sa")]
-    [Summary("Vendé todo tu inventario de una sola vez a cambio de oro.")]
+    [Summary("Vendé tu mochila y el equipo que llevás puesto a cambio de oro (te pregunta antes).")]
     public async Task ShopSellAllAsync()
     {
         try
         {
-            var result = await ShopModule.ExecuteSellAllAsync(shopRepository, gameEvents, Context.User.Id);
-            await ReplyAsync(result.PlainMessage, embed: result.Embed);
+            // v0.53.0: pregunta antes de vender (ver ShopModule.BuildSellAllConfirmAsync); la venta la hace el botón «Sí».
+            var result = await ShopModule.BuildSellAllConfirmAsync(shopRepository, Context.User.Id);
+            await ReplyAsync(result.PlainMessage, embed: result.Embed, components: result.Components);
         }
         catch (Exception ex)
         {
@@ -154,7 +155,7 @@ public partial class TextCommandModule
     {
         try
         {
-            var result = await ForgeModule.ExecuteMakeAsync(userRepository, recipeRepository, craftingRepository, gameEvents, Context.User.Id, item);
+            var result = await ForgeModule.ExecuteMakeAsync(userRepository, recipeRepository, craftingRepository, gameEvents, Context.User.Id, item, zoneRepository);
             await ReplyAsync(result.PlainMessage, embed: result.Embed);
         }
         catch (Exception ex)
