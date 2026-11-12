@@ -32,6 +32,14 @@ public static class FogonRules
     public static bool IsGateOpen(IReadOnlyList<Zone> orderedZones, int highestZoneCleared) =>
         orderedZones.Count > 0 && highestZoneCleared > 0 && ZoneRanking.RankOf(orderedZones, highestZoneCleared) >= orderedZones.Count;
 
+    // ¿Hace falta el equipo del Fogón (el Trinche y la Brasa) para este jugador? (v0.53.0, el dueño: «pensá una solución para el trinche y la brasa»). Solo mientras a El Fogón se entra CAMINANDO: con la escalera de ese jugador
+    // terminando en la Zona 5 (Fuego Nuevo 0 a 4). Desde el Fuego Nuevo 5 la zona tope es una de las 6 a 10 y al Asador se llega pasando la mazmorra, sin llevar equipo especial (ver ZoneModule), así que esas dos piezas no sirven
+    // para nada: ni se ofrecen en la herrería ni se pueden forjar por nombre, y /forge-special lo explica. playerLadder: ZoneRanking.ForPlayer del jugador.
+    public static bool KeyGearNeeded(IReadOnlyList<Zone> playerLadder) => LastZone(playerLadder) is { } last && !ZoneRanking.IsDungeonZone(last);
+
+    // Se ofrecen las recetas del Fogón: la puerta está abierta Y todavía hace falta el equipo (ver KeyGearNeeded).
+    public static bool OffersKeyGear(IReadOnlyList<Zone> playerLadder, int highestZoneCleared) => KeyGearNeeded(playerLadder) && IsGateOpen(playerLadder, highestZoneCleared);
+
     public enum EntryStatus { Ok, NotOpen, LevelTooLow, MissingGear }
 
     // MissingWeapon / MissingAmulet: qué pieza le falta (solo con MissingGear).

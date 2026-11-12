@@ -161,6 +161,12 @@ public partial class PetModule
             lines.Add(Loc.T("No encontró nada especial esta vez."));
         }
 
+        // v0.53.0: las horas solo suman para evolucionar en el nivel tope de su tier; si todavía no llegó, se le dice al jugador (con el nivel que tiene y el tope) para que no cuente con esas horas.
+        if (!outcome.HoursCounted)
+        {
+            lines.Add(Loc.F($"⏱️ Estas horas no cuentan para evolucionar: {done.Species.Name} todavía no está en el nivel tope de su tier ({outcome.PetLevel}/{outcome.LevelCap})."));
+        }
+
         var embed = new EmbedBuilder()
             .WithTitle(Loc.F($"🎉 {done.Species.Emoji} {done.Species.Name} volvió de la expedición"))
             .WithColor(outcome.Find is null ? Color.Teal : Color.Gold)
@@ -217,7 +223,8 @@ public partial class PetModule
             .WithColor(Color.Teal)
             .WithDescription(
                 Loc.F($"Mandá a una mascota **nivel {PetExpeditions.RequiredLevel}** a explorar mientras hacés otra cosa. Sale de a una por vez y gasta {PetRules.FoodItemName} (tenés **{data.Food}**). ") +
-                Loc.T("Cuando vuelve, recogés lo que trajo. ¿Qué encontrará? Descubrilo."))
+                Loc.T("Cuando vuelve, recogés lo que trajo. ¿Qué encontrará? Descubrilo.") + "\n\n" +
+                Loc.T("⏱️ Las horas que pasa afuera solo cuentan para evolucionar cuando la mascota está en el nivel tope de su tier."))
             .AddField(Loc.T("⏱️ Cuánto dura y cuánto cuesta"), string.Join("\n", durations), false)
             .AddField(Loc.T("🐾 Pueden salir"), string.Join("\n", data.Eligible.Select(p => $"{p.Species.Emoji} **{p.Species.Name}**")), false);
 

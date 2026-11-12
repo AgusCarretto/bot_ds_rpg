@@ -104,12 +104,13 @@ DELETE FROM recipe_ingredients WHERE recipe_id IN (SELECT r.recipe_id FROM recip
 DROP TABLE IF EXISTS z610_ing;
 CREATE TEMP TABLE z610_ing (role TEXT, item_name TEXT, base INTEGER, per_zone INTEGER);
 -- cantidad = base + per_zone × k (k = 0 en la Zona 6 … 4 en la 10). '{drop}' = el drop de la zona. A diferencia de las zonas 1 a 5, acá los Legendarios (Ébano, Zafiro) van en CANTIDAD (el dueño:
--- «el 1 de ébano y zafiro, cualquiera; poné cantidades grandes, con FN 7 salen bien») y cada arma de clase pide UN Mítico de recolección: el Meteorito las de metal y la Corteza las de
--- madera (el dueño: «es buena idea»). Se compran también en el Tabernero del Inframundo.
+-- «el 1 de ébano y zafiro, cualquiera; poné cantidades grandes, con FN 7 salen bien»). Los dos Míticos de recolección (Meteorito y Corteza, que también se compran en el Tabernero del Inframundo) van
+-- en TODAS las armas de clase (1 de cada uno) y en el AMULETO (1 + k de cada uno: 1, 2, 3, 4, 5); eso es de la v0.53.0 (antes solo las armas pedían UNO, el de su material; el dueño: «poné en las recetas de
+-- amuleto y arma de zona 6 a 10 materiales míticos»). Para una base viva está Database/rebalance_zone6_10_mythics.sql. Por eso cada receta de equipo de estas zonas tiene 6 tipos de ingrediente.
 INSERT INTO z610_ing VALUES
-    ('weapon_metal', '{drop}', 8, 2), ('weapon_metal', 'Hierro', 20, 6), ('weapon_metal', 'Gema de Zafiro', 4, 2), ('weapon_metal', 'Carbón', 30, 12), ('weapon_metal', 'Fragmento de Meteorito', 1, 0),
-    ('weapon_wood', '{drop}', 8, 2), ('weapon_wood', 'Madera de Nogal', 12, 5), ('weapon_wood', 'Madera de Ébano', 4, 2), ('weapon_wood', 'Madera de Roble', 40, 12), ('weapon_wood', 'Corteza del Árbol de Vida', 1, 0),
-    ('amulet', '{drop}', 10, 2), ('amulet', 'Oro Puro', 10, 4), ('amulet', 'Gema de Zafiro', 4, 2), ('amulet', 'Piedra', 100, 50),
+    ('weapon_metal', '{drop}', 8, 2), ('weapon_metal', 'Hierro', 20, 6), ('weapon_metal', 'Gema de Zafiro', 4, 2), ('weapon_metal', 'Carbón', 30, 12), ('weapon_metal', 'Fragmento de Meteorito', 1, 0), ('weapon_metal', 'Corteza del Árbol de Vida', 1, 0),
+    ('weapon_wood', '{drop}', 8, 2), ('weapon_wood', 'Madera de Nogal', 12, 5), ('weapon_wood', 'Madera de Ébano', 4, 2), ('weapon_wood', 'Madera de Roble', 40, 12), ('weapon_wood', 'Corteza del Árbol de Vida', 1, 0), ('weapon_wood', 'Fragmento de Meteorito', 1, 0),
+    ('amulet', '{drop}', 10, 2), ('amulet', 'Oro Puro', 10, 4), ('amulet', 'Gema de Zafiro', 4, 2), ('amulet', 'Piedra', 100, 50), ('amulet', 'Fragmento de Meteorito', 1, 1), ('amulet', 'Corteza del Árbol de Vida', 1, 1),
     ('relic', '{drop}', 5, 1), ('relic', 'Cofre de Escoria', 1, 0), ('relic', 'Madera de Pino', 100, 50), ('relic', 'Piedra', 100, 50);
 
 INSERT INTO recipe_ingredients (recipe_id, item_id, quantity)
@@ -143,7 +144,7 @@ BEGIN
        OR (SELECT count(*) FROM recipes r WHERE r.zone_id = z.zone_id) <> 6
        OR (SELECT count(*) FROM zone_boxes b WHERE b.zone_id = z.zone_id) <> 6
        OR EXISTS (SELECT 1 FROM recipes r JOIN items res ON res.item_id = r.result_item_id WHERE r.zone_id = z.zone_id
-                  AND (SELECT count(*) FROM recipe_ingredients ri WHERE ri.recipe_id = r.recipe_id) <> CASE res.type WHEN 'Weapon' THEN 5 ELSE 4 END);
+                  AND (SELECT count(*) FROM recipe_ingredients ri WHERE ri.recipe_id = r.recipe_id) <> CASE res.type WHEN 'Weapon' THEN 6 WHEN 'Amulet' THEN 6 ELSE 4 END);
     IF bad IS NOT NULL THEN
         RAISE EXCEPTION 'add_zones_6_10: zonas incompletas: %', bad;
     END IF;

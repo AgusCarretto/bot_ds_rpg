@@ -35,8 +35,15 @@ public static class RaidDifficulty
     private static readonly Scale FirstZone = new(1.76, 1.35);
     private static readonly Scale LadderZones = new(1.2, 1.1);
 
+    // v0.53.0: el jefe de la ZONA 5 (rango 5) subió +10 % de vida y +5 % de daño GUARDADOS (Database/rebalance_zone5_boss.sql, el dueño: «sumale unos puntos de vida y daño»), y los multiplicadores del raid de esa zona
+    // se dividen por los mismos factores (como en la v0.17.1), así que su raid queda EXACTAMENTE igual de difícil que el ya medido: 2118 × 1,2 / 1,10 = 1925 × 1,2 (y 212 × 1,1 / 1,05 = 202 × 1,1). Si se quiere un raid de la
+    // Zona 5 más duro a propósito, dejar estos dos en 1,0.
+    public const double ZoneFiveBossHpBoost = 1.10;
+    public const double ZoneFiveBossDamageBoost = 1.05;
+    private static readonly Scale ZoneFive = new(1.2 / ZoneFiveBossHpBoost, 1.1 / ZoneFiveBossDamageBoost);
+
     // zoneRank: posición 1-indexada de la zona por dificultad (ZoneRanking.RankOf); 0 (desconocida) cuenta como 1.
-    public static Scale ForZoneRank(int zoneRank) => zoneRank <= 1 ? FirstZone : LadderZones;
+    public static Scale ForZoneRank(int zoneRank) => zoneRank <= 1 ? FirstZone : zoneRank == 5 ? ZoneFive : LadderZones;
 
     // Cada jugador ADEMÁS del primero suma este porcentaje del HP base: con 3 jugadores el jefe tiene
     // 1 + 2 * 0.5 = 2x su HP. Menos que proporcional a propósito — así un grupo grande sí lo tiene más

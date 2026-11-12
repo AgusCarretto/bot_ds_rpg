@@ -32,8 +32,9 @@ public enum ExpeditionClaimStatus
 }
 
 // Expedition: la que se cobró (Ok) o la que sigue afuera (NotReady). Receipt: el oro y la EXP pagados (con la subida de nivel). Find: el hallazgo si salió. Remaining: lo que falta (NotReady).
+// HoursCounted (v0.53.0): si las horas de esta expedición se sumaron a las de la mascota para evolucionar (solo si al volver estaba en el nivel tope de su tier); PetLevel y LevelCap, el nivel que tenía y su tope.
 public sealed record ExpeditionClaimOutcome(
-    ExpeditionClaimStatus Status, ActiveExpedition? Expedition, RewardReceipt? Receipt, ExpeditionFindResult? Find, TimeSpan Remaining);
+    ExpeditionClaimStatus Status, ActiveExpedition? Expedition, RewardReceipt? Receipt, ExpeditionFindResult? Find, TimeSpan Remaining, bool HoursCounted = true, int PetLevel = 0, int LevelCap = 0);
 
 // Las expediciones de las mascotas (v0.39.0, GameData/PetExpeditions.cs). Salir y volver son transacciones con guardas: la fila del jugador se toma con FOR UPDATE, la comida se gasta con un UPDATE guardado,
 // la expedición se cobra con un DELETE ... WHERE ends_at <= now() (dos clics a la vez cobran UNA vez) y el premio se paga en la MISMA transacción. El premio NO depende de la zona del jugador.

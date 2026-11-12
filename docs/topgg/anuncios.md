@@ -7,7 +7,35 @@ fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo
 
 ---
 
-## 2026-11-11 — Laberinto libre, responder en vez de mencionar y top 50 (v0.51.1 a v0.52.2)
+## 2026-11-12 — «Vender todo» con confirmación, stats de otros y un jefe de la Zona 5 más duro (v0.52.2 y v0.53.0)
+
+**Título:** ¡«Vender todo» con confirmación, stats de otros jugadores y un jefe de la Zona 5 más duro!
+
+**Texto:**
+
+🛒 **Vender todo ahora pregunta antes** (**/shop sellall**, **aa shop sellall** y **aa sell all**): te muestra qué vendés y cuánto paga, y vende también el **arma y el amuleto que llevás puestos** (pierden el encantamiento). Elegís «Sí, vender todo» o «No, cancelar». Sigue sin vender cajas, premios ni lo que se conserva en el Fuego Nuevo. **aa sell arma**, **aa sell amuleto** y **aa sell all <ítem>** venden directo.
+
+📊 **Stats de otro jugador:** **/stats jugador:@alguien**, **aa stats @alguien** o respondiendo su mensaje con **aa stats** (con **aa stats mas @alguien** ves la segunda pantalla).
+
+👑 **El jefe de la Zona 5** (Soberano de la Escoria) tiene un poco más de vida y pega más fuerte (+10 % y +5 %). La raid de esa zona queda igual de difícil que antes.
+
+💎 **Míticos en el equipo de las Zonas 6 a 10:** las armas y los amuletos ahora piden **Corteza del Árbol de Vida** y **Fragmento de Meteorito** (uno de cada en las armas y de 1 a 5 de cada uno en los amuletos, según la zona). El Tabernero del Inframundo también los vende.
+
+🔥 **El Trinche y la Brasa del Fogón** ya no hacen falta desde el **Fuego Nuevo 5** (al Asador se llega por la mazmorra de tu zona más alta): la herrería dejó de ofrecerlos y **/forge-special** te lo explica. Los materiales que pedían, a usarlos en el equipo de cada zona.
+
+🐾 **Mascotas:** las horas de expedición solo cuentan para evolucionar cuando la mascota está en el nivel tope de su tier; la pantalla ahora te avisa.
+
+🧩 **El laberinto de humo (Zona 7)** ahora tiene **varios caminos a la salida**, y 6 brasas escondidas en esos caminos: cada una quema una vez y siempre queda un camino sin ninguna, pero no sabés cuál. (Corrección: con los varios caminos, ya no es cierto que una rama quemada «no lleva a la salida».)
+
+🔨 **Aviso de herramientas:** cuando vencés por primera vez al jefe de la Zona 2 y al de la Zona 4, el juego te avisa que con la Zona 3 y la Zona 5 se abren las herramientas del Carpintero (**/tools**): hacha, pico y caña que multiplican lo que recolectás. Así no se te pasa hacerlas después de cada Fuego Nuevo.
+
+🎨 **Arte nuevo:** las 5 **Reliquias** de las mazmorras y todo el **equipo de las Zonas 6 a 10** (las 4 armas de clase y el amuleto de cada zona) ya tienen su propio dibujo.
+
+⚡ **aa mission** abre tus misiones y **aa pr**, tus oficios.
+
+---
+
+## 2026-11-11 — Laberinto libre, responder en vez de mencionar y top 50 (v0.51.1 a v0.52.0)
 
 **Título:** ¡Laberinto libre, responder en vez de mencionar y ranking top 50!
 
@@ -17,15 +45,11 @@ fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo
 
 ⏱️ **El cd de otro jugador:** **/cd jugador:@alguien**, **aa cd @alguien**, o respondiendo su mensaje con **aa cd**. Lo ves con las líneas que elegiste en /config.
 
-🧩 **El laberinto de humo (Zona 7), renovado:** ahora te movés para donde quieras (las 4 flechas siempre andan y chocar contra una pared no cuesta nada), el mapa dibuja las paredes y ves los 4 lados de donde estás parado, y lo que recorriste queda en verde 🟩. Es más largo, no tiene límite de pasos y ahora hay **varios caminos a la salida**. Ojo con las brasas: hay 6 repartidas por esos caminos, se ven como un camino más y cada una quema una vez; siempre queda un camino sin ninguna, pero no sabés cuál.
+🧩 **El laberinto de humo (Zona 7), renovado:** ahora te movés para donde quieras (las 4 flechas siempre andan y chocar contra una pared no cuesta nada), el mapa dibuja las paredes y ves los 4 lados de donde estás parado, y lo que recorriste queda en verde 🟩. Es más largo y no tiene límite de pasos. Ojo con las brasas: se esconden en los desvíos y se ven como un camino más; si te quemás, esa rama no lleva a la salida.
 
 🏆 **/leaderboard** muestra ahora los **50 primeros**, de a 10 por página: pasá de página con los botones ◀ ▶, o directo con **/leaderboard pagina:3** o **aa lb 3**. Abajo, en chiquito, cuántos aventureros hay en total.
 
-⚡ **Atajos**: **aa ch a**, **aa m a** y **aa f a** hacen la versión avanzada de talar, minar y pescar; **aa mission** abre tus misiones y **aa pr**, tus oficios.
-
-🔨 **Aviso de herramientas:** cuando vencés por primera vez al jefe de la Zona 2 y al de la Zona 4, el juego ahora te avisa que con la Zona 3 y la Zona 5 se abren las herramientas del Carpintero (**/tools**): hacha, pico y caña que multiplican lo que recolectás. Así no se te pasa hacerlas después de cada Fuego Nuevo.
-
-🎨 **Arte nuevo:** las 5 **Reliquias** de las mazmorras y todo el **equipo de las Zonas 6 a 10** (las 4 armas de clase y el amuleto de cada zona) ya tienen su propio dibujo.
+⚡ **Atajos para lo avanzado:** **aa ch a**, **aa m a** y **aa f a** hacen la versión avanzada de talar, minar y pescar.
 
 🥚 **/open** ya no te ofrece huevos de mascotas que ya abriste (esos son de repuesto, para evolucionar, y los ves contados en **/pet**), en el **inventario** los drops de monstruo van agrupados por zona, y **/fuegonuevo** aclara que los porcentajes se aplican sobre lo que ya tenés, no se suman: un +30 % sobre un 6 % de drop te deja en 7,8 %, no en 36 %.
 

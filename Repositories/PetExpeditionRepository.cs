@@ -117,6 +117,8 @@ public sealed class PetExpeditionRepository(IDbConnectionFactory connectionFacto
         }
     }
 
+    private sealed record PetTierRow(int Tier, int FeedPoints);
+
     public async Task<ExpeditionClaimOutcome> ClaimAsync(ulong discordId, Random? rng = null, CancellationToken cancellationToken = default)
     {
         rng ??= Random.Shared;
@@ -162,13 +164,20 @@ public sealed class PetExpeditionRepository(IDbConnectionFactory connectionFacto
             var kind = PetExpeditions.FindKindOf(species.BonusKind);
             bool found = PetExpeditions.RollFind(option, rng);
 
-            // El tier de la mascota (I, II, III) multiplica el premio ×1 / ×2 / ×4, y las horas de esta expedición suman a las que la mascota lleva acumuladas (cuentan para evolucionarla).
-            int tier = await connection.ExecuteScalarAsync<int?>(new CommandDefinition(
-                "SELECT tier FROM player_pets WHERE discord_id = @DiscordId AND species_id = @SpeciesId;",
-                new { DiscordId = (long)discordId, SpeciesId = species.SpeciesId }, transaction: transaction, cancellationToken: cancellationToken)) ?? 1;
-            await connection.ExecuteAsync(new CommandDefinition(
-                "UPDATE player_pets SET expedition_hours = expedition_hours + @Hours WHERE discord_id = @DiscordId AND species_id = @SpeciesId;",
-                new { Hours = active.Hours, DiscordId = (long)discordId, SpeciesId = species.SpeciesId }, transaction: transaction, cancellationToken: cancellationToken));
+            // El tier de la mascota (I, II, III) multiplica el premio ×1 / ×2 / ×4. Las horas de esta expedición suman a las que la mascota lleva acumuladas (cuentan para evolucionarla) SOLO si, al volver, está en el nivel tope
+            // de su tier (v0.53.0, el dueño): de una de tier II en el nivel 15 el premio se paga igual pero las horas no suman.
+            var petRow = await connection.QuerySingleOrDefaultAsync<PetTierRow>(new CommandDefinition(
+                "SELECT tier::int AS Tier, feed_points AS FeedPoints FROM player_pets WHERE discord_id = @DiscordId AND species_id = @SpeciesId;",
+                new { DiscordId = (long)discordId, SpeciesId = species.SpeciesId }, transaction: transaction, cancellationToken: cancellationToken));
+            int tier = petRow?.Tier ?? 1;
+            int petLevel = PetRules.LevelFor(petRow?.FeedPoints ?? 0), levelCap = PetRules.LevelCap(tier);
+            bool hoursCounted = petRow is null || PetRules.CountsForEvolution(petRow.FeedPoints, tier);
+            if (hoursCounted)
+            {
+                await connection.ExecuteAsync(new CommandDefinition(
+                    "UPDATE player_pets SET expedition_hours = expedition_hours + @Hours WHERE discord_id = @DiscordId AND species_id = @SpeciesId;",
+                    new { Hours = active.Hours, DiscordId = (long)discordId, SpeciesId = species.SpeciesId }, transaction: transaction, cancellationToken: cancellationToken));
+            }
 
             // El premio NO depende de la zona ni de la especie: el oro es un valor del rango de esa duración y la EXP un % del nivel del jugador (con subida de nivel), todo en la misma transacción.
             // Solo el hallazgo de oro o de EXP suma un 50 % a su parte. La EXP va por RewardPayer (sin oro: el oro de una expedición no son "cacerías de la zona") y el oro se suma acá, frenado en int.MaxValue.
@@ -187,7 +196,7 @@ public sealed class PetExpeditionRepository(IDbConnectionFactory connectionFacto
             }
 
             await transaction.CommitAsync(cancellationToken);
-            return new ExpeditionClaimOutcome(ExpeditionClaimStatus.Ok, active, receipt, find, TimeSpan.Zero);
+            return new ExpeditionClaimOutcome(ExpeditionClaimStatus.Ok, active, receipt, find, TimeSpan.Zero, hoursCounted, petLevel, levelCap);
         }
         catch
         {

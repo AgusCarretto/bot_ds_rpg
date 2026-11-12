@@ -94,10 +94,13 @@ Check(badQty.Embed is null && badQty.PlainMessage is not null && await Have("Mad
 
 await Give("Madera de Pino", 4);
 int goldBefore = await Gold();
+// v0.53.0: «aa sell all» PREGUNTA antes (la venta la hace el botón «Sí», ShopModule.ResolveSellAllConfirmAsync) y vende también lo puesto; con la mochila vacía y nada puesto lo dice sin preguntar.
 var everything = await Sell("all");
-Check(everything.Embed is not null && await Have("Madera de Pino") == 0 && await Have("Madera de Roble") == 0 && await Gold() == goldBefore + (4 * pinePrice) + (3 * oakPrice), "aa sell all: vende todo lo vendible de la mochila");
+Check(everything.Embed is not null && everything.Components is not null && await Have("Madera de Pino") == 4 && await Have("Madera de Roble") == 3 && await Gold() == goldBefore, "aa sell all: pregunta antes y todavía no vende nada");
+var confirmed = await ShopModule.ResolveSellAllConfirmAsync(shop, events, U, U, (4 * pinePrice) + (3 * oakPrice));
+Check(confirmed.Embed is not null && await Have("Madera de Pino") == 0 && await Have("Madera de Roble") == 0 && await Gold() == goldBefore + (4 * pinePrice) + (3 * oakPrice), "con el «Sí»: vende todo lo vendible de la mochila");
 var nothing = await Sell("all");
-Check(nothing.Embed is null && nothing.PlainMessage is not null, "aa sell all con la mochila vacía: lo dice");
+Check(nothing.Embed is null && nothing.PlainMessage is not null, "aa sell all con la mochila vacía: lo dice (sin preguntar)");
 
 await db.ExecuteAsync("UPDATE users SET weapon_id = @w, amulet_id = @a, weapon_enchant = 3, gold = 0 WHERE discord_id = @id", new { id = (long)U, w = weapon.Id, a = amulet.Id });
 var soldWeapon = await Sell("arma");

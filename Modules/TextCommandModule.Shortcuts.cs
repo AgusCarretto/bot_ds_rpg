@@ -15,7 +15,7 @@ public partial class TextCommandModule
         try
         {
             var result = await TextShortcuts.ExecuteSellAsync(userRepository, itemRepository, inventoryRepository, shopRepository, gameEvents, Context.User.Id, args);
-            await ReplyAsync(result.PlainMessage, embed: result.Embed);
+            await ReplyAsync(result.PlainMessage, embed: result.Embed, components: result.Components);
         }
         catch (Exception ex)
         {
