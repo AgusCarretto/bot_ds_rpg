@@ -868,6 +868,29 @@
   },
   {
     "type": 1,
+    "name": "ppt",
+    "description": "Piedra, papel o tijera apostando oro contra otro jugador: el que gana se lleva la apuesta del otro.",
+    "options": [
+      {
+        "type": 6,
+        "name": "jugador",
+        "description": "A quién desafiás",
+        "required": true,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      },
+      {
+        "type": 3,
+        "name": "apuesta",
+        "description": "Cuánto oro pone cada uno (500, 10k o all)",
+        "required": true,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      }
+    ]
+  },
+  {
+    "type": 1,
     "name": "professions",
     "description": "Tus oficios (Leñador, Minero, Pescador, Encantador): nivel, XP y lo que dan."
   },

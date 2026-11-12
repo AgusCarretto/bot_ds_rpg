@@ -9,7 +9,7 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
 **Nuevo (2026-11-09), esperando respuestas del dueño** — los detalles y las preguntas de cada una están en las dos secciones «Anotado el 2026-11-09» de abajo
 - **La Torre** (`aa tower` / `aa torre`): a botones, una cura por intento, guardado cada 5 pisos, **después del Fuego Nuevo 20** (el dueño lo cambió el 2026-11-10; antes era desde el 5), 100 pisos y con tus stats (los últimos pisos pensados para un FN 20 de nivel ~100). Falta decidir si el punto de control llena la vida y devuelve la cura, la frecuencia (propongo un intento por día), si el piso es por vuelta o de toda la vida y los premios. Antes de fijar la dificultad hay que subirle el techo a `tools/balance2` (nivel 100, FN 20).
 - **Aventura** (`aa aventura` / `aa adventure`): un travel con lore, tipo roguelike, de 4 o 5 escenas con decisiones y peleas. Una sola aventura para todas las zonas; la zona cambia la dificultad y el premio. Falta: cooldown, penalidad al morir, si las zonas 6 a 10 la tienen y si las decisiones cambian algo real.
-- **Apuestas** (ideas de un jugador y del dueño): piedra, papel o tijera entre jugadores con la misma apuesta; la **ruleta** de siempre como un juego más de `/play` (solo oro) y, aparte, una rueda de premios; y una **carrera de ñandús** cada X horas con una apuesta a un solo ñandú y el resultado contado como la Arena. Falta elegir cuál va primero y las preguntas de cada una.
+- **Apuestas** (ideas de un jugador y del dueño): ~~piedra, papel o tijera entre jugadores con la misma apuesta~~ **hecho en la v0.54.0** (`/ppt`, `aa ppt @amigo 5k`: una mano, sin tope, logro «Mano Ganadora» sin títulos); la **ruleta** de siempre como un juego más de `/play` (solo oro) y, aparte, una rueda de premios; y una **carrera de ñandús** cada X horas con una apuesta a un solo ñandú y el resultado contado como la Arena. Falta elegir cuál va primero y las preguntas de cada una.
 
 **Pedidos del dueño sin hacer**
 - ~~**Subir la vida del jefe de la Zona 5**~~ **hecho en la v0.53.0** (+10 % de vida y +5 % de daño, el raid igual): a nivel 55-60 sigue sin arriesgar nada, lo único que lo cambia es que el jefe escale con el nivel del jugador (sin construir). Ver «Anotado el 2026-11-12».
@@ -88,7 +88,9 @@ Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para 
   - Ruleta: «Que sea una probabilidad de ganar varias cosas, no solo plata, un drop de tu zona, comida, cajas, plata o nada».
   - Piedra, papel o tijeras: «Enfrentamiento entre los jugadores, que pongan la misma cantidad de oro y el que gana se lleva todo».
 
-### Idea 3 — Piedra, papel o tijera entre jugadores (`/rps` o `/ppt`, `aa ppt @amigo 5k`)
+### Idea 3 — Piedra, papel o tijera entre jugadores (`/rps` o `/ppt`, `aa ppt @amigo 5k`) — HECHA en la v0.54.0 (2026-11-12)
+
+El dueño contestó: una sola mano, sin tope de apuesta, y un logro por partidas ganadas sin títulos. Lo construido está en `docs/claude/economia-progreso.md`; lo de abajo es la propuesta original.
 
 - **Mi propuesta (sin confirmar)**:
   - **El desafío** con el mismo molde que `/fight` y `/trade`: `/ppt jugador:@x apuesta:5k` o `aa ppt @x 5k` (el monto con `AmountParser`: `10k`, `all`). Si respondés al mensaje de alguien con `aa ppt 5k` también anda, porque la regla de «responder = mencionar» (v0.51.3) cubre cualquier comando cuyo primer parámetro es un jugador. El invitado ve Aceptar / Rechazar (2 minutos, una oferta abierta por jugador, en memoria como `TradeOfferService`).
