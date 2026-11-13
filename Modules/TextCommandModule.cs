@@ -73,7 +73,8 @@ public partial class TextCommandModule(
     IReferralRepository referralRepository,
     IDungeonService dungeonService,
     ICookingRepository cookingRepository,
-    IRpsService rpsService) : ModuleBase<SocketCommandContext>
+    IRpsService rpsService,
+    IRouletteBoardService rouletteBoards) : ModuleBase<SocketCommandContext>
 {
     // ---- Onboarding / clase ----
 
