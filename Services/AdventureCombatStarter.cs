@@ -31,6 +31,20 @@ public sealed class AdventureCombatStarter(
             extraGate: null,
             cancellationToken);
 
+    public Task<CombatStartOutcome> PrepareKrampusAsync(ulong discordId, CancellationToken cancellationToken = default) =>
+        PrepareInternalAsync(
+            discordId,
+            KrampusRules.Cooldown,
+            async player =>
+            {
+                var travelMonster = await monsterRepository.GetTravelMonsterByZoneAsync(player.CurrentZoneId, cancellationToken);
+                return travelMonster is null ? [] : new[] { KrampusRules.FromTravel(travelMonster) };
+            },
+            CombatStartStatus.NoMonstersInZone,
+            isBossFight: false,
+            extraGate: null,
+            cancellationToken);
+
     public Task<CombatStartOutcome> PrepareHuntAsync(ulong discordId, CancellationToken cancellationToken = default) =>
         PrepareInternalAsync(
             discordId,

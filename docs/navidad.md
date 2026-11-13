@@ -130,5 +130,8 @@ Reno, banner de nieve.
   Navidad» 1.500 (página 🎄 Navidad de `aa titles`, quedan en `player_stats`) y el **Reno 4.500** (`player_stats.xmas_reno`: +15 % XP y oro en
   `PlayerBonuses`, `/travel` 25 min en el cobro, `/cd` y los avisos). Calendario: 5 Campanas los días 11 y 18 y un Calcetín el 24.
 - **Para probar antes:** `Christmas__Start`, `Christmas__FarmEnd`, `Christmas__End` (ver `.env.example`).
-- **Falta:** venta de Regalos por oro (25 → 6, precio a decidir); banner de nieve (cuando haya arte); Krampus; Muñeco de Nieve Gigante;
+- **Krampus (hecho):** `/krampus` y `aa krampus` (solo del 1 al 24): pelea solo contra el élite de tu zona ×1,5 de vida y ×1,2 de daño, cooldown propio de 4 h
+  ganes o pierdas, paga oro y EXP de un viaje + 30–40 Regalos, sin cajas (`KrampusRules` en `GameData/Christmas.cs`; multiplicadores «a medir»). `/navidad` muestra cuánto le falta.
+  No tiene aviso de `/cd` ni recordatorio (el cooldown no está en `CooldownCatalog.All`).
+- **Falta:** venta de Regalos por oro (25 → 6, precio a decidir); banner de nieve (cuando haya arte); Muñeco de Nieve Gigante;
   logros; arte; `/info` y `docs/topgg/comandos`.

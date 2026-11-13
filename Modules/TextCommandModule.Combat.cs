@@ -14,6 +14,20 @@ public partial class TextCommandModule
     [Summary("Salí a cazar monstruos cercanos (cooldown de 1 minuto).")]
     public Task HuntAsync() => StartCombatAsync(CooldownCatalog.Hunt, () => combatStarter.PrepareHuntAsync(Context.User.Id));
 
+    // "aa krampus" — misma lógica que AdventureModule.HandleKrampusAsync (Navidad, v0.57.0).
+    [Command("krampus")]
+    [Summary("Navidad: enfrentá al Krampus (del 1 al 24 de diciembre, cada 4 horas). Da Regalos.")]
+    public async Task KrampusAsync()
+    {
+        if (ChristmasModule.KrampusClosedMessage(christmasService, DateTime.UtcNow) is { } closed)
+        {
+            await ReplyAsync(closed);
+            return;
+        }
+
+        await StartCombatAsync(KrampusRules.Cooldown, () => combatStarter.PrepareKrampusAsync(Context.User.Id));
+    }
+
     // "aa travel" / "aa t" — misma lógica que AdventureModule.HandleTravelAsync.
     [Command("travel")]
     [Alias("t")]

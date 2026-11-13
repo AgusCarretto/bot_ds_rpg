@@ -22,6 +22,10 @@ public interface IAdventureCombatStarter
     // CombatStartStatus.NoMonstersInZone si esa zona todavía no tiene uno cargado.
     Task<CombatStartOutcome> PrepareTravelAsync(ulong discordId, CancellationToken cancellationToken = default);
 
+    // El Krampus de Navidad (v0.57.0): el élite de tu zona agrandado (GameData/Christmas.cs, KrampusRules), con su cooldown de 4 h. Que el evento esté abierto lo mira quien llama.
+    Task<CombatStartOutcome> PrepareKrampusAsync(ulong discordId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(new CombatStartOutcome(CombatStartStatus.NoMonstersInZone, null, null));
+
     // /hunt: el pool depende de la zona ACTUAL del jugador (users.current_zone_id), así que se
     // resuelve internamente después de conocerlo — ver Repositories/IMonsterRepository.cs.
     Task<CombatStartOutcome> PrepareHuntAsync(ulong discordId, CancellationToken cancellationToken = default);

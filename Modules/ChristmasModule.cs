@@ -10,7 +10,8 @@ public class ChristmasModule(
     IUserRepository userRepository,
     IZoneRepository zoneRepository,
     IChristmasRepository christmasRepository,
-    IChristmasService christmasService) : InteractionModuleBase<SocketInteractionContext>
+    IChristmasService christmasService,
+    ICooldownRepository cooldownRepository) : InteractionModuleBase<SocketInteractionContext>
 {
     private const string ClaimPrefix = "adv_claim";
     private const string ShopPrefix = "xmas_shop";
@@ -24,7 +25,7 @@ public class ChristmasModule(
 
         try
         {
-            var view = await BuildAsync(christmasRepository, christmasService, Context.User.Id, DateTime.UtcNow);
+            var view = await BuildAsync(christmasRepository, christmasService, Context.User.Id, DateTime.UtcNow, cooldownRepository);
             await FollowupAsync(embed: view.Embed, components: view.Components);
         }
         catch (Exception ex)
@@ -55,7 +56,7 @@ public class ChristmasModule(
             }
 
             // El calendario se actualiza en el mismo mensaje (el día queda tachado) y el premio sale aparte.
-            var view = await BuildAsync(christmasRepository, christmasService, ownerId, DateTime.UtcNow);
+            var view = await BuildAsync(christmasRepository, christmasService, ownerId, DateTime.UtcNow, cooldownRepository);
             await ModifyOriginalResponseAsync(p => { p.Embed = view.Embed; p.Components = view.Components; });
             await FollowupAsync(embed: result.Embed);
         }
@@ -102,7 +103,7 @@ public class ChristmasModule(
                 return;
             }
 
-            var view = await BuildAsync(christmasRepository, christmasService, ownerId, DateTime.UtcNow);
+            var view = await BuildAsync(christmasRepository, christmasService, ownerId, DateTime.UtcNow, cooldownRepository);
             await ModifyOriginalResponseAsync(p => { p.Embed = view.Embed; p.Components = view.Components; });
         }
         catch (Exception ex)
@@ -273,12 +274,19 @@ public class ChristmasModule(
         };
     }
 
+    // null si el Krampus se puede pelear ahora; si no, el aviso (antes del 1 o después del 24 de diciembre).
+    public static string? KrampusClosedMessage(IChristmasService service, DateTime utcNow) =>
+        ChristmasRules.PhaseAt(service.Settings, utcNow) == ChristmasPhase.Farm
+            ? null
+            : Loc.T("👹 El Krampus solo anda suelto del 1 al 24 de diciembre.");
+
     public sealed record ChristmasView(Embed Embed, MessageComponent? Components = null);
 
     public sealed record AdventClaimView(string? Error, Embed? Embed = null);
 
     // La pantalla de /navidad. Solo mira: nunca crea cuentas (sin cuenta, 0 Regalos y el calendario sin abrir).
-    public static async Task<ChristmasView> BuildAsync(IChristmasRepository repository, IChristmasService service, ulong discordId, DateTime utcNow)
+    public static async Task<ChristmasView> BuildAsync(
+        IChristmasRepository repository, IChristmasService service, ulong discordId, DateTime utcNow, ICooldownRepository? cooldowns = null)
     {
         var settings = service.Settings;
         var phase = ChristmasRules.PhaseAt(settings, utcNow);
@@ -316,6 +324,13 @@ public class ChristmasModule(
         {
             description.Add(string.Empty);
             description.Add(Loc.T("Caen Regalos de cada **/hunt**, **/travel**, jefe y **/daily** hasta el 24 de diciembre."));
+            if (cooldowns is not null)
+            {
+                var krampusWait = await cooldowns.GetRemainingAsync(discordId, KrampusRules.CommandName, KrampusRules.Cooldown.Duration);
+                description.Add(krampusWait is null
+                    ? Loc.F($"👹 **/krampus**: ¡listo! ({ChristmasRules.KrampusMinGifts}–{ChristmasRules.KrampusMaxGifts} Regalos)")
+                    : Loc.F($"👹 **/krampus**: {TimeFormat.Remaining(krampusWait.Value)}"));
+            }
         }
         else
         {

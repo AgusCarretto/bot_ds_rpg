@@ -3134,5 +3134,10 @@
   "Un título para siempre.": "A title, forever.",
   "Mascota para siempre: +15 % de XP y de oro, y /travel en 25 minutos.": "A pet forever: +15 % XP and gold, and /travel in 25 minutes.",
   "Título «{0}»": "Title «{0}»",
-  "Compralo en la tienda de Navidad (/navidad)": "Buy it in the Christmas shop (/navidad)"
+  "Compralo en la tienda de Navidad (/navidad)": "Buy it in the Christmas shop (/navidad)",
+  "👹 ¡El Krampus te salió al cruce!": "👹 The Krampus jumped out at you!",
+  "👹 El Krampus solo anda suelto del 1 al 24 de diciembre.": "👹 The Krampus is only on the loose from December 1st to 24th.",
+  "👹 **/krampus**: ¡listo! ({0}–{1} Regalos)": "👹 **/krampus**: ready! ({0}–{1} Gifts)",
+  "👹 **/krampus**: {0}": "👹 **/krampus**: {0}",
+  "Krampus": "Krampus"
 }

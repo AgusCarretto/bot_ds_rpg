@@ -74,6 +74,7 @@ public static class ChristmasRules
         GameEventKinds.HuntWin => roll < HuntChancePercent ? 1 : 0,
         GameEventKinds.TravelWin => TravelGifts,
         GameEventKinds.BossWin or GameEventKinds.RaidWin => BossGifts,
+        GameEventKinds.KrampusWin => KrampusMinGifts + (roll % (KrampusMaxGifts - KrampusMinGifts + 1)),
         _ => 0,
     };
 
@@ -99,4 +100,31 @@ public static class ChristmasRules
 
     // Lo que suman los 24 días en Regalos (lo usan la ayuda y las pruebas).
     public static int AdventTotalGifts => Enumerable.Range(1, AdventDays).Sum(d => Advent(d).Gifts);
+}
+
+// El Krampus (v0.57.0, docs/navidad.md): el jefe del evento, del 1 al 24 de diciembre. Una pelea SOLO con tu personaje (el mismo combate de /travel), contra el élite de
+// tu zona agrandado y con otro nombre. Cooldown propio de 4 horas (no gasta el del jefe). Paga lo de un viaje (oro y EXP) más 30–40 Regalos; no suelta cajas.
+// Los multiplicadores y el cooldown son propuesta, «a medir».
+public static class KrampusRules
+{
+    public const string CommandName = "krampus";
+    public const string Name = "Krampus";
+    public const string Emoji = "👹";
+    public const double HpMultiplier = 1.5;
+    public const double DamageMultiplier = 1.2;
+
+    public static readonly CooldownDefinition Cooldown = new(CommandName, Loc.Mark("Krampus"), Emoji, TimeSpan.FromHours(4));   // 4 h ganes o pierdas (sin la espera corta del jefe)
+
+    // El élite de la zona convertido en Krampus: más vida y más daño, sin drops (los Regalos se pagan aparte).
+    public static MonsterTemplate FromTravel(MonsterTemplate travel) => travel with
+    {
+        Name = Name,
+        Emoji = Emoji,
+        MinHp = (int)Math.Round(travel.MinHp * HpMultiplier),
+        MaxHp = (int)Math.Round(travel.MaxHp * HpMultiplier),
+        MinDamage = (int)Math.Round(travel.MinDamage * DamageMultiplier),
+        MaxDamage = (int)Math.Round(travel.MaxDamage * DamageMultiplier),
+        DropItemNames = [],
+        Portrait = null,
+    };
 }

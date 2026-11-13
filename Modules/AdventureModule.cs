@@ -17,8 +17,22 @@ public class AdventureModule(
     IZoneBoxService zoneBoxService,
     IPartyBossService partyBoss,
     IDungeonService dungeons,
-    IZoneRepository zoneRepository) : InteractionModuleBase<SocketInteractionContext>
+    IZoneRepository zoneRepository,
+    IChristmasService christmasService) : InteractionModuleBase<SocketInteractionContext>
 {
+    // El Krampus de Navidad (v0.57.0): solo mientras caen Regalos (1 al 24 de diciembre); fuera de eso, el aviso de cuándo vuelve.
+    [SlashCommand("krampus", "Navidad: enfrentá al Krampus (del 1 al 24 de diciembre, cada 4 h). Da Regalos.")]
+    public async Task HandleKrampusAsync()
+    {
+        if (ChristmasModule.KrampusClosedMessage(christmasService, DateTime.UtcNow) is { } closed)
+        {
+            await RespondAsync(closed, ephemeral: true);
+            return;
+        }
+
+        await StartCombatAsync(KrampusRules.Cooldown, () => combatStarter.PrepareKrampusAsync(Context.User.Id));
+    }
+
     [SlashCommand("hunt", "Salí a cazar monstruos cercanos (cooldown de 1 minuto).")]
     public Task HandleHuntAsync() =>
         StartCombatAsync(CooldownCatalog.Hunt, () => combatStarter.PrepareHuntAsync(Context.User.Id));
@@ -458,6 +472,8 @@ public class AdventureModule(
                 var reward = state.CommandName switch
                 {
                     "travel" => CombatRewardCalculator.RollTravelReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus, state.Bonuses, travelBox.ChancePercent),
+                    // El Krampus (v0.57.0): paga lo de un viaje, sin caja (sus Regalos van aparte).
+                    KrampusRules.CommandName => CombatRewardCalculator.RollTravelReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus, state.Bonuses, 0),
                     "boss" => CombatRewardCalculator.RollBossReward(
                         state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus, firstBossClear, state.Bonuses, repeat.ChancePercent),
                     _ => CombatRewardCalculator.RollHuntReward(state.PlayerLevel, state.MonsterGoldBonus, state.MonsterXpBonus, state.Bonuses),
@@ -465,6 +481,8 @@ public class AdventureModule(
 
                 Item? droppedItem = state.CommandName == "boss" && !firstBossClear
                     ? (reward.DroppedSomething && repeat.BoxName is not null ? await itemRepository.GetByNameAsync(repeat.BoxName) : null)
+                    : state.CommandName == KrampusRules.CommandName
+                        ? null
                     : state.CommandName == "travel"
                         ? (reward.DroppedSomething && travelBox.BoxName is not null ? await itemRepository.GetByNameAsync(travelBox.BoxName) : null)
                         : await ResolveDroppedItemAsync(itemRepository, state, reward);
@@ -495,7 +513,13 @@ public class AdventureModule(
                     : await adventureRepository.ApplyVictoryAsync(
                         discordId, reward.Gold, reward.Xp, hpDelta, droppedItem?.ItemId, droppedItemQuantity: 1);
 
-                string winKind = finalState.CommandName switch { "travel" => GameEventKinds.TravelWin, "boss" => GameEventKinds.BossWin, _ => GameEventKinds.HuntWin };
+                string winKind = finalState.CommandName switch
+                {
+                    "travel" => GameEventKinds.TravelWin,
+                    "boss" => GameEventKinds.BossWin,
+                    KrampusRules.CommandName => GameEventKinds.KrampusWin,
+                    _ => GameEventKinds.HuntWin,
+                };
                 await gameEvents.RecordVictoryAsync(discordId, winKind, outcome, finalState.MonsterName);
 
                 // Navidad en el Fogón (v0.57.0): los Regalos de la victoria, con su línea al pie de la pantalla (0 fuera del evento).
@@ -774,6 +798,7 @@ public class AdventureModule(
         {
             "hunt" => Loc.T("🏹 ¡Encuentro en la caza!"),
             "boss" => Loc.T("👑 ¡Encuentro con el Jefe de Zona!"),
+            KrampusRules.CommandName => Loc.T("👹 ¡El Krampus te salió al cruce!"),
             _ => Loc.T("🗺️ ¡Encuentro en el viaje!"),
         };
 

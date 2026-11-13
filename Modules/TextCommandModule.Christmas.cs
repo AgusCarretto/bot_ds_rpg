@@ -32,7 +32,7 @@ public partial class TextCommandModule
                 return;
             }
 
-            var view = await ChristmasModule.BuildAsync(christmasRepository, christmasService, Context.User.Id, DateTime.UtcNow);
+            var view = await ChristmasModule.BuildAsync(christmasRepository, christmasService, Context.User.Id, DateTime.UtcNow, cooldownRepository);
             await ReplyAsync(embed: view.Embed, components: view.Components);
         }
         catch (Exception ex)

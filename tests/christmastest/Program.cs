@@ -227,6 +227,31 @@ using (Loc.Use("en"))
     Check(shopLeak.Ok, $"la tienda en inglés sin español ({shopLeak.Found})");
 }
 
+Console.WriteLine("\n== 13. El Krampus ==");
+var gifts30to40 = Enumerable.Range(0, 100).Select(r => ChristmasRules.VictoryGifts(GameEventKinds.KrampusWin, r)).ToList();
+Check(gifts30to40.Min() == 30 && gifts30to40.Max() == 40, "el Krampus da entre 30 y 40 Regalos");
+var travelTemplate = new MonsterTemplate("Élite", "🐺", 100, 200, 10, 20, ["Colmillo"], 5, 5, "retrato");
+var krampus = KrampusRules.FromTravel(travelTemplate);
+Check(krampus.Name == "Krampus" && krampus.MinHp == 150 && krampus.MaxHp == 300 && krampus.MinDamage == 12 && krampus.MaxDamage == 24 && krampus.DropItemNames.Count == 0,
+    "el Krampus es el élite de la zona con ×1,5 de vida, ×1,2 de daño y sin drops");
+Check(KrampusRules.Cooldown.Duration == TimeSpan.FromHours(4) && KrampusRules.Cooldown.RetryAfterFailure is null && !CooldownCatalog.All.Contains(KrampusRules.Cooldown),
+    "cooldown propio de 4 h (no gasta el del jefe ni aparece en /cd fuera del evento)");
+Check(ChristmasModule.KrampusClosedMessage(during, settings.StartUtc.AddDays(3)) is null && ChristmasModule.KrampusClosedMessage(shop, settings.FarmEndUtc.AddDays(1)) is not null,
+    "solo se pelea del 1 al 24");
+var combatSessions = new CombatSessionService(users);
+var starter = new AdventureCombatStarter(new CooldownRepository(factory), new AdventureRepository(factory), users, new ItemRepository(factory), new MonsterRepository(factory), zones,
+    new BuffRepository(factory), bonusSvc, combatSessions, new RaidSessionService());
+await db.ExecuteAsync("UPDATE users SET current_hp = max_hp WHERE discord_id = @id", new { id = (long)U });
+var started = await starter.PrepareKrampusAsync(U);
+Check(started.Status == CombatStartStatus.Started && started.State!.CommandName == "krampus" && started.State.MonsterName == "Krampus", "arranca una pelea contra el Krampus");
+Check((await starter.PrepareKrampusAsync(U)).Status is CombatStartStatus.OnCooldown or CombatStartStatus.AlreadyInCombat, "no se puede volver a arrancar enseguida");
+Check(await cds.GetRemainingAsync(U, "krampus", KrampusRules.Cooldown.Duration) is { } kw && kw > TimeSpan.FromHours(3.9), "quedó esperando 4 h");
+Check(await cds.GetRemainingAsync(U, "boss", CooldownCatalog.Boss.Duration) is null, "no tocó el cooldown del jefe");
+var encounter = AdventureModule.BuildEncounterEmbed(started.State!);
+Check(encounter.Title.Contains("Krampus"), "el encuentro dice que es el Krampus");
+var navView = await ChristmasModule.BuildAsync(repo, during, U, settings.StartUtc.AddDays(2), cds);
+Check(navView.Embed.Description.Contains("/krampus") && !navView.Embed.Description.Contains("¡listo!"), "/navidad muestra cuánto le falta al Krampus");
+
 await Clean();
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;
