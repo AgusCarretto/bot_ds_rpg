@@ -571,3 +571,12 @@ CREATE TABLE IF NOT EXISTS referrals (
 );
 
 CREATE INDEX IF NOT EXISTS idx_referrals_inviter ON referrals (inviter_id);
+
+-- El bestiario (v0.56.0, ver Database/add_bestiary.sql): qué monstruos venció cada jugador y cuántas veces. De por vida (el Fuego Nuevo no lo toca).
+CREATE TABLE IF NOT EXISTS player_bestiary (
+    discord_id    BIGINT  NOT NULL,
+    monster_id    INTEGER NOT NULL REFERENCES monsters (monster_id) ON DELETE CASCADE,
+    kills         BIGINT  NOT NULL DEFAULT 0 CHECK (kills >= 0),
+    first_kill_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (discord_id, monster_id)
+);

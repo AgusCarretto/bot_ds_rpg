@@ -9,7 +9,8 @@ namespace BotDsRpg.Services;
 // progressNotifier es opcional a propósito: sin él esto es solo el registro (las pruebas del registro lo arman así); con él, cada
 // evento guardado también avanza las misiones y los logros y deja sus avisos en la cola.
 // referrals también es opcional: con él, cada subida de nivel de un jugador invitado le paga al que lo invitó el premio del nivel 5 (una sola vez; GameData/Referrals.cs).
-public sealed class GameEventService(IGameEventRepository eventRepository, IProgressNotifier? progressNotifier = null, IReferralRepository? referrals = null) : IGameEvents
+public sealed class GameEventService(
+    IGameEventRepository eventRepository, IProgressNotifier? progressNotifier = null, IReferralRepository? referrals = null, IBestiaryRepository? bestiary = null) : IGameEvents
 {
     // Avisos pendientes por jugador. En memoria a propósito: si el bot se reinicia entre el evento y el aviso, no pasa nada
     // (el progreso ya está guardado en la base; solo se pierde el cartelito).
@@ -39,6 +40,32 @@ public sealed class GameEventService(IGameEventRepository eventRepository, IProg
         if (kind == GameEventKinds.LevelUp && referrals is not null)
         {
             await PayReferralLevelAsync(discordId);
+        }
+
+        // El bestiario (v0.56.0): cada enemigo vencido con su nombre suma una muerte; la primera vez es un monstruo nuevo (el logro).
+        if (kind == GameEventKinds.EnemyDefeated && bestiary is not null && !string.IsNullOrEmpty(detail))
+        {
+            await RecordBestiaryAsync(discordId, detail);
+        }
+    }
+
+    // Nunca tira: sin la tabla (Database/add_bestiary.sql) la victoria se anota igual y queda un aviso en el log.
+    private async Task RecordBestiaryAsync(ulong discordId, string monsterName)
+    {
+        bool isNew;
+        try
+        {
+            isNew = await bestiary!.RecordKillAsync(discordId, monsterName);
+        }
+        catch (Exception ex)
+        {
+            BotLog.Warn(ex);
+            return;
+        }
+
+        if (isNew)
+        {
+            await RecordAsync(discordId, GameEventKinds.BestiaryNew, detail: monsterName);
         }
     }
 

@@ -7,6 +7,30 @@ fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo
 
 ---
 
+## 2026-11-13 — La ruleta, Elementos y /drops por zona (v0.53.2 a v0.55.1)
+
+**Título:** 🎡 ¡Llegó la ruleta! Y te regalamos 100.000 de oro para probarla
+
+**Texto:**
+
+🎡 **La ruleta ya está en el casino.** Escribí **aa ruleta 1k** (o **/play game:Ruleta apuesta:1k**) y se abre tu **paño**: ponés fichas tocando botones y después girás.
+• 🟥 **Rojo**, ⬛ **Negro**, **Par** o **Impar** pagan **×2**.
+• Un **número** del 0 al 36 paga **×36**, y en los menús podés marcar **varios números de una**.
+• Arriba cambiás el tamaño de la ficha (**×1, ×5 o ×10**); **Deshacer** saca el último toque y **Borrar**, todo.
+• **Girar** juega todas tus fichas juntas, la rueda gira en el mensaje y frena en el número. Las fichas quedan puestas para repetir.
+• Si sale el 🟩 **0**, pierden el color y el par o impar.
+• Apurado: **aa ruleta rojo 5k** o **aa ruleta 17 500** giran de una.
+
+🎁 **Código para probarla:** escribí **aa code RULETA** (o **/code codigo:RULETA**) y te llevás **100.000 de oro**. Uno por persona.
+
+💬 **¡Queremos tu opinión!** Probala y contanos en **#sugerencias** qué le mejorarías: más tipos de apuesta (docenas, mitades), la velocidad del giro, cómo se ve en el celular… lo que se te ocurra.
+
+🔥 **Elementos, un duelo de apuestas contra otro jugador** (también en **/play**): **aa elementos @amigo 5k**. Los dos ponen lo mismo y cada uno elige en secreto 🔥 **Fuego**, ❄️ **Hielo** o 💧 **Agua**: el fuego derrite el hielo, el hielo congela el agua y el agua apaga el fuego. ¡El que gana se lleva la apuesta del otro! Logro nuevo: **Señor de los Elementos**.
+
+🎁 **aa drops más limpio:** ahora muestra **una zona por mensaje** (abre en la tuya) con un menú para pasar a otra, y cada monstruo en un renglón.
+
+---
+
 ## 2026-11-12 — «Vender todo» con confirmación, stats de otros y un jefe de la Zona 5 más duro (v0.52.2 y v0.53.0)
 
 **Título:** ¡«Vender todo» con confirmación, stats de otros jugadores y un jefe de la Zona 5 más duro!

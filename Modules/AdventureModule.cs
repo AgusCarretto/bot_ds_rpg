@@ -498,7 +498,8 @@ public class AdventureModule(
                 await gameEvents.RecordVictoryAsync(
                     discordId,
                     finalState.CommandName switch { "travel" => GameEventKinds.TravelWin, "boss" => GameEventKinds.BossWin, _ => GameEventKinds.HuntWin },
-                    outcome);
+                    outcome,
+                    finalState.MonsterName);
 
                 // La historia (GameData/Lore.cs): la primera vez que vence a este jefe se le abre su capítulo (el aviso sale solo, por el evento) y la pantalla cuenta la escena.
                 var openedChapter = await gameEvents.RecordStoryChapterAsync(

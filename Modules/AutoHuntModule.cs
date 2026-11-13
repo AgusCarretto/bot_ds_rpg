@@ -155,7 +155,7 @@ public class AutoHuntModule(
             var levelOutcome = await adventureRepository.ApplyVictoryAsync(
                 discordId, reward.Gold, reward.Xp, finalState.ToDbHpDelta(playerHp - state.PlayerStartingHp), droppedItem?.ItemId, droppedItemQuantity: 1);
 
-            await gameEvents.RecordVictoryAsync(discordId, GameEventKinds.HuntWin, levelOutcome);
+            await gameEvents.RecordVictoryAsync(discordId, GameEventKinds.HuntWin, levelOutcome, state.MonsterName);
 
             return new AutoHuntResult(null, BuildVictoryEmbed(finalState, levelOutcome, reward, droppedItem));
         }

@@ -80,7 +80,8 @@ public static class GameEventKinds
 
     // v0.9.0.
     public const string CommandUsed = "command_used";       // un comando (de barra o de texto) que se ejecutó bien: alimenta el logro Comandante
-    public const string EnemyDefeated = "enemy_defeated";   // un enemigo vencido (cacería, viaje, jefe o raid): se registra junto con hunt_win / travel_win / boss_win / raid_win
+    public const string EnemyDefeated = "enemy_defeated";   // un enemigo vencido (cacería, viaje, jefe o raid): se registra junto con hunt_win / travel_win / boss_win / raid_win; desde la v0.56.0 detail = el nombre del monstruo (lo usa el bestiario)
+    public const string BestiaryNew = "bestiary_new";       // un monstruo nuevo en el bestiario (la PRIMERA vez que lo vence; v0.56.0): el contador del logro «Cazador de Bestias»
     public const string BankOpened = "bank_opened";         // compró la cuenta del banco
     public const string BankDeposit = "bank_deposit";       // amount = oro depositado
     public const string Dismantle = "dismantle";            // amount = unidades desmanteladas; detail = el ítem

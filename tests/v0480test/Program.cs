@@ -274,7 +274,7 @@ Console.WriteLine("\n== 10. El logro y los títulos ==");
 var fishAch = AchievementCatalog.Find("pescador");
 Check(fishAch is not null && fishAch.StatKind == "fish" && fishAch.Tiers.Select(t => t.Threshold).SequenceEqual([25L, 150, 600]) && fishAch.Tiers.All(t => t.Reward.Box == BoxGrant.None) && AchievementCatalog.Categories.Single(c => c.Name == "Oficios").Keys.Contains("pescador"),
     "el logro Pescador cuenta usos de /fish (25 / 150 / 600), paga solo oro y EXP y está en la página Oficios");
-Check(AchievementCatalog.All.Count == 33 && AchievementCatalog.Categories.SelectMany(c => c.Keys).Distinct().Count() == 33, "33 logros, cada uno en una sola página");
+Check(AchievementCatalog.All.Count == 34 && AchievementCatalog.Categories.SelectMany(c => c.Keys).Distinct().Count() == 34, "34 logros, cada uno en una sola página");
 var fishTitles = TitleCatalog.All.Where(t => t.AchievementKey == "pescador").ToList();
 var masterTitles = TitleCatalog.All.Where(t => t.Key.StartsWith("fisher_")).ToList();
 Check(fishTitles.Count == 3 && fishTitles.Select(t => t.Name).SequenceEqual(["Cañero", "Lobo de Río", "Señor del Surubí"]) && masterTitles.Count == 3 && masterTitles.Select(t => t.Name).SequenceEqual(["Pescador de Orilla", "Capitán del Río", "Rey del Dorado"]),
