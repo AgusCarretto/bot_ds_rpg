@@ -49,8 +49,10 @@ public static class GameHistory
                 Gold(GameEventKinds.CasinoWin, "coinflip"), Gold(GameEventKinds.CasinoLoss, "coinflip"), IsCasino: true),
             new("🃏", "Blackjack", Count(GameEventKinds.CasinoWin, "blackjack"), Count(GameEventKinds.CasinoLoss, "blackjack"),
                 Gold(GameEventKinds.CasinoWin, "blackjack"), Gold(GameEventKinds.CasinoLoss, "blackjack"), IsCasino: true),
+            new("🎡", Loc.T("Ruleta"), Count(GameEventKinds.CasinoWin, "roulette"), Count(GameEventKinds.CasinoLoss, "roulette"),
+                Gold(GameEventKinds.CasinoWin, "roulette"), Gold(GameEventKinds.CasinoLoss, "roulette"), IsCasino: true),
             // v0.54.0: el detail es el rival, así que el oro se suma de todos los rivales.
-            new("✊", Loc.T("Piedra, papel o tijera"), Count(GameEventKinds.RpsWin), Count(GameEventKinds.RpsLoss),
+            new("🔥", Loc.T("Elementos"), Count(GameEventKinds.RpsWin), Count(GameEventKinds.RpsLoss),
                 AllGold(GameEventKinds.RpsGoldWon), AllGold(GameEventKinds.RpsGoldLost), IsCasino: true),
         };
 

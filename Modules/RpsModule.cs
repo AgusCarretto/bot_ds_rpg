@@ -5,7 +5,9 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 
-// /ppt (aa ppt @amigo 5k): piedra, papel o tijera apostando oro entre dos jugadores (v0.54.0). Una sola mano: cada uno elige con
+// «Elementos» (/play game:Elementos rival:@amigo apuesta:5k, aa play elementos @amigo 5k, aa elementos @amigo 5k): fuego, hielo y agua
+// apostando oro entre dos jugadores (v0.54.0; nació como /ppt, piedra, papel o tijera, y el dueño lo pasó a /play con elementos). El
+// desafío lo arma CasinoModule (y el comando de texto) con PrepareChallengeAsync; acá viven los botones. Una sola mano: cada uno elige con
 // los botones del mensaje público (la respuesta de quién eligió qué es privada), se revelan juntas y el que gana se lleva la
 // apuesta del otro. Empate = otra mano (hasta 3); el que no elige en 60 s pierde. Sin tope de apuesta (el dueño). El oro se mueve
 // UNA vez, al final, con la transferencia guardada de /give (ITransferRepository): no hay depósito, así un reinicio no se come nada.
@@ -18,33 +20,6 @@ public class RpsModule(
     private const string AcceptPrefix = "rps_accept";
     private const string DeclinePrefix = "rps_decline";
     private const string PickPrefix = "rps_pick";
-
-    [SlashCommand("ppt", "Piedra, papel o tijera apostando oro contra otro jugador: el que gana se lleva la apuesta del otro.")]
-    public async Task HandlePptAsync(
-        [Summary("jugador", "A quién desafiás")] IUser jugador,
-        [Summary("apuesta", "Cuánto oro pone cada uno (500, 10k o all)")] string apuesta)
-    {
-        await DeferAsync();
-
-        try
-        {
-            var result = await PrepareChallengeAsync(userRepository, rpsService, Context.User.Id, Context.User.GlobalName ?? Context.User.Username, jugador, apuesta);
-            if (result.Game is null)
-            {
-                await FollowupAsync(result.Error, ephemeral: true);
-                return;
-            }
-
-            var message = await FollowupAsync(jugador.Mention, embed: BuildEmbed(result.Game), components: BuildComponents(result.Game),
-                allowedMentions: new AllowedMentions(AllowedMentionTypes.Users));
-            result.Game.Message = message;
-        }
-        catch (Exception ex)
-        {
-            BotLog.Error(ex);
-            await FollowupAsync(Loc.T("¡Upa! No pude armar la partida, intentá de nuevo en un momento."), ephemeral: true);
-        }
-    }
 
     [ComponentInteraction($"{AcceptPrefix}:*")]
     public async Task HandleAcceptAsync(string idRaw)
@@ -211,7 +186,7 @@ public class RpsModule(
 
     public sealed record RpsChallengeResult(string? Error, RpsGame? Game);
 
-    // Estático (sin Context): lo usan /ppt y «aa ppt». Valida todo ANTES de crear la propuesta y nunca crea cuentas.
+    // Estático (sin Context): lo usan /play y «aa play elementos» / «aa elementos». Valida todo ANTES de crear la propuesta y nunca crea cuentas.
     public static async Task<RpsChallengeResult> PrepareChallengeAsync(
         IUserRepository userRepository, IRpsService rpsService, ulong challengerId, string challengerName, IUser opponent, string amountText)
     {
@@ -295,7 +270,8 @@ public class RpsModule(
         string loserName = loser == game.ChallengerId ? game.ChallengerName : game.OpponentName;
         string reveal = result.ByTimeout
             ? Loc.F($"⌛ <@{loser}> no eligió a tiempo.")
-            : Loc.F($"<@{game.ChallengerId}> {RpsRules.Label(result.ChallengerChoice!.Value)}  vs  {RpsRules.Label(result.OpponentChoice!.Value)} <@{game.OpponentId}>");
+            : Loc.F($"<@{game.ChallengerId}> {RpsRules.Label(result.ChallengerChoice!.Value)}  vs  {RpsRules.Label(result.OpponentChoice!.Value)} <@{game.OpponentId}>")
+              + "\n" + RpsRules.WhyWins(winner == game.ChallengerId ? result.ChallengerChoice!.Value : result.OpponentChoice!.Value);
 
         TransferOutcome outcome;
         try
@@ -354,7 +330,7 @@ public class RpsModule(
         });
     }
 
-    private static string Title() => Loc.T("✊ Piedra, papel o tijera");
+    private static string Title() => Loc.T("🔥❄️💧 Elementos");
 
     // La pantalla mientras se juega: la propuesta (Aceptar / Rechazar) o la mano en curso (quién ya eligió).
     public static Embed BuildEmbed(RpsGame game, string? note = null)
@@ -402,7 +378,7 @@ public class RpsModule(
         }
         else if (game.Phase == RpsPhase.Picking)
         {
-            foreach (var choice in new[] { RpsChoice.Rock, RpsChoice.Paper, RpsChoice.Scissors })
+            foreach (var choice in new[] { RpsChoice.Fire, RpsChoice.Ice, RpsChoice.Water })
             {
                 builder.WithButton(RpsRules.Name(choice), $"{PickPrefix}:{game.Id}:{RpsRules.Code(choice)}", ButtonStyle.Primary, new Emoji(RpsRules.Emoji(choice)));
             }

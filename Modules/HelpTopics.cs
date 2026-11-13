@@ -218,8 +218,11 @@ public static class HelpTopics
             Loc.F($"**/play game:blackjack** o `aa bj 10k` reparte una mano: te acercás a **21** sin pasarte y le ganás a la banca. Con los botones **Pedir** (otra carta), **Plantarte** o **Doblar** (solo con las dos primeras cartas: una carta más y la apuesta se duplica); por texto `aa bj hit` / `aa bj stand` / `aa bj double`. ") +
             Loc.F($"La banca pide hasta 17 y se planta en todos los 17. Ganar paga 1 a 1, el **blackjack** (As + 10 de entrada) paga **3 a 2**, el empate devuelve la apuesta. No se divide ni hay seguro. Si la banca tiene blackjack la mano **sigue**: si llegás a 21, empatás. La apuesta se cobra al repartir y, si dejás la mano sin tocar {BlackjackService.IdleSeconds} segundos, la banca te planta. ") +
             Loc.T("Jugando bien la casa se queda con ~1 %; jugando mal, con más.")),
-        (Loc.T("✊ Piedra, papel o tijera"),
-            Loc.F($"**/ppt jugador:@amigo apuesta:5k** o `aa ppt @amigo 5k`: los dos ponen lo mismo y el que gana se lleva la apuesta del otro (sin la casa). Una sola mano: cada uno elige con los botones y nadie ve lo del otro hasta el final. ") +
+        (Loc.T("🎡 Ruleta"),
+            Loc.F($"**/play game:Ruleta apuesta:5k** o `aa ruleta 5k` abre la mesa: tocás 🟥 Rojo, ⬛ Negro, Par o Impar (pagan **×{RouletteRules.ColorMultiplier}**) o elegís un número del 0 al 36 (paga **×{RouletteRules.NumberMultiplier}**) y la rueda gira. Si sale el 🟩 0, pierden el color y el par o impar. ") +
+            Loc.F($"Para girar de una: `aa ruleta rojo 5k` o `aa ruleta 17 500`. A la larga la casa se queda con el **{Dec((1 - RouletteRules.ReturnToPlayer) * 100)} %**.")),
+        (Loc.T("🔥❄️💧 Elementos"),
+            Loc.F($"**/play game:Elementos rival:@amigo apuesta:5k** o `aa play elementos @amigo 5k` (atajo `aa elementos @amigo 5k`): contra otro jugador, los dos ponen lo mismo y el que gana se lleva la apuesta del otro (sin la casa). Una sola mano: cada uno elige 🔥 Fuego, ❄️ Hielo o 💧 Agua con los botones y nadie ve lo del otro hasta el final. El fuego derrite el hielo, el hielo congela el agua y el agua apaga el fuego. ") +
             Loc.F($"Empate = otra mano (a los {RpsRules.MaxTies} empates se cancela); el que no elige en {(int)RpsRules.PickTimeout.TotalSeconds} segundos, pierde. Apuesta mínima **{RpsRules.MinBet}**.")),
         (Loc.T("📈 Tus números"), Loc.T("**/history** muestra cuánto ganaste y perdiste en el casino, y la diferencia.")));
 

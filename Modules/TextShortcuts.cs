@@ -63,6 +63,17 @@ public static class TextShortcuts
         return new SellRequest(SellKind.Item, text);
     }
 
+    // «aa ruleta» (v0.55.0): con dos palabras, la PRIMERA que sea una apuesta de ruleta (rojo, negro, par, impar, 0 a 36) es la apuesta
+    // y la otra el monto («17 500», «500 17», «rojo 5k», «5k rojo»); con una sola palabra es el monto (abre la mesa). Bet null = sin apuesta.
+    public static (RouletteBet? Bet, string Amount) SplitRouletteArgs(string? first, string? second)
+    {
+        string a = (first ?? string.Empty).Trim(), b = (second ?? string.Empty).Trim();
+        if (b.Length == 0) return (null, a);
+        if (RouletteRules.Parse(a) is { } betA) return (betA, b);
+        if (RouletteRules.Parse(b) is { } betB) return (betB, a);
+        return (null, a);
+    }
+
     // «h 100», «100 h», «tails 1k», «all t»: el lado y la apuesta en cualquier orden. Null si no hay un lado claro o falta la apuesta.
     public static CoinflipRequest? ParseCoinflip(string? first, string? second)
     {
