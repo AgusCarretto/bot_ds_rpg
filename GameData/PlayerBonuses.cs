@@ -91,10 +91,11 @@ public sealed record PlayerBonuses(
 
     public double MineRarityUpgrade => ProfessionRules.RarityUpgradeChance(ProfessionLevel(ProfessionCatalog.MinerKey));
 
-    // La pesca (v0.48.0, /fish): cuántas unidades da cada tirada (Fuego Nuevo × oficio Pescador × la mascota del Fogón × el dragón; no hay bendición de pesca) y la chance de que el pez suba de rareza.
+    // La pesca (v0.48.0, /fish): cuántas unidades da cada tirada (Fuego Nuevo × bendición Anzuelo de Plata (v0.56.2) × oficio Pescador × la mascota del Fogón × el dragón) y la chance de que el pez suba de rareza.
     // La caña (FishToolFactor) va aparte, como el hacha y el pico: se aplica por rareza con ToolRules.QuantityFactor.
     public double FishMultiplier =>
-        FuegoNuevoRules.GatherMultiplier(FuegoNuevo) * ProfessionRules.QuantityMultiplier(ProfessionLevel(ProfessionCatalog.FisherKey)) * PetGather * DragonFactor(d => d.GatherPercent) * CookFactor(d => d.GatherPercent);
+        FuegoNuevoRules.GatherMultiplier(FuegoNuevo) * (1 + (BlessingCatalog.FishPerLevel * BlessingLevel(BlessingCatalog.FishKey)))
+        * ProfessionRules.QuantityMultiplier(ProfessionLevel(ProfessionCatalog.FisherKey)) * PetGather * DragonFactor(d => d.GatherPercent) * CookFactor(d => d.GatherPercent);
 
     public double FishRarityUpgrade => ProfessionRules.RarityUpgradeChance(ProfessionLevel(ProfessionCatalog.FisherKey));
 

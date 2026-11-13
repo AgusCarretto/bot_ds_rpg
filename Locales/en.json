@@ -3058,5 +3058,9 @@
   "{0} de {1}": "{0} of {1}",
   "Ver la ficha de…": "See the card of…",
   "Vencé monstruos distintos y llená tu /bestiary": "Defeat different monsters and fill your /bestiary",
-  "{0} · vencido **{1}** · 🎁 {2}": "{0} · defeated **{1}** · 🎁 {2}"
+  "{0} · vencido **{1}** · {2}": "{0} · defeated **{1}** · {2}",
+  "Pescá miles de veces con /fish": "Fish thousands of times with /fish",
+  "+{0} de cantidad en /fish": "+{0} quantity on /fish",
+  "Pescá 3 veces (/fish)": "Fish 3 times (/fish)",
+  "Pescá 20 veces (/fish)": "Fish 20 times (/fish)"
 }

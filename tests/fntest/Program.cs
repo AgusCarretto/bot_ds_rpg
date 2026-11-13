@@ -70,7 +70,7 @@ Check(FuegoNuevoRules.KeptItemTypes.SequenceEqual(["Huevo", "PetFood", "DragonFo
 
 Console.WriteLine("\n== 2. Bendiciones: catálogo y sorteo ==");
 var all = BlessingCatalog.All;
-Check(all.Count == 13 && all.Select(b => b.Key).Distinct().Count() == 13 && all.All(b => b.Key == b.Key.ToLowerInvariant() && !b.Key.Contains(':') && !b.Key.Contains(',') && b.Key.Length <= 40), "13 bendiciones con claves únicas y sin ':' ni ',' (van en los ids de los botones y en la oferta)");
+Check(all.Count == 14 && all.Select(b => b.Key).Distinct().Count() == 14 && all.All(b => b.Key == b.Key.ToLowerInvariant() && !b.Key.Contains(':') && !b.Key.Contains(',') && b.Key.Length <= 40), "14 bendiciones (Anzuelo de Plata desde la v0.56.2) con claves únicas y sin ':' ni ',' (van en los ids de los botones y en la oferta)");
 Check(Enum.GetValues<BlessingKind>().All(k => all.Any(b => b.Kind == k)), "hay de cada tipo: velocidad, poder, mascotas, economía, ítems y cosmética (variado, como pidió el dueño)");
 Check(BlessingCatalog.MaxLevel == 5 && BlessingCatalog.OfferSize == 3 && BlessingCatalog.RomanLevel(1) == "I" && BlessingCatalog.RomanLevel(5) == "V", "niveles I a V y oferta de 3");
 var rng = new Random(12345);
@@ -367,8 +367,8 @@ Check(offerText.Contains("Manada V") && offerText.Contains("sube de nivel") && o
 var bEmbed0 = FuegoNuevoModule.BuildBlessingsEmbed(new Dictionary<string, int>(), null);
 var bEmbedMax = FuegoNuevoModule.BuildBlessingsEmbed(lv5, offerNow);
 Check(bEmbed0.Description.Contains("Todavía no tenés ninguna") && bEmbed0.Fields.Length == 0 && bEmbed0.Length <= 6000, "/blessings sin ninguna lo explica y ya NO lista las que existen (el dueño: solo las que tiene cada uno)");
-Check(bEmbedMax.Length <= 6000 && bEmbedMax.Description.Length <= 4096 && bEmbedMax.Fields.All(f => f.Value.Length <= 1024) && bEmbedMax.Description.Split("\n\n").Length == 13, $"con las 13 al máximo y una oferta entra en los límites ({bEmbedMax.Length})");
-Check(all.All(b => bEmbedMax.Description.Contains($"**{b.Emoji} {b.Name} V**")) && !bEmbedMax.Fields.Any(f => f.Name.Contains("existen")), "con las 13 cada una sale en su bloque (nombre y nivel en negrita) y no hay campo de «las que existen»");
+Check(bEmbedMax.Length <= 6000 && bEmbedMax.Description.Length <= 4096 && bEmbedMax.Fields.All(f => f.Value.Length <= 1024) && bEmbedMax.Description.Split("\n\n").Length == 14, $"con las 14 al máximo y una oferta entra en los límites ({bEmbedMax.Length})");
+Check(all.All(b => bEmbedMax.Description.Contains($"**{b.Emoji} {b.Name} V**")) && !bEmbedMax.Fields.Any(f => f.Name.Contains("existen")), "con las 14 cada una sale en su bloque (nombre y nivel en negrita) y no hay campo de «las que existen»");
 var blessParts = bEmbedMax.Description.Split("\n\n");
 var oneOwned = FuegoNuevoModule.BuildBlessingsEmbed(new Dictionary<string, int> { ["manada"] = 3, ["pico_fino"] = 1 }, null);
 Check(oneOwned.Description.Split("\n\n").Length == 2 && blessParts.All(p => p.Split('\n').Length == 2) && oneOwned.Description.Contains("**🐾 Manada III**") && !oneOwned.Description.Contains("Filo Antiguo") && oneOwned.Fields.Length == 0,
@@ -447,7 +447,7 @@ Check(AllText(info).Contains("/fuegonuevo") && AllText(info).Contains("fuego") &
 Check(AllText(HelpTopics.Find("fogon")!.Build()).Contains("/fuegonuevo") && !FogonRules.ClearedText.Contains("próxima versión") && FogonRules.ClearedText.Contains("/fuegonuevo"), "el tema del Fogón y el mensaje de victoria ya apuntan a /fuegonuevo (no dicen «próxima versión»)");
 Check(AllText(HelpTopics.Find("classes")!.Build()).Contains("Fuego Nuevo"), "el tema de clases avisa que la clase se vuelve a elegir con cada Fuego Nuevo");
 var ren = AchievementCatalog.Find("renacido");
-Check(ren is not null && ren.Tiers.Select(t => t.Threshold).SequenceEqual([1L, 5L, 20L]) && ren.Tiers.All(t => t.Reward.Box == BoxGrant.None) && ren.StatKind == GameEventKinds.FuegoNuevo && AchievementCatalog.Categories[3].Keys.Contains("renacido") && AchievementCatalog.All.Count == 34, "logro Renacido (1/5/20 Fuegos Nuevos): solo oro y XP, en Constancia (32 logros en total desde la v0.48.0, 31 desde la v0.41.0; eran 23 desde la v0.18.3)");
+Check(ren is not null && ren.Tiers.Select(t => t.Threshold).SequenceEqual([1L, 5L, 20L]) && ren.Tiers.All(t => t.Reward.Box == BoxGrant.None) && ren.StatKind == GameEventKinds.FuegoNuevo && AchievementCatalog.Categories[3].Keys.Contains("renacido") && AchievementCatalog.All.Count == 35, "logro Renacido (1/5/20 Fuegos Nuevos): solo oro y XP, en Constancia (32 logros en total desde la v0.48.0, 31 desde la v0.41.0; eran 23 desde la v0.18.3)");
 Check(AchievementCatalog.Categories.SelectMany(c => c.Keys).OrderBy(k => k).SequenceEqual(AchievementCatalog.All.Select(a => a.Key).OrderBy(k => k)), "cada logro está en exactamente una página");
 
 await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)U });

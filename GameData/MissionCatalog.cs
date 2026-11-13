@@ -38,6 +38,7 @@ public static class MissionCatalog
         new("d_travel2",  MissionPeriod.Daily, GameEventKinds.TravelWin,     2,  Loc.Mark("Ganá 2 viajes contra élites (/travel)"),   new(9, 6)),
         new("d_chop3",    MissionPeriod.Daily, GameEventKinds.Chop,          3,  Loc.Mark("Talá árboles 3 veces (/chop)"),            new(4, 3)),
         new("d_mine3",    MissionPeriod.Daily, GameEventKinds.Mine,          3,  Loc.Mark("Minerá 3 veces (/mine)"),                  new(4, 3)),
+        new("d_fish3",    MissionPeriod.Daily, GameEventKinds.Fish,          3,  Loc.Mark("Pescá 3 veces (/fish)"),                   new(4, 3)), // v0.56.2
         new("d_gather15", MissionPeriod.Daily, GameEventKinds.GatheredUnits, 15, Loc.Mark("Juntá 15 materiales talando y minando"),   new(5, 3)),
         new("d_daily",    MissionPeriod.Daily, GameEventKinds.DailyClaim,    1,  Loc.Mark("Reclamá tu recompensa diaria (/daily)"),   new(2, 2)),
     ];
@@ -50,6 +51,7 @@ public static class MissionCatalog
         new("w_travel15",  MissionPeriod.Weekly, GameEventKinds.TravelWin,     15,  Loc.Mark("Ganá 15 viajes contra élites (/travel)"),    new(75, 22)),
         new("w_gather300", MissionPeriod.Weekly, GameEventKinds.GatheredUnits, 300, Loc.Mark("Juntá 300 materiales talando y minando"),    new(60, 16)),
         new("w_gather500", MissionPeriod.Weekly, GameEventKinds.GatheredUnits, 500, Loc.Mark("Juntá 500 materiales talando y minando"),    new(95, 22)),
+        new("w_fish20",    MissionPeriod.Weekly, GameEventKinds.Fish,          20,  Loc.Mark("Pescá 20 veces (/fish)"),                    new(30, 10)), // v0.56.2
         new("w_craft1",    MissionPeriod.Weekly, GameEventKinds.Craft,         1,   Loc.Mark("Forjá un ítem en la herrería (/forge make)"), new(25, 10)),
         new("w_craft3",    MissionPeriod.Weekly, GameEventKinds.Craft,         3,   Loc.Mark("Forjá 3 ítems en la herrería (/forge make)"), new(60, 18)),
         new("w_boxes3",    MissionPeriod.Weekly, GameEventKinds.BoxOpened,     3,   Loc.Mark("Abrí 3 cajas (/open)"),                      new(30, 10)),

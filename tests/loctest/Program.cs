@@ -827,7 +827,7 @@ using (Loc.Use("en"))
     }
 }
 
-Check(allMissions.Count == 18 && missingMissions.Count == 0 && leakedMissions.Count == 0, $"las {allMissions.Count} misiones del catálogo tienen su título en inglés (sin traducir: {string.Join(", ", missingMissions)}; con español: {string.Join(" | ", leakedMissions)})");
+Check(allMissions.Count == 20 && missingMissions.Count == 0 && leakedMissions.Count == 0, $"las {allMissions.Count} misiones del catálogo tienen su título en inglés (sin traducir: {string.Join(", ", missingMissions)}; con español: {string.Join(" | ", leakedMissions)})");
 
 const ulong M12 = 999000000000098012UL;
 var missionRepo12 = sp.GetRequiredService<IMissionRepository>(); var zoneBoxSvc12 = sp.GetRequiredService<IZoneBoxService>();

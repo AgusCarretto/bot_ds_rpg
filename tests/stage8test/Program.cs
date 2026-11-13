@@ -106,6 +106,16 @@ var envSettings = MiniEventSettings.FromEnvironment();
 Environment.SetEnvironmentVariable("MiniEvent__ChancePercent", null); Environment.SetEnvironmentVariable("MiniEvent__ChannelCooldownMinutes", null); Environment.SetEnvironmentVariable("MiniEvent__JoinSeconds", null);
 Check(envSettings.ChancePercent == 100 && envSettings.ChannelCooldown == TimeSpan.Zero && envSettings.JoinWindow == TimeSpan.FromSeconds(3), "las variables de entorno cambian la frecuencia (y la ventana nunca baja de 3 segundos)");
 
+// v0.56.2: el canal de eventos random.
+Check(MiniEventSettings.Default.EventChannelId == 0 && MiniEventSettings.Default.For(777) == (3, TimeSpan.FromMinutes(30)), "sin el canal configurado, todos los canales van con 3 % y 30 minutos (nada cambia)");
+Environment.SetEnvironmentVariable("MiniEvent__EventChannelId", "4242");
+var withChannel = MiniEventSettings.FromEnvironment();
+Environment.SetEnvironmentVariable("MiniEvent__EventChannelChancePercent", "40"); Environment.SetEnvironmentVariable("MiniEvent__EventChannelCooldownMinutes", "2");
+var tuned = MiniEventSettings.FromEnvironment();
+Environment.SetEnvironmentVariable("MiniEvent__EventChannelId", null); Environment.SetEnvironmentVariable("MiniEvent__EventChannelChancePercent", null); Environment.SetEnvironmentVariable("MiniEvent__EventChannelCooldownMinutes", null);
+Check(withChannel.For(4242) == (15, TimeSpan.FromMinutes(5)) && withChannel.For(777) == (3, TimeSpan.FromMinutes(30)), "con MiniEvent__EventChannelId: en ese canal 15 % y uno cada 5 minutos; en los demás, lo de siempre");
+Check(tuned.For(4242) == (40, TimeSpan.FromMinutes(2)), "la chance y el cooldown del canal también se cambian con variables");
+
 Console.WriteLine("\n== 4. El minievento funcionando (base real, ventana corta) ==");
 (int seed, MiniEventKind kind)[] seeds = [];
 int SeedFor(MiniEventKind want) { for (int s = 0; s < 10000; s++) { var r = new Random(s); r.Next(100); if ((MiniEventKind)r.Next(3) == want) return s; } throw new Exception("sin semilla"); }
@@ -134,6 +144,15 @@ Check(await Have(P[0], "Piedra") == 6 && await Have(P[1], "Piedra") == 6 && awai
 var late = await svc.JoinAsync(evId, P[3]);
 Check(late.Status is JoinStatus.Gone or JoinStatus.Finished, "llegar tarde: ya no deja sumarse");
 Check(await db.ExecuteScalarAsync<int>("SELECT count(*) FROM game_events WHERE kind = 'mini_event' AND discord_id = ANY(@ids)", new { ids = P.Select(x => (long)x).ToArray() }) == 3, "quedaron 3 eventos mini_event registrados (uno por participante)");
+
+// v0.56.2: con la chance general en 0 y la del canal de eventos en 100, solo sale en ese canal.
+var chLog = new List<(ulong, Embed, MessageComponent, FakeAnnouncement)>();
+var chSvc = new MiniEventService(users, zones, items, payouts, gameEvents,
+    new MiniEventSettings(0, TimeSpan.FromMinutes(30), TimeSpan.FromMilliseconds(300), EventChannelId: 999, EventChannelChancePercent: 100, EventChannelCooldownOverride: TimeSpan.Zero), new Random(1));
+await chSvc.MaybeSpawnAsync(555, Publisher(chLog)(555));
+await chSvc.MaybeSpawnAsync(999, Publisher(chLog)(999));
+Check(chLog.Count == 1 && chLog[0].Item1 == 999, "en el canal de eventos random sale; en otro canal (chance 0) no");
+await Task.Delay(800);
 
 // Madera con 1 persona y plata con 2 (zonas distintas).
 await Reset();
