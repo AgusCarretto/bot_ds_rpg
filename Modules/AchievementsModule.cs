@@ -183,8 +183,10 @@ public class AchievementsModule(
         var embed = new EmbedBuilder()
             .WithTitle(Loc.F($"🏆 Tus logros — {category.Emoji} {category.Name}"))
             .WithColor(Color.Gold)
-            .WithDescription(Loc.T("Cada logro tiene tres tramos. ✅ cobrado · 🎁 listo para reclamar · 🔒 todavía no. Cuentan desde que se activó el registro de eventos."))
-            .AddField("Logros", string.Join("\n\n", shown.Select(Line)));
+            // Los logros van en la descripción (auditoría de UI, M13): un campo «Logros» debajo de un título que ya dice «Tus logros» no aportaba, y la descripción admite 4096 caracteres.
+            .WithDescription(
+                Loc.T("Cada logro tiene tres tramos. ✅ cobrado · 🎁 listo para reclamar · 🔒 todavía no. Cuentan desde que se activó el registro de eventos.") +
+                "\n\n" + string.Join("\n\n", shown.Select(Line)));
 
         int claimable = rows.Sum(r => r.ClaimableTiers.Count);
         string tail = claimable > 0 ? Loc.F($"🎁 Tenés {claimable} para reclamar en total: tocá el botón.") : Loc.T("Seguí jugando: se suman solos.");

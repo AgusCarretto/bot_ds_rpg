@@ -319,8 +319,9 @@ public class TabernaModule(
             .Build();
 
         var buttons = new ComponentBuilder()
-            .WithButton(Loc.T("Sí, venderla"), $"{GearYes}:{discordId}:{item.ItemId}", ButtonStyle.Danger, new Emoji("💰"))
-            .WithButton(Loc.T("No, me la quedo"), $"{GearNo}:{discordId}", ButtonStyle.Secondary, new Emoji("🛡️"))
+            // Una etiqueta por pieza (auditoría de UI, M15): «venderla» es el arma, «venderlo» el amuleto.
+            .WithButton(weapon ? Loc.T("Sí, venderla") : Loc.T("Sí, venderlo"), $"{GearYes}:{discordId}:{item.ItemId}", ButtonStyle.Danger, new Emoji("💰"))
+            .WithButton(weapon ? Loc.T("No, me la quedo") : Loc.T("No, me lo quedo"), $"{GearNo}:{discordId}", ButtonStyle.Secondary, new Emoji("🛡️"))
             .Build();
 
         return (embed, buttons);

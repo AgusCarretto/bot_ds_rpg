@@ -201,11 +201,13 @@ public class TitlesModule(IUserRepository userRepository, IZoneRepository zoneRe
             }
         }
 
+        // Footer corto y con la página, como en /achievements (auditoría de UI, M13).
+        int pageNumber = Math.Max(0, TitleCatalog.Pages.ToList().FindIndex(p => p.Key == page.Key)) + 1;
         return new EmbedBuilder()
             .WithTitle(Loc.F($"🏷️ Títulos · {page.Emoji} {page.Name}"))
             .WithColor(Color.Gold)
             .WithDescription(string.Join("\n", lines))
-            .WithFooter(Loc.F($"Tenés {TitleCatalog.UnlockedCount(context)} de {TitleCatalog.All.Count} · el que te pongas se ve en tu perfil, al lado de tu nombre"))
+            .WithFooter(Loc.F($"Página {pageNumber}/{TitleCatalog.Pages.Count} · Tenés {TitleCatalog.UnlockedCount(context)} de {TitleCatalog.All.Count}"))
             .Build();
     }
 

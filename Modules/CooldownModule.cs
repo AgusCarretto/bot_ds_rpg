@@ -145,7 +145,7 @@ public class CooldownModule(
         var shown = CooldownLayout.Apply(lines, layout);
         return new EmbedBuilder()
             .WithTitle(other ? Loc.F($"⏱️ Cooldowns de {targetName}") : Loc.T("⏱️ Tus cooldowns"))
-            .WithColor(Color.Teal)
+            .WithColor(Color.Orange) // naranja como perfil, stats e inventario: las pantallas del personaje van del mismo color (auditoría de UI, M15)
             .WithDescription(shown.Count == 0 ? Loc.T("Tenés todas las líneas ocultas. Mostralas en **/config** o con `aa cd mostrar todo`.") : string.Join('\n', shown))
             .WithFooter(other ? Loc.T("Con las líneas que elegiste ver en /config.") : Loc.T("Elegí qué líneas ver y en qué orden en /config (o con `aa cd orden`)."))
             .Build();

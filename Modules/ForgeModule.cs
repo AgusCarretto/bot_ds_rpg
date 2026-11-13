@@ -39,7 +39,7 @@ public static class ForgeModule
 
         var embed = new EmbedBuilder()
             .WithTitle(Loc.T("⚒️ Recetas del Herrero"))
-            .WithColor(Color.DarkGrey);
+            .WithColor(Color.Orange); // el color del herrero, también en `aa forge recipes` (auditoría de UI, M15)
 
         if (recipes.Count == 0)
         {
@@ -100,7 +100,7 @@ public static class ForgeModule
     {
         var embed = new EmbedBuilder()
             .WithTitle(Loc.T("⚒️ Recetas del Herrero"))
-            .WithColor(Color.DarkGrey);
+            .WithColor(Color.Orange); // el color del herrero, también en `aa forge recipes` (auditoría de UI, M15)
 
         if (recipes.Count == 0)
         {

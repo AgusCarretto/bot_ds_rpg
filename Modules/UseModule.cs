@@ -254,14 +254,16 @@ public class UseModule(
             ? Loc.F($"El **{state.MonsterName}** {state.MonsterEmoji} intentó golpearte, ¡pero esquivaste el ataque! 💨")
             : Loc.F($"El **{state.MonsterName}** te hizo **{monsterHit}** de daño mientras te curabas.");
 
-        return new EmbedBuilder()
+        var embed = new EmbedBuilder()
             .WithTitle(Loc.F($"⚔️ Combate contra {state.MonsterName} {state.MonsterEmoji}"))
             .WithColor(Color.Gold)
             .WithMonsterPortrait(state.MonsterPortrait)
             .WithDescription(Loc.F($"Usaste **{ItemDisplay.Format(item.Emoji, item.Name)}**. {monsterLine}"))
             .AddField(Loc.T("❤️ Tu HP"), HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
-            .AddField(Loc.F($"{state.MonsterEmoji} HP de {state.MonsterName}"), HpLine(state.MonsterCurrentHp, state.MonsterMaxHp), true)
-            .Build();
+            .AddField(Loc.F($"{state.MonsterEmoji} HP de {state.MonsterName}"), HpLine(state.MonsterCurrentHp, state.MonsterMaxHp), true);
+
+        // Los mismos campos que el turno normal (auditoría de UI, M14): sin el de la habilidad, el mensaje cambiaba de alto justo este turno y los botones saltaban.
+        return AdventureModule.WithAbilityField(embed, state).Build();
     }
 
     // state.PlayerCurrentHp ya viene con el resultado final aplicado — en unidades de combate,
@@ -276,10 +278,15 @@ public class UseModule(
             .WithDescription(
                 Loc.F($"Usaste **{ItemDisplay.Format(item.Emoji, item.Name)}**, pero el **{state.MonsterName}** te hizo **{monsterHit}** de daño y te dejó fuera de combate. Usá **/heal** para recuperarte.") +
                 $"\n\n{AdventureModule.MonsterSays(state, NpcDialogue.BossLine.Victory)}")
-            .AddField(Loc.T("❤️ Tu HP"), HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), !state.ShowFightSummary);   // en su propia fila: la tablita arranca en una fila nueva
+            // Los mismos dos campos que la otra derrota (AdventureModule.BuildDefeatEmbed; auditoría de UI, M14): tu vida y la que le quedaba al monstruo.
+            .AddField(Loc.T("❤️ Tu HP"), HpLine(state.PlayerCurrentHp, state.PlayerMaxHp), true)
+            .AddField(Loc.F($"{state.MonsterEmoji} HP de {state.MonsterName}"), HpLine(state.MonsterCurrentHp, state.MonsterMaxHp), true);
 
         if (state.ShowFightSummary)
         {
+            // Un tercer campo en línea vacío (U+200B) cierra la fila de las dos vidas: así la tablita arranca en una fila nueva, como antes.
+            string blank = ((char)0x200B).ToString();
+            embed.AddField(blank, blank, true);
             AdventureModule.AddCombatSummary(embed, state);
         }
 

@@ -463,11 +463,11 @@ Console.WriteLine("\n== 9. Pantallas y cobro completo (módulos) ==");
     await ResetPlayer(level: 1, xp: 0, gold: 0, zone: 1);
     var av0 = await AchievementsModule.BuildViewAsync(eventsRepo, achievements, U);
     bool HasButton(AchievementsView v) => v.Components is not null && v.Components.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<ButtonComponent>().Any();
-    Check(av0.Embed.Fields.Length == 1 && av0.ClaimableCount == 0 && !HasButton(av0) && av0.Embed.Fields.All(f => f.Value.Length <= 1024) && av0.Embed.Length < 6000, $"/logros sin progreso (v0.9.0: una página por tema): 1 campo con los 5 logros de Combate, sin botón de reclamar, largo {av0.Embed.Length} de 6000");
+    Check(av0.Embed.Fields.Length == 0 && av0.ClaimableCount == 0 && !HasButton(av0) && av0.Embed.Description.Length <= 4096 && av0.Embed.Length < 6000, $"/logros sin progreso (v0.9.0: una página por tema): los 5 logros de Combate en la descripción (M13), sin campo «Logros», sin botón de reclamar, largo {av0.Embed.Length} de 6000");
     await eventsRepo.RecordAsync(U, GameEventKinds.HuntWin, null, 30, null);
     await eventsRepo.RecordAsync(U, GameEventKinds.Craft, null, 1, null);
     var av1 = await AchievementsModule.BuildViewAsync(eventsRepo, achievements, U);
-    Check(av1.ClaimableCount == 2 && av1.Components is not null && av1.Embed.Fields[0].Value.Contains("Cazador") && av1.Embed.Fields[0].Value.Contains("I 🎁"), "30 cacerías y 1 forja: 2 tramos listos (Cazador I y Herrero I) y botón de reclamar");
+    Check(av1.ClaimableCount == 2 && av1.Components is not null && av1.Embed.Description.Contains("Cazador") && av1.Embed.Description.Contains("I 🎁"), "30 cacerías y 1 forja: 2 tramos listos (Cazador I y Herrero I) y botón de reclamar");
     var abtn = av1.Components!.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<ButtonComponent>().Single();
     Check(abtn.CustomId == $"ach_claim:{U}:0" && abtn.Label == "Reclamar (2)", $"botón de logros (v0.9.0: lleva la página): {abtn.CustomId} / {abtn.Label}");
     int g1 = await Gold();
@@ -476,12 +476,12 @@ Console.WriteLine("\n== 9. Pantallas y cobro completo (módulos) ==");
     Check(await db.ExecuteScalarAsync<int>("SELECT count(*) FROM game_events WHERE discord_id = @id AND kind = 'achievement_unlocked'", new { id = (long)U }) == 2, "quedaron registrados 2 eventos achievement_unlocked");
     var ac2 = await AchievementsModule.ExecuteClaimAsync(users, zones, eventsRepo, achievements, events, U);
     var av2 = await AchievementsModule.BuildViewAsync(eventsRepo, achievements, U);
-    Check(ac2.Embed is null && ac2.PlainMessage!.Contains("No tenés logros listos") && av2.ClaimableCount == 0 && !HasButton(av2) && av2.Embed.Fields[0].Value.Contains("I ✅"), "reclamar de nuevo no paga y la pantalla muestra ✅ en lo cobrado");
+    Check(ac2.Embed is null && ac2.PlainMessage!.Contains("No tenés logros listos") && av2.ClaimableCount == 0 && !HasButton(av2) && av2.Embed.Description.Contains("I ✅"), "reclamar de nuevo no paga y la pantalla muestra ✅ en lo cobrado");
     // El peor caso de tamaño: todos los logros completos y cobrados.
     foreach (var a in AchievementCatalog.All) await eventsRepo.RecordAsync(U, a.StatKind, null, 1_000_000, null);
     var avFull = await AchievementsModule.BuildViewAsync(eventsRepo, achievements, U);
     bool allPagesFit = true; int worstLen = 0;
-    for (int pg = 0; pg < AchievementCatalog.Categories.Count; pg++) { var vp = await AchievementsModule.BuildViewAsync(eventsRepo, achievements, U, pg); allPagesFit &= vp.Embed.Fields.All(f => f.Value.Length <= 1024) && vp.Embed.Length < 6000; worstLen = Math.Max(worstLen, vp.Embed.Length); }
+    for (int pg = 0; pg < AchievementCatalog.Categories.Count; pg++) { var vp = await AchievementsModule.BuildViewAsync(eventsRepo, achievements, U, pg); allPagesFit &= vp.Embed.Description.Length <= 4096 && vp.Embed.Length < 6000; worstLen = Math.Max(worstLen, vp.Embed.Length); }
     Check(allPagesFit && avFull.ClaimableCount > 0, $"con todo desbloqueado ninguna de las páginas pasa los límites de Discord (la más larga mide {worstLen})");
     // Pantalla de misiones en el peor caso: todo completo y ninguna cobrada.
     var worst = MissionCatalog.ForPeriod(MissionPeriod.Weekly, weekStart).Concat(MissionCatalog.ForPeriod(MissionPeriod.Daily, dayStart)).ToList();
