@@ -8,8 +8,14 @@ namespace BotDsRpg.GameData;
 public sealed record PlayerBonuses(
     PetBonuses Pets, int FuegoNuevo = 0, IReadOnlyDictionary<string, int>? BlessingLevels = null, IReadOnlyDictionary<string, long>? ProfessionXp = null, double BankGoldPercent = 0,
     double ChopToolFactor = 1, double MineToolFactor = 1, DragonBonuses? Dragon = null, double FishToolFactor = 1, IReadOnlyDictionary<string, int>? Cooked = null,
-    IReadOnlyCollection<string>? CookBuffs = null)
+    IReadOnlyCollection<string>? CookBuffs = null, bool HasReno = false)
 {
+    // El Reno de Navidad (v0.57.0, GameData/ChristmasShop.cs): +15 % de XP y de oro fijos y /travel en 25 minutos. Se compra con Regalos y es para siempre.
+    private double RenoFactor => HasReno ? 1 + (RenoRules.XpGoldPercent / 100.0) : 1;
+
+    // La espera de /travel de ESTE jugador: 30 minutos, 25 con el Reno.
+    public TimeSpan TravelCooldown => HasReno ? RenoRules.TravelCooldown : CooldownCatalog.Travel.Duration;
+
     public static readonly PlayerBonuses None = new(PetBonuses.None);
 
     // Lo cocinado en esta vuelta (v0.49.0, GameData/CookingCatalog.cs): sumas PLANAS a la vida máxima, la defensa y el ataque. Entran en PlayerCombatProfileCalculator (solo contra monstruos, como todo lo de acá).
@@ -50,10 +56,10 @@ public sealed record PlayerBonuses(
     public double TravelDropMultiplier => TravelDropFactors.Total;
 
     public double XpMultiplier =>
-        FuegoNuevoRules.XpMultiplier(FuegoNuevo) * (1 + (Pets.XpPercent / 100.0)) * (1 + (BlessingCatalog.XpPerLevel * BlessingLevel(BlessingCatalog.XpKey))) * DragonFactor(d => d.XpPercent) * CookFactor(d => d.XpPercent);
+        FuegoNuevoRules.XpMultiplier(FuegoNuevo) * (1 + (Pets.XpPercent / 100.0)) * (1 + (BlessingCatalog.XpPerLevel * BlessingLevel(BlessingCatalog.XpKey))) * DragonFactor(d => d.XpPercent) * CookFactor(d => d.XpPercent) * RenoFactor;
 
     public double GoldMultiplier =>
-        (1 + (Pets.GoldPercent / 100.0)) * (1 + (BlessingCatalog.GoldPerLevel * BlessingLevel(BlessingCatalog.GoldKey))) * (1 + (Math.Clamp(BankGoldPercent, 0, BankRules.MaxGoldBonusPercent) / 100.0)) * DragonFactor(d => d.GoldPercent) * CookFactor(d => d.GoldPercent);
+        (1 + (Pets.GoldPercent / 100.0)) * (1 + (BlessingCatalog.GoldPerLevel * BlessingLevel(BlessingCatalog.GoldKey))) * (1 + (Math.Clamp(BankGoldPercent, 0, BankRules.MaxGoldBonusPercent) / 100.0)) * DragonFactor(d => d.GoldPercent) * CookFactor(d => d.GoldPercent) * RenoFactor;
 
     // El minibuff del banco (v0.21.0, GameData/BankRules.cs): lo saca PlayerBonusService del saldo y la zona del jugador, y ya está sumado a GoldMultiplier.
     // Poder (solo contra monstruos): el ataque y la defensa TOTALES (nivel + equipo) y la vida máxima de combate.
@@ -112,7 +118,7 @@ public sealed record PlayerBonuses(
     public bool IsNone =>
         Pets.IsNone && FuegoNuevo == 0 && (BlessingLevels is null || BlessingLevels.Count == 0)
         && ProfessionCatalog.All.All(p => ProfessionLevel(p.Key) == 0) && BankGoldPercent <= 0 && ChopToolFactor <= 1 && MineToolFactor <= 1 && FishToolFactor <= 1 && (Dragon is null || Dragon.IsNone)
-        && CookedMaxHp == 0 && CookedDefense == 0 && CookedAttack == 0 && (CookBuffs is null || CookBuffs.Count == 0);
+        && CookedMaxHp == 0 && CookedDefense == 0 && CookedAttack == 0 && (CookBuffs is null || CookBuffs.Count == 0) && !HasReno;
 
     // Aplica un multiplicador a una cantidad entera (oro, EXP, ataque, defensa), redondeando al más cercano. Con 1,0 o menos no toca nada.
     public static int Scale(int amount, double multiplier) =>

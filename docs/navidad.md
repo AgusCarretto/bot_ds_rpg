@@ -118,13 +118,18 @@ Reno, banner de nieve.
 - Precio de venta de Regalos por oro (25 → 6).
 - Premios exactos al derribar al Muñeco y del calendario día por día.
 
-## Estado de la construcción
+## Estado de la construcción (rama `feature/navidad`, carpeta `bot_ds_rpg-navidad`)
 
-- **Hecho (v0.57.0, sin release):** `GameData/Christmas.cs` (fechas, Regalos, calendario), `Database/add_christmas.sql` (tablas
-  `event_gifts` por temporada y `event_advent_claims`; correr ANTES de abrir el evento, es opcional antes del binario),
-  `Repositories/ChristmasRepository.cs`, `Services/ChristmasService.cs` (+ `IGameEvents.GrantEventGiftsAsync`, enganchado en las
-  victorias de `/hunt`, `/autohunt`, `/travel`, jefe, jefe en equipo y `/daily`, con la línea «❄️ Navidad en el Fogón» al pie),
-  `/navidad` y `aa navidad` (saldo + grilla del calendario + botón del día), `aa adviento` (abre el día). Arnés `tests/christmastest`.
+- **Parte 1 (hecha):** `GameData/Christmas.cs` (fechas, Regalos, calendario), `Database/add_christmas.sql` (tablas `event_gifts` por
+  temporada —con `bells` y `candle_until`— y `event_advent_claims`; re-ejecutable; correr ANTES de abrir el evento),
+  `Repositories/ChristmasRepository.cs`, `Services/ChristmasService.cs` (+ `IGameEvents.GrantEventGiftsAsync`, enganchado en las victorias de
+  `/hunt`, `/autohunt`, `/travel`, jefe, jefe en equipo y `/daily`, con la línea «❄️ Navidad en el Fogón» al pie), `/navidad` y
+  `aa navidad` (saldo + grilla del calendario + botón del día + 🛒 Tienda), `aa adviento`. Hunt: **50 %** (dueño).
+- **Parte 2 (hecha):** `GameData/ChristmasShop.cs` y la tienda (`/navidad` → 🛒, `aa navidad tienda`, `aa navidad comprar <artículo> [n]`):
+  Campana 3 (se acumulan; `aa campana` reinicia `/hunt` y no se gasta si ya estaba listo), Calcetín 60 (se abre al comprarlo), Vela 80
+  (+50 % redondeado para arriba por 1 h; se apilan; solo hasta el 24), Bolsa de Polvo 50, títulos «Elfo del Fogón» 500 y «Espíritu de la
+  Navidad» 1.500 (página 🎄 Navidad de `aa titles`, quedan en `player_stats`) y el **Reno 4.500** (`player_stats.xmas_reno`: +15 % XP y oro en
+  `PlayerBonuses`, `/travel` 25 min en el cobro, `/cd` y los avisos). Calendario: 5 Campanas los días 11 y 18 y un Calcetín el 24.
 - **Para probar antes:** `Christmas__Start`, `Christmas__FarmEnd`, `Christmas__End` (ver `.env.example`).
-- **Falta:** tienda (Campana, Calcetín, Vela, Polvo, títulos, banner, Reno) y venta de Regalos; Campanas (días 11 y 18) y Calcetín (24)
-  en el calendario; Krampus; Muñeco de Nieve Gigante; logros; arte; `/info` y `docs/topgg/comandos`.
+- **Falta:** venta de Regalos por oro (25 → 6, precio a decidir); banner de nieve (cuando haya arte); Krampus; Muñeco de Nieve Gigante;
+  logros; arte; `/info` y `docs/topgg/comandos`.

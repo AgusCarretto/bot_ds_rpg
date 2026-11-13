@@ -60,6 +60,7 @@ public static class TitleCatalog
         new("hazanas", "Hazañas", "🏆"),
         new("pvp", "PvP y comunidad", "🏟️"),
         new("curiosos", "Curiosos", "🎲"),
+        new("navidad", "Navidad", "🎄"),
     ];
 
     // Los títulos de los logros: (logro, página, qué cuenta la meta, los tres nombres en orden de tramo).
@@ -185,6 +186,10 @@ public static class TitleCatalog
         all.Add(new TitleDefinition("inframundo", "Cliente del Inframundo", "curiosos", TitleRule.Stat, Loc.Mark("Comprale algo al Tabernero del Inframundo con /deepshop"), GameEventKinds.DeepShopBuy, 1));
         all.Add(new TitleDefinition("encanto_v", "Brasa Soberana", "curiosos", TitleRule.Flag, Loc.Mark("Sacá un encantamiento de tier V (Soberano) con /enchant"), FlagEnchantV));
         all.Add(new TitleDefinition(DefaultKey, "Recién Llegado", "curiosos", TitleRule.Always, Loc.Mark("Lo tenés desde el primer día")));
+
+        // 6) Navidad en el Fogón (v0.57.0): se compran con Regalos en la tienda navideña (/navidad) y quedan para siempre.
+        all.Add(new TitleDefinition("xmas_elfo", "Elfo del Fogón", "navidad", TitleRule.Stat, Loc.Mark("Compralo en la tienda de Navidad (/navidad)"), ChristmasShop.TitleElfStat, 1));
+        all.Add(new TitleDefinition("xmas_espiritu", "Espíritu de la Navidad", "navidad", TitleRule.Stat, Loc.Mark("Compralo en la tienda de Navidad (/navidad)"), ChristmasShop.TitleSpiritStat, 1));
 
         return all;
     }

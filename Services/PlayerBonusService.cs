@@ -56,9 +56,11 @@ public sealed class PlayerBonusService(
 
         // Los oficios (v0.13.0): su XP sale de los contadores de player_stats (cada oficio lee el de su comando), no de una tabla propia.
         Dictionary<string, long>? professionXp = null;
+        bool hasReno = false;
         try
         {
             var stats = await eventRepository.GetStatsAsync(discordId, cancellationToken);
+            hasReno = stats.GetValueOrDefault(RenoRules.StatKey) > 0;   // el Reno de Navidad (v0.57.0): se compra una vez y queda en player_stats
             professionXp = ProfessionCatalog.All.ToDictionary(p => p.Key, p => ProfessionRules.XpFrom(p, stats), StringComparer.Ordinal);
         }
         catch (Exception ex)
@@ -164,6 +166,6 @@ public sealed class PlayerBonusService(
             }
         }
 
-        return new PlayerBonuses(pets, Math.Max(0, fuegoNuevo), levels.Count == 0 ? null : levels, professionXp, bankPercent, chopTool, mineTool, dragon, fishTool, cooked, cookBuffs);
+        return new PlayerBonuses(pets, Math.Max(0, fuegoNuevo), levels.Count == 0 ? null : levels, professionXp, bankPercent, chopTool, mineTool, dragon, fishTool, cooked, cookBuffs, hasReno);
     }
 }

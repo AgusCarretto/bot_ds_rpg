@@ -58,7 +58,7 @@ Check(AchievementCatalog.Find("hz_cazador")!.Tiers.Select(t => t.Reward.GoldUnit
 
 Console.WriteLine("\n== 2. Los títulos (puros) ==");
 var featTitles = TitleCatalog.All.Where(t => t.AchievementKey is not null && feats.Contains(t.AchievementKey)).ToList();
-Check(featTitles.Count == 24 && featTitles.All(t => t.PageKey == "hazanas" && t.Rule == TitleRule.Stat) && TitleCatalog.All.Count == 143 && TitleCatalog.Pages.Count == 10 && TitleCatalog.Pages.Any(p => p.Key == "hazanas" && p.Name == "Hazañas"), "24 títulos nuevos en la página «Hazañas» (143 en total desde la v0.48.0, 10 páginas)");
+Check(featTitles.Count == 24 && featTitles.All(t => t.PageKey == "hazanas" && t.Rule == TitleRule.Stat) && TitleCatalog.All.Count == 145 && TitleCatalog.Pages.Count == 11 && TitleCatalog.Pages.Any(p => p.Key == "hazanas" && p.Name == "Hazañas"), "24 títulos nuevos en la página «Hazañas» (145 en total con los 2 de Navidad de la v0.57.0, 11 páginas)");
 Check(featTitles.All(t => AchievementCatalog.Find(t.AchievementKey!)!.Tiers[t.AchievementTier - 1].Threshold == t.Threshold && t.Source == AchievementCatalog.Find(t.AchievementKey!)!.StatKind), "cada título se gana con la MISMA meta y el mismo contador que su tramo");
 Check(TitleCatalog.All.Select(t => t.Name.ToLowerInvariant()).Distinct().Count() == TitleCatalog.All.Count && TitleCatalog.All.Count(t => t.PageKey == "hazanas") <= 25 && TitleCatalog.ParsePage("hazanas") == 7, "ningún nombre se repite, la página entra en las 25 opciones del desplegable y se pide por su clave");
 var ctxLow = new TitleContext(new Dictionary<string, long> { [GameEventKinds.HuntWin] = 2_499 }, 1, new HashSet<int>(), new HashSet<string>(), 0);

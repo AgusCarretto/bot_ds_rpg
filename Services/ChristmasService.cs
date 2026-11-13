@@ -43,8 +43,8 @@ public sealed class ChristmasService(IChristmasRepository repository, ChristmasS
 
         try
         {
-            await repository.GrantAsync(discordId, settings.Season, amount);
-            return amount;
+            // Con la Vela prendida el repositorio suma +50 %: lo que se muestra es lo que se sumó de verdad.
+            return await repository.GrantAsync(discordId, settings.Season, amount);
         }
         catch (Exception ex)
         {

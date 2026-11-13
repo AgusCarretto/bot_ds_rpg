@@ -587,6 +587,8 @@ CREATE TABLE IF NOT EXISTS event_gifts (
     season     TEXT   NOT NULL,
     balance    BIGINT NOT NULL DEFAULT 0 CHECK (balance >= 0),
     earned     BIGINT NOT NULL DEFAULT 0 CHECK (earned >= 0),
+    bells        INTEGER     NOT NULL DEFAULT 0 CHECK (bells >= 0),
+    candle_until TIMESTAMPTZ,
     PRIMARY KEY (discord_id, season)
 );
 

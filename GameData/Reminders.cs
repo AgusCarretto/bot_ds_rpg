@@ -48,7 +48,8 @@ public static class ReminderCatalog
 
     // De las filas de cooldown del jugador (comando, última vez) saca cuáles TODAVÍA corren y cuándo terminan. Lo que ya terminó no genera aviso (el jugador ya puede usarlo).
     // Un cooldown que se guardó con la espera "corta" de un jefe perdido ya viene acomodado en last_executed_at (ver CooldownCatalog.Boss), así que acá es siempre última vez + duración.
-    public static IReadOnlyList<ReminderDue> FromCooldowns(IEnumerable<(string Command, DateTime LastExecutedUtc)> rows, DateTime nowUtc)
+    // travelCooldown: la espera de /travel de ESE jugador (25 minutos con el Reno de Navidad); null = la de siempre.
+    public static IReadOnlyList<ReminderDue> FromCooldowns(IEnumerable<(string Command, DateTime LastExecutedUtc)> rows, DateTime nowUtc, TimeSpan? travelCooldown = null)
     {
         var due = new List<ReminderDue>();
         foreach (var (command, last) in rows)
@@ -59,7 +60,8 @@ public static class ReminderCatalog
                 continue;
             }
 
-            var ready = DateTime.SpecifyKind(last, DateTimeKind.Utc) + definition.Duration;
+            var wait = definition == CooldownCatalog.Travel && travelCooldown is { } travel ? travel : definition.Duration;
+            var ready = DateTime.SpecifyKind(last, DateTimeKind.Utc) + wait;
             if (ready > nowUtc)
             {
                 due.Add(new ReminderDue(command, ready));

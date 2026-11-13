@@ -23,9 +23,9 @@ TitleDefinition T(string key) => TitleCatalog.Find(key) ?? throw new InvalidOper
 
 Console.WriteLine("== 1. El catálogo ==");
 var all = TitleCatalog.All;
-Check(all.Count == 143 && all.Count >= 50, $"hay {all.Count} títulos (el pedido era 50 como mínimo)");
+Check(all.Count == 145 && all.Count >= 50, $"hay {all.Count} títulos (el pedido era 50 como mínimo)");
 Check(all.Select(t => t.Key).Distinct().Count() == all.Count && all.Select(t => t.Name.ToLowerInvariant()).Distinct().Count() == all.Count, "las claves y los nombres no se repiten");
-Check(TitleCatalog.Pages.Count == 10 && TitleCatalog.Pages.Select(p => p.Key).Distinct().Count() == 10 && all.All(t => TitleCatalog.Pages.Any(p => p.Key == t.PageKey)), "10 páginas (con «Hazañas») y cada título está en una que existe");
+Check(TitleCatalog.Pages.Count == 11 && TitleCatalog.Pages.Select(p => p.Key).Distinct().Count() == 11 && all.All(t => TitleCatalog.Pages.Any(p => p.Key == t.PageKey)), "11 páginas (con «Hazañas» y «Navidad», v0.57.0) y cada título está en una que existe");
 var sizes = TitleCatalog.Pages.ToDictionary(p => p.Key, p => TitleCatalog.OfPage(p.Key).Count);
 Check(sizes.Values.All(n => n is >= 1 and <= 25) && sizes.Values.Sum() == all.Count, $"cada página tiene entre 1 y 25 títulos (el desplegable de equipar admite 25): {string.Join(", ", sizes.Select(kv => $"{kv.Key} {kv.Value}"))}");
 Check(all.All(t => t.Name.Length is >= 3 and <= 40 && t.Hint.Length > 3 && t.Hint.Length <= 100), "nombres cortos y una pista de cómo conseguirlo en todos (entran en una opción de desplegable)");
@@ -160,8 +160,8 @@ var rows = view.Components!.Components.OfType<ActionRowComponent>().ToList();
 var pageMenu = Flat(view.Components).OfType<SelectMenuComponent>().Single(m => m.CustomId == $"titles_page:{U}");
 var equipMenu = Flat(view.Components).OfType<SelectMenuComponent>().Single(m => m.CustomId == $"titles_equip:{U}:combate");
 var clearButton = Flat(view.Components).OfType<ButtonComponent>().Single();
-Check(rows.Count == 3 && pageMenu.Options.Count == 10 && pageMenu.Options.Single(o => o.IsDefault == true).Value == "combate" && pageMenu.Options.All(o => o.Emote is null && o.Label.Length <= 100),
-    "tres filas: el desplegable de las 10 páginas (marcada la actual), el de equipar y el botón");
+Check(rows.Count == 3 && pageMenu.Options.Count == 11 && pageMenu.Options.Single(o => o.IsDefault == true).Value == "combate" && pageMenu.Options.All(o => o.Emote is null && o.Label.Length <= 100),
+    "tres filas: el desplegable de las 11 páginas (marcada la actual), el de equipar y el botón");
 Check(equipMenu.Options.Select(o => o.Value).OrderBy(v => v).SequenceEqual(new[] { "cazador_1", "cazador_2" }.OrderBy(v => v)) && equipMenu.Options.Single(o => o.Value == "cazador_1").Description == "Puesto ahora" && equipMenu.Options.Count <= 25,
     "el desplegable de equipar lista SOLO los que tiene de esa página");
 Check(clearButton.CustomId == $"titles_clear:{U}:combate" && !clearButton.IsDisabled, "el botón de quitar está activo con un título puesto y su id lleva el dueño y la página");

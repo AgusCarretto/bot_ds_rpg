@@ -18,3 +18,7 @@ CREATE TABLE IF NOT EXISTS event_advent_claims (
     claimed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (discord_id, season, day)
 );
+
+-- La tienda (v0.57.0): las Campanas compradas (se usan con «aa campana» para reiniciar /hunt) y hasta cuándo dura la Vela (+50 % de Regalos).
+ALTER TABLE event_gifts ADD COLUMN IF NOT EXISTS bells        INTEGER     NOT NULL DEFAULT 0 CHECK (bells >= 0);
+ALTER TABLE event_gifts ADD COLUMN IF NOT EXISTS candle_until TIMESTAMPTZ;

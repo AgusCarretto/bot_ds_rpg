@@ -27,7 +27,8 @@ public sealed record ChristmasSettings(DateTime StartUtc, DateTime FarmEndUtc, D
 }
 
 // Lo que da un día del calendario de adviento: Regalos siempre, y algunos días además oro (unidades del /daily, escaladas a la zona), una caja de la zona y Polvo.
-public sealed record AdventDay(int Day, int Gifts, RewardSpec? Reward = null, int Dust = 0);
+// Bells: Campanas de la tienda (días 11 y 18); Sock: un Calcetín abierto en el momento (el 24).
+public sealed record AdventDay(int Day, int Gifts, RewardSpec? Reward = null, int Dust = 0, int Bells = 0, bool Sock = false);
 
 public static class ChristmasRules
 {
@@ -47,6 +48,7 @@ public static class ChristmasRules
     public const int AdventDoubleGifts = 40;
     public const int AdventEveGifts = 150;
     public const int AdventDust = 100;          // «a medir»: ~3 h de farmeo de Polvo
+    public const int AdventBells = 5;
 
     public static ChristmasPhase PhaseAt(ChristmasSettings settings, DateTime utcNow) =>
         utcNow < settings.StartUtc ? ChristmasPhase.Off
@@ -78,13 +80,14 @@ public static class ChristmasRules
     public static int DailyClaimGifts(int streakDay) => DailyGifts + (streakDay >= DailyStreakBonusFrom ? DailyStreakBonusGifts : 0);
 
     // El calendario día por día (docs/navidad.md): 20 Regalos todos los días; 3/10/17 oro; 5/12/19 doble; 7/14 caja de la zona; 9/16/23 Polvo;
-    // 21 caja grande; 24 Nochebuena (150 Regalos y caja grande). Las Campanas (11 y 18) y el Calcetín (24) se suman cuando exista la tienda.
+    // 11/18 cinco Campanas; 21 caja grande; 24 Nochebuena (150 Regalos, caja grande y un Calcetín).
     public static AdventDay Advent(int day)
     {
         int d = Math.Clamp(day, 1, AdventDays);
         return d switch
         {
-            24 => new AdventDay(d, AdventEveGifts, new RewardSpec(0, 0, BoxGrant.Weekly)),
+            24 => new AdventDay(d, AdventEveGifts, new RewardSpec(0, 0, BoxGrant.Weekly), Sock: true),
+            11 or 18 => new AdventDay(d, AdventBaseGifts, Bells: AdventBells),
             21 => new AdventDay(d, AdventBaseGifts, new RewardSpec(0, 0, BoxGrant.Weekly)),
             7 or 14 => new AdventDay(d, AdventBaseGifts, new RewardSpec(0, 0, BoxGrant.Daily)),
             5 or 12 or 19 => new AdventDay(d, AdventDoubleGifts),
