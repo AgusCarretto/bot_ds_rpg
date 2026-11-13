@@ -146,27 +146,34 @@ public class BestiaryModule(
 
     public static Embed BuildZoneEmbed(BestiaryPage page, IReadOnlyList<BestiaryPage> pages, IReadOnlyDictionary<string, long> kills)
     {
-        var blocks = page.Monsters.Select(m =>
-        {
-            var monster = m.Monster;
-            if (!kills.TryGetValue(monster.Name, out long count))
-            {
-                return Loc.F($"❓ **???** · {KindName(m.Kind)}");
-            }
-
-            return Loc.F($"{monster.Emoji} **{monster.Name}** · {KindName(m.Kind)} · vencido **{GameHistory.Number(count)}**") + "\n" +
-                Loc.F($"❤️ {GameHistory.Number(monster.MinHp)}-{GameHistory.Number(monster.MaxHp)} · ⚔️ {GameHistory.Number(monster.MinDamage)}-{GameHistory.Number(monster.MaxDamage)} · 🎁 {DropText(monster)}");
-        });
-
         int total = pages.Sum(p => p.Monsters.Count);
         int have = pages.Sum(p => Unlocked(p, kills));
 
-        return new EmbedBuilder()
+        var embed = new EmbedBuilder()
             .WithTitle(Loc.F($"📖 Bestiario · {page.Title}"))
             .WithColor(new Color(0x8D6E63))
-            .WithDescription(string.Join("\n\n", blocks))
-            .WithFooter(Loc.F($"Esta zona: {Unlocked(page, kills)} de {page.Monsters.Count} · en total: {have} de {total} · los ??? se descubren venciéndolos"))
-            .Build();
+            .WithFooter(Loc.F($"Esta zona: {Unlocked(page, kills)} de {page.Monsters.Count} · en total: {have} de {total} · los ??? se descubren venciéndolos"));
+
+        // v0.56.1 (el dueño: «la UI está muy junta… separar un poquito o sacar las stats»): cada monstruo es su propio campo (Discord los
+        // separa solo) y la vida y el daño quedan SOLO en la ficha. El nombre del campo lleva el emoji unicode del monstruo (los propios no
+        // se dibujan ahí); el drop, con su emoji propio, va en el valor.
+        foreach (var m in page.Monsters)
+        {
+            var monster = m.Monster;
+            if (kills.TryGetValue(monster.Name, out long count))
+            {
+                embed.AddField(
+                    $"{monster.Emoji} {monster.Name}",
+                    Loc.F($"{KindName(m.Kind)} · vencido **{GameHistory.Number(count)}** · 🎁 {DropText(monster)}"),
+                    false);
+            }
+            else
+            {
+                embed.AddField("❓ ???", KindName(m.Kind), false);
+            }
+        }
+
+        return embed.Build();
     }
 
     public static Embed BuildCardEmbed(BestiaryPage page, ZoneMonster entry, long count, int fuegoNuevo)

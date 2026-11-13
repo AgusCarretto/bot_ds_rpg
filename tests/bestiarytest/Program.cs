@@ -76,10 +76,12 @@ Check(ext.GetParameters().Any(p => p.Name == "monsterName" && p.IsOptional), "Re
 
 Console.WriteLine("\n== 3. Las pantallas ==");
 var view = await BestiaryModule.BuildAsync(users, zones, monsters, bestiary, U);
-string text = view.Embed!.Description!;
-Check(view.Embed.Title!.Contains("Zona 1") && text.Contains($"**{hunt1}**") && text.Contains($"**{boss1}**") && text.Contains("❓ **???**"), "abre en la Zona 1: lo vencido con nombre y lo que falta como ???");
+string text = LeakCheck.AllText(view.Embed!);
+Check(view.Embed!.Title!.Contains("Zona 1") && view.Embed.Fields.Any(f => f.Name.EndsWith(hunt1)) && view.Embed.Fields.Any(f => f.Name.EndsWith(boss1)) && view.Embed.Fields.Any(f => f.Name == "❓ ???"),
+    "abre en la Zona 1: un bloque por monstruo, lo vencido con nombre y lo que falta como ???");
+Check(view.Embed.Fields.Length == z1.Count && view.Embed.Description is null, "un campo por monstruo (Discord los separa solo)");
 var hunter = z1.First(m => m.Monster.Name == hunt1).Monster;
-Check(text.Contains($"❤️ {GameHistory.Number(hunter.MinHp)}-{GameHistory.Number(hunter.MaxHp)}") && text.Contains("vencido **2**"), "con su vida, su daño y cuántas veces lo venciste");
+Check(text.Contains("vencido **2**") && !text.Contains("❤️") && !text.Contains("⚔️"), "en la lista: cuántas veces lo venciste y su drop; la vida y el daño quedan para la ficha (v0.56.1)");
 Check(view.Embed.Footer!.Value.Text.Contains($"Esta zona: 2 de {z1.Count}"), "el pie dice cuántos de la zona y del total");
 var rows = view.Components!.Components.OfType<ActionRowComponent>().ToList();
 var zoneMenu = rows[0].Components.OfType<SelectMenuComponent>().Single();
@@ -90,12 +92,14 @@ Check(zoneMenu.CustomId == $"bes_zone:{U}" && zoneMenu.Options.Count == pages.Co
 Check(!pages.Any(p => p.ZoneId >= 6), "con Fuego Nuevo 0 las zonas 6 a 10 no aparecen (son sorpresa)");
 Check(cardMenu.CustomId == $"bes_card:{U}:1" && cardMenu.Options.Select(o => o.Value).OrderBy(x => x).SequenceEqual(new[] { hunt1, boss1 }.OrderBy(x => x)), "el menú de fichas solo trae los que venció");
 var card = await BestiaryModule.BuildAsync(users, zones, monsters, bestiary, U, 1, boss1);
-Check(card.Embed!.Title!.Contains(boss1) && card.Embed.Thumbnail is not null && card.Embed.Description!.Contains("**Lo venciste:** 1"), "la ficha: su cara grande, sus números y lo que dice");
+var bossT = z1.Single(m => m.Kind == MonsterKind.Boss).Monster;
+Check(card.Embed!.Title!.Contains(boss1) && card.Embed.Thumbnail is not null && card.Embed.Description!.Contains("**Lo venciste:** 1") && card.Embed.Description.Contains($"**Vida:** {GameHistory.Number(bossT.MinHp)}-{GameHistory.Number(bossT.MaxHp)}"),
+    "la ficha: su cara grande, su vida y su daño, cuántas veces lo venciste y lo que dice");
 string locked = z1.First(m => m.Monster.Name != hunt1 && m.Monster.Name != boss1).Monster.Name;
 var cheat = await BestiaryModule.BuildAsync(users, zones, monsters, bestiary, U, 1, locked);
 Check(!cheat.Embed!.Title!.Contains(locked) && cheat.Embed.Title.Contains("Zona 1"), "pedir la ficha de uno que no venció muestra la zona (no lo revela)");
 var other = await BestiaryModule.BuildAsync(users, zones, monsters, bestiary, U, 2);
-Check(other.Embed!.Title!.Contains("Zona 2") && !other.Embed.Description!.Contains("vencido") && other.Components!.Components.OfType<ActionRowComponent>().Count() == 1, "la Zona 2 sin nada vencido: todo ??? y sin menú de fichas");
+Check(other.Embed!.Title!.Contains("Zona 2") && !LeakCheck.AllText(other.Embed).Contains("vencido") && other.Components!.Components.OfType<ActionRowComponent>().Count() == 1, "la Zona 2 sin nada vencido: todo ??? y sin menú de fichas");
 Check((await BestiaryModule.BuildAsync(users, zones, monsters, bestiary, U, 8)).Embed!.Title!.Contains("Zona 1"), "una zona que no tiene abierta abre la primera");
 Check((await BestiaryModule.BuildAsync(users, zones, monsters, bestiary, NOACC)).Error!.Contains("/start") && await users.GetByDiscordIdAsync(NOACC) is null, "sin cuenta no muestra nada y no la crea");
 Check(LeakCheck.FitsDiscord(view.Embed) && LeakCheck.FitsDiscord(card.Embed), "entran en Discord");
