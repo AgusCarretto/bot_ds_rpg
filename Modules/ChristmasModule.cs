@@ -244,9 +244,6 @@ public class ChristmasModule(
 
                 lines.Add(Loc.F($"✨ **Polvo**: +{GameHistory.Number(outcome.Dust)}"));
                 break;
-            case ChristmasShopKind.Dust:
-                lines.Add(Loc.F($"✨ **Polvo**: +{GameHistory.Number(outcome.Dust)}"));
-                break;
             case ChristmasShopKind.Unlock when item.UnlockStat == RenoRules.StatKey:
                 lines.Add(Loc.F($"🦌 **¡El Reno es tuyo!** +{RenoRules.XpGoldPercent} % de XP y de oro, y /travel cada {(int)RenoRules.TravelCooldown.TotalMinutes} minutos. Para siempre."));
                 break;

@@ -264,11 +264,6 @@ public sealed class ChristmasRepository(IDbConnectionFactory connectionFactory) 
                     await AddDustAsync(connection, transaction, discordId, dust, cancellationToken);
                     break;
 
-                case ChristmasShopKind.Dust:
-                    dust = ChristmasShop.DustBag;
-                    await AddDustAsync(connection, transaction, discordId, dust, cancellationToken);
-                    break;
-
                 case ChristmasShopKind.Unlock:
                     await connection.ExecuteAsync(new CommandDefinition(
                         """

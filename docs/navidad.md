@@ -84,9 +84,8 @@ Total del calendario completo: 670 Regalos + 4 cajas + Calcetín + oro, Polvo y 
 | Ítem | Precio | Qué hace |
 |---|---|---|
 | 🔔 Campana | 3 | Reinicia el cooldown de `/hunt`. Se compra las veces que quieras (y de a varias: `aa buy campana 10`), queda en el inventario y se usa cuando quieras. NO reinicia `/travel` (el dueño: «muy op») |
-| 🧦 Calcetín (Caja Navideña) | 60 | Caja con oro, Polvo, materiales de tus zonas y chance chica de huevo |
-| 🕯️ Vela | 80 | +50 % Regalos por 1 hora (solo hasta el 24) |
-| ✨ Bolsa de Polvo | 50 | Polvo **(a medir)** |
+| 🧦 Calcetín (Caja Navideña) | 50 | Caja con oro, Polvo, materiales de tus zonas y chance chica de huevo |
+| 🕯️ Vela | 70 | +50 % Regalos por 1 hora (solo hasta el 24) |
 | Título «Elfo del Fogón» | 500 | Cosmético, para siempre |
 | Banner de nieve del perfil | 1.000 | Cosmético, para siempre |
 | Título «Espíritu de la Navidad» | 1.500 | Cosmético, para siempre |
@@ -126,8 +125,8 @@ Reno, banner de nieve.
   `/hunt`, `/autohunt`, `/travel`, jefe, jefe en equipo y `/daily`, con la línea «❄️ Navidad en el Fogón» al pie), `/navidad` y
   `aa navidad` (saldo + grilla del calendario + botón del día + 🛒 Tienda), `aa adviento`. Hunt: **50 %** (dueño).
 - **Parte 2 (hecha):** `GameData/ChristmasShop.cs` y la tienda (`/navidad` → 🛒, `aa navidad tienda`, `aa navidad comprar <artículo> [n]`):
-  Campana 3 (se acumulan; `aa campana` reinicia `/hunt` y no se gasta si ya estaba listo), Calcetín 60 (se abre al comprarlo), Vela 80
-  (+50 % redondeado para arriba por 1 h; se apilan; solo hasta el 24), Bolsa de Polvo 50, títulos «Elfo del Fogón» 500 y «Espíritu de la
+  Campana 3 (se acumulan; `aa campana` reinicia `/hunt` y no se gasta si ya estaba listo), Calcetín 50 (se abre al comprarlo), Vela 70
+  (+50 % redondeado para arriba por 1 h; se apilan; solo hasta el 24), (la Bolsa de Polvo se sacó: «no me gusta»), títulos «Elfo del Fogón» 500 y «Espíritu de la
   Navidad» 1.500 (página 🎄 Navidad de `aa titles`, quedan en `player_stats`) y el **Reno 4.500** (`player_stats.xmas_reno`: +15 % XP y oro en
   `PlayerBonuses`, `/travel` 25 min en el cobro, `/cd` y los avisos). Calendario: 5 Campanas los días 11 y 18 y un Calcetín el 24.
 - **Para probar antes:** `Christmas__Start`, `Christmas__FarmEnd`, `Christmas__End` (ver `.env.example`).

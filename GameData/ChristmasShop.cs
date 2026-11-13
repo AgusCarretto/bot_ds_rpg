@@ -16,7 +16,6 @@ public enum ChristmasShopKind
     Bell,       // 🔔 Campana: suma una al saldo; «aa campana» la usa para reiniciar /hunt
     Sock,       // 🧦 Calcetín: se abre al comprarlo (oro + EXP + caja de la zona + Polvo)
     Candle,     // 🕯️ Vela: +50 % de Regalos por 1 hora (solo mientras caen)
-    Dust,       // ✨ Bolsa de Polvo
     Unlock,     // títulos y el Reno: una sola vez, quedan en player_stats (UnlockStat = 1)
 }
 
@@ -26,13 +25,12 @@ public sealed record ChristmasShopItem(string Key, string Name, string Emoji, in
     public bool OneTime => Kind == ChristmasShopKind.Unlock;
 }
 
-// La tienda navideña (docs/navidad.md). Abre durante todo el evento (1 de diciembre → 6 de enero). Los precios de la Campana (3) y del Reno (4.500) los decidió el dueño;
-// el resto son propuesta, «a medir». El banner de nieve se suma cuando esté el arte.
+// La tienda navideña (docs/navidad.md). Abre durante todo el evento (1 de diciembre → 6 de enero). Los precios los decidió el dueño (2026-11-13: Campana 3, Calcetín 50, Vela 70, Reno 4.500;
+// la Bolsa de Polvo se sacó: «no me gusta»). Los premios del Calcetín y los títulos son propuesta, «a medir». El banner de nieve se suma cuando esté el arte.
 public static class ChristmasShop
 {
     public const int CandleGiftPercent = 50;                       // la Vela: +50 % de Regalos
     public static readonly TimeSpan CandleDuration = TimeSpan.FromHours(1);
-    public const int DustBag = 100;                                // «a medir»
     public const int SockDust = 50;                                // «a medir»
     public static readonly RewardSpec SockReward = new(10, 2, BoxGrant.Daily); // «a medir»: oro y EXP como un /daily del día 4–5 y la caja diaria de tu zona
     public const int MaxBellsPerPurchase = 100;
@@ -43,9 +41,8 @@ public static class ChristmasShop
     public static readonly IReadOnlyList<ChristmasShopItem> Items =
     [
         new("campana", "Campana", "🔔", 3, ChristmasShopKind.Bell, Loc.Mark("Reinicia la espera de /hunt. Comprá las que quieras y usalas con «aa campana».")),
-        new("calcetin", "Calcetín", "🧦", 60, ChristmasShopKind.Sock, Loc.Mark("Se abre al comprarlo: oro, EXP, una caja de tu zona y Polvo.")),
-        new("vela", "Vela", "🕯️", 80, ChristmasShopKind.Candle, Loc.Mark("+50 % de Regalos durante 1 hora (hasta el 24 de diciembre).")),
-        new("polvo", "Bolsa de Polvo", "✨", 50, ChristmasShopKind.Dust, Loc.Mark("100 de Polvo para encantar.")),
+        new("calcetin", "Calcetín", "🧦", 50, ChristmasShopKind.Sock, Loc.Mark("Se abre al comprarlo: oro, EXP, una caja de tu zona y Polvo.")),
+        new("vela", "Vela", "🕯️", 70, ChristmasShopKind.Candle, Loc.Mark("+50 % de Regalos durante 1 hora (hasta el 24 de diciembre).")),
         new("elfo", "Elfo del Fogón", "🧝", 500, ChristmasShopKind.Unlock, Loc.Mark("Un título para siempre."), TitleElfStat),
         new("espiritu", "Espíritu de la Navidad", "🌟", 1500, ChristmasShopKind.Unlock, Loc.Mark("Un título para siempre."), TitleSpiritStat),
         new("reno", "Reno", "🦌", 4500, ChristmasShopKind.Unlock, Loc.Mark("Mascota para siempre: +15 % de XP y de oro, y /travel en 25 minutos."), RenoRules.StatKey),
