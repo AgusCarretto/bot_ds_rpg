@@ -18,6 +18,7 @@ Todo comando también se puede escribir con el prefijo `aa` (por ejemplo `aa hun
 | `/info` | La lista de comandos, o cómo funciona un sistema (`/info tema:enchant`). |
 | `/profile` | Tu nivel, vida, ataque, defensa y oro (o los de otro jugador). |
 | `/stats` | Tu ataque, defensa y vida y cuánto aporta cada cosa (equipo, platos, dragón...); con `jugador:` mirás las de otra persona. |
+| `/bestiary` | Tu bestiario: los monstruos de cada zona que ya venciste, con su vida, daño y drop (los que te faltan, como ???). |
 | `/inventory` | Tus materiales, comida y cajas, por pestañas. |
 | `/language` | Cambiá el idioma: español o English. |
 | `/config` | Ajustá cómo ves el bot. |

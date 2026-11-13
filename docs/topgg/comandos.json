@@ -80,6 +80,21 @@
   },
   {
     "type": 1,
+    "name": "bestiary",
+    "description": "Tu bestiario: los monstruos de cada zona que ya venciste (y los que te faltan).",
+    "options": [
+      {
+        "type": 4,
+        "name": "zona",
+        "description": "Qué zona mirar (sin nada, la Zona 1)",
+        "required": false,
+        "min_value": -9007199254740991,
+        "max_value": 9007199254740991
+      }
+    ]
+  },
+  {
+    "type": 1,
     "name": "blessings",
     "description": "Tus bendiciones (una por cada Fuego Nuevo) y la que tengas para elegir."
   },

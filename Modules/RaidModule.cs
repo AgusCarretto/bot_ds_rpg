@@ -1804,7 +1804,7 @@ public class RaidModule(
             var outcome = await adventureRepository.ApplyBossVictoryAsync(
                 participant.DiscordId, reward.Gold, reward.Xp, hpDelta, drop?.ItemId, droppedItemQuantity: 1, session.ZoneId);
 
-            await gameEvents.RecordVictoryAsync(participant.DiscordId, GameEventKinds.RaidWin, outcome);
+            await gameEvents.RecordVictoryAsync(participant.DiscordId, GameEventKinds.RaidWin, outcome, session.BossName);
 
             // La historia (GameData/Lore.cs): si es la primera vez que ESTE jugador vence al jefe, se le abre su capítulo (el aviso le llega por el evento, a su próximo comando).
             await gameEvents.RecordStoryChapterAsync(participant.DiscordId, session.BossName, firstClear, outcome);

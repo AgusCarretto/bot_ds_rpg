@@ -28,14 +28,15 @@ public static class GameEventExtensions
 
     // Una victoria o una recompensa que da XP: registra el evento ("hunt_win", "daily_claim"...) y, si además subió de
     // nivel, el "level_up" con el nivel nuevo. La zona sale del propio jugador, que ya viene resuelto en el resultado.
-    public static async Task RecordVictoryAsync(this IGameEvents events, ulong discordId, string kind, LevelUpOutcome outcome)
+    // monsterName (v0.56.0): el monstruo vencido; va en el detail de enemy_defeated y con eso GameEventService llena el bestiario.
+    public static async Task RecordVictoryAsync(this IGameEvents events, ulong discordId, string kind, LevelUpOutcome outcome, string? monsterName = null)
     {
         await events.RecordAsync(discordId, kind, outcome.Player.CurrentZoneId);
 
         // Cada victoria de combate (cacería, viaje, jefe, raid, /autohunt) también es un enemigo vencido: es el contador del logro Exterminador.
         if (GameEventKinds.IsEnemyWin(kind))
         {
-            await events.RecordAsync(discordId, GameEventKinds.EnemyDefeated, outcome.Player.CurrentZoneId);
+            await events.RecordAsync(discordId, GameEventKinds.EnemyDefeated, outcome.Player.CurrentZoneId, detail: monsterName);
         }
 
         if (outcome.LevelsGained > 0)
