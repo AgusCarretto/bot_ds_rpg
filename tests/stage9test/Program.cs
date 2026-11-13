@@ -23,10 +23,10 @@ var embed = ShopModule.BuildViewEmbed(shopItems, await buffs.GetItemBuffsAsync()
 Console.WriteLine("   " + embed.Title + "\n   " + embed.Description.Replace("\n", "\n   "));
 foreach (var f in embed.Fields) Console.WriteLine($"   --- {f.Name} (columna: {f.Inline})\n   " + f.Value.Replace("\n", "\n   "));
 string all = embed.Description + string.Join("\n", embed.Fields.Select(f => f.Name + "\n" + f.Value));
-Check(embed.Fields.Length == 3 && embed.Fields.All(f => f.Inline) && embed.Fields[0].Name == "Comida" && embed.Fields[1].Name == "Cajas" && embed.Fields[2].Name == "Mascotas", "columnas lado a lado: Comida | Cajas | Mascotas (v0.10.0)");
+Check(embed.Fields.Length == 3 && embed.Fields.All(f => !f.Inline) && embed.Fields[0].Name == "Comida" && embed.Fields[1].Name == "Cajas" && embed.Fields[2].Name == "Mascotas" && embed.Fields.All(f => f.Value.Split('\n').All(l => l.Contains("**: ") && l.Contains(" oro"))), "un campo de ancho completo por categoría (Comida, Cajas, Mascotas) y un renglón por ítem con su precio (auditoría de UI, M6)");
 Check(!new[] { "[Común]", "[Raro]", "[Épico]", "[Legendario]", "[Mítico]", "Común", "Legendario", "❤️", "💰", "💸", "🎲" }.Any(all.Contains), "sin rareza escrita ni emojis de adorno (sin ❤️ 💰 💸 🎲 y sin '[Común]')");
-Check(all.Contains("<:cofre_comun:1555578513682075809> Cajón de Pino") && all.Contains("<:cofre_legendario:1555578509601280113> Cofre de Oro") && all.Contains("<:mate_comun:1555578601892749433> Mate Amargo"), "cada ítem muestra SU emoji (los cofres nuevos y la comida que ya tenía)");
-Check(all.Contains("Cura 150 HP · +15% ATQ 30 min · 2.100 oro") && all.Contains("Cura 15 HP · 8 oro") && !all.Contains("Venta"), "detalle corto en una línea: 'Cura 15 HP · 8 oro' y el banquete con su buff; sin precio de venta");
+Check(all.Contains("<:cofre_comun:1555578513682075809> **Cajón de Pino**") && all.Contains("<:cofre_legendario:1555578509601280113> **Cofre de Oro**") && all.Contains("<:mate_comun:1555578601892749433> **Mate Amargo**"), "cada ítem muestra SU emoji (los cofres nuevos y la comida que ya tenía)");
+Check(all.Contains("**: 2.100 oro · cura 150 HP, +15% ATQ 30 min") && all.Contains("**Mate Amargo**: 8 oro · cura 15 HP") && !all.Contains("Venta"), "precio y detalle corto en el mismo renglón: «**Mate Amargo**: 8 oro · cura 15 HP» y el banquete con su buff; sin precio de venta");
 Check(embed.Description.Contains("una vez cada 2 horas") && embed.Description.Contains("/open") && embed.Description.Contains("El Tabernero") && embed.Length < 2000, $"el aviso de las cajas y el saludo del tendero siguen, y el embed mide {embed.Length} caracteres");
 Check(!all.Contains("Arca del Soberano") && shopItems.Count(i => i.Type == "Caja") == 4, "la caja Mítica (premio) no se ofrece");
 

@@ -313,7 +313,7 @@ var shopItems = await ShopModule.LoadShopItemsAsync(itemsRepo);
 var petFood = shopItems.Single(i => i.Name == PetRules.FoodItemName);
 Check(ShopCatalog.IsForSale(petFood) && petFood.Type == "PetFood" && petFood.BuyPrice == 100 && petFood.SellPrice == 25 && ShopModule.PetFoodLine(petFood) == "Para tus mascotas · 100 oro" && shopItems.All(i => i.Type != "Huevo"), "la comida de mascotas se vende (100 de oro, vuelve a 25) y los huevos NO están a la venta");
 var shopView = ShopModule.BuildViewEmbed(shopItems);
-Check(shopView.Fields.Length == 3 && shopView.Fields[2].Name == "Mascotas" && !shopView.Fields[0].Value.Contains("Comida para Mascotas") && shopView.Fields[2].Value.Contains("Para tus mascotas") && shopView.Fields.All(f => f.Inline), "la tienda la lista en SU columna (la tercera), no mezclada con la comida que cura");
+Check(shopView.Fields.Length == 3 && shopView.Fields[2].Name == "Mascotas" && !shopView.Fields[0].Value.Contains("Comida para Mascotas") && shopView.Fields[2].Value.Contains("**Comida para Mascotas**: 100 oro · para tus mascotas") && shopView.Fields.All(f => !f.Inline), "la tienda la lista en SU campo (el tercero), no mezclada con la comida que cura");
 Check(ItemChoices.ForBuy(shopItems, 1000, "mascotas").Single().Name.Contains("para tus mascotas"), "y el autocompletado de /shop buy la describe bien (no «cura 0 HP»)");
 await db.ExecuteAsync("UPDATE users SET gold = 1000 WHERE discord_id = @id", new { id = (long)U });
 var buy = await ShopModule.ExecuteBuyAsync(users, itemsRepo, shopRepo, combat, evts, U, PetRules.FoodItemName, 3);

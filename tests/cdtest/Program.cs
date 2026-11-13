@@ -226,8 +226,8 @@ using (Loc.Use("en"))
 }
 
 TimeSpan twoHours = TimeSpan.FromHours(2);
-Check(CooldownModule.WorldBossLine(false, twoHours, true).Contains("todavía no se anotó") && !CooldownModule.WorldBossLine(false, twoHours, true).Contains("/miniboss") && CooldownModule.ArenaLine(false, twoHours, true).Contains("todavía no se anotó") && !CooldownModule.ArenaLine(false, twoHours, true).Contains("/arena join"),
-    "mirando a otro, el jefe mundial y la Arena hablan de ÉL («todavía no se anotó») y no le dan la orden de anotarse");
+Check(CooldownModule.WorldBossLine(false, twoHours, true).Contains("⚠️ sin anotar") && !CooldownModule.WorldBossLine(false, twoHours, true).Contains("/miniboss") && CooldownModule.ArenaLine(false, twoHours, true).Contains("⚠️ sin anotar") && !CooldownModule.ArenaLine(false, twoHours, true).Contains("/arena join"),
+    "mirando a otro, el jefe mundial y la Arena dicen «⚠️ sin anotar» y no le dan la orden de anotarse");
 Check(CooldownModule.WorldBossLine(false, twoHours).Contains("/miniboss") && CooldownModule.ArenaLine(false, twoHours).Contains("/arena join") && CooldownModule.WorldBossLine(true, twoHours, true).Contains("anotado ✅"), "para uno mismo las líneas son las de siempre (y anotado se dice igual)");
 
 string[] layoutWords = ["orden", "order", "mover", "move", "posicion", "posición", "position", "ocultar", "hide", "sacar", "esconder", "mostrar", "show", "ver", "poner", "reset", "restablecer", "reiniciar", "default", "normal"];

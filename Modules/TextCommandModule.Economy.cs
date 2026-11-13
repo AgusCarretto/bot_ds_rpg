@@ -138,7 +138,8 @@ public partial class TextCommandModule
             // Si es la primera vez que este usuario ejecuta un comando, se crea acá con los valores por defecto.
             var player = await userRepository.GetOrCreateUserAsync(Context.User.Id);
             bool fullBook = (await settingsService.GetAsync(Context.User.Id)).FullRecipeBook;
-            await ReplyAsync(embed: await ForgeModule.BuildRecipeBookForPlayerAsync(recipeRepository, zoneRepository, inventoryRepository, player, fullBook, zoneId));
+            // Con la foto del herrero adjunta si es el archivo local (auditoría de UI, M15d), igual que `aa forge`.
+            await NpcImages.SendAsync(Context.Channel, await ForgeModule.BuildRecipeBookForPlayerAsync(recipeRepository, zoneRepository, inventoryRepository, player, fullBook, zoneId));
         }
         catch (Exception ex)
         {

@@ -938,6 +938,10 @@ public class AdventureModule(
 
         if (state.ShowFightSummary)
         {
+            // Un tercer campo en línea vacío (U+200B) cierra la fila de las dos vidas (auditoría de UI, M2): la tablita arranca en una fila nueva
+            // en vez de meter «Turnos» en el tercer lugar. Es el mismo recurso de la derrota después de comer (UseModule).
+            string blank = ((char)0x200B).ToString();
+            embed.AddField(blank, blank, true);
             AddCombatSummary(embed, state);
         }
 

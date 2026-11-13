@@ -262,8 +262,8 @@ Console.WriteLine("\n== v0.8.0 · Tarea 3: las cajas contra la base, la tienda y
     var shopItems = await ShopModule.LoadShopItemsAsync(itemRepo);
     var view = ShopModule.BuildViewEmbed(shopItems, null, null, 5000, 1);
     string boxesText = view.Fields.Single(f => f.Name == "Cajas").Value;
-    Check(boxesText.Contains("entre 1 y 5 ítems · 2.300 oro") && boxesText.Contains("🔒 Zona 2 · entre 5 y 10 ítems · 14.000 oro") && boxesText.Contains("🔒 Zona 4 · entre 25 y 60 ítems · 120.000 oro") && !boxesText.Contains("Arca"),
-        "/shop view: «entre 1 y 5 ítems · 2.300 oro», las de zonas cerradas con 🔒 y el Arca no figura");
+    Check(boxesText.Contains("2.300 oro · entre 1 y 5 ítems\n") && boxesText.Contains("14.000 oro · entre 5 y 10 ítems · 🔒 Zona 2") && boxesText.Contains("120.000 oro · entre 25 y 60 ítems · 🔒 Zona 4") && !boxesText.Contains("Arca"),
+        "/shop view: «2.300 oro · entre 1 y 5 ítems», las de zonas cerradas con 🔒 al final del renglón y el Arca no figura");
     var viewAll = ShopModule.BuildViewEmbed(shopItems, null, null, 5000, 5);
     Check(!viewAll.Fields.Single(f => f.Name == "Cajas").Value.Contains("🔒") && view.Length < 6000, "con todas las zonas abiertas no hay candados, y el embed entra en los límites");
     var buyChoices = ItemChoices.ForBuy(shopItems, 5000, "", null, 1);

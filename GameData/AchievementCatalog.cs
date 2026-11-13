@@ -89,7 +89,7 @@ public static class AchievementCatalog
         new("hz_cazador",    "Cazador de Leyenda", "🏹", GameEventKinds.HuntWin,    Loc.Mark("Ganá miles de cacerías con /hunt"),                 Feat(2_500, 7_500, 20_000)),
         new("hz_viajero",    "Trotamundos",        "🧭", GameEventKinds.TravelWin,  Loc.Mark("Ganá cientos de viajes contra élites con /travel"),  Feat(400, 1_200, 3_000)),
         new("hz_jefes",      "Verdugo de Gigantes", "🗡️", GameEventKinds.BossWin,   Loc.Mark("Vencé a decenas de jefes con /boss"),               Feat(40, 120, 300)),
-        // v0.56.2: la de la pesca (usos de /fish, el contador del logro común «Pescador», que llega a 600). Sin títulos: la página de títulos Hazañas ya tiene 24 de 25.
+        // v0.56.2: la de la pesca (usos de /fish, el contador del logro común «Pescador», que llega a 600). Sin títulos (cuando se decidió, la página de títulos Hazañas tenía 24 de 25; hoy son dos páginas de 12).
         new("hz_pescador",   "Señor del Río",      "🎣", GameEventKinds.Fish,       Loc.Mark("Pescá miles de veces con /fish"),                   Feat(1_500, 5_000, 15_000)),
         new("hz_recolector", "Titán del Monte",    "⛰️", GameEventKinds.GatheredUnits, Loc.Mark("Juntá decenas de miles de materiales con /chop y /mine"), Feat(10_000, 30_000, 100_000)),
         new("hz_herrero",    "Yunque Eterno",      "⚒️", GameEventKinds.Craft,      Loc.Mark("Forjá cientos de piezas en la herrería con /forge"), Feat(60, 150, 400)),

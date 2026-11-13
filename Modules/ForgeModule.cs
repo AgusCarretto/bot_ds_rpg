@@ -157,18 +157,24 @@ public static class ForgeModule
 
     // El recetario que le toca a ESTE jugador según su /config (v0.28.1), para «aa forge recipes [zona]»: el clásico (la página de su zona, o de la que pida, con lo que tiene de cada material) o el completo.
     // Lee las recetas, las zonas y el inventario; la elección ya viene resuelta (fullBook), así que se prueba sin Discord.
+    // Lleva la foto del herrero de miniatura, como la escena de /forge (auditoría de UI, M15d): si es el archivo local (attachment://), el que lo manda
+    // tiene que adjuntarlo con NpcImages.SendAsync (ver TextCommandModule.ForgeRecipesAsync); sin foto configurada el embed sale igual que antes.
     public static async Task<Embed> BuildRecipeBookForPlayerAsync(
         IRecipeRepository recipeRepository, IZoneRepository zoneRepository, IInventoryRepository inventoryRepository, User player, bool fullBook, int? zoneId)
     {
         if (fullBook)
         {
-            return await BuildRecipesEmbed(recipeRepository, zoneRepository, player.Class, zoneId, player.Level, player.HighestZoneCleared, player.FuegoNuevo);
+            return NpcImages.Decorate(
+                await BuildRecipesEmbed(recipeRepository, zoneRepository, player.Class, zoneId, player.Level, player.HighestZoneCleared, player.FuegoNuevo),
+                NpcImages.Blacksmith);
         }
 
         var recipes = await recipeRepository.GetAllAsync();
         var zones = ZoneRanking.ForPlayer(await zoneRepository.GetAllAsync(), player.FuegoNuevo);
         var owned = (await inventoryRepository.GetByDiscordIdAsync((ulong)player.DiscordId)).ToDictionary(e => e.ItemName, e => e.Quantity);
-        return RenderZonePageEmbed(recipes, zones, player.Class, zoneId ?? player.CurrentZoneId, owned, player.Gold, player.Level, highestZoneCleared: player.HighestZoneCleared);
+        return NpcImages.Decorate(
+            RenderZonePageEmbed(recipes, zones, player.Class, zoneId ?? player.CurrentZoneId, owned, player.Gold, player.Level, highestZoneCleared: player.HighestZoneCleared),
+            NpcImages.Blacksmith);
     }
 
     // El título de cada parte del recetario: «🌾 Zona 1 · Praderas del Mate · nivel 1» (con 🔒 si todavía no llegás), «🧰 Sin zona específica» o «🔥 El Fogón Eterno».

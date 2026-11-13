@@ -45,9 +45,10 @@ public partial class ShopModule
 
     // Público para que Modules/TextCommandModule.cs arme el mismo embed en "aa shop view".
     //
-    // Limpio a propósito: dos columnas (Comida | Cajas), cada ítem con SU emoji si lo tiene y el nombre, y debajo qué hace y cuánto cuesta, con
-    // una línea en blanco entre ítems. Sin la rareza escrita ("[Común]"), sin emojis de adorno en cada dato y sin el precio de venta (para
-    // saber a cuánto se vende algo está la lista de /shop sell, que lo dice por cada ítem que tenés).
+    // Un campo de ANCHO COMPLETO por categoría (Comida, Cajas, Mascotas) y UN renglón por ítem, `icono **Nombre**: precio · detalle corto`
+    // (auditoría de UI, M6, aprobado por el dueño el 2026-11-14; hasta entonces eran tres columnas en línea con dos renglones por ítem, que en el
+    // celular se apilaban en una tira larga antes de los menús). Sin la rareza escrita ("[Común]"), sin emojis de adorno en cada dato y sin el
+    // precio de venta (para saber a cuánto se vende algo está la lista de /shop sell, que lo dice por cada ítem que tenés).
     // talk: lo que dice el tabernero (por defecto, el saludo); gold: tu oro, si se quiere mostrar.
     public static Embed BuildViewEmbed(
         IReadOnlyList<Item> items, IReadOnlyDictionary<int, ItemBuff>? buffs = null, string? talk = null, int? gold = null, int? unlockedZoneRank = null)
@@ -67,14 +68,30 @@ public partial class ShopModule
             $"{talk ?? NpcDialogue.Shopkeeper(ShopkeeperLine.Greeting)}{goldLine}\n\n" +
             Loc.T("Las cajas se compran **de a una y una vez cada 2 horas**; abrilas con `/open`."));
 
-        AddColumn(embed, Loc.T("Comida"), items.Where(i => i.Type is not ("Caja" or ShopCatalog.PetFoodType or ShopCatalog.DragonFoodType)), i => Loc.F($"Cura {i.StatValue} HP{BuffText(i, buffs)} · {GameHistory.Number(i.BuyPrice)} oro"));
-        AddColumn(embed, Loc.T("Cajas"), items.Where(i => i.Type == "Caja"), i => BoxLine(i, unlockedZoneRank));
-        // La comida de las mascotas va en su propia columna (es la tercera del renglón, que quedaba vacía): no cura, se le da a una mascota con /pet feed.
-        AddColumn(embed, Loc.T("Mascotas"), items.Where(i => i.Type is ShopCatalog.PetFoodType or ShopCatalog.DragonFoodType), i => i.Type == ShopCatalog.DragonFoodType ? DragonFoodLine(i) : PetFoodLine(i));
+        AddCategory(embed, Loc.T("Comida"), items.Where(i => i.Type is not ("Caja" or ShopCatalog.PetFoodType or ShopCatalog.DragonFoodType)), i => FoodDetail(i, buffs));
+        AddCategory(embed, Loc.T("Cajas"), items.Where(i => i.Type == "Caja"), i => BoxDetail(i, unlockedZoneRank));
+        // La comida de las mascotas y la del dragón van en su propio campo: no curan, se gastan con /pet feed y en cada cría del dragón.
+        AddCategory(embed, Loc.T("Mascotas"), items.Where(i => i.Type is ShopCatalog.PetFoodType or ShopCatalog.DragonFoodType), i => i.Type == ShopCatalog.DragonFoodType ? Loc.T("para tu dragón") : Loc.T("para tus mascotas"));
 
         return embed.Build();
     }
 
+    // El detalle corto de una comida en la pantalla de la tienda: «cura 150 HP», y los banquetes «cura 150 HP, +15% ATQ 30 min» (una oración entera por variante).
+    private static string FoodDetail(Item food, IReadOnlyDictionary<int, ItemBuff>? buffs) =>
+        buffs is not null && buffs.TryGetValue(food.ItemId, out var buff)
+            ? Loc.F($"cura {food.StatValue} HP, +{buff.AttackPercent}% ATQ {buff.Minutes} min")
+            : Loc.F($"cura {food.StatValue} HP");
+
+    // El detalle corto de una caja en la pantalla de la tienda: «entre 1 y 10 ítems», y si es de una zona que todavía no desbloqueaste, «🔒 Zona 2» al final.
+    private static string BoxDetail(Item box, int? unlockedZoneRank)
+    {
+        string range = BoxCatalog.RangeText(box.BoxMinItems, box.BoxMaxItems);
+        int required = BoxCatalog.RequiredZoneRank(box.Rarity);
+        string locked = unlockedZoneRank is int unlocked && required > unlocked ? Loc.F($"🔒 Zona {required}") : string.Empty;
+        return string.Join(" · ", new[] { range, locked }.Where(part => part.Length > 0));
+    }
+
+    // Las tres que siguen son el texto de las OPCIONES de los menús de la taberna (Modules/TabernaModule.cs), no de la pantalla de arriba.
     // "Para tus mascotas · 100 oro": la comida de las mascotas no cura, así que no lleva el "Cura N HP" de la comida común.
     public static string PetFoodLine(Item food) => Loc.F($"Para tus mascotas · {GameHistory.Number(food.BuyPrice)} oro");
 
@@ -100,23 +117,24 @@ public partial class ShopModule
         return string.Join(" · ", new[] { locked, range }.Where(part => part.Length > 0));
     }
 
-    // " · +15% ATQ 30 min" para los banquetes, nada para el resto de la comida.
-    private static string BuffText(Item item, IReadOnlyDictionary<int, ItemBuff>? buffs) =>
-        buffs is not null && buffs.TryGetValue(item.ItemId, out var buff) ? Loc.F($" · +{buff.AttackPercent}% ATQ {buff.Minutes} min") : string.Empty;
-
-    // De lo más barato a lo más caro (que es también de lo más común a lo más raro).
-    private static void AddColumn(EmbedBuilder embed, string title, IEnumerable<Item> items, Func<Item, string> detail)
+    // Un campo de ancho completo con un renglón por ítem, de lo más barato a lo más caro (que es también de lo más común a lo más raro):
+    // `icono **Nombre**: 30 oro · detalle`. Sin emoji cargado el renglón arranca directo en el nombre.
+    private static void AddCategory(EmbedBuilder embed, string title, IEnumerable<Item> items, Func<Item, string> detail)
     {
         var lines = items
             .OrderBy(i => i.BuyPrice)
             .ThenBy(i => i.Name, StringComparer.Ordinal)
-            .Select(i => $"**{ItemDisplay.Format(i.Emoji, i.Name)}**\n{detail(i)}")
+            .Select(i =>
+            {
+                string extra = detail(i);
+                string price = Loc.F($"{GameHistory.Number(i.BuyPrice)} oro");
+                return $"{ItemDisplay.Format(i.Emoji, $"**{i.Name}**")}: {price}{(extra.Length > 0 ? " · " + extra : string.Empty)}";
+            })
             .ToList();
 
         if (lines.Count > 0)
         {
-            string text = string.Join("\n\n", lines);
-            embed.AddField(title, FieldText.FitLines(text), true);
+            embed.AddField(title, FieldText.FitLines(string.Join("\n", lines)), false);
         }
     }
 }
