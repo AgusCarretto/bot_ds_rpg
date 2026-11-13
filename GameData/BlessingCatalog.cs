@@ -20,6 +20,7 @@ public static class BlessingCatalog
     // Claves (las que se guardan en player_blessings.blessing_key).
     public const string ChopKey = "mano_lenador";
     public const string MineKey = "pico_fino";
+    public const string FishKey = "anzuelo_de_plata";    // v0.56.2: la de la pesca
     public const string TravelDropKey = "brasa_vieja";
     public const string HuntDropKey = "ojo_de_halcon";
     public const string XpKey = "aprendiz";
@@ -35,6 +36,7 @@ public static class BlessingCatalog
     // Lo que da CADA NIVEL.
     public const double ChopPerLevel = 0.05;          // +5 % de cantidad en /chop
     public const double MinePerLevel = 0.05;          // +5 % de cantidad en /mine
+    public const double FishPerLevel = 0.05;          // +5 % de cantidad en /fish (v0.56.2)
     public const double TravelDropPerLevel = 0.05;    // +5 % relativo a la chance de la caja de /travel (antes, del drop)
     public const double HuntDropPerLevel = 0.05;      // +5 % relativo a la chance de /hunt
     public const double XpPerLevel = 0.04;            // +4 % de EXP en las peleas
@@ -52,6 +54,7 @@ public static class BlessingCatalog
     [
         new(ChopKey, "Mano de Leñador", "🪓", BlessingKind.Speed, $"+{Pct(ChopPerLevel)} de cantidad en /chop"),
         new(MineKey, "Pico Fino", "⛏️", BlessingKind.Speed, $"+{Pct(MinePerLevel)} de cantidad en /mine"),
+        new(FishKey, "Anzuelo de Plata", "🎣", BlessingKind.Speed, $"+{Pct(FishPerLevel)} de cantidad en /fish"),
         new(TravelDropKey, "Brasa Vieja", "🗺️", BlessingKind.Speed, $"+{Pct(TravelDropPerLevel)} de chance de caja en /travel"),
         new(HuntDropKey, "Ojo de Halcón", "🏹", BlessingKind.Speed, $"+{Pct(HuntDropPerLevel)} de chance de drop en /hunt"),
         new(XpKey, "Aprendiz", "📊", BlessingKind.Speed, $"+{Pct(XpPerLevel)} de EXP en las peleas"),
@@ -95,6 +98,7 @@ public static class BlessingCatalog
         {
             ChopKey => Loc.F($"+{Pct(ChopPerLevel * n)} de cantidad en /chop"),
             MineKey => Loc.F($"+{Pct(MinePerLevel * n)} de cantidad en /mine"),
+            FishKey => Loc.F($"+{Pct(FishPerLevel * n)} de cantidad en /fish"),
             TravelDropKey => Loc.F($"+{Pct(TravelDropPerLevel * n)} de chance de caja en /travel"),
             HuntDropKey => Loc.F($"+{Pct(HuntDropPerLevel * n)} de chance de drop en /hunt"),
             XpKey => Loc.F($"+{Pct(XpPerLevel * n)} de EXP en las peleas"),

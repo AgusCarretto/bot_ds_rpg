@@ -89,6 +89,8 @@ public static class AchievementCatalog
         new("hz_cazador",    "Cazador de Leyenda", "🏹", GameEventKinds.HuntWin,    Loc.Mark("Ganá miles de cacerías con /hunt"),                 Feat(2_500, 7_500, 20_000)),
         new("hz_viajero",    "Trotamundos",        "🧭", GameEventKinds.TravelWin,  Loc.Mark("Ganá cientos de viajes contra élites con /travel"),  Feat(400, 1_200, 3_000)),
         new("hz_jefes",      "Verdugo de Gigantes", "🗡️", GameEventKinds.BossWin,   Loc.Mark("Vencé a decenas de jefes con /boss"),               Feat(40, 120, 300)),
+        // v0.56.2: la de la pesca (usos de /fish, el contador del logro común «Pescador», que llega a 600). Sin títulos: la página de títulos Hazañas ya tiene 24 de 25.
+        new("hz_pescador",   "Señor del Río",      "🎣", GameEventKinds.Fish,       Loc.Mark("Pescá miles de veces con /fish"),                   Feat(1_500, 5_000, 15_000)),
         new("hz_recolector", "Titán del Monte",    "⛰️", GameEventKinds.GatheredUnits, Loc.Mark("Juntá decenas de miles de materiales con /chop y /mine"), Feat(10_000, 30_000, 100_000)),
         new("hz_herrero",    "Yunque Eterno",      "⚒️", GameEventKinds.Craft,      Loc.Mark("Forjá cientos de piezas en la herrería con /forge"), Feat(60, 150, 400)),
         new("hz_magnate",    "Magnate",            "💎", GameEventKinds.ShopGoldSpent, Loc.Mark("Gastá millones de oro en la tienda (/shop)"),    Feat(1_000_000, 10_000_000, 100_000_000)),
@@ -105,7 +107,7 @@ public static class AchievementCatalog
         new("Oficios", "🔨", ["recolector", "pescador", "herrero", "desmantelador", "encantador"]),
         new("Economía", "💰", ["comerciante", "generoso", "abridor", "afortunado", "manoganadora"]),
         new("Constancia", "📅", ["constante", "racha", "comandante", "misionero", "domador", "criador", "renacido", "companero", "volvio"]),
-        new("Hazañas", "🏆", ["hz_cazador", "hz_viajero", "hz_jefes", "hz_recolector", "hz_herrero", "hz_magnate", "hz_encantador", "hz_explorador"]),
+        new("Hazañas", "🏆", ["hz_cazador", "hz_viajero", "hz_jefes", "hz_recolector", "hz_pescador", "hz_herrero", "hz_magnate", "hz_encantador", "hz_explorador"]),
     ];
 
     // Los logros de una página (0..Categories.Count-1); una página fuera de rango se acota a la más cercana.

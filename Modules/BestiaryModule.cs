@@ -164,7 +164,7 @@ public class BestiaryModule(
             {
                 embed.AddField(
                     $"{monster.Emoji} {monster.Name}",
-                    Loc.F($"{KindName(m.Kind)} · vencido **{GameHistory.Number(count)}** · 🎁 {DropText(monster)}"),
+                    Loc.F($"{KindName(m.Kind)} · vencido **{GameHistory.Number(count)}** · {DropText(monster)}"),
                     false);
             }
             else

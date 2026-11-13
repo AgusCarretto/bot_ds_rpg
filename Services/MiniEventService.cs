@@ -17,9 +17,20 @@ public interface IEventAnnouncement
 
 // Cada cuánto aparece un minievento y cuánto dura. Se puede cambiar con variables de entorno (útil para probarlo: MiniEvent__ChancePercent=100
 // y MiniEvent__ChannelCooldownMinutes=0 hacen que aparezca en cada comando).
-public sealed record MiniEventSettings(int ChancePercent, TimeSpan ChannelCooldown, TimeSpan JoinWindow)
+// El canal de eventos random (v0.56.2, idea del dueño del 2026-11-06: «un canal para alguien que quiera quedarse ahí farmeando»): si
+// MiniEvent__EventChannelId tiene el ID de un canal, ahí los minieventos salen MÁS seguido (EventChannelChancePercent, 15 % por comando, y
+// como mucho uno cada EventChannelCooldown, 5 minutos). En el resto de los canales todo sigue igual. Sin la variable, no cambia nada.
+public sealed record MiniEventSettings(
+    int ChancePercent, TimeSpan ChannelCooldown, TimeSpan JoinWindow,
+    ulong EventChannelId = 0, int EventChannelChancePercent = 15, TimeSpan? EventChannelCooldownOverride = null)
 {
     public static MiniEventSettings Default => new(3, TimeSpan.FromMinutes(30), TimeSpan.FromSeconds(15));
+
+    public TimeSpan EventChannelCooldown => EventChannelCooldownOverride ?? TimeSpan.FromMinutes(5);
+
+    // La chance y el cooldown que valen en ESE canal.
+    public (int Chance, TimeSpan Cooldown) For(ulong channelId) =>
+        EventChannelId != 0 && channelId == EventChannelId ? (EventChannelChancePercent, EventChannelCooldown) : (ChancePercent, ChannelCooldown);
 
     public static MiniEventSettings FromEnvironment()
     {
@@ -30,7 +41,10 @@ public sealed record MiniEventSettings(int ChancePercent, TimeSpan ChannelCooldo
         return new MiniEventSettings(
             Math.Min(100, Read("MiniEvent__ChancePercent", d.ChancePercent)),
             TimeSpan.FromMinutes(Read("MiniEvent__ChannelCooldownMinutes", (int)d.ChannelCooldown.TotalMinutes)),
-            TimeSpan.FromSeconds(Math.Max(3, Read("MiniEvent__JoinSeconds", (int)d.JoinWindow.TotalSeconds))));
+            TimeSpan.FromSeconds(Math.Max(3, Read("MiniEvent__JoinSeconds", (int)d.JoinWindow.TotalSeconds))),
+            ulong.TryParse(Environment.GetEnvironmentVariable("MiniEvent__EventChannelId"), out ulong channel) ? channel : 0,
+            Math.Min(100, Read("MiniEvent__EventChannelChancePercent", d.EventChannelChancePercent)),
+            TimeSpan.FromMinutes(Read("MiniEvent__EventChannelCooldownMinutes", (int)d.EventChannelCooldown.TotalMinutes)));
     }
 }
 
@@ -75,7 +89,8 @@ public sealed class MiniEventService(
     {
         try
         {
-            if (_settings.ChancePercent <= 0)
+            var (chance, cooldown) = _settings.For(channelId);
+            if (chance <= 0)
             {
                 return;
             }
@@ -85,8 +100,8 @@ public sealed class MiniEventService(
             {
                 // Uno a la vez por canal, y no más de uno cada ChannelCooldown (si no, en un canal activo sería una molestia).
                 if (_channelsWithOpenEvent.Contains(channelId)
-                    || (_lastSpawnByChannel.TryGetValue(channelId, out var last) && DateTime.UtcNow - last < _settings.ChannelCooldown)
-                    || _random.Next(100) >= _settings.ChancePercent)
+                    || (_lastSpawnByChannel.TryGetValue(channelId, out var last) && DateTime.UtcNow - last < cooldown)
+                    || _random.Next(100) >= chance)
                 {
                     return;
                 }

@@ -30,7 +30,7 @@ var sizes = TitleCatalog.Pages.ToDictionary(p => p.Key, p => TitleCatalog.OfPage
 Check(sizes.Values.All(n => n is >= 1 and <= 25) && sizes.Values.Sum() == all.Count, $"cada página tiene entre 1 y 25 títulos (el desplegable de equipar admite 25): {string.Join(", ", sizes.Select(kv => $"{kv.Key} {kv.Value}"))}");
 Check(all.All(t => t.Name.Length is >= 3 and <= 40 && t.Hint.Length > 3 && t.Hint.Length <= 100), "nombres cortos y una pista de cómo conseguirlo en todos (entran en una opción de desplegable)");
 var fromAch = all.Where(t => t.FromAchievement).ToList();
-Check(fromAch.Count == 96 && AchievementCatalog.All.Where(a => a.Key is not ("manoganadora" or "bestiario")).All(a => a.Tiers.Select((tier, i) => fromAch.Any(t => t.AchievementKey == a.Key && t.AchievementTier == i + 1 && t.Threshold == tier.Threshold && t.Source == a.StatKind)).All(x => x)),
+Check(fromAch.Count == 96 && AchievementCatalog.All.Where(a => a.Key is not ("manoganadora" or "bestiario" or "hz_pescador")).All(a => a.Tiers.Select((tier, i) => fromAch.Any(t => t.AchievementKey == a.Key && t.AchievementTier == i + 1 && t.Threshold == tier.Threshold && t.Source == a.StatKind)).All(x => x)),
     "96 títulos vienen de los logros: los 32 logros con títulos por sus 3 tramos (Mano Ganadora, v0.54.0, va sin títulos: lo pidió el dueño), con la MISMA meta y el mismo contador que el tramo (una sola fuente de verdad)");
 Check(all.Count(t => t.Rule == TitleRule.BossRank) == 5 && all.Count(t => t.Rule == TitleRule.Level) == 4 && all.Count(t => t.Rule == TitleRule.BlessingColor) == 5 && all.Count(t => t.Rule == TitleRule.Flag) == 3 && all.Count(t => t.Rule == TitleRule.Always) == 1,
     "especiales: 5 jefes de la escalera, 4 niveles, 5 de la Brasa de Color, 3 hallazgos y el título inicial");
