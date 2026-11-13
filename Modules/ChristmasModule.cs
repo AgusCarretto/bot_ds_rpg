@@ -358,6 +358,11 @@ public class ChristmasModule(
             buttons.WithButton(Loc.F($"Abrir el día {today}"), $"{ClaimPrefix}:{discordId}", ButtonStyle.Success, new Emoji("🎁"));
         }
 
+        if (phase == ChristmasPhase.Farm)
+        {
+            buttons.WithButton(Loc.T("Muñeco"), $"{SnowmanModule.PanelPrefix}:{discordId}", ButtonStyle.Primary, new Emoji("☃️"));
+        }
+
         buttons.WithButton(Loc.T("Tienda"), $"{ShopPrefix}:{discordId}", ButtonStyle.Primary, new Emoji("🛒"));
         return new ChristmasView(embed.Build(), buttons.Build());
     }

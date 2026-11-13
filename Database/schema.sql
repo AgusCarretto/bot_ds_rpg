@@ -599,3 +599,23 @@ CREATE TABLE IF NOT EXISTS event_advent_claims (
     claimed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (discord_id, season, day)
 );
+
+CREATE TABLE IF NOT EXISTS event_snowman (
+    season     TEXT        NOT NULL,
+    round      INTEGER     NOT NULL CHECK (round >= 1),
+    max_hp     INTEGER     NOT NULL CHECK (max_hp > 0),
+    hp         INTEGER     NOT NULL CHECK (hp >= 0),
+    started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    killed_at  TIMESTAMPTZ,
+    killer_id  BIGINT,
+    PRIMARY KEY (season, round)
+);
+
+CREATE TABLE IF NOT EXISTS event_snowman_hits (
+    season     TEXT    NOT NULL,
+    round      INTEGER NOT NULL,
+    discord_id BIGINT  NOT NULL,
+    damage     BIGINT  NOT NULL DEFAULT 0 CHECK (damage >= 0),
+    spent      BIGINT  NOT NULL DEFAULT 0 CHECK (spent >= 0),
+    PRIMARY KEY (season, round, discord_id)
+);

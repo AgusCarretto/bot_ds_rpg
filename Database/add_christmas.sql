@@ -22,3 +22,25 @@ CREATE TABLE IF NOT EXISTS event_advent_claims (
 -- La tienda (v0.57.0): las Campanas compradas (se usan con «aa campana» para reiniciar /hunt) y hasta cuándo dura la Vela (+50 % de Regalos).
 ALTER TABLE event_gifts ADD COLUMN IF NOT EXISTS bells        INTEGER     NOT NULL DEFAULT 0 CHECK (bells >= 0);
 ALTER TABLE event_gifts ADD COLUMN IF NOT EXISTS candle_until TIMESTAMPTZ;
+
+-- El Muñeco de Nieve Gigante (v0.57.0): UNO para todos los servidores. Cada vuelta es una fila (round); al morir se cierra (killed_at) y, si
+-- todavía caen Regalos, se abre la siguiente con ×1,5 de vida. event_snowman_hits = cuánto le pegó cada jugador en cada vuelta (el ranking y los premios).
+CREATE TABLE IF NOT EXISTS event_snowman (
+    season     TEXT        NOT NULL,
+    round      INTEGER     NOT NULL CHECK (round >= 1),
+    max_hp     INTEGER     NOT NULL CHECK (max_hp > 0),
+    hp         INTEGER     NOT NULL CHECK (hp >= 0),
+    started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    killed_at  TIMESTAMPTZ,
+    killer_id  BIGINT,
+    PRIMARY KEY (season, round)
+);
+
+CREATE TABLE IF NOT EXISTS event_snowman_hits (
+    season     TEXT    NOT NULL,
+    round      INTEGER NOT NULL,
+    discord_id BIGINT  NOT NULL,
+    damage     BIGINT  NOT NULL DEFAULT 0 CHECK (damage >= 0),
+    spent      BIGINT  NOT NULL DEFAULT 0 CHECK (spent >= 0),
+    PRIMARY KEY (season, round, discord_id)
+);

@@ -133,5 +133,10 @@ Reno, banner de nieve.
 - **Krampus (hecho):** `/krampus` y `aa krampus` (solo del 1 al 24): pelea solo contra el élite de tu zona ×1,5 de vida y ×1,2 de daño, cooldown propio de 4 h
   ganes o pierdas, paga oro y EXP de un viaje + 30–40 Regalos, sin cajas (`KrampusRules` en `GameData/Christmas.cs`; multiplicadores «a medir»). `/navidad` muestra cuánto le falta.
   No tiene aviso de `/cd` ni recordatorio (el cooldown no está en `CooldownCatalog.All`).
-- **Falta:** venta de Regalos por oro (25 → 6, precio a decidir); banner de nieve (cuando haya arte); Muñeco de Nieve Gigante;
+- **Muñeco de Nieve Gigante (hecho):** `/munieco`, `aa muñeco` (panel) y `aa muñeco tirar petardo 5`; botón ☃️ en `/navidad`. Uno para todos los servidores
+  (`event_snowman` por vuelta + `event_snowman_hits`), vida inicial `Christmas__SnowmanHp` (100.000 sin la variable), proyectiles Bola 1→10, Bastón 10→110,
+  Petardo 50→600, Trineo 200→2.600. Al caer, en la misma transacción: todos 150 Regalos + Cofre de Oro + Polvo (daño/10, entre 10 y 500); top 10 +300 Regalos;
+  top 3 + Cofre de Escoria (el dueño); contador `snowman_kill` → títulos «Rompenieves» (1) y «Azote del Muñeco» (3). Vuelve con ×1,5 de vida mientras caen Regalos.
+  El panel se refresca solo cada 5 s durante 2 min y muestra las últimas 5 tiradas (en memoria). Anuncio público con el top 10 al caer.
+- **Falta:** venta de Regalos por oro (25 → 6, precio a decidir); banner de nieve (cuando haya arte);
   logros; arte; `/info` y `docs/topgg/comandos`.

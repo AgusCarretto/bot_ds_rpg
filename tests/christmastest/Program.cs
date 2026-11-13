@@ -196,8 +196,8 @@ Check(ReminderCatalog.FromCooldowns(cdRows, DateTime.UtcNow).Count == 1 && Remin
 Check((await repo.BuyAsync(U, season, ChristmasShop.Find("elfo")!, 1, 1)).Status == ChristmasBuyStatus.Ok, "el título «Elfo del Fogón» se compra");
 var titleCtx = new TitleContext(await new GameEventRepository(factory).GetStatsAsync(U), 1, new HashSet<int>(), new HashSet<string>(), 0);
 var xmasTitles = TitleCatalog.All.Where(t => t.PageKey == "navidad").ToList();
-Check(xmasTitles.Count == 2 && TitleCatalog.IsUnlocked(xmasTitles.Single(t => t.Key == "xmas_elfo"), titleCtx) && !TitleCatalog.IsUnlocked(xmasTitles.Single(t => t.Key == "xmas_espiritu"), titleCtx),
-    "página 🎄 Navidad con 2 títulos; el del Elfo desbloqueado");
+Check(xmasTitles.Count == 4 && TitleCatalog.IsUnlocked(xmasTitles.Single(t => t.Key == "xmas_elfo"), titleCtx) && !TitleCatalog.IsUnlocked(xmasTitles.Single(t => t.Key == "xmas_espiritu"), titleCtx),
+    "página 🎄 Navidad con 4 títulos (2 de la tienda, 2 del Muñeco); el del Elfo desbloqueado");
 
 Console.WriteLine("\n== 11. Calendario: Campanas y Calcetín ==");
 int bellsBefore = (await repo.GetAsync(U, season)).Bells;
@@ -251,6 +251,89 @@ var encounter = AdventureModule.BuildEncounterEmbed(started.State!);
 Check(encounter.Title.Contains("Krampus"), "el encuentro dice que es el Krampus");
 var navView = await ChristmasModule.BuildAsync(repo, during, U, settings.StartUtc.AddDays(2), cds);
 Check(navView.Embed.Description.Contains("/krampus") && !navView.Embed.Description.Contains("¡listo!"), "/navidad muestra cuánto le falta al Krampus");
+
+Console.WriteLine("\n== 14. El Muñeco de Nieve Gigante ==");
+ulong[] players = [999000000000098921UL, 999000000000098922UL, 999000000000098923UL, 999000000000098924UL];
+async Task CleanSnow()
+{
+    await db.ExecuteAsync("DELETE FROM event_snowman WHERE season = @season", new { season });
+    await db.ExecuteAsync("DELETE FROM event_snowman_hits WHERE season = @season", new { season });
+    foreach (var p in players)
+    {
+        await db.ExecuteAsync("DELETE FROM event_gifts WHERE discord_id = @id", new { id = (long)p });
+        await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)p });
+    }
+}
+
+await CleanSnow();
+foreach (var p in players)
+{
+    await users.GetOrCreateUserAsync(p);
+    await repo.GrantAsync(p, season, 1);
+    await db.ExecuteAsync("UPDATE event_gifts SET balance = 100000 WHERE discord_id = @id AND season = @season", new { id = (long)p, season });
+}
+
+var snowRepo = new SnowmanRepository(factory);
+var snowSvc = new SnowmanService(snowRepo, during, 3000);
+Check(SnowmanRules.Find("bola")!.Damage == 10 && SnowmanRules.Find("trineo")!.Price == 200 && SnowmanRules.Projectiles.Count == 4, "4 proyectiles: Bola, Bastón, Petardo, Trineo");
+Check(SnowmanRules.Projectiles.Zip(SnowmanRules.Projectiles.Skip(1)).All(p => (double)p.Second.Damage / p.Second.Price > (double)p.First.Damage / p.First.Price),
+    "los caros rinden más daño por Regalo");
+var st0 = await snowSvc.GetStateAsync(players[0]);
+Check(st0.Round == 1 && st0.Hp == 3000 && st0.MaxHp == 3000 && st0.MyDamage == 0 && st0.MyRank == 0, "abre la primera vuelta con la vida de la configuración");
+var poor = await snowRepo.ThrowAsync(U, season, SnowmanRules.Find("trineo")!, 1000, 3000, true);
+Check(poor.Status == SnowThrowStatus.NotEnoughGifts && (await snowSvc.GetStateAsync(U)).Hp == 3000, "sin Regalos no pega ni cobra");
+// players[0] pega 1.200, players[1] 600, players[2] 110, y después todos a la vez hasta tirarlo.
+await snowSvc.ThrowAsync(players[0], "Uno", SnowmanRules.Find("petardo")!, 2);
+await snowSvc.ThrowAsync(players[1], "Dos", SnowmanRules.Find("petardo")!, 1);
+await snowSvc.ThrowAsync(players[2], "Tres", SnowmanRules.Find("baston")!, 1);
+var mid = await snowSvc.GetStateAsync(players[1]);
+Check(mid.Hp == 3000 - 1910 && mid.MyDamage == 600 && mid.MyRank == 2 && mid.Participants == 3, $"vida 1.090, el segundo va puesto 2 ({mid.Hp}, puesto {mid.MyRank})");
+Check(snowSvc.Feed().Count == 3 && snowSvc.Feed()[0].Name == "Tres", "el panel guarda las últimas tiradas, la más nueva primero");
+long goldChest = await db.ExecuteScalarAsync<long>("SELECT COALESCE(SUM(quantity),0) FROM inventory v JOIN items i USING (item_id) WHERE v.discord_id = @id AND i.name = 'Cofre de Oro'", new { id = (long)players[3] });
+var race20 = await Task.WhenAll(Enumerable.Range(0, 20).Select(i => snowSvc.ThrowAsync(players[i % 4], "x", SnowmanRules.Find("bola")!, 10)));
+var kills = race20.Where(r => r.Kill is not null).ToList();
+Check(kills.Count == 1, "20 tiros a la vez: uno solo da el último golpe");
+var kill = kills.Single().Kill!;
+Check(kill.Round == 1 && kill.Participants == 4 && kill.NextMaxHp == 4500, "cobran los 4 y vuelve con ×1,5 de vida (4.500)");
+Check(kill.Top[0].DiscordId == players[0] && kill.Top[0].Rank == 1, "el que más pegó es el primero del ranking");
+var hitsSum = await db.ExecuteScalarAsync<long>("SELECT SUM(damage) FROM event_snowman_hits WHERE season = @season AND round = 1", new { season });
+Check(hitsSum == 3000, $"el daño anotado suma justo la vida (3.000; {hitsSum}): lo que sobra del último golpe no cuenta");
+Check(race20.Count(r => r.Status == SnowThrowStatus.Ok) == 20, "los tiros después de la muerte pegan a la vuelta nueva");
+var after = await snowSvc.GetStateAsync(players[0]);
+Check(after.Round == 2 && after.MaxHp == 4500 && after.Kills == 1, "vuelta 2, cayó 1 vez");
+var gp0 = await repo.GetAsync(players[0], season);
+var p3Escoria = await db.ExecuteScalarAsync<long>("SELECT COALESCE(SUM(quantity),0) FROM inventory v JOIN items i USING (item_id) WHERE v.discord_id = @id AND i.name = 'Cofre de Escoria'", new { id = (long)players[3] });
+var p0Escoria = await db.ExecuteScalarAsync<long>("SELECT COALESCE(SUM(quantity),0) FROM inventory v JOIN items i USING (item_id) WHERE v.discord_id = @id AND i.name = 'Cofre de Escoria'", new { id = (long)players[0] });
+long goldChestAfter = await db.ExecuteScalarAsync<long>("SELECT COALESCE(SUM(quantity),0) FROM inventory v JOIN items i USING (item_id) WHERE v.discord_id = @id AND i.name = 'Cofre de Oro'", new { id = (long)players[3] });
+Check(gp0.Earned >= 1 + SnowmanRules.AllGifts + SnowmanRules.Top10Gifts, "el top 10 cobra 150 + 300 Regalos");
+Check(p0Escoria == 1 && p3Escoria == 0 && goldChestAfter == goldChest + 1, "Cofre de Oro para todos; Cofre de Escoria solo al top 3");
+var killStats = await new GameEventRepository(factory).GetStatsAsync(players[3]);
+Check(killStats.GetValueOrDefault(SnowmanRules.KillStat) == 1 && killStats.GetValueOrDefault(SnowmanRules.DamageStat) > 0, "contadores: 1 vuelta ganada y el daño total (para los títulos)");
+Check(TitleCatalog.All.Count(t => t.Source == SnowmanRules.KillStat) == 2, "dos títulos del Muñeco (1 y 3 vueltas)");
+Check(SnowmanRules.DustFor(5) == 10 && SnowmanRules.DustFor(1200) == 120 && SnowmanRules.DustFor(99999) == 500, "Polvo: 1 cada 10 de daño, entre 10 y 500");
+
+// Sin vuelta nueva (se terminó el farmeo): queda en el suelo y no se cobra nada más.
+var lastKill = await snowRepo.ThrowAsync(players[0], season, SnowmanRules.Find("trineo")!, 2, 3000, canRespawn: false);
+Check(lastKill.Kill is { NextMaxHp: null }, "si cae después del 24, no vuelve");
+long before24 = (await repo.GetAsync(players[0], season)).Balance;
+var dead = await snowRepo.ThrowAsync(players[0], season, SnowmanRules.Find("bola")!, 1, 3000, true);
+Check(dead.Status == SnowThrowStatus.Dead && (await repo.GetAsync(players[0], season)).Balance == before24, "caído: no se puede tirar ni se cobra");
+
+var panel = await SnowmanModule.BuildPanelAsync(repo, during, snowSvc, players[0], settings.StartUtc.AddDays(3));
+Check(panel.Components is not null && LeakCheck.FitsDiscord(panel.Embed), "el panel tiene botones y entra en Discord");
+var killEmbed = SnowmanModule.BuildKillEmbed(kill);
+Check(killEmbed.Description!.Contains($"<@{players[0]}>") && killEmbed.Description.Contains("4.500") && LeakCheck.FitsDiscord(killEmbed), "el anuncio: ranking con menciones y la vida nueva");
+Check((await SnowmanModule.ThrowAsync(shop, snowSvc, players[0], "x", "bola", 1, settings.FarmEndUtc.AddDays(1))).Error is not null, "del 25 en adelante no se tira");
+using (Loc.Use("en"))
+{
+    var enPanel = await SnowmanModule.BuildPanelAsync(repo, during, snowSvc, players[1], settings.StartUtc.AddDays(3));
+    string enText = LeakCheck.AllText(enPanel.Embed) + "\n" + LeakCheck.AllText(SnowmanModule.BuildKillEmbed(kill));
+    var names = SnowmanRules.Projectiles.Select(p => p.Name).Concat([SnowmanRules.AllBox, SnowmanRules.TopBox, "Uno", "Dos", "Tres", "x", "aa muñeco tirar petardo 5"]).ToList();
+    var snowLeak = LeakCheck.NoSpanish(enText, names);
+    Check(snowLeak.Ok, $"el Muñeco en inglés sin español ({snowLeak.Found})");
+}
+
+await CleanSnow();
 
 await Clean();
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");

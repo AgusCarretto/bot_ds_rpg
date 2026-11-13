@@ -76,4 +76,39 @@ public partial class TextCommandModule
             await ReplyAsync(Loc.T("¡Upa! No pude usar la Campana, intentá de nuevo en un momento."));
         }
     }
+
+    // "aa muñeco" — el panel del Muñeco de Nieve Gigante (SnowmanModule); "aa muñeco tirar petardo 5" tira sin pasar por los botones.
+    [Command("muñeco")]
+    [Alias("munieco", "muneco", "snowman")]
+    [Summary("Navidad: el Muñeco de Nieve Gigante. \"aa muñeco tirar petardo 5\" tira de a muchos.")]
+    public async Task SnowmanAsync([Remainder] string? args = null)
+    {
+        try
+        {
+            var words = (args ?? string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (words.Length > 0 && words[0].ToLowerInvariant() is "tirar" or "throw")
+            {
+                int count = words.Length > 2 && int.TryParse(words[2], out int n) ? n : 1;
+                var thrown = await SnowmanModule.ThrowAsync(christmasService, snowmanService, Context.User.Id, SnowmanModule.DisplayName(Context.User), words.ElementAtOrDefault(1), count, DateTime.UtcNow);
+                await ReplyAsync(thrown.Error ?? thrown.Line);
+                if (thrown.Kill is not null)
+                {
+                    await ReplyAsync(embed: thrown.Kill);
+                }
+
+                return;
+            }
+
+            var view = await SnowmanModule.BuildPanelAsync(christmasRepository, christmasService, snowmanService, Context.User.Id, DateTime.UtcNow);
+            var message = await ReplyAsync(embed: view.Embed, components: view.Components);
+            ulong ownerId = Context.User.Id;
+            SnowmanModule.StartLiveRefresh(view, () => SnowmanModule.BuildPanelAsync(christmasRepository, christmasService, snowmanService, ownerId, DateTime.UtcNow),
+                v => message.ModifyAsync(p => { p.Embed = v.Embed; p.Components = v.Components; }));
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            await ReplyAsync(Loc.T("¡Upa! No pude abrir el Muñeco, intentá de nuevo en un momento."));
+        }
+    }
 }

@@ -279,8 +279,8 @@ var fishTitles = TitleCatalog.All.Where(t => t.AchievementKey == "pescador").ToL
 var masterTitles = TitleCatalog.All.Where(t => t.Key.StartsWith("fisher_")).ToList();
 Check(fishTitles.Count == 3 && fishTitles.Select(t => t.Name).SequenceEqual(["Cañero", "Lobo de Río", "Señor del Surubí"]) && masterTitles.Count == 3 && masterTitles.Select(t => t.Name).SequenceEqual(["Pescador de Orilla", "Capitán del Río", "Rey del Dorado"]),
     "3 títulos del logro y 3 de maestro del oficio (nivel 25, 50 y 100)");
-Check(masterTitles.All(t => t.PageKey == "maestros" && t.Source == "fish_xp") && TitleCatalog.All.Count == 145 && TitleCatalog.All.Select(t => t.Key).Distinct().Count() == 145 && TitleCatalog.All.Select(t => t.Name).Distinct().Count() == 145
-    && TitleCatalog.Pages.All(p => TitleCatalog.OfPage(p.Key).Count <= 25), "145 títulos con claves y nombres únicos y ninguna página pasa de los 25 que admite el desplegable");
+Check(masterTitles.All(t => t.PageKey == "maestros" && t.Source == "fish_xp") && TitleCatalog.All.Count == 147 && TitleCatalog.All.Select(t => t.Key).Distinct().Count() == 147 && TitleCatalog.All.Select(t => t.Name).Distinct().Count() == 147
+    && TitleCatalog.Pages.All(p => TitleCatalog.OfPage(p.Key).Count <= 25), "147 títulos con claves y nombres únicos y ninguna página pasa de los 25 que admite el desplegable");
 
 Console.WriteLine("\n== 11. Recordatorios, oficios y ayuda ==");
 Check(ReminderCatalog.All.Count == 15 && ReminderCatalog.Find("fish")?.Command == "/fish" && ReminderCatalog.Find("fish_adv") is not null && ReminderCatalog.Find("fish")!.AutoDelete == ReminderCatalog.ShortLived && ReminderCatalog.Find("fish_adv")!.AutoDelete is null,

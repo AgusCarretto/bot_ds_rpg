@@ -190,6 +190,8 @@ public static class TitleCatalog
         // 6) Navidad en el Fogón (v0.57.0): se compran con Regalos en la tienda navideña (/navidad) y quedan para siempre.
         all.Add(new TitleDefinition("xmas_elfo", "Elfo del Fogón", "navidad", TitleRule.Stat, Loc.Mark("Compralo en la tienda de Navidad (/navidad)"), ChristmasShop.TitleElfStat, 1));
         all.Add(new TitleDefinition("xmas_espiritu", "Espíritu de la Navidad", "navidad", TitleRule.Stat, Loc.Mark("Compralo en la tienda de Navidad (/navidad)"), ChristmasShop.TitleSpiritStat, 1));
+        all.Add(new TitleDefinition("xmas_munieco_1", "Rompenieves", "navidad", TitleRule.Stat, Loc.Mark("Ayudá a derribar al Muñeco de Nieve Gigante (/munieco)"), SnowmanRules.KillStat, 1));
+        all.Add(new TitleDefinition("xmas_munieco_3", "Azote del Muñeco", "navidad", TitleRule.Stat, Loc.Mark("Ayudá a derribar al Muñeco de Nieve Gigante 3 veces"), SnowmanRules.KillStat, 3));
 
         return all;
     }

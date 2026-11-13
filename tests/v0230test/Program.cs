@@ -23,7 +23,7 @@ TitleDefinition T(string key) => TitleCatalog.Find(key) ?? throw new InvalidOper
 
 Console.WriteLine("== 1. El catálogo ==");
 var all = TitleCatalog.All;
-Check(all.Count == 145 && all.Count >= 50, $"hay {all.Count} títulos (el pedido era 50 como mínimo)");
+Check(all.Count == 147 && all.Count >= 50, $"hay {all.Count} títulos (el pedido era 50 como mínimo)");
 Check(all.Select(t => t.Key).Distinct().Count() == all.Count && all.Select(t => t.Name.ToLowerInvariant()).Distinct().Count() == all.Count, "las claves y los nombres no se repiten");
 Check(TitleCatalog.Pages.Count == 11 && TitleCatalog.Pages.Select(p => p.Key).Distinct().Count() == 11 && all.All(t => TitleCatalog.Pages.Any(p => p.Key == t.PageKey)), "11 páginas (con «Hazañas» y «Navidad», v0.57.0) y cada título está en una que existe");
 var sizes = TitleCatalog.Pages.ToDictionary(p => p.Key, p => TitleCatalog.OfPage(p.Key).Count);
