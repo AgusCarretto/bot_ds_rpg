@@ -93,6 +93,7 @@ Config: `.env` → User Secrets → variables de entorno (`Discord__Token`, `Dis
 | **UI**: bestiario (v0.56.0), inventario y perfil legibles, NPCs y escena del herrero, banner de nivel, taberna, pestañas del inventario, emojis de ítems/aplicación/registro, íconos y barras, emojis en menús, imágenes de NPC, `/info` por tema, idioma, `/config` y tabla de resumen, banner del perfil, `/cd` personalizable, respuesta = mención | `docs/claude/ui-embeds-emojis-idioma.md` |
 | Dragón (cría, entrenamiento, tablón), mascotas (tiers, evolución, huevos, expediciones — sus premios son SECRETOS en pantalla) | `docs/claude/mascotas-dragon.md` |
 | El Fogón (Zona 0), Tabernero del Inframundo, Fuego Nuevo y bendiciones, la historia (Crónicas del Fogón) | `docs/claude/fogon-fn-historia.md` |
+| **Navidad en el Fogón** (v0.57.0+): Regalos, calendario de adviento, tienda, Reno, Krampus, Muñeco de Nieve | `docs/navidad.md` |
 | Mini-evento, recordatorios, voto top.gg y su página (`docs/topgg/`), `aa admingive/adminset`, códigos canjeables, invitaciones | `docs/claude/sistemas-comunidad-admin.md` |
 
 Comentarios del código que dicen "ver CLAUDE.md, «X»" → buscar «X» con Grep en `docs/claude/`.

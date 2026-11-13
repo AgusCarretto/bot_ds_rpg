@@ -495,18 +495,19 @@ public class AdventureModule(
                     : await adventureRepository.ApplyVictoryAsync(
                         discordId, reward.Gold, reward.Xp, hpDelta, droppedItem?.ItemId, droppedItemQuantity: 1);
 
-                await gameEvents.RecordVictoryAsync(
-                    discordId,
-                    finalState.CommandName switch { "travel" => GameEventKinds.TravelWin, "boss" => GameEventKinds.BossWin, _ => GameEventKinds.HuntWin },
-                    outcome,
-                    finalState.MonsterName);
+                string winKind = finalState.CommandName switch { "travel" => GameEventKinds.TravelWin, "boss" => GameEventKinds.BossWin, _ => GameEventKinds.HuntWin };
+                await gameEvents.RecordVictoryAsync(discordId, winKind, outcome, finalState.MonsterName);
+
+                // Navidad en el Fogón (v0.57.0): los Regalos de la victoria, con su línea al pie de la pantalla (0 fuera del evento).
+                int gifts = await gameEvents.GrantEventGiftsAsync(discordId, winKind);
 
                 // La historia (GameData/Lore.cs): la primera vez que vence a este jefe se le abre su capítulo (el aviso sale solo, por el evento) y la pantalla cuenta la escena.
                 var openedChapter = await gameEvents.RecordStoryChapterAsync(
                     discordId, finalState.CommandName == "boss" ? finalState.MonsterName : null, firstBossClear, outcome);
 
                 await output.ShowAsync(
-                    BuildVictoryEmbedWithStory(finalState, turn, reward, droppedItem, outcome, firstBossClear, openedChapter), new ComponentBuilder().Build(), null, session.ReplyTarget);
+                    ChristmasDisplay.WithGifts(BuildVictoryEmbedWithStory(finalState, turn, reward, droppedItem, outcome, firstBossClear, openedChapter), gifts),
+                    new ComponentBuilder().Build(), null, session.ReplyTarget);
                 return;
             }
 

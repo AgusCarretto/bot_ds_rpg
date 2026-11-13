@@ -1771,6 +1771,7 @@ public class RaidModule(
         var repeat = await BossChest.RepeatAsync(zoneBoxService, session.ZoneId);
 
         var results =new List<(RaidParticipant Participant, CombatReward Reward, Item? Drop, LevelUpOutcome Outcome)>();
+        var gifts = new List<(string Name, int Gifts)>();
         bool anyFirstClear = false;   // alguien lo venció por primera vez de esta vuelta: la pantalla puede avisar de las herramientas que abre esa zona
 
         // Solo cobra quien contribuyó (pegó al menos un golpe) y no se retiró — huir siempre
@@ -1810,9 +1811,13 @@ public class RaidModule(
             await gameEvents.RecordStoryChapterAsync(participant.DiscordId, session.BossName, firstClear, outcome);
 
             results.Add((participant, reward, drop, outcome));
+
+            // Navidad en el Fogón (v0.57.0): los Regalos del jefe, a cada uno (0 fuera del evento).
+            gifts.Add((participant.DisplayName, await gameEvents.GrantEventGiftsAsync(participant.DiscordId, GameEventKinds.RaidWin)));
         }
 
-        await session.ReplyTarget.UpdateAsync(BuildVictoryEmbed(session, logLine, results, anyFirstClear), new ComponentBuilder().Build());
+        await session.ReplyTarget.UpdateAsync(
+            ChristmasDisplay.WithGifts(BuildVictoryEmbed(session, logLine, results, anyFirstClear), gifts), new ComponentBuilder().Build());
 
         // La victoria dejó el cooldown del jefe en su espera larga: se vuelve a armar el aviso de cada participante (el que pegó el último golpe lo arma también su interacción).
         await SyncRemindersAsync(session, session.Participants.Select(p => p.DiscordId).ToList());

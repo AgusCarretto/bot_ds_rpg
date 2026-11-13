@@ -31,7 +31,8 @@ public partial class TextCommandModule
             await gameEvents.RecordVictoryAsync(Context.User.Id, GameEventKinds.DailyClaim, outcome.Result!);
             await gameEvents.RecordDailyStreakAsync(gameEventRepository, Context.User.Id, calculation.NewStreak);
 
-            await ReplyAsync(embed: DailyModule.BuildResultEmbed(calculation, outcome.Result!, outcome.Receipt!));
+            int gifts = await gameEvents.GrantEventGiftsAsync(Context.User.Id, GameEventKinds.DailyClaim, calculation.NewStreak);
+            await ReplyAsync(embed: ChristmasDisplay.WithGifts(DailyModule.BuildResultEmbed(calculation, outcome.Result!, outcome.Receipt!), gifts));
         }
         catch (Exception ex)
         {

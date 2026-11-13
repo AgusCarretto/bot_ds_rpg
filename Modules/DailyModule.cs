@@ -34,7 +34,9 @@ public class DailyModule(
             await gameEvents.RecordVictoryAsync(Context.User.Id, GameEventKinds.DailyClaim, outcome.Result!);
             await gameEvents.RecordDailyStreakAsync(gameEventRepository, Context.User.Id, calculation.NewStreak);
 
-            await FollowupAsync(embed: BuildResultEmbed(calculation, outcome.Result!, outcome.Receipt!));
+            // Navidad en el Fogón (v0.57.0): los Regalos del /daily (más con racha de 7), 0 fuera del evento.
+            int gifts = await gameEvents.GrantEventGiftsAsync(Context.User.Id, GameEventKinds.DailyClaim, calculation.NewStreak);
+            await FollowupAsync(embed: ChristmasDisplay.WithGifts(BuildResultEmbed(calculation, outcome.Result!, outcome.Receipt!), gifts));
         }
         catch (Exception ex)
         {

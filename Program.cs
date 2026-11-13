@@ -623,6 +623,10 @@ public static class ServiceProviderBuilder
             .AddSingleton<IRedeemCodeRepository, RedeemCodeRepository>()
             .AddSingleton<IReferralRepository, ReferralRepository>()
             .AddSingleton<IBestiaryRepository, BestiaryRepository>()
+            // Navidad en el Fogón (v0.57.0, docs/navidad.md): las fechas salen de Christmas__Start/FarmEnd/End (sin ellas, 1-12-2026 → 7-1-2027).
+            .AddSingleton<IChristmasRepository, ChristmasRepository>()
+            .AddSingleton(sp => ChristmasService.LoadSettings(sp.GetRequiredService<IConfiguration>()))
+            .AddSingleton<IChristmasService>(sp => new ChristmasService(sp.GetRequiredService<IChristmasRepository>(), sp.GetRequiredService<ChristmasSettings>()))
             .AddSingleton<IPlayerBonusService, PlayerBonusService>()
             .AddSingleton<ILanguageRepository, LanguageRepository>()
             .AddSingleton<IPlayerLanguageService, PlayerLanguageService>()

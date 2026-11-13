@@ -10,8 +10,11 @@ namespace BotDsRpg.Services;
 // evento guardado también avanza las misiones y los logros y deja sus avisos en la cola.
 // referrals también es opcional: con él, cada subida de nivel de un jugador invitado le paga al que lo invitó el premio del nivel 5 (una sola vez; GameData/Referrals.cs).
 public sealed class GameEventService(
-    IGameEventRepository eventRepository, IProgressNotifier? progressNotifier = null, IReferralRepository? referrals = null, IBestiaryRepository? bestiary = null) : IGameEvents
+    IGameEventRepository eventRepository, IProgressNotifier? progressNotifier = null, IReferralRepository? referrals = null, IBestiaryRepository? bestiary = null, IChristmasService? christmas = null) : IGameEvents
 {
+    public Task<int> GrantEventGiftsAsync(ulong discordId, string kind, int streakDay = 0) =>
+        christmas is null ? Task.FromResult(0) : christmas.GrantAsync(discordId, kind, streakDay);
+
     // Avisos pendientes por jugador. En memoria a propósito: si el bot se reinicia entre el evento y el aviso, no pasa nada
     // (el progreso ya está guardado en la base; solo se pierde el cartelito).
     private readonly ConcurrentDictionary<ulong, ConcurrentQueue<GameNotice>> _notices = new();
