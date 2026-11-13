@@ -634,6 +634,7 @@ public static class ServiceProviderBuilder
             .AddSingleton<IProgressNotifier, ProgressNotifier>()
             .AddSingleton<ITradeOfferService, TradeOfferService>()
             .AddSingleton<IRpsService, RpsService>()
+            .AddSingleton<IRouletteBoardService, RouletteBoardService>()
             .AddSingleton<IArenaRepository, ArenaRepository>()
             .AddSingleton<IWorldBossRepository, WorldBossRepository>()
             .AddSingleton<IWorldBossService, WorldBossService>()

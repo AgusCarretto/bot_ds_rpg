@@ -5,12 +5,12 @@ using Discord.Commands;
 
 public partial class TextCommandModule
 {
-    // "aa ruleta 5k" abre la mesa; "aa ruleta rojo 5k" / "aa ruleta 17 500" / "aa ruleta 5k par" apuesta y gira de una (v0.55.0, ver
+    // "aa ruleta 5k" abre el paño de fichas (v0.55.1); "aa ruleta rojo 5k" / "aa ruleta 17 500" / "aa ruleta 5k par" apuesta y gira de una (v0.55.0, ver
     // RouletteModule). Con dos palabras, la PRIMERA que sea una apuesta (rojo, negro, par, impar o 0 a 36) es la apuesta y la otra el
     // monto: «17 500» es 500 al 17 y «500 17» también (500 no es una casilla).
     [Command("ruleta")]
     [Alias("roulette", "rl")]
-    [Summary("La ruleta: \"aa ruleta 5k\" abre la mesa con botones; \"aa ruleta rojo 5k\" o \"aa ruleta 17 500\" apuesta y gira de una.")]
+    [Summary("La ruleta: \"aa ruleta 1k\" abre el paño para poner fichas en varias apuestas; \"aa ruleta rojo 5k\" o \"aa ruleta 17 500\" apuesta y gira de una.")]
     public async Task RouletteAsync(string first = "", string second = "")
     {
         try
@@ -18,13 +18,13 @@ public partial class TextCommandModule
             var (bet, amountText) = TextShortcuts.SplitRouletteArgs(first, second);
             if (string.IsNullOrWhiteSpace(amountText))
             {
-                await ReplyAsync(Loc.T("Decime cuánto apostás: **aa ruleta 5k** (abre la mesa) o **aa ruleta rojo 5k** (gira de una)."));
+                await ReplyAsync(Loc.T("Decime cuánto apostás: **aa ruleta 1k** (abre el paño de fichas) o **aa ruleta rojo 5k** (gira de una)."));
                 return;
             }
 
             if (bet is null)
             {
-                var table = await RouletteModule.OpenTableAsync(userRepository, Context.User.Id, amountText);
+                var table = await RouletteModule.OpenBoardAsync(userRepository, rouletteBoards, Context.User.Id, amountText);
                 await ReplyAsync(table.Error, embed: table.Embed, components: table.Components);
                 return;
             }

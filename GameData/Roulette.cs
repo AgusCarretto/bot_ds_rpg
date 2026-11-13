@@ -73,6 +73,16 @@ public static class RouletteRules
     // Lo que se cobra si sale n (0 si pierde). La apuesta ya está acotada para que entre en un int.
     public static int Payout(RouletteBet bet, int amount, int n) => Wins(bet, n) ? checked(amount * Multiplier(bet)) : 0;
 
+    // El paño (v0.55.1): varias apuestas en un giro. El total apostado tiene que dejar que el premio más grande posible (todo a un
+    // número, ×36) entre en un int, que es lo que cobra PlaceBetAsync.
+    public const int MaxTotalStake = int.MaxValue / NumberMultiplier;
+
+    public static int TotalPayout(IEnumerable<(RouletteBet Bet, int Amount)> bets, int n) =>
+        checked(bets.Sum(b => Payout(b.Bet, b.Amount, n)));
+
+    // Orden para mostrar el paño: rojo, negro, par, impar y después los números de menor a mayor.
+    public static int SortKey(RouletteBet bet) => bet.Kind == RouletteBetKind.Number ? 10 + bet.Number : (int)bet.Kind;
+
     public static string Describe(RouletteBet bet) => bet.Kind switch
     {
         RouletteBetKind.Red => Loc.T("🟥 Rojo"),

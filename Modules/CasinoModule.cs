@@ -5,7 +5,7 @@ using Discord;
 using Discord.Interactions;
 
 public class CasinoModule(
-    IUserRepository userRepository, ICasinoRepository casinoRepository, ICasinoService casinoService, IGameEvents gameEvents, IBlackjackService blackjack, IRpsService rpsService)
+    IUserRepository userRepository, ICasinoRepository casinoRepository, ICasinoService casinoService, IGameEvents gameEvents, IBlackjackService blackjack, IRpsService rpsService, IRouletteBoardService rouletteBoards)
     : InteractionModuleBase<SocketInteractionContext>
 {
     public const int MinBet = 10;
@@ -41,10 +41,10 @@ public class CasinoModule(
                 return;
             }
 
-            // La ruleta (v0.55.0): abre la mesa con botones; se apuesta y gira al tocar (Modules/RouletteModule.cs).
+            // La ruleta (v0.55.0; paño de fichas desde la v0.55.1): abre el paño; se ponen fichas y se gira con botones (Modules/RouletteModule.cs).
             if (game.Trim().ToLowerInvariant() == RouletteRules.GameKey)
             {
-                var table = await RouletteModule.OpenTableAsync(userRepository, Context.User.Id, bet);
+                var table = await RouletteModule.OpenBoardAsync(userRepository, rouletteBoards, Context.User.Id, bet);
                 await FollowupAsync(table.Error, embed: table.Embed, components: table.Components, ephemeral: table.Embed is null);
                 return;
             }
