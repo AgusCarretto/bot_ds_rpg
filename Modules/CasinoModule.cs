@@ -11,12 +11,13 @@ public class CasinoModule(
     public const int MinBet = 10;
 
     // Comando barra: /play
-    [SlashCommand("play", "Apostá tu oro: Coinflip, Slots, Blackjack o Elementos (contra otro jugador).")]
+    [SlashCommand("play", "Apostá tu oro: Coinflip, Slots, Blackjack, Ruleta o Elementos (contra otro jugador).")]
     public async Task HandlePlayAsync(
         [Summary("game", "Elegí el juego.")]
         [Choice("Coinflip", "coinflip")]
         [Choice("Slots", "slots")]
         [Choice("Blackjack", "blackjack")]
+        [Choice("Ruleta", RouletteRules.GameKey)]
         [Choice("Elementos (contra otro jugador)", RpsRules.GameKey)]
         string game,
         [Summary("apuesta", "Cuánto oro querés apostar (mínimo 10; también 10k, 1m), o all para apostar todo.")]
@@ -37,6 +38,14 @@ public class CasinoModule(
             {
                 var hand = await BlackjackModule.ExecuteStartAsync(blackjack, Context.User.Id, bet);
                 await FollowupAsync(hand.PlainMessage, embed: hand.Embed, components: hand.Components, ephemeral: hand.Embed is null);
+                return;
+            }
+
+            // La ruleta (v0.55.0): abre la mesa con botones; se apuesta y gira al tocar (Modules/RouletteModule.cs).
+            if (game.Trim().ToLowerInvariant() == RouletteRules.GameKey)
+            {
+                var table = await RouletteModule.OpenTableAsync(userRepository, Context.User.Id, bet);
+                await FollowupAsync(table.Error, embed: table.Embed, components: table.Components, ephemeral: table.Embed is null);
                 return;
             }
 
@@ -102,7 +111,7 @@ public class CasinoModule(
 
         if (game is not ("coinflip" or "slots"))
         {
-            return new PlayResult(Loc.T("El juego tiene que ser **coinflip**, **slots**, **blackjack** o **elementos**."), null);
+            return new PlayResult(Loc.T("El juego tiene que ser **coinflip**, **slots**, **blackjack**, **ruleta** o **elementos**."), null);
         }
 
         if (bet < MinBet)

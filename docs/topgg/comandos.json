@@ -814,7 +814,7 @@
   {
     "type": 1,
     "name": "play",
-    "description": "Apostá tu oro: Coinflip, Slots, Blackjack o Elementos (contra otro jugador).",
+    "description": "Apostá tu oro: Coinflip, Slots, Blackjack, Ruleta o Elementos (contra otro jugador).",
     "options": [
       {
         "type": 3,
@@ -833,6 +833,10 @@
           {
             "name": "Blackjack",
             "value": "blackjack"
+          },
+          {
+            "name": "Ruleta",
+            "value": "ruleta"
           },
           {
             "name": "Elementos (contra otro jugador)",
