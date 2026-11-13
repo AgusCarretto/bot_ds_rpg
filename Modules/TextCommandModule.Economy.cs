@@ -205,9 +205,16 @@ public partial class TextCommandModule
     // "aa play <coinflip|slots|blackjack> <apuesta> [heads|tails]" / "aa pl ..." — misma lógica que /play.
     [Command("play")]
     [Alias("pl")]
-    [Summary("Apostá tu oro en el casino: \"aa play coinflip <apuesta|all> <heads|tails>\", \"aa play slots <apuesta|all>\" o \"aa play blackjack <apuesta|all>\".")]
+    [Summary("Apostá tu oro: \"aa play coinflip <apuesta|all> <heads|tails>\", \"aa play slots <apuesta|all>\", \"aa play blackjack <apuesta|all>\" o \"aa play elementos @amigo <apuesta>\".")]
     public async Task PlayAsync(string game, string apuesta, string? lado = null)
     {
+        // Elementos (v0.54.0): contra otro jugador, con botones (ver TextCommandModule.Rps.cs).
+        if (game.Trim().ToLowerInvariant() is RpsRules.GameKey or "elemento" or "elem")
+        {
+            await PlayElementsAsync(apuesta, lado);
+            return;
+        }
+
         try
         {
             // El blackjack es una mano con botones: ver Modules/BlackjackModule.cs ("aa bj" es el atajo).

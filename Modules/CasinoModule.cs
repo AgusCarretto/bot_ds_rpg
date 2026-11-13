@@ -5,25 +5,28 @@ using Discord;
 using Discord.Interactions;
 
 public class CasinoModule(
-    IUserRepository userRepository, ICasinoRepository casinoRepository, ICasinoService casinoService, IGameEvents gameEvents, IBlackjackService blackjack)
+    IUserRepository userRepository, ICasinoRepository casinoRepository, ICasinoService casinoService, IGameEvents gameEvents, IBlackjackService blackjack, IRpsService rpsService)
     : InteractionModuleBase<SocketInteractionContext>
 {
     public const int MinBet = 10;
 
     // Comando barra: /play
-    [SlashCommand("play", "Apostá tu oro en el casino (Coinflip, Slots o Blackjack).")]
+    [SlashCommand("play", "Apostá tu oro: Coinflip, Slots, Blackjack o Elementos (contra otro jugador).")]
     public async Task HandlePlayAsync(
         [Summary("game", "Elegí el juego.")]
         [Choice("Coinflip", "coinflip")]
         [Choice("Slots", "slots")]
         [Choice("Blackjack", "blackjack")]
+        [Choice("Elementos (contra otro jugador)", RpsRules.GameKey)]
         string game,
         [Summary("apuesta", "Cuánto oro querés apostar (mínimo 10; también 10k, 1m), o all para apostar todo.")]
         string bet,
         [Summary("lado", "Solo para Coinflip: elegí Heads o Tails.")]
         [Choice("Heads", "heads")]
         [Choice("Tails", "tails")]
-        string? lado = null)
+        string? lado = null,
+        [Summary("rival", "Solo para Elementos: a quién desafiás.")]
+        IUser? rival = null)
     {
         await DeferAsync();
 
@@ -34,6 +37,27 @@ public class CasinoModule(
             {
                 var hand = await BlackjackModule.ExecuteStartAsync(blackjack, Context.User.Id, bet);
                 await FollowupAsync(hand.PlainMessage, embed: hand.Embed, components: hand.Components, ephemeral: hand.Embed is null);
+                return;
+            }
+
+            // Elementos (v0.54.0): fuego, hielo y agua contra otro jugador; el desafío se publica y se juega con botones (Modules/RpsModule.cs).
+            if (game.Trim().ToLowerInvariant() == RpsRules.GameKey)
+            {
+                if (rival is null)
+                {
+                    await FollowupAsync(Loc.T("Para **Elementos** elegí a quién desafiás en la opción **rival**."), ephemeral: true);
+                    return;
+                }
+
+                var challenge = await RpsModule.PrepareChallengeAsync(userRepository, rpsService, Context.User.Id, Context.User.GlobalName ?? Context.User.Username, rival, bet);
+                if (challenge.Game is null)
+                {
+                    await FollowupAsync(challenge.Error, ephemeral: true);
+                    return;
+                }
+
+                challenge.Game.Message = await FollowupAsync(rival.Mention, embed: RpsModule.BuildEmbed(challenge.Game), components: RpsModule.BuildComponents(challenge.Game),
+                    allowedMentions: new AllowedMentions(AllowedMentionTypes.Users));
                 return;
             }
 
@@ -78,7 +102,7 @@ public class CasinoModule(
 
         if (game is not ("coinflip" or "slots"))
         {
-            return new PlayResult(Loc.T("El juego tiene que ser **coinflip** o **slots**."), null);
+            return new PlayResult(Loc.T("El juego tiene que ser **coinflip**, **slots**, **blackjack** o **elementos**."), null);
         }
 
         if (bet < MinBet)

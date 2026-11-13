@@ -252,7 +252,7 @@ var sp = (IServiceProvider)typeof(BoxModule).Assembly.GetType("ServiceProviderBu
 await interactions.AddModulesAsync(typeof(BoxModule).Assembly, sp);
 var play = interactions.SlashCommands.Single(c => c.Name == "play");
 var gameParam = play.Parameters.Single(p => p.Name == "game");
-Check(play.Description.Length <= 100 && play.Description.Contains("Blackjack") && gameParam.Choices.Select(c => c.Value.ToString()).SequenceEqual(["coinflip", "slots", "blackjack"]) && play.Parameters.Single(p => p.Name == "apuesta").Description.Length <= 100, "/play ofrece Blackjack entre los juegos, con sus descripciones dentro de los 100 caracteres");
+Check(play.Description.Length <= 100 && play.Description.Contains("Blackjack") && gameParam.Choices.Select(c => c.Value.ToString()).SequenceEqual(["coinflip", "slots", "blackjack", "elementos"]) && play.Parameters.Single(p => p.Name == "apuesta").Description.Length <= 100, "/play ofrece Blackjack entre los juegos, con sus descripciones dentro de los 100 caracteres");
 IComponentInteraction Click(string id) => FakeProxy.Make<IComponentInteraction>(new() { ["Data"] = FakeProxy.Make<IComponentInteractionData>(new() { ["CustomId"] = id }) });
 string gid = Guid.NewGuid().ToString("N");
 var rHit = interactions.SearchComponentCommand(Click($"bj_hit:{U(1)}:{gid}")); var rStand = interactions.SearchComponentCommand(Click($"bj_stand:{U(1)}:{gid}")); var rDouble = interactions.SearchComponentCommand(Click($"bj_double:{U(1)}:{gid}"));

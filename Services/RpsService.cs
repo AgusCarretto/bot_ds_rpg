@@ -6,7 +6,7 @@ namespace BotDsRpg.Services;
 
 public enum RpsPhase { Offered, Picking, Finished }
 
-// Una partida de piedra, papel o tijera. Se muta SOLO bajo Lock y sin await adentro (el mismo modelo que el jefe en equipo):
+// Una partida de Elementos (fuego, hielo y agua). Se muta SOLO bajo Lock y sin await adentro (el mismo modelo que el jefe en equipo):
 // dos clicks a la vez del último que elige deciden la partida UNA sola vez.
 public sealed class RpsGame
 {

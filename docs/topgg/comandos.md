@@ -77,13 +77,12 @@ Todo comando también se puede escribir con el prefijo `aa` (por ejemplo `aa hun
 | `/trade` | Cambiá un material por otro de la misma rareza con otro jugador. |
 | `/exchange` | Cambiá 3 drops de una zona por 1 que te falte. |
 | `/deepshop` | El Tabernero del Inframundo: materiales míticos por Polvo. |
-| `/play` | El casino: moneda, tragamonedas y blackjack. |
+| `/play` | El casino: moneda, tragamonedas, blackjack y Elementos (fuego, hielo y agua contra otro jugador, el que gana se lleva la apuesta del otro). |
 
 ## Con otros jugadores
 | Comando | Descripción |
 |---|---|
 | `/fight` | Desafiá a otro jugador a un duelo amistoso. |
-| `/ppt` | Piedra, papel o tijera apostando oro contra otro jugador: el que gana se lleva la apuesta del otro. |
 | `/arena join` | Anotate en el torneo PvP de hoy. |
 | `/arena listplayers` | Quiénes están anotados hoy. |
 | `/arena results` | La llave y el campeón del último torneo. |

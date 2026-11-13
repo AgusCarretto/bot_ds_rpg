@@ -50,7 +50,7 @@ public static class GameHistory
             new("🃏", "Blackjack", Count(GameEventKinds.CasinoWin, "blackjack"), Count(GameEventKinds.CasinoLoss, "blackjack"),
                 Gold(GameEventKinds.CasinoWin, "blackjack"), Gold(GameEventKinds.CasinoLoss, "blackjack"), IsCasino: true),
             // v0.54.0: el detail es el rival, así que el oro se suma de todos los rivales.
-            new("✊", Loc.T("Piedra, papel o tijera"), Count(GameEventKinds.RpsWin), Count(GameEventKinds.RpsLoss),
+            new("🔥", Loc.T("Elementos"), Count(GameEventKinds.RpsWin), Count(GameEventKinds.RpsLoss),
                 AllGold(GameEventKinds.RpsGoldWon), AllGold(GameEventKinds.RpsGoldLost), IsCasino: true),
         };
 

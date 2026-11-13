@@ -814,7 +814,7 @@
   {
     "type": 1,
     "name": "play",
-    "description": "Apostá tu oro en el casino (Coinflip, Slots o Blackjack).",
+    "description": "Apostá tu oro: Coinflip, Slots, Blackjack o Elementos (contra otro jugador).",
     "options": [
       {
         "type": 3,
@@ -833,6 +833,10 @@
           {
             "name": "Blackjack",
             "value": "blackjack"
+          },
+          {
+            "name": "Elementos (contra otro jugador)",
+            "value": "elementos"
           }
         ],
         "min_value": -9007199254740991,
@@ -863,27 +867,12 @@
         ],
         "min_value": -9007199254740991,
         "max_value": 9007199254740991
-      }
-    ]
-  },
-  {
-    "type": 1,
-    "name": "ppt",
-    "description": "Piedra, papel o tijera apostando oro contra otro jugador: el que gana se lleva la apuesta del otro.",
-    "options": [
-      {
-        "type": 6,
-        "name": "jugador",
-        "description": "A quién desafiás",
-        "required": true,
-        "min_value": -9007199254740991,
-        "max_value": 9007199254740991
       },
       {
-        "type": 3,
-        "name": "apuesta",
-        "description": "Cuánto oro pone cada uno (500, 10k o all)",
-        "required": true,
+        "type": 6,
+        "name": "rival",
+        "description": "Solo para Elementos: a quién desafiás.",
+        "required": false,
         "min_value": -9007199254740991,
         "max_value": 9007199254740991
       }

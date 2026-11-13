@@ -62,9 +62,9 @@ public static class AchievementCatalog
         new("encantador",    "Encantador",    "✨", GameEventKinds.Enchant,       Loc.Mark("Intentá encantar tu arma o tu amuleto"),            Plain(1, 10, 40)),
         new("afortunado",    "Afortunado",    "🎰", GameEventKinds.CasinoWin,     Loc.Mark("Ganá oro en el casino con /play"),                  Plain(500, 5000, 50000)),
         new("gladiador",     "Gladiador",     "🏟️", GameEventKinds.ArenaJoin,     Loc.Mark("Anotate en el torneo diario con /arena join"),      Plain(3, 15, 60)),
-        // v0.54.0: piedra, papel o tijera apostando. Solo oro y EXP (Plain) y sin títulos: el dueño pidió «logro nomás». Se puede farmear
+        // v0.54.0: Elementos (fuego, hielo y agua) apostando; nació como piedra, papel o tijera y la clave quedó «manoganadora». Solo oro y EXP (Plain) y sin títulos: el dueño pidió «logro nomás». Se puede farmear
         // entre amigos (uno pierde a propósito), por eso nunca una caja.
-        new("manoganadora",  "Mano Ganadora", "✊", GameEventKinds.RpsWin,        Loc.Mark("Ganá partidas de piedra, papel o tijera con /ppt"),  Plain(5, 25, 100)),
+        new("manoganadora",  "Señor de los Elementos", "🔥", GameEventKinds.RpsWin, Loc.Mark("Ganá partidas de Elementos con /play"),  Plain(5, 25, 100)),
 
         // v0.10.0: las mascotas (también solo oro y XP). Hay 6 especies desde la v0.14.0 (la del Fogón Eterno), así que Domador termina en 6; para dejar a las seis en el nivel máximo hacen falta
         // 150 comidas (PetRules.TotalFeedsToMax × 6) y ese es el último tramo de Criador. Se alimenta a cada una una vez por hora: el contador no se infla.
