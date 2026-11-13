@@ -3046,9 +3046,6 @@
   "viaje": "travel",
   "jefe": "boss",
   "sin drop": "no drop",
-  "❓ **???** · {0}": "❓ **???** · {0}",
-  "{0} **{1}** · {2} · vencido **{3}**": "{0} **{1}** · {2} · defeated **{3}**",
-  "❤️ {0}-{1} · ⚔️ {2}-{3} · 🎁 {4}": "❤️ {0}-{1} · ⚔️ {2}-{3} · 🎁 {4}",
   "📖 Bestiario · {0}": "📖 Bestiary · {0}",
   "Esta zona: {0} de {1} · en total: {2} de {3} · los ??? se descubren venciéndolos": "This zone: {0} of {1} · in total: {2} of {3} · the ??? are revealed by defeating them",
   "📖 {0}": "📖 {0}",
@@ -3060,5 +3057,6 @@
   "Elegí otro monstruo o volvé a la zona con los menús": "Pick another monster or go back to the zone with the menus",
   "{0} de {1}": "{0} of {1}",
   "Ver la ficha de…": "See the card of…",
-  "Vencé monstruos distintos y llená tu /bestiary": "Defeat different monsters and fill your /bestiary"
+  "Vencé monstruos distintos y llená tu /bestiary": "Defeat different monsters and fill your /bestiary",
+  "{0} · vencido **{1}** · 🎁 {2}": "{0} · defeated **{1}** · 🎁 {2}"
 }
