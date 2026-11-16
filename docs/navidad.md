@@ -138,5 +138,7 @@ Reno, banner de nieve.
   Petardo 50→600, Trineo 200→2.600. Al caer, en la misma transacción: todos 150 Regalos + Cofre de Oro + Polvo (daño/10, entre 10 y 500); top 10 +300 Regalos;
   top 3 + Cofre de Escoria (el dueño); contador `snowman_kill` → títulos «Rompenieves» (1) y «Azote del Muñeco» (3). Vuelve con ×1,5 de vida mientras caen Regalos.
   El panel se refresca solo cada 5 s durante 2 min y muestra las últimas 5 tiradas (en memoria). Anuncio público con el top 10 al caer.
-- **Falta:** venta de Regalos por oro (25 → 6, precio a decidir); banner de nieve (cuando haya arte);
+- **Venta de Regalos (hecha):** **5.000 de oro cada uno** (el dueño, 2026-11-16), solo del 25 al 6. Botón «💰 Vender Regalos» en la tienda con confirmación (vende todo);
+  `aa navidad vender 100|10k|all` vende una parte. Transacción guardada; si el oro pasaría el tope de la base (INTEGER) no vende nada.
+- **Falta:** banner de nieve (cuando haya arte);
   logros; arte; `/info` y `docs/topgg/comandos`.

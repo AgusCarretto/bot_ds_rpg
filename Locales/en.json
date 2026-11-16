@@ -3188,5 +3188,17 @@
   "nadie lo sacó todavía": "nobody has redeemed it yet",
   "lo sacó 1 persona": "redeemed by 1 player",
   "lo sacaron {0}": "redeemed by {0} players",
-  "{0} No pude escribirte por privado (¿tenés los mensajes directos cerrados?): usá **/codelist**, que responde solo para vos.": "{0} I couldn't message you privately (are your DMs closed?): use **/codelist**, which only you can see."
+  "{0} No pude escribirte por privado (¿tenés los mensajes directos cerrados?): usá **/codelist**, que responde solo para vos.": "{0} I couldn't message you privately (are your DMs closed?): use **/codelist**, which only you can see.",
+  "¡Upa! No pude vender los Regalos, intentá de nuevo en un momento.": "Oops! I couldn't sell the Gifts, try again in a moment.",
+  "💰 Vender Regalos": "💰 Sell Gifts",
+  "No tenés Regalos para vender.": "You have no Gifts to sell.",
+  "Los Regalos se venden del 25 de diciembre al 6 de enero.": "Gifts can be sold from December 25th to January 6th.",
+  "¿Vendés tus **{0}** Regalos por **{1}** de oro?\n\nNo se puede deshacer. Para vender solo una parte: **aa navidad vender 100**.": "Sell your **{0}** Gifts for **{1}** gold?\n\nThis can't be undone. To sell only some: **aa navidad vender 100**.",
+  "No, me los quedo": "No, I'll keep them",
+  "Decime cuántos Regalos vender: un número (**aa navidad vender 100**) o **all** para todos.": "Tell me how many Gifts to sell: a number (**aa navidad vender 100**) or **all** for all of them.",
+  "No te alcanzan: tenés **{0}** Regalos.": "Not enough: you have **{0}** Gifts.",
+  "Con eso pasarías el tope de oro: vendé menos de una vez.": "That would go over the gold cap: sell fewer at once.",
+  "💰 Vendiste **{0}** Regalos por **{1}** de oro. Te quedan **{2}** Regalos.": "💰 You sold **{0}** Gifts for **{1}** gold. You have **{2}** Gifts left.",
+  "💰 **Vender Regalos**: {0} de oro cada uno (hasta el 6 de enero)": "💰 **Sell Gifts**: {0} gold each (until January 6th)",
+  "Vender Regalos": "Sell Gifts"
 }

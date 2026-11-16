@@ -17,6 +17,8 @@ public class ChristmasModule(
     private const string ShopPrefix = "xmas_shop";
     private const string BackPrefix = "xmas_back";
     private const string BuyPrefix = "xmas_buy";
+    private const string SellPrefix = "xmas_sell";
+    private const string SellYesPrefix = "xmas_sellyes";
 
     [SlashCommand("navidad", "Navidad en el Fogón: tus Regalos y el calendario de adviento.")]
     public async Task HandleChristmasAsync()
@@ -145,6 +147,103 @@ public class ChristmasModule(
         }
     }
 
+    [ComponentInteraction($"{SellPrefix}:*")]
+    public async Task HandleSellAskAsync(string ownerRaw)
+    {
+        await DeferAsync();
+
+        try
+        {
+            if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
+            {
+                await FollowupAsync(Loc.T("Esa tienda es de otra persona: abrí la tuya con **/navidad**."), ephemeral: true);
+                return;
+            }
+
+            var view = await BuildSellConfirmAsync(christmasRepository, christmasService, ownerId, DateTime.UtcNow);
+            await ModifyOriginalResponseAsync(p => { p.Embed = view.Embed; p.Components = view.Components; });
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            await FollowupAsync(Loc.T("¡Upa! No pude abrir la tienda de Navidad, intentá de nuevo en un momento."), ephemeral: true);
+        }
+    }
+
+    [ComponentInteraction($"{SellYesPrefix}:*")]
+    public async Task HandleSellYesAsync(string ownerRaw)
+    {
+        await DeferAsync();
+
+        try
+        {
+            if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
+            {
+                await FollowupAsync(Loc.T("Esa tienda es de otra persona: abrí la tuya con **/navidad**."), ephemeral: true);
+                return;
+            }
+
+            string result = await SellGiftsAsync(christmasRepository, christmasService, ownerId, "all", DateTime.UtcNow);
+            var view = await BuildShopAsync(christmasRepository, christmasService, ownerId, DateTime.UtcNow);
+            await ModifyOriginalResponseAsync(p => { p.Embed = view.Embed; p.Components = view.Components; });
+            await FollowupAsync(result);
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            await FollowupAsync(Loc.T("¡Upa! No pude vender los Regalos, intentá de nuevo en un momento."), ephemeral: true);
+        }
+    }
+
+    // La confirmación antes de vender TODO (con un botón no se vende sin querer lo que juntaste para el Reno).
+    public static async Task<ChristmasView> BuildSellConfirmAsync(IChristmasRepository repository, IChristmasService service, ulong discordId, DateTime utcNow)
+    {
+        var gifts = await repository.GetAsync(discordId, service.Settings.Season);
+        var embed = new EmbedBuilder().WithTitle(Loc.T("💰 Vender Regalos")).WithColor(Color.Gold);
+        if (!ChristmasShop.CanSellGifts(ChristmasRules.PhaseAt(service.Settings, utcNow)) || gifts.Balance <= 0)
+        {
+            embed.WithDescription(gifts.Balance <= 0 ? Loc.T("No tenés Regalos para vender.") : Loc.T("Los Regalos se venden del 25 de diciembre al 6 de enero."));
+            return new ChristmasView(embed.Build(), new ComponentBuilder()
+                .WithButton(Loc.T("Volver"), $"{ShopPrefix}:{discordId}", ButtonStyle.Secondary, new Emoji("↩️")).Build());
+        }
+
+        embed.WithDescription(Loc.F($"¿Vendés tus **{GameHistory.Number(gifts.Balance)}** Regalos por **{GameHistory.Number(gifts.Balance * ChristmasShop.GiftSellPrice)}** de oro?\n\nNo se puede deshacer. Para vender solo una parte: **aa navidad vender 100**."));
+        return new ChristmasView(embed.Build(), new ComponentBuilder()
+            .WithButton(Loc.T("Sí, vender todo"), $"{SellYesPrefix}:{discordId}", ButtonStyle.Success, new Emoji("💰"))
+            .WithButton(Loc.T("No, me los quedo"), $"{ShopPrefix}:{discordId}", ButtonStyle.Secondary, new Emoji("🛡️"))
+            .Build());
+    }
+
+    // Vende Regalos por oro (del 25 al 6). amountText: un número, «10k» o «all». Devuelve el mensaje para el jugador.
+    public static async Task<string> SellGiftsAsync(IChristmasRepository repository, IChristmasService service, ulong discordId, string? amountText, DateTime utcNow)
+    {
+        if (!ChristmasShop.CanSellGifts(ChristmasRules.PhaseAt(service.Settings, utcNow)))
+        {
+            return Loc.T("Los Regalos se venden del 25 de diciembre al 6 de enero.");
+        }
+
+        var gifts = await repository.GetAsync(discordId, service.Settings.Season);
+        int available = (int)Math.Min(int.MaxValue, gifts.Balance);
+        if (available <= 0)
+        {
+            return Loc.T("No tenés Regalos para vender.");
+        }
+
+        var parsed = AmountParser.Parse(amountText, available);
+        if (!parsed.Ok)
+        {
+            return Loc.T("Decime cuántos Regalos vender: un número (**aa navidad vender 100**) o **all** para todos.");
+        }
+
+        var outcome = await repository.SellGiftsAsync(discordId, service.Settings.Season, parsed.Amount, ChristmasShop.GiftSellPrice);
+        return outcome.Status switch
+        {
+            GiftSellStatus.NotEnoughGifts => Loc.F($"No te alcanzan: tenés **{GameHistory.Number(available)}** Regalos."),
+            GiftSellStatus.GoldCap => Loc.T("Con eso pasarías el tope de oro: vendé menos de una vez."),
+            _ => Loc.F($"💰 Vendiste **{GameHistory.Number(outcome.Sold)}** Regalos por **{GameHistory.Number(outcome.GoldEarned)}** de oro. Te quedan **{GameHistory.Number(outcome.GiftsAfter)}** Regalos."),
+        };
+    }
+
     // La tienda navideña: un artículo por línea y un desplegable para comprar de a uno (las Campanas de a muchas, con «aa navidad comprar campana 10»).
     public static async Task<ChristmasView> BuildShopAsync(IChristmasRepository repository, IChristmasService service, ulong discordId, DateTime utcNow)
     {
@@ -171,11 +270,23 @@ public class ChristmasModule(
             }
         }
 
+        bool selling = ChristmasShop.CanSellGifts(phase);
+        if (selling)
+        {
+            lines.Add(string.Empty);
+            lines.Add(Loc.F($"💰 **Vender Regalos**: {GameHistory.Number(ChristmasShop.GiftSellPrice)} de oro cada uno (hasta el 6 de enero)"));
+        }
+
         embed.WithDescription(string.Join("\n", lines));
         embed.WithFooter(Loc.T("Campanas de a muchas: aa navidad comprar campana 10"));
-        var components = new ComponentBuilder()
-            .WithSelectMenu(menu)
-            .WithButton(Loc.T("Volver"), $"{BackPrefix}:{discordId}", ButtonStyle.Secondary, new Emoji("↩️"))
+        var builder = new ComponentBuilder().WithSelectMenu(menu);
+        if (selling)
+        {
+            builder.WithButton(Loc.T("Vender Regalos"), $"{SellPrefix}:{discordId}", ButtonStyle.Success, new Emoji("💰"), row: 1);
+        }
+
+        var components = builder
+            .WithButton(Loc.T("Volver"), $"{BackPrefix}:{discordId}", ButtonStyle.Secondary, new Emoji("↩️"), row: 1)
             .Build();
         return new ChristmasView(embed.Build(), components);
     }

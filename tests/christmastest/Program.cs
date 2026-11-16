@@ -335,6 +335,35 @@ using (Loc.Use("en"))
 
 await CleanSnow();
 
+Console.WriteLine("\n== 15. Vender Regalos (25 → 6) ==");
+Check(ChristmasShop.GiftSellPrice == 5000 && !ChristmasShop.CanSellGifts(ChristmasPhase.Farm) && ChristmasShop.CanSellGifts(ChristmasPhase.Shop), "5.000 de oro cada uno, solo del 25 al 6");
+await db.ExecuteAsync("UPDATE event_gifts SET balance = 300 WHERE discord_id = @id AND season = @season", new { id = (long)U, season });
+await db.ExecuteAsync("UPDATE users SET gold = 1000 WHERE discord_id = @id", new { id = (long)U });
+Check((await ChristmasModule.SellGiftsAsync(repo, during, U, "10", settings.StartUtc.AddDays(3))).Contains("25 de diciembre") && (await repo.GetAsync(U, season)).Balance == 300,
+    "mientras caen Regalos no se venden");
+DateTime sellDay = settings.FarmEndUtc.AddDays(2);
+string sold = await ChristmasModule.SellGiftsAsync(repo, shop, U, "100", sellDay);
+Check(sold.Contains("500.000") && (await repo.GetAsync(U, season)).Balance == 200 && (await users.GetByDiscordIdAsync(U))!.Gold == 1000 + 500_000, "vender 100 = 500.000 de oro");
+Check((await ChristmasModule.SellGiftsAsync(repo, shop, U, "999", sellDay)).Contains("No te alcanzan") && (await repo.GetAsync(U, season)).Balance == 200, "más de los que tenés: no vende nada");
+await db.ExecuteAsync("UPDATE users SET gold = 2147000000 WHERE discord_id = @id", new { id = (long)U });
+Check((await ChristmasModule.SellGiftsAsync(repo, shop, U, "all", sellDay)).Contains("tope") && (await repo.GetAsync(U, season)).Balance == 200, "si el oro pasaría el tope, no vende ni descuenta");
+await db.ExecuteAsync("UPDATE users SET gold = 0 WHERE discord_id = @id", new { id = (long)U });
+var sellRace = await Task.WhenAll(Enumerable.Range(0, 5).Select(_ => repo.SellGiftsAsync(U, season, 200, ChristmasShop.GiftSellPrice)));
+Check(sellRace.Count(r => r.Status == GiftSellStatus.Ok) == 1 && (await users.GetByDiscordIdAsync(U))!.Gold == 1_000_000 && (await repo.GetAsync(U, season)).Balance == 0, "5 ventas de todo a la vez: se cobra una sola");
+await db.ExecuteAsync("UPDATE event_gifts SET balance = 40 WHERE discord_id = @id AND season = @season", new { id = (long)U, season });
+var confirm = await ChristmasModule.BuildSellConfirmAsync(repo, shop, U, sellDay);
+Check(confirm.Embed.Description!.Contains("200.000") && confirm.Components is not null, "la confirmación dice cuánto oro te dan (40 → 200.000)");
+var shopSelling = await ChristmasModule.BuildShopAsync(repo, shop, U, sellDay);
+var shopFarm = await ChristmasModule.BuildShopAsync(repo, during, U, settings.StartUtc.AddDays(3));
+bool HasSell(MessageComponent? c) => c is not null && c.Components.SelectMany(r => ((ActionRowComponent)r).Components).OfType<ButtonComponent>().Any(b => b.CustomId?.StartsWith("xmas_sell:") == true);
+Check(HasSell(shopSelling.Components) && !HasSell(shopFarm.Components), "el botón de vender aparece solo del 25 al 6");
+using (Loc.Use("en"))
+{
+    string enSell = await ChristmasModule.SellGiftsAsync(repo, shop, U, "10", sellDay) + "\n" + LeakCheck.AllText((await ChristmasModule.BuildSellConfirmAsync(repo, shop, U, sellDay)).Embed);
+    var sellLeak = LeakCheck.NoSpanish(enSell, ["aa navidad vender 100"]);
+    Check(sellLeak.Ok, $"la venta en inglés sin español ({sellLeak.Found})");
+}
+
 await Clean();
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;

@@ -35,6 +35,15 @@ public enum ChristmasBuyStatus
 public sealed record ChristmasBuyOutcome(
     ChristmasBuyStatus Status, ChristmasShopItem Item, int Quantity = 0, long GiftsAfter = 0, int BellsAfter = 0, DateTime? CandleUntil = null, RewardReceipt? Receipt = null, int Dust = 0);
 
+public enum GiftSellStatus
+{
+    Ok,
+    NotEnoughGifts,
+    GoldCap,     // el oro pasaría el tope de la base (INTEGER): no se vende nada
+}
+
+public sealed record GiftSellOutcome(GiftSellStatus Status, int Sold = 0, long GoldEarned = 0, long GiftsAfter = 0, int GoldAfter = 0);
+
 public enum BellUseStatus
 {
     Ok,
@@ -58,6 +67,9 @@ public interface IChristmasRepository
 
     // Compra en la tienda: cobra los Regalos (update guardado) y entrega en la MISMA transacción. quantity solo vale para las Campanas (las demás, 1).
     Task<ChristmasBuyOutcome> BuyAsync(ulong discordId, string season, ChristmasShopItem item, int quantity, int zoneRank, CancellationToken cancellationToken = default);
+
+    // Vende count Regalos a pricePerGift de oro cada uno, en UNA transacción: baja los Regalos (update guardado) y sube el oro sin pasarse del tope.
+    Task<GiftSellOutcome> SellGiftsAsync(ulong discordId, string season, int count, int pricePerGift, CancellationToken cancellationToken = default);
 
     // Usa una Campana: si /hunt está esperando, borra su cooldown y descuenta la Campana; si ya está listo, no gasta nada.
     Task<(BellUseStatus Status, int BellsLeft)> UseBellAsync(ulong discordId, string season, TimeSpan huntCooldown, CancellationToken cancellationToken = default);
@@ -317,6 +329,48 @@ public sealed class ChristmasRepository(IDbConnectionFactory connectionFactory) 
 
             await transaction.CommitAsync(cancellationToken);
             return (BellUseStatus.Ok, bellsLeft.Value);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
+
+    public async Task<GiftSellOutcome> SellGiftsAsync(ulong discordId, string season, int count, int pricePerGift, CancellationToken cancellationToken = default)
+    {
+        if (count <= 0)
+        {
+            return new GiftSellOutcome(GiftSellStatus.NotEnoughGifts);
+        }
+
+        long gold = (long)count * pricePerGift;
+        using DbConnection connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        await using DbTransaction transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            long? giftsAfter = await connection.QuerySingleOrDefaultAsync<long?>(new CommandDefinition(
+                "UPDATE event_gifts SET balance = balance - @Count WHERE discord_id = @DiscordId AND season = @Season AND balance >= @Count RETURNING balance;",
+                new { DiscordId = (long)discordId, Season = season, Count = (long)count }, transaction: transaction, cancellationToken: cancellationToken));
+            if (giftsAfter is null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new GiftSellOutcome(GiftSellStatus.NotEnoughGifts);
+            }
+
+            int? goldAfter = gold > int.MaxValue ? null : await connection.QuerySingleOrDefaultAsync<int?>(new CommandDefinition(
+                "UPDATE users SET gold = gold + @Gold WHERE discord_id = @DiscordId AND gold <= @Max - @Gold RETURNING gold;",
+                new { DiscordId = (long)discordId, Gold = (int)gold, Max = int.MaxValue }, transaction: transaction, cancellationToken: cancellationToken));
+            if (goldAfter is null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new GiftSellOutcome(GiftSellStatus.GoldCap);
+            }
+
+            await transaction.CommitAsync(cancellationToken);
+            return new GiftSellOutcome(GiftSellStatus.Ok, count, gold, giftsAfter.Value, goldAfter.Value);
         }
         catch
         {

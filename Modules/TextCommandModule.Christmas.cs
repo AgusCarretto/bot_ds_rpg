@@ -23,6 +23,12 @@ public partial class TextCommandModule
                 return;
             }
 
+            if (verb is "vender" or "sell")
+            {
+                await ReplyAsync(await ChristmasModule.SellGiftsAsync(christmasRepository, christmasService, Context.User.Id, words.ElementAtOrDefault(1), DateTime.UtcNow));
+                return;
+            }
+
             if (verb is "comprar" or "buy")
             {
                 int quantity = words.Length > 2 && int.TryParse(words[2], out int n) ? n : 1;

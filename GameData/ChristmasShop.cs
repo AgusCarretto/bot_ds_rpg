@@ -35,6 +35,11 @@ public static class ChristmasShop
     public static readonly RewardSpec SockReward = new(10, 2, BoxGrant.Daily); // «a medir»: oro y EXP como un /daily del día 4–5 y la caja diaria de tu zona
     public const int MaxBellsPerPurchase = 100;
 
+    // Del 25 de diciembre al 6 de enero se pueden vender los Regalos que sobran (el dueño, 2026-11-16: «cada regalo, 5k»). Mientras caen, no: son para la tienda y el Muñeco.
+    public const int GiftSellPrice = 5_000;
+
+    public static bool CanSellGifts(ChristmasPhase phase) => phase == ChristmasPhase.Shop;
+
     public const string TitleElfStat = "xmas_title_elfo";
     public const string TitleSpiritStat = "xmas_title_espiritu";
 
