@@ -145,7 +145,7 @@ public class CooldownModule(
         var shown = CooldownLayout.Apply(lines, layout);
         return new EmbedBuilder()
             .WithTitle(other ? Loc.F($"⏱️ Cooldowns de {targetName}") : Loc.T("⏱️ Tus cooldowns"))
-            .WithColor(Color.Teal)
+            .WithColor(Color.Orange) // naranja como perfil, stats e inventario: las pantallas del personaje van del mismo color (auditoría de UI, M15)
             .WithDescription(shown.Count == 0 ? Loc.T("Tenés todas las líneas ocultas. Mostralas en **/config** o con `aa cd mostrar todo`.") : string.Join('\n', shown))
             .WithFooter(other ? Loc.T("Con las líneas que elegiste ver en /config.") : Loc.T("Elegí qué líneas ver y en qué orden en /config (o con `aa cd orden`)."))
             .Build();
@@ -393,13 +393,14 @@ public class CooldownModule(
     }
 
     // La línea del jefe mundial: anotado ✅ con lo que falta para la pelea de las 00:00, o el aviso ⚠️ de que todavía no te anotaste (como la Arena). Pública y pura para probarla sin base.
-    // other (v0.51.3): al mirar a OTRO jugador la línea habla de él («todavía no se anotó») y no le da la orden de anotarse.
+    // other (v0.51.3): al mirar a OTRO jugador la línea no le da la orden de anotarse (sale sin el comando).
+    // Sin anotar va en un renglón corto que entra en el celular (auditoría de UI, M15a): «⚠️ sin anotar · 1h 35m · `/miniboss`»; el ⚠️ se conserva (v0.48.1).
     public static string WorldBossLine(bool joined, TimeSpan untilPlay, bool other = false) =>
         joined
             ? Loc.F($"🌍 **Jefe mundial**: anotado ✅ — se pelea en {TimeFormat.Remaining(untilPlay)}")
             : other
-                ? Loc.F($"🌍 **Jefe mundial**: **todavía no se anotó** ⚠️ Se pelea en {TimeFormat.Remaining(untilPlay)}")
-                : Loc.F($"🌍 **Jefe mundial**: **¡todavía no te anotaste!** ⚠️ Se pelea en {TimeFormat.Remaining(untilPlay)}: **/miniboss**");
+                ? Loc.F($"🌍 **Jefe mundial**: ⚠️ sin anotar · {TimeFormat.Remaining(untilPlay)}")
+                : Loc.F($"🌍 **Jefe mundial**: ⚠️ sin anotar · {TimeFormat.Remaining(untilPlay)} · `/miniboss`");
 
     private static async Task<string?> TryBuildArenaLineAsync(IArenaService? arenaService, ulong discordId, bool other = false)
     {
@@ -426,6 +427,6 @@ public class CooldownModule(
         joined
             ? Loc.F($"🏟️ **Arena**: anotado ✅ — se juega en {TimeFormat.Remaining(untilPlay)}")
             : other
-                ? Loc.F($"🏟️ **Arena**: **todavía no se anotó** ⚠️ Se juega en {TimeFormat.Remaining(untilPlay)}")
-                : Loc.F($"🏟️ **Arena**: **¡todavía no te anotaste!** ⚠️ Se juega en {TimeFormat.Remaining(untilPlay)}: **/arena join**");
+                ? Loc.F($"🏟️ **Arena**: ⚠️ sin anotar · {TimeFormat.Remaining(untilPlay)}")
+                : Loc.F($"🏟️ **Arena**: ⚠️ sin anotar · {TimeFormat.Remaining(untilPlay)} · `/arena join`");
 }

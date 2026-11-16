@@ -219,7 +219,7 @@ public class MissionsModule(
             else
             {
                 int shown = (int)Math.Min(row.Progress, row.Mission.Target);
-                lines.Add($"▫️ **{Loc.Tr(row.Mission.Title)}**\n   {ProgressBar.Render(shown, (int)row.Mission.Target)} {shown}/{row.Mission.Target} · {MissionRewards.Describe(row.Reward)}");
+                lines.Add($"▫️ **{Loc.Tr(row.Mission.Title)}**\n   {ProgressBar.Render(shown, (int)row.Mission.Target)} {shown}/{row.Mission.Target}\n   🎁 {MissionRewards.Describe(row.Reward)}");
             }
         }
 
@@ -248,7 +248,7 @@ public class MissionsModule(
         var embed = new EmbedBuilder()
             .WithTitle(Loc.T("🎁 ¡Premios reclamados!"))
             .WithColor(Color.Green)
-            .WithDescription($"{string.Join('\n', lines)}\n\n**Total:** {totals.Describe()}")
+            .WithDescription(Loc.F($"{string.Join('\n', lines)}\n\n**Total:** {totals.Describe()}"))
             .AddField(Loc.T("💰 Tu oro ahora"), GameHistory.Number(totals.GoldAfter), true);
 
         // La subida de nivel sale como mensaje propio (GameData/LevelUpCard.cs), no como una línea más acá.

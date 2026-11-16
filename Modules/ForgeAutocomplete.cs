@@ -23,6 +23,26 @@ public static class ForgeChoices
         // + las recetas del Fogón Eterno cuando ya venció al jefe de la última zona (GameData/FogonRules.cs).
         // + la Hoja de Acero Puro (la única arma general, sin zona y solo con materiales) mientras no lleves NINGUNA arma puesta: es la base de quien empieza; con un arma puesta
         //   sería una opción más cada vez ("🔁 vendé tu arma primero") para algo que ya no sirve.
+        return Ordered(recipes, zones, player, owned, typed)
+            .Select(c => new AutocompleteResult(Truncate(c.Label()), c.Recipe.ResultItem.Name))
+            .ToList();
+    }
+
+    // Una opción del menú de la herrería (/forge): la etiqueta es corta (estado + nombre + estadística) y lo que falta va en la descripción,
+    // el segundo renglón gris de la opción, para que en el celular no se corte. El autocompletado de `aa forge make` no tiene ese segundo
+    // renglón: por eso sigue usando For(), con todo en una línea.
+    public sealed record MenuChoice(string Value, string Label, string Description);
+
+    // Las mismas recetas y el mismo orden que For(), armadas para un menú desplegable.
+    public static IReadOnlyList<MenuChoice> MenuFor(
+        IReadOnlyList<RecipeDetails> recipes, IReadOnlyList<Zone> zones, User player, IReadOnlyDictionary<string, int> owned) =>
+        Ordered(recipes, zones, player, owned, string.Empty)
+            .Select(c => new MenuChoice(c.Recipe.ResultItem.Name, Truncate(c.MenuLabel()), Truncate(c.MenuDescription())))
+            .ToList();
+
+    private static IEnumerable<Candidate> Ordered(
+        IReadOnlyList<RecipeDetails> recipes, IReadOnlyList<Zone> zones, User player, IReadOnlyDictionary<string, int> owned, string typed)
+    {
         zones = ZoneRanking.ForPlayer(zones, player.FuegoNuevo);
         bool gateOpen = FogonRules.OffersKeyGear(zones, player.HighestZoneCleared);
         return RecipeCatalog.ViewFor(recipes, zones, player.Class, player.CurrentZoneId, gateOpen).Recipes
@@ -34,9 +54,7 @@ public static class ForgeChoices
             .ThenBy(c => c.MissingUnits)
             .ThenByDescending(c => c.Recipe.ResultItem.StatValue)
             .ThenBy(c => c.Recipe.ResultItem.Name, StringComparer.Ordinal)
-            .Take(MaxChoices)
-            .Select(c => new AutocompleteResult(Truncate(c.Label()), c.Recipe.ResultItem.Name))
-            .ToList();
+            .Take(MaxChoices);
     }
 
     private sealed class Candidate
@@ -68,6 +86,43 @@ public static class ForgeChoices
 
         // Unidades de material que faltan (el oro no cuenta acá: es otra unidad y el jugador lo consigue distinto).
         public int MissingUnits => MissingIngredients.Sum(x => x.Short);
+
+        // Menú de la herrería: estado + nombre + estadística. Nada más, para que entre en el celular.
+        public string MenuLabel()
+        {
+            var item = Recipe.ResultItem;
+            string mark = AlreadyEquipped ? "🟢" : SlotTaken && Craftable ? "🔁" : Craftable ? "✅" : "❌";
+            return $"{mark} {item.Name} ({ItemStatLabel.Format(item) ?? item.Type})";
+        }
+
+        // Menú de la herrería: el segundo renglón de la opción. Una oración entera por variante (arma / amuleto) para que se pueda traducir.
+        public string MenuDescription()
+        {
+            bool weapon = Recipe.ResultItem.Type == "Weapon";
+
+            if (AlreadyEquipped)
+            {
+                return weapon ? Loc.T("Ya la llevás equipada") : Loc.T("Ya lo llevás equipado");
+            }
+
+            if (SlotTaken && Craftable)
+            {
+                return weapon ? Loc.T("Primero vendé tu arma equipada") : Loc.T("Primero vendé tu amuleto equipado");
+            }
+
+            if (Craftable)
+            {
+                return Recipe.GoldCost > 0 ? Loc.F($"Te cuesta {GameHistory.Number(Recipe.GoldCost)} oro") : Loc.T("Ya tenés todo");
+            }
+
+            var parts = MissingIngredients.Select(x => $"{GameHistory.Number(x.Short)} {x.Name}").ToList();
+            if (GoldShort > 0)
+            {
+                parts.Add(Loc.F($"{GameHistory.Number(GoldShort)} oro"));
+            }
+
+            return Loc.F($"Te falta: {string.Join(", ", parts)}");
+        }
 
         public string Label()
         {

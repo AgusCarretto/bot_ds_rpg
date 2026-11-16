@@ -155,12 +155,16 @@ public class DungeonModule(
             .WithTitle(Loc.F($"🏛️ {DungeonRules.Name(puzzle.Kind)} · {session.ZoneName}"))
             .WithColor(Color.DarkPurple)
             .WithDescription(puzzle.Render() + note)
-            .AddField(Loc.T("❤️ Tu vida") + burn, $"{ProgressBar.Render(session.Hp, session.MaxHp)}\n{session.Hp}/{session.MaxHp}", false)
-            .WithFooter(session.IsTop
-                ? Loc.T("Sin comida. Si te quedás sin vida, perdés la Reliquia. Al salir te espera el Asador, con la vida que te quede. 3 minutos por jugada.")
-                : Loc.T("Sin comida. Si te quedás sin vida, perdés la Reliquia. Al salir se abre la zona siguiente. 3 minutos por jugada."))
+            .AddField(Loc.T("❤️ Tu HP") + burn, HpLine(session), false)
+            // Footer corto (auditoría de UI, M12): el reloj y lo que está en juego. El resto de las reglas vive en /info.
+            .WithFooter(Loc.T("⏱️ 3 min por jugada · sin vida perdés la Reliquia"))
             .Build();
     }
+
+    // La vida de la mazmorra: campo de ancho completo, así que va la barra de emoji de 8 piezas del perfil (o la de texto si no están subidas),
+    // con el mismo nombre de campo que en las peleas («Tu HP»).
+    private static string HpLine(DungeonSession session) =>
+        $"{ProgressBar.Render(session.Hp, session.MaxHp, 8, UiEmojis.BarHp)}\n{GameHistory.Number(session.Hp)}/{GameHistory.Number(session.MaxHp)}";
 
     public static MessageComponent BuildButtons(DungeonSession session)
     {
@@ -185,12 +189,12 @@ public class DungeonModule(
         var finish = result.Finish;
         string name = DungeonRules.Name(session.Puzzle.Kind);
         string relic = ItemDisplay.Format(session.Relic.Emoji, session.Relic.Name);
-        string hp = $"{ProgressBar.Render(session.Hp, session.MaxHp)}\n{session.Hp}/{session.MaxHp}";
+        string hp = HpLine(session);
         string note = session.Puzzle.Note is { } n ? $"{n}\n\n" : string.Empty;
 
         if (result.End == DungeonEnd.Won && finish is { Won: true })
         {
-            var embed = new EmbedBuilder().WithColor(Color.Green).AddField(Loc.T("❤️ Tu vida"), hp, false);
+            var embed = new EmbedBuilder().WithColor(Color.Green).AddField(Loc.T("❤️ Tu HP"), hp, false);
             if (session.IsTop)
             {
                 return embed.WithTitle(Loc.F($"🔥 ¡Saliste de {name}!"))
@@ -217,7 +221,7 @@ public class DungeonModule(
             .WithTitle(Loc.F($"💀 {name} te ganó"))
             .WithColor(Color.DarkRed)
             .WithDescription(note + why + "\n\n" + Loc.F($"Perdiste la {relic}: hay que forjarla de nuevo para volver a entrar. La vida que te sacó la mazmorra no vuelve sola (**/heal**)."))
-            .AddField(Loc.T("❤️ Tu vida"), hp, false)
+            .AddField(Loc.T("❤️ Tu HP"), hp, false)
             .Build();
     }
 

@@ -302,8 +302,9 @@ public partial class ShopModule(IUserRepository userRepository, IItemRepository 
 
         // «No» primero y en verde, «Sí» en rojo: lo mismo que la pregunta de huir (un toque sin querer no vende).
         var buttons = new ComponentBuilder()
-            .WithButton(Loc.T("No, cancelar"), $"{SellAllNoId}:{discordId}", ButtonStyle.Success)
-            .WithButton(Loc.T("Sí, vender todo"), $"{SellAllYesId}:{discordId}:{preview.TotalGold}", ButtonStyle.Danger)
+            // Los mismos emojis que la pregunta de vender equipo en la taberna (auditoría de UI, M15).
+            .WithButton(Loc.T("No, cancelar"), $"{SellAllNoId}:{discordId}", ButtonStyle.Success, new Emoji("🛡️"))
+            .WithButton(Loc.T("Sí, vender todo"), $"{SellAllYesId}:{discordId}:{preview.TotalGold}", ButtonStyle.Danger, new Emoji("💰"))
             .Build();
         return new ShopActionResult(null, embed, buttons);
     }

@@ -35,7 +35,7 @@ public sealed record TitleContext(
     public static TitleContext Empty { get; } = new(new Dictionary<string, long>(), 1, new HashSet<int>(), new HashSet<string>(), 0);
 }
 
-// El catálogo de títulos y las cuentas puras para saber cuáles tiene un jugador. 137 títulos en 10 páginas (113 en 9 hasta la v0.40.1; la v0.41.0 sumó la página «Hazañas» con 24):
+// El catálogo de títulos y las cuentas puras para saber cuáles tiene un jugador. 11 páginas (113 títulos en 9 hasta la v0.40.1; la v0.41.0 sumó la página «Hazañas» con 24, partida en dos de 12 el 2026-11-14):
 //   · 93 vienen de los logros (los 31 por 3 tramos: 23 comunes y 8 hazañas), así que su meta es la del tramo y no puede quedar desparejada si se retocan los logros;
 //   · 44 son especiales: jefes, nivel, maestro de un oficio, PvP y comunidad, derrotas, hallazgos, y los 5 de la bendición Brasa de Color (antes un texto fijo del perfil).
 // Son cosméticos: no dan nada de poder (el principio del repo: nada permanente pesa contra otros jugadores). Desde la v0.23.0 el perfil muestra «Nombre - Título (Clase)».
@@ -57,7 +57,9 @@ public static class TitleCatalog
         new("fogon", "Mascotas y Fogón", "🐾"),
         new("jefes", "Jefes y niveles", "👑"),
         new("maestros", "Maestros de oficio", "🛠️"),
-        new("hazanas", "Hazañas", "🏆"),
+        // Las hazañas van en DOS páginas de 12 títulos (auditoría de UI, M13: una sola de 24 eran unos 2.500 caracteres seguidos en el celular).
+        new("hazanas", "Hazañas I", "🏆"),
+        new("hazanas2", "Hazañas II", "🏆"),
         new("pvp", "PvP y comunidad", "🏟️"),
         new("curiosos", "Curiosos", "🎲"),
     ];
@@ -94,15 +96,15 @@ public static class TitleCatalog
         ("companero", "fogon", Loc.Mark("Fuegos Nuevos hechos"), ["Compañero de Mesa", "Amigo de la Brasa", "Hermano del Fuego"]),
         ("volvio", "fogon", Loc.Mark("Fuegos Nuevos hechos"), ["El que Vuelve", "Fiel a la Mesa Larga", "El que Volvió"]),
 
-        // v0.41.0: las hazañas (la página «Hazañas»).
+        // v0.41.0: las hazañas (las páginas «Hazañas I» y «Hazañas II»: 4 logros, 12 títulos, en cada una).
         ("hz_cazador", "hazanas", Loc.Mark("Cacerías ganadas"), ["Pesadilla de la Pradera", "Cazador Sin Descanso", "Leyenda de la Cacería"]),
         ("hz_viajero", "hazanas", Loc.Mark("Viajes ganados"), ["Pisa Caminos", "Trotamundos", "Dueño del Horizonte"]),
         ("hz_jefes", "hazanas", Loc.Mark("Jefes vencidos"), ["Rompe Gigantes", "Verdugo de Gigantes", "Azote de los Colosos"]),
         ("hz_recolector", "hazanas", Loc.Mark("Materiales juntados"), ["Brazo de Hierro", "Titán del Monte", "Montaña Andante"]),
-        ("hz_herrero", "hazanas", Loc.Mark("Piezas forjadas"), ["Martillo Firme", "Yunque Eterno", "Herrero de Leyenda"]),
-        ("hz_magnate", "hazanas", Loc.Mark("Oro gastado en la tienda"), ["Bolsillo Gordo", "Gran Magnate", "Dueño de la Tienda"]),
-        ("hz_encantador", "hazanas", Loc.Mark("Intentos de encantar"), ["Chispa Terca", "Archimago del Polvo", "Señor de los Encantos"]),
-        ("hz_explorador", "hazanas", Loc.Mark("Horas de expedición de tus mascotas"), ["Explorador", "Gran Explorador", "Leyenda de los Caminos"]),
+        ("hz_herrero", "hazanas2", Loc.Mark("Piezas forjadas"), ["Martillo Firme", "Yunque Eterno", "Herrero de Leyenda"]),
+        ("hz_magnate", "hazanas2", Loc.Mark("Oro gastado en la tienda"), ["Bolsillo Gordo", "Gran Magnate", "Dueño de la Tienda"]),
+        ("hz_encantador", "hazanas2", Loc.Mark("Intentos de encantar"), ["Chispa Terca", "Archimago del Polvo", "Señor de los Encantos"]),
+        ("hz_explorador", "hazanas2", Loc.Mark("Horas de expedición de tus mascotas"), ["Explorador", "Gran Explorador", "Leyenda de los Caminos"]),
     ];
 
     // Los jefes de la escalera por orden de zona (los mismos de Lore.Chapters cap1..cap5).
