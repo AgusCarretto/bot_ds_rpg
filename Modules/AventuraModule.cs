@@ -76,6 +76,13 @@ public class AventuraModule(AdventureDeps deps) : InteractionModuleBase<SocketIn
     // Arranca: cobra las 3 horas y muestra la escena 1. No arranca en pelea, sin vida, en El Fogón ni con otra aventura abierta (no cobra nada).
     public static async Task<AdventureView> StartAsync(AdventureDeps deps, ulong discordId)
     {
+        // v0.58.2: con una aventura abierta eligiendo camino, /aventura vuelve a mostrar la escena (sin cobrar nada). El dueño, 2026-11-16: a Matt se le ganó una pelea y el mensaje
+        // no pasó a la escena siguiente, así que quedó sin botones y trabado 3 minutos hasta que venció. Ahora siempre hay una forma de volver a verla.
+        if (await TryResumeAsync(deps, discordId) is { } resumed)
+        {
+            return resumed;
+        }
+
         if (FightGuard.IsInFight(deps.Combat, deps.Raids, null, discordId, deps.Dungeons) || deps.Adventures.IsInAdventure(discordId))
         {
             return new AdventureView(Loc.T("Ya estás en una pelea o en una aventura: terminala primero."));
@@ -227,6 +234,30 @@ public class AventuraModule(AdventureDeps deps) : InteractionModuleBase<SocketIn
 
         // Sin comida: los botones de la pelea van sin el desplegable (CombatHeal.HasMenu no incluye la aventura).
         return new AdventureView(null, AdventureModule.BuildEncounterEmbed(started.State!), AdventureModule.BuildCombatButtons(started.State!));
+    }
+
+    // La escena actual de una aventura que está ELIGIENDO camino (null si no hay aventura, si está peleando o si ya terminó). Le da 3 minutos nuevos para elegir: quien la pide es
+    // porque no la estaba viendo (v0.58.2).
+    public static async Task<AdventureView?> TryResumeAsync(AdventureDeps deps, ulong discordId)
+    {
+        var run = deps.Adventures.Peek(discordId);
+        if (run is null)
+        {
+            return null;
+        }
+
+        lock (run.Lock)
+        {
+            if (run.Phase != AdventurePhase.Choosing)
+            {
+                return null;
+            }
+
+            run.LastActivityUtc = DateTime.UtcNow;
+        }
+
+        var player = await deps.Users.GetByDiscordIdAsync(discordId);
+        return player is null ? null : BuildSceneView(run, player);
     }
 
     // Llamado por el turno que ganó una pelea de la aventura (la vida de la pelea ya está guardada). Pasa a la escena siguiente o, si era el Guardián, paga.

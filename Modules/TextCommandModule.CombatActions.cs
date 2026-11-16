@@ -58,6 +58,13 @@ public partial class TextCommandModule
                 return;
             }
 
+            // Una aventura eligiendo camino (la pelea ya terminó): se manda la escena de nuevo (v0.58.2).
+            if (!fled && await AventuraModule.TryResumeAsync(adventureDeps, discordId) is { Embed: { } resumeEmbed } resume)
+            {
+                await ReplyAsync(embed: resumeEmbed, components: resume.Components);
+                return;
+            }
+
             await ReplyAsync(Loc.T("No tenés ningún combate activo. Empezá uno con /hunt, /travel, /boss o \"aa hunt\"."));
         }
         catch (Exception ex)

@@ -387,6 +387,14 @@ public class AdventureModule(
             var session = combatSessions.Peek(discordId);
             if (session is null)
             {
+                // v0.58.2: si la pelea era de la Aventura y la aventura sigue (eligiendo camino), el botón viejo de la pelea muestra la escena que sigue en vez de «ya terminó»:
+                // así una escena que no llegó a verse (el caso de Matt, 2026-11-16) se recupera con un clic.
+                if (!fled && adventure is not null && await AventuraModule.TryResumeAsync(adventure, discordId) is { Embed: { } resumeEmbed } resume)
+                {
+                    await output.ShowAsync(resumeEmbed, resume.Components!, null, NoReplyTarget.Instance);
+                    return;
+                }
+
                 await output.NoteAsync(NoActiveFightMessage(combatSessions, discordId));
                 return;
             }
@@ -469,7 +477,17 @@ public class AdventureModule(
                     var won = state with { PlayerCurrentHp = playerHpAfterLifesteal, TurnsElapsed = turnsElapsed, CritCount = critCount, TotalDamageDealt = totalDamageDealt, TotalHealed = totalHealed };
                     await userRepository.ApplyCombatHpDeltaAsync(discordId, won.ToDbHpDelta(won.PlayerCurrentHp - won.PlayerStartingHp));
                     var (advEmbed, advButtons) = await AventuraModule.AfterWinAsync(adventure, discordId, won);
-                    await output.ShowAsync(advEmbed, advButtons, null, session.ReplyTarget);
+                    try
+                    {
+                        await output.ShowAsync(advEmbed, advButtons, null, session.ReplyTarget);
+                    }
+                    catch (Exception showEx)
+                    {
+                        // La pelea ya se ganó y la aventura ya avanzó: si la pantalla no se pudo mostrar, que el jugador sepa cómo volver a verla (v0.58.2).
+                        BotLog.Error(showEx);
+                        await output.NoteAsync(Loc.T("¡Ganaste la pelea! No pude mostrar la escena que sigue: escribí **/aventura** (o **aa aventura**) para verla y seguir."));
+                    }
+
                     return;
                 }
 
@@ -1106,4 +1124,13 @@ public class AdventureModule(
         NpcDialogue.Monster(state.MonsterName, state.MonsterEmoji, line, isBoss: state.CommandName == "boss", fuegoNuevo: state.Bonuses?.FuegoNuevo ?? 0);
 
     private static string HpLine(int current, int max) => $"{ProgressBar.Render(current, max)}\n{current}/{max}";
+}
+
+// Un destino de combate que no hace nada: lo usa el botón viejo de una pelea de la Aventura que ya terminó para mostrar la escena que sigue (v0.58.2), donde no hay mensaje «anterior»
+// al que sacarle botones (el botón edita el mensaje que se tocó).
+internal sealed class NoReplyTarget : ICombatReplyTarget
+{
+    public static readonly NoReplyTarget Instance = new();
+
+    public Task UpdateAsync(Embed embed, MessageComponent components) => Task.CompletedTask;
 }

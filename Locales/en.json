@@ -1,4 +1,7 @@
 {
+  "⏳ Esperá un toque: todavía estoy procesando tu comando anterior.": "⏳ Hold on a moment: I am still processing your previous command.",
+  "¡Ganaste la pelea! No pude mostrar la escena que sigue: escribí **/aventura** (o **aa aventura**) para verla y seguir.": "You won the fight! I could not show the next scene: type **/aventura** (or **aa aventura**) to see it and keep going.",
+  "🗺️ **Estás en una aventura**: no podés usar `{0}` hasta que termine. Si no ves los botones, escribí `/aventura` (o `aa aventura`) para volver a ver la escena.": "🗺️ **You are on an adventure**: you cannot use `{0}` until it ends. If you do not see the buttons, type `/aventura` (or `aa aventura`) to see the scene again.",
   "🌐 Tu idioma es **{0}**. Para cambiarlo usá `/language` (o `aa language es` / `aa language en`).": "🌐 Your language is **{0}**. To change it use `/language` (or `aa language es` / `aa language en`).",
   "No conozco ese idioma. Elegí **es** (español) o **en** (English).": "I don't know that language. Pick **es** (Spanish) or **en** (English).",
   "¡Upa! No pude guardar tu idioma, probá de nuevo en un momento.": "Oops! I couldn't save your language, try again in a moment.",
