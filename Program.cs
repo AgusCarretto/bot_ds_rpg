@@ -119,8 +119,19 @@ class Program
         _commands.Log += LogAsync;
         _textCommands.Log += LogAsync;
         _client.Ready += () => ReadyAsync(configuration);
-        _client.InteractionCreated += HandleInteractionAsync;
-        _client.MessageReceived += HandleTextMessageAsync;
+        // v0.58.2: los dos se corren APARTE del hilo de la conexión con Discord. Los comandos de texto se ejecutan enteros adentro de su manejador (CommandService en modo síncrono), así que uno lento
+        // («A MessageReceived handler is blocking the gateway task», log de producción del 2026-11-16 19:33) frenaba TODOS los eventos del bot: botones, comandos y la conexión misma. Los dos
+        // manejadores atrapan sus errores, y el orden entre comandos del mismo jugador lo cuida el candado de un comando a la vez (Services/CommandGate.cs).
+        _client.InteractionCreated += interaction =>
+        {
+            _ = Task.Run(() => HandleInteractionAsync(interaction));
+            return Task.CompletedTask;
+        };
+        _client.MessageReceived += message =>
+        {
+            _ = Task.Run(() => HandleTextMessageAsync(message));
+            return Task.CompletedTask;
+        };
 
         // 5. Nos logueamos y arrancamos el bot
         var connected = new TaskCompletionSource();
