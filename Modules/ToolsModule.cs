@@ -156,13 +156,8 @@ public class ToolsModule(
                 $"{WornLine(ToolRules.PickaxeKind, worn.FirstOrDefault(t => t.Kind == ToolRules.PickaxeKind))}\n" +
                 $"{WornLine(ToolRules.RodKind, worn.FirstOrDefault(t => t.Kind == ToolRules.RodKind))}\n\n" +
                 (options > 0
-                    ? Loc.T("_Se arman solo con materiales de **/chop** y **/mine** y multiplican lo Común, Raro y Épico de su comando (el hacha **/chop**, el pico **/mine**, la caña **/fish**); se ponen solas. ✅ = ya tenés todo · ❌ = te falta · 🔒 = zona cerrada._")
+                    ? Loc.T("_✅ podés · ❌ te falta · 🔒 zona cerrada_\n_Más en **/info tema:forge**_")
                     : Loc.T("_Ya tenés lo mejor que arma el Carpintero por ahora._")));
-
-        if (options > 0)
-        {
-            embed.WithFooter(Loc.T("Lo que te conteste el carpintero sale abajo."));
-        }
 
         // La foto del Carpintero (NpcImages.Carpenter: una URL, Assets/npc/carpenter.jpg o un emoji de la aplicación llamado «carpintero»), de miniatura como en la taberna.
         var built = NpcImages.Decorate(embed.Build(), NpcImages.Carpenter);
@@ -226,6 +221,7 @@ public class ToolsModule(
                 Loc.F($"{NpcDialogue.Carpenter(CarpenterLine.Success, rng)}\n\n**{itemText}** ya quedó **puesta** como tu {ToolRules.KindLabel(kind).ToLowerInvariant()}: ") +
                 Loc.F($"{ToolRules.KindCommand(kind)} te da **×{recipe.ResultItem.StatValue}** de lo Común, Raro y Épico."))
             .WithColor(Color.Green)
+            .WithItemThumbnail(recipe.ResultItem.Emoji) // la miniatura de lo que se armó, como en la forja (auditoría de UI, M15)
             .Build());
     }
 }

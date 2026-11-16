@@ -25,8 +25,14 @@ public sealed record RedeemCodeInfo(
 
 // Los códigos canjeables (v0.37.0, `aa code` / `/code` y el panel `aa admincode`). Canjear es UNA transacción (ver RedeemCodeRepository): sin carreras (el tope de personas y «una vez por persona» se garantizan
 // en la base) y sin pagar a medias.
+// Un código de la libreta de un jugador (aa codelist, v0.56.4): cuántas personas lo canjearon y, si él lo canjeó, cuándo (null = no lo tiene: se muestra como ???).
+public sealed record CodeBookEntry(string Code, int Uses, DateTime CreatedAt, DateTime? ClaimedAt);
+
 public interface IRedeemCodeRepository
 {
+    // Todos los códigos que existieron (los viejos y los apagados también), del más viejo al más nuevo, con lo que canjeó ESE jugador.
+    Task<IReadOnlyList<CodeBookEntry>> GetCodeBookAsync(ulong discordId, CancellationToken cancellationToken = default);
+
     // Crea el código con sus premios en una transacción. Los nombres de los ítems tienen que ser los del catálogo (el módulo los resuelve antes).
     Task<CreateCodeResult> CreateAsync(RedeemCodeSpec spec, ulong createdBy, CancellationToken cancellationToken = default);
 

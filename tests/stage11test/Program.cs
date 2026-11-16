@@ -190,7 +190,7 @@ var home = await Forge();
 var hm = Menus(home);
 List<ButtonComponent> Buttons(BlacksmithScene s) => s.Components?.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<ButtonComponent>().ToList() ?? [];
 Check(hm.Count == 1 && hm[0].CustomId == $"blacksmith_pick:{U}" && Buttons(home).Count == 1 && Buttons(home)[0].CustomId == $"blacksmith_book:{U}" && Buttons(home)[0].Label.Contains("Ver todas las recetas"), $"una lista para forjar y un botón «Ver todas las recetas» (v0.27.0: ya no hay selector de zonas) ({string.Join(", ", hm.Select(m => m.CustomId))} + {string.Join(", ", Buttons(home).Select(b => b.CustomId))})");
-Check(home.Embed.Title == "⚒️ La Herrería" && home.Embed.Description.Contains("botón de abajo") && home.Embed.Footer is not null && home.Embed.Footer.Value.Text.Contains("abajo"), "el saludo avisa que el botón muestra todas las recetas y que la respuesta sale abajo");
+Check(home.Embed.Title == "⚒️ La Herrería" && home.Embed.Description.Contains("botón de abajo") && home.Embed.Footer is null && hm[0].Options.All(o => !o.Label.Contains('—') && !string.IsNullOrEmpty(o.Description)), "el saludo avisa que el botón muestra todas las recetas, sin footer (M11), y cada opción lleva la etiqueta corta con lo que falta en su descripción");
 Console.WriteLine("   " + home.Embed.Description.Replace("\n", "\n   "));
 Check(hm.All(m => m.Options.Count is >= 1 and <= 25) && home.Components!.Components.OfType<ActionRowComponent>().Count() == 2, "dentro de los límites de Discord (2 filas, hasta 25 opciones en la lista)");
 

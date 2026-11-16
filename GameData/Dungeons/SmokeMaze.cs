@@ -172,10 +172,11 @@ public sealed class SmokeMaze : IDungeonPuzzle
         Solved ? []
         :
         [
-            new DungeonButton(Up, Loc.T("Arriba"), "⬆️", 0),
-            new DungeonButton(Down, Loc.T("Abajo"), "⬇️", 0),
-            new DungeonButton(Left, Loc.T("Izquierda"), "⬅️", 0),
-            new DungeonButton(Right, Loc.T("Derecha"), "➡️", 0),
+            // Solo el emoji (auditoría de UI, M12): con texto, «Izquierda» y «Derecha» se cortaban en el celular. Izquierda y derecha en las puntas.
+            new DungeonButton(Left, string.Empty, "⬅️", 0),
+            new DungeonButton(Up, string.Empty, "⬆️", 0),
+            new DungeonButton(Down, string.Empty, "⬇️", 0),
+            new DungeonButton(Right, string.Empty, "➡️", 0),
         ];
 
     // Lo que ves desde una celda: sus 4 lados (queda anotado para siempre) y, por los que están abiertos, la casilla de atrás.

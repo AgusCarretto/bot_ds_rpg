@@ -186,7 +186,7 @@ public class BlacksmithModule(
         var zones = ZoneRanking.ForPlayer(await zoneRepository.GetAllAsync(), player.FuegoNuevo);
         var inventory = await inventoryRepository.GetByDiscordIdAsync(discordId);
         var owned = inventory.ToDictionary(entry => entry.ItemName, entry => entry.Quantity);
-        var choices = ForgeChoices.For(recipes, zones, player, owned, string.Empty);
+        var choices = ForgeChoices.MenuFor(recipes, zones, player, owned);
 
         // Las zonas con recetas, de la más fácil a la más difícil: lo que se puede mirar en el selector del recetario clásico.
         var zonesWithRecipes = ZoneRanking.OrderByDifficulty(zones)
@@ -220,7 +220,7 @@ public class BlacksmithModule(
         {
             string talk = choices.Count == 0
                 ? NpcDialogue.Blacksmith(BlacksmithLine.NoRecipes)
-                : Loc.F($"{NpcDialogue.Blacksmith(BlacksmithLine.Greeting, fuegoNuevo: player.FuegoNuevo)}\n\n_✅ lo que ya podés forjar · ❌ lo que todavía te falta (te digo qué)_");
+                : Loc.F($"{NpcDialogue.Blacksmith(BlacksmithLine.Greeting, fuegoNuevo: player.FuegoNuevo)}\n\n_✅ podés · ❌ te falta_");
 
             if (fullBook)
             {
@@ -232,11 +232,6 @@ public class BlacksmithModule(
             }
 
             embed = new EmbedBuilder().WithTitle(Loc.T("⚒️ La Herrería")).WithColor(Color.Orange).WithDescription(talk);
-
-            if (choices.Count > 0)
-            {
-                embed.WithFooter(Loc.T("Lo que te conteste el herrero sale abajo."));
-            }
         }
 
         // La foto del herrero va de miniatura en toda la charla (el mensaje conserva el adjunto cuando se edita).
@@ -257,8 +252,8 @@ public class BlacksmithModule(
                 .WithMaxValues(1);
             foreach (var choice in choices)
             {
-                // El valor es el nombre del ítem que se forja: su emoji va en la opción (el ✅ / ❌ del estado se queda en el texto).
-                menu.AddItemOption(choice.Value.ToString()!, choice.Name, choice.Value.ToString()!);
+                // El valor es el nombre del ítem que se forja: su emoji va en la opción (el ✅ / ❌ del estado se queda en el texto) y lo que falta, en el renglón gris de abajo.
+                menu.AddItemOption(choice.Value, choice.Label, choice.Value, choice.Description);
             }
 
             components.WithSelectMenu(menu, row++);

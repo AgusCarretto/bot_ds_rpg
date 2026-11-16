@@ -91,7 +91,7 @@ var boss = Menu(AdventureModule.BuildCombatButtons(baseState with { CommandName 
 Check(boss is { IsDisabled: false }, "boss: desplegable activo");
 var huntUi = AdventureModule.BuildCombatButtons(baseState with { CommandName = "hunt" }, opts);
 Check(Menu(huntUi) is null && Rows(huntUi).Count == 1, "hunt: sin desplegable (una sola fila de botones)");
-Check(AdventureModule.BuildEncounterEmbed(baseState).Footer?.Text?.Contains("UNA vez") == true && AdventureModule.BuildEncounterEmbed(baseState with { CommandName = "hunt" }).Footer?.Text?.Contains("/use") == true, "el encuentro avisa de la curación: travel/boss con el desplegable y hunt con /use");
+Check(AdventureModule.BuildEncounterEmbed(baseState).Footer is null && AdventureModule.BuildEncounterEmbed(baseState with { CommandName = "hunt" }).Footer?.Text?.Contains("/use") == true, "el encuentro avisa de la curación: en hunt con /use; en travel/boss sin footer, porque lo dice el desplegable (M14)");
 
 Console.WriteLine("\n== 5. Curar de punta a punta: una vez por pelea en travel/boss, compartido con /use ==");
 const ulong testId = 999000000000000779UL;
@@ -164,7 +164,7 @@ try
     // Avisos del encuentro.
     string footerHunt = AdventureModule.BuildEncounterEmbed(huntState).Footer?.Text ?? "";
     string footerTravel = AdventureModule.BuildEncounterEmbed(baseState).Footer?.Text ?? "";
-    Check(footerHunt.Contains("UNA vez") && footerHunt.Contains("/use") && footerTravel.Contains("UNA vez") && footerTravel.Contains("desplegable"), "el encuentro avisa «UNA vez»: en hunt con /use y en travel/boss con el desplegable");
+    Check(footerHunt.Contains("UNA vez") && footerHunt.Contains("/use") && footerTravel.Length == 0, "el encuentro avisa «UNA vez»: en hunt con /use; en travel/boss no hay footer, lo dice el desplegable (M14)");
 
     // Gathering end to end: la cantidad sorteada llega al inventario.
     var gatherRepo = new GatheringRepository(factory);

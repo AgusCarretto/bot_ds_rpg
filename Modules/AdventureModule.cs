@@ -715,7 +715,7 @@ public class AdventureModule(
         return $"{ability.Emoji} {ability.Name}: {readiness}{effect}";
     }
 
-    private static EmbedBuilder WithAbilityField(EmbedBuilder embed, CombatState state)
+    internal static EmbedBuilder WithAbilityField(EmbedBuilder embed, CombatState state)
     {
         string line = BuildAbilityStatusLine(state.PlayerClass, state.Ability);
         return line.Length > 0 ? embed.AddField(Loc.T("✨ Habilidad"), line, false) : embed;
@@ -814,11 +814,8 @@ public class AdventureModule(
         {
             embed.WithFooter(Loc.T("🚫 Venís de la mazmorra: en esta pelea no se come. Y cuidado con su llamarada."));
         }
-        else if (CombatHeal.HasMenu(state.CommandName))
-        {
-            embed.WithFooter(Loc.T("🍖 Podés curarte UNA vez en esta pelea con el desplegable de abajo."));
-        }
-        else if (CombatHeal.IsLimited(state.CommandName))
+        // Con desplegable de comida no va footer (auditoría de UI, M14): el propio menú dice «Curarte con comida (1 vez por pelea)».
+        else if (!CombatHeal.HasMenu(state.CommandName) && CombatHeal.IsLimited(state.CommandName))
         {
             embed.WithFooter(Loc.T("🍖 Podés curarte UNA vez en esta pelea con /use."));
         }
@@ -967,6 +964,10 @@ public class AdventureModule(
 
         if (state.ShowFightSummary)
         {
+            // Un tercer campo en línea vacío (U+200B) cierra la fila de las dos vidas (auditoría de UI, M2): la tablita arranca en una fila nueva
+            // en vez de meter «Turnos» en el tercer lugar. Es el mismo recurso de la derrota después de comer (UseModule).
+            string blank = ((char)0x200B).ToString();
+            embed.AddField(blank, blank, true);
             AddCombatSummary(embed, state);
         }
 

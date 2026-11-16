@@ -486,13 +486,13 @@ var outList = await CooldownModule.BuildStatusEmbedAsync(cooldownsRepo, users, U
 string[] inLines = inList.Description.Split('\n');
 Check(inLines[^1].Contains("Arena") && inLines[^1].Contains("anotado ✅") && inLines[^1].Contains("1h 35m") && inLines.Length == CooldownCatalog.All.Count + 2, $"/cd: ya anotado → «{inLines[^1]}» (la última línea, después de los cooldowns y el diario)");
 string[] outLines = outList.Description.Split('\n');
-Check(outLines[^1].Contains("todavía no te anotaste") && outLines[^1].Contains("/arena join") && outLines[^1].Contains("1h 35m"), $"/cd: sin anotarte → «{outLines[^1]}»");
+Check(outLines[^1].Contains("⚠️ sin anotar") && outLines[^1].Contains("/arena join") && outLines[^1].Contains("1h 35m"), $"/cd: sin anotarte → «{outLines[^1]}»");
 var noArena = await CooldownModule.BuildStatusEmbedAsync(cooldownsRepo, users, U);
 var brokenArena = await CooldownModule.BuildStatusEmbedAsync(cooldownsRepo, users, U, new FakeArena(null, TimeSpan.Zero));
 Check(!noArena.Description.Contains("Arena") && !brokenArena.Description.Contains("Arena") && brokenArena.Description.Contains("Diario"), "sin servicio de Arena, o si falla, /cd sale igual sin esa línea");
 var realArena = (IArenaService)sp.GetService(typeof(IArenaService))!;
 var viaReal = await CooldownModule.BuildStatusEmbedAsync(cooldownsRepo, users, U, realArena);
-Check(viaReal.Description.Split('\n')[^1].Contains("todavía no te anotaste"), "con el servicio real (solo lee el torneo de hoy), un jugador que no se anotó ve el aviso");
+Check(viaReal.Description.Split('\n')[^1].Contains("⚠️ sin anotar"), "con el servicio real (solo lee el torneo de hoy), un jugador que no se anotó ve el aviso");
 Check(CooldownModule.ArenaLine(false, TimeSpan.FromHours(30)).Contains("1d 6h 0m") || CooldownModule.ArenaLine(false, TimeSpan.FromHours(30)).Contains("30"), "el tiempo que falta usa el formato de siempre de los cooldowns");
 
 // Polvo y encantamientos más aireados

@@ -247,7 +247,7 @@ public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepo
             .WithTitle(targetName is null ? Loc.T("📊 Tus stats") : Loc.F($"📊 Stats de {targetName}"))
             .WithColor(Color.Orange)
             .WithDescription(attackBlock + "\n\n" + defenseBlock + "\n\n" + hpBlock + "\n\n" + critBlock + "\n\n" + dodgeBlock + dropSection)
-            .WithFooter(Loc.T("Todo cuenta contra monstruos (en duelos y en la Arena, solo el nivel, el equipo y la clase). El perfil ya muestra estos totales. En el drop, cada ➕ cuenta sobre lo que ya llevás acumulado más arriba."));
+            .WithFooter(Loc.T("Todo cuenta contra monstruos; en duelos y en la Arena, solo el nivel, el equipo y la clase."));
 
         // ---- La segunda pantalla, «Más stats»: lo que se cocinó, el dragón, las mascotas y el Fuego Nuevo con las bendiciones (cada campo solo si hay algo que contar).
         var more = new EmbedBuilder()
@@ -282,14 +282,14 @@ public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepo
         if (bonuses.Dragon is { IsNone: false } dragonBonus)
         {
             var parts = new List<string>();
-            if (dragonBonus.AttackPercent > 0) parts.Add(Loc.F($"ATQ {FuegoNuevoRules.PercentText(1 + (dragonBonus.AttackPercent / 100.0))}"));
-            if (dragonBonus.DefensePercent > 0) parts.Add(Loc.F($"DEF {FuegoNuevoRules.PercentText(1 + (dragonBonus.DefensePercent / 100.0))}"));
-            if (dragonBonus.HpPercent > 0) parts.Add(Loc.F($"vida {FuegoNuevoRules.PercentText(1 + (dragonBonus.HpPercent / 100.0))}"));
-            if (dragonBonus.GoldPercent > 0) parts.Add(Loc.F($"oro {FuegoNuevoRules.PercentText(1 + (dragonBonus.GoldPercent / 100.0))}"));
-            if (dragonBonus.XpPercent > 0) parts.Add(Loc.F($"EXP {FuegoNuevoRules.PercentText(1 + (dragonBonus.XpPercent / 100.0))}"));
-            if (dragonBonus.DropPercent > 0) parts.Add(Loc.F($"drop {FuegoNuevoRules.PercentText(1 + (dragonBonus.DropPercent / 100.0))}"));
-            if (dragonBonus.GatherPercent > 0) parts.Add(Loc.F($"recolección {FuegoNuevoRules.PercentText(1 + (dragonBonus.GatherPercent / 100.0))}"));
-            if (dragonBonus.LastStand) parts.Add(Loc.T("aliento final"));
+            if (dragonBonus.AttackPercent > 0) parts.Add(Loc.F($"ATQ: {FuegoNuevoRules.PercentText(1 + (dragonBonus.AttackPercent / 100.0))}"));
+            if (dragonBonus.DefensePercent > 0) parts.Add(Loc.F($"DEF: {FuegoNuevoRules.PercentText(1 + (dragonBonus.DefensePercent / 100.0))}"));
+            if (dragonBonus.HpPercent > 0) parts.Add(Loc.F($"Vida: {FuegoNuevoRules.PercentText(1 + (dragonBonus.HpPercent / 100.0))}"));
+            if (dragonBonus.GoldPercent > 0) parts.Add(Loc.F($"Oro: {FuegoNuevoRules.PercentText(1 + (dragonBonus.GoldPercent / 100.0))}"));
+            if (dragonBonus.XpPercent > 0) parts.Add(Loc.F($"EXP: {FuegoNuevoRules.PercentText(1 + (dragonBonus.XpPercent / 100.0))}"));
+            if (dragonBonus.DropPercent > 0) parts.Add(Loc.F($"Drop: {FuegoNuevoRules.PercentText(1 + (dragonBonus.DropPercent / 100.0))}"));
+            if (dragonBonus.GatherPercent > 0) parts.Add(Loc.F($"Recolección: {FuegoNuevoRules.PercentText(1 + (dragonBonus.GatherPercent / 100.0))}"));
+            if (dragonBonus.LastStand) parts.Add(Loc.T("Aliento final"));
 
             string title = Loc.T("🐲 Dragón");
             try
@@ -304,7 +304,8 @@ public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepo
                 BotLog.Warn(ex);
             }
 
-            more.AddField(title, string.Join(" · ", parts), false);
+            // Un bono por renglón (auditoría de UI, M5), como el Fuego Nuevo y las bendiciones de más abajo.
+            more.AddField(title, string.Join("\n", parts), false);
         }
 
         // ---- Mascotas
@@ -320,10 +321,16 @@ public class StatsModule(IUserRepository users, IItemRepository items, IBuffRepo
             .ToList();
         if (player.FuegoNuevo > 0 || blessingNames.Count > 0)
         {
-            string fnLine = player.FuegoNuevo > 0
-                ? Loc.F($"Fuego Nuevo {player.FuegoNuevo}: EXP {FuegoNuevoRules.PercentText(FuegoNuevoRules.XpMultiplier(player.FuegoNuevo))} · drop de cacería {FuegoNuevoRules.PercentText(FuegoNuevoRules.HuntDropMultiplier(player.FuegoNuevo))} · drop de viaje {FuegoNuevoRules.PercentText(FuegoNuevoRules.TravelDropMultiplier(player.FuegoNuevo))} · recolección {FuegoNuevoRules.PercentText(FuegoNuevoRules.GatherMultiplier(player.FuegoNuevo))}")
+            // Un bono por renglón (auditoría de UI, M5): el Fuego Nuevo con su título en negrita y, separadas por un renglón en blanco, las bendiciones.
+            string fnBlock = player.FuegoNuevo > 0
+                ? string.Join("\n",
+                    Loc.F($"**Fuego Nuevo {player.FuegoNuevo}**"),
+                    Loc.F($"EXP: {FuegoNuevoRules.PercentText(FuegoNuevoRules.XpMultiplier(player.FuegoNuevo))}"),
+                    Loc.F($"Drop de cacería: {FuegoNuevoRules.PercentText(FuegoNuevoRules.HuntDropMultiplier(player.FuegoNuevo))}"),
+                    Loc.F($"Drop de viaje: {FuegoNuevoRules.PercentText(FuegoNuevoRules.TravelDropMultiplier(player.FuegoNuevo))}"),
+                    Loc.F($"Recolección: {FuegoNuevoRules.PercentText(FuegoNuevoRules.GatherMultiplier(player.FuegoNuevo))}"))
                 : string.Empty;
-            more.AddField(Loc.T("🔥 Fuego Nuevo y bendiciones"), string.Join("\n", new[] { fnLine, string.Join(" · ", blessingNames) }.Where(t => t.Length > 0)), false);
+            more.AddField(Loc.T("🔥 Fuego Nuevo y bendiciones"), string.Join("\n\n", new[] { fnBlock, string.Join("\n", blessingNames) }.Where(t => t.Length > 0)), false);
         }
 
         // Un botón para pasar de una pantalla a la otra (solo si hay segunda pantalla). Siempre lleva el dueño en el id.
