@@ -17,7 +17,7 @@ public static class AbilityTuning
     // habilidad o usar un consumible cuentan) durante los que NO se puede volver a usar.
     public const int CooldownTurns = 3;
 
-    // Guerrero — Aguante: ataca al 70% y recibe -60% de daño (se multiplica con su pasiva ×0.9).
+    // Guerrero — Aguante: ataca al 70% y recibe -60% de daño (se multiplica con su pasiva ×0,85).
     public const double AguanteStrikeMultiplier = 0.70;
     public const double AguanteDamageTakenMultiplier = 0.40;
     public const int AguanteEffectTurns = 2;
@@ -32,8 +32,8 @@ public static class AbilityTuning
     public const double SombraTotalDodgeChance = 0.75;
     public const double SombraAmbushMultiplier = 1.25;
 
-    // Arquero — Lluvia de Flechas: 3 flechas al 60% del daño, cada una con su propio crítico.
-    public const int LluviaArrows = 3;
+    // Arquero — Lluvia de Flechas: 4 flechas al 60% del daño, cada una con su propio crítico (v0.57.2, el dueño: «al arquero vamos a sumarle a la habilidad otra flecha»; eran 3).
+    public const int LluviaArrows = 4;
     public const double LluviaArrowMultiplier = 0.60;
 }
 
