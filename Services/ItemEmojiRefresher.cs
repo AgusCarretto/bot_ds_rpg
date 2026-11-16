@@ -7,24 +7,15 @@ namespace BotDsRpg.Services;
 // datos y se corre con el bot andando) se vea en las pantallas sin reiniciar. Nunca tira: si la base no responde queda la tabla que ya había (y se registra).
 public sealed class ItemEmojiRefresher(IItemRepository itemRepository)
 {
-    // Todos los tipos de ítem del catálogo (items.type).
-    private static readonly string[] Types = ["Weapon", "Amulet", "Consumable", "Madera", "Mineral", "Pescado", "Material", "Caja", "Huevo", "PetFood", "DragonFood"];
-
     public static readonly TimeSpan Every = TimeSpan.FromMinutes(10);
 
     public async Task RefreshAsync()
     {
         try
         {
-            var all = new List<(string Name, string? Emoji)>();
-            foreach (string type in Types)
-            {
-                foreach (var item in await itemRepository.GetAllByTypeAsync(type))
-                {
-                    all.Add((item.Name, item.Emoji));
-                }
-            }
-
+            // El catálogo ENTERO (v0.57.1): hasta acá era una lista fija de tipos y se quedaban afuera la Reliquia, el Hacha, el Pico y la Caña (el dueño: «al craftear una
+            // reliquia no aparece el dibujito en la opción»). En el texto se veían igual (el emoji sale del ítem), pero los desplegables preguntan a esta tabla.
+            var all = (await itemRepository.GetAllAsync()).Select(item => (item.Name, item.Emoji)).ToList();
             ItemEmojiRegistry.Set(all);
         }
         catch (Exception ex)

@@ -19,4 +19,7 @@ public interface IItemRepository
 
     // Catálogo completo de un tipo (ej. "Consumable" para /shop view). Lista vacía si no hay ninguno.
     Task<IReadOnlyList<Item>> GetAllByTypeAsync(string type, CancellationToken cancellationToken = default);
+
+    // El catálogo entero, de cualquier tipo (v0.57.1: lo usa ItemEmojiRefresher; con una lista fija de tipos se quedaban afuera las Reliquias y las herramientas).
+    Task<IReadOnlyList<Item>> GetAllAsync(CancellationToken cancellationToken = default);
 }

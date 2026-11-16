@@ -63,6 +63,13 @@ foreach (var name in new[] { "Cofre de Escoria", "Brasero del Fogón", "Huevo de
 {
     Check(ItemEmojiRegistry.IconOf(name, "FALLBACK").StartsWith("<:"), $"{name}: el registro cargado de la base tiene su emoji propio ({ItemEmojiRegistry.IconOf(name, "FALLBACK")})");
 }
+// v0.57.1 (el dueño: «al craftear una reliquia no aparece el dibujito en la opción»): el refresco lee el catálogo ENTERO; antes, una lista fija de tipos dejaba afuera
+// las Reliquias y las herramientas (Hacha, Pico, Caña), y los desplegables no encontraban su emoji.
+var everyItem = (await db.QueryAsync<(string Name, string? Emoji)>("SELECT name, emoji FROM items")).ToList();
+Check(everyItem.All(i => ItemEmojiRegistry.IconOf(i.Name, "FALLBACK") == (string.IsNullOrWhiteSpace(i.Emoji) ? "FALLBACK" : i.Emoji!.Trim()) || !(i.Emoji ?? "").StartsWith("<")),
+    "todos los ítems del catálogo, de cualquier tipo, entran al registro (también Reliquias, Hacha, Pico y Caña)");
+var relicOrTool = (await db.QueryAsync<string>("SELECT name FROM items WHERE type IN ('Reliquia', 'Hacha', 'Pico', 'Caña') AND emoji LIKE '<%'")).ToList();
+Check(relicOrTool.All(n => ItemEmojiRegistry.IconOf(n, "FALLBACK").StartsWith("<:")), $"Reliquias y herramientas con su emoji en el registro ({relicOrTool.Count} en la base local)");
 // v0.47.0: los drops de las zonas 6 a 10 todavía no tienen arte.
 var pendingArt = (await db.QueryAsync<string>("SELECT i.name FROM monster_drops d JOIN monsters m ON m.monster_id = d.monster_id JOIN items i ON i.item_id = d.item_id WHERE m.zone_id BETWEEN 6 AND 10")).ToHashSet();
 var missing = new List<string>();
