@@ -57,6 +57,19 @@ public sealed class ItemRepository(IDbConnectionFactory connectionFactory) : IIt
         return await connection.QuerySingleOrDefaultAsync<Item>(command);
     }
 
+    public async Task<IReadOnlyList<Item>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        string sql = $"""
+            SELECT {ItemSql.SelectColumns}
+            FROM items i
+            ORDER BY name;
+            """;
+
+        using IDbConnection connection = connectionFactory.CreateConnection();
+        var rows = await connection.QueryAsync<Item>(new CommandDefinition(sql, cancellationToken: cancellationToken));
+        return rows.AsList();
+    }
+
     public async Task<IReadOnlyList<Item>> GetAllByTypeAsync(string type, CancellationToken cancellationToken = default)
     {
         string sql = $"""
