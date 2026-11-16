@@ -631,7 +631,8 @@ public static class ServiceProviderBuilder
                 sp.GetRequiredService<IUserRepository>(), sp.GetRequiredService<IAdventureRepository>(), sp.GetRequiredService<ICooldownRepository>(),
                 sp.GetRequiredService<IMonsterRepository>(), sp.GetRequiredService<IAdventureCombatStarter>(), sp.GetRequiredService<ICombatSessionService>(),
                 sp.GetRequiredService<IRaidSessionService>(), sp.GetRequiredService<IDungeonService>(), sp.GetRequiredService<IAdventureService>(),
-                sp.GetRequiredService<IZoneBoxService>(), sp.GetRequiredService<IItemRepository>(), sp.GetRequiredService<IGameEvents>(), sp.GetRequiredService<IPlayerBonusService>()))
+                sp.GetRequiredService<IZoneBoxService>(), sp.GetRequiredService<IItemRepository>(), sp.GetRequiredService<IGameEvents>(), sp.GetRequiredService<IPlayerBonusService>(),
+                sp.GetRequiredService<IZoneRepository>()))
             .AddSingleton<IPlayerBonusService, PlayerBonusService>()
             .AddSingleton<ILanguageRepository, LanguageRepository>()
             .AddSingleton<IPlayerLanguageService, PlayerLanguageService>()

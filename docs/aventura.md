@@ -1,6 +1,6 @@
 # 🗺️ La Aventura — diseño (borrador para aprobar)
 
-Estado: **aprobado por el dueño el 2026-11-16** (premio de 3 viajes, sin comida, difícil); los números marcados **(a medir)** son propuesta.
+Estado: **aprobado y construido** (rama `feature/aventura`, 2026-11-16). Premio de 3 viajes **por zona**, sin comida, difícil a propósito.
 
 ## Lo que decidió el dueño
 
@@ -51,7 +51,8 @@ El **botín** se va sumando y multiplica el premio final: tres caminos arriesgad
 
 ## El premio (a medir)
 
-- **Base: lo de 3 viajes** de oro y EXP (3 × la fórmula del `/travel`), multiplicado por el botín (hasta ~×1,9).
+- **Base: lo de 3 viajes** de oro y EXP (3 × la fórmula del `/travel`) **calculados con el nivel mínimo de la zona** (el dueño: «ni que hablar
+  que el premio es por zona»), multiplicado por el botín (hasta ~×1,9). Quedarse en una zona fácil paga lo de esa zona.
 - **Chance de la caja de tu zona** (la del viaje, `zone_boxes`): 25 %.
 - Para comparar: en 3 horas, el `/travel` paga 6 viajes si no te perdés ninguno; la Aventura es **además** del viaje, no en
   lugar de él.
@@ -73,3 +74,10 @@ al azar; el nombre del monstruo de la pelea se mete en el texto. Todo pasa por `
 - Corrida en memoria con su candado (como `DungeonSession`), reloj por jugada de 3 minutos, ids de botón con el dueño.
 - Peleas con `CombatTurnResolver`/`CombatState`; bloqueo de comandos con `FightGuard`/`FightLock`.
 - `CooldownCatalog.Adventure` (3 h), `GameEventKinds.AdventureWin`, misión/logro más adelante.
+
+## Dificultad medida (`tools/balance2 -- O`, 2026-11-16)
+
+Sin bonos (mascotas, Fuego Nuevo, bendiciones, dragón), así que arriba es pesimista. Siempre seguro, nivel mínimo de la zona + 5:
+Zona 1 100 %; Zona 2 74–89 %; Zona 3 27–70 %; Zona 5 5–43 %; Zonas 6–10 casi nadie. La Zona 1 es trivial desde nivel ~6 aunque se
+agranden los monstruos (son fijos y el jugador sube): por eso el premio es por zona. El dueño (2026-11-16) **lo quiere difícil así**:
+«los FN bajos bajan de zona a hacer lo más fácil; los FN altos pueden arriesgarse con las más altas». Se ajusta con jugadores reales.

@@ -1091,6 +1091,11 @@
   },
   {
     "type": 1,
+    "name": "aventura",
+    "description": "Una aventura de 5 escenas: elegí caminos, peleá y llegá al Guardián (cada 3 h)."
+  },
+  {
+    "type": 1,
     "name": "tutorial",
     "description": "Aprendé el loop básico del juego: recolección, herrería, combate y supervivencia."
   },

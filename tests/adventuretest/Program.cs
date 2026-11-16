@@ -36,7 +36,7 @@ var raids = new RaidSessionService();
 var starter = new AdventureCombatStarter(cooldowns, adventureRepo, users, items, monsters, zones, new BuffRepository(factory), bonus, combat, raids);
 var adventures = new AdventureService(combat);
 var deps = new AdventureDeps(users, adventureRepo, cooldowns, monsters, starter, combat, raids, FakeProxy.Make<IDungeonService>(new()), adventures,
-    new ZoneBoxService(factory, zones), items, new GameEventService(eventsRepo), bonus);
+    new ZoneBoxService(factory, zones), items, new GameEventService(eventsRepo), bonus, zones);
 
 async Task Clean()
 {

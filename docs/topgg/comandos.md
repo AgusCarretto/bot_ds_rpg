@@ -29,6 +29,7 @@ Todo comando también se puede escribir con el prefijo `aa` (por ejemplo `aa hun
 | `/hunt` | Salí a cazar monstruos de tu zona. |
 | `/autohunt` | Una cacería completa de una vez, sin botones. |
 | `/travel` | Enfrentá al élite de tu zona: más difícil, mucho más premio. |
+| `/aventura` | Una aventura de 5 escenas: elegí caminos, peleá y llegá al Guardián (cada 3 h, sin comida). |
 | `/boss` | Enfrentá al jefe de tu zona, solo o con hasta 5 amigos. |
 | `/zona` | Viajá a otra zona del mundo. |
 | `/zonas` | Todas las zonas y el nivel que piden. |

@@ -9,7 +9,7 @@ using Discord.Interactions;
 public sealed record AdventureDeps(
     IUserRepository Users, IAdventureRepository Adventure, ICooldownRepository Cooldowns, IMonsterRepository Monsters, IAdventureCombatStarter Starter,
     ICombatSessionService Combat, IRaidSessionService Raids, IDungeonService Dungeons, IAdventureService Adventures, IZoneBoxService ZoneBoxes,
-    IItemRepository Items, IGameEvents Events, IPlayerBonusService Bonuses);
+    IItemRepository Items, IGameEvents Events, IPlayerBonusService Bonuses, IZoneRepository Zones);
 
 // La Aventura (v0.57.0, docs/aventura.md; /aventura, aa aventura). 5 escenas con 3 caminos (🛡️ seguro, ⚔️ arriesgado, ❓ misterioso) y el Guardián del Camino al final,
 // en un solo mensaje que se va editando. Las peleas son las de siempre (AdventureModule.ResolveTurnCoreAsync, CommandName "aventura"): al ganar, ese mismo turno llama a
@@ -270,12 +270,14 @@ public class AventuraModule(AdventureDeps deps) : InteractionModuleBase<SocketIn
         return await PayAsync(deps, player, fight, loot);
     }
 
-    // El premio: 3 viajes de oro y EXP por el botín y una chance de la caja del viaje de la zona.
+    // El premio: 3 viajes de oro y EXP por el botín y una chance de la caja del viaje de la zona. POR ZONA, no por nivel (el dueño, 2026-11-16: «ni que hablar
+    // que el premio es por zona»): los viajes se calculan con el nivel mínimo de la zona donde la hiciste, así quedarse en una zona fácil rinde lo de esa zona.
     private static async Task<(Embed Embed, MessageComponent Components)> PayAsync(AdventureDeps deps, User player, CombatState fight, int loot)
     {
         ulong discordId = (ulong)player.DiscordId;
         var bonuses = fight.Bonuses ?? await deps.Bonuses.GetAsync(discordId, player.FuegoNuevo);
-        var travel = CombatRewardCalculator.RollTravelReward(player.Level, 0, 0, bonuses, 0);
+        int referenceLevel = await ReferenceLevelAsync(deps, player.CurrentZoneId);
+        var travel = CombatRewardCalculator.RollTravelReward(referenceLevel, 0, 0, bonuses, 0);
         int gold = AdventureRules.ApplyLoot(travel.Gold * AdventureRules.RewardTravels, loot);
         int xp = AdventureRules.ApplyLoot(travel.Xp * AdventureRules.RewardTravels, loot);
 
@@ -317,6 +319,10 @@ public class AventuraModule(AdventureDeps deps) : InteractionModuleBase<SocketIn
             .Build();
         return (embed, new ComponentBuilder().Build());
     }
+
+    // El nivel con el que paga la zona: su nivel mínimo (como alguien que recién llega). Sin zona conocida, 1.
+    public static async Task<int> ReferenceLevelAsync(AdventureDeps deps, int zoneId) =>
+        Math.Max(1, (await deps.Zones.GetByIdAsync(zoneId))?.MinLevel ?? 1);
 
     // La pantalla de una escena: lo que pasó antes, el texto, tu vida y el botín, y los caminos (o el botón del Guardián).
     public static AdventureView BuildSceneView(AdventureRun run, User player)
