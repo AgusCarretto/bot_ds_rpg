@@ -185,7 +185,7 @@ public static class TitleCatalog
         all.Add(new TitleDefinition("hallazgo_corteza", "Ojo de Savia", "curiosos", TitleRule.Flag, Loc.Mark("Encontrá una Corteza del Árbol de Vida con /chop"), FlagCorteza));
         all.Add(new TitleDefinition("hallazgo_meteorito", "Tocado por el Cielo", "curiosos", TitleRule.Flag, Loc.Mark("Encontrá un Fragmento de Meteorito con /mine"), FlagMeteorito));
         all.Add(new TitleDefinition("inframundo", "Cliente del Inframundo", "curiosos", TitleRule.Stat, Loc.Mark("Comprale algo al Tabernero del Inframundo con /deepshop"), GameEventKinds.DeepShopBuy, 1));
-        all.Add(new TitleDefinition("encanto_v", "Brasa Soberana", "curiosos", TitleRule.Flag, Loc.Mark("Sacá un encantamiento de tier V (Soberano) con /enchant"), FlagEnchantV));
+        all.Add(new TitleDefinition("encanto_v", "Brasa Soberana", "curiosos", TitleRule.Flag, Loc.Mark("Sacá un encantamiento de tier V o más (Soberano o mejor) con /enchant"), FlagEnchantV));
         all.Add(new TitleDefinition(DefaultKey, "Recién Llegado", "curiosos", TitleRule.Always, Loc.Mark("Lo tenés desde el primer día")));
 
         return all;

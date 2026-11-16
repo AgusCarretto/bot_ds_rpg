@@ -7,7 +7,7 @@ fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo
 
 ---
 
-## 2026-11-17 — La Aventura paga lo que tiene que pagar, y el Arquero y el Guerrero más fuertes (v0.57.2)
+## 2026-11-17 — La Aventura paga lo que tiene que pagar, el Arquero y el Guerrero más fuertes y encantamientos nuevos (v0.57.2 y v0.58.0)
 
 **Título:** 🏹 La Aventura paga completo, y el Arquero y el Guerrero vienen con todo
 
@@ -22,6 +22,8 @@ fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo
 🛡️ **Guerrero:** más aguante, recibe **menos daño** en cada golpe.
 
 ⚔️ En los **duelos** y la **Arena** las clases se ajustaron para que sigan parejas.
+
+✨ **Encantamientos nuevos, rarísimos:** además del Soberano (+26 %) ahora pueden salir **Infernal (+35 %)** y **Primordial (+50 %)**, con menos chance que cualquier otro. Valen para todos los efectos (Filo, Guarda, Crítico, Sangre, Vida, Esquive). ¿Quién saca el primero?
 
 ---
 

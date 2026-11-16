@@ -381,7 +381,7 @@ Console.WriteLine("\n== 17. El Polvo de los drops de monstruo por su origen (v0.
         "desmantelar de verdad: 3 Corazón de Titán (Mítico, cacería) = 51, 2 Fragmento de Alma (Mítico, cacería) = 34, 4 Pino = 4");
     Check(await db.ExecuteScalarAsync<int>("SELECT dust FROM users WHERE discord_id = @id", new { id = (long)U }) == 51 + 34 + 4, "y el Polvo de la cuenta es la suma exacta");
     var info = DustModule.BuildOptionsEmbed();
-    Check(AllText(info).Contains("17") && !AllText(info).Contains("38") && AllText(info).Contains("no tienen rareza") && info.Length <= 6000, "/enchant info y el tema de ayuda explican el Polvo de los drops");
+    Check(AllText(info).Contains("17") && !AllText(info).Contains("**38**") && AllText(info).Contains("no tienen rareza") && info.Length <= 6000, "/enchant info y el tema de ayuda explican el Polvo de los drops");
 }
 
 await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)U });
