@@ -461,7 +461,7 @@ public class DustModule(
         string tiers = string.Join('\n', Enumerable.Range(1, Enchantments.MaxTier).Select(t =>
             Loc.F($"**{Enchantments.TierName(t)}** — sale el **{ShortPercent(Enchantments.ChancePercent(t))}**{Attempts(t)}")));
 
-        // Los efectos de cada pieza con sus cinco valores (del tier I al V), leídos de la tabla: no se puede desactualizar.
+        // Los efectos de cada pieza con sus siete valores (del tier I al VII), leídos de la tabla: no se puede desactualizar.
         string EffectBlock(string slotKey, string title) =>
             $"**{title}**\n" + string.Join('\n', Enchantments.KindsFor(slotKey).Select(k => $"• **{k.Name}**: {Enchantments.DescribeValues(k)}"));
         string effects =

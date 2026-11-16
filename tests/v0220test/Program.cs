@@ -23,13 +23,19 @@ Console.WriteLine("== 1. El catálogo de efectos ==");
 Check(Enchantments.Kinds.Count == 6 && Enchantments.KindsFor("weapon").Select(k => k.Key).SequenceEqual(["filo", "critico", "sangre"]) && Enchantments.KindsFor("amulet").Select(k => k.Key).SequenceEqual(["guarda", "vida", "esquive"]),
     "seis efectos: arma = Filo, Crítico, Sangre; amuleto = Guarda, Vida, Esquive");
 Check(Enchantments.Kinds.All(k => k.ValuesByTier.Count == Enchantments.MaxTier && k.ValuesByTier.Zip(k.ValuesByTier.Skip(1)).All(p => p.First < p.Second)), "cada efecto trae un valor por tier y SUBE con el tier");
-Check(Enchantments.FindKind("filo")!.ValuesByTier.SequenceEqual(Enumerable.Range(1, Enchantments.MaxTier).Select(Enchantments.BonusPercent)) && Enchantments.FindKind("filo")!.ValuesByTier.SequenceEqual([4, 8, 13, 19, 26]) && Enchantments.FindKind("guarda")!.ValuesByTier.SequenceEqual([3, 6, 9, 13, 18])
+Check(Enchantments.FindKind("filo")!.ValuesByTier.SequenceEqual(Enumerable.Range(1, Enchantments.MaxTier).Select(Enchantments.BonusPercent)) && Enchantments.FindKind("filo")!.ValuesByTier.SequenceEqual([4, 8, 13, 19, 26, 35, 50]) && Enchantments.FindKind("guarda")!.ValuesByTier.SequenceEqual([3, 6, 9, 13, 18, 24, 35])
       && Enumerable.Range(1, Enchantments.MaxTier).All(t => Enchantments.StatBonusPercent("guarda", t) < Enchantments.StatBonusPercent("filo", t) && Enchantments.StatBonusPercent("critico", t) == 0 && Enchantments.StatBonusPercent(null, t) == 0) && Enchantments.StatBonusPercent("filo", 0) == 0,
-    "el Filo sigue en +4/8/13/19/26 % (la tabla de tiers) y la Guarda tiene la suya, +3/6/9/13/18 % (v0.25.1, bajada un poco por ser muy fuerte): más baja que el Filo en todos los tiers, y los efectos de combate no suman al stat");
+    "el Filo +4/8/13/19/26 % y, desde la v0.58.0, +35 y +50 % (la tabla de tiers); la Guarda tiene la suya, +3/6/9/13/18/24/35 % (v0.25.1, bajada un poco por ser muy fuerte): más baja que el Filo en todos los tiers, y los efectos de combate no suman al stat");
 Check(Enchantments.Apply(100, "guarda", 5) == 118 && Enchantments.Apply(100, "filo", 5) == 126 && Enchantments.Apply(100, 5) == 126 && Enchantments.Apply(100, "vida", 5) == 100 && Enchantments.Apply(100, "guarda", 0) == 100 && Enchantments.Apply(5, "guarda", 1) == 6,
     "Apply(stat, efecto, tier): Guarda V sobre 100 de DEF da 118 (antes 126), el Filo 126, los efectos de combate no tocan el stat y siempre suma al menos 1");
-Check(Enchantments.FindKind("critico")!.ValuesByTier.SequenceEqual([3, 6, 10, 15, 20]) && Enchantments.FindKind("sangre")!.ValuesByTier.SequenceEqual([1, 2, 3, 4, 5]) && Enchantments.FindKind("vida")!.ValuesByTier.SequenceEqual([4, 8, 13, 18, 24]) && Enchantments.FindKind("esquive")!.ValuesByTier.SequenceEqual([3, 6, 9, 12, 15]),
-    "las magnitudes medidas con el simulador (parte L): Crítico 3-20 puntos, Sangre 1-5 % del daño, Vida 4-24 % y Esquive 3-15 puntos");
+Check(Enchantments.FindKind("critico")!.ValuesByTier.SequenceEqual([3, 6, 10, 15, 20, 27, 38]) && Enchantments.FindKind("sangre")!.ValuesByTier.SequenceEqual([1, 2, 3, 4, 5, 7, 10]) && Enchantments.FindKind("vida")!.ValuesByTier.SequenceEqual([4, 8, 13, 18, 24, 32, 46]) && Enchantments.FindKind("esquive")!.ValuesByTier.SequenceEqual([3, 6, 9, 12, 15, 20, 29]),
+    "las magnitudes medidas con el simulador (parte L): Crítico 3-20 puntos, Sangre 1-5 % del daño, Vida 4-24 % y Esquive 3-15 puntos; los tiers VI y VII (v0.58.0) suben en proporción al Filo");
+// v0.58.0: los tiers VI Infernal (+35 %) y VII Primordial (+50 %), más raros que el V.
+Check(Enchantments.MaxTier == 7 && Enchantments.TierName(6) == "Infernal" && Enchantments.TierName(7) == "Primordial" && Math.Abs(Enchantments.ChancePercent(6) - 0.3) < 1e-9 && Math.Abs(Enchantments.ChancePercent(7) - 0.1) < 1e-9 && Math.Abs(Enchantments.ChancePercent(5) - 1.0) < 1e-9
+      && Enchantments.Apply(100, "filo", 7) == 150 && Enchantments.Apply(100, "filo", 6) == 135 && Enumerable.Range(1, 7).Sum(Enchantments.ChancePercent) is > 99.999 and < 100.001,
+    "tiers VI Infernal (0,3 %, +35 %) y VII Primordial (0,1 %, +50 %); el V sigue al 1 % y las chances suman 100 %");
+var rolls7 = Enumerable.Range(0, 200_000).Select(i => Enchantments.Roll(new Random(i))).ToList();
+Check(rolls7.Count(t => t == 7) is > 80 and < 330 && rolls7.Count(t => t == 6) is > 400 and < 800 && rolls7.Max() == 7, $"sorteo real: VII {rolls7.Count(t => t == 7)} y VI {rolls7.Count(t => t == 6)} de 200.000");
 Check(Enchantments.Kinds.Where(k => k.PveOnly).Select(k => k.Key).OrderBy(x => x).SequenceEqual(["critico", "esquive", "sangre", "vida"]) && Enchantments.IsStatKind("filo") && Enchantments.IsStatKind("guarda") && !Enchantments.IsStatKind("critico"),
     "Crítico, Sangre, Vida y Esquive son solo contra monstruos; Filo y Guarda cambian el stat de la pieza");
 Check(Enchantments.DefaultKind("weapon") == "filo" && Enchantments.DefaultKind("amulet") == "guarda", "el efecto de siempre de cada pieza es Filo / Guarda");
@@ -44,8 +50,8 @@ Check(Enchantments.ValueText("filo", 3) == "+13 %" && Enchantments.ValueText("cr
     "el valor en palabras");
 Check(Enchantments.ShortText("filo", 3) == "+13 %" && Enchantments.ShortText("critico", 3) == "Crít +10" && Enchantments.ShortText("sangre", 1) == "Sangre 1 %" && Enchantments.ShortText("vida", 5) == "Vida +24 %" && Enchantments.ShortText("esquive", 2) == "Esq +6",
     "el valor corto de la línea del perfil");
-Check(Enchantments.DescribeValues(Enchantments.FindKind("filo")!) == "+4/8/13/19/26 % de ATQ de la pieza" && Enchantments.DescribeValues(Enchantments.FindKind("sangre")!) == "cura el 1/2/3/4/5 % del daño de cada golpe" && Enchantments.DescribeValues(Enchantments.FindKind("esquive")!).Contains("3/6/9/12/15"),
-    "los cinco valores de cada efecto en palabras (para /enchant info)");
+Check(Enchantments.DescribeValues(Enchantments.FindKind("filo")!) == "+4/8/13/19/26/35/50 % de ATQ de la pieza" && Enchantments.DescribeValues(Enchantments.FindKind("sangre")!) == "cura el 1/2/3/4/5/7/10 % del daño de cada golpe" && Enchantments.DescribeValues(Enchantments.FindKind("esquive")!).Contains("3/6/9/12/15/20/29"),
+    "los valores de cada tier de un efecto en palabras (para /enchant info), I a VII");
 
 Console.WriteLine("\n== 2. El perfil de combate (solo contra monstruos) ==");
 var weaponItem = new Item { StatValue = 100, WeaponFamily = "Espadas" };
@@ -127,6 +133,10 @@ async Task Reset(int gold = 1_000_000, int dust = 5_000)
 async Task<User> Me() => (await users.GetByDiscordIdAsync(U))!;
 await Reset();
 var fresh = await Me();
+await db.ExecuteAsync("UPDATE users SET weapon_enchant = 7, amulet_enchant = 6 WHERE discord_id = @id", new { id = (long)U });
+var tier7 = await Me();
+Check(tier7.WeaponEnchant == 7 && tier7.AmuletEnchant == 6 && PlayerCombatProfileCalculator.WeaponDamage(tier7, (await items.GetByIdAsync(weaponId))!) >= (await items.GetByIdAsync(weaponId))!.StatValue * 3 / 2, "la base acepta los tiers 6 y 7 (Database/add_enchant_tiers_6_7.sql) y el arma Primordial pega +50 %");
+await Reset();
 Check(fresh.WeaponEnchantKind == "filo" && fresh.AmuletEnchantKind == "guarda" && fresh.WeaponEnchant == 0, "un jugador nuevo arranca con Filo y Guarda (el de siempre) y sin tier");
 var o1 = await dustRepo.TryEnchantAsync(U, "weapon", 2, 100, 10, "critico");
 var u1 = await Me();
@@ -209,7 +219,7 @@ Check(advLocked.PlainMessage is not null && advLocked.PlainMessage.Contains("se 
 var ev = await db.ExecuteScalarAsync<string>("SELECT detail FROM game_events WHERE discord_id = @id AND kind = 'enchant' ORDER BY event_id DESC LIMIT 1", new { id = (long)U });
 Check(ev == "weapon:2:sangre", $"el evento de cada intento anota la pieza, el tier y el efecto («{ev}»)");
 await Reset();
-var amu = await Enchant("amuleto", "esquive", rng: new FixedRandom(999));   // tier 5
+var amu = await Enchant("amuleto", "esquive", rng: new FixedRandom(990));   // tier 5 (pesos acumulados 416/716/896/986/996/999/1000 desde la v0.58.0)
 Check(amu.Embed is not null && (await Me()).AmuletEnchantKind == "esquive" && (await Me()).AmuletEnchant == 5 && AllText(amu.Embed).Contains("Esquive Soberano") && AllText(amu.Embed).Contains("+15 puntos de esquive"), "el amuleto con Esquive V: «+15 puntos de esquive»");
 
 Console.WriteLine("\n== 7. Pantallas ==");

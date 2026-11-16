@@ -50,7 +50,7 @@ public sealed class TitleRepository(IDbConnectionFactory connectionFactory) : IT
             SELECT
                 EXISTS (SELECT 1 FROM game_events WHERE discord_id = @Id AND kind = 'chop' AND detail LIKE @Corteza) AS Corteza,
                 EXISTS (SELECT 1 FROM game_events WHERE discord_id = @Id AND kind = 'mine' AND detail LIKE @Meteorito) AS Meteorito,
-                EXISTS (SELECT 1 FROM game_events WHERE discord_id = @Id AND kind = 'enchant' AND detail LIKE '%:5') AS EnchantV;
+                EXISTS (SELECT 1 FROM game_events WHERE discord_id = @Id AND kind = 'enchant' AND detail ~ ':[5-7]$') AS EnchantV;
             """,
             new { Id = id, Corteza = "%Corteza del Árbol de Vida%", Meteorito = "%Fragmento de Meteorito%" }, cancellationToken: cancellationToken));
         var flags = new HashSet<string>();
