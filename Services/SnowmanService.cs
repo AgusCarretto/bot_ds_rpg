@@ -22,7 +22,8 @@ public interface ISnowmanService
     IReadOnlyList<SnowFeedLine> Feed();
 }
 
-public sealed class SnowmanService(ISnowmanRepository repository, IChristmasService christmas, int initialHp) : ISnowmanService
+// events (opcional): el daño se anota como evento (SnowmanRules.DamageStat) DESPUÉS del commit, así avanza el logro «Bombardero de Nieve» y avisa.
+public sealed class SnowmanService(ISnowmanRepository repository, IChristmasService christmas, int initialHp, IGameEvents? events = null) : ISnowmanService
 {
     private const int FeedSize = 5;
     private readonly object _lock = new();
@@ -39,6 +40,11 @@ public sealed class SnowmanService(ISnowmanRepository repository, IChristmasServ
         var outcome = await repository.ThrowAsync(discordId, christmas.Settings.Season, projectile, count, initialHp, canRespawn);
         if (outcome.Status == SnowThrowStatus.Ok)
         {
+            if (events is not null && outcome.Damage > 0)
+            {
+                await events.RecordAsync(discordId, SnowmanRules.DamageStat, amount: outcome.Damage);
+            }
+
             lock (_lock)
             {
                 _feed.AddFirst(new SnowFeedLine(displayName, projectile, outcome.Count, outcome.Damage));

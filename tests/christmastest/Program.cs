@@ -274,7 +274,7 @@ foreach (var p in players)
 }
 
 var snowRepo = new SnowmanRepository(factory);
-var snowSvc = new SnowmanService(snowRepo, during, 3000);
+var snowSvc = new SnowmanService(snowRepo, during, 3000, new GameEventService(new GameEventRepository(factory)));
 Check(SnowmanRules.Find("bola")!.Damage == 10 && SnowmanRules.Find("trineo")!.Price == 200 && SnowmanRules.Projectiles.Count == 4, "4 proyectiles: Bola, Bastón, Petardo, Trineo");
 Check(SnowmanRules.Projectiles.Zip(SnowmanRules.Projectiles.Skip(1)).All(p => (double)p.Second.Damage / p.Second.Price > (double)p.First.Damage / p.First.Price),
     "los caros rinden más daño por Regalo");
@@ -363,6 +363,18 @@ using (Loc.Use("en"))
     var sellLeak = LeakCheck.NoSpanish(enSell, ["aa navidad vender 100"]);
     Check(sellLeak.Ok, $"la venta en inglés sin español ({sellLeak.Found})");
 }
+
+Console.WriteLine("\n== 16. Los logros de Navidad ==");
+var espiritu = AchievementCatalog.Find("xmas_espiritu");
+var bombardero = AchievementCatalog.Find("xmas_bombardero");
+Check(espiritu is not null && espiritu.Tiers.Select(t => t.Threshold).SequenceEqual([1000L, 3000, 6000]) && espiritu.StatKind == GameEventKinds.XmasGifts, "«Espíritu Navideño»: 1.000 / 3.000 / 6.000 Regalos");
+Check(bombardero is not null && bombardero.Tiers.Select(t => t.Threshold).SequenceEqual([5000L, 25000, 100000]) && bombardero.StatKind == GameEventKinds.SnowmanDamage, "«Bombardero de Nieve»: 5.000 / 25.000 / 100.000 de daño");
+Check(AchievementCatalog.Categories.Single(c => c.Name == "Navidad").Keys.SequenceEqual(["xmas_espiritu", "xmas_bombardero"]) && TitleCatalog.All.All(t => t.AchievementKey is not ("xmas_espiritu" or "xmas_bombardero")),
+    "página 🎄 Navidad en /achievements, sin títulos");
+long giftsStatBefore = (await new GameEventRepository(factory).GetStatsAsync(U)).GetValueOrDefault(GameEventKinds.XmasGifts);
+var eventsWithXmas = new GameEventService(new GameEventRepository(factory), christmas: during);
+int bossGifts = await eventsWithXmas.GrantEventGiftsAsync(U, GameEventKinds.BossWin);
+Check((await new GameEventRepository(factory).GetStatsAsync(U)).GetValueOrDefault(GameEventKinds.XmasGifts) == giftsStatBefore + bossGifts, "los Regalos de una victoria suman al contador del logro");
 
 await Clean();
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");

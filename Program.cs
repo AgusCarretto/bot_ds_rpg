@@ -629,7 +629,8 @@ public static class ServiceProviderBuilder
             .AddSingleton<IChristmasService>(sp => new ChristmasService(sp.GetRequiredService<IChristmasRepository>(), sp.GetRequiredService<ChristmasSettings>()))
             .AddSingleton<ISnowmanRepository, SnowmanRepository>()
             .AddSingleton<ISnowmanService>(sp => new SnowmanService(
-                sp.GetRequiredService<ISnowmanRepository>(), sp.GetRequiredService<IChristmasService>(), SnowmanService.LoadInitialHp(sp.GetRequiredService<IConfiguration>())))
+                sp.GetRequiredService<ISnowmanRepository>(), sp.GetRequiredService<IChristmasService>(), SnowmanService.LoadInitialHp(sp.GetRequiredService<IConfiguration>()),
+                sp.GetRequiredService<IGameEvents>()))
             .AddSingleton<IPlayerBonusService, PlayerBonusService>()
             .AddSingleton<ILanguageRepository, LanguageRepository>()
             .AddSingleton<IPlayerLanguageService, PlayerLanguageService>()

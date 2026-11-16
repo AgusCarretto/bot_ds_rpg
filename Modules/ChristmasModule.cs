@@ -11,7 +11,8 @@ public class ChristmasModule(
     IZoneRepository zoneRepository,
     IChristmasRepository christmasRepository,
     IChristmasService christmasService,
-    ICooldownRepository cooldownRepository) : InteractionModuleBase<SocketInteractionContext>
+    ICooldownRepository cooldownRepository,
+    IGameEvents gameEvents) : InteractionModuleBase<SocketInteractionContext>
 {
     private const string ClaimPrefix = "adv_claim";
     private const string ShopPrefix = "xmas_shop";
@@ -50,7 +51,7 @@ public class ChristmasModule(
                 return;
             }
 
-            var result = await ClaimAsync(userRepository, zoneRepository, christmasRepository, christmasService, ownerId, DateTime.UtcNow);
+            var result = await ClaimAsync(userRepository, zoneRepository, christmasRepository, christmasService, ownerId, DateTime.UtcNow, gameEvents);
             if (result.Embed is null)
             {
                 await FollowupAsync(result.Error, ephemeral: true);
@@ -480,7 +481,8 @@ public class ChristmasModule(
 
     // Reclama el día de hoy. Crea la cuenta si hace falta (es un premio, como el /daily).
     public static async Task<AdventClaimView> ClaimAsync(
-        IUserRepository userRepository, IZoneRepository zoneRepository, IChristmasRepository repository, IChristmasService service, ulong discordId, DateTime utcNow)
+        IUserRepository userRepository, IZoneRepository zoneRepository, IChristmasRepository repository, IChristmasService service, ulong discordId, DateTime utcNow,
+        IGameEvents? events = null)
     {
         var settings = service.Settings;
         int today = ChristmasRules.AdventDayAt(settings, utcNow);
@@ -497,8 +499,19 @@ public class ChristmasModule(
         {
             AdventClaimStatus.AlreadyClaimed => new AdventClaimView(Loc.F($"Ya abriste el día **{today}**. Volvé mañana.")),
             AdventClaimStatus.NoAccount => new AdventClaimView(Loc.T("No encontré tu cuenta, probá de nuevo.")),
-            _ => new AdventClaimView(null, BuildClaimEmbed(outcome)),
+            _ => await RecordedAsync(new AdventClaimView(null, BuildClaimEmbed(outcome))),
         };
+
+        // Los Regalos del calendario también cuentan para «Espíritu Navideño» (el evento va después del commit, como siempre).
+        async Task<AdventClaimView> RecordedAsync(AdventClaimView view)
+        {
+            if (events is not null && outcome.Day is { Gifts: > 0 } claimedDay)
+            {
+                await events.RecordAsync(discordId, GameEventKinds.XmasGifts, amount: claimedDay.Gifts);
+            }
+
+            return view;
+        }
     }
 
     public static Embed BuildClaimEmbed(AdventClaimOutcome outcome)

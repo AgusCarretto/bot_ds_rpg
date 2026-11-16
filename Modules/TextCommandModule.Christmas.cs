@@ -56,7 +56,7 @@ public partial class TextCommandModule
     {
         try
         {
-            var result = await ChristmasModule.ClaimAsync(userRepository, zoneRepository, christmasRepository, christmasService, Context.User.Id, DateTime.UtcNow);
+            var result = await ChristmasModule.ClaimAsync(userRepository, zoneRepository, christmasRepository, christmasService, Context.User.Id, DateTime.UtcNow, gameEvents);
             await ReplyAsync(result.Error, embed: result.Embed);
         }
         catch (Exception ex)

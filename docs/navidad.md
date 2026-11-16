@@ -140,5 +140,8 @@ Reno, banner de nieve.
   El panel se refresca solo cada 5 s durante 2 min y muestra las últimas 5 tiradas (en memoria). Anuncio público con el top 10 al caer.
 - **Venta de Regalos (hecha):** **1.000 de oro cada uno** (el dueño, 2026-11-16: primero 5.000, lo bajó a 1.000), solo del 25 al 6. Botón «💰 Vender Regalos» en la tienda con confirmación (vende todo);
   `aa navidad vender 100|10k|all` vende una parte. Transacción guardada; si el oro pasaría el tope de la base (INTEGER) no vende nada.
-- **Falta:** banner de nieve (cuando haya arte);
-  logros; arte; `/info` y `docs/topgg/comandos`.
+- **Logros (hechos, el dueño aprobó los números el 2026-11-16):** página 🎄 Navidad en `/achievements`, sin títulos: «Espíritu Navideño» (Regalos juntados
+  en victorias, `/daily` y calendario —los premios del Muñeco no cuentan—: 1.000 / 3.000 / 6.000, evento `xmas_gifts`) y «Bombardero de Nieve» (daño al Muñeco:
+  5.000 / 25.000 / 100.000, evento `snowman_damage`). 37 logros en 6 páginas (Hazañas sigue última, ahora la 6).
+- **Vida del Muñeco:** 30.000 por defecto (el dueño: 9 activos por día y 14 por semana el 2026-11-16; cae cada ~3 días y ~4 veces en el evento).
+- **Falta:** banner de nieve y conectar el arte (prompts entregados el 2026-11-16); `/info` y `docs/topgg/comandos`; anuncio; release.

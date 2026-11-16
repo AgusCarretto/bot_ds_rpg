@@ -12,7 +12,7 @@ public sealed record SnowmanRank(ulong DiscordId, long Damage, int Rank);
 // top 3. Las cantidades exactas y la vida inicial son propuesta, «a medir» (la vida se puede cambiar con Christmas__SnowmanHp sin tocar código).
 public static class SnowmanRules
 {
-    public const int DefaultInitialHp = 100_000;
+    public const int DefaultInitialHp = 30_000;   // 2026-11-16: con ~9 activos por día cae cada ~3 días al principio (100.000 tardaba 9)
     public const double RespawnMultiplier = 1.5;
     public const int MaxThrowsPerCommand = 50;
 
@@ -27,7 +27,7 @@ public static class SnowmanRules
     public const int DamagePerDust = 10;        // 1 de Polvo cada 10 de daño, entre 10 y 500
 
     public const string KillStat = "snowman_kill";      // vueltas del Muñeco en las que pegaste y cayó (los títulos)
-    public const string DamageStat = "snowman_damage";  // daño total al Muñeco, de por vida
+    public const string DamageStat = GameEventKinds.SnowmanDamage;  // daño total al Muñeco, de por vida
 
     public static readonly IReadOnlyList<SnowProjectile> Projectiles =
     [

@@ -64,6 +64,9 @@ public static class AchievementCatalog
         new("gladiador",     "Gladiador",     "🏟️", GameEventKinds.ArenaJoin,     Loc.Mark("Anotate en el torneo diario con /arena join"),      Plain(3, 15, 60)),
         // v0.56.0: el bestiario. Cuenta monstruos DISTINTOS vencidos (bestiary_new solo se anota la primera vez que vencés a cada uno), de por
         // vida. 31 es el total de hoy (20 de las zonas 1 a 5, 10 de las 6 a 10 y el Asador): si se suman monstruos, el tramo III sigue en 31.
+        // v0.57.0: Navidad en el Fogón (docs/navidad.md). Solo oro y EXP (Plain) y SIN títulos (los del evento salen de la tienda y del Muñeco); el dueño aprobó los números (2026-11-16).
+        new("xmas_espiritu",   "Espíritu Navideño",   "🎁", GameEventKinds.XmasGifts,   Loc.Mark("Juntá Regalos en Navidad (/navidad)"),                Plain(1000, 3000, 6000)),
+        new("xmas_bombardero", "Bombardero de Nieve", "☃️", SnowmanRules.DamageStat,    Loc.Mark("Pegale al Muñeco de Nieve Gigante (/munieco)"),       Plain(5000, 25000, 100000)),
         new("bestiario",     "Cazador de Bestias", "📖", GameEventKinds.BestiaryNew, Loc.Mark("Vencé monstruos distintos y llená tu /bestiary"), Plain(10, 20, 31)),
         // v0.54.0: Elementos (fuego, hielo y agua) apostando; nació como piedra, papel o tijera y la clave quedó «manoganadora». Solo oro y EXP (Plain) y sin títulos: el dueño pidió «logro nomás». Se puede farmear
         // entre amigos (uno pierde a propósito), por eso nunca una caja.
@@ -107,6 +110,7 @@ public static class AchievementCatalog
         new("Oficios", "🔨", ["recolector", "pescador", "herrero", "desmantelador", "encantador"]),
         new("Economía", "💰", ["comerciante", "generoso", "abridor", "afortunado", "manoganadora"]),
         new("Constancia", "📅", ["constante", "racha", "comandante", "misionero", "domador", "criador", "renacido", "companero", "volvio"]),
+        new("Navidad", "🎄", ["xmas_espiritu", "xmas_bombardero"]),
         new("Hazañas", "🏆", ["hz_cazador", "hz_viajero", "hz_jefes", "hz_recolector", "hz_pescador", "hz_herrero", "hz_magnate", "hz_encantador", "hz_explorador"]),
     ];
 

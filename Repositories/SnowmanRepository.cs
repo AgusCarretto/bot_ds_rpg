@@ -106,8 +106,6 @@ public sealed class SnowmanRepository(IDbConnectionFactory connectionFactory) : 
                     SET damage = event_snowman_hits.damage + EXCLUDED.damage, spent = event_snowman_hits.spent + EXCLUDED.spent;
                 """,
                 new { Season = season, row.Round, DiscordId = (long)discordId, Damage = (long)applied, Cost = cost }, transaction: transaction, cancellationToken: cancellationToken));
-            await AddStatAsync(connection, transaction, "SELECT @DiscordId AS discord_id, @Amount::bigint AS amount", SnowmanRules.DamageStat,
-                new { DiscordId = (long)discordId, Amount = (long)applied }, cancellationToken);
 
             SnowmanKill? kill = null;
             var current = row with { Hp = hpAfter };

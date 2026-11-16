@@ -3200,5 +3200,7 @@
   "Con eso pasarías el tope de oro: vendé menos de una vez.": "That would go over the gold cap: sell fewer at once.",
   "💰 Vendiste **{0}** Regalos por **{1}** de oro. Te quedan **{2}** Regalos.": "💰 You sold **{0}** Gifts for **{1}** gold. You have **{2}** Gifts left.",
   "💰 **Vender Regalos**: {0} de oro cada uno (hasta el 6 de enero)": "💰 **Sell Gifts**: {0} gold each (until January 6th)",
-  "Vender Regalos": "Sell Gifts"
+  "Vender Regalos": "Sell Gifts",
+  "Juntá Regalos en Navidad (/navidad)": "Collect Gifts at Christmas (/navidad)",
+  "Pegale al Muñeco de Nieve Gigante (/munieco)": "Hit the Giant Snowman (/munieco)"
 }

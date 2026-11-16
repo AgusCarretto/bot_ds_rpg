@@ -12,8 +12,16 @@ namespace BotDsRpg.Services;
 public sealed class GameEventService(
     IGameEventRepository eventRepository, IProgressNotifier? progressNotifier = null, IReferralRepository? referrals = null, IBestiaryRepository? bestiary = null, IChristmasService? christmas = null) : IGameEvents
 {
-    public Task<int> GrantEventGiftsAsync(ulong discordId, string kind, int streakDay = 0) =>
-        christmas is null ? Task.FromResult(0) : christmas.GrantAsync(discordId, kind, streakDay);
+    public async Task<int> GrantEventGiftsAsync(ulong discordId, string kind, int streakDay = 0)
+    {
+        int gifts = christmas is null ? 0 : await christmas.GrantAsync(discordId, kind, streakDay);
+        if (gifts > 0)
+        {
+            await RecordAsync(discordId, GameEventKinds.XmasGifts, amount: gifts);   // el logro «Espíritu Navideño»
+        }
+
+        return gifts;
+    }
 
     // Avisos pendientes por jugador. En memoria a propósito: si el bot se reinicia entre el evento y el aviso, no pasa nada
     // (el progreso ya está guardado en la base; solo se pierde el cartelito).
