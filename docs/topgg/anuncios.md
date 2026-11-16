@@ -7,6 +7,25 @@ fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo
 
 ---
 
+## 2026-11-17 — La Aventura y cambiar materiales de a muchos (v0.56.6 y v0.57.0)
+
+**Título:** 🗺️ Llegó la Aventura: 5 escenas, tus decisiones y el Guardián del Camino
+
+**Texto:**
+
+🗺️ **La Aventura** (**/aventura** o **aa aventura**): un viaje de **5 escenas**. En cada una elegís el camino:
+• 🛡️ **Seguro**: peleás contra un monstruo de tu zona.
+• ⚔️ **Arriesgado**: contra el élite, y suma **+20 % de botín**.
+• ❓ **Misterioso**: puede ser un cofre, una fogata, una trampa, un santuario… o una emboscada.
+
+Al final te espera el **🗿 Guardián del Camino**. Si llegás, cobrás **3 viajes de oro y EXP** por tu botín, y a veces la caja de tu zona.
+
+⚠️ **Es difícil a propósito:** no se come en toda la aventura, y si morís pagás la penalidad de siempre y no cobrás nada. El premio es **por zona**: elegí bien dónde arriesgarte. Sale **cada 3 horas**.
+
+🔄 **/trade con cantidad:** ahora podés cambiar de a muchos, la misma cantidad de cada lado: **aa trade @jugador "Oro Puro" "Madera de Nogal" 10**.
+
+---
+
 ## 2026-11-16 — El bestiario, más pesca y pantallas más limpias (v0.56.0 a v0.56.3)
 
 **Título:** 📖 Llegó el bestiario, la pesca suma premios y el bot se ve más prolijo
