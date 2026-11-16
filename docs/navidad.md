@@ -143,5 +143,5 @@ Reno, banner de nieve.
 - **Logros (hechos, el dueño aprobó los números el 2026-11-16):** página 🎄 Navidad en `/achievements`, sin títulos: «Espíritu Navideño» (Regalos juntados
   en victorias, `/daily` y calendario —los premios del Muñeco no cuentan—: 1.000 / 3.000 / 6.000, evento `xmas_gifts`) y «Bombardero de Nieve» (daño al Muñeco:
   5.000 / 25.000 / 100.000, evento `snowman_damage`). 37 logros en 6 páginas (Hazañas sigue última, ahora la 6).
-- **Vida del Muñeco:** 30.000 por defecto (el dueño: 9 activos por día y 14 por semana el 2026-11-16; cae cada ~3 días y ~4 veces en el evento).
+- **Vida del Muñeco:** 50.000 por defecto (el dueño: «50k mínimo»; con 9 activos por día la primera cae en ~5 días, ~3 veces en el evento).
 - **Falta:** banner de nieve y conectar el arte (prompts entregados el 2026-11-16); `/info` y `docs/topgg/comandos`; anuncio; release.

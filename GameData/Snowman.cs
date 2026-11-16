@@ -12,7 +12,7 @@ public sealed record SnowmanRank(ulong DiscordId, long Damage, int Rank);
 // top 3. Las cantidades exactas y la vida inicial son propuesta, «a medir» (la vida se puede cambiar con Christmas__SnowmanHp sin tocar código).
 public static class SnowmanRules
 {
-    public const int DefaultInitialHp = 30_000;   // 2026-11-16: con ~9 activos por día cae cada ~3 días al principio (100.000 tardaba 9)
+    public const int DefaultInitialHp = 50_000;   // 2026-11-16: el dueño pidió «50k de vida mínimo» (con ~9 activos por día, la primera cae en ~5 días)
     public const double RespawnMultiplier = 1.5;
     public const int MaxThrowsPerCommand = 50;
 
