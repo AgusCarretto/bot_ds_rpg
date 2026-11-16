@@ -54,7 +54,7 @@ var template = new MonsterTemplate("Lobo", "🐺", 100, 200, 10, 20, ["Colmillo"
 var scaled = AdventureRules.Scale(template, AdventureRules.MonsterMultiplier);
 Check(scaled.MinHp == 130 && scaled.MaxHp == 260 && scaled.MinDamage == 13 && scaled.MaxDamage == 26 && scaled.DropItemNames.Count == 0, "los monstruos de la aventura: ×1,3 y sin drops");
 var guardian = AdventureRules.Guardian(template);
-Check(guardian.Name == AdventureRules.GuardianName && guardian.MaxHp == 320 && guardian.MaxDamage == 32, "el Guardián: el élite ×1,6 con su nombre");
+Check(guardian.Name == AdventureRules.GuardianName && guardian.MaxHp == 320 && guardian.MinDamage == 20 && guardian.MaxDamage == 40, "el Guardián: el élite ×1,6 de vida y ×2,0 de daño (v0.57.2: +25 %), con su nombre");
 Check(AdventureRules.ApplyLoot(1000, 0) == 1000 && AdventureRules.ApplyLoot(1000, 60) == 1600, "el botín multiplica el premio (+60 % = ×1,6)");
 // v0.57.2: un viaje de la aventura lleva el bono del monstruo de viaje de la zona, como /travel (hasta la v0.57.1 pagaba solo el nivel: ~13 % en la Zona 5).
 foreach (var zone in await zones.GetAllAsync())

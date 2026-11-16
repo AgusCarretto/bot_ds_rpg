@@ -32,7 +32,9 @@ public static class AdventureRules
 
     public const int Scenes = 5;                       // la última es el Guardián
     public const double MonsterMultiplier = 1.3;       // comunes y élites de la aventura, contra los de afuera
-    public const double GuardianMultiplier = 1.6;      // el Guardián: el élite de la zona
+    public const double GuardianMultiplier = 1.6;      // el Guardián: el élite de la zona (la vida)
+    // v0.57.2 (el dueño: «es muy fácil para la mayoría… un poco, tipo 1.25»): el daño del Guardián pega un 25 % más que su vida, ×1,6 × 1,25 = ×2,0 el élite.
+    public const double GuardianDamageMultiplier = GuardianMultiplier * 1.25;
     public const int RiskyBonusPercent = 20;
     public const int ChestBonusPercent = 30;
     public const int CampfireHealPercent = 30;
@@ -62,7 +64,12 @@ public static class AdventureRules
         DropItemNames = [],
     };
 
-    public static MonsterTemplate Guardian(MonsterTemplate elite) => Scale(elite, GuardianMultiplier) with { Name = GuardianName };
+    public static MonsterTemplate Guardian(MonsterTemplate elite)
+    {
+        var hp = Scale(elite, GuardianMultiplier);
+        var damage = Scale(elite, GuardianDamageMultiplier);
+        return hp with { Name = GuardianName, MinDamage = damage.MinDamage, MaxDamage = damage.MaxDamage };
+    }
 
     public const string GuardianName = "Guardián del Camino";
 
