@@ -3077,5 +3077,6 @@
   "Siguiente": "Next",
   "nadie lo sacó todavía": "nobody has redeemed it yet",
   "lo sacó 1 persona": "redeemed by 1 player",
-  "lo sacaron {0}": "redeemed by {0} players"
+  "lo sacaron {0}": "redeemed by {0} players",
+  "{0} No pude escribirte por privado (¿tenés los mensajes directos cerrados?): usá **/codelist**, que responde solo para vos.": "{0} I couldn't message you privately (are your DMs closed?): use **/codelist**, which only you can see."
 }

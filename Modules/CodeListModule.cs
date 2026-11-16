@@ -15,12 +15,13 @@ public class CodeListModule(IRedeemCodeRepository redeemCodeRepository) : Intera
     [SlashCommand("codelist", "Tus códigos: los que canjeaste y los que te faltan (??? sin pista).")]
     public async Task HandleCodeListAsync([Summary("pagina", "Qué página mirar (sin nada, la primera)")] int? pagina = null)
     {
-        await DeferAsync();
+        // Solo para quien la pide (el dueño, 2026-11-16): si la viera todo el canal, se sabría qué códigos sacó cada uno.
+        await DeferAsync(ephemeral: true);
 
         try
         {
             var view = await BuildAsync(redeemCodeRepository, Context.User.Id, (pagina ?? 1) - 1);
-            await FollowupAsync(embed: view.Embed, components: view.Components);
+            await FollowupAsync(embed: view.Embed, components: view.Components, ephemeral: true);
         }
         catch (Exception ex)
         {
