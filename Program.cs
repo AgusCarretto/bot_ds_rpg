@@ -310,6 +310,7 @@ class Program
             // comandos de barra y nunca pasan por acá. Se responde en privado y no se despacha nada.
             if (interaction is SocketSlashCommand fightSlash
                 && ((_services.GetService<IDungeonService>()?.IsInDungeon(interaction.User.Id) == true && !FightLock.IsAllowedInDungeon(fightSlash.CommandName))
+                    || (_services.GetService<IAdventureService>()?.IsInAdventure(interaction.User.Id) == true && !FightLock.IsAllowedInAdventure(fightSlash.CommandName))
                     || (!FightLock.IsAllowed(fightSlash.CommandName)
                 && FightGuard.IsInFight(_services.GetRequiredService<ICombatSessionService>(), _services.GetService<IRaidSessionService>(), _services.GetService<IDuelService>(), interaction.User.Id, _services.GetService<IDungeonService>()))))
             {
@@ -395,6 +396,7 @@ class Program
             {
                 string key = FightLock.TextKey(found.Commands[0].Command.Aliases.FirstOrDefault() ?? found.Commands[0].Command.Name);
                 if ((_services.GetService<IDungeonService>()?.IsInDungeon(message.Author.Id) == true && !FightLock.IsAllowedInDungeon(key))
+                    || (_services.GetService<IAdventureService>()?.IsInAdventure(message.Author.Id) == true && !FightLock.IsAllowedInAdventure(key))
                     || (!FightLock.IsAllowed(key)
                     && FightGuard.IsInFight(_services.GetRequiredService<ICombatSessionService>(), _services.GetService<IRaidSessionService>(), _services.GetService<IDuelService>(), message.Author.Id, _services.GetService<IDungeonService>())))
                 {
@@ -623,6 +625,14 @@ public static class ServiceProviderBuilder
             .AddSingleton<IRedeemCodeRepository, RedeemCodeRepository>()
             .AddSingleton<IReferralRepository, ReferralRepository>()
             .AddSingleton<IBestiaryRepository, BestiaryRepository>()
+            // La Aventura (v0.57.0, docs/aventura.md): las corridas en memoria y el paquete de lo que usan sus pantallas y el turno de pelea.
+            .AddSingleton<IAdventureService, AdventureService>()
+            .AddSingleton(sp => new AdventureDeps(
+                sp.GetRequiredService<IUserRepository>(), sp.GetRequiredService<IAdventureRepository>(), sp.GetRequiredService<ICooldownRepository>(),
+                sp.GetRequiredService<IMonsterRepository>(), sp.GetRequiredService<IAdventureCombatStarter>(), sp.GetRequiredService<ICombatSessionService>(),
+                sp.GetRequiredService<IRaidSessionService>(), sp.GetRequiredService<IDungeonService>(), sp.GetRequiredService<IAdventureService>(),
+                sp.GetRequiredService<IZoneBoxService>(), sp.GetRequiredService<IItemRepository>(), sp.GetRequiredService<IGameEvents>(), sp.GetRequiredService<IPlayerBonusService>(),
+                sp.GetRequiredService<IZoneRepository>()))
             .AddSingleton<IPlayerBonusService, PlayerBonusService>()
             .AddSingleton<ILanguageRepository, LanguageRepository>()
             .AddSingleton<IPlayerLanguageService, PlayerLanguageService>()
