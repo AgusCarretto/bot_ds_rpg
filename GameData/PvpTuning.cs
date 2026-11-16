@@ -10,13 +10,18 @@ namespace BotDsRpg.GameData;
 // (Guerrero > Ninja > Arquero y Hechicero > Guerrero) estable en los cuatro rangos. Con una sola palanca (la vida) ese es el piso: lo que
 // queda es la interacción real entre las habilidades, y eso es parte del juego. Si se retocan las clases o las habilidades, hay que
 // volver a medirlo (el arnés es chico: un doble bucle de Simulate).
+//
+// v0.57.2: el Arquero tira 4 flechas (eran 3) y el Guerrero recibe ×0,85 (era ×0,9), los dos para que se elijan más contra monstruos. Medido con
+// `dotnet run --project tools/balance2 -- P` (zonas 2 a 5, nivel mínimo + 8, su equipo, 3000 duelos por cruce): con los factores viejos el Arquero
+// pasaba a ganar el 63 % y el Hechicero caía al 43 %; con el Arquero de 1,25 a 1,10 y el Guerrero de 0,90 a 0,87 queda Guerrero 48 % · Hechicero 50 % ·
+// Ninja 52 % · Arquero 49 % (antes del cambio: 44 / 53 / 55 / 49) y el peor cruce, Guerrero contra Ninja, ~62/38.
 public static class PvpTuning
 {
     public static double HpFactor(string playerClass) => playerClass switch
     {
-        "Guerrero" => 0.90,
+        "Guerrero" => 0.87,
         "Hechicero" => 1.20,
-        "Arquero" => 1.25,
+        "Arquero" => 1.10,
         _ => 1.0, // Ninja: la referencia
     };
 

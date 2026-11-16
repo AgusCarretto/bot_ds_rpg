@@ -53,6 +53,15 @@ El **botín** se va sumando y multiplica el premio final: tres caminos arriesgad
 
 - **Base: lo de 3 viajes** de oro y EXP (3 × la fórmula del `/travel`) **calculados con el nivel mínimo de la zona** (el dueño: «ni que hablar
   que el premio es por zona»), multiplicado por el botín (hasta ~×1,9). Quedarse en una zona fácil paga lo de esa zona.
+  **Cada viaje incluye el bono de oro y EXP del monstruo de viaje de la zona** (como el `/travel` de verdad). Hasta la v0.57.1 se pasaba 0 y el
+  «viaje» quedaba en lo que paga el nivel solo: el dueño notó que la Aventura daba mucho menos (2026-11-16). Medido: era el 34 % de un viaje
+  real en la Zona 2, el 13 % en la 5 y el 4 % en la 10; desde la v0.57.2 paga los 3 viajes completos.
+- **El Guardián pega un 25 % más desde la v0.57.2** (el dueño: «es muy fácil para la mayoría… tipo 1.25»): vida ×1,6 el élite como antes, daño
+  ×2,0 (`AdventureRules.GuardianDamageMultiplier`). Medido con `tools/balance2 -- O` (equipo de la zona, sin encantamientos, mascotas, platos,
+  dragón ni bendiciones, que los jugadores sí tienen, así que la realidad es más fácil): con +30 niveles sobre el mínimo, las zonas 1-5 siguen
+  en ~75-100 % de llegada, pero la Zona 6 por el camino seguro baja de 65-91 % a 24-56 % según la clase y la 10 de 4-45 % a 0-14 %; con
+  +15 niveles, la Zona 5 por el seguro baja de 66-90 % a 22-52 %. Si las zonas altas quedan imposibles, la palanca es ese número (o solo
+  subirlo en las zonas bajas).
 - **Chance de la caja de tu zona** (la del viaje, `zone_boxes`): 25 %.
 - Para comparar: en 3 horas, el `/travel` paga 6 viajes si no te perdés ninguno; la Aventura es **además** del viaje, no en
   lugar de él.

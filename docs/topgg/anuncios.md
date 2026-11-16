@@ -7,6 +7,24 @@ fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo
 
 ---
 
+## 2026-11-17 — La Aventura paga lo que tiene que pagar, y el Arquero y el Guerrero más fuertes (v0.57.2)
+
+**Título:** 🏹 La Aventura paga completo, y el Arquero y el Guerrero vienen con todo
+
+**Texto:**
+
+🗺️ **La Aventura ahora paga lo que tenía que pagar.** El premio de **3 viajes** se estaba calculando de menos en todas las zonas menos la 1: ahora cada viaje paga como un **/travel** de verdad de tu zona. Desde la Zona 2 en adelante vas a cobrar **varias veces más** que antes.
+
+🗿 **El Guardián del Camino pega más fuerte** (+25 % de daño). Llegar al final ahora sí es un desafío.
+
+🏹 **Arquero:** la **Lluvia de Flechas** dispara **4 flechas** en lugar de 3, cada una con su propio crítico.
+
+🛡️ **Guerrero:** más aguante, recibe **menos daño** en cada golpe.
+
+⚔️ En los **duelos** y la **Arena** las clases se ajustaron para que sigan parejas.
+
+---
+
 ## 2026-11-16 — La Aventura, el bestiario y un Cofre de Oro de regalo (v0.56.0 a v0.57.0)
 
 (La pesca y las pantallas más limpias ya se habían anunciado antes, junto con la cocina.)

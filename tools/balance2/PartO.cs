@@ -6,7 +6,7 @@ using BotDsRpg.GameData;
 // Uso: dotnet run --project tools/balance2 -- O [corridas por celda] [niveles sobre el mínimo de la zona]
 public static class PartO
 {
-    private static double Monster = AdventureRules.MonsterMultiplier, Guardian = AdventureRules.GuardianMultiplier;
+    private static double Monster = AdventureRules.MonsterMultiplier, Guardian = AdventureRules.GuardianMultiplier, GuardianDamage = AdventureRules.GuardianDamageMultiplier;
 
     public static void Run(string[] args)
     {
@@ -15,8 +15,10 @@ public static class PartO
         // Para probar otros números sin tocar el juego: [3] multiplicador de comunes y élites, [4] del Guardián.
         Monster = args.Length > 3 && double.TryParse(args[3], System.Globalization.CultureInfo.InvariantCulture, out double mm) ? mm : AdventureRules.MonsterMultiplier;
         Guardian = args.Length > 4 && double.TryParse(args[4], System.Globalization.CultureInfo.InvariantCulture, out double gm) ? gm : AdventureRules.GuardianMultiplier;
+        // [5] el daño del Guardián (v0.57.2 es aparte de su vida: ×1,6 × 1,25 = ×2,0).
+        GuardianDamage = args.Length > 5 && double.TryParse(args[5], System.Globalization.CultureInfo.InvariantCulture, out double gd) ? gd : AdventureRules.GuardianDamageMultiplier;
         Console.WriteLine($"Aventura: % de corridas que llegan al final (sin comida). Nivel = mínimo de la zona + {extra}. {runs} corridas por celda.");
-        Console.WriteLine($"Comunes y élites ×{Monster}, Guardián = élite ×{Guardian}.\n");
+        Console.WriteLine($"Comunes y élites ×{Monster}, Guardián = élite ×{Guardian} de vida y ×{GuardianDamage} de daño.\n");
         Console.WriteLine($"{"Zona",-28} {"Nivel",5} " + string.Join(" ", World.Classes.Select(c => $"{c[..4],6}S {c[..4],6}A")));
 
         for (int zi = 0; zi < World.Zones.Count; zi++)
@@ -53,11 +55,11 @@ public static class PartO
         Console.WriteLine("\nS = siempre seguro, A = siempre arriesgado. Lo ideal (propuesta): seguro ~60-75 % con el equipo de la zona, arriesgado ~35-50 %.");
     }
 
-    private static MonRow Scaled(MonRow m, double k) => new()
+    private static MonRow Scaled(MonRow m, double k, double? damage = null) => new()
     {
         Name = m.Name, Kind = m.Kind, ZoneId = m.ZoneId,
         MinHp = (int)Math.Round(m.MinHp * k), MaxHp = (int)Math.Round(m.MaxHp * k),
-        MinDmg = (int)Math.Round(m.MinDmg * k), MaxDmg = (int)Math.Round(m.MaxDmg * k),
+        MinDmg = (int)Math.Round(m.MinDmg * (damage ?? k)), MaxDmg = (int)Math.Round(m.MaxDmg * (damage ?? k)),
     };
 
     private static double Rate(string cls, int level, int weaponStat, int amuletStat, int zi, bool risky, int runs)
@@ -70,7 +72,7 @@ public static class PartO
             for (int scene = 1; scene <= AdventureRules.Scenes && !dead; scene++)
             {
                 MonRow monster = scene == AdventureRules.Scenes
-                    ? Scaled(World.Travel[zi][Sim.Rng.Next(World.Travel[zi].Length)], Guardian)
+                    ? Scaled(World.Travel[zi][Sim.Rng.Next(World.Travel[zi].Length)], Guardian, GuardianDamage)
                     : risky
                         ? Scaled(World.Travel[zi][Sim.Rng.Next(World.Travel[zi].Length)], Monster)
                         : Scaled(World.Hunt[zi][Sim.Rng.Next(World.Hunt[zi].Length)], AdventureRules.MonsterMultiplier);

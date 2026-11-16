@@ -272,12 +272,15 @@ public class AventuraModule(AdventureDeps deps) : InteractionModuleBase<SocketIn
 
     // El premio: 3 viajes de oro y EXP por el botín y una chance de la caja del viaje de la zona. POR ZONA, no por nivel (el dueño, 2026-11-16: «ni que hablar
     // que el premio es por zona»): los viajes se calculan con el nivel mínimo de la zona donde la hiciste, así quedarse en una zona fácil rinde lo de esa zona.
+    // v0.57.2: con el bono de oro y EXP del monstruo de viaje de la zona, como un /travel de verdad. Hasta la v0.57.1 se pasaba 0 y el «viaje» quedaba en lo que paga
+    // el nivel solo: en la Zona 5 ~13 % de un viaje real, en la 10 ~4 % (el bono es casi todo lo que hace crecer el premio con la zona).
     private static async Task<(Embed Embed, MessageComponent Components)> PayAsync(AdventureDeps deps, User player, CombatState fight, int loot)
     {
         ulong discordId = (ulong)player.DiscordId;
         var bonuses = fight.Bonuses ?? await deps.Bonuses.GetAsync(discordId, player.FuegoNuevo);
         int referenceLevel = await ReferenceLevelAsync(deps, player.CurrentZoneId);
-        var travel = CombatRewardCalculator.RollTravelReward(referenceLevel, 0, 0, bonuses, 0);
+        var travelMonster = await deps.Monsters.GetTravelMonsterByZoneAsync(player.CurrentZoneId);
+        var travel = RewardTravel(referenceLevel, travelMonster, bonuses);
         int gold = AdventureRules.ApplyLoot(travel.Gold * AdventureRules.RewardTravels, loot);
         int xp = AdventureRules.ApplyLoot(travel.Xp * AdventureRules.RewardTravels, loot);
 
@@ -319,6 +322,10 @@ public class AventuraModule(AdventureDeps deps) : InteractionModuleBase<SocketIn
             .Build();
         return (embed, new ComponentBuilder().Build());
     }
+
+    // UN viaje de la zona (sin la caja: la de la aventura va aparte): el nivel de referencia más el bono del monstruo de viaje. Sin monstruo de viaje, solo el nivel.
+    public static CombatReward RewardTravel(int referenceLevel, MonsterTemplate? travelMonster, PlayerBonuses? bonuses) =>
+        CombatRewardCalculator.RollTravelReward(referenceLevel, travelMonster?.GoldBonus ?? 0, travelMonster?.XpBonus ?? 0, bonuses, 0);
 
     // El nivel con el que paga la zona: su nivel mínimo (como alguien que recién llega). Sin zona conocida, 1.
     public static async Task<int> ReferenceLevelAsync(AdventureDeps deps, int zoneId) =>
