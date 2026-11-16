@@ -56,6 +56,11 @@ public partial class TextCommandModule
         }
     }
 
+    // "aa adminsetcd jefe @amigo" / "aa adminsetcd todo" — atajo de "aa adminset cd …" (v0.58.1): resetea un cooldown (o todos) de un jugador.
+    [Command("adminsetcd")]
+    [Alias("admin-setcd", "adminresetcd", "admincd")]
+    public Task AdminSetCooldownAsync([Remainder] string args = "") => AdminSetAsync("cd " + args);
+
     // "aa adminset dragon tier 5 @amigo" / "aa adminset dragon level 40" — fijar el tier o el nivel de entrenamiento del dragón (v0.48.1, ver AdminSetHandler).
     [Command("adminset")]
     [Alias("admin-set", "adminponer")]

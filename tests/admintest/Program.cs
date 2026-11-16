@@ -223,6 +223,28 @@ Check(textsSet.Search("adminset dragon tier 5").IsSuccess && new[] { "admin-set"
     "«aa adminset» (y sus alias) existe en CommandService, una sola vez");
 Check(textsSet.Commands.Single(c => c.Name == "adminset").Summary is null && !FightLock.IsAllowed("adminset"), "no tiene resumen (no figura en ninguna lista) y no vale en plena pelea");
 
+Console.WriteLine("\n== 5b. aa adminset cd (v0.58.1) ==");
+Check(AdminSet.FindCooldown("jefe")?.CommandName == "boss" && AdminSet.FindCooldown("Cacería")?.CommandName == "hunt" && AdminSet.FindCooldown("aventura")?.CommandName == "aventura"
+      && AdminSet.FindCooldown("tala avanzada")?.CommandName == "chop_adv" && AdminSet.FindCooldown("votar") is null && AdminSet.FindCooldown("vote") is null,
+    "reconoce el cooldown por nombre, alias o tilde (jefe, Cacería, aventura, tala avanzada) y el voto NO se puede resetear");
+Check(AdminSet.Parse("cd") is { Request: null, Error: not null } && AdminSet.Parse("cd cualquiera") is { Request: null } && AdminSet.Parse($"cd jefe <@{P1}>").Request is { Kind: AdminSetKind.Cooldown, TargetId: P1, Cooldowns: ["boss"] }
+      && AdminSet.Parse("cd todo").Request is { Cooldowns.Count: > 5, TargetId: null },
+    "lee «cd jefe @alguien», «cd todo» y rechaza lo que no conoce");
+async Task<int> Cds(ulong id) => await db.ExecuteScalarAsync<int>("SELECT count(*)::int FROM cooldowns WHERE discord_id = @id", new { id = (long)id });
+await Player(P1);
+await db.ExecuteAsync("INSERT INTO cooldowns (discord_id, command_name, last_executed_at) VALUES (@id, 'boss', now()), (@id, 'hunt', now()), (@id, 'vote', now()) ON CONFLICT DO NOTHING", new { id = (long)P1 });
+var cdDenied = await Set(OUTSIDER, $"cd todo <@{P1}>");
+Check(cdDenied is null && await Cds(P1) == 3, "un NO administrador no recibe respuesta y no borra nada");
+var cdBoss = await Set(ADMIN, $"cd jefe <@{P1}>");
+Check(cdBoss is not null && cdBoss.Contains($"<@{P1}>") && cdBoss.Contains("Jefe") && await Cds(P1) == 2, $"«cd jefe @alguien» borra solo ese y dice cuál y a quién ({cdBoss})");
+var cdAgain = await Set(ADMIN, $"cd jefe <@{P1}>");
+Check(cdAgain is not null && cdAgain.Contains("no tenía guardado"), "si ya no estaba, lo dice (ya lo podía usar)");
+var cdAll = await Set(ADMIN, $"cd todo <@{P1}>");
+Check(cdAll is not null && cdAll.Contains("todos") && cdAll.Contains("Cazar") && await db.ExecuteScalarAsync<int>("SELECT count(*)::int FROM cooldowns WHERE discord_id = @id AND command_name = 'vote'", new { id = (long)P1 }) == 1 && await Cds(P1) == 1,
+    $"«cd todo» borra todos menos el voto ({cdAll})");
+Check(textsSet.Search("adminsetcd jefe").IsSuccess && new[] { "admincd", "adminresetcd" }.All(a => textsSet.Search(a + " jefe").IsSuccess) && textsSet.Commands.Single(c => c.Name == "adminsetcd").Summary is null,
+    "«aa adminsetcd» (y sus alias) existe, sin resumen");
+
 Console.WriteLine("\n== 6. aa admininfo ==");
 await Player(P1);
 var stats = await adminRepo.GetBotStatsAsync();

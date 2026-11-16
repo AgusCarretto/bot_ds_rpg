@@ -35,6 +35,10 @@ public interface IAdminRepository
     // «aa admininfo» (v0.51.2): cuánta gente juega. Players = cuentas (todos los que hicieron /start); Active24h / Active7d = jugadores distintos con algún evento en game_events en ese tiempo;
     // WithFuegoNuevo = cuentas que ya hicieron al menos un Fuego Nuevo. Solo lee.
     Task<AdminBotStats> GetBotStatsAsync(CancellationToken cancellationToken = default);
+
+    // «aa adminset cd» (v0.58.1): borra esos cooldowns del jugador (y sus recordatorios pendientes, que avisarían algo que ya pasó) en una transacción.
+    // Devuelve los que de verdad estaban guardados (vacío = no tenía ninguno de esos).
+    Task<IReadOnlyList<string>> ResetCooldownsAsync(ulong discordId, IReadOnlyList<string> commandNames, CancellationToken cancellationToken = default);
 }
 
 public sealed record AdminBotStats(int Players, int Active24h, int Active7d, int WithFuegoNuevo);
