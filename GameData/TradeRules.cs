@@ -8,6 +8,9 @@ namespace BotDsRpg.GameData;
 // sacarle valor al sistema de rarezas. Pura: se prueba sin Discord ni base.
 public static class TradeRules
 {
+    // Tope de un cambio (v0.56.6): cuántas unidades da y recibe cada uno de una vez.
+    public const int MaxQuantity = 10_000;
+
     // Lo que se puede cambiar: los materiales de recolección.
     public static bool IsTradeable(Item item) => item.Type is "Madera" or "Mineral";
 

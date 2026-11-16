@@ -16,7 +16,8 @@ public interface ITransferRepository
     // transacción: o se mueven los dos o no se mueve ninguno. Las cuatro operaciones se hacen siempre en el mismo orden (por jugador y por ítem),
     // así dos cambios cruzados no se traban entre sí, y cada descuento es un UPDATE guardado (si ya no tiene la unidad, no se aplica nada).
     // Las reglas (misma rareza, solo recolección) las valida quien llama (GameData/TradeRules.cs).
-    Task<SwapStatus> SwapItemsAsync(ulong firstId, int firstGivesItemId, ulong secondId, int secondGivesItemId, CancellationToken cancellationToken = default);
+    // quantity (v0.56.6): cuántas unidades da y recibe cada uno (lo mismo de cada lado).
+    Task<SwapStatus> SwapItemsAsync(ulong firstId, int firstGivesItemId, ulong secondId, int secondGivesItemId, int quantity = 1, CancellationToken cancellationToken = default);
 
     Task<TransferOutcome> TransferGoldAsync(ulong fromDiscordId, ulong toDiscordId, int amount, CancellationToken cancellationToken = default);
 }

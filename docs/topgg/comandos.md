@@ -75,7 +75,7 @@ Todo comando también se puede escribir con el prefijo `aa` (por ejemplo `aa hun
 | `/shop sellall` | Vendé tu mochila y el equipo que llevás puesto de una vez (te pregunta antes). |
 | `/bank` | Guardá oro a salvo de la penalidad por morir. |
 | `/give` | Dale oro a otro jugador. |
-| `/trade` | Cambiá un material por otro de la misma rareza con otro jugador. |
+| `/trade` | Cambiá materiales de la misma rareza con otro jugador, la misma cantidad de cada lado. |
 | `/exchange` | Cambiá 3 drops de una zona por 1 que te falte. |
 | `/deepshop` | El Tabernero del Inframundo: materiales míticos por Polvo. |
 | `/play` | El casino: moneda, tragamonedas, blackjack, ruleta y Elementos (fuego, hielo y agua contra otro jugador, el que gana se lleva la apuesta del otro). |

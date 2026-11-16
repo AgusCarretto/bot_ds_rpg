@@ -7,36 +7,41 @@ namespace BotDsRpg.Repositories;
 public sealed class TransferRepository(IDbConnectionFactory connectionFactory) : ITransferRepository
 {
     public async Task<SwapStatus> SwapItemsAsync(
-        ulong firstId, int firstGivesItemId, ulong secondId, int secondGivesItemId, CancellationToken cancellationToken = default)
+        ulong firstId, int firstGivesItemId, ulong secondId, int secondGivesItemId, int quantity = 1, CancellationToken cancellationToken = default)
     {
         await using DbConnection connection = connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
         await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
 
-        // Cada uno da 1 y recibe 1. Orden fijo (jugador, ítem): dos cambios cruzados toman las filas en el mismo orden y no se traban.
+        if (quantity < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(quantity), quantity, "Un cambio es de al menos 1 unidad.");
+        }
+
+        // Cada uno da quantity y recibe quantity. Orden fijo (jugador, ítem): dos cambios cruzados toman las filas en el mismo orden y no se traban.
         var operations = new List<(ulong Owner, int ItemId, int Delta, SwapStatus IfMissing)>
         {
-            (firstId, firstGivesItemId, -1, SwapStatus.FirstMissing),
-            (secondId, secondGivesItemId, -1, SwapStatus.SecondMissing),
-            (firstId, secondGivesItemId, 1, SwapStatus.Ok),
-            (secondId, firstGivesItemId, 1, SwapStatus.Ok),
+            (firstId, firstGivesItemId, -quantity, SwapStatus.FirstMissing),
+            (secondId, secondGivesItemId, -quantity, SwapStatus.SecondMissing),
+            (firstId, secondGivesItemId, quantity, SwapStatus.Ok),
+            (secondId, firstGivesItemId, quantity, SwapStatus.Ok),
         };
 
         foreach (var (owner, itemId, delta, ifMissing) in operations.OrderBy(o => o.Owner).ThenBy(o => o.ItemId))
         {
             if (delta > 0)
             {
-                await InventoryUpsert.AddItemAsync(connection, transaction, owner, itemId, 1, cancellationToken);
+                await InventoryUpsert.AddItemAsync(connection, transaction, owner, itemId, delta, cancellationToken);
                 continue;
             }
 
             int? left = await connection.QuerySingleOrDefaultAsync<int?>(new CommandDefinition(
                 """
-                UPDATE inventory SET quantity = quantity - 1
-                WHERE discord_id = @DiscordId AND item_id = @ItemId AND quantity >= 1
+                UPDATE inventory SET quantity = quantity - @Qty
+                WHERE discord_id = @DiscordId AND item_id = @ItemId AND quantity >= @Qty
                 RETURNING quantity;
                 """,
-                new { DiscordId = (long)owner, ItemId = itemId }, transaction: transaction, cancellationToken: cancellationToken));
+                new { DiscordId = (long)owner, ItemId = itemId, Qty = -delta }, transaction: transaction, cancellationToken: cancellationToken));
 
             if (left is null)
             {

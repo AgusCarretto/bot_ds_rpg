@@ -3,14 +3,14 @@ using BotDsRpg.Models;
 
 namespace BotDsRpg.Services;
 
-// Una propuesta de cambio pendiente: FromId le ofrece 1 de GiveItem a ToId a cambio de 1 de GetItem.
+// Una propuesta de cambio pendiente: FromId le ofrece Quantity de GiveItem a ToId a cambio de Quantity de GetItem (v0.56.6: antes era siempre 1).
 public sealed record TradeOffer(
-    Guid Id, ulong FromId, ulong ToId, int GiveItemId, string GiveName, int GetItemId, string GetName, DateTime ExpiresAtUtc);
+    Guid Id, ulong FromId, ulong ToId, int GiveItemId, string GiveName, int GetItemId, string GetName, DateTime ExpiresAtUtc, int Quantity = 1);
 
 public interface ITradeOfferService
 {
     // Crea la propuesta (vence a los pocos minutos). Cada jugador tiene UNA propuesta abierta: una nueva reemplaza a la anterior.
-    TradeOffer Create(ulong fromId, ulong toId, Item give, Item get);
+    TradeOffer Create(ulong fromId, ulong toId, Item give, Item get, int quantity = 1);
 
     // Mirar sin sacarla (null si no existe o ya venció).
     TradeOffer? Peek(Guid id);
@@ -28,7 +28,7 @@ public sealed class TradeOfferService : ITradeOfferService
 
     private readonly ConcurrentDictionary<Guid, TradeOffer> _offers = new();
 
-    public TradeOffer Create(ulong fromId, ulong toId, Item give, Item get)
+    public TradeOffer Create(ulong fromId, ulong toId, Item give, Item get, int quantity = 1)
     {
         Purge();
 
@@ -37,7 +37,7 @@ public sealed class TradeOfferService : ITradeOfferService
             _offers.TryRemove(old.Id, out _);
         }
 
-        var offer = new TradeOffer(Guid.NewGuid(), fromId, toId, give.ItemId, give.Name, get.ItemId, get.Name, DateTime.UtcNow + Lifetime);
+        var offer = new TradeOffer(Guid.NewGuid(), fromId, toId, give.ItemId, give.Name, get.ItemId, get.Name, DateTime.UtcNow + Lifetime, Math.Max(1, quantity));
         _offers[offer.Id] = offer;
         return offer;
     }
