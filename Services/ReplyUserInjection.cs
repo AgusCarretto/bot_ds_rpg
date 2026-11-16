@@ -56,7 +56,13 @@ public static class ReplyUserInjection
                 continue;
             }
 
-            bool missing = marked ? typed == 0 : typed <= command.Parameters.Count - 1;
+            // Un número opcional al final (la cantidad de «aa trade», v0.56.6) no cuenta como argumento: «aa trade Roble Hierro 10» respondiendo es SIN jugador,
+            // y «aa trade Agus Roble Hierro» (el jugador escrito por nombre) sigue sin tocarse.
+            var last = command.Parameters.Count > 0 ? command.Parameters[^1] : null;
+            bool trailingNumber = last is { IsOptional: true } && last.Type == typeof(int);
+            int counted = trailingNumber && typed > 0 && int.TryParse(LastArgument(args), out _) ? typed - 1 : typed;
+            int slots = trailingNumber ? command.Parameters.Count - 1 : command.Parameters.Count;
+            bool missing = marked ? typed == 0 : counted <= slots - 1;
             if (missing)
             {
                 return input[..alias.Length] + $" <@{replyUserId}>" + rest;
@@ -74,6 +80,13 @@ public static class ReplyUserInjection
         }
 
         return typeof(IUser).IsAssignableFrom(type);
+    }
+
+    // La última palabra escrita (sin comillas), para ver si es un número.
+    private static string LastArgument(string args)
+    {
+        var parts = args.Trim().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length == 0 ? string.Empty : parts[^1].Trim('"', '“', '”');
     }
 
     // Cuántos argumentos se escribieron, con las comillas como las lee Discord.Net: «"Cuero Curtido" 5» son dos. Las comillas curvas también (el celular cambia las rectas solo).

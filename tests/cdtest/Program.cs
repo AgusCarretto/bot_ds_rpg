@@ -255,6 +255,8 @@ Check(Rw("p") == "p <@777>" && Rw("profile") == "profile <@777>" && Rw("Dragon B
 Check(Rw("p polar") is null && Rw("p <@5>") is null && Rw("dragon breed po") is null && Rw("boss <@5>") is null, "si ya escribiste a alguien (mención o nombre) NO se toca: manda lo tuyo");
 Check(Rw("give 5k") == "give <@777> 5k" && Rw("give polar 5k") is null && Rw("give <@5> 5k") is null, "«aa give 5k» respondiendo: la mención va primero y el monto queda («give <@777> 5k»); con jugador escrito no se toca");
 Check(Rw("trade \"Madera de Roble\" Hierro") == "trade <@777> \"Madera de Roble\" Hierro" && Rw("trade a b c") is null && Rw("trade <@5> a b") is null, "«aa trade» respondiendo: la mención va primero (las comillas cuentan como UN argumento)");
+Check(Rw("trade \"Madera de Roble\" Hierro 10") == "trade <@777> \"Madera de Roble\" Hierro 10" && Rw("trade Agus Roble Hierro") is null && Rw("trade Agus Roble Hierro 10") is null,
+    "«aa trade … 10» respondiendo: la cantidad del final no cuenta como el jugador (v0.56.6)");
 Check(Rw("cd") == "cd <@777>" && Rw("cd orden cazar 1") is null && Rw("cd orden") is null && Rw("cd reset") is null, "«aa cd» respondiendo muestra el del otro; con «orden», «reset»... sigue siendo lo de siempre");
 Check(Rw("hunt") is null && Rw("daily") is null && ReplyUserInjection.Rewrite("p", [], 777UL) is null, "un comando que no recibe jugadores no se toca (aa hunt, aa daily) y sin comando encontrado tampoco");
 Check(ReplyUserInjection.CountArguments("") == 0 && ReplyUserInjection.CountArguments("5k") == 1 && ReplyUserInjection.CountArguments("a b") == 2 && ReplyUserInjection.CountArguments("\"Cuero Curtido\" 5") == 2 && ReplyUserInjection.CountArguments("“a b” c") == 2 && ReplyUserInjection.CountArguments("«a b»") == 1,

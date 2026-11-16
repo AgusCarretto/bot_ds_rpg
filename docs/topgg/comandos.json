@@ -1048,7 +1048,7 @@
   {
     "type": 1,
     "name": "trade",
-    "description": "Cambiá 1 material por 1 de otro material de la misma rareza con otro jugador.",
+    "description": "Cambiá materiales de la misma rareza con otro jugador, la misma cantidad de cada lado.",
     "options": [
       {
         "type": 6,
@@ -1061,7 +1061,7 @@
       {
         "type": 3,
         "name": "give",
-        "description": "El material que das (1 unidad).",
+        "description": "El material que das.",
         "required": true,
         "autocomplete": true,
         "min_value": -9007199254740991,
@@ -1075,6 +1075,12 @@
         "autocomplete": true,
         "min_value": -9007199254740991,
         "max_value": 9007199254740991
+      },
+      {
+        "type": 4,
+        "name": "cantidad",
+        "description": "Cuántos das y cuántos recibís (lo mismo de cada lado). Sin nada, 1.",
+        "required": false
       }
     ]
   },
