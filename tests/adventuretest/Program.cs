@@ -92,7 +92,8 @@ await db.ExecuteAsync("UPDATE users SET level = 20, current_hp = max_hp WHERE di
 var start = await AventuraModule.StartAsync(deps, U);
 Check(start.Embed is not null && start.Embed.Title!.Contains("1/5") && start.Components is not null, "arranca en la escena 1 con los tres caminos");
 Check(await cooldowns.GetRemainingAsync(U, "aventura", AdventureRules.Cooldown.Duration) is { } w && w > TimeSpan.FromHours(2.9), "cobró las 3 horas al arrancar");
-Check((await AventuraModule.StartAsync(deps, U)).Error is not null, "con una aventura abierta no arranca otra");
+var again = await AventuraModule.StartAsync(deps, U);
+Check(again.Error is null && again.Embed!.Title!.Contains("1/5") && again.Components is not null, "con una aventura abierta no arranca otra: /aventura vuelve a mostrar la escena (v0.58.2)");
 var run = adventures.Peek(U)!;
 var target = new NullTarget();
 Check((await AventuraModule.ChooseAsync(deps, U, "otrotoken", AdventurePath.Safe, target)).Error!.Contains("anterior"), "un botón de otra corrida no hace nada");
@@ -160,6 +161,30 @@ Check(used.PlainMessage!.Contains("no se come"), "en una pelea de la aventura /u
 if (combat.Peek(U) is { } s3) { combat.TryAdvance(U, s3, null, null); }
 adventures.End(U);
 
+Console.WriteLine("\n== 5b. La escena que no llegó a verse (v0.58.2, el caso de Matt) ==");
+await db.ExecuteAsync("DELETE FROM cooldowns WHERE discord_id = @id", new { id = (long)U });
+await db.ExecuteAsync("UPDATE users SET current_hp = max_hp WHERE discord_id = @id", new { id = (long)U });
+await AventuraModule.StartAsync(deps, U);
+await AventuraModule.ChooseAsync(deps, U, adventures.Find(U)!.Token, AdventurePath.Safe, target);
+var lostFight = combat.Peek(U)!;
+// Se gana la pelea y la aventura pasa a la escena 2, pero la pantalla nunca se muestra (como si la edición del mensaje hubiera fallado).
+combat.TryAdvance(U, lostFight, null, null);
+await AventuraModule.AfterWinAsync(deps, U, lostFight.State);
+var stuck = adventures.Peek(U)!;
+stuck.LastActivityUtc = DateTime.UtcNow - TimeSpan.FromMinutes(2);
+Check(adventures.IsInAdventure(U) && FightLock.AdventureMessage("aa pet").Contains("/aventura"), "trabado en la aventura: el aviso del bloqueo dice cómo volver a ver la escena");
+var click = new CaptureOutput();
+await AdventureModule.ResolveTurnCoreAsync(combat, users, items, adventureRepo, new InventoryRepository(factory), new BuffRepository(factory), deps.Events, deps.ZoneBoxes, U, false, false, click, deps);
+Check(click.Shown?.Title?.Contains("2/5") == true && click.Note is null && DateTime.UtcNow - stuck.LastActivityUtc < TimeSpan.FromSeconds(5),
+    "el botón viejo de la pelea muestra la escena 2 con sus caminos (y le da 3 minutos nuevos) en vez de «ya terminó»");
+long startsBefore = (await eventsRepo.GetStatsAsync(U)).GetValueOrDefault(GameEventKinds.AdventureStart);
+var resumed = await AventuraModule.StartAsync(deps, U);
+Check(resumed.Embed!.Title!.Contains("2/5") && (await eventsRepo.GetStatsAsync(U)).GetValueOrDefault(GameEventKinds.AdventureStart) == startsBefore, "/aventura también la vuelve a mostrar, sin cobrar otra aventura");
+adventures.End(U);
+var noAdv = new CaptureOutput();
+await AdventureModule.ResolveTurnCoreAsync(combat, users, items, adventureRepo, new InventoryRepository(factory), new BuffRepository(factory), deps.Events, deps.ZoneBoxes, U, false, false, noAdv, deps);
+Check(noAdv.Shown is null && noAdv.Note is not null, "sin aventura abierta, el botón viejo sigue diciendo que no hay combate");
+
 Console.WriteLine("\n== 6. Pantallas ==");
 var sample = adventures.Start(U, new Random(9))!;
 sample.LootPercent = 40;
@@ -178,6 +203,26 @@ adventures.End(U);
 await Clean();
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;
+
+sealed class CaptureOutput : ICombatTurnOutput
+{
+    public Embed? Shown { get; private set; }
+    public string? Note { get; private set; }
+
+    public Task NoteAsync(string text)
+    {
+        Note = text;
+        return Task.CompletedTask;
+    }
+
+    public ICombatReplyTarget NextReplyTarget(ICombatReplyTarget previous) => previous;
+
+    public Task ShowAsync(Embed embed, MessageComponent components, ICombatReplyTarget? next, ICombatReplyTarget previous)
+    {
+        Shown = embed;
+        return Task.CompletedTask;
+    }
+}
 
 sealed class NullTarget : ICombatReplyTarget
 {

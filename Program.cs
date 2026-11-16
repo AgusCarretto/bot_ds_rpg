@@ -19,6 +19,7 @@ class Program
     private static DiscordSocketClient _client = null!;
     private static InteractionService _commands = null!;
     private static CommandService _textCommands = null!;
+    private static readonly CommandGate _gate = new();
 
     static async Task Main(string[] args)
     {
@@ -102,6 +103,12 @@ class Program
         // Los avisos de los comandos de barra y de los botones (¡SUBISTE DE NIVEL!, misiones, logros) salen cuando el comando TERMINA: ver
         // Services/NoticeDelivery.cs (entregarlos justo después de ExecuteCommandAsync llegaba antes de que el comando hubiera registrado nada).
         NoticeDelivery.Attach(_commands, _services.GetRequiredService<IGameEvents>(), _services.GetRequiredService<IReminderService>());
+        // El candado de un comando a la vez (Services/CommandGate.cs) se suelta cuando el comando de barra o el botón TERMINA (no cuando se lanza: corren en modo asíncrono).
+        _commands.InteractionExecuted += (_, context, _) =>
+        {
+            _gate.Exit(context.User.Id);
+            return Task.CompletedTask;
+        };
 
         // Falla rápido y claro si la base no está o no tiene el esquema: sin esto el bot se conecta a Discord igual y
         // CADA comando responde "¡Upa! Algo falló" sin que se vea el motivo.
@@ -112,8 +119,19 @@ class Program
         _commands.Log += LogAsync;
         _textCommands.Log += LogAsync;
         _client.Ready += () => ReadyAsync(configuration);
-        _client.InteractionCreated += HandleInteractionAsync;
-        _client.MessageReceived += HandleTextMessageAsync;
+        // v0.58.2: los dos se corren APARTE del hilo de la conexión con Discord. Los comandos de texto se ejecutan enteros adentro de su manejador (CommandService en modo síncrono), así que uno lento
+        // («A MessageReceived handler is blocking the gateway task», log de producción del 2026-11-16 19:33) frenaba TODOS los eventos del bot: botones, comandos y la conexión misma. Los dos
+        // manejadores atrapan sus errores, y el orden entre comandos del mismo jugador lo cuida el candado de un comando a la vez (Services/CommandGate.cs).
+        _client.InteractionCreated += interaction =>
+        {
+            _ = Task.Run(() => HandleInteractionAsync(interaction));
+            return Task.CompletedTask;
+        };
+        _client.MessageReceived += message =>
+        {
+            _ = Task.Run(() => HandleTextMessageAsync(message));
+            return Task.CompletedTask;
+        };
 
         // 5. Nos logueamos y arrancamos el bot
         var connected = new TaskCompletionSource();
@@ -288,11 +306,24 @@ class Program
 
     private static async Task HandleInteractionAsync(SocketInteraction interaction)
     {
+        bool gateHeld = false;
         try
         {
             // El idioma del jugador (GameData/Loc.cs) se fija UNA vez, acá, antes de cualquier respuesta (el aviso de registro y el bloqueo de pelea también salen en su idioma). Se hace en este mismo método y
             // no en un helper: un AsyncLocal fijado adentro de un método async no vuelve al que lo llamó. Los comandos que se lanzan después heredan el idioma. Nunca tira: sin dato, español.
             using var languageScope = Loc.Use(await _services.GetRequiredService<IPlayerLanguageService>().ResolveAsync(interaction.User.Id, interaction.UserLocale));
+
+            // Un comando a la vez por jugador (v0.58.2, Services/CommandGate.cs): comandos de barra, botones, menús y ventanas. Los autocompletes no (solo muestran una lista mientras se escribe).
+            if (interaction is SocketSlashCommand or SocketMessageComponent or SocketModal)
+            {
+                if (!_gate.TryEnter(interaction.User.Id))
+                {
+                    await interaction.RespondAsync(BusyMessage(), ephemeral: true);
+                    return;
+                }
+
+                gateHeld = true;
+            }
 
             // Chequeo directo ANTES de despachar el comando: nada de inspeccionar el resultado
             // de una precondición (ese enfoque dependía de que Discord.Net devolviera el
@@ -314,12 +345,17 @@ class Program
                     || (!FightLock.IsAllowed(fightSlash.CommandName)
                 && FightGuard.IsInFight(_services.GetRequiredService<ICombatSessionService>(), _services.GetService<IRaidSessionService>(), _services.GetService<IDuelService>(), interaction.User.Id, _services.GetService<IDungeonService>()))))
             {
-                await interaction.RespondAsync(FightLock.Message($"/{fightSlash.CommandName}"), ephemeral: true);
+                bool adventureLock = _services.GetService<IAdventureService>()?.IsInAdventure(interaction.User.Id) == true && _services.GetRequiredService<ICombatSessionService>().Peek(interaction.User.Id) is null;
+                await interaction.RespondAsync(adventureLock ? FightLock.AdventureMessage($"/{fightSlash.CommandName}") : FightLock.Message($"/{fightSlash.CommandName}"), ephemeral: true);
                 return;
             }
 
             var context = new SocketInteractionContext(_client, interaction);
             var result = await _commands.ExecuteCommandAsync(context, _services);
+            if (result.IsSuccess)
+            {
+                gateHeld = false; // ya se lanzó: el candado lo suelta InteractionExecuted cuando el comando termina de verdad (corre en modo asíncrono)
+            }
 
             if (!result.IsSuccess)
                 Console.WriteLine($"[ERROR DE COMANDO] {result.ErrorReason}");
@@ -351,6 +387,14 @@ class Program
                 }
             }
         }
+        finally
+        {
+            // Si el comando no llegó a lanzarse (registro, bloqueo de pelea, error), el candado se suelta acá; si se lanzó, lo suelta InteractionExecuted cuando termina.
+            if (gateHeld)
+            {
+                _gate.Exit(interaction.User.Id);
+            }
+        }
     }
 
     // Puente de comandos de texto tradicionales ("aa hunt", "aa daily", "aa shop view"), pensado
@@ -370,6 +414,7 @@ class Program
             return;
         }
 
+        bool textGateHeld = false;
         try
         {
             // Mismo gate de registro que los slash commands, para que "aa hunt" no esquive /start.
@@ -400,7 +445,8 @@ class Program
                     || (!FightLock.IsAllowed(key)
                     && FightGuard.IsInFight(_services.GetRequiredService<ICombatSessionService>(), _services.GetService<IRaidSessionService>(), _services.GetService<IDuelService>(), message.Author.Id, _services.GetService<IDungeonService>())))
                 {
-                    await message.Channel.SendMessageAsync(FightLock.Message($"{TextCommandPrefix}{key}"));
+                    bool adventureLock = _services.GetService<IAdventureService>()?.IsInAdventure(message.Author.Id) == true && _services.GetRequiredService<ICombatSessionService>().Peek(message.Author.Id) is null;
+                    await message.Channel.SendMessageAsync(adventureLock ? FightLock.AdventureMessage($"{TextCommandPrefix}{key}") : FightLock.Message($"{TextCommandPrefix}{key}"));
                     return;
                 }
             }
@@ -413,6 +459,14 @@ class Program
                 withReplyUser = ReplyUserInjection.Rewrite(message.Content[argPos..].TrimStart(), found.Commands, replyUserId);
             }
 
+            // Un comando a la vez por jugador (v0.58.2, Services/CommandGate.cs). Los comandos de texto corren hasta el final adentro de ExecuteAsync, así que el candado se suelta al salir de este método.
+            if (!_gate.TryEnter(message.Author.Id))
+            {
+                await message.Channel.SendMessageAsync(BusyMessage());
+                return;
+            }
+
+            textGateHeld = true;
             var result = withReplyUser is null
                 ? await _textCommands.ExecuteAsync(context, argPos, _services)
                 : await _textCommands.ExecuteAsync(context, withReplyUser, _services);
@@ -445,7 +499,17 @@ class Program
         {
             BotLog.Error(ex);
         }
+        finally
+        {
+            if (textGateHeld)
+            {
+                _gate.Exit(message.Author.Id);
+            }
+        }
     }
+
+    // La respuesta a quien manda un comando mientras el anterior todavía se procesa (Services/CommandGate.cs).
+    private static string BusyMessage() => Loc.T("⏳ Esperá un toque: todavía estoy procesando tu comando anterior.");
 
     // A quién le respondió este mensaje: el autor del mensaje respondido, si es una persona (no un bot ni un webhook) y no es el mismo que escribe. null en cualquier otro caso. Nunca tira.
     private static async Task<ulong?> ReplyTargetAsync(SocketUserMessage message)
