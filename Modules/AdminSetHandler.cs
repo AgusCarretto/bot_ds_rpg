@@ -43,6 +43,11 @@ public static class AdminSetHandler
             return $"<@{targetId}> todavía no tiene cuenta: que use **/start** primero (este comando no crea cuentas).";
         }
 
+        if (request.Kind == AdminSetKind.Cooldown)
+        {
+            return await ResetCooldownsAsync(adminRepository, events, actorId, targetId, request);
+        }
+
         var result = request.Kind == AdminSetKind.DragonTier
             ? await adminRepository.SetDragonTierAsync(targetId, request.Value)
             : await adminRepository.SetDragonLevelAsync(targetId, request.Value);
@@ -78,5 +83,29 @@ public static class AdminSetHandler
         BotLog.Info($"[ADMIN] {actorId} -> {targetId}: set {detail}");
         await events.RecordAsync(targetId, GameEventKinds.AdminSet, null, request.Value, $"{detail} | por {actorId}");
         return reply;
+    }
+
+    // «aa adminset cd jefe @alguien» (v0.58.1): borra el cooldown (o todos) y dice cuál y a quién. Lo que no estaba guardado ya se podía usar.
+    private static async Task<string> ResetCooldownsAsync(IAdminRepository adminRepository, IGameEvents events, ulong actorId, ulong targetId, AdminSetRequest request)
+    {
+        var names = request.Cooldowns ?? [];
+        var deleted = await adminRepository.ResetCooldownsAsync(targetId, names);
+        string label = request.CooldownLabel ?? string.Join(", ", names);
+        string detail = $"cd reset {label}" + (deleted.Count > 0 ? $" ({string.Join(", ", deleted)})" : " (nada guardado)");
+        BotLog.Info($"[ADMIN] {actorId} -> {targetId}: {detail}");
+        await events.RecordAsync(targetId, GameEventKinds.AdminSet, null, deleted.Count, $"{detail} | por {actorId}");
+
+        if (deleted.Count == 0)
+        {
+            return names.Count == 1
+                ? $"⏱️ <@{targetId}> no tenía guardado el cooldown de **{label}**: ya lo podía usar."
+                : $"⏱️ <@{targetId}> no tenía ningún cooldown guardado: ya podía usar todo.";
+        }
+
+        // Los nombres de pantalla de lo que se borró, en el orden de la lista (Cazar, Viajar, Jefe…).
+        string reset = string.Join(", ", AdminSet.ResettableCooldowns.Where(c => deleted.Contains(c.CommandName)).Select(c => $"**{c.DisplayName}**"));
+        return names.Count == 1
+            ? $"⏱️ Le reseteé a <@{targetId}> el cooldown de **{label}**: ya lo puede usar."
+            : $"⏱️ Le reseteé a <@{targetId}> todos los cooldowns: {reset}. Ya los puede usar.";
     }
 }
