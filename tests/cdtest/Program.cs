@@ -55,26 +55,26 @@ async Task Clean()
 await Clean();
 foreach (var id in all) await users.GetOrCreateUserAsync(id);
 
-string[] defaultKeys = ["hunt", "travel", "chop", "mine", "fish", "buybox", "chop_adv", "mine_adv", "fish_adv", "vote", "pets", "dragon", "expedition", "daily", "boss", "worldboss", "arena"];
+string[] defaultKeys = ["hunt", "travel", "aventura", "chop", "mine", "fish", "buybox", "chop_adv", "mine_adv", "fish_adv", "vote", "pets", "dragon", "expedition", "daily", "boss", "worldboss", "arena"];
 
 Console.WriteLine("== 1. Las reglas puras ==");
-Check(CooldownLayout.Known.Select(k => k.Key).SequenceEqual(defaultKeys) && CooldownLayout.Known.Select(k => k.Key).Distinct().Count() == 17 && CooldownLayout.Known.All(k => k.Emoji.Length > 0 && k.Name.Length > 0),
-    "hay 17 líneas conocidas, en el orden de siempre (el jefe, el jefe mundial y la Arena abajo de todo), con ícono y nombre");
+Check(CooldownLayout.Known.Select(k => k.Key).SequenceEqual(defaultKeys) && CooldownLayout.Known.Select(k => k.Key).Distinct().Count() == 18 && CooldownLayout.Known.All(k => k.Emoji.Length > 0 && k.Name.Length > 0),
+    "hay 18 líneas conocidas, en el orden de siempre (el jefe, el jefe mundial y la Arena abajo de todo), con ícono y nombre");
 Check(CooldownLayout.Materialize(null).Select(e => e.Key).SequenceEqual(defaultKeys) && CooldownLayout.Materialize(null).All(e => !e.Hidden) && CooldownLayout.IsDefault(null) && CooldownLayout.IsDefault("") && CooldownLayout.Encode(CooldownLayout.Materialize(null)) is null,
     "sin nada guardado se ven todas y el resultado de no tocar nada es null (la columna vacía)");
 string? hiddenChop = CooldownLayout.SetVisible(null, defaultKeys.Where(k => k != "chop"));
-Check(hiddenChop!.StartsWith("hunt,travel,-chop,mine,") && CooldownLayout.Materialize(hiddenChop).Single(e => e.Hidden).Key == "chop" && !CooldownLayout.VisibleKeys(hiddenChop).Contains("chop") && CooldownLayout.VisibleKeys(hiddenChop).Count == 16
+Check(hiddenChop!.StartsWith("hunt,travel,aventura,-chop,mine,") && CooldownLayout.Materialize(hiddenChop).Single(e => e.Hidden).Key == "chop" && !CooldownLayout.VisibleKeys(hiddenChop).Contains("chop") && CooldownLayout.VisibleKeys(hiddenChop).Count == 17
     && CooldownLayout.SetVisible(hiddenChop, defaultKeys) is null,
     "ocultar una línea la marca con «-» sin mover las demás, y volver a tildarla deja todo como siempre (null)");
 string? travelFirst = CooldownLayout.MoveTo(null, "travel", 1);
-Check(travelFirst!.StartsWith("travel,hunt,chop,") && CooldownLayout.VisibleKeys(travelFirst)[0] == "travel" && CooldownLayout.MoveTo(null, "hunt", 1) is null && CooldownLayout.MoveTo(null, "arena", 1)!.StartsWith("arena,hunt,")
-    && CooldownLayout.VisibleKeys(CooldownLayout.MoveTo(null, "hunt", 3)).Take(3).SequenceEqual(["travel", "chop", "hunt"]) && CooldownLayout.VisibleKeys(CooldownLayout.MoveTo(null, "hunt", 99)).Last() == "hunt",
+Check(travelFirst!.StartsWith("travel,hunt,aventura,") && CooldownLayout.VisibleKeys(travelFirst)[0] == "travel" && CooldownLayout.MoveTo(null, "hunt", 1) is null && CooldownLayout.MoveTo(null, "arena", 1)!.StartsWith("arena,hunt,")
+    && CooldownLayout.VisibleKeys(CooldownLayout.MoveTo(null, "hunt", 3)).Take(3).SequenceEqual(["travel", "aventura", "hunt"]) && CooldownLayout.VisibleKeys(CooldownLayout.MoveTo(null, "hunt", 99)).Last() == "hunt",
     "poner un número lo deja en ese puesto (1 = primera; «hunt» al 3 queda tercera; un puesto enorme la deja última) y volver a poner la primera donde ya estaba es no cambiar nada");
 string? hideTwo = CooldownLayout.SetVisible(null, defaultKeys.Where(k => k is not ("hunt" or "travel")));
 var movedAmongVisible = CooldownLayout.VisibleKeys(CooldownLayout.MoveTo(hideTwo, "arena", 2));
-Check(movedAmongVisible[0] == "chop" && movedAmongVisible[1] == "arena" && CooldownLayout.Materialize(CooldownLayout.MoveTo(hideTwo, "hunt", 1)).Single(e => e.Key == "hunt").Hidden,
-    "el puesto cuenta SOLO las que ves (con «hunt» y «travel» ocultas, la Arena al 2 queda segunda detrás de «chop»), y una línea oculta que se mueve sigue oculta");
-Check(CooldownLayout.Materialize("foo,-bar,hunt,hunt,-fish").Select(e => e.Key).Take(2).SequenceEqual(["hunt", "fish"]) && CooldownLayout.Materialize("foo,-bar,hunt,hunt,-fish").Count == 17 && CooldownLayout.Materialize("foo,-bar,hunt,hunt,-fish").Single(e => e.Key == "fish").Hidden,
+Check(movedAmongVisible[0] == "aventura" && movedAmongVisible[1] == "arena" && CooldownLayout.Materialize(CooldownLayout.MoveTo(hideTwo, "hunt", 1)).Single(e => e.Key == "hunt").Hidden,
+    "el puesto cuenta SOLO las que ves (con «hunt» y «travel» ocultas, la Arena al 2 queda segunda detrás de «aventura»), y una línea oculta que se mueve sigue oculta");
+Check(CooldownLayout.Materialize("foo,-bar,hunt,hunt,-fish").Select(e => e.Key).Take(2).SequenceEqual(["hunt", "fish"]) && CooldownLayout.Materialize("foo,-bar,hunt,hunt,-fish").Count == 18 && CooldownLayout.Materialize("foo,-bar,hunt,hunt,-fish").Single(e => e.Key == "fish").Hidden,
     "un texto guardado con basura se lee igual: lo desconocido se ignora, lo repetido cuenta una vez y lo que no aparece se ve al final");
 var sample = new List<(string Key, string Text)> { ("hunt", "A"), ("travel", "B"), ("chop", "C"), ("nueva", "U") };
 Check(CooldownLayout.Apply(sample, null).SequenceEqual(["A", "B", "C", "U"]) && CooldownLayout.Apply(sample, "-travel,chop,hunt").SequenceEqual(["C", "A", "U"]) && CooldownLayout.Apply(sample, string.Join(',', defaultKeys.Select(k => "-" + k))).SequenceEqual(["U"]),
@@ -151,9 +151,9 @@ var sc0 = await ConfigModule.BuildScreenAsync(settingsService, U1, blessings);
 var p0 = Parts(sc0);
 var show0 = p0.Menus.Single(m => m.CustomId == $"config_cdshow:{U1}");
 var first0 = p0.Menus.Single(m => m.CustomId == $"config_cdfirst:{U1}");
-Check(sc0.Embed.Fields.Any(f => f.Name == "⏱️ Cooldowns (/cd)" && f.Value.Contains("**todas**") && f.Value.Contains("aa cd orden cazar 3")) && show0.Options.Count == 17 && show0.Options.All(o => o.IsDefault == true) && show0.MinValues == 0 && show0.MaxValues == 17
-    && first0.Options.Count == 18 && first0.Options.Last().Value == "reset" && first0.Options.Select(o => o.Value).Take(17).SequenceEqual(defaultKeys),
-    "el menú de qué ver trae las 17 líneas todas tildadas (se puede destildar todo) y el de «poner primera» las 17 en orden más «volver al orden de siempre»");
+Check(sc0.Embed.Fields.Any(f => f.Name == "⏱️ Cooldowns (/cd)" && f.Value.Contains("**todas**") && f.Value.Contains("aa cd orden cazar 3")) && show0.Options.Count == 18 && show0.Options.All(o => o.IsDefault == true) && show0.MinValues == 0 && show0.MaxValues == 18
+    && first0.Options.Count == 19 && first0.Options.Last().Value == "reset" && first0.Options.Select(o => o.Value).Take(18).SequenceEqual(defaultKeys),
+    "el menú de qué ver trae las 18 líneas todas tildadas (se puede destildar todo) y el de «poner primera» las 18 en orden más «volver al orden de siempre»");
 Check(p0.Rows == 3 && sc0.Embed.Length <= 6000 && show0.Options.All(o => o.Label.Length <= 100 && o.Emote is Emoji) && first0.Options.All(o => o.Label.Length <= 100 && (o.Description?.Length ?? 0) <= 100),
     "sin el banner las filas son 3 (botones y los dos menús, contiguas) y todo entra en los límites de Discord");
 await Bless(U2, "brasa_de_color", 2);
@@ -162,9 +162,9 @@ var sc1 = await ConfigModule.BuildScreenAsync(settingsService, U1, blessings);
 var p1 = Parts(sc1);
 var show1 = p1.Menus.Single(m => m.CustomId == $"config_cdshow:{U1}");
 var first1 = p1.Menus.Single(m => m.CustomId == $"config_cdfirst:{U1}");
-Check(sc1.Embed.Fields.Any(f => f.Name == "⏱️ Cooldowns (/cd)" && f.Value.Contains("**16 de 17**") && f.Value.Contains("tu orden")) && show1.Options.Single(o => o.Value == "chop").IsDefault == false && show1.Options.Count(o => o.IsDefault == true) == 16
-    && show1.Options.Select(o => o.Value).Take(3).SequenceEqual(["travel", "chop", "hunt"]) && !first1.Options.Any(o => o.Value == "chop") && first1.Options.Count == 17 && first1.Options.First().Value == "travel" && first1.Options.First().Description!.Contains("puesto 1"),
-    "con lo guardado el campo dice «16 de 17 en tu orden», el menú de qué ver deja «chop» destildada y el de «primera» no la ofrece y arranca por la que va primera");
+Check(sc1.Embed.Fields.Any(f => f.Name == "⏱️ Cooldowns (/cd)" && f.Value.Contains("**17 de 18**") && f.Value.Contains("tu orden")) && show1.Options.Single(o => o.Value == "chop").IsDefault == false && show1.Options.Count(o => o.IsDefault == true) == 17
+    && show1.Options.Select(o => o.Value).Take(3).SequenceEqual(["travel", "chop", "hunt"]) && !first1.Options.Any(o => o.Value == "chop") && first1.Options.Count == 18 && first1.Options.First().Value == "travel" && first1.Options.First().Description!.Contains("puesto 1"),
+    "con lo guardado el campo dice «17 de 18 en tu orden», el menú de qué ver deja «chop» destildada y el de «primera» no la ofrece y arranca por la que va primera");
 await settingsService.SetProfileBannerAsync(U2, "brasa_de_color");
 var sc2 = await ConfigModule.BuildScreenAsync(settingsService, U2, blessings);
 Check(Parts(sc2).Rows == 4 && Parts(sc2).Menus.Count == 3, "con el banner (quien tiene la Brasa de Color) las filas son 4: botones, banner y los dos menús de /cd");

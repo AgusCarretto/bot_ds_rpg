@@ -23,6 +23,10 @@ public static class FightLock
     public static bool IsAllowedInDungeon(string? commandName) =>
         !string.IsNullOrWhiteSpace(commandName) && commandName.Trim().ToLowerInvariant() is "dungeon" or "profile" or "inventory" or "cd" or "info" or "tutorial" or "stats";
 
+    // En una Aventura (v0.57.0) tampoco se come, ni en sus peleas ni entre escenas: valen las jugadas de la pelea y lo que solo mira, pero no «use».
+    public static bool IsAllowedInAdventure(string? commandName) =>
+        !string.IsNullOrWhiteSpace(commandName) && commandName.Trim().ToLowerInvariant() is "attack" or "ability" or "flee" or "aventura" or "profile" or "inventory" or "cd" or "info" or "tutorial" or "stats";
+
     public static bool IsAllowed(string? commandName) =>
         !string.IsNullOrWhiteSpace(commandName) && Allowed.Contains(commandName.Trim());
 

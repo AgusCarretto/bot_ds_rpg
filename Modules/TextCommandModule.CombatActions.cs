@@ -37,7 +37,7 @@ public partial class TextCommandModule
             {
                 await AdventureModule.ResolveTurnCoreAsync(
                     combatSessions, userRepository, itemRepository, adventureRepository, inventoryRepository, buffRepository, gameEvents, zoneBoxService,
-                    discordId, fled, useAbility, new MessageCombatTurnOutput(Context.Channel));
+                    discordId, fled, useAbility, new MessageCombatTurnOutput(Context.Channel), adventureDeps);
                 return;
             }
 

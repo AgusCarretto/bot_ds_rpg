@@ -41,7 +41,8 @@ public static class CooldownCatalog
     // No está en All a propósito: /cd la muestra solo cuando el voto está habilitado (hay token de top.gg), para no listar algo que todavía no se puede hacer.
     public static readonly CooldownDefinition Vote = new("vote", Loc.Mark("Votar"), "🗳️", VoteRules.Interval);
 
-    public static readonly IReadOnlyList<CooldownDefinition> All = [Hunt, Travel, Chop, Mine, Fish, Boss, BoxBuy];
+    // La Aventura (v0.57.0) va después del viaje: su cooldown vive en GameData/Adventure.cs (AdventureRules.Cooldown, 3 h).
+    public static readonly IReadOnlyList<CooldownDefinition> All = [Hunt, Travel, AdventureRules.Cooldown, Chop, Mine, Fish, Boss, BoxBuy];
 
     // La versión avanzada de un cooldown de recolección (null si no tiene).
     public static CooldownDefinition? AdvancedOf(CooldownDefinition definition) =>

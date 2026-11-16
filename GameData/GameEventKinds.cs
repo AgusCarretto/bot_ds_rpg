@@ -13,6 +13,8 @@ public static class GameEventKinds
     // Combate (cada uno suma 1 por pelea ganada).
     public const string HuntWin = "hunt_win";
     public const string TravelWin = "travel_win";
+    public const string AdventureStart = "adventure_start";  // arrancó una Aventura (v0.57.0, /aventura): cobró las 3 h
+    public const string AdventureWin = "adventure_win";      // llegó al final de una Aventura y cobró (v0.57.0)
     public const string BossWin = "boss_win";
     public const string RaidWin = "raid_win";
     // v0.47.0: las mazmorras de las Zonas 6 a 10 (GameData/Dungeons); detail = la zona.

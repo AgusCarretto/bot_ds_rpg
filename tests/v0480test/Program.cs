@@ -283,7 +283,7 @@ Check(masterTitles.All(t => t.PageKey == "maestros" && t.Source == "fish_xp") &&
     && TitleCatalog.Pages.All(p => TitleCatalog.OfPage(p.Key).Count <= 25), "143 títulos con claves y nombres únicos y ninguna página pasa de los 25 que admite el desplegable");
 
 Console.WriteLine("\n== 11. Recordatorios, oficios y ayuda ==");
-Check(ReminderCatalog.All.Count == 15 && ReminderCatalog.Find("fish")?.Command == "/fish" && ReminderCatalog.Find("fish_adv") is not null && ReminderCatalog.Find("fish")!.AutoDelete == ReminderCatalog.ShortLived && ReminderCatalog.Find("fish_adv")!.AutoDelete is null,
+Check(ReminderCatalog.All.Count == 16 && ReminderCatalog.Find("fish")?.Command == "/fish" && ReminderCatalog.Find("fish_adv") is not null && ReminderCatalog.Find("fish")!.AutoDelete == ReminderCatalog.ShortLived && ReminderCatalog.Find("fish_adv")!.AutoDelete is null,
     "hay 15 tipos de aviso; el de pescar se borra solo a los 2 minutos como el de talar y minar, y el de la avanzada no");
 var due = ReminderCatalog.FromCooldowns([("fish", DateTime.UtcNow), ("fish_adv", DateTime.UtcNow)], DateTime.UtcNow);
 Check(due.Select(d => d.Kind).OrderBy(k => k).SequenceEqual(["fish", "fish_adv"]) && due.Single(d => d.Kind == "fish").DueUtc - DateTime.UtcNow < TimeSpan.FromMinutes(5.1) && due.Single(d => d.Kind == "fish_adv").DueUtc - DateTime.UtcNow > TimeSpan.FromMinutes(59),
