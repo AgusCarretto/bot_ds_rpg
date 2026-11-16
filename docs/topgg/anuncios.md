@@ -7,42 +7,28 @@ fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo
 
 ---
 
-## 2026-11-17 — La Aventura y cambiar materiales de a muchos (v0.56.6 y v0.57.0)
+## 2026-11-16 — La Aventura, el bestiario y un Cofre de Oro de regalo (v0.56.0 a v0.57.0)
 
-**Título:** 🗺️ Llegó la Aventura: 5 escenas, tus decisiones y el Guardián del Camino
+(La pesca y las pantallas más limpias ya se habían anunciado antes, junto con la cocina.)
+
+**Título:** 🗺️ Llegó la Aventura, el bestiario… ¡y un Cofre de Oro de regalo!
 
 **Texto:**
 
-🗺️ **La Aventura** (**/aventura** o **aa aventura**): un viaje de **5 escenas**. En cada una elegís el camino:
+🗺️ **La Aventura** (**/aventura** o **aa aventura**): un viaje de **5 escenas** donde vos elegís el camino:
 • 🛡️ **Seguro**: peleás contra un monstruo de tu zona.
-• ⚔️ **Arriesgado**: contra el élite, y suma **+20 % de botín**.
+• ⚔️ **Arriesgado**: vas contra el élite y sumás **+20 % de botín**.
 • ❓ **Misterioso**: puede ser un cofre, una fogata, una trampa, un santuario… o una emboscada.
 
 Al final te espera el **🗿 Guardián del Camino**. Si llegás, cobrás **3 viajes de oro y EXP** por tu botín, y a veces la caja de tu zona.
 
 ⚠️ **Es difícil a propósito:** no se come en toda la aventura, y si morís pagás la penalidad de siempre y no cobrás nada. El premio es **por zona**: elegí bien dónde arriesgarte. Sale **cada 3 horas**.
 
-🔄 **/trade con cantidad:** ahora podés cambiar de a muchos, la misma cantidad de cada lado: **aa trade @jugador "Oro Puro" "Madera de Nogal" 10**.
+📖 **Bestiario** (**/bestiary** o **aa bestiario**): los monstruos de cada zona. Los que ya venciste muestran su cara, vida, daño, qué sueltan y cuántas veces les ganaste; los que no, quedan en **???**. ¡Cuenta lo que ya venías cazando! Logro nuevo: **Cazador de Bestias**.
 
----
+🔄 **/trade con cantidad:** ahora cambiás de a muchos, la misma cantidad de cada lado: **aa trade @jugador "Oro Puro" "Madera de Nogal" 10**.
 
-## 2026-11-16 — El bestiario, más pesca y pantallas más limpias (v0.56.0 a v0.56.3)
-
-**Título:** 📖 Llegó el bestiario, la pesca suma premios y el bot se ve más prolijo
-
-**Texto:**
-
-📖 **Bestiario:** escribí **aa bestiario** (o **/bestiary**) y mirá los monstruos de cada zona. Los que ya venciste muestran su cara, vida, daño, qué sueltan y cuántas veces les ganaste; los que no, quedan en **???**. ¡Cuenta lo que ya venías cazando! Logro nuevo: **Cazador de Bestias**.
-
-🎣 **Más premios por pescar:** misión diaria **Pescá 3 veces**, semanal **Pescá 20 veces**, la hazaña **Señor del Río** y la bendición **Anzuelo de Plata** (+5 % de peces por nivel).
-
-✨ **Pantallas más claras, pensadas para el celular:**
-• La **tienda** y la **taberna**: un renglón por ítem con su precio.
-• **/cd** más corto y del mismo color que el perfil.
-• En **/forge** cada opción dice abajo lo que te falta.
-• Las **mazmorras** con flechas más simples y la vida como en las peleas.
-• **Misiones**, **logros** y **títulos** más ordenados (los **títulos** de Hazañas ahora van en dos páginas).
-• **/stats** con un bono por renglón en «Más stats».
+🎁 **Código de regalo:** escribí **aa code AVENTURA** (o **/code codigo:AVENTURA**) y te llevás un **Cofre de Oro**. Uno por persona, vale por 7 días.
 
 ---
 
