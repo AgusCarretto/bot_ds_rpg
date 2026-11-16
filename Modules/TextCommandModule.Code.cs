@@ -60,8 +60,27 @@ public partial class TextCommandModule
     {
         try
         {
+            // Por privado (el dueño, 2026-11-16): en el canal la vería cualquiera. Si los mensajes directos están cerrados, en el canal solo queda el aviso de usar /codelist.
             var view = await CodeListModule.BuildAsync(redeemCodeRepository, Context.User.Id, pagina - 1);
-            await ReplyAsync(embed: view.Embed, components: view.Components);
+            if (Context.IsPrivate)
+            {
+                await ReplyAsync(embed: view.Embed, components: view.Components);
+                return;
+            }
+
+            try
+            {
+                await Context.User.SendMessageAsync(embed: view.Embed, components: view.Components);
+            }
+            catch (Exception dmError)
+            {
+                BotLog.Warn(dmError);
+                await ReplyAsync(Loc.F($"{Context.User.Mention} No pude escribirte por privado (¿tenés los mensajes directos cerrados?): usá **/codelist**, que responde solo para vos."),
+                    allowedMentions: new AllowedMentions(AllowedMentionTypes.Users));
+                return;
+            }
+
+            await ReplyAsync(Loc.F($"{Context.User.Mention} 🎟️ Te respondí por mensaje privado."), allowedMentions: new AllowedMentions(AllowedMentionTypes.Users));
         }
         catch (Exception ex)
         {
