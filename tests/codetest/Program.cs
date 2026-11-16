@@ -272,6 +272,27 @@ Check(aliasesOk && textCommands.Search("canjear sword") is { IsSuccess: true } e
     && textCommands.Search("admincode list").Commands[0].Command.Summary is null, "aa code y sus alias llegan a su comando, «canjear» sigue siendo del canje de drops y aa admincode existe sin descripción (no figura en ninguna lista)");
 Check(!FightLock.IsAllowed("code") && FightLock.IsAllowed("use"), "en plena pelea /code se bloquea (solo valen los comandos de la pelea y los que miran)");
 
+Console.WriteLine("\n== La libreta de códigos (aa codelist, v0.56.4) ==");
+var book = (await codes.GetCodeBookAsync(P1)).Where(c => c.Code.StartsWith("TESTV37")).ToList();
+var bookP2 = (await codes.GetCodeBookAsync(P2)).Where(c => c.Code.StartsWith("TESTV37")).ToList();
+Check(book.Count == bookP2.Count && book.Count > 0, $"están todos los códigos para cualquiera ({book.Count})");
+Check(book.Single(c => c.Code == "TESTV37A").ClaimedAt is not null && book.Single(c => c.Code == "TESTV37A").Uses >= 1, "el que canjeó P1 figura con fecha y cuántos lo sacaron");
+Check(book.Select(c => c.CreatedAt).SequenceEqual(book.Select(c => c.CreatedAt).OrderBy(d => d)), "del más viejo al más nuevo");
+var listView = await CodeListModule.BuildAsync(codes, P1, 0);
+Check(listView.Embed.Footer!.Value.Text.Contains("Página 1/") && listView.Embed.Description!.Split('\n').Length <= CodeListModule.PageSize, "una página de hasta 10, con «Página X/Y · Tenés N de M»");
+var lastPage = await CodeListModule.BuildAsync(codes, P1, 999);
+Check(lastPage.Embed.Footer!.Value.Text.StartsWith($"Página {(await codes.GetCodeBookAsync(P1)).Count / CodeListModule.PageSize + ((await codes.GetCodeBookAsync(P1)).Count % CodeListModule.PageSize == 0 ? 0 : 1)}/"), "una página de más abre la última");
+string allText = string.Join("\n", await Task.WhenAll(Enumerable.Range(0, 20).Select(async p => (await CodeListModule.BuildAsync(codes, NOACC, p)).Embed.Description)));
+Check(!allText.Contains("TESTV37") && allText.Contains("???"), "quien no canjeó nada ve todo como ??? (sin el nombre)");
+Check(CodeListModule.Redeemers(0).Contains("nadie") && CodeListModule.Redeemers(1).Contains("1 persona") && CodeListModule.Redeemers(37).Contains("37"), "«nadie», «1 persona», «lo sacaron 37»");
+using (Loc.Use("en"))
+{
+    var en = await CodeListModule.BuildAsync(codes, P1, 0);
+    var codeNames = (await codes.GetCodeBookAsync(P1)).Select(c => c.Code).ToList();
+    var leakCodes = LeakCheck.NoSpanish(LeakCheck.AllText(en.Embed), codeNames);
+    Check(leakCodes.Ok, $"en inglés sin español ({leakCodes.Found})");
+}
+
 await Clean();
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;

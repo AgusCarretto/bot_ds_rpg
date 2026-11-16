@@ -2,6 +2,14 @@
 
 _Última revisión: 2026-11-12 (v0.52.2 en main desde el 2026-11-11: el laberinto de la Zona 7 trenzado y el arte de las Reliquias y del equipo de las zonas 6 a 10; v0.53.0 (2026-11-12): «sell all» que pregunta y vende el equipo, stats de otro jugador, las horas de expedición de las mascotas, el jefe de la Zona 5 más duro, Míticos en las recetas de las zonas 6 a 10 y el Trinche y la Brasa retirados desde el FN 5; antes, v0.52.1, en main: el aviso de herramientas al desbloquear la Zona 3 y la 5 y los alias `aa mission` y `aa pr`; antes, v0.52.0: el laberinto de humo de la Zona 7 libre, con las paredes dibujadas y las brasas en los desvíos; v0.51.x: `/cd` a medida, el ranking top 50, responder un mensaje = mencionar, el `/cd` de otro jugador y los nombres exactos; v0.50.x: los banners del perfil; v0.49.x: la cocina y `/stats`; v0.48.x: la pesca y el arte de las zonas 6 a 10; v0.47.0: las zonas 6 a 10 con sus mazmorras. El detalle de cada versión está en las secciones de abajo, lo más nuevo arriba)_
 
+## Anotado el 2026-11-16: el Guardián de las mazmorras ya pasadas (para DESPUÉS de Navidad, sin construir)
+
+El dueño (2026-11-16): en las Zonas 6 a 10 el jefe es la mazmorra; con FN alto (ej. FN 11 en la Zona 8) las Zonas 6 y 7 «no peleás contra boss, solamente tenés mazmorra». Le propuse y le gustó, **para después de Navidad**:
+- En una zona 6–10 cuya mazmorra YA pasaste en esta vuelta, `/boss` deja elegir: repetir la mazmorra o pelear directo contra su **Guardián**.
+- El Guardián es una pelea solo como el jefe (más corta) y paga la caja de repetición de la zona (`zone_boxes`), como los jefes de las Zonas 1–5.
+- En la zona MÁS ALTA que tenés sigue siendo solo mazmorra: el Guardián es para farmear lo pasado, no un atajo para avanzar.
+- Hace falta: 5 monstruos nuevos (uno por zona, `Database/*.sql`), su arte, medir vida y daño con `tools/balance2` (los números los decide el dueño).
+
 ## Pendiente de un vistazo (puesto al día el 2026-11-12)
 
 Este archivo es sobre todo un diario de versiones (lo más nuevo, arriba). Para no tener que recorrerlo entero, esto es lo que de verdad está abierto:
