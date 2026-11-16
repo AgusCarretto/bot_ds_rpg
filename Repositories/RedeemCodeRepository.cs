@@ -324,6 +324,21 @@ public sealed class RedeemCodeRepository(IDbConnectionFactory connectionFactory)
         return list.FirstOrDefault();
     }
 
+    public async Task<IReadOnlyList<CodeBookEntry>> GetCodeBookAsync(ulong discordId, CancellationToken cancellationToken = default)
+    {
+        using DbConnection connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        var rows = await connection.QueryAsync<CodeBookEntry>(new CommandDefinition(
+            """
+            SELECT c.code AS "Code", c.uses AS "Uses", c.created_at AS "CreatedAt", k.claimed_at AS "ClaimedAt"
+            FROM redeem_codes c
+            LEFT JOIN redeem_code_claims k ON k.code_id = c.code_id AND k.discord_id = @DiscordId
+            ORDER BY c.created_at, c.code_id;
+            """,
+            new { DiscordId = (long)discordId }, cancellationToken: cancellationToken));
+        return rows.ToList();
+    }
+
     public Task<IReadOnlyList<RedeemCodeInfo>> ListAsync(int limit, CancellationToken cancellationToken = default) =>
         LoadAsync(string.Empty, new { }, Math.Clamp(limit, 1, 50), cancellationToken);
 

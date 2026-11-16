@@ -3066,5 +3066,16 @@
   "Pescá miles de veces con /fish": "Fish thousands of times with /fish",
   "+{0} de cantidad en /fish": "+{0} quantity on /fish",
   "Pescá 3 veces (/fish)": "Fish 3 times (/fish)",
-  "Pescá 20 veces (/fish)": "Fish 20 times (/fish)"
+  "Pescá 20 veces (/fish)": "Fish 20 times (/fish)",
+  "¡Upa! No pude abrir tus códigos, intentá de nuevo en un momento.": "Oops! I couldn't open your codes, try again in a moment.",
+  "Esa libreta es de otra persona: abrí la tuya con **/codelist**.": "That code list belongs to someone else: open yours with **/codelist**.",
+  "🎟️ Tus códigos": "🎟️ Your codes",
+  "Todavía no salió ningún código. Atento a los anuncios: se canjean con **aa code CODIGO**.": "No codes have come out yet. Watch the announcements: redeem them with **aa code CODE**.",
+  "✅ **{0}** · lo canjeaste el {1:dd/MM} · {2}": "✅ **{0}** · you redeemed it on {1:dd/MM} · {2}",
+  "❓ **???** · {0}": "❓ **???** · {0}",
+  "Anterior": "Previous",
+  "Siguiente": "Next",
+  "nadie lo sacó todavía": "nobody has redeemed it yet",
+  "lo sacó 1 persona": "redeemed by 1 player",
+  "lo sacaron {0}": "redeemed by {0} players"
 }

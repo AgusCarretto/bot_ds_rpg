@@ -207,6 +207,19 @@
   },
   {
     "type": 1,
+    "name": "codelist",
+    "description": "Tus códigos: los que canjeaste y los que te faltan (??? sin pista).",
+    "options": [
+      {
+        "type": 4,
+        "name": "pagina",
+        "description": "Qué página mirar (sin nada, la primera)",
+        "required": false
+      }
+    ]
+  },
+  {
+    "type": 1,
     "name": "config",
     "description": "Configurá cómo ves el bot: resumen del combate, recetario de la herrería y banner del perfil."
   },

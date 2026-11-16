@@ -102,6 +102,7 @@ Todo comando también se puede escribir con el prefijo `aa` (por ejemplo `aa hun
 | `/achievements` | Tus logros y sus premios. |
 | `/titles` | Tus títulos: elegí uno para tu perfil. |
 | `/code` | Canjeá un código por premios. |
+| `/codelist` | Tus códigos: los que canjeaste y los que te faltan (??? sin pista). |
 | `/cd` | Tus cooldowns de un vistazo (o los de otro jugador). |
 | `/reminders` | Elegí qué avisos querés recibir cuando termina una espera. |
 
