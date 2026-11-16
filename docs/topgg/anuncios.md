@@ -7,6 +7,26 @@ fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo
 
 ---
 
+## 2026-11-16 — El bestiario, más pesca y pantallas más limpias (v0.56.0 a v0.56.3)
+
+**Título:** 📖 Llegó el bestiario, la pesca suma premios y el bot se ve más prolijo
+
+**Texto:**
+
+📖 **Bestiario:** escribí **aa bestiario** (o **/bestiary**) y mirá los monstruos de cada zona. Los que ya venciste muestran su cara, vida, daño, qué sueltan y cuántas veces les ganaste; los que no, quedan en **???**. ¡Cuenta lo que ya venías cazando! Logro nuevo: **Cazador de Bestias**.
+
+🎣 **Más premios por pescar:** misión diaria **Pescá 3 veces**, semanal **Pescá 20 veces**, la hazaña **Señor del Río** y la bendición **Anzuelo de Plata** (+5 % de peces por nivel).
+
+✨ **Pantallas más claras, pensadas para el celular:**
+• La **tienda** y la **taberna**: un renglón por ítem con su precio.
+• **/cd** más corto y del mismo color que el perfil.
+• En **/forge** cada opción dice abajo lo que te falta.
+• Las **mazmorras** con flechas más simples y la vida como en las peleas.
+• **Misiones**, **logros** y **títulos** más ordenados (los **títulos** de Hazañas ahora van en dos páginas).
+• **/stats** con un bono por renglón en «Más stats».
+
+---
+
 ## 2026-11-13 — La ruleta, Elementos y /drops por zona (v0.53.2 a v0.55.1)
 
 **Título:** 🎡 ¡Llegó la ruleta! Y te regalamos 100.000 de oro para probarla
