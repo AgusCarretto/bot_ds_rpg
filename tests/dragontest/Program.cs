@@ -607,6 +607,43 @@ var otherGuild = await DragonModule.PrepareBoardInviteAsync(dragons, offers, boa
 var restingTarget = await DragonModule.PrepareBoardInviteAsync(dragons, offers, board, A, GUILD, C);
 Check(okInvite.Error is null && okInvite.Content == $"<@{B}>" && okInvite.Components is not null && notListed.Error!.Contains("ya no está anotado") && otherGuild.Error!.Contains("ya no está anotado") && restingTarget.Error!.Contains("descansando"),
     "invitar desde el tablón: manda la invitación de siempre a quien sigue anotado en el servidor; al que se salió, al de otro servidor o al que descansa lo rechaza diciendo por qué");
+// v0.62.0 (el dueño: «que un jugador aparezca en todos los servers en que se encuentre… así si otra persona juega en otro server, puedo hacer breed en el oficial»): la anotación es UNA y global; cada tablón muestra a los
+// anotados que son MIEMBROS de ese servidor. F se anotó en OTHER_GUILD; si también es miembro de GUILD, en el tablón de GUILD aparece y se lo puede invitar.
+var members = new Dictionary<ulong, HashSet<ulong>> { [GUILD] = [A, B, C, D, F], [OTHER_GUILD] = [F, E] };
+Func<ulong, bool> InGuild(ulong guild) => id => members[guild].Contains(id);
+var multiView = await DragonModule.BuildBoardAsync(dragons, board, A, GUILD, NameOf, InGuild(GUILD));
+Check(multiView.Candidates.OrderBy(x => x).SequenceEqual(new[] { B, F }.OrderBy(x => x)),
+    "entre servidores: F se anotó en otro servidor pero también está en este, así que aparece acá (y B, que se anotó acá); C descansa y no sale");
+members[GUILD].Remove(F);
+Check((await DragonModule.BuildBoardAsync(dragons, board, A, GUILD, NameOf, InGuild(GUILD))).Candidates.SequenceEqual([B]), "si F no es miembro de este servidor, no aparece (acá no se pueden cruzar)");
+members[GUILD].Add(F);
+var crossInvite = await DragonModule.PrepareBoardInviteAsync(dragons, offers, board, A, GUILD, F, InGuild(GUILD));
+var crossMissing = await DragonModule.PrepareBoardInviteAsync(dragons, offers, board, A, OTHER_GUILD, B, InGuild(OTHER_GUILD));
+Check(crossInvite.Error is null && crossInvite.Content == $"<@{F}>" && crossMissing.Error!.Contains("ya no está anotado"),
+    "invitar entre servidores: a F (anotado en otro, miembro de este) se lo invita acá; a B desde un servidor donde B no está, no");
+board.List(OTHER_GUILD, A);
+Check((await DragonModule.BuildBoardAsync(dragons, board, A, GUILD, NameOf, InGuild(GUILD))).Embed.Description.Contains("Estás anotado")
+    && (await DragonModule.ExecuteBoardToggleAsync(dragons, board, A, GUILD)).Contains("Saliste") && board.Get(A) is null,
+    "anotado en otro servidor también figurás anotado acá, y salir desde acá te saca de todos");
+
+// El aviso: cuando A se anota, les llega a los de SU tier que ya estaban anotados y pueden criar, en el canal donde se anotaron, si A es miembro de ese servidor. Una vez por hora como mucho.
+var noticeBoard = new DragonBoardService();
+noticeBoard.List(GUILD, B, 5001); noticeBoard.List(GUILD, C, 5002); noticeBoard.List(GUILD, D, 5003); noticeBoard.List(OTHER_GUILD, E, 5004); noticeBoard.List(GUILD, F, 0);
+noticeBoard.List(GUILD, A, 5000);
+var noticed = new List<(ulong To, ulong Channel, int Tier)>();
+int sentNow = await DragonModule.NotifySameTierAsync(dragons, noticeBoard, A, (g, u) => members[g].Contains(u), (target, tier) => { noticed.Add((target.DiscordId, target.ChannelId, tier)); return Task.CompletedTask; });
+Check(sentNow == 1 && noticed.Single() == (B, 5001UL, 2),
+    "el aviso le llega solo a B (mismo tier, puede criar, en su canal): no a C (descansa), D (otro tier), E (A no está en ese servidor) ni F (sin canal)");
+Check(await DragonModule.NotifySameTierAsync(dragons, noticeBoard, A, (g, u) => members[g].Contains(u), (_, _) => { noticed.Add((0, 0, 0)); return Task.CompletedTask; }) == 0 && noticed.Count == 1,
+    "entrar y salir del tablón no vuelve a avisar: una vez por hora como mucho");
+string notice = DragonModule.BoardNoticeText(B, "Agus", 2);
+Check(notice.Contains($"<@{B}>") && notice.Contains("**Agus**") && notice.Contains("tier 2") && !notice.Contains($"<@{A}>") && notice.Contains("/dragon-board"),
+    "el aviso menciona solo a quien lo recibe, nombra a quien se anotó y dice dónde invitarlo");
+var oneHourBoard = new DragonBoardService(() => fakeNow);
+Check(oneHourBoard.TryClaimNotify(A, TimeSpan.FromHours(1)) && !oneHourBoard.TryClaimNotify(A, TimeSpan.FromHours(1)) && oneHourBoard.TryClaimNotify(B, TimeSpan.FromHours(1)), "el freno es por jugador");
+fakeNow = fakeNow.AddHours(1).AddMinutes(1);
+Check(oneHourBoard.TryClaimNotify(A, TimeSpan.FromHours(1)), "pasada la hora, puede volver a avisar");
+
 var slashBoard = interactions.SlashCommands.Single(c => c.Name == "dragon-board");
 var rToggle = interactions.SearchComponentCommand(Click($"dragon_board_toggle:{A}")); var rRefresh = interactions.SearchComponentCommand(Click($"dragon_board_refresh:{A}"));
 Check(slashBoard.Description.Length <= 100 && slashBoard.Parameters.Count == 0 && rToggle.IsSuccess && rToggle.Command.MethodName == "HandleBoardToggleAsync" && rRefresh.IsSuccess && rRefresh.Command.MethodName == "HandleBoardRefreshAsync" && interactions.ComponentCommands.Any(c => c.MethodName == "HandleBoardPickAsync") && texts.Search("dragon board").Commands.Any(c => c.Command.Name == "dragon board") && !FightLock.IsAllowed("dragon-board"),
