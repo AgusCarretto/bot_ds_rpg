@@ -29,6 +29,7 @@ Todo comando también se puede escribir con el prefijo `aa` (por ejemplo `aa hun
 | `/hunt` | Salí a cazar monstruos de tu zona. |
 | `/autohunt` | Una cacería completa de una vez, sin botones. |
 | `/travel` | Enfrentá al élite de tu zona: más difícil, mucho más premio. |
+| `/aventura` | Una aventura de 5 escenas: elegí caminos, peleá y llegá al Guardián (cada 3 h, sin comida). |
 | `/boss` | Enfrentá al jefe de tu zona, solo o con hasta 5 amigos. |
 | `/zona` | Viajá a otra zona del mundo. |
 | `/zonas` | Todas las zonas y el nivel que piden. |
@@ -75,7 +76,7 @@ Todo comando también se puede escribir con el prefijo `aa` (por ejemplo `aa hun
 | `/shop sellall` | Vendé tu mochila y el equipo que llevás puesto de una vez (te pregunta antes). |
 | `/bank` | Guardá oro a salvo de la penalidad por morir. |
 | `/give` | Dale oro a otro jugador. |
-| `/trade` | Cambiá un material por otro de la misma rareza con otro jugador. |
+| `/trade` | Cambiá materiales de la misma rareza con otro jugador, la misma cantidad de cada lado. |
 | `/exchange` | Cambiá 3 drops de una zona por 1 que te falte. |
 | `/deepshop` | El Tabernero del Inframundo: materiales míticos por Polvo. |
 | `/play` | El casino: moneda, tragamonedas, blackjack, ruleta y Elementos (fuego, hielo y agua contra otro jugador, el que gana se lleva la apuesta del otro). |

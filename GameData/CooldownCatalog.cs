@@ -19,8 +19,9 @@ public static class CooldownCatalog
     // El jefe de zona solo o en equipo ("/boss @amigo", antes /raid) es EL MISMO combate: un solo cooldown, y /cd lo muestra en una sola línea.
     // Es un hito de progresión, no contenido para repetir: 5 horas (30 minutos hasta la v0.7.0, 5 horas en la v0.7.1, 1 hora en la v0.8.0 y otra vez 5 horas
     // por pedido del dueño: con 1 hora los cofres de jefe eran demasiados). Es el único lugar para cambiarlo.
-    // 5 horas si lo ganás; si perdés, huís o abandonás, solo 30 minutos (RetryAfterFailure): reintentar el jefe de la puerta de la zona no puede costar horas.
-    public static readonly CooldownDefinition Boss = new("boss", Loc.Mark("Jefe"), "👑", TimeSpan.FromHours(10), RetryAfterFailure: TimeSpan.FromMinutes(30));
+    // 10 horas si lo ganás; si perdés, huís o abandonás, la MITAD (RetryAfterFailure). Eran 30 minutos hasta la v0.59.1; el dueño (2026-11-17): «si perdés el boss, que tengas que
+    // esperar la mitad… no quiero que espere media [hora]». Vale para todo lo que gasta este cooldown: el jefe solo y en equipo, el Asador y las mazmorras.
+    public static readonly CooldownDefinition Boss = new("boss", Loc.Mark("Jefe"), "👑", TimeSpan.FromHours(10), RetryAfterFailure: TimeSpan.FromHours(10) / 2);
 
     // El raid lee el cooldown con la misma definición (mismo CommandName: reclamar uno bloquea al otro). Se mantiene el nombre porque el raid lo chequea
     // al arrancar y al unirse (antes recién se enteraba al empezar y dejaba afuera a quien lo tenía ocupado).
@@ -41,7 +42,8 @@ public static class CooldownCatalog
     // No está en All a propósito: /cd la muestra solo cuando el voto está habilitado (hay token de top.gg), para no listar algo que todavía no se puede hacer.
     public static readonly CooldownDefinition Vote = new("vote", Loc.Mark("Votar"), "🗳️", VoteRules.Interval);
 
-    public static readonly IReadOnlyList<CooldownDefinition> All = [Hunt, Travel, Chop, Mine, Fish, Boss, BoxBuy];
+    // La Aventura (v0.57.0) va después del viaje: su cooldown vive en GameData/Adventure.cs (AdventureRules.Cooldown, 3 h).
+    public static readonly IReadOnlyList<CooldownDefinition> All = [Hunt, Travel, AdventureRules.Cooldown, Chop, Mine, Fish, Boss, BoxBuy];
 
     // La versión avanzada de un cooldown de recolección (null si no tiene).
     public static CooldownDefinition? AdvancedOf(CooldownDefinition definition) =>

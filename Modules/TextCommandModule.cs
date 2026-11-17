@@ -78,7 +78,8 @@ public partial class TextCommandModule(
     IBestiaryRepository bestiaryRepository,
     IChristmasRepository christmasRepository,
     IChristmasService christmasService,
-    ISnowmanService snowmanService) : ModuleBase<SocketCommandContext>
+    ISnowmanService snowmanService,
+    AdventureDeps adventureDeps) : ModuleBase<SocketCommandContext>
 {
     // ---- Onboarding / clase ----
 

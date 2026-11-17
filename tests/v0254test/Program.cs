@@ -63,6 +63,20 @@ string resolved = AdventureModule.NoActiveFightMessage(combat, A);
 Check(resolved.Contains("No tenés ningún combate activo") && resolved.Contains("ya terminó") && resolved.Contains("viejo"), "con un combate recién resuelto dice que el mensaje es viejo");
 Check(none != resolved && !resolved.Contains("reinició"), "y los dos textos son distintos");
 
+Console.WriteLine("\n== 5. Un comando a la vez por jugador (v0.58.2, Services/CommandGate.cs) ==");
+var clock = DateTime.UtcNow;
+var gate = new BotDsRpg.Services.CommandGate(() => clock);
+Check(gate.TryEnter(A) && !gate.TryEnter(A) && gate.IsBusy(A), "con un comando en proceso, el segundo del MISMO jugador espera");
+Check(gate.TryEnter(B), "otro jugador no espera a nadie");
+gate.Exit(A);
+Check(!gate.IsBusy(A) && gate.TryEnter(A), "al terminar el comando se suelta y el siguiente pasa");
+clock += BotDsRpg.Services.CommandGate.MaxHold + TimeSpan.FromSeconds(1);
+Check(gate.TryEnter(A), $"si algo no avisó que terminó, el candado vence solo a los {BotDsRpg.Services.CommandGate.MaxHold.TotalSeconds:0} s y nadie queda trabado");
+gate.Exit(A);
+var race = new BotDsRpg.Services.CommandGate();
+var wins = await Task.WhenAll(Enumerable.Range(0, 32).Select(_ => Task.Run(() => race.TryEnter(A))));
+Check(wins.Count(w => w) == 1, $"32 clics a la vez del mismo jugador: pasa UNO ({wins.Count(w => w)})");
+
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");
 return fails == 0 ? 0 : 1;
 

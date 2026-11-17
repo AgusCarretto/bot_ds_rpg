@@ -10,7 +10,8 @@ using static AutocompleteText;
 // Resultado de proponer un cambio: un rechazo simple (PlainMessage) o la propuesta con sus botones (Content = la mención del otro).
 public sealed record TradeOfferResult(string? PlainMessage, string? Content, Embed? Embed, MessageComponent? Components);
 
-// /trade: cambiar 1 material por 1 de otro material de la MISMA rareza con otro jugador (solo lo que dropean /chop y /mine; reglas en
+// /trade: cambiar N de un material por N de otro material de la MISMA rareza (v0.56.6, el dueño: «que se pueda hacer con una cantidad»; lo mismo de cada lado,
+// así no sirve para pasarse materiales casi gratis entre cuentas) con otro jugador (solo lo que dropean /chop y /mine; reglas en
 // GameData/TradeRules.cs). Uno propone, el otro acepta o rechaza con un botón (la propuesta vence a los 2 minutos), y el cambio se
 // hace en UNA transacción (ITransferRepository.SwapItemsAsync): o se mueven los dos materiales o no se mueve ninguno.
 public class TradeModule(
@@ -18,18 +19,19 @@ public class TradeModule(
     ITransferRepository transferRepository, ITradeOfferService offers, ICombatSessionService combatSessions, IGameEvents gameEvents)
     : InteractionModuleBase<SocketInteractionContext>
 {
-    [SlashCommand("trade", "Cambiá 1 material por 1 de otro material de la misma rareza con otro jugador.")]
+    [SlashCommand("trade", "Cambiá materiales de la misma rareza con otro jugador, la misma cantidad de cada lado.")]
     public async Task HandleTradeAsync(
         [Summary("player", "Con quién querés cambiar.")] IUser player,
-        [Summary("give", "El material que das (1 unidad).")] [Autocomplete(typeof(TradeGiveAutocompleteHandler))] string give,
-        [Summary("get", "El material que querés a cambio (misma rareza).")] [Autocomplete(typeof(TradeGetAutocompleteHandler))] string get)
+        [Summary("give", "El material que das.")] [Autocomplete(typeof(TradeGiveAutocompleteHandler))] string give,
+        [Summary("get", "El material que querés a cambio (misma rareza).")] [Autocomplete(typeof(TradeGetAutocompleteHandler))] string get,
+        [Summary("cantidad", "Cuántos das y cuántos recibís (lo mismo de cada lado). Sin nada, 1.")] int cantidad = 1)
     {
         await DeferAsync();
 
         try
         {
             var result = await ExecuteOfferAsync(
-                userRepository, itemRepository, inventoryRepository, offers, combatSessions, Context.User.Id, player, give, get);
+                userRepository, itemRepository, inventoryRepository, offers, combatSessions, Context.User.Id, player, give, get, cantidad);
             await FollowupAsync(result.PlainMessage ?? result.Content, embed: result.Embed, components: result.Components, ephemeral: result.Embed is null);
         }
         catch (Exception ex)
@@ -65,7 +67,7 @@ public class TradeModule(
                 return;
             }
 
-            var status = await transferRepository.SwapItemsAsync(taken.FromId, taken.GiveItemId, taken.ToId, taken.GetItemId);
+            var status = await transferRepository.SwapItemsAsync(taken.FromId, taken.GiveItemId, taken.ToId, taken.GetItemId, taken.Quantity);
             if (status == SwapStatus.Ok)
             {
                 await gameEvents.RecordAsync(taken.FromId, GameEventKinds.Trade, detail: $"{taken.GiveName}->{taken.GetName}");
@@ -136,9 +138,14 @@ public class TradeModule(
 
     public static async Task<TradeOfferResult> ExecuteOfferAsync(
         IUserRepository userRepository, IItemRepository itemRepository, IInventoryRepository inventoryRepository, ITradeOfferService offers,
-        ICombatSessionService combatSessions, ulong fromId, IUser target, string giveName, string getName)
+        ICombatSessionService combatSessions, ulong fromId, IUser target, string giveName, string getName, int quantity = 1)
     {
         TradeOfferResult Reject(string message) => new(message, null, null, null);
+
+        if (quantity < 1 || quantity > TradeRules.MaxQuantity)
+        {
+            return Reject(Loc.F($"La cantidad va de 1 a {GameHistory.Number(TradeRules.MaxQuantity)}."));
+        }
 
         if (target.IsBot)
         {
@@ -177,24 +184,29 @@ public class TradeModule(
             return Reject(broken);
         }
 
-        if (await inventoryRepository.GetQuantityAsync(fromId, give.ItemId) < 1)
+        int mine = await inventoryRepository.GetQuantityAsync(fromId, give.ItemId);
+        if (mine < quantity)
         {
-            return Reject(Loc.F($"No tenés **{ItemDisplay.Format(give.Emoji, give.Name)}** para dar."));
+            return Reject(mine < 1
+                ? Loc.F($"No tenés **{ItemDisplay.Format(give.Emoji, give.Name)}** para dar.")
+                : Loc.F($"Tenés **{GameHistory.Number(mine)}× {ItemDisplay.Format(give.Emoji, give.Name)}**: no te alcanza para dar {GameHistory.Number(quantity)}."));
         }
 
-        if (await inventoryRepository.GetQuantityAsync(target.Id, get.ItemId) < 1)
+        int theirs = await inventoryRepository.GetQuantityAsync(target.Id, get.ItemId);
+        if (theirs < quantity)
         {
-            return Reject(Loc.F($"{target.Mention} no tiene **{ItemDisplay.Format(get.Emoji, get.Name)}** para cambiarte."));
+            return Reject(theirs < 1
+                ? Loc.F($"{target.Mention} no tiene **{ItemDisplay.Format(get.Emoji, get.Name)}** para cambiarte.")
+                : Loc.F($"{target.Mention} tiene **{GameHistory.Number(theirs)}× {ItemDisplay.Format(get.Emoji, get.Name)}**: no le alcanza para darte {GameHistory.Number(quantity)}."));
         }
 
-        var offer = offers.Create(fromId, target.Id, give, get);
+        var offer = offers.Create(fromId, target.Id, give, get, quantity);
 
         var embed = new EmbedBuilder()
             .WithTitle(Loc.T("🔄 Propuesta de cambio"))
             .WithColor(Color.Blue)
             .WithDescription(
-                Loc.F($"{MentionUtils.MentionUser(fromId)} te propone cambiar **1× {ItemDisplay.Format(give.Emoji, give.Name)}** por ") +
-                Loc.F($"**1× {ItemDisplay.Format(get.Emoji, get.Name)}** (los dos son {RarityCatalog.DisplayName(give.Rarity)})."))
+                Loc.F($"{MentionUtils.MentionUser(fromId)} te propone cambiar **{GameHistory.Number(quantity)}× {ItemDisplay.Format(give.Emoji, give.Name)}** por **{GameHistory.Number(quantity)}× {ItemDisplay.Format(get.Emoji, get.Name)}** (los dos son {RarityCatalog.DisplayName(give.Rarity)})."))
             .WithFooter(Loc.F($"{target.Username}: tenés {(int)TradeOfferService.Lifetime.TotalMinutes} minutos para aceptar."))
             .Build();
 
@@ -216,10 +228,10 @@ public class TradeModule(
             SwapStatus.Ok => new EmbedBuilder()
                 .WithTitle(Loc.T("✅ ¡Cambio hecho!"))
                 .WithColor(Color.Green)
-                .WithDescription(Loc.F($"{from} dio **1× {offer.GiveName}** y {to} dio **1× {offer.GetName}**."))
+                .WithDescription(Loc.F($"{from} dio **{GameHistory.Number(offer.Quantity)}× {offer.GiveName}** y {to} dio **{GameHistory.Number(offer.Quantity)}× {offer.GetName}**."))
                 .Build(),
-            SwapStatus.FirstMissing => Failed(Loc.F($"{from} ya no tiene **{offer.GiveName}**.")),
-            _ => Failed(Loc.F($"{to} ya no tiene **{offer.GetName}**.")),
+            SwapStatus.FirstMissing => Failed(Loc.F($"{from} ya no tiene **{GameHistory.Number(offer.Quantity)}× {offer.GiveName}**.")),
+            _ => Failed(Loc.F($"{to} ya no tiene **{GameHistory.Number(offer.Quantity)}× {offer.GetName}**.")),
         };
 
         static Embed Failed(string why) => new EmbedBuilder().WithTitle(Loc.T("⚠️ No se pudo cambiar")).WithColor(Color.Red).WithDescription(why).Build();

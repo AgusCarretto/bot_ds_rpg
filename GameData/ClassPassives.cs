@@ -5,7 +5,7 @@ namespace BotDsRpg.GameData;
 // chequear la clase en cada lugar que resuelve un golpe.
 public sealed record ClassPassiveProfile(
     double MaxHpMultiplier, // Guerrero: HP Máximo de combate ×1.2 (ver Services/AdventureCombatStarter.cs)
-    double DamageTakenMultiplier, // Guerrero: daño final recibido ×0.9
+    double DamageTakenMultiplier, // Guerrero: daño final recibido ×0,85 (×0,9 hasta la v0.57.1)
     double DodgeChanceBonus, // Ninja: +0.15 sobre CombatMath.DodgeChance
     double CritChanceBonus, // Arquero: +0.15 sobre CombatMath.CritChance
     double LifestealChance, // Hechicero: probabilidad de Sifón de Almas
@@ -30,7 +30,8 @@ public static class ClassPassives
     public static ClassPassiveProfile For(string playerClass) => playerClass switch
     {
         // Tanque: más HP efectivo en combate + reduce el daño final que le pega el monstruo.
-        "Guerrero" => None with { MaxHpMultiplier = 1.2, DamageTakenMultiplier = 0.9 },
+        // v0.57.2 (el dueño: «al tanque un poquito más de def, porque nadie lo juega»): el daño recibido ×0,85 (era ×0,9).
+        "Guerrero" => None with { MaxHpMultiplier = 1.2, DamageTakenMultiplier = 0.85 },
 
         // Sifón de Almas: al atacar, 30% de probabilidad de curarse el 50% del daño infligido.
         "Hechicero" => None with { LifestealChance = 0.30, LifestealRatio = 0.50 },

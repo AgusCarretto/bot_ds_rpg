@@ -140,6 +140,20 @@ public sealed class AdminRepository(IDbConnectionFactory connectionFactory) : IA
         return await connection.QuerySingleAsync<AdminBotStats>(new CommandDefinition(sql, cancellationToken: cancellationToken));
     }
 
+    public async Task<IReadOnlyList<string>> ResetCooldownsAsync(ulong discordId, IReadOnlyList<string> commandNames, CancellationToken cancellationToken = default)
+    {
+        using DbConnection connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        var args = new { Id = (long)discordId, Names = commandNames.ToArray() };
+        var deleted = (await connection.QueryAsync<string>(new CommandDefinition(
+            "DELETE FROM cooldowns WHERE discord_id = @Id AND command_name = ANY(@Names) RETURNING command_name;", args, transaction, cancellationToken: cancellationToken))).AsList();
+        await connection.ExecuteAsync(new CommandDefinition(
+            "DELETE FROM reminders WHERE discord_id = @Id AND kind = ANY(@Names);", args, transaction, cancellationToken: cancellationToken));
+        await transaction.CommitAsync(cancellationToken);
+        return deleted;
+    }
+
     public async Task<IReadOnlyList<string>> SearchItemNamesAsync(string typed, int limit, CancellationToken cancellationToken = default)
     {
         // Lo escrito va como texto literal dentro del patrón: se escapan \, % y _ (si no, «100%» o «_» harían de comodín).

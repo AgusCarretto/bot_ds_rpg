@@ -97,7 +97,7 @@ Check(taken.Count(t => t is not null) == 1 && offers.Peek(o1.Id) is null, "20 cl
 var o2 = offers.Create(A, B, roble, hierro); var o3 = offers.Create(A, C, roble, hierro);
 Check(offers.Peek(o2.Id) is null && offers.Peek(o3.Id) is not null, "una propuesta nueva del mismo jugador reemplaza a la anterior");
 await Reset(); await Set(A, "Madera de Roble", 3); await Set(B, "Hierro", 3);
-async Task<TradeOfferResult> Offer(IUser to, string give, string get, ulong from = A) => await TradeModule.ExecuteOfferAsync(users, items, inventory, new TradeOfferService(), combat, from, to, give, get);
+async Task<TradeOfferResult> Offer(IUser to, string give, string get, ulong from = A, int qty = 1) => await TradeModule.ExecuteOfferAsync(users, items, inventory, new TradeOfferService(), combat, from, to, give, get, qty);
 var ok = await Offer(FakeUser(B), "madera de roble", "HIERRO");
 var btns = ok.Components?.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<ButtonComponent>().ToList();
 Check(ok.PlainMessage is null && ok.Content == $"<@{B}>" && ok.Embed!.Description.Contains("1×") && ok.Embed.Description.Contains("Raro") && btns!.Count == 2 && btns[0].CustomId!.StartsWith("trade_accept:") && btns[1].CustomId!.StartsWith("trade_decline:"), $"propuesta válida (escrita en minúsculas/MAYÚSCULAS): menciona al otro y trae Aceptar y Rechazar. Texto: «{ok.Embed?.Description}»");
@@ -106,6 +106,33 @@ Check((await Offer(FakeUser(B), "Madera de Roble", "Madera de Pino")).PlainMessa
 Check((await Offer(FakeUser(B), "Piedra", "Madera de Pino")).PlainMessage!.Contains("No tenés") && (await Offer(FakeUser(B), "Madera de Roble", "Carbón")).PlainMessage!.Contains("no tiene"), "si vos no tenés lo que das, o el otro no tiene lo que pedís: se rechaza antes de molestarlo");
 var list = TradeChoices.ForGive(await inventory.GetByDiscordIdAsync(A), "");
 Check(list.Count == 1 && list[0].Value.ToString() == "Madera de Roble" && list[0].Name.Contains("tenés 3") && TradeChoices.ForGet(await items.GetAllByTypeAsync("Mineral"), "hier").Count == 1, "las listas desplegables de give (lo que tenés) y get (todos los materiales con su rareza) funcionan");
+
+Console.WriteLine("\n== 5. Cambiar con cantidad (v0.56.6) ==");
+await Reset(); await Set(A, "Madera de Roble", 30); await Set(B, "Hierro", 12);
+Check(await transfers.SwapItemsAsync(A, rid, B, hid, 10) == SwapStatus.Ok && await Have(A, "Madera de Roble") == 20 && await Have(A, "Hierro") == 10 && await Have(B, "Madera de Roble") == 10 && await Have(B, "Hierro") == 2,
+    "10 por 10: A da 10 Roble y recibe 10 Hierro");
+Check(await transfers.SwapItemsAsync(A, rid, B, hid, 5) == SwapStatus.SecondMissing && await Have(A, "Madera de Roble") == 20 && await Have(B, "Hierro") == 2, "B tiene 2 Hierro y se piden 5: no se mueve nada");
+await Set(B, "Hierro", 0); await Set(B, "Hierro", 100);
+Check(await transfers.SwapItemsAsync(A, rid, B, hid, 20) == SwapStatus.Ok && await Have(A, "Madera de Roble") == 0 && await Have(B, "Hierro") == 80, "dar TODO lo que tenés (20) borra la fila y anda");
+await Reset(); await Set(A, "Madera de Roble", 30); await Set(B, "Hierro", 30);
+var many = await Offer(FakeUser(B), "Madera de Roble", "Hierro", A, 25);
+Check(many.PlainMessage is null && many.Embed!.Description.Contains("25×"), "la propuesta muestra la cantidad (25×)");
+Check((await Offer(FakeUser(B), "Madera de Roble", "Hierro", A, 31)).PlainMessage!.Contains("no te alcanza") && (await Offer(FakeUser(B), "Madera de Roble", "Hierro", A, 30)).PlainMessage is null,
+    "pedir dar 31 teniendo 30: avisa; 30 sí");
+await Set(B, "Hierro", 5);
+Check((await Offer(FakeUser(B), "Madera de Roble", "Hierro", A, 6)).PlainMessage!.Contains("no le alcanza"), "si al otro no le alcanza, avisa cuánto tiene");
+Check((await Offer(FakeUser(B), "Madera de Roble", "Hierro", A, 0)).PlainMessage!.Contains("1 a") && (await Offer(FakeUser(B), "Madera de Roble", "Hierro", A, TradeRules.MaxQuantity + 1)).PlainMessage!.Contains("1 a"),
+    "cantidad 0 o más del tope: no");
+var withQty = new TradeOfferService().Create(A, B, roble, hierro, 7);
+var doneEmbed = TradeModule.BuildResultEmbed(withQty, SwapStatus.Ok);
+Check(withQty.Quantity == 7 && doneEmbed.Description.Contains("7×"), "el resultado dice cuántos se cambiaron");
+Loc.LoadEmbedded();
+using (Loc.Use("en"))
+{
+    var en = await Offer(FakeUser(B), "Madera de Roble", "Hierro", A, 3);
+    var leak = LeakCheck.NoSpanish(en.Embed!.Description + "\n" + TradeModule.BuildResultEmbed(withQty, SwapStatus.SecondMissing).Description, ["Madera de Roble", "Hierro", "Raro"]);
+    Check(leak.Ok, $"en inglés sin español ({leak.Found})");
+}
 
 await Cleanup();
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");

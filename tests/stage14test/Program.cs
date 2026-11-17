@@ -200,7 +200,7 @@ var onlyBanquet = await TabernaModule.BuildSceneAsync(users, items, inventory, b
 Check(!onlyBanquet.Components!.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<SelectMenuComponent>().Single(m => m.CustomId.StartsWith("taberna_eat")).Options.Any(o => o.Value == "__heal_full__"), "si solo tenés banquetes tampoco se ofrece (no se gastan para curarse)");
 
 Console.WriteLine("\n== 5. El cooldown del raid ==");
-Check(CooldownCatalog.Raid.CommandName == CooldownCatalog.Boss.CommandName && CooldownCatalog.Raid.Duration == CooldownCatalog.Boss.Duration && CooldownCatalog.All.Count(d => d.CommandName == "boss") == 1 && CooldownCatalog.Boss.Duration == TimeSpan.FromHours(10) && CooldownCatalog.Boss.RetryAfterFailure == TimeSpan.FromMinutes(30), "el raid usa el MISMO cooldown que el jefe (mismo nombre y duración), de 10 HORAS (30 min si perdés o escapás), y /cd lo lista UNA sola vez");
+Check(CooldownCatalog.Raid.CommandName == CooldownCatalog.Boss.CommandName && CooldownCatalog.Raid.Duration == CooldownCatalog.Boss.Duration && CooldownCatalog.All.Count(d => d.CommandName == "boss") == 1 && CooldownCatalog.Boss.Duration == TimeSpan.FromHours(10) && CooldownCatalog.Boss.RetryAfterFailure == TimeSpan.FromHours(5), "el raid usa el MISMO cooldown que el jefe (mismo nombre y duración), de 10 HORAS (30 min si perdés o escapás), y /cd lo lista UNA sola vez");
 await Make(U, level: 10);
 var cd0 = await CooldownModule.BuildStatusEmbedAsync(cooldowns, users, U);
 Check(cd0.Description.Contains("👑 **Jefe**: **¡Listo!** ✅") && !cd0.Description.Contains("🛡️") && cd0.Description.Split('\n').Count(l => l.Contains("Jefe")) == 1, "/cd muestra UNA sola línea 'Jefe' (lista)");

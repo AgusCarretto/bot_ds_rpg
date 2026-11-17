@@ -193,7 +193,7 @@ public class GatheringModule(
         var embed = new EmbedBuilder()
             .WithTitle(Loc.F($"{definition.Emoji} ¡{Loc.Tr(definition.DisplayName)} exitoso!"))
             .WithColor(RarityColor(item.Rarity))
-            .WithDescription(Loc.F($"Conseguiste **{quantity}× {ItemDisplay.Format(item.Emoji, item.Name)}**"))
+            .WithDescription(WithCelebration(item.Rarity, Loc.F($"Conseguiste **{quantity}× {ItemDisplay.Format(item.Emoji, item.Name)}**")))
             .AddField(Loc.T("Rareza"), RarityCatalog.DisplayName(item.Rarity), true)
             .WithItemThumbnail(item.Emoji);
 
@@ -219,7 +219,7 @@ public class GatheringModule(
         var embed = new EmbedBuilder()
             .WithTitle(Loc.F($"{definition.Emoji} ¡{Loc.Tr(definition.DisplayName)} exitosa!"))
             .WithColor(RarityColor(best.Rarity))
-            .WithDescription(string.Join('\n', grouped.Select(g => $"**{g.Quantity}× {ItemDisplay.Format(g.Item.Emoji, g.Item.Name)}** · {RarityCatalog.DisplayName(g.Item.Rarity)}")))
+            .WithDescription(WithCelebration(best.Rarity, string.Join('\n', grouped.Select(g => $"**{g.Quantity}× {ItemDisplay.Format(g.Item.Emoji, g.Item.Name)}** · {RarityCatalog.DisplayName(g.Item.Rarity)}"))))
             .WithItemThumbnail(best.Emoji);
 
         if (!string.IsNullOrWhiteSpace(footer))
@@ -229,6 +229,10 @@ public class GatheringModule(
 
         return embed.Build();
     }
+
+    // v0.60.0: desde Épico, el festejo arriba de lo que salió (GameData/LuckCelebration.cs), separado por un renglón vacío. Por debajo, la descripción tal cual.
+    private static string WithCelebration(string rarity, string description) =>
+        LuckCelebration.Line(rarity) is { } line ? $"{line}\n\n{description}" : description;
 
     public static Color RarityColor(string rarity) => rarity switch
     {

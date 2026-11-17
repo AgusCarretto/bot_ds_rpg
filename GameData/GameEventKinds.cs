@@ -16,6 +16,8 @@ public static class GameEventKinds
     public const string KrampusWin = "krampus_win";
     public const string SnowmanDamage = "snowman_damage";  // daño al Muñeco de Nieve Gigante (v0.57.0; amount = el daño que entró): el contador del logro «Bombardero de Nieve»
     public const string XmasGifts = "xmas_gifts";          // Regalos de Navidad juntados (v0.57.0; amount = cuántos): victorias, /daily y el calendario. El contador del logro «Espíritu Navideño»        // le ganó al Krampus de Navidad (v0.57.0, /krampus): da Regalos, no cuenta como enemigo del bestiario
+    public const string AdventureStart = "adventure_start";  // arrancó una Aventura (v0.57.0, /aventura): cobró las 3 h
+    public const string AdventureWin = "adventure_win";      // llegó al final de una Aventura y cobró (v0.57.0)
     public const string BossWin = "boss_win";
     public const string RaidWin = "raid_win";
     // v0.47.0: las mazmorras de las Zonas 6 a 10 (GameData/Dungeons); detail = la zona.

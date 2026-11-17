@@ -13,7 +13,8 @@ public class BestiaryModule(
     IUserRepository userRepository,
     IZoneRepository zoneRepository,
     IMonsterRepository monsterRepository,
-    IBestiaryRepository bestiaryRepository) : InteractionModuleBase<SocketInteractionContext>
+    IBestiaryRepository bestiaryRepository,
+    IZoneBoxService zoneBoxService) : InteractionModuleBase<SocketInteractionContext>
 {
     private const string ZonePrefix = "bes_zone";
     private const string CardPrefix = "bes_card";
@@ -25,7 +26,7 @@ public class BestiaryModule(
 
         try
         {
-            var view = await BuildAsync(userRepository, zoneRepository, monsterRepository, bestiaryRepository, Context.User.Id, zona);
+            var view = await BuildAsync(userRepository, zoneRepository, monsterRepository, bestiaryRepository, Context.User.Id, zona, zoneBoxes: zoneBoxService);
             await FollowupAsync(view.Error, embed: view.Embed, components: view.Components, ephemeral: view.Embed is null);
         }
         catch (Exception ex)
@@ -55,7 +56,7 @@ public class BestiaryModule(
                 return;
             }
 
-            var view = await BuildAsync(userRepository, zoneRepository, monsterRepository, bestiaryRepository, ownerId, zoneId, monsterName);
+            var view = await BuildAsync(userRepository, zoneRepository, monsterRepository, bestiaryRepository, ownerId, zoneId, monsterName, zoneBoxService);
             if (view.Embed is null)
             {
                 await FollowupAsync(view.Error, ephemeral: true);
@@ -78,7 +79,7 @@ public class BestiaryModule(
     // Una zona pedida que no está abre la primera.
     public static async Task<BestiaryView> BuildAsync(
         IUserRepository userRepository, IZoneRepository zoneRepository, IMonsterRepository monsterRepository, IBestiaryRepository bestiaryRepository,
-        ulong discordId, int? zoneId = null, string? monsterName = null)
+        ulong discordId, int? zoneId = null, string? monsterName = null, IZoneBoxService? zoneBoxes = null)
     {
         var player = await userRepository.GetByDiscordIdAsync(discordId);
         if (player is null)
@@ -86,7 +87,7 @@ public class BestiaryModule(
             return new BestiaryView(Loc.T("Todavía no tenés cuenta: empezá con **/start**."));
         }
 
-        var pages = await PagesAsync(zoneRepository, monsterRepository, player.FuegoNuevo);
+        var pages = await PagesAsync(zoneRepository, monsterRepository, player.FuegoNuevo, zoneBoxes);
         if (pages.Count == 0)
         {
             return new BestiaryView(Loc.T("Todavía no hay monstruos cargados."));
@@ -101,9 +102,10 @@ public class BestiaryModule(
     }
 
     // Una zona del bestiario: su número, nombre y emoji, y sus monstruos en el orden cacería, viaje, jefe.
-    public sealed record BestiaryPage(int ZoneId, string Title, IReadOnlyList<ZoneMonster> Monsters);
+    // TravelBox: la caja que a veces suelta el élite de esa zona (zone_boxes, rol del viaje; v0.57.1): el élite no suelta material desde la v0.36.0.
+    public sealed record BestiaryPage(int ZoneId, string Title, IReadOnlyList<ZoneMonster> Monsters, string? TravelBox = null);
 
-    public static async Task<IReadOnlyList<BestiaryPage>> PagesAsync(IZoneRepository zoneRepository, IMonsterRepository monsterRepository, int fuegoNuevo)
+    public static async Task<IReadOnlyList<BestiaryPage>> PagesAsync(IZoneRepository zoneRepository, IMonsterRepository monsterRepository, int fuegoNuevo, IZoneBoxService? zoneBoxes = null)
     {
         var ladder = ZoneRanking.ForPlayer(await zoneRepository.GetAllAsync(), fuegoNuevo);
         var monsters = await monsterRepository.GetAllAsync();
@@ -113,7 +115,8 @@ public class BestiaryModule(
             var list = monsters.Where(m => m.ZoneId == zone.ZoneId).OrderBy(m => KindOrder(m.Kind)).ThenBy(m => m.Monster.Name, StringComparer.Ordinal).ToList();
             if (list.Count > 0)
             {
-                pages.Add(new BestiaryPage(zone.ZoneId, Loc.F($"{zone.Emoji} Zona {zone.ZoneId} · {zone.Name}"), list));
+                string? travelBox = zoneBoxes is null ? null : (await TravelBox.ChanceAsync(zoneBoxes, zone.ZoneId)).BoxName;
+                pages.Add(new BestiaryPage(zone.ZoneId, Loc.F($"{zone.Emoji} Zona {zone.ZoneId} · {zone.Name}"), list, travelBox));
             }
         }
 
@@ -137,10 +140,14 @@ public class BestiaryModule(
         _ => Loc.T("jefe"),
     };
 
-    // Lo que suelta, con el emoji de cada ítem; el monstruo de viaje no suelta material (da la caja de la zona a veces).
-    private static string DropText(MonsterTemplate monster) => monster.DropItemNames.Count == 0
-        ? Loc.T("sin drop")
-        : string.Join(" / ", monster.DropItemNames.Select(name => ItemEmojiRegistry.Label(name, "📦")));
+    // Lo que suelta, con el emoji de cada ítem. El élite (viaje) no suelta material: a veces da la caja de la zona (el dueño, 2026-11-16: «el bestiario no dice el drop
+    // de los élites de zonas 6 a 10, que es básicamente la caja de escoria»).
+    private static string DropText(MonsterTemplate monster, MonsterKind kind, string? travelBox) =>
+        monster.DropItemNames.Count > 0
+            ? string.Join(" / ", monster.DropItemNames.Select(name => ItemEmojiRegistry.Label(name, "📦")))
+            : kind == MonsterKind.Travel && travelBox is not null
+                ? Loc.F($"{ItemEmojiRegistry.Label(travelBox, "📦")} (a veces)")
+                : Loc.T("sin drop");
 
     private static int Unlocked(BestiaryPage page, IReadOnlyDictionary<string, long> kills) => page.Monsters.Count(m => kills.ContainsKey(m.Monster.Name));
 
@@ -164,7 +171,7 @@ public class BestiaryModule(
             {
                 embed.AddField(
                     $"{monster.Emoji} {monster.Name}",
-                    Loc.F($"{KindName(m.Kind)} · vencido **{GameHistory.Number(count)}** · {DropText(monster)}"),
+                    Loc.F($"{KindName(m.Kind)} · vencido **{GameHistory.Number(count)}** · {DropText(monster, m.Kind, page.TravelBox)}"),
                     false);
             }
             else
@@ -190,7 +197,7 @@ public class BestiaryModule(
                 Loc.F($"{monster.Emoji} {KindName(entry.Kind)} · {page.Title}") + "\n\n" +
                 Loc.F($"❤️ **Vida:** {GameHistory.Number(monster.MinHp)}-{GameHistory.Number(monster.MaxHp)}") + "\n" +
                 Loc.F($"⚔️ **Daño:** {GameHistory.Number(monster.MinDamage)}-{GameHistory.Number(monster.MaxDamage)}") + "\n" +
-                Loc.F($"🎁 **Suelta:** {DropText(monster)}") + "\n" +
+                Loc.F($"🎁 **Suelta:** {DropText(monster, entry.Kind, page.TravelBox)}") + "\n" +
                 Loc.F($"🏆 **Lo venciste:** {GameHistory.Number(count)} veces") + "\n\n" +
                 says)
             .WithFooter(Loc.T("Elegí otro monstruo o volvé a la zona con los menús"))

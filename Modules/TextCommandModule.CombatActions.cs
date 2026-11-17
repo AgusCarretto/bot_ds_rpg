@@ -37,7 +37,7 @@ public partial class TextCommandModule
             {
                 await AdventureModule.ResolveTurnCoreAsync(
                     combatSessions, userRepository, itemRepository, adventureRepository, inventoryRepository, buffRepository, gameEvents, zoneBoxService,
-                    discordId, fled, useAbility, new MessageCombatTurnOutput(Context.Channel));
+                    discordId, fled, useAbility, new MessageCombatTurnOutput(Context.Channel), adventureDeps);
                 return;
             }
 
@@ -55,6 +55,13 @@ public partial class TextCommandModule
                         raidSessions, userRepository, itemRepository, adventureRepository, gameEvents, zoneBoxService, raidId, discordId, useAbility, output);
                 }
 
+                return;
+            }
+
+            // Una aventura eligiendo camino (la pelea ya terminó): se manda la escena de nuevo (v0.58.2).
+            if (!fled && await AventuraModule.TryResumeAsync(adventureDeps, discordId) is { Embed: { } resumeEmbed } resume)
+            {
+                await ReplyAsync(embed: resumeEmbed, components: resume.Components);
                 return;
             }
 

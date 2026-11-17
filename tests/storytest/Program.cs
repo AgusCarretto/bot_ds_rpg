@@ -134,7 +134,7 @@ Check(nRenacido.Any(n => n.Text.Contains("Renacido I")), "(el logro Renacido sig
 
 Console.WriteLine("\n== 6. Logros nuevos ==");
 var comp = AchievementCatalog.Find("companero")!; var vol = AchievementCatalog.Find("volvio")!;
-Check(AchievementCatalog.All.Count == 37 && comp.StatKind == GameEventKinds.FuegoNuevo && vol.StatKind == GameEventKinds.FuegoNuevo
+Check(AchievementCatalog.All.Count == 38 && comp.StatKind == GameEventKinds.FuegoNuevo && vol.StatKind == GameEventKinds.FuegoNuevo
         && comp.Tiers.Select(t => t.Threshold).SequenceEqual([10L, 25, 50]) && vol.Tiers.Select(t => t.Threshold).SequenceEqual([75L, 90, 100]),
     "32 logros; Compañero del Asador (10/25/50) y El que volvió (75/90/100) cuentan los Fuegos Nuevos");
 Check(comp.Tiers.Concat(vol.Tiers).All(t => t.Reward.Box == BoxGrant.None), "pagan solo oro y XP (nunca una caja: el contador es de pocas vueltas pero cada una pide vencer al Asador)");
@@ -239,7 +239,7 @@ var plain = new User { Class = "Ninja", Level = 1, MaxHp = 100, CurrentHp = 100 
 int Hp(string cls, PlayerBonuses? b) => PlayerCombatProfileCalculator.Resolve(new User { Class = cls, Level = 1, MaxHp = 100, CurrentHp = 100 }, null, null, 0, b).CombatMaxHp;
 Check(Hp("Ninja", PlayerBonuses.None) == 95 && Hp("Arquero", PlayerBonuses.None) == 115 && Hp("Guerrero", PlayerBonuses.None) == 120 && Hp("Hechicero", PlayerBonuses.None) == 100, "contra monstruos: Ninja 95, Arquero 115, Guerrero 120 (el de siempre), Hechicero 100");
 Check(Hp("Ninja", null) == 100 && Hp("Arquero", null) == 100 && Hp("Guerrero", null) == 120 && Hp("Hechicero", null) == 100, "sin bonificaciones (duelos y Arena) no cambia nada");
-Check(PvpTuning.MaxHp(Hp("Arquero", null), "Arquero") == 125 && PvpTuning.MaxHp(Hp("Ninja", null), "Ninja") == 100 && PvpTuning.MaxHp(Hp("Guerrero", null), "Guerrero") == 108, "el PvP queda exactamente como estaba medido (Arquero 125, Ninja 100, Guerrero 108)");
+Check(PvpTuning.MaxHp(Hp("Arquero", null), "Arquero") == 110 && PvpTuning.MaxHp(Hp("Ninja", null), "Ninja") == 100 && PvpTuning.MaxHp(Hp("Guerrero", null), "Guerrero") == 104, "el PvP queda como se midió en la v0.57.2 (Arquero 110, Ninja 100, Guerrero 104; tools/balance2 parte P)");
 var ap = PlayerCombatProfileCalculator.Resolve(new User { Class = "Arquero", Level = 10, MaxHp = 235, CurrentHp = 235 }, null, null, 0, PlayerBonuses.None);
 var arch = new CombatState("boss", "X", "x", 100, 100, 1, [], 0, 0, null, ap.CombatMaxHp, ap.CombatCurrentHp, ap.CombatCurrentHp, ap.Damage, ap.Defense, 10, "Arquero", ap.Passives);
 Check(ap.CombatMaxHp == 270 && arch.ToDbHpDelta(-27) == -23 && arch.ToDbHpDelta(-270) == -235, "el HP de combate se destraduce a vida real (270 de combate = 235 reales): lo que se pierde en la base es lo justo");
@@ -281,7 +281,7 @@ var mentioned = System.Text.RegularExpressions.Regex.Matches(tt, @"/([a-z]+)").S
 Check(mentioned.All(m => slashNames.Contains(m)), $"todo comando que el tema nombra existe ({string.Join(", ", mentioned.Where(m => !slashNames.Contains(m)))})");
 var allTopicsOk = HelpTopics.All.All(t => { var e = t.Build(); return e.Length <= 6000 && e.Fields.All(f => f.Value.Length <= 1024 && f.Name.Length <= 256) && (e.Description?.Length ?? 0) <= 4096; });
 var idx = HelpTopics.BuildIndexEmbed();
-Check(allTopicsOk && idx.Length <= 6000 && idx.Fields.All(f => f.Value.Length <= 1024) && HelpTopics.All.Count == 28, $"los 28 temas y el índice entran en Discord (índice {idx.Length})");
+Check(allTopicsOk && idx.Length <= 6000 && idx.Fields.All(f => f.Value.Length <= 1024) && HelpTopics.All.Count == 29, $"los 29 temas y el índice entran en Discord (índice {idx.Length})");
 var infoE = HelpModule.BuildInfoEmbed();
 Check(AllText(infoE).Contains("/story") && infoE.Length <= 6000 && infoE.Fields.All(f => f.Value.Length <= 1024), $"/info lista /story, dentro de los límites ({infoE.Length})");
 var welcome = OnboardingModule_Confirmation();
@@ -381,7 +381,7 @@ Console.WriteLine("\n== 17. El Polvo de los drops de monstruo por su origen (v0.
         "desmantelar de verdad: 3 Corazón de Titán (Mítico, cacería) = 51, 2 Fragmento de Alma (Mítico, cacería) = 34, 4 Pino = 4");
     Check(await db.ExecuteScalarAsync<int>("SELECT dust FROM users WHERE discord_id = @id", new { id = (long)U }) == 51 + 34 + 4, "y el Polvo de la cuenta es la suma exacta");
     var info = DustModule.BuildOptionsEmbed();
-    Check(AllText(info).Contains("17") && !AllText(info).Contains("38") && AllText(info).Contains("no tienen rareza") && info.Length <= 6000, "/enchant info y el tema de ayuda explican el Polvo de los drops");
+    Check(AllText(info).Contains("17") && !AllText(info).Contains("**38**") && AllText(info).Contains("no tienen rareza") && info.Length <= 6000, "/enchant info y el tema de ayuda explican el Polvo de los drops");
 }
 
 await db.ExecuteAsync("DELETE FROM users WHERE discord_id = @id", new { id = (long)U });

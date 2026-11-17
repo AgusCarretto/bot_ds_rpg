@@ -12,7 +12,7 @@ public partial class TextCommandModule
     {
         try
         {
-            var view = await BestiaryModule.BuildAsync(userRepository, zoneRepository, monsterRepository, bestiaryRepository, Context.User.Id, zona);
+            var view = await BestiaryModule.BuildAsync(userRepository, zoneRepository, monsterRepository, bestiaryRepository, Context.User.Id, zona, zoneBoxes: zoneBoxService);
             await ReplyAsync(view.Error, embed: view.Embed, components: view.Components);
         }
         catch (Exception ex)

@@ -65,6 +65,12 @@ public class UseModule(
                 null);
         }
 
+        // En la Aventura (v0.57.0) no se come: el dueño lo pidió así (FightLock ya frena /use; esto cubre cualquier otro camino, antes de mirar el ítem).
+        if (combatSessions.Peek(discordId)?.State.CommandName == AdventureRules.CommandName)
+        {
+            return new UseResult(Loc.T("🍖 En la aventura no se come: aguantá hasta el final."), null);
+        }
+
         var item = await itemRepository.GetByNameAsync(itemName);
         if (item is null)
         {

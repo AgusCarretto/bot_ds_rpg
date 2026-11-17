@@ -274,16 +274,16 @@ Console.WriteLine("\n== 10. El logro y los títulos ==");
 var fishAch = AchievementCatalog.Find("pescador");
 Check(fishAch is not null && fishAch.StatKind == "fish" && fishAch.Tiers.Select(t => t.Threshold).SequenceEqual([25L, 150, 600]) && fishAch.Tiers.All(t => t.Reward.Box == BoxGrant.None) && AchievementCatalog.Categories.Single(c => c.Name == "Oficios").Keys.Contains("pescador"),
     "el logro Pescador cuenta usos de /fish (25 / 150 / 600), paga solo oro y EXP y está en la página Oficios");
-Check(AchievementCatalog.All.Count == 37 && AchievementCatalog.Categories.SelectMany(c => c.Keys).Distinct().Count() == 37, "35 logros, cada uno en una sola página");
+Check(AchievementCatalog.All.Count == 38 && AchievementCatalog.Categories.SelectMany(c => c.Keys).Distinct().Count() == 38, "38 logros (v0.59.0: Aventurero; v0.61.0: los 2 de Navidad), cada uno en una sola página");
 var fishTitles = TitleCatalog.All.Where(t => t.AchievementKey == "pescador").ToList();
 var masterTitles = TitleCatalog.All.Where(t => t.Key.StartsWith("fisher_")).ToList();
 Check(fishTitles.Count == 3 && fishTitles.Select(t => t.Name).SequenceEqual(["Cañero", "Lobo de Río", "Señor del Surubí"]) && masterTitles.Count == 3 && masterTitles.Select(t => t.Name).SequenceEqual(["Pescador de Orilla", "Capitán del Río", "Rey del Dorado"]),
     "3 títulos del logro y 3 de maestro del oficio (nivel 25, 50 y 100)");
-Check(masterTitles.All(t => t.PageKey == "maestros" && t.Source == "fish_xp") && TitleCatalog.All.Count == 147 && TitleCatalog.All.Select(t => t.Key).Distinct().Count() == 147 && TitleCatalog.All.Select(t => t.Name).Distinct().Count() == 147
-    && TitleCatalog.Pages.All(p => TitleCatalog.OfPage(p.Key).Count <= 25), "147 títulos con claves y nombres únicos y ninguna página pasa de los 25 que admite el desplegable");
+Check(masterTitles.All(t => t.PageKey == "maestros" && t.Source == "fish_xp") && TitleCatalog.All.Count == 150 && TitleCatalog.All.Select(t => t.Key).Distinct().Count() == 150 && TitleCatalog.All.Select(t => t.Name).Distinct().Count() == 150
+    && TitleCatalog.Pages.All(p => TitleCatalog.OfPage(p.Key).Count <= 25), "150 títulos con claves y nombres únicos y ninguna página pasa de los 25 que admite el desplegable");
 
 Console.WriteLine("\n== 11. Recordatorios, oficios y ayuda ==");
-Check(ReminderCatalog.All.Count == 15 && ReminderCatalog.Find("fish")?.Command == "/fish" && ReminderCatalog.Find("fish_adv") is not null && ReminderCatalog.Find("fish")!.AutoDelete == ReminderCatalog.ShortLived && ReminderCatalog.Find("fish_adv")!.AutoDelete is null,
+Check(ReminderCatalog.All.Count == 16 && ReminderCatalog.Find("fish")?.Command == "/fish" && ReminderCatalog.Find("fish_adv") is not null && ReminderCatalog.Find("fish")!.AutoDelete == ReminderCatalog.ShortLived && ReminderCatalog.Find("fish_adv")!.AutoDelete is null,
     "hay 15 tipos de aviso; el de pescar se borra solo a los 2 minutos como el de talar y minar, y el de la avanzada no");
 var due = ReminderCatalog.FromCooldowns([("fish", DateTime.UtcNow), ("fish_adv", DateTime.UtcNow)], DateTime.UtcNow);
 Check(due.Select(d => d.Kind).OrderBy(k => k).SequenceEqual(["fish", "fish_adv"]) && due.Single(d => d.Kind == "fish").DueUtc - DateTime.UtcNow < TimeSpan.FromMinutes(5.1) && due.Single(d => d.Kind == "fish_adv").DueUtc - DateTime.UtcNow > TimeSpan.FromMinutes(59),

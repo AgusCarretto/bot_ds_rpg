@@ -12,7 +12,7 @@ namespace BotDsRpg.GameData;
 public static class Enchantments
 {
     // Cuántos tiers hay: sale de la TABLA de abajo, no es un número aparte. Era una constante (5) y alguien que la subió a mano (100) rompió todo lo que recorre los tiers
-    // ("/enchant info" tiraba IndexOutOfRange): ahora no hay un número que desincronizar. Para agregar un tier se agrega una fila (y la base solo acepta 0 a 5: users_*_enchant_check).
+    // ("/enchant info" tiraba IndexOutOfRange): ahora no hay un número que desincronizar. Para agregar un tier se agrega una fila (y la base tiene que aceptarlo: users_*_enchant_check, 0 a 7 desde la v0.58.0, Database/add_enchant_tiers_6_7.sql).
     public static int MaxTier => Tiers.Length;
 
     // Un tier válido (1 hasta el último). Todas las cuentas de abajo y el perfil lo usan, así nadie indexa la tabla con un tier que no existe.
@@ -22,11 +22,15 @@ public static class Enchantments
     [
         // Los pesos suman 1000 (v0.22.1, el dueño: «que sea MUY difícil tener un tier V; que vaya de I a V y el V sea muy poco probable, pero posible»): 42 / 30 / 18 / 9 / 1 %. Antes 40 / 30 / 18 / 9 / 3 %:
         // el Soberano pasa de ~33 intentos en promedio a ~100 (el tier nunca baja, así que se llega acumulando intentos). El oficio Encantador ayuda (ProfessionRules.TierUpgradeChance).
-        ("Tibio", 4, 420),
+        // v0.58.0 (el dueño, 2026-11-16: «vamos a poder encantar a 35 % y 50 % con menos probabilidad que el 26 %»): VI Infernal 0,3 % y VII Primordial 0,1 % (~250 y ~1.000 intentos
+        // en promedio para llegar); los 4 puntos salen del Tibio (42 → 41,6 %).
+        ("Tibio", 4, 416),
         ("Al Rojo", 8, 300),
         ("Ardiente", 13, 180),
         ("Incandescente", 19, 90),
         ("Soberano", 26, 10),
+        ("Infernal", 35, 3),
+        ("Primordial", 50, 1),
     ];
 
     // Los EFECTOS (v0.22.0, el dueño: «efectos nuevos»): cada pieza tiene UN efecto y un tier. El jugador ELIGE el efecto y el tier se sortea (cambiar de efecto reemplaza el que tenía).
@@ -41,18 +45,18 @@ public static class Enchantments
     // paridad con el Filo: 27 %), 3/5/8/12/16 (22 %), 3/6/9/13/18 (17,6 %, el elegido) y 4/7/11/15/20 (14,8 %). Las piezas que ya estaban encantadas con Guarda conservan su tier y rinden con la tabla nueva.
     public const string Filo = "filo", Guarda = "guarda", Critico = "critico", Sangre = "sangre", Vida = "vida", Esquive = "esquive";
 
-    // ValuesByTier: el valor de cada tier (1..5), en la unidad de Unit. Summary: lo que hace, en una frase (para /enchant info y la ayuda).
+    // ValuesByTier: el valor de cada tier (1..7; los VI y VII de la v0.58.0 suben en proporción al Filo, 26 → 35 → 50, como eligió el dueño), en la unidad de Unit. Summary: lo que hace, en una frase (para /enchant info y la ayuda).
     public sealed record EnchantKind(string Key, string Slot, string Name, string Unit, IReadOnlyList<int> ValuesByTier, bool PveOnly, string Summary);
 
     private static readonly EnchantKind[] KindTable =
     [
         new(Filo, "weapon", "Filo", Loc.Mark("% de ATQ de la pieza"), Tiers.Select(t => t.BonusPercent).ToArray(), false, Loc.Mark("sube el ATQ del arma")),
-        new(Critico, "weapon", "Crítico", Loc.Mark("puntos de chance de crítico"), new[] { 3, 6, 10, 15, 20 }, true, Loc.Mark("más chance de golpe crítico (el de base es 10 %)")),
-        new(Sangre, "weapon", "Sangre", Loc.Mark("% del daño en vida"), new[] { 1, 2, 3, 4, 5 }, true, Loc.Mark("curás un % del daño de cada golpe")),
+        new(Critico, "weapon", "Crítico", Loc.Mark("puntos de chance de crítico"), new[] { 3, 6, 10, 15, 20, 27, 38 }, true, Loc.Mark("más chance de golpe crítico (el de base es 10 %)")),
+        new(Sangre, "weapon", "Sangre", Loc.Mark("% del daño en vida"), new[] { 1, 2, 3, 4, 5, 7, 10 }, true, Loc.Mark("curás un % del daño de cada golpe")),
         // La Guarda tiene SU tabla desde la v0.25.1 (antes copiaba la del Filo: 4/8/13/19/26). Ver el comentario de arriba.
-        new(Guarda, "amulet", "Guarda", Loc.Mark("% de DEF de la pieza"), new[] { 3, 6, 9, 13, 18 }, false, Loc.Mark("sube la DEF del amuleto")),
-        new(Vida, "amulet", "Vida", Loc.Mark("% de vida máxima"), new[] { 4, 8, 13, 18, 24 }, true, Loc.Mark("más vida máxima en combate")),
-        new(Esquive, "amulet", "Esquive", Loc.Mark("puntos de chance de esquivar"), new[] { 3, 6, 9, 12, 15 }, true, Loc.Mark("más chance de esquivar (la de base es 5 %)")),
+        new(Guarda, "amulet", "Guarda", Loc.Mark("% de DEF de la pieza"), new[] { 3, 6, 9, 13, 18, 24, 35 }, false, Loc.Mark("sube la DEF del amuleto")),
+        new(Vida, "amulet", "Vida", Loc.Mark("% de vida máxima"), new[] { 4, 8, 13, 18, 24, 32, 46 }, true, Loc.Mark("más vida máxima en combate")),
+        new(Esquive, "amulet", "Esquive", Loc.Mark("puntos de chance de esquivar"), new[] { 3, 6, 9, 12, 15, 20, 29 }, true, Loc.Mark("más chance de esquivar (la de base es 5 %)")),
     ];
 
     public static IReadOnlyList<EnchantKind> Kinds => KindTable;
@@ -137,7 +141,7 @@ public static class Enchantments
         };
     }
 
-    // «+4/8/13/19/26 % de ATQ de la pieza», «cura el 1/2/3/4/5 % del daño de cada golpe»...: los cinco valores de un efecto en palabras (para /enchant info).
+    // «+4/8/13/19/26 % de ATQ de la pieza», «cura el 1/2/3/4/5 % del daño de cada golpe»...: los valores de cada tier de un efecto en palabras (para /enchant info).
     public static string DescribeValues(EnchantKind kind)
     {
         string values = string.Join("/", kind.ValuesByTier);

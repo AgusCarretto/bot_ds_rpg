@@ -89,6 +89,11 @@ var cardMenu = rows[1].Components.OfType<SelectMenuComponent>().Single();
 var pages = await BestiaryModule.PagesAsync(zones, monsters, 0);
 Check(zoneMenu.CustomId == $"bes_zone:{U}" && zoneMenu.Options.Count == pages.Count && zoneMenu.Options.Last().Value == "0" && pages.Last().Monsters.Single().Monster.Name == FogonRules.BossName,
     $"el menú de zonas: las {pages.Count - 1} de su escalera y El Fogón al final");
+// v0.57.1 (el dueño: «el bestiario no dice el drop de los élites»): el élite no suelta material, a veces da la caja del viaje de su zona.
+var withBoxes = await BestiaryModule.PagesAsync(zones, monsters, 0, new ZoneBoxService(factory, zones));
+var eliteCard = BestiaryModule.BuildCardEmbed(withBoxes[0], withBoxes[0].Monsters.First(m => m.Kind == MonsterKind.Travel), 3, 0);
+Check(withBoxes.Where(p => p.ZoneId != 0).All(p => p.TravelBox is not null) && eliteCard.Description!.Contains(withBoxes[0].TravelBox!) && !eliteCard.Description.Contains("sin drop"),
+    $"el élite muestra la caja del viaje de su zona ({withBoxes[0].TravelBox}) en vez de «sin drop»");
 Check(!pages.Any(p => p.ZoneId >= 6), "con Fuego Nuevo 0 las zonas 6 a 10 no aparecen (son sorpresa)");
 Check(cardMenu.CustomId == $"bes_card:{U}:1" && cardMenu.Options.Select(o => o.Value).OrderBy(x => x).SequenceEqual(new[] { hunt1, boss1 }.OrderBy(x => x)), "el menú de fichas solo trae los que venció");
 var card = await BestiaryModule.BuildAsync(users, zones, monsters, bestiary, U, 1, boss1);

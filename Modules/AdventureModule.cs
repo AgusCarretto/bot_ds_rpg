@@ -18,7 +18,8 @@ public class AdventureModule(
     IPartyBossService partyBoss,
     IDungeonService dungeons,
     IZoneRepository zoneRepository,
-    IChristmasService christmasService) : InteractionModuleBase<SocketInteractionContext>
+    IChristmasService christmasService,
+    AdventureDeps adventureDeps) : InteractionModuleBase<SocketInteractionContext>
 {
     // El Krampus de Navidad (v0.57.0): solo mientras caen Regalos (1 al 24 de diciembre); fuera de eso, el aviso de cuándo vuelve.
     [SlashCommand("krampus", "Navidad: enfrentá al Krampus (del 1 al 24 de diciembre, cada 4 h). Da Regalos.")]
@@ -43,7 +44,7 @@ public class AdventureModule(
 
     // El jefe de la zona, SOLO o EN EQUIPO (v0.19.0; reemplaza al viejo /raid): sin compañeros es la pelea de siempre; nombrando a uno o más (hasta 5) arma un grupo que pega por turnos
     // y exige la misma zona máxima (ver Modules/RaidModule.cs). Slash no tiene parámetros variables, de ahí los cinco opcionales; "aa boss @a @b" los toma todos juntos.
-    [SlashCommand("boss", "Enfrentá al Jefe de tu zona, solo o con amigos (cooldown de 10 h, 30 min si perdés).")]
+    [SlashCommand("boss", "Enfrentá al Jefe de tu zona, solo o con amigos (cooldown de 10 h, 5 h si perdés).")]
     public Task HandleBossAsync(
         [Summary("companero", "Un amigo para pelear juntos por turnos (misma zona máxima que vos).")] IUser? companion = null,
         [Summary("companero2", "Otro amigo más (opcional).")] IUser? companion2 = null,
@@ -314,7 +315,7 @@ public class AdventureModule(
             var output = new SessionTargetCombatTurnOutput(Context.Interaction);
             await ResolveTurnCoreAsync(
                 combatSessions, userRepository, itemRepository, adventureRepository, inventoryRepository, buffRepository, gameEvents, zoneBoxService,
-                Context.User.Id, fled: true, useAbility: false, output);
+                Context.User.Id, fled: true, useAbility: false, output, adventureDeps);
 
             await ModifyOriginalResponseAsync(p =>
             {
@@ -369,7 +370,7 @@ public class AdventureModule(
 
         await ResolveTurnCoreAsync(
             combatSessions, userRepository, itemRepository, adventureRepository, inventoryRepository, buffRepository, gameEvents, zoneBoxService,
-            Context.User.Id, fled, useAbility, new InteractionCombatTurnOutput(Context.Interaction));
+            Context.User.Id, fled, useAbility, new InteractionCombatTurnOutput(Context.Interaction), adventureDeps);
     }
 
     // Lo que se le dice a quien aprieta un botón (o escribe «aa attack») sin tener un combate (v0.25.4). Dice POR QUÉ cuando el bot lo sabe: el combate venció por inactividad (más de un minuto sin jugar el
@@ -393,13 +394,21 @@ public class AdventureModule(
     public static async Task ResolveTurnCoreAsync(
         ICombatSessionService combatSessions, IUserRepository userRepository, IItemRepository itemRepository, IAdventureRepository adventureRepository,
         IInventoryRepository inventoryRepository, IBuffRepository buffRepository, IGameEvents gameEvents, IZoneBoxService zoneBoxService,
-        ulong discordId, bool fled, bool useAbility, ICombatTurnOutput output)
+        ulong discordId, bool fled, bool useAbility, ICombatTurnOutput output, AdventureDeps? adventure = null)
     {
         try
         {
             var session = combatSessions.Peek(discordId);
             if (session is null)
             {
+                // v0.58.2: si la pelea era de la Aventura y la aventura sigue (eligiendo camino), el botón viejo de la pelea muestra la escena que sigue en vez de «ya terminó»:
+                // así una escena que no llegó a verse (el caso de Matt, 2026-11-16) se recupera con un clic.
+                if (!fled && adventure is not null && await AventuraModule.TryResumeAsync(adventure, discordId) is { Embed: { } resumeEmbed } resume)
+                {
+                    await output.ShowAsync(resumeEmbed, resume.Components!, null, NoReplyTarget.Instance);
+                    return;
+                }
+
                 await output.NoteAsync(NoActiveFightMessage(combatSessions, discordId));
                 return;
             }
@@ -422,6 +431,13 @@ public class AdventureModule(
                 // No se acumula nada nuevo acá: huir no dispara golpe del monstruo, así que el
                 // resumen es tal cual venía de los turnos anteriores.
                 await output.ShowAsync(BuildFleeEmbed(state), new ComponentBuilder().Build(), null, session.ReplyTarget);
+
+                // Huir de una pelea de la Aventura la termina sin premio y sin penalidad.
+                if (state.CommandName == AdventureRules.CommandName)
+                {
+                    adventure?.Adventures.End(discordId);
+                }
+
                 return;
             }
 
@@ -455,6 +471,40 @@ public class AdventureModule(
 
             if (turn.MonsterDefeated)
             {
+                // La Aventura (v0.57.0): ganar una pelea del camino no paga nada todavía; guarda la vida y vuelve a la escena siguiente (o paga, si era el Guardián).
+                if (state.CommandName == AdventureRules.CommandName && adventure is not null)
+                {
+                    if (adventure.Adventures.Find(discordId) is { } advRun)
+                    {
+                        lock (advRun.Lock)
+                        {
+                            advRun.LastActivityUtc = DateTime.UtcNow;   // la gracia de la corrida mientras la pelea se cierra
+                        }
+                    }
+
+                    if (!combatSessions.TryAdvance(discordId, session, null, null))
+                    {
+                        await output.NoteAsync(Loc.T("Justo se resolvió tu combate por otra vía, revisá el mensaje."));
+                        return;
+                    }
+
+                    var won = state with { PlayerCurrentHp = playerHpAfterLifesteal, TurnsElapsed = turnsElapsed, CritCount = critCount, TotalDamageDealt = totalDamageDealt, TotalHealed = totalHealed };
+                    await userRepository.ApplyCombatHpDeltaAsync(discordId, won.ToDbHpDelta(won.PlayerCurrentHp - won.PlayerStartingHp));
+                    var (advEmbed, advButtons) = await AventuraModule.AfterWinAsync(adventure, discordId, won);
+                    try
+                    {
+                        await output.ShowAsync(advEmbed, advButtons, null, session.ReplyTarget);
+                    }
+                    catch (Exception showEx)
+                    {
+                        // La pelea ya se ganó y la aventura ya avanzó: si la pantalla no se pudo mostrar, que el jugador sepa cómo volver a verla (v0.58.2).
+                        BotLog.Error(showEx);
+                        await output.NoteAsync(Loc.T("¡Ganaste la pelea! No pude mostrar la escena que sigue: escribí **/aventura** (o **aa aventura**) para verla y seguir."));
+                    }
+
+                    return;
+                }
+
                 // Las tres recompensas salen de la MISMA fórmula (nivel + bonus del monstruo); /travel la
                 // multiplica y cada tipo de pelea tiene su chance de drop (ver GameData/CombatRewardCalculator.cs),
                 // así sube junto con la zona.
@@ -570,6 +620,13 @@ public class AdventureModule(
                 await gameEvents.RecordAsync(discordId, GameEventKinds.FightLost, detail: finalState.CommandName);
 
                 await output.ShowAsync(BuildDefeatEmbed(finalState, turn, penalty), new ComponentBuilder().Build(), null, session.ReplyTarget);
+
+                // Morir en la Aventura la termina: la penalidad de siempre (arriba) y sin premio.
+                if (finalState.CommandName == AdventureRules.CommandName)
+                {
+                    adventure?.Adventures.End(discordId);
+                }
+
                 return;
             }
 
@@ -799,6 +856,7 @@ public class AdventureModule(
             "hunt" => Loc.T("🏹 ¡Encuentro en la caza!"),
             "boss" => Loc.T("👑 ¡Encuentro con el Jefe de Zona!"),
             KrampusRules.CommandName => Loc.T("👹 ¡El Krampus te salió al cruce!"),
+            AdventureRules.CommandName => Loc.T("🗺️ ¡Pelea en la aventura!"),
             _ => Loc.T("🗺️ ¡Encuentro en el viaje!"),
         };
 
@@ -1092,4 +1150,13 @@ public class AdventureModule(
         NpcDialogue.Monster(state.MonsterName, state.MonsterEmoji, line, isBoss: state.CommandName == "boss", fuegoNuevo: state.Bonuses?.FuegoNuevo ?? 0);
 
     private static string HpLine(int current, int max) => $"{ProgressBar.Render(current, max)}\n{current}/{max}";
+}
+
+// Un destino de combate que no hace nada: lo usa el botón viejo de una pelea de la Aventura que ya terminó para mostrar la escena que sigue (v0.58.2), donde no hay mensaje «anterior»
+// al que sacarle botones (el botón edita el mensaje que se tocó).
+internal sealed class NoReplyTarget : ICombatReplyTarget
+{
+    public static readonly NoReplyTarget Instance = new();
+
+    public Task UpdateAsync(Embed embed, MessageComponent components) => Task.CompletedTask;
 }

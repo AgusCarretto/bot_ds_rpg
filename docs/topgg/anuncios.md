@@ -7,23 +7,70 @@ fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo
 
 ---
 
-## 2026-11-16 — El bestiario, más pesca y pantallas más limpias (v0.56.0 a v0.56.3)
+## 2026-11-18 — La Aventura, más dura y más completa (v0.59.0)
 
-**Título:** 📖 Llegó el bestiario, la pesca suma premios y el bot se ve más prolijo
+**Título:** 🗺️ La Aventura ahora es para valientes
 
 **Texto:**
 
-📖 **Bestiario:** escribí **aa bestiario** (o **/bestiary**) y mirá los monstruos de cada zona. Los que ya venciste muestran su cara, vida, daño, qué sueltan y cuántas veces les ganaste; los que no, quedan en **???**. ¡Cuenta lo que ya venías cazando! Logro nuevo: **Cazador de Bestias**.
+⚔️ **Los monstruos de la Aventura pegan más fuerte.** El camino seguro ya no es tan seguro, y el arriesgado es más duro que un /travel. La puede hacer cualquiera, pero si llegás justo de nivel a tu zona, te va a costar.
 
-🎣 **Más premios por pescar:** misión diaria **Pescá 3 veces**, semanal **Pescá 20 veces**, la hazaña **Señor del Río** y la bendición **Anzuelo de Plata** (+5 % de peces por nivel).
+🗿 **El Guardián del Camino tiene el doble de vida** que el élite de tu zona, y pega el doble.
 
-✨ **Pantallas más claras, pensadas para el celular:**
-• La **tienda** y la **taberna**: un renglón por ítem con su precio.
-• **/cd** más corto y del mismo color que el perfil.
-• En **/forge** cada opción dice abajo lo que te falta.
-• Las **mazmorras** con flechas más simples y la vida como en las peleas.
-• **Misiones**, **logros** y **títulos** más ordenados (los **títulos** de Hazañas ahora van en dos páginas).
-• **/stats** con un bono por renglón en «Más stats».
+⌨️ **Jugala escribiendo:** `aa av seguro`, `aa av arriesgado` o `aa av misterioso` (o `s`, `a`, `m`). Al final, `aa av guardian`.
+
+🌲 **10 escenas nuevas** en el camino: el molino, el cementerio, la tormenta, la estancia en ruinas y más.
+
+🎁 **Sabés cuánto te jugás:** la primera escena te dice la zona y el premio base, y al final ves el resumen: peleas ganadas, eventos que te tocaron y el botín total.
+
+📋 **Misión semanal nueva** («Completá 2 aventuras») y **logro Aventurero** (5, 25 y 100 aventuras, con cajas y tres títulos: Andariego, Aventurero y Vencedor del Guardián).
+
+📖 Todo explicado en **/info tema:aventura**.
+
+---
+
+## 2026-11-17 — La Aventura paga lo que tiene que pagar, el Arquero y el Guerrero más fuertes y encantamientos nuevos (v0.57.2 y v0.58.0)
+
+**Título:** 🏹 La Aventura paga completo, y el Arquero y el Guerrero vienen con todo
+
+**Texto:**
+
+🗺️ **La Aventura ahora paga lo que tenía que pagar.** El premio de **3 viajes** se estaba calculando de menos en todas las zonas menos la 1: ahora cada viaje paga como un **/travel** de verdad de tu zona. Desde la Zona 2 en adelante vas a cobrar **varias veces más** que antes.
+
+🗿 **El Guardián del Camino pega más fuerte** (+25 % de daño). Llegar al final ahora sí es un desafío.
+
+🏹 **Arquero:** la **Lluvia de Flechas** dispara **4 flechas** en lugar de 3, cada una con su propio crítico.
+
+🛡️ **Guerrero:** más aguante, recibe **menos daño** en cada golpe.
+
+⚔️ En los **duelos** y la **Arena** las clases se ajustaron para que sigan parejas.
+
+✨ **Encantamientos nuevos, rarísimos:** además del Soberano (+26 %) ahora pueden salir **Infernal (+35 %)** y **Primordial (+50 %)**, con menos chance que cualquier otro. Valen para todos los efectos (Filo, Guarda, Crítico, Sangre, Vida, Esquive). ¿Quién saca el primero?
+
+---
+
+## 2026-11-16 — La Aventura, el bestiario y un Cofre de Oro de regalo (v0.56.0 a v0.57.0)
+
+(La pesca y las pantallas más limpias ya se habían anunciado antes, junto con la cocina.)
+
+**Título:** 🗺️ Llegó la Aventura, el bestiario… ¡y un Cofre de Oro de regalo!
+
+**Texto:**
+
+🗺️ **La Aventura** (**/aventura** o **aa aventura**): un viaje de **5 escenas** donde vos elegís el camino:
+• 🛡️ **Seguro**: peleás contra un monstruo de tu zona.
+• ⚔️ **Arriesgado**: vas contra el élite y sumás **+20 % de botín**.
+• ❓ **Misterioso**: puede ser un cofre, una fogata, una trampa, un santuario… o una emboscada.
+
+Al final te espera el **🗿 Guardián del Camino**. Si llegás, cobrás **3 viajes de oro y EXP** por tu botín, y a veces la caja de tu zona.
+
+⚠️ **Es difícil a propósito:** no se come en toda la aventura, y si morís pagás la penalidad de siempre y no cobrás nada. El premio es **por zona**: elegí bien dónde arriesgarte. Sale **cada 3 horas**.
+
+📖 **Bestiario** (**/bestiary** o **aa bestiario**): los monstruos de cada zona. Los que ya venciste muestran su cara, vida, daño, qué sueltan y cuántas veces les ganaste; los que no, quedan en **???**. ¡Cuenta lo que ya venías cazando! Logro nuevo: **Cazador de Bestias**.
+
+🔄 **/trade con cantidad:** ahora cambiás de a muchos, la misma cantidad de cada lado: **aa trade @jugador "Oro Puro" "Madera de Nogal" 10**.
+
+🎁 **Código de regalo:** escribí **aa code AVENTURA** (o **/code codigo:AVENTURA**) y te llevás un **Cofre de Oro**. Uno por persona, vale por 7 días.
 
 ---
 

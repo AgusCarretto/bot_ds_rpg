@@ -44,6 +44,27 @@ public sealed class AdventureCombatStarter(
             isBossFight: false,
             extraGate: null,
             cancellationToken);
+    public async Task<CombatStartOutcome> PrepareAdventureFightAsync(ulong discordId, MonsterTemplate monster, int damageBonusPercent, CancellationToken cancellationToken = default)
+    {
+        if (combatSessions.Peek(discordId) is not null || raidSessions.IsInAnyRaid(discordId))
+        {
+            return new CombatStartOutcome(CombatStartStatus.AlreadyInCombat, null, null);
+        }
+
+        var player = await userRepository.GetByDiscordIdAsync(discordId, cancellationToken);
+        if (player is null || player.CurrentHp <= 0)
+        {
+            return new CombatStartOutcome(CombatStartStatus.NoHp, null, null);
+        }
+
+        var state = await BuildStateAsync(player, AdventureRules.Cooldown, monster, null, cancellationToken);
+        if (damageBonusPercent > 0)
+        {
+            state = state with { PlayerDamage = (int)Math.Round(state.PlayerDamage * (100 + damageBonusPercent) / 100.0) };
+        }
+
+        return new CombatStartOutcome(CombatStartStatus.Started, null, state);
+    }
 
     public Task<CombatStartOutcome> PrepareHuntAsync(ulong discordId, CancellationToken cancellationToken = default) =>
         PrepareInternalAsync(

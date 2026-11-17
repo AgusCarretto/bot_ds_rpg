@@ -27,6 +27,8 @@ public static class HelpTopics
         new("play", "🎰", Loc.Mark("El casino"), Loc.Mark("coinflip y slots: cuánto paga cada uno"), ["casino", "slots", "coinflip", "apostar", "juego"], Play, InEnglish: true),
         new("hunt", "🏹", Loc.Mark("Combate"), Loc.Mark("cazar, viajar, huir, curarte y el modo automático"), ["combate", "cazar", "caceria", "travel", "viaje", "autohunt", "pelea", "pelear", "combat"], Hunt, InEnglish: true),
         new("boss", "👑", Loc.Mark("Jefes y equipo"), Loc.Mark("el jefe de cada zona y cómo hacerlo con amigos"), ["jefe", "jefes", "raid", "raids", "grupo"], Boss, InEnglish: true),
+        // v0.59.0 (el dueño: «una página en /info que explique los caminos, los eventos, el botín y que no se come»).
+        new("adventure", "🗺️", Loc.Mark("La Aventura"), Loc.Mark("5 escenas, 3 caminos, el Guardián y el botín (sin comida)"), ["aventura", "aventuras", "adventures", "av", "guardian", "guardián", "caminos", "camino", "botin", "botín"], Adventure, InEnglish: true),
         new("miniboss", "🌍", Loc.Mark("El jefe mundial"), Loc.Mark("el jefe del día que pelean todos juntos a la medianoche"), ["worldboss", "world boss", "wb", "jefe mundial", "jefemundial", "mundial", "minijefe"], Miniboss, InEnglish: true),
         new("forge", "🔨", Loc.Mark("Herrería y equipo"), Loc.Mark("forjar armas y amuletos, y las herramientas del Carpintero"), ["herrero", "herreria", "forja", "forjar", "recetas", "receta", "equipo", "arma", "armas", "amuleto", "carpintero", "herramientas", "herramienta", "hacha", "pico", "tools", "tool", "equipamiento"], Forge, InEnglish: true),
         new("zone", "🗺️", Loc.Mark("Zonas"), Loc.Mark("cómo se avanza por el mundo"), ["zona", "zonas", "mundo", "mapa"], Zone, InEnglish: true),
@@ -47,8 +49,9 @@ public static class HelpTopics
         new("daily", "🎁", Loc.Mark("Diario y regalos"), Loc.Mark("la recompensa diaria, la racha y regalar oro"), ["diario", "racha", "give", "dar", "regalo", "regalar"], Daily, InEnglish: true),
         new("stats", "📊", Loc.Mark("Nivel y estadísticas"), Loc.Mark("EXP, vida, ataque y defensa"), ["nivel", "exp", "xp", "ataque", "defensa", "vida", "hp", "perfil", "level"], Stats, InEnglish: true),
         new("reminders", "⏰", Loc.Mark("Recordatorios"), Loc.Mark("los avisos del bot cuando termina una espera"), ["recordatorio", "recordatorios", "reminder", "reminders", "aviso", "avisos", "alarma", "alarmas"], Reminders, InEnglish: true),
-        // OJO: Discord muestra como máximo 25 sugerencias, así que con 28 temas la lista desplegable SIN escribir nada deja afuera los tres últimos (stats, reminders y vote). Desde la v0.46.0 el jefe mundial tiene tema propio. Se encuentran escribiendo («votar», «avisos») y figuran en /info;
-        // el próximo tema que se sume no tiene lugar sin sacar otro o fundirlo con uno existente (las herramientas del Carpintero, por eso, son un campo del tema forge y no un tema aparte).
+        // OJO: Discord muestra como máximo 25 sugerencias, así que con 29 temas la lista desplegable SIN escribir nada deja afuera los cuatro últimos (daily, stats, reminders y vote). Desde la v0.46.0 el jefe mundial tiene tema propio
+        // y desde la v0.59.0 la Aventura (lo pidió el dueño: «/info tema:aventura»). Se encuentran escribiendo («diario», «votar», «avisos») y figuran en /info; antes de sumar otro tema conviene fundir alguno
+        // (las herramientas del Carpintero, por eso, son un campo del tema forge y no un tema aparte).
         new("vote", "🗳️", Loc.Mark("Votar en top.gg"), Loc.Mark("qué da cada voto y cómo se cobra"), ["votar", "voto", "votos", "votacion", "votación", "topgg", "top.gg"], Vote, InEnglish: true),
     ];
 
@@ -558,6 +561,24 @@ public static class HelpTopics
         (Loc.T("🍳 Cocina"),
             Loc.T("Con los peces y los materiales raros cocinás platos con **/cook** (las recetas: **aa cook recipes**). El plato se cocina y se come en el momento: suma vida máxima, defensa o ataque y se **apila** hasta el próximo Fuego Nuevo. Solo cuenta contra monstruos.")),
         (Loc.T("🔁 Después"), Loc.T("Lo que juntás sirve para forjar (**/info tema:forge**), para cambiar con otros jugadores (**/info tema:trade**) o para desmantelar y sacar Polvo (**/info tema:dismantle**).")));
+
+    // v0.59.1: los eventos del camino misterioso NO se cuentan acá (el dueño: «no quiero que la gente sepa cuáles hay»). Se descubren jugando.
+    private static Embed Adventure() => Topic(Self("adventure"),
+        Loc.F($"Cada **{Dur(AdventureRules.Cooldown.Duration)}** salís de aventura por la zona donde estás: **{AdventureRules.Scenes} escenas**, en cada una elegís un camino y al final te espera el **Guardián del Camino**. Si llegás vivo, cobrás el premio. Arranca con **/aventura** (o `aa av`)."),
+        (Loc.T("🛤️ Los caminos"),
+            Loc.F($"🛡️ **Seguro**: un monstruo común de la zona, con ×{LDec(AdventureRules.MonsterMultiplier)} de vida y ×{LDec(AdventureRules.SafeDamageMultiplier)} de daño.\n") +
+            Loc.F($"⚔️ **Arriesgado**: el élite de la zona, con ×{LDec(AdventureRules.MonsterMultiplier)} de vida y ×{LDec(AdventureRules.RiskyDamageMultiplier)} de daño. Si lo vencés, **+{AdventureRules.RiskyBonusPercent} %** de botín.\n") +
+            Loc.T("❓ **Misterioso**: nadie sabe qué hay. Puede ser algo muy bueno… o algo muy malo. Se descubre jugando.\n") +
+            Loc.F($"🗿 **El Guardián** (la escena {AdventureRules.Scenes}): el élite de la zona con ×{LDec(AdventureRules.GuardianMultiplier)} de vida y ×{LDec(AdventureRules.GuardianDamageMultiplier)} de daño.")),
+        (Loc.T("💰 El botín y el premio"),
+            Loc.F($"El premio son **{AdventureRules.RewardTravels} viajes** de oro y EXP de la zona, con su nivel mínimo: rinde según **dónde** la hacés, no tu nivel. El botín lo multiplica (+{AdventureRules.RiskyBonusPercent} % por cada arriesgado ganado, y quizás algo más en el camino), ") +
+            Loc.F($"y hay **{AdventureRules.BoxChancePercent} %** de chance de la caja del viaje de la zona. La primera escena te muestra el premio base; al final, el resumen de tu camino.")),
+        (Loc.T("🚫 Sin comida"),
+            Loc.T("Adentro de la aventura **no se come**: ni **/use** ni el menú de la pelea. La vida que perdés se arrastra de escena en escena, así que curate con **/heal** antes de salir. Es difícil a propósito: en una zona alta cuesta bastante.")),
+        (Loc.T("☠️ Si perdés o huís"),
+            Loc.F($"Si morís, la penalidad de siempre (**/info tema:death**) y sin premio. Si huís, termina sin premio y sin penalidad. Las {Dur(AdventureRules.Cooldown.Duration)} se cobran al arrancar, quede como quede.")),
+        (Loc.T("⌨️ Por texto"),
+            Loc.F($"`aa av seguro`, `aa av arriesgado` o `aa av misterioso` (o `s`, `a`, `m`) eligen el camino; en la última escena, `aa av guardian`. Las peleas siguen con `aa attack`. Tenés {(int)AdventureRules.ChoiceTimeout.TotalMinutes} minutos por elección; si no ves los botones, `aa av` vuelve a mostrar la escena.")));
 
     private static Embed Daily() => Topic(Self("daily"),
         Loc.T("Una recompensa por día y la posibilidad de regalar oro."),

@@ -17,6 +17,9 @@ Cómo se leen las columnas: **Cómo se consigue** es lo que ve el jugador mientr
 | Desafiante | Jefes vencidos: 1 | Logro Matajefes I |
 | Matajefes | Jefes vencidos: 5 | Logro Matajefes II |
 | Terror de Jefes | Jefes vencidos: 20 | Logro Matajefes III |
+| Andariego | Aventuras completadas: 5 | Logro Aventurero I (v0.59.0) |
+| Aventurero | Aventuras completadas: 25 | Logro Aventurero II (v0.59.0) |
+| Vencedor del Guardián | Aventuras completadas: 100 | Logro Aventurero III (v0.59.0) |
 | Espanta Bichos | Enemigos vencidos: 50 | Logro Exterminador I |
 | Exterminador | Enemigos vencidos: 500 | Logro Exterminador II |
 | Pesadilla de los Monstruos | Enemigos vencidos: 3.000 | Logro Exterminador III |

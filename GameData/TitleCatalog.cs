@@ -71,6 +71,8 @@ public static class TitleCatalog
         ("cazador", "combate", Loc.Mark("Cacerías ganadas"), ["Rastreador de Pradera", "Cazador Curtido", "Azote de las Bestias"]),
         ("viajero", "combate", Loc.Mark("Viajes ganados"), ["Caminante", "Baqueano", "Señor de los Caminos"]),
         ("matajefes", "combate", Loc.Mark("Jefes vencidos"), ["Desafiante", "Matajefes", "Terror de Jefes"]),
+        // v0.59.0: la Aventura (el dueño: «tirate algunos títulos de aventureros»).
+        ("aventurero", "combate", Loc.Mark("Aventuras completadas"), ["Andariego", "Aventurero", "Vencedor del Guardián"]),
         ("exterminador", "combate", Loc.Mark("Enemigos vencidos"), ["Espanta Bichos", "Exterminador", "Pesadilla de los Monstruos"]),
         ("gladiador", "combate", Loc.Mark("Torneos de la Arena jugados"), ["Pisa Arena", "Gladiador", "Fiera del Coliseo"]),
         ("asador", "combate", Loc.Mark("Veces que venciste al Asador"), ["Rompe Brasas", "Guardián del Fogón", "Señor del Fogón"]),
@@ -186,7 +188,7 @@ public static class TitleCatalog
         all.Add(new TitleDefinition("hallazgo_corteza", "Ojo de Savia", "curiosos", TitleRule.Flag, Loc.Mark("Encontrá una Corteza del Árbol de Vida con /chop"), FlagCorteza));
         all.Add(new TitleDefinition("hallazgo_meteorito", "Tocado por el Cielo", "curiosos", TitleRule.Flag, Loc.Mark("Encontrá un Fragmento de Meteorito con /mine"), FlagMeteorito));
         all.Add(new TitleDefinition("inframundo", "Cliente del Inframundo", "curiosos", TitleRule.Stat, Loc.Mark("Comprale algo al Tabernero del Inframundo con /deepshop"), GameEventKinds.DeepShopBuy, 1));
-        all.Add(new TitleDefinition("encanto_v", "Brasa Soberana", "curiosos", TitleRule.Flag, Loc.Mark("Sacá un encantamiento de tier V (Soberano) con /enchant"), FlagEnchantV));
+        all.Add(new TitleDefinition("encanto_v", "Brasa Soberana", "curiosos", TitleRule.Flag, Loc.Mark("Sacá un encantamiento de tier V o más (Soberano o mejor) con /enchant"), FlagEnchantV));
         all.Add(new TitleDefinition(DefaultKey, "Recién Llegado", "curiosos", TitleRule.Always, Loc.Mark("Lo tenés desde el primer día")));
 
         // 6) Navidad en el Fogón (v0.57.0): se compran con Regalos en la tienda navideña (/navidad) y quedan para siempre.

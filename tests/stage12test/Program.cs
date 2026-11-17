@@ -135,7 +135,7 @@ double hBasic = AvgDamage(hech, wall, PlayerAction.Attack), hAbil = AvgDamage(he
 double aBasic = AvgDamage(arq, wall, PlayerAction.Attack), aAbil = AvgDamage(arq, wall, PlayerAction.Ability);
 double gBasic = AvgDamage(gue, wall, PlayerAction.Attack), gAbil = AvgDamage(gue, wall, PlayerAction.Ability);
 Check(Math.Abs(hAbil / hBasic - 2.2) < 0.1, $"Bola de Fuego pega 2,2x el golpe común aun contra defensa alta (cociente {hAbil / hBasic:0.00}; restar la defensa al final daría ~4x)");
-Check(Math.Abs(aAbil / aBasic - 1.8) < 0.12, $"Lluvia de Flechas pega 1,8x ({aAbil / aBasic:0.00})");
+Check(Math.Abs(aAbil / aBasic - 2.4) < 0.15, $"Lluvia de Flechas pega 2,4x: 4 flechas al 60 % desde la v0.57.2 ({aAbil / aBasic:0.00})");
 Check(Math.Abs(gAbil / gBasic - 0.7) < 0.06, $"Aguante pega 0,7x ({gAbil / gBasic:0.00})");
 
 // Aguante: el que lo usa recibe menos durante exactamente 2 golpes.

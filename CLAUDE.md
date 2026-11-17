@@ -73,8 +73,12 @@ dotnet build                                   # después de cualquier cambio
 .\tests\run-all.ps1                            # todos los arneses (tests/run-all.sh en bash); -Only a,b para algunos
 dotnet run --project tests/<nombre>            # un arnés suelto
 dotnet run --project tools/loc -- --check      # traducciones: 0 faltantes / 0 viejas / 0 {n} mal / 0 no literales
-dotnet run --project tools/balance2 -- <parte> # simulador de balance (partes A–N)
+dotnet run --project tools/balance2 -- <parte> # simulador de balance (partes A–P; P = duelos entre clases)
 ```
+**Qué arneses correr (regla del dueño, 2026-11-17): SOLO los del área que se tocó, nunca la suite entera por costumbre.** Buscar con Grep en
+`tests/` los arneses que usan la clase o constante cambiada y correr esos con `.\tests\run-all.ps1 -Only a,b` (más `loctest` si se tocaron textos
+y el que tenga un conteo que cambió, ej. cantidad de logros o temas de `/info`). `run-all` completo solo si el dueño lo pide o si el cambio es
+transversal (`Program.cs`, el motor de combate, `Loc`, helpers compartidos). Tampoco antes de un release: alcanza con el build y los arneses del área.
 Los arneses ESCRIBEN y borran datos: solo contra una base LOCAL (`TestEnv` rechaza otra salvo `HARNESS_ALLOW_REMOTE=1`;
 nunca producción). Si un cambio rompe un arnés, decidir si el arnés fijaba el comportamiento VIEJO a propósito o si el código está mal.
 Config: `.env` → User Secrets → variables de entorno (`Discord__Token`, `Discord__TestGuildId`, `Postgres__ConnectionString`).

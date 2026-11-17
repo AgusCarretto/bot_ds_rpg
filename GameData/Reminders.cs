@@ -23,6 +23,7 @@ public static class ReminderCatalog
         // Los textos van con Loc.Mark (GameData/Loc.cs): son una tabla que se arma una sola vez, así que se traducen al MOSTRARLOS (Compose, con Loc.Tr), no acá.
         new("hunt", "🏹", Loc.Mark("Cacería"), "/hunt", Loc.Mark("¡Cacería lista! Ya podés volver a cazar con `/hunt`."), ShortLived),
         new("travel", "🗺️", Loc.Mark("Viaje"), "/travel", Loc.Mark("¡Viaje listo! Ya podés salir de expedición con `/travel`."), null),
+        new("aventura", "🗺️", Loc.Mark("Aventura"), "/aventura", Loc.Mark("¡Tu próxima aventura está lista! Salí con `/aventura`."), null),
         new("chop", "🪓", Loc.Mark("Talar"), "/chop", Loc.Mark("¡Ya podés talar de nuevo con `/chop`!"), ShortLived),
         new("mine", "⛏️", Loc.Mark("Minar"), "/mine", Loc.Mark("¡Ya podés minar de nuevo con `/mine`!"), ShortLived),
         new("boss", "👑", Loc.Mark("Jefe"), "/boss", Loc.Mark("¡Jefe listo! Ya podés enfrentarlo con `/boss`, solo o con amigos (`/boss companero:@amigo`)."), null),

@@ -155,9 +155,9 @@ CREATE TABLE IF NOT EXISTS users (
     bank_gold         INTEGER NOT NULL DEFAULT 0 CHECK (bank_gold >= 0),
     -- Polvo (v0.9.0): sale de desmantelar materiales (/dismantle) y se gasta en encantar (/enchant). No es un ítem: no se vende ni se regala.
     dust              INTEGER NOT NULL DEFAULT 0 CHECK (dust >= 0),
-    -- Tier del encantamiento (0 = sin encantar, 1..5, ver GameData/Enchantments.cs) de la pieza que lleva puesta. Es de la PIEZA: al venderla vuelve a 0.
-    weapon_enchant    INTEGER NOT NULL DEFAULT 0 CHECK (weapon_enchant BETWEEN 0 AND 5),
-    amulet_enchant    INTEGER NOT NULL DEFAULT 0 CHECK (amulet_enchant BETWEEN 0 AND 5),
+    -- Tier del encantamiento (0 = sin encantar, 1..7 desde la v0.58.0, ver GameData/Enchantments.cs) de la pieza que lleva puesta. Es de la PIEZA: al venderla vuelve a 0.
+    weapon_enchant    INTEGER NOT NULL DEFAULT 0 CHECK (weapon_enchant BETWEEN 0 AND 7),
+    amulet_enchant    INTEGER NOT NULL DEFAULT 0 CHECK (amulet_enchant BETWEEN 0 AND 7),
     -- v0.22.0: QUÉ efecto tiene ese encantamiento (GameData/Enchantments.cs). El arma: filo (+% de ATQ, el de siempre) | critico | sangre; el amuleto: guarda (+% de DEF, el de siempre) | vida | esquive.
     -- Los nuevos solo valen contra monstruos. Como el tier, es de la PIEZA: al venderla o con un Fuego Nuevo vuelve a filo / guarda.
     weapon_enchant_kind TEXT NOT NULL DEFAULT 'filo' CHECK (weapon_enchant_kind IN ('filo', 'critico', 'sangre')),

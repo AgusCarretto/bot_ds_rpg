@@ -23,6 +23,10 @@ public static class FightLock
     public static bool IsAllowedInDungeon(string? commandName) =>
         !string.IsNullOrWhiteSpace(commandName) && commandName.Trim().ToLowerInvariant() is "dungeon" or "profile" or "inventory" or "cd" or "info" or "tutorial" or "stats";
 
+    // En una Aventura (v0.57.0) tampoco se come, ni en sus peleas ni entre escenas: valen las jugadas de la pelea y lo que solo mira, pero no «use».
+    public static bool IsAllowedInAdventure(string? commandName) =>
+        !string.IsNullOrWhiteSpace(commandName) && commandName.Trim().ToLowerInvariant() is "attack" or "ability" or "flee" or "aventura" or "profile" or "inventory" or "cd" or "info" or "tutorial" or "stats";
+
     public static bool IsAllowed(string? commandName) =>
         !string.IsNullOrWhiteSpace(commandName) && Allowed.Contains(commandName.Trim());
 
@@ -33,4 +37,8 @@ public static class FightLock
     // shown: el comando tal como lo escribió («/chop», «aa chop»).
     public static string Message(string shown) =>
         Loc.F($"⚔️ **Estás en plena pelea**: no podés usar `{shown}` hasta que termine. Mientras tanto atacá, comé algo con `/use` o huí.");
+
+    // En la Aventura (v0.58.2): dice cómo volver a ver la escena, por si la pantalla no llegó a mostrarse (la aventura se vence sola a los 3 minutos sin elegir).
+    public static string AdventureMessage(string shown) =>
+        Loc.F($"🗺️ **Estás en una aventura**: no podés usar `{shown}` hasta que termine. Si no ves los botones, escribí `/aventura` (o `aa aventura`) para volver a ver la escena.");
 }

@@ -26,6 +26,11 @@ public interface IAdventureCombatStarter
     Task<CombatStartOutcome> PrepareKrampusAsync(ulong discordId, CancellationToken cancellationToken = default) =>
         Task.FromResult(new CombatStartOutcome(CombatStartStatus.NoMonstersInZone, null, null));
 
+    // Una pelea de la Aventura (v0.57.0, docs/aventura.md): el monstruo ya viene elegido y agrandado, y NO cobra cooldown (la aventura lo cobró al arrancar).
+    // damageBonusPercent: el santuario. Sin vida, no arranca.
+    Task<CombatStartOutcome> PrepareAdventureFightAsync(ulong discordId, MonsterTemplate monster, int damageBonusPercent, CancellationToken cancellationToken = default) =>
+        Task.FromResult(new CombatStartOutcome(CombatStartStatus.NoMonstersInZone, null, null));
+
     // /hunt: el pool depende de la zona ACTUAL del jugador (users.current_zone_id), así que se
     // resuelve internamente después de conocerlo — ver Repositories/IMonsterRepository.cs.
     Task<CombatStartOutcome> PrepareHuntAsync(ulong discordId, CancellationToken cancellationToken = default);
