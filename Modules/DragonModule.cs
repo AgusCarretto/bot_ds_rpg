@@ -18,7 +18,9 @@ public sealed record DragonBoardView(Embed Embed, MessageComponent? Components, 
 // dos de TIER y cada tier desbloquea una mejora nueva), /dragon-train lo ENTRENA con oro (sube el NIVEL, cada uno más caro, hasta tier × 10) y se compra en la taberna (DragonModule.ExecuteBuyAsync, que la lista de cajas de la
 // taberna ofrece mientras no tengas uno). Los botones viven en este mismo módulo (sin [Group], para que Discord.Net no les pegue el nombre del grupo): Aceptar solo lo toca el invitado; Rechazar, cualquiera de los dos;
 // Entrenar, el dueño de la pantalla. Toda la lógica es estática y sin Context: el slash, los botones y el comando de texto llaman a lo mismo.
-public class DragonModule(IUserRepository userRepository, IDragonRepository dragonRepository, IDragonBreedOfferService offerService, IDragonBoardService boardService, IReminderService reminders)
+public class DragonModule(
+    IUserRepository userRepository, IDragonRepository dragonRepository, IDragonBreedOfferService offerService, IDragonBoardService boardService, IReminderService reminders,
+    IPlayerLanguageService? languages = null)   // v0.62.0: el aviso del tablón sale en el idioma de quien lo recibe
     : InteractionModuleBase<SocketInteractionContext>
 {
     // El valor de la opción «Dragón» en la lista de la taberna. No choca con ningún nombre de ítem.
@@ -225,6 +227,46 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
 
     private Task<string> BoardNameAsync(ulong id) => ResolveNameAsync(Context.Client, Context.Guild, id);
 
+    // v0.62.0: ¿ese jugador es miembro de ESTE servidor? (la caché de miembros del bot, sin consultas). Fuera de un servidor, nadie.
+    private bool IsHere(ulong id) => Context.Guild?.GetUser(id) is not null;
+
+    // El aviso a los de tu tier que ya estaban anotados (NotifySameTierAsync), mandado con Discord: una mención en el canal donde se anotó cada uno, en su idioma. Nunca tira.
+    private async Task NotifyBoardAsync(ulong listerId)
+    {
+        try
+        {
+            var client = Context.Client;
+            await NotifySameTierAsync(dragonRepository, boardService, listerId,
+                (guildId, userId) => client.GetGuild(guildId)?.GetUser(userId) is not null,
+                async (target, tier) =>
+                {
+                    var guild = client.GetGuild(target.GuildId);
+                    if (guild?.GetTextChannel(target.ChannelId) is not { } channel)
+                    {
+                        return;
+                    }
+
+                    string listerName = guild.GetUser(listerId)?.DisplayName ?? Loc.F($"Jugador {listerId}");
+                    string language = languages is null ? Loc.Spanish : await languages.ResolveAsync(target.DiscordId, null);
+                    string text;
+                    using (Loc.Use(language))
+                    {
+                        text = BoardNoticeText(target.DiscordId, listerName, tier);
+                    }
+
+                    await channel.SendMessageAsync(text, allowedMentions: new AllowedMentions { UserIds = [target.DiscordId] });
+                });
+        }
+        catch (Exception ex)
+        {
+            BotLog.Warn(ex);
+        }
+    }
+
+    // El texto del aviso (público para la prueba): menciona solo a quien lo recibe; a quien se anotó, por su nombre (sin ping).
+    public static string BoardNoticeText(ulong toId, string listerName, int tier) =>
+        Loc.F($"🐲 <@{toId}> ¡**{listerName}** se anotó en el tablón de crías con un dragón de **tier {tier}**, como el tuyo! Invitalo desde **/dragon-board**.");
+
     [SlashCommand("dragon-board", "Tablón de crías: anotate para buscar pareja de tu tier y mirá quién busca.")]
     public async Task HandleBoardAsync()
     {
@@ -232,7 +274,7 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
 
         try
         {
-            var view = await BuildBoardAsync(dragonRepository, boardService, Context.User.Id, Context.Guild?.Id ?? 0, BoardNameAsync);
+            var view = await BuildBoardAsync(dragonRepository, boardService, Context.User.Id, Context.Guild?.Id ?? 0, BoardNameAsync, IsHere);
             await FollowupAsync(embed: view.Embed, components: view.Components);
         }
         catch (Exception ex)
@@ -257,14 +299,20 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
             }
 
             ulong guildId = Context.Guild?.Id ?? 0;
-            string message = await ExecuteBoardToggleAsync(dragonRepository, boardService, ownerId, guildId);
-            var view = await BuildBoardAsync(dragonRepository, boardService, ownerId, guildId, BoardNameAsync);
+            string message = await ExecuteBoardToggleAsync(dragonRepository, boardService, ownerId, guildId, Context.Channel?.Id ?? 0);
+            var view = await BuildBoardAsync(dragonRepository, boardService, ownerId, guildId, BoardNameAsync, IsHere);
             await ModifyOriginalResponseAsync(p =>
             {
                 p.Embed = view.Embed;
                 p.Components = view.Components ?? new ComponentBuilder().Build();
             });
             await FollowupAsync(message, ephemeral: true);
+
+            // Si quedó anotado, el aviso a los de su tier que ya estaban (v0.62.0). Va después de contestar: no demora la pantalla.
+            if (boardService.Get(ownerId) is not null)
+            {
+                await NotifyBoardAsync(ownerId);
+            }
         }
         catch (Exception ex)
         {
@@ -286,7 +334,7 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
                 return;
             }
 
-            var view = await BuildBoardAsync(dragonRepository, boardService, ownerId, Context.Guild?.Id ?? 0, BoardNameAsync);
+            var view = await BuildBoardAsync(dragonRepository, boardService, ownerId, Context.Guild?.Id ?? 0, BoardNameAsync, IsHere);
             await ModifyOriginalResponseAsync(p =>
             {
                 p.Embed = view.Embed;
@@ -320,7 +368,7 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
                 return;
             }
 
-            var invite = await PrepareBoardInviteAsync(dragonRepository, offerService, boardService, ownerId, Context.Guild?.Id ?? 0, toId);
+            var invite = await PrepareBoardInviteAsync(dragonRepository, offerService, boardService, ownerId, Context.Guild?.Id ?? 0, toId, IsHere);
             if (invite.Error is not null)
             {
                 await FollowupAsync(invite.Error, ephemeral: true);
@@ -364,7 +412,8 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
     private static string Truncate(string text, int max) => text.Length <= max ? text : text[..(max - 1)] + "…";
 
     // La pantalla del tablón: tu dragón, si estás anotado, quiénes de tu servidor buscan pareja de TU tier (y pueden criar ya) y cuántos buscan en otros tiers. nameOf: cómo se llama cada jugador (el módulo lo resuelve con Discord).
-    public static async Task<DragonBoardView> BuildBoardAsync(IDragonRepository dragonRepository, IDragonBoardService board, ulong viewerId, ulong guildId, Func<ulong, Task<string>> nameOf)
+    // isHere (v0.62.0): ¿ese jugador es miembro de ESTE servidor? (el módulo lo pregunta a Discord). Sin él, cuenta solo quien se anotó acá, como antes.
+    public static async Task<DragonBoardView> BuildBoardAsync(IDragonRepository dragonRepository, IDragonBoardService board, ulong viewerId, ulong guildId, Func<ulong, Task<string>> nameOf, Func<ulong, bool>? isHere = null)
     {
         var embed = new EmbedBuilder().WithTitle(Loc.T("🐲 Tablón de crías")).WithColor(Color.DarkOrange);
         var mine = await dragonRepository.GetAsync(viewerId);
@@ -378,13 +427,15 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
             return new DragonBoardView(embed.WithDescription(Loc.T("Tu dragón ya está en el tier máximo: no hay nada más que criar.")).Build(), null, []);
         }
 
+        // v0.62.0: la anotación es una sola y vale para todos los servidores; este tablón muestra a los anotados que son miembros de este servidor (donde te podés cruzar con ellos).
         var listed = board.Get(viewerId);
-        bool iAmListed = listed is not null && listed.GuildId == guildId;
+        bool iAmListed = listed is not null;
+        Func<ulong, bool> here = isHere ?? (id => board.Get(id)?.GuildId == guildId);
 
         // Los anotados de este servidor que de verdad pueden criar ahora: los de tu tier se pueden invitar; de los otros solo se cuenta cuántos hay.
         var sameTier = new List<(ulong Id, PlayerDragon Dragon)>();
         var otherTiers = new SortedDictionary<int, int>();
-        foreach (var entry in board.Entries(guildId).Where(e => e.DiscordId != viewerId).Take(40))
+        foreach (var entry in board.All().Where(e => e.DiscordId != viewerId && here(e.DiscordId)).Take(40))
         {
             var dragon = await dragonRepository.GetAsync(entry.DiscordId);
             if (dragon is null || !dragon.CanBreed || dragon.Tier >= DragonRules.MaxTier)
@@ -410,7 +461,7 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
                 : Loc.F($"⏳ No podés anotarte mientras tu dragón descansa: puede criar en **{TimeFormat.Remaining(mine.Wait)}**.");
         embed.WithDescription(
             Loc.F($"{DragonRules.KindEmoji(mine.Kind)} **{mine.Name ?? DragonRules.TierName(mine.Tier)}** · Tier **{mine.Tier}** ({DragonRules.TierName(mine.Tier)}) — {state}.\n{listing}\n") +
-            Loc.F($"_Anotarte dura {(int)DragonBoardService.Lifetime.TotalHours} horas o hasta que críes. Solo aparecen los que pueden criar ahora._"));
+            Loc.F($"_Anotarte dura {(int)DragonBoardService.Lifetime.TotalHours} horas o hasta que críes, y aparecés en todos los servidores donde estás. Solo aparecen los que pueden criar ahora._"));
 
         var lines = new List<string>();
         int used = 0;
@@ -473,7 +524,8 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
     }
 
     // «Anotarme / Salir»: si ya estás anotado en este servidor te saca; si no, te anota. Devuelve lo que se le cuenta al jugador.
-    public static async Task<string> ExecuteBoardToggleAsync(IDragonRepository dragonRepository, IDragonBoardService board, ulong userId, ulong guildId)
+    // channelId (v0.62.0): dónde te anotaste, para avisarte ahí cuando se anote alguien de tu tier.
+    public static async Task<string> ExecuteBoardToggleAsync(IDragonRepository dragonRepository, IDragonBoardService board, ulong userId, ulong guildId, ulong channelId = 0)
     {
         var dragon = await dragonRepository.GetAsync(userId);
         if (dragon is null)
@@ -486,7 +538,7 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
             return Loc.T("Tu dragón ya está en el tier máximo: no hay nada más que criar.");
         }
 
-        if (board.Get(userId) is { } mine && mine.GuildId == guildId)
+        if (board.Get(userId) is not null)
         {
             board.Remove(userId);
             return Loc.T("Saliste del tablón: ya no aparecés como que buscás pareja.");
@@ -498,14 +550,61 @@ public class DragonModule(IUserRepository userRepository, IDragonRepository drag
             return Loc.F($"⏳ Tu dragón está descansando: puede criar en **{TimeFormat.Remaining(dragon.Wait)}**. No podés anotarte en el tablón hasta que termine el descanso (solo aparecen los que pueden criar ahora).");
         }
 
-        board.List(guildId, userId);
-        return Loc.F($"📌 Quedaste anotado en el tablón por **{(int)DragonBoardService.Lifetime.TotalHours} horas** (o hasta que críes): los de tu tier que miren el tablón te van a ver y te pueden invitar.");
+        board.List(guildId, userId, channelId);
+        return Loc.F($"📌 Quedaste anotado en el tablón por **{(int)DragonBoardService.Lifetime.TotalHours} horas** (o hasta que críes), en todos los servidores donde estás: los de tu tier que miren el tablón te van a ver y te pueden invitar. Si ya había alguien de tu tier anotado, le llega un aviso.");
     }
 
-    // Invitar a alguien DEL TABLÓN: comprueba que siga anotado en este servidor y después es la invitación de siempre (mismo tier, descansados, etc.).
-    public static async Task<BreedInvite> PrepareBoardInviteAsync(IDragonRepository dragonRepository, IDragonBreedOfferService offerService, IDragonBoardService board, ulong fromId, ulong guildId, ulong toId)
+    // ---- El aviso de «se anotó alguien de tu tier» (v0.62.0) ----
+    // El dueño (2026-11-17): «¿se podrá agregar una notificación cuando otra persona tenga el mismo breed en el tablón?». Cuando alguien se anota, les llega una mención a los que YA estaban anotados con el
+    // mismo tier y pueden criar, en el canal donde se anotaron, solo si quien se anotó es miembro de ESE servidor (ahí lo pueden invitar). Un mismo jugador dispara el aviso como mucho una vez por hora
+    // (entrar y salir del tablón no llena de menciones a nadie).
+    public static readonly TimeSpan NotifyEvery = TimeSpan.FromHours(1);
+
+    // A quiénes avisar y avisarles. isMember(servidor, jugador): ¿es miembro? send(anotación de quien recibe, tier): manda el aviso (el módulo lo arma con Discord; las pruebas lo cuentan).
+    // Devuelve a cuántos se les mandó. Un envío que falla se registra y no corta a los demás.
+    public static async Task<int> NotifySameTierAsync(
+        IDragonRepository dragonRepository, IDragonBoardService board, ulong listerId, Func<ulong, ulong, bool> isMember, Func<DragonBoardEntry, int, Task> send)
     {
-        if (board.Get(toId) is not { } entry || entry.GuildId != guildId)
+        if (board.Get(listerId) is null || await dragonRepository.GetAsync(listerId) is not { } mine || mine.Tier >= DragonRules.MaxTier)
+        {
+            return 0;
+        }
+
+        var targets = new List<DragonBoardEntry>();
+        foreach (var entry in board.All().Where(e => e.DiscordId != listerId && e.ChannelId != 0 && isMember(e.GuildId, listerId)))
+        {
+            if (await dragonRepository.GetAsync(entry.DiscordId) is { CanBreed: true } other && other.Tier == mine.Tier)
+            {
+                targets.Add(entry);
+            }
+        }
+
+        if (targets.Count == 0 || !board.TryClaimNotify(listerId, NotifyEvery))
+        {
+            return 0;
+        }
+
+        int sent = 0;
+        foreach (var target in targets)
+        {
+            try
+            {
+                await send(target, mine.Tier);
+                sent++;
+            }
+            catch (Exception ex)
+            {
+                BotLog.Warn(ex);
+            }
+        }
+
+        return sent;
+    }
+
+    // Invitar a alguien DEL TABLÓN: comprueba que siga anotado y que esté en este servidor (isHere; sin él, que se haya anotado acá) y después es la invitación de siempre (mismo tier, descansados, etc.).
+    public static async Task<BreedInvite> PrepareBoardInviteAsync(IDragonRepository dragonRepository, IDragonBreedOfferService offerService, IDragonBoardService board, ulong fromId, ulong guildId, ulong toId, Func<ulong, bool>? isHere = null)
+    {
+        if (board.Get(toId) is not { } entry || !(isHere?.Invoke(toId) ?? entry.GuildId == guildId))
         {
             return new BreedInvite(Loc.F($"<@{toId}> ya no está anotado en el tablón (se salió o venció): actualizá la lista."));
         }

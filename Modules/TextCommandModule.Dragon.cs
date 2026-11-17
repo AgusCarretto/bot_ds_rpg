@@ -99,7 +99,7 @@ public partial class TextCommandModule
     {
         try
         {
-            var view = await DragonModule.BuildBoardAsync(dragonRepository, dragonBoard, Context.User.Id, Context.Guild?.Id ?? 0, id => DragonModule.ResolveNameAsync(Context.Client, Context.Guild, id));
+            var view = await DragonModule.BuildBoardAsync(dragonRepository, dragonBoard, Context.User.Id, Context.Guild?.Id ?? 0, id => DragonModule.ResolveNameAsync(Context.Client, Context.Guild, id), id => Context.Guild?.GetUser(id) is not null);
             await ReplyAsync(embed: view.Embed, components: view.Components);
         }
         catch (Exception ex)
