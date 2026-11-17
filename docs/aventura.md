@@ -2,6 +2,17 @@
 
 Estado: **aprobado y construido** (rama `feature/aventura`, 2026-11-16). Premio de 3 viajes **por zona**, sin comida, difícil a propósito.
 
+## v0.59.1 — misteriosos secretos y más extremos (el dueño, 2026-11-17)
+
+- **Los eventos del camino misterioso son SECRETOS** (el dueño: «tapá todos los misteriosos en la info… no quiero que la gente sepa cuáles hay»).
+  `/info tema:aventura` dice solo «nadie sabe qué hay… algo muy bueno o algo muy malo»; no nombra ningún evento ni su chance, ni el cofre en el
+  botín ni la fogata en «Sin comida» (`adventuretest` lo controla). Se ven cuando te tocan (la nota de la escena) y en el resumen del final.
+  **No contarlos** en anuncios, `/info` ni la página de top.gg (el anuncio del 2026-11-16 ya los nombró; quedó así).
+- **Más extremos** (mismas chances, `RollEvent`): 🧰 cofre **+50 %** de botín (era +30), 🔥 fogata **40 %** de vida (era 30), 🕸️ trampa **−30 %**
+  (era −15; nunca mata, te deja en 1), ⛩️ santuario **+20 % de daño y cura el 20 %** (era +10 % de daño), 👤 emboscada: un élite **más poderoso que el
+  del arriesgado** («nunca como el jefe final, pero sí más poderoso»): **×1,5 de vida y ×1,95 de daño** (`AdventureRules.AmbushMonster`; la regla del
+  arriesgado, daño = vida × 1,3), debajo del Guardián (×2,0 / ×2,0), y sigue sin sumar botín. El arriesgado queda en +20 % de botín.
+
 ## v0.59.0 — el pulido (el dueño, 2026-11-17)
 
 - **Más difícil, para FN altos** (el dueño: «el camino difícil, un poquito más difícil que el travel normal… que pegue ×1,3, y el hunt mismo

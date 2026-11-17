@@ -11,12 +11,16 @@ public enum AdventurePath
 // Lo que puede salir en el camino misterioso.
 public enum AdventureEvent
 {
-    Chest,      // 🧰 +30 % de botín
-    Campfire,   // 🔥 recuperás el 30 % de la vida
-    Trap,       // 🕸️ perdés el 15 % de la vida (nunca te mata: te deja en 1)
-    Shrine,     // ⛩️ +10 % de daño por el resto de la aventura
-    Ambush,     // 👤 pelea contra el élite, sin el +20 %
+    Chest,      // 🧰 +50 % de botín
+    Campfire,   // 🔥 recuperás el 40 % de la vida
+    Trap,       // 🕸️ perdés el 30 % de la vida (nunca te mata: te deja en 1)
+    Shrine,     // ⛩️ +20 % de daño por el resto de la aventura y recuperás el 20 % de la vida
+    Ambush,     // 👤 pelea contra un élite más fuerte que el del arriesgado (sin botín extra)
 }
+// v0.59.1 (el dueño, 2026-11-17: «tapá todos los misteriosos en la info… no quiero que la gente sepa cuáles hay, y vamos a poner cosas más extremas»): los eventos son
+// SECRETOS (/info tema:aventura dice solo que puede salir algo bueno o malo; se ven al tocarte y en el resumen del final) y más fuertes: cofre +30 → +50 % de botín,
+// fogata 30 → 40 % de vida, trampa 15 → 30 %, santuario +10 → +20 % de daño y además cura el 20 %, y la emboscada es un élite más poderoso que el del camino arriesgado
+// («nunca como el jefe final, pero sí más poderoso»): ×1,5 de vida y ×1,95 de daño (la misma regla del arriesgado, daño = vida × 1,3), debajo del Guardián (×2,0 / ×2,0).
 
 // Una escena del camino: el texto que se lee antes de elegir.
 public sealed record AdventureScene(string Key, string Title, string Text);
@@ -34,7 +38,7 @@ public static class AdventureRules
     public const double MonsterMultiplier = 1.3;       // la VIDA de comunes y élites de la aventura, contra los de afuera
     // v0.59.0 (el dueño, 2026-11-17: «el camino difícil, un poquito más difícil que el travel normal… que pegue ×1,3, y el hunt mismo que pegue poquito más, tipo 1,2, por más
     // que sea safe es difícil… algo para FN más altos: la puede hacer cualquiera, pero si la quiere hacer alguien de zona o nivel bajo, que le cueste bastante»). Eligió que vaya
-    // ENCIMA del ×1,3 de antes y solo en el daño: el común pega ×1,3 × 1,2 = ×1,56 y el élite (arriesgado y emboscada) ×1,3 × 1,3 = ×1,69. La vida sigue en ×1,3.
+    // ENCIMA del ×1,3 de antes y solo en el daño: el común pega ×1,3 × 1,2 = ×1,56 y el élite del arriesgado ×1,3 × 1,3 = ×1,69. La vida sigue en ×1,3.
     public const double SafeDamageMultiplier = MonsterMultiplier * 1.2;
     public const double RiskyDamageMultiplier = MonsterMultiplier * 1.3;
     // El Guardián: el élite de la zona ×2,0 de vida (v0.59.0, el dueño: «agregale poquito de vida… a ×2 también, igual que el ataque»; era ×1,6) y ×2,0 de daño (v0.57.2: «es muy
@@ -42,10 +46,13 @@ public static class AdventureRules
     public const double GuardianMultiplier = 2.0;
     public const double GuardianDamageMultiplier = 2.0;
     public const int RiskyBonusPercent = 20;
-    public const int ChestBonusPercent = 30;
-    public const int CampfireHealPercent = 30;
-    public const int TrapDamagePercent = 15;
-    public const int ShrineDamagePercent = 10;
+    public const int ChestBonusPercent = 50;
+    public const int CampfireHealPercent = 40;
+    public const int TrapDamagePercent = 30;
+    public const int ShrineDamagePercent = 20;
+    public const int ShrineHealPercent = 20;
+    public const double AmbushMultiplier = 1.5;                            // la vida del élite de la emboscada
+    public const double AmbushDamageMultiplier = AmbushMultiplier * 1.3;   // ×1,95 de daño
     public const int RewardTravels = 3;
     public const int BoxChancePercent = 25;
     public static readonly TimeSpan ChoiceTimeout = TimeSpan.FromMinutes(3);
@@ -70,9 +77,10 @@ public static class AdventureRules
         DropItemNames = [],
     };
 
-    // El común del camino seguro y el élite del arriesgado (y de la emboscada), con los multiplicadores de la aventura.
+    // El común del camino seguro, el élite del arriesgado y el de la emboscada (más fuerte, v0.59.1), con los multiplicadores de la aventura.
     public static MonsterTemplate SafeMonster(MonsterTemplate common) => Scale(common, MonsterMultiplier, SafeDamageMultiplier);
     public static MonsterTemplate RiskyMonster(MonsterTemplate elite) => Scale(elite, MonsterMultiplier, RiskyDamageMultiplier);
+    public static MonsterTemplate AmbushMonster(MonsterTemplate elite) => Scale(elite, AmbushMultiplier, AmbushDamageMultiplier);
 
     public static MonsterTemplate Guardian(MonsterTemplate elite) =>
         Scale(elite, GuardianMultiplier, GuardianDamageMultiplier) with { Name = GuardianName };

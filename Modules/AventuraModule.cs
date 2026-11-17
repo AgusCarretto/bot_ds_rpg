@@ -185,7 +185,8 @@ public class AventuraModule(AdventureDeps deps) : InteractionModuleBase<SocketIn
                     break;
                 default:
                     lock (run.Lock) { run.DamageBonusPercent += AdventureRules.ShrineDamagePercent; }
-                    note = Loc.F($"⛩️ Un santuario: **+{AdventureRules.ShrineDamagePercent} %** de daño por el resto de la aventura.");
+                    player = await deps.Users.ApplyCombatHpDeltaAsync(discordId, (int)Math.Round(player.MaxHp * AdventureRules.ShrineHealPercent / 100.0));
+                    note = Loc.F($"⛩️ Un santuario: **+{AdventureRules.ShrineDamagePercent} %** de daño por el resto de la aventura y recuperás el **{AdventureRules.ShrineHealPercent} %** de la vida.");
                     break;
             }
 
@@ -213,7 +214,7 @@ public class AventuraModule(AdventureDeps deps) : InteractionModuleBase<SocketIn
         {
             risky = path == AdventurePath.Risky;
             var elite = await deps.Monsters.GetTravelMonsterByZoneAsync(player.CurrentZoneId);
-            monster = elite is null ? null : AdventureRules.RiskyMonster(elite);
+            monster = elite is null ? null : risky ? AdventureRules.RiskyMonster(elite) : AdventureRules.AmbushMonster(elite);
         }
         else
         {
@@ -229,7 +230,7 @@ public class AventuraModule(AdventureDeps deps) : InteractionModuleBase<SocketIn
             if (mystery == AdventureEvent.Ambush)
             {
                 run.Events.Add(AdventureEvent.Ambush);
-                run.LastNote = Loc.T("👤 ¡Una emboscada! El élite de la zona te cierra el paso.");
+                run.LastNote = Loc.T("👤 ¡Una emboscada! El élite de la zona, más fuerte que nunca, te cierra el paso.");
             }
         }
 

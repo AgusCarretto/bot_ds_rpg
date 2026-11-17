@@ -562,27 +562,19 @@ public static class HelpTopics
             Loc.T("Con los peces y los materiales raros cocinás platos con **/cook** (las recetas: **aa cook recipes**). El plato se cocina y se come en el momento: suma vida máxima, defensa o ataque y se **apila** hasta el próximo Fuego Nuevo. Solo cuenta contra monstruos.")),
         (Loc.T("🔁 Después"), Loc.T("Lo que juntás sirve para forjar (**/info tema:forge**), para cambiar con otros jugadores (**/info tema:trade**) o para desmantelar y sacar Polvo (**/info tema:dismantle**).")));
 
-    // La chance de cada evento del camino misterioso, contada de la misma tirada que usa el juego (AdventureRules.RollEvent, un número 0–99).
-    private static int EventChance(AdventureEvent kind) => Enumerable.Range(0, 100).Count(roll => AdventureRules.RollEvent(roll) == kind);
-
+    // v0.59.1: los eventos del camino misterioso NO se cuentan acá (el dueño: «no quiero que la gente sepa cuáles hay»). Se descubren jugando.
     private static Embed Adventure() => Topic(Self("adventure"),
         Loc.F($"Cada **{Dur(AdventureRules.Cooldown.Duration)}** salís de aventura por la zona donde estás: **{AdventureRules.Scenes} escenas**, en cada una elegís un camino y al final te espera el **Guardián del Camino**. Si llegás vivo, cobrás el premio. Arranca con **/aventura** (o `aa av`)."),
         (Loc.T("🛤️ Los caminos"),
             Loc.F($"🛡️ **Seguro**: un monstruo común de la zona, con ×{LDec(AdventureRules.MonsterMultiplier)} de vida y ×{LDec(AdventureRules.SafeDamageMultiplier)} de daño.\n") +
             Loc.F($"⚔️ **Arriesgado**: el élite de la zona, con ×{LDec(AdventureRules.MonsterMultiplier)} de vida y ×{LDec(AdventureRules.RiskyDamageMultiplier)} de daño. Si lo vencés, **+{AdventureRules.RiskyBonusPercent} %** de botín.\n") +
-            Loc.T("❓ **Misterioso**: un evento al azar (abajo).\n") +
+            Loc.T("❓ **Misterioso**: nadie sabe qué hay. Puede ser algo muy bueno… o algo muy malo. Se descubre jugando.\n") +
             Loc.F($"🗿 **El Guardián** (la escena {AdventureRules.Scenes}): el élite de la zona con ×{LDec(AdventureRules.GuardianMultiplier)} de vida y ×{LDec(AdventureRules.GuardianDamageMultiplier)} de daño.")),
-        (Loc.T("❓ Los eventos del camino misterioso"),
-            Loc.F($"🧰 **Cofre** ({EventChance(AdventureEvent.Chest)} %): **+{AdventureRules.ChestBonusPercent} %** de botín.\n") +
-            Loc.F($"🔥 **Fogata** ({EventChance(AdventureEvent.Campfire)} %): recuperás el {AdventureRules.CampfireHealPercent} % de la vida.\n") +
-            Loc.F($"🕸️ **Trampa** ({EventChance(AdventureEvent.Trap)} %): perdés el {AdventureRules.TrapDamagePercent} % de la vida (nunca te mata).\n") +
-            Loc.F($"⛩️ **Santuario** ({EventChance(AdventureEvent.Shrine)} %): +{AdventureRules.ShrineDamagePercent} % de daño por el resto de la aventura.\n") +
-            Loc.F($"👤 **Emboscada** ({EventChance(AdventureEvent.Ambush)} %): peleás contra el élite, sin el +{AdventureRules.RiskyBonusPercent} %.")),
         (Loc.T("💰 El botín y el premio"),
-            Loc.F($"El premio son **{AdventureRules.RewardTravels} viajes** de oro y EXP de la zona, con su nivel mínimo: rinde según **dónde** la hacés, no tu nivel. El botín lo multiplica (+{AdventureRules.RiskyBonusPercent} % por cada arriesgado ganado, +{AdventureRules.ChestBonusPercent} % por cada cofre), ") +
+            Loc.F($"El premio son **{AdventureRules.RewardTravels} viajes** de oro y EXP de la zona, con su nivel mínimo: rinde según **dónde** la hacés, no tu nivel. El botín lo multiplica (+{AdventureRules.RiskyBonusPercent} % por cada arriesgado ganado, y quizás algo más en el camino), ") +
             Loc.F($"y hay **{AdventureRules.BoxChancePercent} %** de chance de la caja del viaje de la zona. La primera escena te muestra el premio base; al final, el resumen de tu camino.")),
         (Loc.T("🚫 Sin comida"),
-            Loc.T("Adentro de la aventura **no se come**: ni **/use** ni el menú de la pelea. La vida que perdés se arrastra de escena en escena (la fogata ayuda), así que curate con **/heal** antes de salir. Es difícil a propósito: en una zona alta cuesta bastante.")),
+            Loc.T("Adentro de la aventura **no se come**: ni **/use** ni el menú de la pelea. La vida que perdés se arrastra de escena en escena, así que curate con **/heal** antes de salir. Es difícil a propósito: en una zona alta cuesta bastante.")),
         (Loc.T("☠️ Si perdés o huís"),
             Loc.F($"Si morís, la penalidad de siempre (**/info tema:death**) y sin premio. Si huís, termina sin premio y sin penalidad. Las {Dur(AdventureRules.Cooldown.Duration)} se cobran al arrancar, quede como quede.")),
         (Loc.T("⌨️ Por texto"),
