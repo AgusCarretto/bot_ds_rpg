@@ -138,7 +138,7 @@ public sealed class DungeonService(
 
         try
         {
-            // El cooldown del jefe se cobra al entrar con su reintento de 30 minutos; ganar lo completa (DungeonRepository.FinishAsync), perder deja el reintento.
+            // El cooldown del jefe se cobra al entrar con su reintento (la mitad, v0.59.2; eran 30 minutos); ganar lo completa (DungeonRepository.FinishAsync), perder deja el reintento.
             if (!await adventureRepository.TryClaimCooldownAsync(discordId, CooldownCatalog.Boss.CommandName, CooldownCatalog.Boss.Duration, CooldownCatalog.Boss.RetryAfterFailure, cancellationToken))
             {
                 return new DungeonStartResult(DungeonStartStatus.RaceLost);
