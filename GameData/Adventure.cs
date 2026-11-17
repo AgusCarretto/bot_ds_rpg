@@ -31,10 +31,16 @@ public static class AdventureRules
     public static readonly CooldownDefinition Cooldown = new(CommandName, Loc.Mark("Aventura"), "🗺️", TimeSpan.FromHours(3));
 
     public const int Scenes = 5;                       // la última es el Guardián
-    public const double MonsterMultiplier = 1.3;       // comunes y élites de la aventura, contra los de afuera
-    public const double GuardianMultiplier = 1.6;      // el Guardián: el élite de la zona (la vida)
-    // v0.57.2 (el dueño: «es muy fácil para la mayoría… un poco, tipo 1.25»): el daño del Guardián pega un 25 % más que su vida, ×1,6 × 1,25 = ×2,0 el élite.
-    public const double GuardianDamageMultiplier = GuardianMultiplier * 1.25;
+    public const double MonsterMultiplier = 1.3;       // la VIDA de comunes y élites de la aventura, contra los de afuera
+    // v0.59.0 (el dueño, 2026-11-17: «el camino difícil, un poquito más difícil que el travel normal… que pegue ×1,3, y el hunt mismo que pegue poquito más, tipo 1,2, por más
+    // que sea safe es difícil… algo para FN más altos: la puede hacer cualquiera, pero si la quiere hacer alguien de zona o nivel bajo, que le cueste bastante»). Eligió que vaya
+    // ENCIMA del ×1,3 de antes y solo en el daño: el común pega ×1,3 × 1,2 = ×1,56 y el élite (arriesgado y emboscada) ×1,3 × 1,3 = ×1,69. La vida sigue en ×1,3.
+    public const double SafeDamageMultiplier = MonsterMultiplier * 1.2;
+    public const double RiskyDamageMultiplier = MonsterMultiplier * 1.3;
+    // El Guardián: el élite de la zona ×2,0 de vida (v0.59.0, el dueño: «agregale poquito de vida… a ×2 también, igual que el ataque»; era ×1,6) y ×2,0 de daño (v0.57.2: «es muy
+    // fácil para la mayoría»; era ×1,6 × 1,25).
+    public const double GuardianMultiplier = 2.0;
+    public const double GuardianDamageMultiplier = 2.0;
     public const int RiskyBonusPercent = 20;
     public const int ChestBonusPercent = 30;
     public const int CampfireHealPercent = 30;
@@ -54,21 +60,41 @@ public static class AdventureRules
         _ => AdventureEvent.Ambush,
     };
 
-    // Un monstruo de afuera agrandado para la aventura (sin drops: el premio es el del final).
-    public static MonsterTemplate Scale(MonsterTemplate monster, double multiplier) => monster with
+    // Un monstruo de afuera agrandado para la aventura (sin drops: el premio es el del final). damageMultiplier null = el mismo que la vida.
+    public static MonsterTemplate Scale(MonsterTemplate monster, double multiplier, double? damageMultiplier = null) => monster with
     {
         MinHp = (int)Math.Round(monster.MinHp * multiplier),
         MaxHp = (int)Math.Round(monster.MaxHp * multiplier),
-        MinDamage = (int)Math.Round(monster.MinDamage * multiplier),
-        MaxDamage = (int)Math.Round(monster.MaxDamage * multiplier),
+        MinDamage = (int)Math.Round(monster.MinDamage * (damageMultiplier ?? multiplier)),
+        MaxDamage = (int)Math.Round(monster.MaxDamage * (damageMultiplier ?? multiplier)),
         DropItemNames = [],
     };
 
-    public static MonsterTemplate Guardian(MonsterTemplate elite)
+    // El común del camino seguro y el élite del arriesgado (y de la emboscada), con los multiplicadores de la aventura.
+    public static MonsterTemplate SafeMonster(MonsterTemplate common) => Scale(common, MonsterMultiplier, SafeDamageMultiplier);
+    public static MonsterTemplate RiskyMonster(MonsterTemplate elite) => Scale(elite, MonsterMultiplier, RiskyDamageMultiplier);
+
+    public static MonsterTemplate Guardian(MonsterTemplate elite) =>
+        Scale(elite, GuardianMultiplier, GuardianDamageMultiplier) with { Name = GuardianName };
+
+    // «aa aventura seguro / arriesgado / misterioso» (v0.59.0): el camino escrito, sin tildes ni mayúsculas, en español o inglés, con atajos (s / a / m, 1 / 2 / 3).
+    // En la escena del Guardián cualquiera vale (y también «guardian»): ahí hay un solo camino. Null = no es un camino.
+    public static AdventurePath? ParsePath(string? text)
     {
-        var hp = Scale(elite, GuardianMultiplier);
-        var damage = Scale(elite, GuardianDamageMultiplier);
-        return hp with { Name = GuardianName, MinDamage = damage.MinDamage, MaxDamage = damage.MaxDamage };
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return null;
+        }
+
+        string word = TextNormalization.RemoveDiacritics(text.Trim().Split(' ', 2, StringSplitOptions.RemoveEmptyEntries)[0]).ToLowerInvariant();
+        return word switch
+        {
+            "seguro" or "segura" or "safe" or "s" or "1" => AdventurePath.Safe,
+            "arriesgado" or "arriesgada" or "riesgo" or "dificil" or "risky" or "risk" or "hard" or "a" or "r" or "2" => AdventurePath.Risky,
+            "misterioso" or "misteriosa" or "misterio" or "mystery" or "mysterious" or "m" or "?" or "3" => AdventurePath.Mystery,
+            "guardian" or "jefe" or "boss" or "g" => AdventurePath.Risky,
+            _ => null,
+        };
     }
 
     public const string GuardianName = "Guardián del Camino";
@@ -91,6 +117,17 @@ public static class AdventureRules
         new("cruce", Loc.Mark("🪧 El cruce de caminos"), Loc.Mark("Tres carteles, todos borrados. Uno tiene marcas de garras.")),
         new("mina", Loc.Mark("⛏️ La mina vieja"), Loc.Mark("Rieles oxidados se pierden en la oscuridad. Una vagoneta todavía tiene algo adentro.")),
         new("fogon", Loc.Mark("🔥 El fogón apagado"), Loc.Mark("Un fogón frío en medio del claro. Alguien te estuvo esperando… o te está esperando.")),
+        // v0.59.0: diez más (el dueño: «más escenas», con 12 y 4 por aventura se repetían rápido).
+        new("molino", Loc.Mark("🌾 El molino abandonado"), Loc.Mark("Las aspas giran solas aunque no corre viento. La puerta está abierta y adentro cruje la madera.")),
+        new("cementerio", Loc.Mark("🪦 El cementerio viejo"), Loc.Mark("Cruces torcidas y una tumba recién abierta. La tierra todavía está húmeda.")),
+        new("tormenta", Loc.Mark("⛈️ La tormenta"), Loc.Mark("Se larga a llover de golpe. Un rayo ilumina una cabaña a lo lejos y algo que se mueve en el pastizal.")),
+        new("estancia", Loc.Mark("🏚️ La estancia en ruinas"), Loc.Mark("El casco de una estancia sin techo. En la galería quedó una parrilla con brasas tibias.")),
+        new("arroyo", Loc.Mark("🪨 El arroyo seco"), Loc.Mark("Piedras blancas donde antes corría agua. Entre ellas brilla algo, y las huellas que lo rodean son grandes.")),
+        new("totem", Loc.Mark("🗿 Los tótems"), Loc.Mark("Tres tótems de piedra miran el sendero. Uno tiene los ojos pintados de rojo, fresco.")),
+        new("tunel", Loc.Mark("🚇 El túnel de raíces"), Loc.Mark("Las raíces forman un túnel bajo la tierra. Se oye agua al fondo, y algo que rasca.")),
+        new("carreta", Loc.Mark("🛒 La carreta volcada"), Loc.Mark("Una carreta tumbada en el camino, con la carga desparramada. Los bueyes no están; hay marcas de arrastre.")),
+        new("lago", Loc.Mark("🏞️ El lago quieto"), Loc.Mark("El agua está tan quieta que parece un espejo. En el reflejo, alguien te mira desde la otra orilla.")),
+        new("faro", Loc.Mark("🗼 La torre del vigía"), Loc.Mark("Una torre de piedra con una luz que se prende y se apaga. Alguien hace señas desde arriba… o te está llamando para algo.")),
     ];
 
     public static readonly AdventureScene Final = new("guardian", Loc.Mark("🗿 El Guardián del Camino"), Loc.Mark("El camino termina en un portal de piedra. Algo enorme se levanta para cerrarte el paso."));

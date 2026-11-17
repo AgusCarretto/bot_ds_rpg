@@ -1,8 +1,8 @@
 using BotDsRpg.GameData;
 
 // Parte O (v0.57.0): la Aventura (docs/aventura.md). Cuántas corridas llegan al final, por zona y clase, con el arma de clase y el amuleto de la zona,
-// SIN comida, con la vida que se arrastra de pelea en pelea. Dos estrategias: siempre segura (4 comunes ×1,3 y el Guardián) y siempre arriesgada
-// (4 élites ×1,3 y el Guardián). Los monstruos y el Guardián salen de AdventureRules (los mismos multiplicadores del juego).
+// SIN comida, con la vida que se arrastra de pelea en pelea. Dos estrategias: siempre segura (4 comunes y el Guardián) y siempre arriesgada
+// (4 élites y el Guardián). Los monstruos y el Guardián salen de AdventureRules (los mismos multiplicadores del juego; v0.59.0: el daño del común ×1,56 y del élite ×1,69, la vida ×1,3).
 // Uso: dotnet run --project tools/balance2 -- O [corridas por celda] [niveles sobre el mínimo de la zona]
 public static class PartO
 {
@@ -18,7 +18,7 @@ public static class PartO
         // [5] el daño del Guardián (v0.57.2 es aparte de su vida: ×1,6 × 1,25 = ×2,0).
         GuardianDamage = args.Length > 5 && double.TryParse(args[5], System.Globalization.CultureInfo.InvariantCulture, out double gd) ? gd : AdventureRules.GuardianDamageMultiplier;
         Console.WriteLine($"Aventura: % de corridas que llegan al final (sin comida). Nivel = mínimo de la zona + {extra}. {runs} corridas por celda.");
-        Console.WriteLine($"Comunes y élites ×{Monster}, Guardián = élite ×{Guardian} de vida y ×{GuardianDamage} de daño.\n");
+        Console.WriteLine($"Comunes y élites ×{Monster} de vida; daño ×{Monster * AdventureRules.SafeDamageMultiplier / AdventureRules.MonsterMultiplier:0.##} el común y ×{Monster * AdventureRules.RiskyDamageMultiplier / AdventureRules.MonsterMultiplier:0.##} el élite; Guardián = élite ×{Guardian} de vida y ×{GuardianDamage} de daño.\n");
         Console.WriteLine($"{"Zona",-28} {"Nivel",5} " + string.Join(" ", World.Classes.Select(c => $"{c[..4],6}S {c[..4],6}A")));
 
         for (int zi = 0; zi < World.Zones.Count; zi++)
@@ -74,8 +74,8 @@ public static class PartO
                 MonRow monster = scene == AdventureRules.Scenes
                     ? Scaled(World.Travel[zi][Sim.Rng.Next(World.Travel[zi].Length)], Guardian, GuardianDamage)
                     : risky
-                        ? Scaled(World.Travel[zi][Sim.Rng.Next(World.Travel[zi].Length)], Monster)
-                        : Scaled(World.Hunt[zi][Sim.Rng.Next(World.Hunt[zi].Length)], AdventureRules.MonsterMultiplier);
+                        ? Scaled(World.Travel[zi][Sim.Rng.Next(World.Travel[zi].Length)], Monster, Monster * (AdventureRules.RiskyDamageMultiplier / AdventureRules.MonsterMultiplier))
+                        : Scaled(World.Hunt[zi][Sim.Rng.Next(World.Hunt[zi].Length)], Monster, Monster * (AdventureRules.SafeDamageMultiplier / AdventureRules.MonsterMultiplier));
                 var fight = Sim.Fight(cls, level, weaponStat, true, amuletStat, monster, Policy.Ability, 0, hp, limited: true);
                 dead = fight.Died;
                 hp -= fight.Lost;

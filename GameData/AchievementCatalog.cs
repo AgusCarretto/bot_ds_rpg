@@ -62,6 +62,8 @@ public static class AchievementCatalog
         new("encantador",    "Encantador",    "✨", GameEventKinds.Enchant,       Loc.Mark("Intentá encantar tu arma o tu amuleto"),            Plain(1, 10, 40)),
         new("afortunado",    "Afortunado",    "🎰", GameEventKinds.CasinoWin,     Loc.Mark("Ganá oro en el casino con /play"),                  Plain(500, 5000, 50000)),
         new("gladiador",     "Gladiador",     "🏟️", GameEventKinds.ArenaJoin,     Loc.Mark("Anotate en el torneo diario con /arena join"),      Plain(3, 15, 60)),
+        // v0.59.0: la Aventura completada (adventure_win). Con cajas como «Racha»: el contador no se infla (una cada 3 horas y hay que llegar al final vivo).
+        new("aventurero",    "Aventurero",    "🗺️", GameEventKinds.AdventureWin,  Loc.Mark("Completá aventuras con /aventura"),                 Standard(5, 25, 100)),
         // v0.56.0: el bestiario. Cuenta monstruos DISTINTOS vencidos (bestiary_new solo se anota la primera vez que vencés a cada uno), de por
         // vida. 31 es el total de hoy (20 de las zonas 1 a 5, 10 de las 6 a 10 y el Asador): si se suman monstruos, el tramo III sigue en 31.
         new("bestiario",     "Cazador de Bestias", "📖", GameEventKinds.BestiaryNew, Loc.Mark("Vencé monstruos distintos y llená tu /bestiary"), Plain(10, 20, 31)),
@@ -103,7 +105,7 @@ public static class AchievementCatalog
 
     public static readonly IReadOnlyList<AchievementCategory> Categories =
     [
-        new("Combate", "⚔️", ["cazador", "viajero", "matajefes", "exterminador", "gladiador", "asador", "bestiario"]),
+        new("Combate", "⚔️", ["cazador", "viajero", "matajefes", "aventurero", "exterminador", "gladiador", "asador", "bestiario"]),
         new("Oficios", "🔨", ["recolector", "pescador", "herrero", "desmantelador", "encantador"]),
         new("Economía", "💰", ["comerciante", "generoso", "abridor", "afortunado", "manoganadora"]),
         new("Constancia", "📅", ["constante", "racha", "comandante", "misionero", "domador", "criador", "renacido", "companero", "volvio"]),

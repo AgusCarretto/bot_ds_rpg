@@ -82,6 +82,14 @@ public static class CombatRewardCalculator
     public static CombatReward RollTravelReward(int playerLevel, int monsterGoldBonus = 0, int monsterXpBonus = 0, PlayerBonuses? bonuses = null, int boxChancePercent = 0) =>
         Roll(playerLevel, monsterGoldBonus, monsterXpBonus, TravelRewardMultiplier, TravelBoxChance(boxChancePercent, bonuses), bonuses);
 
+    // Lo que paga UN viaje EN PROMEDIO (el azar de Roll en su punto medio: 10 de oro y 14 de EXP), con los bonus del jugador. Lo muestra la Aventura como «premio base» (v0.59.0).
+    public static CombatReward ExpectedTravelReward(int playerLevel, int monsterGoldBonus = 0, int monsterXpBonus = 0, PlayerBonuses? bonuses = null)
+    {
+        int gold = PlayerBonuses.Scale((10 + (playerLevel * 2) + monsterGoldBonus) * TravelRewardMultiplier, bonuses?.GoldMultiplier ?? 1.0);
+        int baseXp = (int)Math.Round((14 + playerLevel + monsterXpBonus) * TravelRewardMultiplier * FightXpScale, MidpointRounding.AwayFromZero);
+        return new CombatReward(gold, PlayerBonuses.Scale(baseXp, bonuses?.XpMultiplier ?? 1.0), false);
+    }
+
     private static CombatReward Roll(
         int playerLevel, int monsterGoldBonus, int monsterXpBonus, int multiplier, double dropChancePercent, PlayerBonuses? bonuses)
     {

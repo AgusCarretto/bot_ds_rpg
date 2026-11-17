@@ -56,6 +56,8 @@ public static class MissionCatalog
         new("w_craft3",    MissionPeriod.Weekly, GameEventKinds.Craft,         3,   Loc.Mark("Forjá 3 ítems en la herrería (/forge make)"), new(60, 18)),
         new("w_boxes3",    MissionPeriod.Weekly, GameEventKinds.BoxOpened,     3,   Loc.Mark("Abrí 3 cajas (/open)"),                      new(30, 10)),
         new("w_daily5",    MissionPeriod.Weekly, GameEventKinds.DailyClaim,    5,   Loc.Mark("Reclamá tu /daily 5 días"),                   new(20, 10)),
+        // v0.59.0: la Aventura (cuenta las COMPLETADAS, adventure_win; se puede en cualquier zona). Premio como «Forjá un ítem» (el dueño: «como las demás»).
+        new("w_adv2",      MissionPeriod.Weekly, GameEventKinds.AdventureWin,  2,   Loc.Mark("Completá 2 aventuras (/aventura)"),           new(25, 10)),
     ];
 
     public static IReadOnlyList<MissionTemplate> Pool(MissionPeriod period) =>

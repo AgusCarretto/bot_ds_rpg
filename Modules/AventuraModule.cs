@@ -105,6 +105,12 @@ public class AventuraModule(AdventureDeps deps) : InteractionModuleBase<SocketIn
             return new AdventureView(Loc.F($"🗺️ Tu próxima aventura sale en **{TimeFormat.Remaining(wait)}**."));
         }
 
+        // v0.59.0: la zona y el premio base (lo que paga con el botín en +0 %), para la primera escena. Se calcula ANTES de cobrar: si la base falla acá, no se pierden las 3 horas.
+        var zone = await deps.Zones.GetByIdAsync(player.CurrentZoneId);
+        var bonuses = await deps.Bonuses.GetAsync(discordId, player.FuegoNuevo);
+        var travelMonster = await deps.Monsters.GetTravelMonsterByZoneAsync(player.CurrentZoneId);
+        var expected = ExpectedTravel(Math.Max(1, zone?.MinLevel ?? 1), travelMonster, bonuses);
+
         if (!await deps.Adventure.TryClaimCooldownAsync(discordId, definition.CommandName, definition.Duration))
         {
             return new AdventureView(Loc.T("Justo se te adelantó otra ejecución de este comando, probá de nuevo en un toque."));
@@ -114,6 +120,13 @@ public class AventuraModule(AdventureDeps deps) : InteractionModuleBase<SocketIn
         if (run is null)
         {
             return new AdventureView(Loc.T("Ya estás en una pelea o en una aventura: terminala primero."));
+        }
+
+        lock (run.Lock)
+        {
+            run.ZoneLabel = zone is null ? Loc.F($"Zona {player.CurrentZoneId}") : Loc.F($"Zona {zone.ZoneId} · {zone.Name}");
+            run.BaseGold = expected.Gold * AdventureRules.RewardTravels;
+            run.BaseXp = expected.Xp * AdventureRules.RewardTravels;
         }
 
         await deps.Events.RecordAsync(discordId, GameEventKinds.AdventureStart, player.CurrentZoneId);
@@ -178,6 +191,7 @@ public class AventuraModule(AdventureDeps deps) : InteractionModuleBase<SocketIn
 
             lock (run.Lock)
             {
+                run.Events.Add(mystery.Value);
                 run.Scene++;
                 run.LastNote = note;
                 run.Phase = AdventurePhase.Choosing;
@@ -199,12 +213,12 @@ public class AventuraModule(AdventureDeps deps) : InteractionModuleBase<SocketIn
         {
             risky = path == AdventurePath.Risky;
             var elite = await deps.Monsters.GetTravelMonsterByZoneAsync(player.CurrentZoneId);
-            monster = elite is null ? null : AdventureRules.Scale(elite, AdventureRules.MonsterMultiplier);
+            monster = elite is null ? null : AdventureRules.RiskyMonster(elite);
         }
         else
         {
             var pool = await deps.Monsters.GetMonstersByZoneAsync(player.CurrentZoneId);
-            monster = pool.Count == 0 ? null : AdventureRules.Scale(MonsterCatalog.RollFrom(pool), AdventureRules.MonsterMultiplier);
+            monster = pool.Count == 0 ? null : AdventureRules.SafeMonster(MonsterCatalog.RollFrom(pool));
         }
 
         int damageBonus;
@@ -214,6 +228,7 @@ public class AventuraModule(AdventureDeps deps) : InteractionModuleBase<SocketIn
             run.PendingRiskyBonus = risky;
             if (mystery == AdventureEvent.Ambush)
             {
+                run.Events.Add(AdventureEvent.Ambush);
                 run.LastNote = Loc.T("👤 ¡Una emboscada! El élite de la zona te cierra el paso.");
             }
         }
@@ -272,9 +287,11 @@ public class AventuraModule(AdventureDeps deps) : InteractionModuleBase<SocketIn
 
         bool finished;
         int loot;
+        AdventureSummary summary;
         lock (run.Lock)
         {
             finished = run.AtGuardian;
+            run.FightsWon++;
             if (run.PendingRiskyBonus)
             {
                 run.LootPercent += AdventureRules.RiskyBonusPercent;
@@ -282,6 +299,7 @@ public class AventuraModule(AdventureDeps deps) : InteractionModuleBase<SocketIn
             }
 
             loot = run.LootPercent;
+            summary = new AdventureSummary(run.FightsWon, run.Events.ToList());
             if (!finished)
             {
                 run.Scene++;
@@ -298,14 +316,41 @@ public class AventuraModule(AdventureDeps deps) : InteractionModuleBase<SocketIn
         }
 
         deps.Adventures.End(discordId);
-        return await PayAsync(deps, player, fight, loot);
+        return await PayAsync(deps, player, fight, loot, summary);
+    }
+
+    // Lo que pasó en el camino, para el resumen del final (v0.59.0).
+    public sealed record AdventureSummary(int FightsWon, IReadOnlyList<AdventureEvent> Events);
+
+    // «aa aventura seguro / arriesgado / misterioso» (v0.59.0, el dueño: jugarla por texto como «aa attack» en las peleas): elige un camino en la escena que está abierta. replyTarget es
+    // el mensaje donde va a quedar la pelea (el texto lo manda DESPUÉS, por eso suele ser un SwitchableCombatReplyTarget que se reapunta).
+    public static async Task<AdventureView> ChooseByTextAsync(AdventureDeps deps, ulong discordId, AdventurePath path, ICombatReplyTarget replyTarget)
+    {
+        var run = deps.Adventures.Peek(discordId);
+        if (run is null)
+        {
+            return new AdventureView(Loc.T("No tenés una aventura en curso. Arrancá una con **/aventura** (o `aa aventura`)."));
+        }
+
+        string token;
+        lock (run.Lock)
+        {
+            if (run.Phase != AdventurePhase.Choosing)
+            {
+                return new AdventureView(Loc.T("Estás peleando en la aventura: seguí con los botones o con `aa attack`."));
+            }
+
+            token = run.Token;
+        }
+
+        return await ChooseAsync(deps, discordId, token, path, replyTarget);
     }
 
     // El premio: 3 viajes de oro y EXP por el botín y una chance de la caja del viaje de la zona. POR ZONA, no por nivel (el dueño, 2026-11-16: «ni que hablar
     // que el premio es por zona»): los viajes se calculan con el nivel mínimo de la zona donde la hiciste, así quedarse en una zona fácil rinde lo de esa zona.
     // v0.57.2: con el bono de oro y EXP del monstruo de viaje de la zona, como un /travel de verdad. Hasta la v0.57.1 se pasaba 0 y el «viaje» quedaba en lo que paga
     // el nivel solo: en la Zona 5 ~13 % de un viaje real, en la 10 ~4 % (el bono es casi todo lo que hace crecer el premio con la zona).
-    private static async Task<(Embed Embed, MessageComponent Components)> PayAsync(AdventureDeps deps, User player, CombatState fight, int loot)
+    private static async Task<(Embed Embed, MessageComponent Components)> PayAsync(AdventureDeps deps, User player, CombatState fight, int loot, AdventureSummary summary)
     {
         ulong discordId = (ulong)player.DiscordId;
         var bonuses = fight.Bonuses ?? await deps.Bonuses.GetAsync(discordId, player.FuegoNuevo);
@@ -328,17 +373,22 @@ public class AventuraModule(AdventureDeps deps) : InteractionModuleBase<SocketIn
             await deps.Events.RecordAsync(discordId, GameEventKinds.LevelUp, player.CurrentZoneId, outcome.LevelsGained, outcome.Player.Level.ToString());
         }
 
+        // v0.59.0 (el dueño: «el resumen al final»): primero el camino (peleas ganadas, cada evento que tocó y el botín juntado), después el premio.
         var lines = new List<string>
         {
             Loc.T("Cruzás el portal con el Guardián a tus espaldas. ¡Llegaste al final del camino!"),
             string.Empty,
-            Loc.F($"{UiEmojis.Gold} **Oro**: +{GameHistory.Number(gold)}"),
-            Loc.F($"{UiEmojis.Xp} **EXP**: +{GameHistory.Number(xp)}"),
+            Loc.F($"⚔️ **Peleas ganadas**: {summary.FightsWon}"),
         };
-        if (loot > 0)
+        foreach (var group in summary.Events.GroupBy(e => e).OrderBy(g => g.Key))
         {
-            lines.Add(Loc.F($"💰 **Botín**: +{loot} %"));
+            lines.Add($"{EventEmoji(group.Key)} **{EventName(group.Key)}**: {group.Count()}");
         }
+
+        lines.Add(Loc.F($"💰 **Botín**: +{loot} %"));
+        lines.Add(string.Empty);
+        lines.Add(Loc.F($"{UiEmojis.Gold} **Oro**: +{GameHistory.Number(gold)}"));
+        lines.Add(Loc.F($"{UiEmojis.Xp} **EXP**: +{GameHistory.Number(xp)}"));
 
         if (box is not null)
         {
@@ -358,6 +408,29 @@ public class AventuraModule(AdventureDeps deps) : InteractionModuleBase<SocketIn
     public static CombatReward RewardTravel(int referenceLevel, MonsterTemplate? travelMonster, PlayerBonuses? bonuses) =>
         CombatRewardCalculator.RollTravelReward(referenceLevel, travelMonster?.GoldBonus ?? 0, travelMonster?.XpBonus ?? 0, bonuses, 0);
 
+    // Lo mismo, en promedio (sin azar): el «premio base» de la primera escena.
+    public static CombatReward ExpectedTravel(int referenceLevel, MonsterTemplate? travelMonster, PlayerBonuses? bonuses) =>
+        CombatRewardCalculator.ExpectedTravelReward(referenceLevel, travelMonster?.GoldBonus ?? 0, travelMonster?.XpBonus ?? 0, bonuses);
+
+    // Los eventos del camino misterioso en el resumen del final.
+    private static string EventEmoji(AdventureEvent kind) => kind switch
+    {
+        AdventureEvent.Chest => "🧰",
+        AdventureEvent.Campfire => "🔥",
+        AdventureEvent.Trap => "🕸️",
+        AdventureEvent.Shrine => "⛩️",
+        _ => "👤",
+    };
+
+    private static string EventName(AdventureEvent kind) => kind switch
+    {
+        AdventureEvent.Chest => Loc.T("Cofre"),
+        AdventureEvent.Campfire => Loc.T("Fogata"),
+        AdventureEvent.Trap => Loc.T("Trampa"),
+        AdventureEvent.Shrine => Loc.T("Santuario"),
+        _ => Loc.T("Emboscada"),
+    };
+
     // El nivel con el que paga la zona: su nivel mínimo (como alguien que recién llega). Sin zona conocida, 1.
     public static async Task<int> ReferenceLevelAsync(AdventureDeps deps, int zoneId) =>
         Math.Max(1, (await deps.Zones.GetByIdAsync(zoneId))?.MinLevel ?? 1);
@@ -370,6 +443,8 @@ public class AventuraModule(AdventureDeps deps) : InteractionModuleBase<SocketIn
         string? note;
         string token;
         bool guardian;
+        string? zoneLabel;
+        int baseGold, baseXp;
         lock (run.Lock)
         {
             scene = run.CurrentScene;
@@ -378,6 +453,9 @@ public class AventuraModule(AdventureDeps deps) : InteractionModuleBase<SocketIn
             note = run.LastNote;
             token = run.Token;
             guardian = run.AtGuardian;
+            zoneLabel = run.ZoneLabel;
+            baseGold = run.BaseGold;
+            baseXp = run.BaseXp;
         }
 
         int percent = player.MaxHp <= 0 ? 0 : (int)Math.Round(100.0 * Math.Clamp(player.CurrentHp, 0, player.MaxHp) / player.MaxHp);
@@ -385,6 +463,14 @@ public class AventuraModule(AdventureDeps deps) : InteractionModuleBase<SocketIn
         if (note is not null)
         {
             lines.Add(note);
+            lines.Add(string.Empty);
+        }
+
+        // v0.59.0 (el dueño: «que se sepa cuánto se arriesga»): en la primera escena, la zona y lo que paga el final con el botín en +0 %.
+        if (number == 1 && zoneLabel is not null)
+        {
+            lines.Add(Loc.F($"📍 **{zoneLabel}**"));
+            lines.Add(Loc.F($"🎁 **Premio base**: {GameHistory.Number(baseGold)} de oro y {GameHistory.Number(baseXp)} de EXP (el botín lo sube)"));
             lines.Add(string.Empty);
         }
 
@@ -397,7 +483,9 @@ public class AventuraModule(AdventureDeps deps) : InteractionModuleBase<SocketIn
             .WithTitle(Loc.F($"{Loc.Tr(scene.Title)} · {number}/{AdventureRules.Scenes}"))
             .WithColor(new Color(0x8E6E3D))
             .WithDescription(string.Join("\n", lines))
-            .WithFooter(Loc.T("Sin comida en la aventura · 3 min por elección"));
+            .WithFooter(guardian
+                ? Loc.T("Sin comida en la aventura · 3 min por elección · en texto: aa av guardian")
+                : Loc.T("Sin comida en la aventura · 3 min por elección · en texto: aa av seguro / arriesgado / misterioso"));
 
         ulong owner = (ulong)player.DiscordId;
         var buttons = new ComponentBuilder();

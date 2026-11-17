@@ -134,7 +134,7 @@ Check(nRenacido.Any(n => n.Text.Contains("Renacido I")), "(el logro Renacido sig
 
 Console.WriteLine("\n== 6. Logros nuevos ==");
 var comp = AchievementCatalog.Find("companero")!; var vol = AchievementCatalog.Find("volvio")!;
-Check(AchievementCatalog.All.Count == 35 && comp.StatKind == GameEventKinds.FuegoNuevo && vol.StatKind == GameEventKinds.FuegoNuevo
+Check(AchievementCatalog.All.Count == 36 && comp.StatKind == GameEventKinds.FuegoNuevo && vol.StatKind == GameEventKinds.FuegoNuevo
         && comp.Tiers.Select(t => t.Threshold).SequenceEqual([10L, 25, 50]) && vol.Tiers.Select(t => t.Threshold).SequenceEqual([75L, 90, 100]),
     "32 logros; Compañero del Asador (10/25/50) y El que volvió (75/90/100) cuentan los Fuegos Nuevos");
 Check(comp.Tiers.Concat(vol.Tiers).All(t => t.Reward.Box == BoxGrant.None), "pagan solo oro y XP (nunca una caja: el contador es de pocas vueltas pero cada una pide vencer al Asador)");
@@ -281,7 +281,7 @@ var mentioned = System.Text.RegularExpressions.Regex.Matches(tt, @"/([a-z]+)").S
 Check(mentioned.All(m => slashNames.Contains(m)), $"todo comando que el tema nombra existe ({string.Join(", ", mentioned.Where(m => !slashNames.Contains(m)))})");
 var allTopicsOk = HelpTopics.All.All(t => { var e = t.Build(); return e.Length <= 6000 && e.Fields.All(f => f.Value.Length <= 1024 && f.Name.Length <= 256) && (e.Description?.Length ?? 0) <= 4096; });
 var idx = HelpTopics.BuildIndexEmbed();
-Check(allTopicsOk && idx.Length <= 6000 && idx.Fields.All(f => f.Value.Length <= 1024) && HelpTopics.All.Count == 28, $"los 28 temas y el índice entran en Discord (índice {idx.Length})");
+Check(allTopicsOk && idx.Length <= 6000 && idx.Fields.All(f => f.Value.Length <= 1024) && HelpTopics.All.Count == 29, $"los 29 temas y el índice entran en Discord (índice {idx.Length})");
 var infoE = HelpModule.BuildInfoEmbed();
 Check(AllText(infoE).Contains("/story") && infoE.Length <= 6000 && infoE.Fields.All(f => f.Value.Length <= 1024), $"/info lista /story, dentro de los límites ({infoE.Length})");
 var welcome = OnboardingModule_Confirmation();

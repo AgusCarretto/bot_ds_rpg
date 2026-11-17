@@ -54,7 +54,33 @@ var template = new MonsterTemplate("Lobo", "🐺", 100, 200, 10, 20, ["Colmillo"
 var scaled = AdventureRules.Scale(template, AdventureRules.MonsterMultiplier);
 Check(scaled.MinHp == 130 && scaled.MaxHp == 260 && scaled.MinDamage == 13 && scaled.MaxDamage == 26 && scaled.DropItemNames.Count == 0, "los monstruos de la aventura: ×1,3 y sin drops");
 var guardian = AdventureRules.Guardian(template);
-Check(guardian.Name == AdventureRules.GuardianName && guardian.MaxHp == 320 && guardian.MinDamage == 20 && guardian.MaxDamage == 40, "el Guardián: el élite ×1,6 de vida y ×2,0 de daño (v0.57.2: +25 %), con su nombre");
+Check(guardian.Name == AdventureRules.GuardianName && guardian.MinHp == 200 && guardian.MaxHp == 400 && guardian.MinDamage == 20 && guardian.MaxDamage == 40 && guardian.DropItemNames.Count == 0,
+    "el Guardián: el élite ×2,0 de vida (v0.59.0; era ×1,6) y ×2,0 de daño, con su nombre");
+// v0.59.0 (el dueño: «el camino difícil… que pegue ×1,3, y el hunt… tipo 1,2», encima del ×1,3 de antes y solo en el daño).
+var safeMonster = AdventureRules.SafeMonster(template);
+var riskyMonster = AdventureRules.RiskyMonster(template);
+Check(safeMonster.MinHp == 130 && safeMonster.MaxHp == 260 && safeMonster.MinDamage == 16 && safeMonster.MaxDamage == 31 && safeMonster.DropItemNames.Count == 0,
+    "camino seguro: el común con ×1,3 de vida y ×1,56 de daño (1,3 × 1,2)");
+Check(riskyMonster.MinHp == 130 && riskyMonster.MaxHp == 260 && riskyMonster.MinDamage == 17 && riskyMonster.MaxDamage == 34,
+    "camino arriesgado (y emboscada): el élite con ×1,3 de vida y ×1,69 de daño (1,3 × 1,3)");
+Check(AdventureRules.ParsePath("seguro") == AdventurePath.Safe && AdventureRules.ParsePath("ARRIESGADO") == AdventurePath.Risky && AdventureRules.ParsePath("misterioso") == AdventurePath.Mystery
+    && AdventureRules.ParsePath("difícil") == AdventurePath.Risky && AdventureRules.ParsePath("s") == AdventurePath.Safe && AdventureRules.ParsePath("m") == AdventurePath.Mystery
+    && AdventureRules.ParsePath("safe") == AdventurePath.Safe && AdventureRules.ParsePath("mystery") == AdventurePath.Mystery && AdventureRules.ParsePath("guardián") == AdventurePath.Risky
+    && AdventureRules.ParsePath("pizza") is null && AdventureRules.ParsePath("  ") is null,
+    "«aa av seguro / arriesgado / misterioso»: el camino escrito, sin tildes ni mayúsculas, en los dos idiomas y con atajos");
+Check(AdventureRules.Pool.Count == 22 && AdventureRules.Pool.Select(s => s.Key).Distinct().Count() == 22 && AdventureRules.Pool.All(s => s.Key != AdventureRules.Final.Key),
+    "22 escenas distintas en el pozo (v0.59.0: 10 nuevas)");
+var expectedTravel = CombatRewardCalculator.ExpectedTravelReward(20, 100, 50);
+Check(expectedTravel.Gold == (10 + 40 + 100) * CombatRewardCalculator.TravelRewardMultiplier && expectedTravel.Xp == (int)Math.Round((14 + 20 + 50) * CombatRewardCalculator.TravelRewardMultiplier * CombatRewardCalculator.FightXpScale),
+    "el premio base de la primera escena: un viaje en su punto medio (10 de oro y 14 de EXP de azar)");
+Check(MissionCatalog.WeeklyPool.Any(m => m.Key == "w_adv2" && m.Kind == GameEventKinds.AdventureWin && m.Target == 2)
+    && AchievementCatalog.Find("aventurero") is { StatKind: GameEventKinds.AdventureWin } aventurero && aventurero.Tiers.Select(t => t.Threshold).SequenceEqual([5L, 25L, 100L]) && aventurero.Tiers[1].Reward.Box != BoxGrant.None
+    && AchievementCatalog.Categories.Single(c => c.Name == "Combate").Keys.Contains("aventurero"),
+    "misión semanal «Completá 2 aventuras» y logro «Aventurero» (5 / 25 / 100, con cajas como Racha, en Combate)");
+var helpTopic = HelpTopics.Find("aventura");
+Check(helpTopic?.Key == "adventure" && HelpTopics.Render(helpTopic) is { } helpEmbed && LeakCheck.FitsDiscord(helpEmbed)
+    && helpEmbed.Fields.Any(f => f.Value.Contains("no se come")) && helpEmbed.Fields.Any(f => f.Value.Contains("aa av seguro")) && helpEmbed.Fields.Any(f => f.Value.Contains("Cofre") && f.Value.Contains("25 %")),
+    "/info tema:aventura explica los caminos, los eventos (con sus chances), el botín, que no se come y cómo jugarla por texto");
 Check(AdventureRules.ApplyLoot(1000, 0) == 1000 && AdventureRules.ApplyLoot(1000, 60) == 1600, "el botín multiplica el premio (+60 % = ×1,6)");
 // v0.57.2: un viaje de la aventura lleva el bono del monstruo de viaje de la zona, como /travel (hasta la v0.57.1 pagaba solo el nivel: ~13 % en la Zona 5).
 foreach (var zone in await zones.GetAllAsync())
@@ -91,12 +117,20 @@ await users.GetOrCreateUserAsync(U);
 await db.ExecuteAsync("UPDATE users SET level = 20, current_hp = max_hp WHERE discord_id = @id", new { id = (long)U });
 var start = await AventuraModule.StartAsync(deps, U);
 Check(start.Embed is not null && start.Embed.Title!.Contains("1/5") && start.Components is not null, "arranca en la escena 1 con los tres caminos");
+Check(start.Embed!.Description!.Contains("Zona 1") && start.Embed.Description.Contains("Premio base") && start.Embed.Footer?.Text?.Contains("aa av seguro") == true,
+    "la primera escena dice la zona y el premio base (v0.59.0), y el pie cómo elegir por texto");
 Check(await cooldowns.GetRemainingAsync(U, "aventura", AdventureRules.Cooldown.Duration) is { } w && w > TimeSpan.FromHours(2.9), "cobró las 3 horas al arrancar");
 var again = await AventuraModule.StartAsync(deps, U);
 Check(again.Error is null && again.Embed!.Title!.Contains("1/5") && again.Components is not null, "con una aventura abierta no arranca otra: /aventura vuelve a mostrar la escena (v0.58.2)");
 var run = adventures.Peek(U)!;
 var target = new NullTarget();
 Check((await AventuraModule.ChooseAsync(deps, U, "otrotoken", AdventurePath.Safe, target)).Error!.Contains("anterior"), "un botón de otra corrida no hace nada");
+
+// v0.59.0: «aa av arriesgado» elige por texto en la escena abierta (la misma jugada que el botón). La pelea la cierra el bucle de abajo.
+var byText = await AventuraModule.ChooseByTextAsync(deps, U, AdventurePath.Risky, target);
+Check(byText.Embed is not null && combat.Peek(U) is { } textFight && textFight.State.CommandName == AdventureRules.CommandName && adventures.Peek(U)!.PendingRiskyBonus,
+    "«aa av arriesgado» arranca la pelea contra el élite de la escena abierta");
+Check((await AventuraModule.ChooseByTextAsync(deps, U, AdventurePath.Safe, target)).Error!.Contains("aa attack"), "en plena pelea, elegir otro camino por texto dice que se sigue con aa attack");
 
 int fights = 0;
 for (int guard = 0; guard < 20 && adventures.Find(U) is { } r; guard++)
@@ -112,6 +146,8 @@ for (int guard = 0; guard < 20 && adventures.Find(U) is { } r; guard++)
         if (adventures.Find(U) is null)
         {
             Check(embed.Title!.Contains("completada"), "al vencer al Guardián se termina y paga");
+            Check(embed.Description!.Contains("Peleas ganadas**: 5") && embed.Description.Contains("Botín**: +20 %") && LeakCheck.FitsDiscord(embed),
+                "el resumen del final: 5 peleas ganadas y el botín total (+20 %: la 1.ª escena fue arriesgada, por texto)");
         }
     }
     else
@@ -149,6 +185,25 @@ await db.ExecuteAsync("UPDATE users SET current_hp = 1 WHERE discord_id = @id", 
 var trapped = afterMystery!;
 var guardView = AventuraModule.BuildSceneView(trapped, (await users.GetByDiscordIdAsync(U))!);
 Check(guardView.Components!.Components.SelectMany(c => ((ActionRowComponent)c).Components).Count() == 1 && guardView.Embed!.Title!.Contains("5/5"), "en la escena 5 solo queda «Enfrentar al Guardián»");
+// v0.59.0: el resumen del final cuenta cada evento que tocó (y la emboscada también como pelea ganada).
+var eventsSeen = trapped.Events.ToList();
+await db.ExecuteAsync("UPDATE users SET current_hp = max_hp WHERE discord_id = @id", new { id = (long)U });
+await AventuraModule.ChooseByTextAsync(deps, U, AdventurePath.Mystery, target);
+if (combat.Peek(U) is { } guardFight)
+{
+    Check(guardFight.State.MonsterName == AdventureRules.GuardianName, "en la última escena cualquier camino escrito es el Guardián");
+    combat.TryAdvance(U, guardFight, null, null);
+    var (final, _) = await AventuraModule.AfterWinAsync(deps, U, guardFight.State);
+    var names = new Dictionary<AdventureEvent, string> { [AdventureEvent.Chest] = "Cofre", [AdventureEvent.Campfire] = "Fogata", [AdventureEvent.Trap] = "Trampa", [AdventureEvent.Shrine] = "Santuario", [AdventureEvent.Ambush] = "Emboscada" };
+    Check(eventsSeen.Count == 4 && eventsSeen.GroupBy(e => e).All(g => final.Description!.Contains($"**{names[g.Key]}**: {g.Count()}"))
+        && final.Description!.Contains($"Peleas ganadas**: {1 + eventsSeen.Count(e => e == AdventureEvent.Ambush)}"),
+        $"el resumen lista los eventos del camino ({string.Join(", ", eventsSeen)}) y las peleas ganadas");
+}
+else
+{
+    Check(false, "el Guardián tendría que haber arrancado por texto");
+}
+
 adventures.End(U);
 
 Console.WriteLine("\n== 5. Sin comida ==");
