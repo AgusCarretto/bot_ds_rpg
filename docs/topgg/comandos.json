@@ -101,7 +101,7 @@
   {
     "type": 1,
     "name": "boss",
-    "description": "Enfrentá al Jefe de tu zona, solo o con amigos (cooldown de 10 h, 30 min si perdés).",
+    "description": "Enfrentá al Jefe de tu zona, solo o con amigos (cooldown de 10 h, 5 h si perdés).",
     "options": [
       {
         "type": 6,

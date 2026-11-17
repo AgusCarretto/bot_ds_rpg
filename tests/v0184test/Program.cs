@@ -46,7 +46,7 @@ async Task<bool> HasRow(ulong id) => await db.ExecuteScalarAsync<bool>("SELECT E
 
 Console.WriteLine("== 1. ReleaseCooldownAsync (el repositorio) ==");
 await Reset();
-Check(await adventure.TryClaimCooldownAsync(A, boss.CommandName, boss.Duration, boss.RetryAfterFailure) && await Left(A) is { } l1 && l1 > TimeSpan.FromMinutes(29) && l1 <= TimeSpan.FromMinutes(30), "reclamar el cooldown del jefe deja la espera corta de 30 minutos");
+Check(await adventure.TryClaimCooldownAsync(A, boss.CommandName, boss.Duration, boss.RetryAfterFailure) && await Left(A) is { } l1 && l1 > TimeSpan.FromMinutes(299) && l1 <= TimeSpan.FromHours(5), "reclamar el cooldown del jefe deja la espera de una derrota: la mitad, 5 horas (v0.59.2; eran 30 minutos)");
 await adventure.ReleaseCooldownAsync(A, boss.CommandName, boss.Duration);
 Check(await Left(A) is null && !await HasRow(A), "soltarlo: el cooldown desaparece");
 Check(await adventure.TryClaimCooldownAsync(A, boss.CommandName, boss.Duration, boss.RetryAfterFailure), "y se puede volver a reclamar enseguida (el jefe queda libre)");
@@ -109,7 +109,7 @@ await BusyBoss(B);
 var (s3, t3, svc3) = NewRaid(A, B, C);
 await RaidModule.TryActivateAsync(s3, svc3, adventure);
 Check(s3.Phase == RaidPhase.Active && s3.Participants.Select(p => p.DiscordId).OrderBy(x => x).SequenceEqual([A, C]) && t3.Updates[0].Description!.Contains("no pudo"), "con tres y uno ocupado, arranca con los dos libres y avisa del que no pudo sumarse");
-Check(await Left(A) is { } la3 && la3 < TimeSpan.FromMinutes(31) && await Left(C) is { } lc3 && lc3 < TimeSpan.FromMinutes(31) && await Left(B) is { } lb3 && lb3 > TimeSpan.FromMinutes(299), "A y C tienen su espera corta y B conserva la suya");
+Check(await Left(A) is { } la3 && la3 <= TimeSpan.FromHours(5) && await Left(C) is { } lc3 && lc3 <= TimeSpan.FromHours(5) && await Left(B) is { } lb3 && lb3 > TimeSpan.FromHours(9), "A y C tienen su espera corta y B conserva la suya");
 
 // La activación explota a mitad de camino (no se puede editar el mensaje): se cierra el raid y se sueltan los cooldowns reclamados.
 await Reset();
