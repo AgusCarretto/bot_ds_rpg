@@ -62,7 +62,14 @@ var riskyMonster = AdventureRules.RiskyMonster(template);
 Check(safeMonster.MinHp == 130 && safeMonster.MaxHp == 260 && safeMonster.MinDamage == 16 && safeMonster.MaxDamage == 31 && safeMonster.DropItemNames.Count == 0,
     "camino seguro: el común con ×1,3 de vida y ×1,56 de daño (1,3 × 1,2)");
 Check(riskyMonster.MinHp == 130 && riskyMonster.MaxHp == 260 && riskyMonster.MinDamage == 17 && riskyMonster.MaxDamage == 34,
-    "camino arriesgado (y emboscada): el élite con ×1,3 de vida y ×1,69 de daño (1,3 × 1,3)");
+    "camino arriesgado: el élite con ×1,3 de vida y ×1,69 de daño (1,3 × 1,3)");
+// v0.59.1 (el dueño: la emboscada «más poderosa que el arriesgado, nunca como el jefe final»; los eventos «más extremos»).
+var ambushMonster = AdventureRules.AmbushMonster(template);
+Check(ambushMonster.MinHp == 150 && ambushMonster.MaxHp == 300 && ambushMonster.MinDamage == 20 && ambushMonster.MaxDamage == 39 && ambushMonster.DropItemNames.Count == 0
+    && ambushMonster.MaxHp > riskyMonster.MaxHp && ambushMonster.MaxDamage > riskyMonster.MaxDamage && ambushMonster.MaxHp < guardian.MaxHp && ambushMonster.MaxDamage < guardian.MaxDamage,
+    "emboscada: el élite con ×1,5 de vida y ×1,95 de daño, entre el arriesgado y el Guardián");
+Check(AdventureRules.ChestBonusPercent == 50 && AdventureRules.CampfireHealPercent == 40 && AdventureRules.TrapDamagePercent == 30 && AdventureRules.ShrineDamagePercent == 20 && AdventureRules.ShrineHealPercent == 20,
+    "eventos más extremos: cofre +50 % de botín, fogata 40 %, trampa 30 %, santuario +20 % de daño y cura 20 %");
 Check(AdventureRules.ParsePath("seguro") == AdventurePath.Safe && AdventureRules.ParsePath("ARRIESGADO") == AdventurePath.Risky && AdventureRules.ParsePath("misterioso") == AdventurePath.Mystery
     && AdventureRules.ParsePath("difícil") == AdventurePath.Risky && AdventureRules.ParsePath("s") == AdventurePath.Safe && AdventureRules.ParsePath("m") == AdventurePath.Mystery
     && AdventureRules.ParsePath("safe") == AdventurePath.Safe && AdventureRules.ParsePath("mystery") == AdventurePath.Mystery && AdventureRules.ParsePath("guardián") == AdventurePath.Risky
@@ -79,8 +86,9 @@ Check(MissionCatalog.WeeklyPool.Any(m => m.Key == "w_adv2" && m.Kind == GameEven
     "misión semanal «Completá 2 aventuras» y logro «Aventurero» (5 / 25 / 100, con cajas como Racha, en Combate)");
 var helpTopic = HelpTopics.Find("aventura");
 Check(helpTopic?.Key == "adventure" && HelpTopics.Render(helpTopic) is { } helpEmbed && LeakCheck.FitsDiscord(helpEmbed)
-    && helpEmbed.Fields.Any(f => f.Value.Contains("no se come")) && helpEmbed.Fields.Any(f => f.Value.Contains("aa av seguro")) && helpEmbed.Fields.Any(f => f.Value.Contains("Cofre") && f.Value.Contains("25 %")),
-    "/info tema:aventura explica los caminos, los eventos (con sus chances), el botín, que no se come y cómo jugarla por texto");
+    && helpEmbed.Fields.Any(f => f.Value.Contains("no se come")) && helpEmbed.Fields.Any(f => f.Value.Contains("aa av seguro"))
+    && !new[] { "Cofre", "cofre", "Fogata", "fogata", "Trampa", "trampa", "Santuario", "santuario", "Emboscada", "emboscada" }.Any(w => LeakCheck.AllText(helpEmbed).Contains(w)),
+    "/info tema:aventura explica los caminos, el botín, que no se come y cómo jugarla por texto, SIN decir qué eventos tiene el misterioso (v0.59.1)");
 Check(AdventureRules.ApplyLoot(1000, 0) == 1000 && AdventureRules.ApplyLoot(1000, 60) == 1600, "el botín multiplica el premio (+60 % = ×1,6)");
 // v0.57.2: un viaje de la aventura lleva el bono del monstruo de viaje de la zona, como /travel (hasta la v0.57.1 pagaba solo el nivel: ~13 % en la Zona 5).
 foreach (var zone in await zones.GetAllAsync())
