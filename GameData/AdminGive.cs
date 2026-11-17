@@ -2,7 +2,8 @@ using System.Text.RegularExpressions;
 
 namespace BotDsRpg.GameData;
 
-public enum AdminGiveKind { Gold, Dust, Xp, Item }
+// Banner (v0.61.0): el Banner de Nieve de la tienda navideña, para probarlo sin gastar Regalos (el dueño: «para que pueda agregarlo yo como admin y ver cómo queda»).
+public enum AdminGiveKind { Gold, Dust, Xp, Item, Banner }
 
 // Lo que pidió el administrador: qué dar, cuánto (para un ítem, la cantidad), cuál ítem y a quién (null = a sí mismo).
 public sealed record AdminGiveRequest(AdminGiveKind Kind, int Amount, string? ItemName, ulong? TargetId);
@@ -22,7 +23,7 @@ public static class AdminGive
     public const int MaxItemQuantity = 100_000;
 
     public const string Usage =
-        "Uso: `aa admingive gold 1m [@alguien]` · `aa admingive dust 500 [@alguien]` · `aa admingive xp 5000 [@alguien]` · `aa admingive item Cofre de Oro 3 [@alguien]`. " +
+        "Uso: `aa admingive gold 1m [@alguien]` · `aa admingive dust 500 [@alguien]` · `aa admingive xp 5000 [@alguien]` · `aa admingive item Cofre de Oro 3 [@alguien]` · `aa admingive banner nieve [@alguien]`. " +
         "Sin mención te lo das a vos. Las cantidades aceptan 1.500, 10k y 1m.";
 
     private static readonly Regex Mention = new(@"<@!?(\d+)>", RegexOptions.Compiled);
@@ -72,11 +73,20 @@ public static class AdminGive
             "dust" or "polvo" => AdminGiveKind.Dust,
             "xp" or "exp" => AdminGiveKind.Xp,
             "item" or "items" or "objeto" or "obj" or "caja" => AdminGiveKind.Item,
+            "banner" or "fondo" => AdminGiveKind.Banner,
             _ => null,
         };
         if (kind is null)
         {
             return Fail($"No sé qué es «{tokens[0]}». {Usage}");
+        }
+
+        // «aa admingive banner nieve»: hoy el único banner que se da así es el de nieve (el de la Brasa de Color sale de la bendición). Sin palabra, también es ese.
+        if (kind == AdminGiveKind.Banner)
+        {
+            return tokens.Length == 1 || (tokens.Length == 2 && ProfileBanners.IsSnowWord(tokens[1]))
+                ? new AdminGiveParse(new AdminGiveRequest(AdminGiveKind.Banner, 1, ProfileBanners.SnowKey, target), null)
+                : Fail($"El único banner que se da así es el de nieve: `aa admingive banner nieve [@alguien]`.");
         }
 
         if (kind != AdminGiveKind.Item)

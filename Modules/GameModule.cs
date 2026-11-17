@@ -246,7 +246,7 @@ public class GameModule(
             try
             {
                 string? chosen = (await settingsService.GetAsync(discordId)).ProfileBanner;
-                if (ProfileBanners.FileFor(chosen, bonuses.BlessingLevel(ProfileBanners.BannerKey)) is { } bannerName)
+                if (ProfileBanners.FileFor(chosen, bonuses.BlessingLevel(ProfileBanners.BannerKey), bonuses.HasSnowBanner) is { } bannerName)
                 {
                     embed.WithImageUrl(ProfileBanners.AttachmentUrl(bannerName));
                 }

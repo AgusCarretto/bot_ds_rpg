@@ -135,12 +135,12 @@ public class SnowmanModule(
         IChristmasRepository christmasRepository, IChristmasService christmas, ISnowmanService snowman, ulong discordId, DateTime utcNow)
     {
         var phase = ChristmasRules.PhaseAt(christmas.Settings, utcNow);
-        var embed = new EmbedBuilder().WithColor(new Color(0x5DADE2));
+        var embed = new EmbedBuilder().WithColor(new Color(0x5DADE2)).WithItemThumbnail(ChristmasEmojis.Snowman);
         if (phase != ChristmasPhase.Farm)
         {
             embed.WithTitle(Loc.T("☃️ El Muñeco de Nieve Gigante"))
                 .WithDescription(Loc.T("☃️ El Muñeco de Nieve Gigante solo está del 1 al 24 de diciembre."));
-            return new SnowmanView(embed.Build());
+            return new SnowmanView(embed.BuildChristmas());
         }
 
         var state = await snowman.GetStateAsync(discordId);
@@ -186,7 +186,7 @@ public class SnowmanModule(
 
         buttons.WithButton(Loc.T("Actualizar"), $"{PanelPrefix}:{discordId}", ButtonStyle.Secondary, new Emoji("🔄"), row: 1);
         buttons.WithButton(Loc.T("Volver"), $"xmas_back:{discordId}", ButtonStyle.Secondary, new Emoji("↩️"), row: 1);
-        return new SnowmanView(embed.Build(), buttons.Build());
+        return new SnowmanView(embed.BuildChristmas(), buttons.Build());
     }
 
     // El anuncio de que cayó: quién dio el último golpe, el top 10 (con mención: en un embed no notifica) y si vuelve.
@@ -212,8 +212,9 @@ public class SnowmanModule(
         return new EmbedBuilder()
             .WithTitle(Loc.T("☃️ ¡El Muñeco de Nieve Gigante cayó!"))
             .WithColor(new Color(0xF1C40F))
+            .WithItemThumbnail(ChristmasEmojis.Snowman)
             .WithDescription(string.Join("\n", lines))
-            .Build();
+            .BuildChristmas();
     }
 
     // El panel en vivo: durante RefreshFor, cada RefreshEvery se vuelve a armar y, si cambió, se edita el mensaje. Nunca tira (si Discord no deja editar, se corta).

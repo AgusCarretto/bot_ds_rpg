@@ -144,4 +144,5 @@ Reno, banner de nieve.
   en victorias, `/daily` y calendario —los premios del Muñeco no cuentan—: 1.000 / 3.000 / 6.000, evento `xmas_gifts`) y «Bombardero de Nieve» (daño al Muñeco:
   5.000 / 25.000 / 100.000, evento `snowman_damage`). 37 logros en 6 páginas (Hazañas sigue última, ahora la 6).
 - **Vida del Muñeco:** 50.000 por defecto (el dueño: «50k mínimo»; con 9 activos por día la primera cae en ~5 días, ~3 veces en el evento).
-- **Falta:** banner de nieve y conectar el arte (prompts entregados el 2026-11-16); `/info` y `docs/topgg/comandos`; anuncio; release.
+- **Arte (2026-11-17):** los 11 emojis propios conectados (`GameData/ChristmasEmojis.cs`; prompts y códigos en `docs/arte-navidad.md` de develop). Los textos siguen con el unicode y `BuildChristmas` los pinta en la descripción y los valores de campo (títulos, nombres de campo, pies, botones y menús quedan con el unicode); miniaturas: el fogón nevado en `/navidad`, el Muñeco en su panel y al caer, la cara del Krampus en su pelea. El Reno va con 🦌 como las demás mascotas.
+- **Falta:** el banner de nieve (`banner_nieve.png`, lo hace el dueño); `/info` y `docs/topgg/comandos`; anuncio; release (traer develop: la versión libre es la v0.61.0).

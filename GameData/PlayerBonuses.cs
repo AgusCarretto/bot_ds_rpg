@@ -8,7 +8,7 @@ namespace BotDsRpg.GameData;
 public sealed record PlayerBonuses(
     PetBonuses Pets, int FuegoNuevo = 0, IReadOnlyDictionary<string, int>? BlessingLevels = null, IReadOnlyDictionary<string, long>? ProfessionXp = null, double BankGoldPercent = 0,
     double ChopToolFactor = 1, double MineToolFactor = 1, DragonBonuses? Dragon = null, double FishToolFactor = 1, IReadOnlyDictionary<string, int>? Cooked = null,
-    IReadOnlyCollection<string>? CookBuffs = null, bool HasReno = false)
+    IReadOnlyCollection<string>? CookBuffs = null, bool HasReno = false, bool HasSnowBanner = false)   // HasSnowBanner: cosmético (el banner de nieve de Navidad), solo lo lee el perfil
 {
     // El Reno de Navidad (v0.57.0, GameData/ChristmasShop.cs): +15 % de XP y de oro fijos y /travel en 25 minutos. Se compra con Regalos y es para siempre.
     private double RenoFactor => HasReno ? 1 + (RenoRules.XpGoldPercent / 100.0) : 1;

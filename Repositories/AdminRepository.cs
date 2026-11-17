@@ -21,6 +21,23 @@ public sealed class AdminRepository(IDbConnectionFactory connectionFactory) : IA
     public Task<AdminGiveResult> GiveDustAsync(ulong discordId, int amount, CancellationToken cancellationToken = default) =>
         AddToUserColumnAsync("dust", discordId, amount, cancellationToken);
 
+    // UNA sentencia: el contador queda en 1 como mínimo (GREATEST: si ya lo tenía, no se toca). Devuelve el valor de ANTES (0 si no existía la fila).
+    public async Task<bool> GrantUnlockAsync(ulong discordId, string statKey, CancellationToken cancellationToken = default)
+    {
+        using DbConnection connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        long before = await connection.ExecuteScalarAsync<long>(new CommandDefinition(
+            """
+            WITH old AS (SELECT value FROM player_stats WHERE discord_id = @DiscordId AND stat_key = @Key),
+                 upsert AS (
+                     INSERT INTO player_stats (discord_id, stat_key, value) VALUES (@DiscordId, @Key, 1)
+                     ON CONFLICT (discord_id, stat_key) DO UPDATE SET value = GREATEST(player_stats.value, 1))
+            SELECT COALESCE((SELECT value FROM old), 0);
+            """,
+            new { DiscordId = (long)discordId, Key = statKey }, cancellationToken: cancellationToken));
+        return before > 0;
+    }
+
     // UNA sentencia: bloquea la fila, suma en bigint y recorta en int.MaxValue (así un total enorme no revienta con «integer out of range»). column es siempre uno de dos nombres fijos: seguro interpolarlo.
     private async Task<AdminGiveResult> AddToUserColumnAsync(string column, ulong discordId, int amount, CancellationToken cancellationToken)
     {

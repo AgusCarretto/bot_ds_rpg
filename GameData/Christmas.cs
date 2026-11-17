@@ -125,6 +125,6 @@ public static class KrampusRules
         MinDamage = (int)Math.Round(travel.MinDamage * DamageMultiplier),
         MaxDamage = (int)Math.Round(travel.MaxDamage * DamageMultiplier),
         DropItemNames = [],
-        Portrait = null,
+        Portrait = ChristmasEmojis.Krampus,   // su cara (arte del dueño, 2026-11-17), miniatura de toda la pelea
     };
 }

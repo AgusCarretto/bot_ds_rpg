@@ -93,8 +93,9 @@ Check(ProfileBanners.AttachmentPathFor(WithImage("attachment://banner_brasa_de_c
 Console.WriteLine("\n== 2. Los 5 archivos del banner ==");
 string BannerFile(int tier) => Path.Combine(TestEnv.RepoRoot, "Assets", "banners", ProfileBanners.FileName(Key, tier));
 var missing = Enumerable.Range(1, 5).Where(t => !File.Exists(BannerFile(t))).ToList();
-var extra = Directory.Exists(Path.Combine(TestEnv.RepoRoot, "Assets", "banners")) ? Directory.GetFiles(Path.Combine(TestEnv.RepoRoot, "Assets", "banners"), "banner_*.png").Select(Path.GetFileName).Where(n => !Enumerable.Range(1, 5).Any(t => n == ProfileBanners.FileName(Key, t))).ToList() : [];
-Check(missing.Count == 0 && extra.Count == 0, $"están los 5 tiers del banner en Assets/banners y ningún otro ({(missing.Count == 0 ? "los 5" : "faltan: " + string.Join(", ", missing))}{(extra.Count == 0 ? string.Empty : "; sobran: " + string.Join(", ", extra))})");
+var extra = Directory.Exists(Path.Combine(TestEnv.RepoRoot, "Assets", "banners")) ? Directory.GetFiles(Path.Combine(TestEnv.RepoRoot, "Assets", "banners"), "banner_*.png").Select(Path.GetFileName).Where(n => n != ProfileBanners.SnowFileName).Where(n => !Enumerable.Range(1, 5).Any(t => n == ProfileBanners.FileName(Key, t))).ToList() : [];
+Check(missing.Count == 0 && extra.Count == 0, $"están los 5 tiers del banner en Assets/banners y ningún otro, más el de nieve de la v0.61.0 ({(missing.Count == 0 ? "los 5" : "faltan: " + string.Join(", ", missing))}{(extra.Count == 0 ? string.Empty : "; sobran: " + string.Join(", ", extra))})");
+Check(File.Exists(Path.Combine(TestEnv.RepoRoot, "Assets", "banners", ProfileBanners.SnowFileName)), "está el banner de nieve (v0.61.0)");
 bool allPng = true; string pngWhy = string.Empty; var hashes = new HashSet<string>();
 for (int tier = 1; tier <= 5; tier++)
 {
@@ -238,6 +239,39 @@ Check(new[] { "config resumen off", "config recetas completo", "config banner 3"
 bool built = true; try { ActivatorUtilities.CreateInstance(sp, typeof(ConfigModule)); ActivatorUtilities.CreateInstance(sp, typeof(GameModule)); ActivatorUtilities.CreateInstance(sp, typeof(TextCommandModule)); } catch (Exception ex) { built = false; Console.WriteLine("   " + ex.Message); }
 Check(built, "los módulos se construyen con el DI real");
 Check(!FightLock.IsAllowed("banner") && !FightLock.IsAllowed("bg"), "en plena pelea «aa banner» queda bloqueado (como todo lo que no es de la pelea)");
+
+Console.WriteLine("\n== El Banner de Nieve (v0.61.0, Navidad): se compra y se ve UNO solo ==");
+var stats = sp.GetRequiredService<IGameEventRepository>();
+Func<string, bool> anyFile = _ => true;
+Check(ProfileBanners.StoredFor(ProfileBanners.SnowKey) == ProfileBanners.SnowKey && ProfileBanners.IsSnowWord("Nieve") && ProfileBanners.IsSnowWord("snow") && !ProfileBanners.IsSnowWord("on")
+    && ProfileBanners.SnowFileName == "banner_nieve_1.png" && ProfileBanners.AttachmentPathFor(new EmbedBuilder().WithImageUrl(ProfileBanners.AttachmentUrl(ProfileBanners.SnowFileName)).Build()) is not null,
+    "la opción «nieve», las palabras para pedirlo y su archivo (que el perfil adjunta)");
+Check(ProfileBanners.FileFor(ProfileBanners.SnowKey, 5, true, anyFile) == "banner_nieve_1.png" && ProfileBanners.FileFor(ProfileBanners.SnowKey, 5, false, anyFile) is null
+    && ProfileBanners.FileFor(Key, 3, true, anyFile) == "banner_brasa_de_color_3.png",
+    "un solo banner: con «nieve» se ve el de nieve (solo si lo compró) y NO el de la Brasa; con la Brasa elegida se ve la Brasa aunque tenga el de nieve");
+await users.GetOrCreateUserAsync(U3);
+Check(await ConfigModule.TrySetBannerAsync(settingsService, blessings, U3, ProfileBanners.SnowKey, stats) == BannerSetStatus.SnowNotOwned, "sin comprarlo, no se puede poner");
+await db.ExecuteAsync("INSERT INTO player_stats (discord_id, stat_key, value) VALUES (@id, @k, 1) ON CONFLICT (discord_id, stat_key) DO UPDATE SET value = 1", new { id = (long)U3, k = ProfileBanners.SnowStat });
+var snowScreen = await ConfigModule.BuildScreenAsync(settingsService, U3, blessings, stats);
+var snowMenu = snowScreen.Components.Components.SelectMany(r => ((ActionRowComponent)r).Components).OfType<SelectMenuComponent>().FirstOrDefault(m => m.CustomId.StartsWith(ConfigModule.BannerSelect));
+Check(snowMenu is not null && snowMenu.Options.Any(o => o.Value == ProfileBanners.SnowKey) && !snowMenu.Options.Any(o => o.Value == ProfileBanners.AutoChoice)
+    && snowScreen.Embed.Fields.Any(f => f.Value.Contains("Banner de Nieve")),
+    "/config: quien solo tiene el de nieve ve el menú con «Sin banner» y «Banner de Nieve» (sin los tiers de la Brasa)");
+var (snowNote, snowAfter) = await ConfigModule.ExecuteTypedAsync(settingsService, U3, "banner", "nieve", blessings, stats);
+Check(snowNote!.Contains("Banner de Nieve") && (await settingsService.GetAsync(U3)).ProfileBanner == ProfileBanners.SnowKey && snowAfter.Embed.Fields.Any(f => f.Value.Contains("✅")),
+    "«aa banner nieve» lo pone y la pantalla lo muestra puesto");
+await ConfigModule.ExecuteTypedAsync(settingsService, U3, "banner", "toggle", blessings, stats);
+Check((await settingsService.GetAsync(U3)).ProfileBanner is null, "«aa banner toggle» con el de nieve puesto lo saca");
+var adminRepo = sp.GetRequiredService<IAdminRepository>();
+await users.GetOrCreateUserAsync(U2);
+await db.ExecuteAsync("DELETE FROM player_stats WHERE discord_id = @id AND stat_key = @k", new { id = (long)U2, k = ProfileBanners.SnowStat });
+Check(!await adminRepo.GrantUnlockAsync(U2, ProfileBanners.SnowStat) && await adminRepo.GrantUnlockAsync(U2, ProfileBanners.SnowStat)
+    && (await stats.GetStatsAsync(U2)).GetValueOrDefault(ProfileBanners.SnowStat) == 1,
+    "aa admingive banner: lo deja comprado (el contador en 1, una segunda vez no lo sube y avisa que ya lo tenía)");
+Check(AdminGive.Parse("banner nieve").Request is { Kind: AdminGiveKind.Banner } && AdminGive.Parse("banner").Request is { Kind: AdminGiveKind.Banner } && AdminGive.Parse("banner brasa").Request is null,
+    "«aa admingive banner nieve» (o solo «banner») se entiende; otro banner no");
+Check(ChristmasShop.Find("banner") is { Price: 1000, Kind: ChristmasShopKind.Unlock, UnlockStat: ProfileBanners.SnowStat } b && ChristmasShopText.Label(b) == "Banner de Nieve",
+    "en la tienda navideña a 1.000 Regalos, con su nombre (no «Título …»)");
 
 await Clean();
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");

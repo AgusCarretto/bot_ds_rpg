@@ -204,12 +204,12 @@ public class ChristmasModule(
         if (!ChristmasShop.CanSellGifts(ChristmasRules.PhaseAt(service.Settings, utcNow)) || gifts.Balance <= 0)
         {
             embed.WithDescription(gifts.Balance <= 0 ? Loc.T("No tenés Regalos para vender.") : Loc.T("Los Regalos se venden del 25 de diciembre al 6 de enero."));
-            return new ChristmasView(embed.Build(), new ComponentBuilder()
+            return new ChristmasView(embed.BuildChristmas(), new ComponentBuilder()
                 .WithButton(Loc.T("Volver"), $"{ShopPrefix}:{discordId}", ButtonStyle.Secondary, new Emoji("↩️")).Build());
         }
 
         embed.WithDescription(Loc.F($"¿Vendés tus **{GameHistory.Number(gifts.Balance)}** Regalos por **{GameHistory.Number(gifts.Balance * ChristmasShop.GiftSellPrice)}** de oro?\n\nNo se puede deshacer. Para vender solo una parte: **aa navidad vender 100**."));
-        return new ChristmasView(embed.Build(), new ComponentBuilder()
+        return new ChristmasView(embed.BuildChristmas(), new ComponentBuilder()
             .WithButton(Loc.T("Sí, vender todo"), $"{SellYesPrefix}:{discordId}", ButtonStyle.Success, new Emoji("💰"))
             .WithButton(Loc.T("No, me los quedo"), $"{ShopPrefix}:{discordId}", ButtonStyle.Secondary, new Emoji("🛡️"))
             .Build());
@@ -254,7 +254,7 @@ public class ChristmasModule(
         if (phase == ChristmasPhase.Off)
         {
             embed.WithDescription(Loc.T("La tienda de Navidad abre del 1 de diciembre al 6 de enero."));
-            return new ChristmasView(embed.Build());
+            return new ChristmasView(embed.BuildChristmas());
         }
 
         var gifts = await repository.GetAsync(discordId, settings.Season);
@@ -289,7 +289,7 @@ public class ChristmasModule(
         var components = builder
             .WithButton(Loc.T("Volver"), $"{BackPrefix}:{discordId}", ButtonStyle.Secondary, new Emoji("↩️"), row: 1)
             .Build();
-        return new ChristmasView(embed.Build(), components);
+        return new ChristmasView(embed.BuildChristmas(), components);
     }
 
     public sealed record ChristmasBuyView(string? Error, Embed? Embed = null);
@@ -360,6 +360,9 @@ public class ChristmasModule(
             case ChristmasShopKind.Unlock when item.UnlockStat == RenoRules.StatKey:
                 lines.Add(Loc.F($"🦌 **¡El Reno es tuyo!** +{RenoRules.XpGoldPercent} % de XP y de oro, y /travel cada {(int)RenoRules.TravelCooldown.TotalMinutes} minutos. Para siempre."));
                 break;
+            case ChristmasShopKind.Unlock when item.UnlockStat == ProfileBanners.SnowStat:
+                lines.Add(Loc.T("🖼️ **¡El Banner de Nieve es tuyo!** Ponételo en **/config** o con **aa banner nieve** (se ve uno solo: reemplaza al que tengas)."));
+                break;
             case ChristmasShopKind.Unlock:
                 lines.Add(Loc.F($"{item.Emoji} Nuevo título: **{item.Name}**. Ponételo con **aa title**."));
                 break;
@@ -371,7 +374,7 @@ public class ChristmasModule(
             .WithTitle(Loc.F($"{item.Emoji} Compraste {ChristmasShopText.Label(item)}"))
             .WithColor(new Color(0x27AE60))
             .WithDescription(string.Join("\n", lines))
-            .Build();
+            .BuildChristmas();
     }
 
     // «aa campana»: reinicia /hunt con una Campana. Fuera del evento también sirven las que quedaron (hasta que termina la temporada).
@@ -402,7 +405,7 @@ public class ChristmasModule(
     {
         var settings = service.Settings;
         var phase = ChristmasRules.PhaseAt(settings, utcNow);
-        var embed = new EmbedBuilder().WithTitle(Loc.T("❄️ Navidad en el Fogón")).WithColor(new Color(0xC0392B));
+        var embed = new EmbedBuilder().WithTitle(Loc.T("❄️ Navidad en el Fogón")).WithColor(new Color(0xC0392B)).WithItemThumbnail(ChristmasEmojis.Event);
 
         if (phase == ChristmasPhase.Off)
         {
@@ -410,7 +413,7 @@ public class ChristmasModule(
             embed.WithDescription(utcNow < settings.StartUtc
                 ? Loc.F($"La Navidad llega al Fogón el **{start}**.\n\nDel 1 al 24 de diciembre van a caer 🎁 **Regalos** de cada pelea, y habrá un calendario de adviento con una caja por día.")
                 : Loc.T("La Navidad ya terminó. ¡Gracias por festejarla en el Fogón!"));
-            return new ChristmasView(embed.Build());
+            return new ChristmasView(embed.BuildChristmas());
         }
 
         var gifts = await repository.GetAsync(discordId, settings.Season);
@@ -476,7 +479,7 @@ public class ChristmasModule(
         }
 
         buttons.WithButton(Loc.T("Tienda"), $"{ShopPrefix}:{discordId}", ButtonStyle.Primary, new Emoji("🛒"));
-        return new ChristmasView(embed.Build(), buttons.Build());
+        return new ChristmasView(embed.BuildChristmas(), buttons.Build());
     }
 
     // Reclama el día de hoy. Crea la cuenta si hace falta (es un premio, como el /daily).
@@ -558,7 +561,7 @@ public class ChristmasModule(
             .WithTitle(day.Day == ChristmasRules.AdventDays ? Loc.T("🎄 ¡Nochebuena!") : Loc.F($"🎁 Día {day.Day} del calendario"))
             .WithColor(new Color(0x27AE60))
             .WithDescription(string.Join("\n", lines))
-            .Build();
+            .BuildChristmas();
     }
 
     // Los 24 días en 4 filas de 6: ✅ abierto, ❌ perdido, 🎁 hoy sin abrir, ⬜ todavía no llegó. Es una barra de ancho completo, no una lista de ítems.

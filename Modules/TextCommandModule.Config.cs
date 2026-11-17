@@ -13,7 +13,7 @@ public partial class TextCommandModule
     {
         try
         {
-            var (note, screen) = await ConfigModule.ExecuteTypedAsync(settingsService, Context.User.Id, option, value, blessingRepository);
+            var (note, screen) = await ConfigModule.ExecuteTypedAsync(settingsService, Context.User.Id, option, value, blessingRepository, gameEventRepository);
             await ReplyAsync(note, embed: screen.Embed, components: screen.Components);
         }
         catch (Exception ex)
@@ -31,7 +31,7 @@ public partial class TextCommandModule
     {
         try
         {
-            var (note, screen) = await ConfigModule.ExecuteTypedAsync(settingsService, Context.User.Id, "banner", name, blessingRepository);
+            var (note, screen) = await ConfigModule.ExecuteTypedAsync(settingsService, Context.User.Id, "banner", name, blessingRepository, gameEventRepository);
             await ReplyAsync(note, embed: screen.Embed, components: screen.Components);
         }
         catch (Exception ex)

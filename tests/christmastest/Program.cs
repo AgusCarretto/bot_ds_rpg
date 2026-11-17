@@ -119,7 +119,7 @@ var claimedNow = await repo.GetClaimedDaysAsync(U, season);
 var view = await ChristmasModule.BuildAsync(repo, during, U, settings.StartUtc.AddDays(1));
 string grid = view.Embed.Fields.Single(f => f.Name.Contains("📅")).Value;
 var rows = grid.Split('\n');
-Check(rows.Length == 4 && rows[0] == "❌🎁✅⬜⬜⬜", $"la grilla: 4 filas; el 1 perdido, el 2 hoy, el 3 abierto («{rows[0]}»)");
+Check(rows.Length == 4 && rows[0] == $"❌{ChristmasEmojis.Gift}✅⬜⬜⬜", $"la grilla: 4 filas; el 1 perdido, el 2 hoy (con el Regalo propio), el 3 abierto («{rows[0]}»)");
 bool HasClaim(MessageComponent? c) => c is not null && c.Components.SelectMany(row => ((ActionRowComponent)row).Components).OfType<ButtonComponent>().Any(x => x.CustomId?.StartsWith("adv_claim") == true);
 Check(HasClaim(view.Components), "con el día de hoy sin abrir, hay botón para abrirlo");
 var view7 = await ChristmasModule.BuildAsync(repo, during, U, settings.StartUtc.AddDays(6));
@@ -375,6 +375,19 @@ long giftsStatBefore = (await new GameEventRepository(factory).GetStatsAsync(U))
 var eventsWithXmas = new GameEventService(new GameEventRepository(factory), christmas: during);
 int bossGifts = await eventsWithXmas.GrantEventGiftsAsync(U, GameEventKinds.BossWin);
 Check((await new GameEventRepository(factory).GetStatsAsync(U)).GetValueOrDefault(GameEventKinds.XmasGifts) == giftsStatBefore + bossGifts, "los Regalos de una victoria suman al contador del logro");
+
+Console.WriteLine("\n== El arte propio (docs/arte-navidad.md, subido el 2026-11-17) ==");
+string[] art = [ChristmasEmojis.Gift, ChristmasEmojis.Bell, ChristmasEmojis.Candle, ChristmasEmojis.Sock, ChristmasEmojis.CandyCane, ChristmasEmojis.Snowball,
+    ChristmasEmojis.Firecracker, ChristmasEmojis.Sled, ChristmasEmojis.Krampus, ChristmasEmojis.Snowman, ChristmasEmojis.Event];
+Check(art.All(e => ItemDisplay.ImageUrl(e) is not null) && art.Distinct().Count() == 11, "los 11 emojis tienen el formato <:nombre:id> y son distintos");
+Check(ChristmasEmojis.Paint("🎁 **Regalos**: 5 · 🔔 🕯️ 🧦 🍬 ❄️ 🧨 🛷 👹 ☃️") == $"{ChristmasEmojis.Gift} **Regalos**: 5 · {ChristmasEmojis.Bell} {ChristmasEmojis.Candle} {ChristmasEmojis.Sock} {ChristmasEmojis.CandyCane} {ChristmasEmojis.Snowball} {ChristmasEmojis.Firecracker} {ChristmasEmojis.Sled} {ChristmasEmojis.Krampus} {ChristmasEmojis.Snowman}"
+    && ChristmasEmojis.Paint("⚔️ 🗺️ texto") == "⚔️ 🗺️ texto" && ChristmasEmojis.Paint(null) is null && !ChristmasEmojis.Paint("🕯️")!.Contains('️'),
+    "Paint cambia solo los emojis del evento (sin dejar el selector de variante suelto)");
+var painted = new EmbedBuilder().WithTitle("🎁 Título").WithDescription("🎁 hola").AddField("🎁 Campo", "🔔 valor").WithFooter("🎁 pie").BuildChristmas();
+Check(painted.Title == "🎁 Título" && painted.Fields[0].Name == "🎁 Campo" && painted.Footer!.Value.Text == "🎁 pie"
+    && painted.Description == $"{ChristmasEmojis.Gift} hola" && painted.Fields[0].Value == $"{ChristmasEmojis.Bell} valor",
+    "BuildChristmas pinta la descripción y los valores; el título, los nombres de campo y el pie quedan con el unicode (ahí Discord no dibuja los propios)");
+Check(krampus.Portrait == ChristmasEmojis.Krampus && krampus.Emoji == KrampusRules.Emoji, "el Krampus pelea con su cara de miniatura (y el 👹 en el texto)");
 
 await Clean();
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");

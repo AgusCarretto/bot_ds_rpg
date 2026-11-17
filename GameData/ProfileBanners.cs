@@ -24,6 +24,19 @@ public static class ProfileBanners
 
     public static string FileName(string key, int tier) => $"banner_{key}_{tier}.png";
 
+    // El banner de NIEVE (Navidad, v0.61.0; arte del dueño, docs/arte-navidad.md): el segundo banner del juego. No sale de una bendición: se compra en la tienda navideña (1.000 Regalos) y queda
+    // para siempre en player_stats (SnowStat). Un solo archivo, sin tiers: Assets/banners/banner_nieve_1.png. Se ve UN banner por perfil (el dueño: «que solo se permita uno, elegir el de nieve es
+    // elección»): profile_banner guarda «nieve» EN LUGAR del de la Brasa de Color, nunca los dos.
+    public const string SnowKey = "nieve";
+    public const string SnowStat = "xmas_banner";
+    public static string SnowFileName => FileName(SnowKey, 1);
+
+    public static bool IsSnow(string? stored) => string.Equals(stored, SnowKey, StringComparison.Ordinal);
+
+    // «aa banner nieve»: las palabras con que se pide.
+    public static bool IsSnowWord(string? text) =>
+        TextNormalization.RemoveDiacritics((text ?? string.Empty).Trim()).ToLowerInvariant() is "nieve" or "snow" or "navidad" or "christmas" or "banner de nieve" or "snow banner";
+
     public static string PathOf(string fileName) => Path.Combine(AppContext.BaseDirectory, "Assets", Folder, fileName);
 
     // La bendición dueña del banner.
@@ -42,7 +55,9 @@ public static class ProfileBanners
 
     // La opción del menú de /config («none», «auto» o «1» a «5») → lo que se guarda. null para «none» o cualquier cosa rara.
     public static string? StoredFor(string? choice) =>
-        choice == AutoChoice ? BannerKey : int.TryParse(choice, out int tier) && tier is >= 1 and <= BlessingCatalog.MaxLevel ? StoredFor(tier) : null;
+        choice == SnowKey ? SnowKey
+        : choice == AutoChoice ? BannerKey
+        : int.TryParse(choice, out int tier) && tier is >= 1 and <= BlessingCatalog.MaxLevel ? StoredFor(tier) : null;
 
     // Lo guardado → (¿hay banner?, el tier fijo que eligió; null = el mejor). Un valor viejo, raro o de otra bendición cuenta como sin banner.
     public static (bool On, int? Tier) Parse(string? stored)
@@ -94,8 +109,12 @@ public static class ProfileBanners
         return null;
     }
 
+    // Con el banner de nieve: si eligió «nieve», su archivo (solo si lo compró y el archivo está); si no, el de la Brasa de Color de siempre.
+    public static string? FileFor(string? stored, int level, bool hasSnow, Func<string, bool> exists) =>
+        IsSnow(stored) ? (hasSnow && exists(SnowFileName) ? SnowFileName : null) : FileFor(stored, level, exists);
+
     // El mismo cálculo contra el disco: lo que usa el perfil.
-    public static string? FileFor(string? stored, int level) => FileFor(stored, level, name => File.Exists(PathOf(name)));
+    public static string? FileFor(string? stored, int level, bool hasSnow = false) => FileFor(stored, level, hasSnow, name => File.Exists(PathOf(name)));
 
     // Si el embed lleva un banner local (attachment://banner_...), la ruta del archivo que hay que mandar JUNTO con el mensaje; null si no hace falta.
     public static string? AttachmentPathFor(Embed embed)

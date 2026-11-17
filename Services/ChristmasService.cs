@@ -81,7 +81,7 @@ public static class ChristmasDisplay
         }
 
         return embed.ToEmbedBuilder()
-            .AddField(Loc.T("❄️ Navidad en el Fogón"), Loc.F($"🎁 **+{gifts}** Regalos"), false)
+            .AddField(Loc.T("❄️ Navidad en el Fogón"), ChristmasEmojis.Paint(Loc.F($"🎁 **+{gifts}** Regalos")), false)
             .Build();
     }
 
@@ -95,7 +95,7 @@ public static class ChristmasDisplay
         }
 
         return embed.ToEmbedBuilder()
-            .AddField(Loc.T("❄️ Navidad en el Fogón"), string.Join("\n", lines), false)
+            .AddField(Loc.T("❄️ Navidad en el Fogón"), ChristmasEmojis.Paint(string.Join("\n", lines)), false)
             .Build();
     }
 }

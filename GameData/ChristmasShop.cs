@@ -49,6 +49,8 @@ public static class ChristmasShop
         new("calcetin", "Calcetín", "🧦", 50, ChristmasShopKind.Sock, Loc.Mark("Se abre al comprarlo: oro, EXP, una caja de tu zona y Polvo.")),
         new("vela", "Vela", "🕯️", 70, ChristmasShopKind.Candle, Loc.Mark("+50 % de Regalos durante 1 hora (hasta el 24 de diciembre).")),
         new("elfo", "Elfo del Fogón", "🧝", 500, ChristmasShopKind.Unlock, Loc.Mark("Un título para siempre."), TitleElfStat),
+        // v0.61.0: el banner de nieve del perfil (arte del dueño). Se ve UNO solo por perfil: se elige en /config o con «aa banner nieve».
+        new("banner", "Banner de Nieve", "🖼️", 1000, ChristmasShopKind.Unlock, Loc.Mark("Un banner de nieve al pie de tu perfil, para siempre. Se elige en /config."), ProfileBanners.SnowStat),
         new("espiritu", "Espíritu de la Navidad", "🌟", 1500, ChristmasShopKind.Unlock, Loc.Mark("Un título para siempre."), TitleSpiritStat),
         new("reno", "Reno", "🦌", 4500, ChristmasShopKind.Unlock, Loc.Mark("Mascota para siempre: +15 % de XP y de oro, y /travel en 25 minutos."), RenoRules.StatKey),
     ];
@@ -72,5 +74,5 @@ public static class ChristmasShopText
 {
     // El nombre para mostrar: los títulos van como «Título «Nombre»»; el resto, su nombre (nombres propios: quedan en español).
     public static string Label(ChristmasShopItem item) =>
-        item.Kind == ChristmasShopKind.Unlock && item.UnlockStat != RenoRules.StatKey ? Loc.F($"Título «{item.Name}»") : item.Name;
+        item.Kind == ChristmasShopKind.Unlock && item.UnlockStat is not (RenoRules.StatKey or ProfileBanners.SnowStat) ? Loc.F($"Título «{item.Name}»") : item.Name;
 }

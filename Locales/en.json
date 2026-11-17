@@ -1,4 +1,12 @@
 {
+  "🖼️ **¡El Banner de Nieve es tuyo!** Ponételo en **/config** o con **aa banner nieve** (se ve uno solo: reemplaza al que tengas).": "🖼️ **The Banner de Nieve is yours!** Put it on in **/config** or with **aa banner nieve** (only one shows: it replaces the one you have).",
+  "Todavía no tenés el Banner de Nieve: se compra en la tienda de **/navidad**.": "You do not have the Banner de Nieve yet: buy it in the **/navidad** shop.",
+  "Banner de Nieve": "Banner de Nieve",
+  "El de la tienda navideña.": "The one from the Christmas shop.",
+  "✅ **Banner de Nieve**, al pie de tu perfil (de la tienda navideña).": "✅ **Banner de Nieve**, at the bottom of your profile (from the Christmas shop).",
+  "❌ **Sin banner.** Tenés el **Banner de Nieve**: elegilo en el menú de abajo.": "❌ **No banner.** You have the **Banner de Nieve**: pick it in the menu below.",
+  "✅ Listo: tu perfil lleva el **Banner de Nieve**.": "✅ Done: your profile now has the **Banner de Nieve**.",
+  "Un banner de nieve al pie de tu perfil, para siempre. Se elige en /config.": "A snowy banner at the bottom of your profile, forever. Pick it in /config.",
   "🌐 Tu idioma es **{0}**. Para cambiarlo usá `/language` (o `aa language es` / `aa language en`).": "🌐 Your language is **{0}**. To change it use `/language` (or `aa language es` / `aa language en`).",
   "No conozco ese idioma. Elegí **es** (español) o **en** (English).": "I don't know that language. Pick **es** (Spanish) or **en** (English).",
   "¡Upa! No pude guardar tu idioma, probá de nuevo en un momento.": "Oops! I couldn't save your language, try again in a moment.",
