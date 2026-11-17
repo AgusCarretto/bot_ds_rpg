@@ -22,6 +22,10 @@ public interface IAdminRepository
     // (cajas, materiales, comida, huevos, comida de mascotas y de dragón...) se suma a la mochila. Para el equipo y las herramientas la cantidad no cuenta.
     Task<AdminGiveResult> GiveItemAsync(ulong discordId, Item item, int quantity, CancellationToken cancellationToken = default);
 
+    // «aa admingive banner nieve» (v0.61.0): deja comprado algo que vive como contador en player_stats (el Banner de Nieve), igual que la tienda navideña: el contador queda en 1 como mínimo
+    // (si ya lo tenía, no cambia). Devuelve true si ya lo tenía de antes.
+    Task<bool> GrantUnlockAsync(ulong discordId, string statKey, CancellationToken cancellationToken = default);
+
     // Hasta `limit` nombres de ítems que contienen lo escrito (sin importar mayúsculas), para decir «¿quisiste decir…?» cuando el nombre no existe.
     Task<IReadOnlyList<string>> SearchItemNamesAsync(string typed, int limit, CancellationToken cancellationToken = default);
 

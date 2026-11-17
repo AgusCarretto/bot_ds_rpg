@@ -580,3 +580,42 @@ CREATE TABLE IF NOT EXISTS player_bestiary (
     first_kill_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (discord_id, monster_id)
 );
+
+-- Navidad en el Fogón (v0.57.0, ver Database/add_christmas.sql): los Regalos por temporada y el calendario de adviento.
+CREATE TABLE IF NOT EXISTS event_gifts (
+    discord_id BIGINT NOT NULL,
+    season     TEXT   NOT NULL,
+    balance    BIGINT NOT NULL DEFAULT 0 CHECK (balance >= 0),
+    earned     BIGINT NOT NULL DEFAULT 0 CHECK (earned >= 0),
+    bells        INTEGER     NOT NULL DEFAULT 0 CHECK (bells >= 0),
+    candle_until TIMESTAMPTZ,
+    PRIMARY KEY (discord_id, season)
+);
+
+CREATE TABLE IF NOT EXISTS event_advent_claims (
+    discord_id BIGINT      NOT NULL,
+    season     TEXT        NOT NULL,
+    day        SMALLINT    NOT NULL CHECK (day BETWEEN 1 AND 24),
+    claimed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (discord_id, season, day)
+);
+
+CREATE TABLE IF NOT EXISTS event_snowman (
+    season     TEXT        NOT NULL,
+    round      INTEGER     NOT NULL CHECK (round >= 1),
+    max_hp     INTEGER     NOT NULL CHECK (max_hp > 0),
+    hp         INTEGER     NOT NULL CHECK (hp >= 0),
+    started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    killed_at  TIMESTAMPTZ,
+    killer_id  BIGINT,
+    PRIMARY KEY (season, round)
+);
+
+CREATE TABLE IF NOT EXISTS event_snowman_hits (
+    season     TEXT    NOT NULL,
+    round      INTEGER NOT NULL,
+    discord_id BIGINT  NOT NULL,
+    damage     BIGINT  NOT NULL DEFAULT 0 CHECK (damage >= 0),
+    spent      BIGINT  NOT NULL DEFAULT 0 CHECK (spent >= 0),
+    PRIMARY KEY (season, round, discord_id)
+);

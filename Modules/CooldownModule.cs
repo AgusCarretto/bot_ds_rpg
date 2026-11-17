@@ -72,16 +72,16 @@ public class CooldownModule(
         }
 
         // El jefe va abajo de todo, con el jefe mundial y la Arena (el dueño, v0.46.0): los tres son las peleas «grandes» del día.
+        PlayerBonuses? bonuses = bonusService is null ? null : await bonusService.GetAsync(discordId, player.FuegoNuevo);
         foreach (var definition in CooldownCatalog.All.Where(d => d != CooldownCatalog.Boss))
         {
-            await AddLineAsync(definition);
+            // /travel con el Reno de Navidad (v0.57.0) espera 25 minutos: la cuenta tiene que ser la misma que cobra el viaje.
+            await AddLineAsync(definition == CooldownCatalog.Travel && bonuses is not null ? definition with { Duration = bonuses.TravelCooldown } : definition);
         }
 
         // Las versiones avanzadas de /chop y /mine: solo con el oficio al nivel máximo (GameData/ProfessionRules.cs).
-        PlayerBonuses? bonuses = null;
-        if (bonusService is not null)
+        if (bonuses is not null)
         {
-            bonuses = await bonusService.GetAsync(discordId, player.FuegoNuevo);
             if (ProfessionRules.AdvancedUnlocked(bonuses.ProfessionLevel(ProfessionCatalog.WoodcutterKey)))
             {
                 await AddLineAsync(CooldownCatalog.ChopAdvanced);

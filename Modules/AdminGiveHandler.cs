@@ -75,6 +75,16 @@ public static class AdminGiveHandler
                 break;
             }
 
+            case AdminGiveKind.Banner:
+            {
+                bool had = await adminRepository.GrantUnlockAsync(targetId, ProfileBanners.SnowStat);
+                reply = had
+                    ? $"🖼️ <@{targetId}> ya tenía el **Banner de Nieve**. Se pone en **/config** o con **aa banner nieve**."
+                    : $"🖼️ Le diste el **Banner de Nieve** a <@{targetId}>. Se pone en **/config** o con **aa banner nieve**.";
+                detail = "banner nieve";
+                break;
+            }
+
             default:
             {
                 string name = request.ItemName!;

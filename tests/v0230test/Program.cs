@@ -23,14 +23,14 @@ TitleDefinition T(string key) => TitleCatalog.Find(key) ?? throw new InvalidOper
 
 Console.WriteLine("== 1. El catálogo ==");
 var all = TitleCatalog.All;
-Check(all.Count == 146 && all.Count >= 50, $"hay {all.Count} títulos (el pedido era 50 como mínimo)");
+Check(all.Count == 150 && all.Count >= 50, $"hay {all.Count} títulos (el pedido era 50 como mínimo)");
 Check(all.Select(t => t.Key).Distinct().Count() == all.Count && all.Select(t => t.Name.ToLowerInvariant()).Distinct().Count() == all.Count, "las claves y los nombres no se repiten");
-Check(TitleCatalog.Pages.Count == 11 && TitleCatalog.Pages.Select(p => p.Key).Distinct().Count() == 11 && all.All(t => TitleCatalog.Pages.Any(p => p.Key == t.PageKey)), "11 páginas (con «Hazañas I» y «Hazañas II») y cada título está en una que existe");
+Check(TitleCatalog.Pages.Count == 12 && TitleCatalog.Pages.Select(p => p.Key).Distinct().Count() == 12 && all.All(t => TitleCatalog.Pages.Any(p => p.Key == t.PageKey)), "12 páginas (con «Hazañas I», «Hazañas II» y «Navidad», v0.57.0) y cada título está en una que existe");
 var sizes = TitleCatalog.Pages.ToDictionary(p => p.Key, p => TitleCatalog.OfPage(p.Key).Count);
 Check(sizes.Values.All(n => n is >= 1 and <= 25) && sizes.Values.Sum() == all.Count, $"cada página tiene entre 1 y 25 títulos (el desplegable de equipar admite 25): {string.Join(", ", sizes.Select(kv => $"{kv.Key} {kv.Value}"))}");
 Check(all.All(t => t.Name.Length is >= 3 and <= 40 && t.Hint.Length > 3 && t.Hint.Length <= 100), "nombres cortos y una pista de cómo conseguirlo en todos (entran en una opción de desplegable)");
 var fromAch = all.Where(t => t.FromAchievement).ToList();
-Check(fromAch.Count == 99 && AchievementCatalog.All.Where(a => a.Key is not ("manoganadora" or "bestiario" or "hz_pescador")).All(a => a.Tiers.Select((tier, i) => fromAch.Any(t => t.AchievementKey == a.Key && t.AchievementTier == i + 1 && t.Threshold == tier.Threshold && t.Source == a.StatKind)).All(x => x)),
+Check(fromAch.Count == 99 && AchievementCatalog.All.Where(a => a.Key is not ("manoganadora" or "bestiario" or "hz_pescador" or "xmas_espiritu" or "xmas_bombardero")).All(a => a.Tiers.Select((tier, i) => fromAch.Any(t => t.AchievementKey == a.Key && t.AchievementTier == i + 1 && t.Threshold == tier.Threshold && t.Source == a.StatKind)).All(x => x)),
     "99 títulos vienen de los logros: los 33 logros con títulos por sus 3 tramos (Mano Ganadora, v0.54.0, va sin títulos: lo pidió el dueño), con la MISMA meta y el mismo contador que el tramo (una sola fuente de verdad)");
 Check(all.Count(t => t.Rule == TitleRule.BossRank) == 5 && all.Count(t => t.Rule == TitleRule.Level) == 4 && all.Count(t => t.Rule == TitleRule.BlessingColor) == 5 && all.Count(t => t.Rule == TitleRule.Flag) == 3 && all.Count(t => t.Rule == TitleRule.Always) == 1,
     "especiales: 5 jefes de la escalera, 4 niveles, 5 de la Brasa de Color, 3 hallazgos y el título inicial");
@@ -160,8 +160,8 @@ var rows = view.Components!.Components.OfType<ActionRowComponent>().ToList();
 var pageMenu = Flat(view.Components).OfType<SelectMenuComponent>().Single(m => m.CustomId == $"titles_page:{U}");
 var equipMenu = Flat(view.Components).OfType<SelectMenuComponent>().Single(m => m.CustomId == $"titles_equip:{U}:combate");
 var clearButton = Flat(view.Components).OfType<ButtonComponent>().Single();
-Check(rows.Count == 3 && pageMenu.Options.Count == 11 && pageMenu.Options.Single(o => o.IsDefault == true).Value == "combate" && pageMenu.Options.All(o => o.Emote is null && o.Label.Length <= 100),
-    "tres filas: el desplegable de las 11 páginas (marcada la actual), el de equipar y el botón");
+Check(rows.Count == 3 && pageMenu.Options.Count == 12 && pageMenu.Options.Single(o => o.IsDefault == true).Value == "combate" && pageMenu.Options.All(o => o.Emote is null && o.Label.Length <= 100),
+    "tres filas: el desplegable de las 12 páginas (marcada la actual), el de equipar y el botón");
 Check(equipMenu.Options.Select(o => o.Value).OrderBy(v => v).SequenceEqual(new[] { "cazador_1", "cazador_2" }.OrderBy(v => v)) && equipMenu.Options.Single(o => o.Value == "cazador_1").Description == "Puesto ahora" && equipMenu.Options.Count <= 25,
     "el desplegable de equipar lista SOLO los que tiene de esa página");
 Check(clearButton.CustomId == $"titles_clear:{U}:combate" && !clearButton.IsDisabled, "el botón de quitar está activo con un título puesto y su id lleva el dueño y la página");

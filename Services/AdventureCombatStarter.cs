@@ -17,10 +17,10 @@ public sealed class AdventureCombatStarter(
     IRaidSessionService raidSessions,
     IPlayerSettingsService? settingsService = null) : IAdventureCombatStarter   // opcional como bonusService en otros: los arneses viejos que lo arman a mano siguen igual (con el resumen prendido)
 {
-    public Task<CombatStartOutcome> PrepareTravelAsync(ulong discordId, CancellationToken cancellationToken = default) =>
-        PrepareInternalAsync(
+    public async Task<CombatStartOutcome> PrepareTravelAsync(ulong discordId, CancellationToken cancellationToken = default) =>
+        await PrepareInternalAsync(
             discordId,
-            CooldownCatalog.Travel,
+            await TravelDefinitionAsync(discordId, cancellationToken),
             async player =>
             {
                 var travelMonster = await monsterRepository.GetTravelMonsterByZoneAsync(player.CurrentZoneId, cancellationToken);
@@ -31,6 +31,19 @@ public sealed class AdventureCombatStarter(
             extraGate: null,
             cancellationToken);
 
+    public Task<CombatStartOutcome> PrepareKrampusAsync(ulong discordId, CancellationToken cancellationToken = default) =>
+        PrepareInternalAsync(
+            discordId,
+            KrampusRules.Cooldown,
+            async player =>
+            {
+                var travelMonster = await monsterRepository.GetTravelMonsterByZoneAsync(player.CurrentZoneId, cancellationToken);
+                return travelMonster is null ? [] : new[] { KrampusRules.FromTravel(travelMonster) };
+            },
+            CombatStartStatus.NoMonstersInZone,
+            isBossFight: false,
+            extraGate: null,
+            cancellationToken);
     public async Task<CombatStartOutcome> PrepareAdventureFightAsync(ulong discordId, MonsterTemplate monster, int damageBonusPercent, CancellationToken cancellationToken = default)
     {
         if (combatSessions.Peek(discordId) is not null || raidSessions.IsInAnyRaid(discordId))
@@ -103,6 +116,23 @@ public sealed class AdventureCombatStarter(
                     : null;
             },
             cancellationToken);
+
+    // La espera de /travel de ESTE jugador (25 minutos con el Reno de Navidad, v0.57.0). Si no se puede leer, la de siempre: el viaje sigue.
+    private async Task<CooldownDefinition> TravelDefinitionAsync(ulong discordId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var user = await userRepository.GetByDiscordIdAsync(discordId, cancellationToken);
+            return user is null
+                ? CooldownCatalog.Travel
+                : CooldownCatalog.Travel with { Duration = (await bonusService.GetAsync(discordId, user.FuegoNuevo, cancellationToken)).TravelCooldown };
+        }
+        catch (Exception ex)
+        {
+            BotLog.Warn(ex);
+            return CooldownCatalog.Travel;
+        }
+    }
 
     private async Task<CombatStartOutcome> PrepareInternalAsync(
         ulong discordId,

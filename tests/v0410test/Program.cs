@@ -43,9 +43,9 @@ var feats = new[] { "hz_cazador", "hz_viajero", "hz_jefes", "hz_recolector", "hz
 var commonOf = new Dictionary<string, string> { ["hz_cazador"] = "cazador", ["hz_viajero"] = "viajero", ["hz_jefes"] = "matajefes", ["hz_recolector"] = "recolector", ["hz_herrero"] = "herrero", ["hz_magnate"] = "comerciante", ["hz_encantador"] = "encantador" };
 
 Console.WriteLine("== 1. El catálogo (puro) ==");
-Check(AchievementCatalog.All.Count == 36 && AchievementCatalog.All.Select(a => a.Key).Distinct().Count() == 36 && feats.All(k => AchievementCatalog.Find(k) is not null), "32 logros con claves distintas: los 24 de siempre (con el Pescador de la v0.48.0) y las 8 hazañas");
+Check(AchievementCatalog.All.Count == 38 && AchievementCatalog.All.Select(a => a.Key).Distinct().Count() == 38 && feats.All(k => AchievementCatalog.Find(k) is not null), "32 logros con claves distintas: los 24 de siempre (con el Pescador de la v0.48.0) y las 8 hazañas");
 var page = AchievementCatalog.Categories[^1];
-Check(page.Name == "Hazañas" && page.Keys.SequenceEqual(feats) && AchievementCatalog.Categories.Count == 5 && AchievementCatalog.Categories.SelectMany(c => c.Keys).Distinct().Count() == 36, "las hazañas tienen su PÁGINA propia (la última) y cada logro sigue estando en exactamente una");
+Check(page.Name == "Hazañas" && page.Keys.SequenceEqual(feats) && AchievementCatalog.Categories.Count == 6 && AchievementCatalog.Categories.SelectMany(c => c.Keys).Distinct().Count() == 38, "las hazañas tienen su PÁGINA propia (la última) y cada logro sigue estando en exactamente una");
 Check(feats.All(k => AchievementCatalog.Find(k)!.Tiers.Count == 3 && AchievementCatalog.Find(k)!.Tiers.Zip(AchievementCatalog.Find(k)!.Tiers.Skip(1), (a, b) => b.Threshold > a.Threshold).All(x => x)), "cada hazaña tiene tres tramos y cada uno pide más que el anterior");
 Check(commonOf.All(kv => AchievementCatalog.Find(kv.Key)!.StatKind == AchievementCatalog.Find(kv.Value)!.StatKind), "cada hazaña cuenta lo mismo que su logro común (los mismos contadores: no hay nada nuevo que registrar)");
 Check(commonOf.All(kv => AchievementCatalog.Find(kv.Key)!.Tiers[0].Threshold >= AchievementCatalog.Find(kv.Value)!.Tiers[2].Threshold), "el PRIMER tramo de la hazaña ya pide más que el tramo más alto del logro común (bastante más difícil)");
@@ -58,7 +58,7 @@ Check(AchievementCatalog.Find("hz_cazador")!.Tiers.Select(t => t.Reward.GoldUnit
 
 Console.WriteLine("\n== 2. Los títulos (puros) ==");
 var featTitles = TitleCatalog.All.Where(t => t.AchievementKey is not null && feats.Contains(t.AchievementKey)).ToList();
-Check(featTitles.Count == 24 && featTitles.All(t => t.PageKey is "hazanas" or "hazanas2" && t.Rule == TitleRule.Stat) && featTitles.Count(t => t.PageKey == "hazanas") == 12 && TitleCatalog.All.Count == 146 && TitleCatalog.Pages.Count == 11 && TitleCatalog.Pages.Any(p => p.Key == "hazanas" && p.Name == "Hazañas I") && TitleCatalog.Pages.Any(p => p.Key == "hazanas2" && p.Name == "Hazañas II"), "24 títulos nuevos en las páginas «Hazañas I» y «Hazañas II», 12 en cada una (146 en total desde la v0.59.0, 11 páginas)");
+Check(featTitles.Count == 24 && featTitles.All(t => t.PageKey is "hazanas" or "hazanas2" && t.Rule == TitleRule.Stat) && featTitles.Count(t => t.PageKey == "hazanas") == 12 && TitleCatalog.All.Count == 150 && TitleCatalog.Pages.Count == 12 && TitleCatalog.Pages.Any(p => p.Key == "hazanas" && p.Name == "Hazañas I") && TitleCatalog.Pages.Any(p => p.Key == "hazanas2" && p.Name == "Hazañas II"), "24 títulos nuevos en las páginas «Hazañas I» y «Hazañas II», 12 en cada una (146 en total desde la v0.59.0, 11 páginas)");
 Check(featTitles.All(t => AchievementCatalog.Find(t.AchievementKey!)!.Tiers[t.AchievementTier - 1].Threshold == t.Threshold && t.Source == AchievementCatalog.Find(t.AchievementKey!)!.StatKind), "cada título se gana con la MISMA meta y el mismo contador que su tramo");
 Check(TitleCatalog.All.Select(t => t.Name.ToLowerInvariant()).Distinct().Count() == TitleCatalog.All.Count && TitleCatalog.All.Count(t => t.PageKey == "hazanas") <= 25 && TitleCatalog.ParsePage("hazanas") == 7 && TitleCatalog.ParsePage("hazanas2") == 8, "ningún nombre se repite, la página entra en las 25 opciones del desplegable y se pide por su clave");
 var ctxLow = new TitleContext(new Dictionary<string, long> { [GameEventKinds.HuntWin] = 2_499 }, 1, new HashSet<int>(), new HashSet<string>(), 0);
@@ -67,9 +67,9 @@ Check(!TitleCatalog.IsUnlocked(TitleCatalog.All.Single(t => t.Key == "hz_cazador
 
 Console.WriteLine("\n== 3. Verlas y reclamarlas (base local) ==");
 await Reset();
-var view = await AchievementsModule.BuildViewAsync(eventsRepo, achRepo, U, 4);
+var view = await AchievementsModule.BuildViewAsync(eventsRepo, achRepo, U, 5);
 string vt = AllText(view.Embed);
-Check(vt.Contains("Hazañas") && vt.Contains("Cazador de Leyenda") && vt.Contains("Gran Explorador") && vt.Contains("Magnate") && vt.Contains("Página 5/5") && view.Embed.Length <= 6000 && view.Embed.Fields.All(f => f.Value.Length <= 1024), $"la página 5 muestra las hazañas, dentro de los límites de Discord ({view.Embed.Length})");
+Check(vt.Contains("Hazañas") && vt.Contains("Cazador de Leyenda") && vt.Contains("Gran Explorador") && vt.Contains("Magnate") && vt.Contains("Página 6/6") && view.Embed.Length <= 6000 && view.Embed.Fields.All(f => f.Value.Length <= 1024), $"la página 5 muestra las hazañas, dentro de los límites de Discord ({view.Embed.Length})");
 await SetStat(GameEventKinds.PetExpeditionClaim, 300);
 var claim = await AchievementsModule.ExecuteClaimAsync(users, zonesRepo, eventsRepo, achRepo, events, U);
 var me = await Me();

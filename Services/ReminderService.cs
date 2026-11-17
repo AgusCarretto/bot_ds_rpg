@@ -53,7 +53,15 @@ public sealed class ReminderService(
 
             var now = DateTime.UtcNow;
             var rows = await cooldowns.GetAllAsync(discordId, cancellationToken);
-            var candidates = new List<ReminderDue>(ReminderCatalog.FromCooldowns(rows.Select(r => (r.Command, r.LastExecutedUtc)), now));
+            // El Reno de Navidad (v0.57.0) acorta /travel a 25 minutos: solo se mira si hay un viaje esperando (si no, no hace falta leer los bonus).
+            TimeSpan? travelCooldown = null;
+            if (rows.Any(r => r.Command == CooldownCatalog.Travel.CommandName && DateTime.SpecifyKind(r.LastExecutedUtc, DateTimeKind.Utc) + CooldownCatalog.Travel.Duration > now)
+                && await users.GetByDiscordIdAsync(discordId, cancellationToken) is { } traveler)
+            {
+                travelCooldown = (await bonuses.GetAsync(discordId, traveler.FuegoNuevo, cancellationToken)).TravelCooldown;
+            }
+
+            var candidates = new List<ReminderDue>(ReminderCatalog.FromCooldowns(rows.Select(r => (r.Command, r.LastExecutedUtc)), now, travelCooldown));
 
             bool pet = ReminderCatalog.MayChangePet(commandHint);
             bool daily = ReminderCatalog.MayChangeDaily(commandHint);

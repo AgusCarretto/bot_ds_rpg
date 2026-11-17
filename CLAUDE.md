@@ -75,6 +75,10 @@ dotnet run --project tests/<nombre>            # un arnés suelto
 dotnet run --project tools/loc -- --check      # traducciones: 0 faltantes / 0 viejas / 0 {n} mal / 0 no literales
 dotnet run --project tools/balance2 -- <parte> # simulador de balance (partes A–P; P = duelos entre clases)
 ```
+**Qué arneses correr (regla del dueño, 2026-11-17): SOLO los del área que se tocó, nunca la suite entera por costumbre.** Buscar con Grep en
+`tests/` los arneses que usan la clase o constante cambiada y correr esos con `.\tests\run-all.ps1 -Only a,b` (más `loctest` si se tocaron textos
+y el que tenga un conteo que cambió, ej. cantidad de logros o temas de `/info`). `run-all` completo solo si el dueño lo pide o si el cambio es
+transversal (`Program.cs`, el motor de combate, `Loc`, helpers compartidos). Tampoco antes de un release: alcanza con el build y los arneses del área.
 Los arneses ESCRIBEN y borran datos: solo contra una base LOCAL (`TestEnv` rechaza otra salvo `HARNESS_ALLOW_REMOTE=1`;
 nunca producción). Si un cambio rompe un arnés, decidir si el arnés fijaba el comportamiento VIEJO a propósito o si el código está mal.
 Config: `.env` → User Secrets → variables de entorno (`Discord__Token`, `Discord__TestGuildId`, `Postgres__ConnectionString`).
@@ -93,6 +97,7 @@ Config: `.env` → User Secrets → variables de entorno (`Discord__Token`, `Dis
 | **UI**: bestiario (v0.56.0), inventario y perfil legibles, NPCs y escena del herrero, banner de nivel, taberna, pestañas del inventario, emojis de ítems/aplicación/registro, íconos y barras, emojis en menús, imágenes de NPC, `/info` por tema, idioma, `/config` y tabla de resumen, banner del perfil, `/cd` personalizable, respuesta = mención | `docs/claude/ui-embeds-emojis-idioma.md` |
 | Dragón (cría, entrenamiento, tablón), mascotas (tiers, evolución, huevos, expediciones — sus premios son SECRETOS en pantalla) | `docs/claude/mascotas-dragon.md` |
 | El Fogón (Zona 0), Tabernero del Inframundo, Fuego Nuevo y bendiciones, la historia (Crónicas del Fogón) | `docs/claude/fogon-fn-historia.md` |
+| **Navidad en el Fogón** (v0.57.0+): Regalos, calendario de adviento, tienda, Reno, Krampus, Muñeco de Nieve | `docs/navidad.md` |
 | Mini-evento, recordatorios, voto top.gg y su página (`docs/topgg/`), `aa admingive/adminset`, códigos canjeables, invitaciones | `docs/claude/sistemas-comunidad-admin.md` |
 
 Comentarios del código que dicen "ver CLAUDE.md, «X»" → buscar «X» con Grep en `docs/claude/`.

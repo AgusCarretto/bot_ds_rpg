@@ -689,6 +689,14 @@ public static class ServiceProviderBuilder
             .AddSingleton<IRedeemCodeRepository, RedeemCodeRepository>()
             .AddSingleton<IReferralRepository, ReferralRepository>()
             .AddSingleton<IBestiaryRepository, BestiaryRepository>()
+            // Navidad en el Fogón (v0.57.0, docs/navidad.md): las fechas salen de Christmas__Start/FarmEnd/End (sin ellas, 1-12-2026 → 7-1-2027).
+            .AddSingleton<IChristmasRepository, ChristmasRepository>()
+            .AddSingleton(sp => ChristmasService.LoadSettings(sp.GetRequiredService<IConfiguration>()))
+            .AddSingleton<IChristmasService>(sp => new ChristmasService(sp.GetRequiredService<IChristmasRepository>(), sp.GetRequiredService<ChristmasSettings>()))
+            .AddSingleton<ISnowmanRepository, SnowmanRepository>()
+            .AddSingleton<ISnowmanService>(sp => new SnowmanService(
+                sp.GetRequiredService<ISnowmanRepository>(), sp.GetRequiredService<IChristmasService>(), SnowmanService.LoadInitialHp(sp.GetRequiredService<IConfiguration>()),
+                sp.GetRequiredService<IGameEvents>()))
             // La Aventura (v0.57.0, docs/aventura.md): las corridas en memoria y el paquete de lo que usan sus pantallas y el turno de pelea.
             .AddSingleton<IAdventureService, AdventureService>()
             .AddSingleton(sp => new AdventureDeps(

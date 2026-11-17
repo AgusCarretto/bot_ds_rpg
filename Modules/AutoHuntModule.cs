@@ -156,8 +156,9 @@ public class AutoHuntModule(
                 discordId, reward.Gold, reward.Xp, finalState.ToDbHpDelta(playerHp - state.PlayerStartingHp), droppedItem?.ItemId, droppedItemQuantity: 1);
 
             await gameEvents.RecordVictoryAsync(discordId, GameEventKinds.HuntWin, levelOutcome, state.MonsterName);
+            int gifts = await gameEvents.GrantEventGiftsAsync(discordId, GameEventKinds.HuntWin);
 
-            return new AutoHuntResult(null, BuildVictoryEmbed(finalState, levelOutcome, reward, droppedItem));
+            return new AutoHuntResult(null, ChristmasDisplay.WithGifts(BuildVictoryEmbed(finalState, levelOutcome, reward, droppedItem), gifts));
         }
 
         // Derrota: el jugador llegó a 0 HP antes de bajar al monstruo.

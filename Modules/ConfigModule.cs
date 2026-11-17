@@ -13,9 +13,11 @@ using Discord.Interactions;
 // mejora solo) o uno de los tiers que ya desbloqueó; también «aa banner on», «aa banner 3» y «aa banner off».
 public sealed record ConfigScreen(Embed Embed, MessageComponent Components);
 
-public enum BannerSetStatus { Saved, NotOwned, TierTooHigh, Failed }
+// Banner de nieve (v0.61.0, Navidad): el segundo banner, comprado en la tienda navideña. El perfil sigue llevando UNO solo: «nieve» es otra opción del mismo menú (reemplaza al de la Brasa).
+// También «aa banner nieve». Saber si lo compró pide los contadores (player_stats): por eso el repositorio de eventos viaja junto al de las bendiciones.
+public enum BannerSetStatus { Saved, NotOwned, TierTooHigh, Failed, SnowNotOwned }
 
-public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository blessings) : InteractionModuleBase<SocketInteractionContext>
+public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository blessings, IGameEventRepository stats) : InteractionModuleBase<SocketInteractionContext>
 {
     // El id del botón lleva a quién pertenece la pantalla y el valor al que PASA al tocarlo (on / off; full / classic): nadie puede cambiar la configuración de otro con una pantalla vieja o ajena.
     public const string SummaryButton = "config_summary";
@@ -31,7 +33,7 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
 
         try
         {
-            var screen = await BuildScreenAsync(settings, Context.User.Id, blessings);
+            var screen = await BuildScreenAsync(settings, Context.User.Id, blessings, stats);
             await FollowupAsync(embed: screen.Embed, components: screen.Components, ephemeral: true);
         }
         catch (Exception ex)
@@ -54,10 +56,11 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
     public async Task HandleBannerSelectAsync(string ownerRaw, string[] selected)
     {
         string? stored = ProfileBanners.StoredFor(selected.FirstOrDefault());
-        await ApplyAsync(ownerRaw, async owner => await TrySetBannerAsync(settings, blessings, owner, stored) switch
+        await ApplyAsync(ownerRaw, async owner => await TrySetBannerAsync(settings, blessings, owner, stored, stats) switch
         {
             BannerSetStatus.Saved => null,
             BannerSetStatus.NotOwned => Loc.T("Todavía no tenés la bendición Brasa de Color: es la que desbloquea el banner."),
+            BannerSetStatus.SnowNotOwned => Loc.T("Todavía no tenés el Banner de Nieve: se compra en la tienda de **/navidad**."),
             BannerSetStatus.TierTooHigh => Loc.T("Todavía no llegaste a ese tier: se desbloquea al subir de nivel la Brasa de Color."),
             _ => Loc.T("No pude guardar el cambio, intentá de nuevo en un momento."),
         });
@@ -94,7 +97,7 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
             }
 
             string? problem = await save(ownerId);
-            var screen = await BuildScreenAsync(settings, ownerId, blessings);
+            var screen = await BuildScreenAsync(settings, ownerId, blessings, stats);
 
             // La pantalla se actualiza en su lugar; si no se pudo guardar, además se avisa aparte (la pantalla sigue mostrando lo que de verdad hay).
             await ModifyOriginalResponseAsync(p =>
@@ -116,11 +119,13 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
     }
 
     // La pantalla: qué tenés ahora y el botón que lo cambia, una opción debajo de la otra. Pública y sin Context para que el comando de texto muestre lo mismo y se pruebe sin Discord.
-    public static async Task<ConfigScreen> BuildScreenAsync(IPlayerSettingsService service, ulong discordId, IBlessingRepository? blessings = null)
+    public static async Task<ConfigScreen> BuildScreenAsync(IPlayerSettingsService service, ulong discordId, IBlessingRepository? blessings = null, IGameEventRepository? stats = null)
     {
         var current = await service.GetAsync(discordId);
         bool on = current.ShowFightSummary;
         bool full = current.FullRecipeBook;
+        bool hasSnow = await HasSnowBannerAsync(stats, discordId);
+        bool snowOn = ProfileBanners.IsSnow(current.ProfileBanner);
 
         // Los banners que desbloqueó (una bendición = un banner): sin el repositorio, o si la lectura falla, la pantalla sale sin esa opción.
         IReadOnlyDictionary<string, int>? levels = null;
@@ -157,9 +162,9 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
         IReadOnlyList<(BlessingDefinition Blessing, int Level)> unlocked = levels is null ? [] : ProfileBanners.Unlocked(levels);
         int? bannerLevel = unlocked.Count == 0 ? null : unlocked[0].Level;
         var (bannerOn, bannerTier) = ProfileBanners.Parse(current.ProfileBanner);
-        if (levels is not null)
+        if (levels is not null || hasSnow)
         {
-            embed = AddBannerField(embed, bannerLevel, bannerOn, bannerTier);
+            embed = AddBannerField(embed, bannerLevel, bannerOn, bannerTier, hasSnow, snowOn);
         }
 
         embed = AddCdField(embed, current.CdLayout);
@@ -177,18 +182,27 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
                 new Emoji(full ? "📖" : "📜"));
 
         // El menú para elegir el banner (v0.50.0), en su propia fila y solo para quien tiene la Brasa de Color: «Sin banner», «El mejor» (el de su nivel, mejora solo) y un tier por cada nivel que ya tiene la bendición.
-        if (bannerLevel is int unlockedTiers)
+        // v0.61.0: también para quien compró el Banner de Nieve (una opción más; se ve UNO solo).
+        if (bannerLevel is not null || hasSnow)
         {
             var menu = new SelectMenuBuilder()
                 .WithCustomId($"{BannerSelect}:{discordId}")
                 .WithPlaceholder(Loc.T("Elegí el banner de tu perfil"))
                 .WithMinValues(1)
                 .WithMaxValues(1)
-                .AddOption(Loc.T("Sin banner"), ProfileBanners.NoneChoice, Loc.T("El perfil sale como siempre."), new Emoji("🚫"), isDefault: !bannerOn)
-                .AddOption(Loc.T("El mejor (automático)"), ProfileBanners.AutoChoice, Loc.T("Siempre el de tu nivel: mejora solo al subir la bendición."), new Emoji("✨"), isDefault: bannerOn && bannerTier is null);
-            for (int tier = 1; tier <= unlockedTiers; tier++)
+                .AddOption(Loc.T("Sin banner"), ProfileBanners.NoneChoice, Loc.T("El perfil sale como siempre."), new Emoji("🚫"), isDefault: !bannerOn && !snowOn);
+            if (hasSnow)
             {
-                menu.AddOption(Loc.F($"Tier {BlessingCatalog.RomanLevel(tier)}"), $"{tier}", Loc.F($"El banner de la Brasa de Color en su tier {BlessingCatalog.RomanLevel(tier)}."), new Emoji("🌈"), isDefault: bannerOn && bannerTier == tier);
+                menu.AddOption(Loc.T("Banner de Nieve"), ProfileBanners.SnowKey, Loc.T("El de la tienda navideña."), new Emoji("❄️"), isDefault: snowOn);
+            }
+
+            if (bannerLevel is int unlockedTiers)
+            {
+                menu.AddOption(Loc.T("El mejor (automático)"), ProfileBanners.AutoChoice, Loc.T("Siempre el de tu nivel: mejora solo al subir la bendición."), new Emoji("✨"), isDefault: bannerOn && bannerTier is null);
+                for (int tier = 1; tier <= unlockedTiers; tier++)
+                {
+                    menu.AddOption(Loc.F($"Tier {BlessingCatalog.RomanLevel(tier)}"), $"{tier}", Loc.F($"El banner de la Brasa de Color en su tier {BlessingCatalog.RomanLevel(tier)}."), new Emoji("🌈"), isDefault: bannerOn && bannerTier == tier);
+                }
             }
 
             buttons.WithSelectMenu(menu, row: 1);
@@ -234,10 +248,18 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
     }
 
     // El campo del banner: cómo se desbloquea, o cuál tenés puesto (level = el nivel de la bendición Brasa de Color; null = no la tiene).
-    private static Embed AddBannerField(Embed embed, int? level, bool on, int? tier)
+    private static Embed AddBannerField(Embed embed, int? level, bool on, int? tier, bool hasSnow = false, bool snowOn = false)
     {
         string text;
-        if (level is null)
+        if (snowOn && hasSnow)
+        {
+            text = Loc.T("✅ **Banner de Nieve**, al pie de tu perfil (de la tienda navideña).");
+        }
+        else if (level is null && hasSnow)
+        {
+            text = Loc.T("❌ **Sin banner.** Tenés el **Banner de Nieve**: elegilo en el menú de abajo.");
+        }
+        else if (level is null)
         {
             text = Loc.T("Se desbloquea con la bendición **Brasa de Color** (se consigue con el Fuego Nuevo). Es el banner de tu `/profile`: mejora con cada nivel de la bendición y vos elegís cuál tier mostrar.");
         }
@@ -259,11 +281,19 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
 
     // Guarda el banner (null = sin banner; «brasa_de_color» = el mejor; «brasa_de_color:3» = ese tier). Solo lo deja poner a quien tiene la bendición Brasa de Color y solo hasta el tier que ya desbloqueó.
     // Nunca tira: si la base falla se registra y devuelve Failed.
-    public static async Task<BannerSetStatus> TrySetBannerAsync(IPlayerSettingsService service, IBlessingRepository blessings, ulong discordId, string? stored)
+    public static async Task<BannerSetStatus> TrySetBannerAsync(IPlayerSettingsService service, IBlessingRepository blessings, ulong discordId, string? stored, IGameEventRepository? stats = null)
     {
         try
         {
-            if (stored is not null)
+            // El de nieve (v0.61.0): solo quien lo compró. Sin el repositorio de contadores no se puede saber, así que no se deja poner.
+            if (ProfileBanners.IsSnow(stored))
+            {
+                if (!await HasSnowBannerAsync(stats, discordId))
+                {
+                    return BannerSetStatus.SnowNotOwned;
+                }
+            }
+            else if (stored is not null)
             {
                 var (valid, tier) = ProfileBanners.Parse(stored);
                 var levels = await blessings.GetLevelsAsync(discordId);
@@ -285,6 +315,25 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
         {
             BotLog.Error(ex);
             return BannerSetStatus.Failed;
+        }
+    }
+
+    // ¿Compró el Banner de Nieve? (player_stats.xmas_banner). Sin repositorio o si la lectura falla, no (la pantalla sale sin esa opción; nunca se cae).
+    private static async Task<bool> HasSnowBannerAsync(IGameEventRepository? stats, ulong discordId)
+    {
+        if (stats is null)
+        {
+            return false;
+        }
+
+        try
+        {
+            return (await stats.GetStatsAsync(discordId)).GetValueOrDefault(ProfileBanners.SnowStat) > 0;
+        }
+        catch (Exception ex)
+        {
+            BotLog.Warn(ex);
+            return false;
         }
     }
 
@@ -348,29 +397,29 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
     // "aa config" (sin nada) abre la pantalla; "aa config resumen off" (también «summary», «fight summary»; on/off, si/no, mostrar/ocultar, toggle) cambia el resumen y "aa config recetas completo" (también «recipes full»,
     // «clásico»/«classic», toggle) el recetario; en los dos casos muestra la pantalla ya al día.
     // note: una línea de aviso arriba de la pantalla (lo que se hizo, o qué no se entendió); null si solo se abrió.
-    public static async Task<(string? Note, ConfigScreen Screen)> ExecuteTypedAsync(IPlayerSettingsService service, ulong discordId, string? option, string? value, IBlessingRepository? blessings = null)
+    public static async Task<(string? Note, ConfigScreen Screen)> ExecuteTypedAsync(IPlayerSettingsService service, ulong discordId, string? option, string? value, IBlessingRepository? blessings = null, IGameEventRepository? stats = null)
     {
         if (string.IsNullOrWhiteSpace(option))
         {
-            return (null, await BuildScreenAsync(service, discordId, blessings));
+            return (null, await BuildScreenAsync(service, discordId, blessings, stats));
         }
 
         return SettingWords.KeyOf(option) switch
         {
             SettingKey.FightSummary => await ExecuteSummaryTypedAsync(service, discordId, value),
             SettingKey.RecipeBook => await ExecuteRecipeBookTypedAsync(service, discordId, value),
-            SettingKey.Banner => await ExecuteBannerTypedAsync(service, blessings, discordId, value),
-            _ => (Loc.T("No conozco esa opción. Probá `aa config resumen off`, `aa config recetas completo` o `aa banner on`."), await BuildScreenAsync(service, discordId, blessings)),
+            SettingKey.Banner => await ExecuteBannerTypedAsync(service, blessings, discordId, value, stats),
+            _ => (Loc.T("No conozco esa opción. Probá `aa config resumen off`, `aa config recetas completo` o `aa banner on`."), await BuildScreenAsync(service, discordId, blessings, stats)),
         };
     }
 
     // «aa banner» (o «aa config banner») sin nada abre el panel; «on» o «auto» pone el mejor (el de tu nivel, mejora solo), «3» (también «tier 3», «iii») fija ese tier, «off» (también «ninguno», «sacar», «no») lo
     // saca y «toggle» lo invierte.
-    private static async Task<(string? Note, ConfigScreen Screen)> ExecuteBannerTypedAsync(IPlayerSettingsService service, IBlessingRepository? blessings, ulong discordId, string? value)
+    private static async Task<(string? Note, ConfigScreen Screen)> ExecuteBannerTypedAsync(IPlayerSettingsService service, IBlessingRepository? blessings, ulong discordId, string? value, IGameEventRepository? stats = null)
     {
         if (blessings is null || string.IsNullOrWhiteSpace(value))
         {
-            return (null, await BuildScreenAsync(service, discordId, blessings));
+            return (null, await BuildScreenAsync(service, discordId, blessings, stats));
         }
 
         int? tier = ProfileBanners.IsNoneWord(value) ? null : ProfileBanners.TierFrom(value);
@@ -378,6 +427,10 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
         if (ProfileBanners.IsNoneWord(value))
         {
             stored = null;
+        }
+        else if (ProfileBanners.IsSnowWord(value))
+        {
+            stored = ProfileBanners.SnowKey;   // «aa banner nieve» (v0.61.0)
         }
         else if (tier is int fixedTier)
         {
@@ -389,20 +442,23 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
         }
         else if (SettingWords.ParseSwitch(value).Toggle)
         {
-            stored = ProfileBanners.Parse((await service.GetAsync(discordId)).ProfileBanner).On ? null : ProfileBanners.BannerKey;
+            string? currentBanner = (await service.GetAsync(discordId)).ProfileBanner;
+            stored = ProfileBanners.Parse(currentBanner).On || ProfileBanners.IsSnow(currentBanner) ? null : ProfileBanners.BannerKey;
         }
         else
         {
-            return (Loc.T("Decime qué querés: `aa banner on` (el mejor), `aa banner 3` (ese tier) o `aa banner off`."), await BuildScreenAsync(service, discordId, blessings));
+            return (Loc.T("Decime qué querés: `aa banner on` (el mejor), `aa banner 3` (ese tier) o `aa banner off`."), await BuildScreenAsync(service, discordId, blessings, stats));
         }
 
-        var status = await TrySetBannerAsync(service, blessings, discordId, stored);
-        var screen = await BuildScreenAsync(service, discordId, blessings);
+        var status = await TrySetBannerAsync(service, blessings, discordId, stored, stats);
+        var screen = await BuildScreenAsync(service, discordId, blessings, stats);
         return status switch
         {
+            BannerSetStatus.SnowNotOwned => (Loc.T("Todavía no tenés el Banner de Nieve: se compra en la tienda de **/navidad**."), screen),
             BannerSetStatus.NotOwned => (Loc.T("Todavía no tenés la bendición Brasa de Color: es la que desbloquea el banner."), screen),
             BannerSetStatus.TierTooHigh => (Loc.T("Todavía no llegaste a ese tier: se desbloquea al subir de nivel la Brasa de Color."), screen),
             BannerSetStatus.Failed => (Loc.T("No pude guardar el cambio, intentá de nuevo en un momento."), screen),
+            _ when ProfileBanners.IsSnow(stored) => (Loc.T("✅ Listo: tu perfil lleva el **Banner de Nieve**."), screen),
             _ when stored is null => (Loc.T("✅ Listo: tu perfil va **sin banner**."), screen),
             _ when tier is int shown => (Loc.F($"✅ Listo: tu perfil lleva el banner de la Brasa de Color, **tier {BlessingCatalog.RomanLevel(shown)}**."), screen),
             _ => (Loc.T("✅ Listo: tu perfil lleva el **mejor banner de la Brasa de Color** (el de tu nivel, mejora solo)."), screen),

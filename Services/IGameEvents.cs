@@ -21,4 +21,8 @@ public interface IGameEvents
 
     // Los avisos pendientes de ese jugador, en orden. Los saca de la cola: cada aviso se entrega una sola vez.
     IReadOnlyList<GameNotice> TakeNotices(ulong discordId);
+
+    // Los Regalos de Navidad (v0.57.0, Services/ChristmasService.cs) de una victoria o del /daily: cuántos dio (0 fuera del evento). Va acá porque IGameEvents ya
+    // llega a cada pantalla de victoria; nunca tira. Por defecto no da nada (los registros de prueba que no lo implementan).
+    Task<int> GrantEventGiftsAsync(ulong discordId, string kind, int streakDay = 0) => Task.FromResult(0);
 }

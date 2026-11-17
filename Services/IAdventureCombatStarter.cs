@@ -22,6 +22,10 @@ public interface IAdventureCombatStarter
     // CombatStartStatus.NoMonstersInZone si esa zona todavía no tiene uno cargado.
     Task<CombatStartOutcome> PrepareTravelAsync(ulong discordId, CancellationToken cancellationToken = default);
 
+    // El Krampus de Navidad (v0.57.0): el élite de tu zona agrandado (GameData/Christmas.cs, KrampusRules), con su cooldown de 4 h. Que el evento esté abierto lo mira quien llama.
+    Task<CombatStartOutcome> PrepareKrampusAsync(ulong discordId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(new CombatStartOutcome(CombatStartStatus.NoMonstersInZone, null, null));
+
     // Una pelea de la Aventura (v0.57.0, docs/aventura.md): el monstruo ya viene elegido y agrandado, y NO cobra cooldown (la aventura lo cobró al arrancar).
     // damageBonusPercent: el santuario. Sin vida, no arranca.
     Task<CombatStartOutcome> PrepareAdventureFightAsync(ulong discordId, MonsterTemplate monster, int damageBonusPercent, CancellationToken cancellationToken = default) =>
