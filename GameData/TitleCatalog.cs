@@ -70,6 +70,8 @@ public static class TitleCatalog
         ("cazador", "combate", Loc.Mark("Cacerías ganadas"), ["Rastreador de Pradera", "Cazador Curtido", "Azote de las Bestias"]),
         ("viajero", "combate", Loc.Mark("Viajes ganados"), ["Caminante", "Baqueano", "Señor de los Caminos"]),
         ("matajefes", "combate", Loc.Mark("Jefes vencidos"), ["Desafiante", "Matajefes", "Terror de Jefes"]),
+        // v0.59.0: la Aventura (el dueño: «tirate algunos títulos de aventureros»).
+        ("aventurero", "combate", Loc.Mark("Aventuras completadas"), ["Andariego", "Aventurero", "Vencedor del Guardián"]),
         ("exterminador", "combate", Loc.Mark("Enemigos vencidos"), ["Espanta Bichos", "Exterminador", "Pesadilla de los Monstruos"]),
         ("gladiador", "combate", Loc.Mark("Torneos de la Arena jugados"), ["Pisa Arena", "Gladiador", "Fiera del Coliseo"]),
         ("asador", "combate", Loc.Mark("Veces que venciste al Asador"), ["Rompe Brasas", "Guardián del Fogón", "Señor del Fogón"]),

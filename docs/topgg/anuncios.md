@@ -7,6 +7,28 @@ fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo
 
 ---
 
+## 2026-11-18 — La Aventura, más dura y más completa (v0.59.0)
+
+**Título:** 🗺️ La Aventura ahora es para valientes
+
+**Texto:**
+
+⚔️ **Los monstruos de la Aventura pegan más fuerte.** El camino seguro ya no es tan seguro, y el arriesgado es más duro que un /travel. La puede hacer cualquiera, pero si llegás justo de nivel a tu zona, te va a costar.
+
+🗿 **El Guardián del Camino tiene el doble de vida** que el élite de tu zona, y pega el doble.
+
+⌨️ **Jugala escribiendo:** `aa av seguro`, `aa av arriesgado` o `aa av misterioso` (o `s`, `a`, `m`). Al final, `aa av guardian`.
+
+🌲 **10 escenas nuevas** en el camino: el molino, el cementerio, la tormenta, la estancia en ruinas y más.
+
+🎁 **Sabés cuánto te jugás:** la primera escena te dice la zona y el premio base, y al final ves el resumen: peleas ganadas, eventos que te tocaron y el botín total.
+
+📋 **Misión semanal nueva** («Completá 2 aventuras») y **logro Aventurero** (5, 25 y 100 aventuras, con cajas y tres títulos: Andariego, Aventurero y Vencedor del Guardián).
+
+📖 Todo explicado en **/info tema:aventura**.
+
+---
+
 ## 2026-11-17 — La Aventura paga lo que tiene que pagar, el Arquero y el Guerrero más fuertes y encantamientos nuevos (v0.57.2 y v0.58.0)
 
 **Título:** 🏹 La Aventura paga completo, y el Arquero y el Guerrero vienen con todo

@@ -29,6 +29,13 @@ public sealed class AdventureRun
     public bool PendingRiskyBonus { get; set; }         // la pelea en curso es la del camino arriesgado: si se gana, suma el +20
     public DateTime LastActivityUtc { get; set; } = DateTime.UtcNow;
 
+    // v0.59.0: para la primera escena («Zona 5 · premio base: …») y el resumen del final (peleas ganadas y eventos del camino misterioso).
+    public string? ZoneLabel { get; set; }
+    public int BaseGold { get; set; }
+    public int BaseXp { get; set; }
+    public int FightsWon { get; set; }
+    public List<AdventureEvent> Events { get; } = [];
+
     public AdventureScene CurrentScene => Scene >= AdventureRules.Scenes ? AdventureRules.Final : Scenes[Scene - 1];
     public bool AtGuardian => Scene >= AdventureRules.Scenes;
 }
