@@ -168,6 +168,26 @@ var win = (Embed)victory.Invoke(null, [cs, turn, new CombatReward(100, 100, fals
 Check(!win.Fields.Any(f => f.Name.Contains("Subiste") || f.Name.Contains("💡")) && win.Description!.Contains("Oro") && win.Description.Contains("XP"), $"la victoria (aun subiendo de nivel) queda corta, con lo ganado en la descripción (desde la v0.26.2, como el autohunt): {string.Join(" | ", win.Fields.Select(f => f.Name))}");
 var gather = GatheringModule.BuildResultEmbed(CooldownCatalog.Chop, (await items.GetByNameAsync("Madera de Pino"))!, 4);
 Check(gather.Fields.Length == 1 && gather.Fields[0].Name == "Rareza", "/chop y /mine: solo lo que conseguiste y la rareza");
+// v0.60.0 (el dueño: «cuando alguien saque algo legendario o mítico… WOOOWWW TREMENDA SUERTE… desde épico, cada vez más exagerado»).
+Check(LuckCelebration.VariantsFor("Común").Count == 0 && LuckCelebration.VariantsFor("Raro").Count == 0 && LuckCelebration.Line("Raro") is null && LuckCelebration.Line("rareza rara") is null
+    && !gather.Description!.Contains("¡¡"), "lo Común y lo Raro no festejan (la Madera de Pino tampoco)");
+Check(new[] { "Épico", "Legendario", "Mítico" }.All(r => LuckCelebration.VariantsFor(r).Count >= 3)
+    && LuckCelebration.VariantsFor("Épico").All(v => !v.Contains("¡¡"))
+    && LuckCelebration.VariantsFor("Legendario").All(v => v.Contains("¡¡") && !v.Contains("¡¡¡"))
+    && LuckCelebration.VariantsFor("Mítico").All(v => v.Contains("¡¡¡") && v.Length > LuckCelebration.VariantsFor("Legendario").Max(l => l.Length)),
+    "desde Épico festeja, y cada rareza más exagerada que la anterior (más signos y más largo)");
+var mythicItem = new Item { ItemId = -2, Name = "Corteza de Vida", Rarity = "Mítico", Type = "Madera" };
+var mythicGather = GatheringModule.BuildResultEmbed(CooldownCatalog.Chop, mythicItem, 1);
+var advancedGather = GatheringModule.BuildAdvancedResultEmbed(CooldownCatalog.Chop, [(new Item { ItemId = -1, Name = "Roble", Rarity = "Común", Type = "Madera" }, 5), (mythicItem, 1)]);
+Check(LuckCelebration.VariantsFor("Mítico").Any(v => mythicGather.Description!.StartsWith(v, StringComparison.Ordinal)) && mythicGather.Description!.Contains("Conseguiste")
+    && LuckCelebration.VariantsFor("Mítico").Any(v => advancedGather.Description!.StartsWith(v, StringComparison.Ordinal)),
+    "un Mítico en /chop (y en la avanzada, por lo mejor que salió) abre la pantalla con el festejo y debajo lo conseguido");
+Loc.LoadEmbedded();
+using (Loc.Use("en"))
+{
+    var mythicEn = GatheringModule.BuildResultEmbed(CooldownCatalog.Chop, mythicItem, 1);
+    Check(mythicEn.Description!.Contains("**MYTHIC**"), "el festejo en inglés");
+}
 var daily = DailyModule.BuildResultEmbed(new DailyClaimCalculation(DailyClaimStatus.StreakContinued, 3, null), new LevelUpOutcome(player, 1), new RewardReceipt(new ResolvedReward(100, 100, null, 0), 1000, 1, 5));
 Check(!daily.Fields.Any(f => f.Name.Contains("Subiste")) && daily.Fields.Length == 3, "/daily: racha, oro y XP, sin la línea de nivel");
 
