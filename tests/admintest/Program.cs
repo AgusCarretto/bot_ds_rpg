@@ -245,6 +245,21 @@ Check(cdAll is not null && cdAll.Contains("todos") && cdAll.Contains("Cazar") &&
 Check(textsSet.Search("adminsetcd jefe").IsSuccess && new[] { "admincd", "adminresetcd" }.All(a => textsSet.Search(a + " jefe").IsSuccess) && textsSet.Commands.Single(c => c.Name == "adminsetcd").Summary is null,
     "«aa adminsetcd» (y sus alias) existe, sin resumen");
 
+// v0.62.1: la cría del dragón (su descanso vive en player_dragons.last_bred_at, no en cooldowns). El dueño probó «aa adminsetcd dragon @x» y «aa adminsetcd cria @x».
+Check(new[] { "cd dragon", "cd cria", "cd cría", "cd breed", "cd dragón" }.All(t => AdminSet.Parse(t).Request is { Cooldowns: [AdminSet.DragonBreedKey] })
+      && AdminSet.Parse("cd todo").Request!.Cooldowns!.Contains(AdminSet.DragonBreedKey),
+    "«cd dragon», «cd cria» (y breed, con o sin tilde) apuntan a la cría del dragón; «cd todo» también la incluye");
+async Task<bool> Resting(ulong id) => await db.ExecuteScalarAsync<bool>("SELECT last_bred_at IS NOT NULL FROM player_dragons WHERE discord_id = @id", new { id = (long)id });
+await db.ExecuteAsync("DELETE FROM player_dragons WHERE discord_id = @id", new { id = (long)P1 });
+await db.ExecuteAsync("INSERT INTO player_dragons (discord_id, kind, tier, level, fail_streak, solo_fail_streak, last_bred_at) VALUES (@id, 'oro', 3, 10, 2, 0, now())", new { id = (long)P1 });
+await db.ExecuteAsync("INSERT INTO reminders (discord_id, kind, channel_id, due_at) VALUES (@id, 'dragon', 1, now() + interval '12 hours') ON CONFLICT DO NOTHING", new { id = (long)P1 });
+var cdDragon = await Set(ADMIN, $"cd dragon <@{P1}>");
+Check(cdDragon is not null && cdDragon.Contains("Cría del dragón") && !await Resting(P1)
+      && await db.ExecuteScalarAsync<int>("SELECT count(*)::int FROM reminders WHERE discord_id = @id AND kind = 'dragon'", new { id = (long)P1 }) == 0
+      && await db.ExecuteScalarAsync<int>("SELECT fail_streak FROM player_dragons WHERE discord_id = @id", new { id = (long)P1 }) == 2,
+    $"«cd dragon @alguien» le saca el descanso a su dragón (puede criar ya) y su aviso, sin tocar la piedad ({cdDragon})");
+Check((await Set(ADMIN, $"cd cria <@{P1}>"))!.Contains("no tenía guardado"), "si el dragón ya podía criar, lo dice");
+
 Console.WriteLine("\n== 6. aa admininfo ==");
 await Player(P1);
 var stats = await adminRepo.GetBotStatsAsync();

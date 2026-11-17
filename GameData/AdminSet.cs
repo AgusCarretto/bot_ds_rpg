@@ -21,7 +21,13 @@ public static class AdminSet
         "`aa adminset cd <comando|todo> [@alguien]` (o `aa adminsetcd`) resetea un cooldown: " + CooldownWords + ". " +
         "Sin mención te lo fijás a vos. Cambiar el tier recorta el nivel al tope del tier nuevo y pone en cero la racha de fallos de la cría.";
 
-    private const string CooldownWords = "cazar, viajar, aventura, talar, minar, pescar, jefe, caja, tala/minería/pesca avanzada o todo";
+    private const string CooldownWords = "cazar, viajar, aventura, talar, minar, pescar, jefe, caja, tala/minería/pesca avanzada, cría del dragón (dragon) o todo";
+
+    // v0.62.1 (el dueño, probando el tablón: «¿cómo reseteaba el cd de dragon breed?»): el descanso de 12 h de la cría NO está en la tabla cooldowns (es player_dragons.last_bred_at), así que va con
+    // una clave propia que el repositorio entiende aparte. También entra en «todo».
+    public const string DragonBreedKey = "dragon";
+    public const string DragonBreedLabel = "Cría del dragón";
+    private static readonly string[] DragonBreedWords = ["dragon", "cria", "criar", "breed", "dragon breed", "cria del dragon", "cria dragon"];
 
     // Los cooldowns que se pueden resetear: los de la tabla cooldowns que se juegan. El voto NO: su fila guarda qué voto de top.gg ya se cobró, y borrarla dejaría
     // cobrar el mismo voto otra vez. El diario, la cría del dragón y las mascotas no viven en esa tabla.
@@ -64,7 +70,12 @@ public static class AdminSet
         string text = string.Join(" ", tokens.Skip(1));
         if (AllWords.Contains(Normalize(text)))
         {
-            return new AdminSetParse(new AdminSetRequest(AdminSetKind.Cooldown, 0, target, ResettableCooldowns.Select(c => c.CommandName).ToList(), "todos"), null);
+            return new AdminSetParse(new AdminSetRequest(AdminSetKind.Cooldown, 0, target, [.. ResettableCooldowns.Select(c => c.CommandName), DragonBreedKey], "todos"), null);
+        }
+
+        if (DragonBreedWords.Contains(Normalize(text)))
+        {
+            return new AdminSetParse(new AdminSetRequest(AdminSetKind.Cooldown, 0, target, [DragonBreedKey], DragonBreedLabel), null);
         }
 
         return FindCooldown(text) is { } cooldown

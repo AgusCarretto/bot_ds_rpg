@@ -103,7 +103,8 @@ public static class AdminSetHandler
         }
 
         // Los nombres de pantalla de lo que se borró, en el orden de la lista (Cazar, Viajar, Jefe…).
-        string reset = string.Join(", ", AdminSet.ResettableCooldowns.Where(c => deleted.Contains(c.CommandName)).Select(c => $"**{c.DisplayName}**"));
+        string reset = string.Join(", ", AdminSet.ResettableCooldowns.Where(c => deleted.Contains(c.CommandName)).Select(c => $"**{c.DisplayName}**")
+            .Concat(deleted.Contains(AdminSet.DragonBreedKey) ? [$"**{AdminSet.DragonBreedLabel}**"] : []));
         return names.Count == 1
             ? $"⏱️ Le reseteé a <@{targetId}> el cooldown de **{label}**: ya lo puede usar."
             : $"⏱️ Le reseteé a <@{targetId}> todos los cooldowns: {reset}. Ya los puede usar.";

@@ -148,6 +148,17 @@ public sealed class AdminRepository(IDbConnectionFactory connectionFactory) : IA
         var args = new { Id = (long)discordId, Names = commandNames.ToArray() };
         var deleted = (await connection.QueryAsync<string>(new CommandDefinition(
             "DELETE FROM cooldowns WHERE discord_id = @Id AND command_name = ANY(@Names) RETURNING command_name;", args, transaction, cancellationToken: cancellationToken))).AsList();
+
+        // v0.62.1: la cría del dragón (AdminSet.DragonBreedKey) vive en player_dragons.last_bred_at, no en cooldowns. Su recordatorio también se llama «dragon», así que el DELETE de abajo lo saca.
+        if (commandNames.Contains(AdminSet.DragonBreedKey))
+        {
+            int rested = await connection.ExecuteAsync(new CommandDefinition(
+                "UPDATE player_dragons SET last_bred_at = NULL WHERE discord_id = @Id AND last_bred_at IS NOT NULL;", args, transaction, cancellationToken: cancellationToken));
+            if (rested > 0)
+            {
+                deleted.Add(AdminSet.DragonBreedKey);
+            }
+        }
         await connection.ExecuteAsync(new CommandDefinition(
             "DELETE FROM reminders WHERE discord_id = @Id AND kind = ANY(@Names);", args, transaction, cancellationToken: cancellationToken));
         await transaction.CommitAsync(cancellationToken);
