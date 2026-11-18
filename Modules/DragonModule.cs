@@ -223,6 +223,128 @@ public class DragonModule(
         }
     }
 
+    // ---------------- El listado de todos los dragones (v0.63.0) ----------------
+    // El dueño (2026-11-18): «un comando que diga los dragones que existen con el nivel y tier, y de quién son… aa dragon tier 5 o aa dragon list… que alguien pueda ver los dragones de todos para
+    // informarse cómo está el mercado de dragones». Arriba, cuántos hay de cada tier; abajo, la lista de a 10 por página (del tier más alto al más bajo), con el dueño (mención sin ping, como /leaderboard),
+    // el tier, el nivel y si puede criar ya. Con un tier, solo los de ese tier. Solo lee.
+    public const int ListPageSize = 10;
+    private const string ListPagePrefix = "dragon_list";
+
+    [SlashCommand("dragon-list", "Todos los dragones del juego: cuántos hay de cada tier y de quién son.")]
+    public async Task HandleListAsync([Summary("tier", "Ver solo los dragones de ese tier (1 a 10)."), MinValue(1), MaxValue(10)] int? tier = null)
+    {
+        await DeferAsync();
+
+        try
+        {
+            var (embed, components) = await BuildDragonListAsync(dragonRepository, Context.User.Id, tier, 1);
+            await FollowupAsync(embed: embed, components: components, allowedMentions: AllowedMentions.None);
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            await FollowupAsync(Loc.T("¡Upa! No pude armar la lista de dragones, intentá de nuevo en un momento."), ephemeral: true);
+        }
+    }
+
+    // ◀ ▶: «dragon_list:{dueño}:{tier, 0 = todos}:{página}». Solo los usa quien abrió la lista.
+    [ComponentInteraction($"{ListPagePrefix}:*:*:*")]
+    public async Task HandleListPageAsync(string ownerRaw, string tierRaw, string pageRaw)
+    {
+        await DeferAsync();
+
+        try
+        {
+            if (!ulong.TryParse(ownerRaw, out ulong ownerId) || ownerId != Context.User.Id)
+            {
+                await FollowupAsync(Loc.T("Esa lista la abrió otra persona: abrí la tuya con **/dragon-list**."), ephemeral: true);
+                return;
+            }
+
+            int? tier = int.TryParse(tierRaw, out int t) && t is >= 1 and <= DragonRules.MaxTier ? t : null;
+            int page = int.TryParse(pageRaw, out int p) ? p : 1;
+            var (embed, components) = await BuildDragonListAsync(dragonRepository, ownerId, tier, page);
+            await ModifyOriginalResponseAsync(m =>
+            {
+                m.Embed = embed;
+                m.Components = components ?? new ComponentBuilder().Build();
+                m.AllowedMentions = AllowedMentions.None;
+            });
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            await FollowupAsync(Loc.T("¡Upa! No pude armar la lista de dragones, intentá de nuevo en un momento."), ephemeral: true);
+        }
+    }
+
+    // La pantalla: el mercado (cuántos por tier) y una página de la lista. viewerId: quién la mira (su dragón sale marcado «vos» y es el dueño de los botones). Pública y sin Context: el slash, los botones y
+    // «aa dragon list» llaman a esta.
+    public static async Task<(Embed Embed, MessageComponent? Components)> BuildDragonListAsync(IDragonRepository dragonRepository, ulong viewerId, int? tier, int page)
+    {
+        var counts = await dragonRepository.CountByTierAsync();
+        int total = tier is int only ? counts.GetValueOrDefault(only) : counts.Values.Sum();
+        int pages = Math.Max(1, (total + ListPageSize - 1) / ListPageSize);
+        page = Math.Clamp(page, 1, pages);
+        var listed = total == 0 ? [] : await dragonRepository.ListAsync(tier, ListPageSize, (page - 1) * ListPageSize);
+
+        var embed = new EmbedBuilder()
+            .WithTitle(tier is int t ? Loc.F($"🐲 Dragones de tier {t} ({DragonRules.TierName(t)})") : Loc.T("🐲 Los dragones del juego"))
+            .WithColor(Color.DarkOrange);
+
+        if (counts.Count == 0)
+        {
+            return (embed.WithDescription(Loc.T("Todavía nadie tiene un dragón. Se compra en la **/taberna** (o con **/shop buy dragon**).")).Build(), null);
+        }
+
+        // El mercado: un tier por renglón (nunca fichas), en dos columnas (1 a 5 y 6 a 10) y un tercer campo vacío para cerrar la fila. Solo en la vista de todos.
+        if (tier is null)
+        {
+            embed.WithDescription(Loc.F($"Hay **{GameHistory.Number(total)}** dragones en el juego. Para ver solo un tier: `/dragon-list tier:5` o `aa dragon list 5`."));
+            string Column(int from, int to) => string.Join('\n', Enumerable.Range(from, to - from + 1).Select(x => Loc.F($"**Tier {x}**: {GameHistory.Number(counts.GetValueOrDefault(x))}")));
+            embed.AddField(Loc.T("📊 Por tier"), Column(1, 5), true);
+            embed.AddField("​", Column(6, DragonRules.MaxTier), true);
+            embed.AddField("​", "​", true);
+        }
+        else
+        {
+            embed.WithDescription(total == 0
+                ? Loc.F($"Todavía nadie tiene un dragón de tier {tier}.")
+                : Loc.F($"Hay **{GameHistory.Number(total)}** dragones de tier {tier}."));
+        }
+
+        if (listed.Count > 0)
+        {
+            int offset = (page - 1) * ListPageSize;
+            var lines = listed.Select((d, i) =>
+            {
+                var dragon = d.Dragon;
+                string name = dragon.Name ?? DragonRules.TierName(dragon.Tier);
+                string state = dragon.Tier >= DragonRules.MaxTier ? Loc.T("👑 tier máximo")
+                    : dragon.CanBreed ? Loc.T("✅ puede criar")
+                    : Loc.F($"💤 cría en {TimeFormat.Remaining(dragon.Wait)}");
+                string you = d.DiscordId == viewerId ? Loc.T(" **(vos)**") : string.Empty;
+                return Loc.F($"{offset + i + 1}. {DragonRules.KindEmoji(dragon.Kind)} <@{d.DiscordId}>{you} — **{name}** · Tier {dragon.Tier} · nivel {dragon.Level} · {state}");
+            }).ToList();
+
+            // De a 5 renglones por campo: con el emoji propio y la mención, 10 juntos pueden pasar los 1.024 caracteres de un campo.
+            for (int start = 0; start < lines.Count; start += 5)
+            {
+                embed.AddField(start == 0 ? Loc.T("🐉 Dragones") : "​", FieldText.FitLines(string.Join('\n', lines.Skip(start).Take(5))), false);
+            }
+        }
+
+        embed.WithFooter(Loc.F($"Página {page}/{pages} · del tier más alto al más bajo"));
+        MessageComponent? components = pages > 1
+            ? new ComponentBuilder()
+                .WithButton("◀", $"{ListPagePrefix}:{viewerId}:{tier ?? 0}:{page - 1}", ButtonStyle.Secondary, disabled: page <= 1)
+                .WithButton($"{page}/{pages}", $"{ListPagePrefix}_now:{viewerId}", ButtonStyle.Secondary, disabled: true)
+                .WithButton("▶", $"{ListPagePrefix}:{viewerId}:{tier ?? 0}:{page + 1}", ButtonStyle.Secondary, disabled: page >= pages)
+                .Build()
+            : null;
+        return (embed.Build(), components);
+    }
+
     // ---------------- El tablón de crías (v0.33.0) ----------------
 
     private Task<string> BoardNameAsync(ulong id) => ResolveNameAsync(Context.Client, Context.Guild, id);
