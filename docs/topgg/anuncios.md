@@ -7,7 +7,7 @@ fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo
 
 ---
 
-## 2026-11-18 — La Aventura, más dura y más completa, y la cocina con el Cocinero (v0.59.0 y v0.64.0)
+## 2026-11-18 — La Aventura, más dura y más completa, la cocina con el Cocinero y el blackjack sin cartas repetidas (v0.59.0, v0.64.0 y v0.64.1)
 
 **Título:** 🗺️ La Aventura ahora es para valientes
 
@@ -26,6 +26,8 @@ fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo
 📋 **Misión semanal nueva** («Completá 2 aventuras») y **logro Aventurero** (5, 25 y 100 aventuras, con cajas y tres títulos: Andariego, Aventurero y Vencedor del Guardián).
 
 🍳 **La cocina ahora es una escena:** en **/cook** te atiende el Cocinero, ves cada plato con lo que te da y un ✅ si te alcanza, y lo cocinás eligiéndolo de la lista. Los ingredientes, en el botón 📖 Recetas o con `aa cook recipes`.
+
+🃏 **El blackjack ya no repite cartas:** cada mano se reparte de su propio mazo de 52. La banca ahora pide con 17 blando y **se sacó el doblar**: pedís o te plantás.
 
 📖 Todo explicado en **/info tema:aventura**.
 

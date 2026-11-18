@@ -7,22 +7,18 @@ using Discord.Interactions;
 public sealed record BlackjackReply(string? PlainMessage, Embed? Embed, MessageComponent? Components);
 
 // El blackjack del casino (/play game:blackjack, aa bj <apuesta>; GameData/Blackjack.cs, Services/BlackjackService.cs). El dueño (2026-10-22): «armate el bj, aa bj 10k por ejemplo». Esta clase tiene los botones de la mano
-// (Pedir / Plantarse / Doblar) y arma lo que se ve; el comando que EMPIEZA una mano vive en CasinoModule (/play) y en Modules/TextCommandModule.Blackjack.cs (aa bj), los dos con la misma lógica de acá.
+// (Pedir / Plantarse; Doblar se sacó en la v0.64.1) y arma lo que se ve; el comando que EMPIEZA una mano vive en CasinoModule (/play) y en Modules/TextCommandModule.Blackjack.cs (aa bj), los dos con la misma lógica de acá.
 // Los botones llevan el dueño y la mano en el id: otro jugador no puede jugar la tuya, y un botón de una mano vieja muestra cómo terminó en vez de hacer nada.
 public class BlackjackModule(IBlackjackService blackjack) : InteractionModuleBase<SocketInteractionContext>
 {
     private const string HitPrefix = "bj_hit";
     private const string StandPrefix = "bj_stand";
-    private const string DoublePrefix = "bj_double";
 
     [ComponentInteraction($"{HitPrefix}:*:*")]
     public Task HandleHitAsync(string ownerRaw, string gameRaw) => ActAsync(ownerRaw, gameRaw, BlackjackAction.Hit);
 
     [ComponentInteraction($"{StandPrefix}:*:*")]
     public Task HandleStandAsync(string ownerRaw, string gameRaw) => ActAsync(ownerRaw, gameRaw, BlackjackAction.Stand);
-
-    [ComponentInteraction($"{DoublePrefix}:*:*")]
-    public Task HandleDoubleAsync(string ownerRaw, string gameRaw) => ActAsync(ownerRaw, gameRaw, BlackjackAction.Double);
 
     private async Task ActAsync(string ownerRaw, string gameRaw, BlackjackAction action)
     {
@@ -62,7 +58,7 @@ public class BlackjackModule(IBlackjackService blackjack) : InteractionModuleBas
     public static async Task<BlackjackReply> ExecuteStartAsync(IBlackjackService service, ulong discordId, string betText) =>
         ToReply(await service.StartAsync(discordId, betText), discordId);
 
-    // Pide, planta o dobla. gameId null = la mano actual del jugador (los comandos de texto).
+    // Pide o planta. gameId null = la mano actual del jugador (los comandos de texto).
     public static async Task<BlackjackReply> ExecuteActAsync(IBlackjackService service, ulong discordId, Guid? gameId, BlackjackAction action) =>
         ToReply(await service.ActAsync(discordId, gameId, action), discordId);
 
@@ -94,13 +90,12 @@ public class BlackjackModule(IBlackjackService blackjack) : InteractionModuleBas
             dealerText = Loc.F($"**La banca**: `{state.Dealer[0].Label} ❓`");
         }
 
-        string stakeText = state.Doubled ? Loc.F($"{state.Stake} (doblada)") : state.Stake.ToString(System.Globalization.CultureInfo.InvariantCulture);
         var lines = new List<string> { playerText, dealerText, string.Empty };
 
         if (!state.Finished)
         {
-            lines.Add(view.CanDouble ? Loc.T("Elegí: **Pedir** otra carta, **Plantarte** o **Doblar** (una sola carta más y la apuesta se duplica).") : Loc.T("Elegí: **Pedir** otra carta o **Plantarte**."));
-            lines.Add(view.CanDouble ? Loc.T("_En texto: `aa bj hit`, `aa bj stand`, `aa bj double`._") : Loc.T("_En texto: `aa bj hit`, `aa bj stand`._"));
+            lines.Add(Loc.T("Elegí: **Pedir** otra carta o **Plantarte**."));
+            lines.Add(Loc.T("_En texto: `aa bj hit`, `aa bj stand`._"));
         }
         else
         {
@@ -124,7 +119,7 @@ public class BlackjackModule(IBlackjackService blackjack) : InteractionModuleBas
         }
 
         return new EmbedBuilder()
-            .WithTitle(Loc.F($"🃏 Blackjack · apuesta {stakeText}"))
+            .WithTitle(Loc.F($"🃏 Blackjack · apuesta {state.Stake}"))
             .WithColor(!state.Finished ? Color.Blue : state.Outcome switch
             {
                 BlackjackOutcome.PlayerBlackjack or BlackjackOutcome.PlayerWin => Color.Green,
@@ -132,11 +127,11 @@ public class BlackjackModule(IBlackjackService blackjack) : InteractionModuleBas
                 _ => Color.Red,
             })
             .WithDescription(string.Join("\n", lines))
-            .WithFooter(Loc.F($"Oro: {view.Gold} · la banca se planta en 17, el blackjack paga 3 a 2"))
+            .WithFooter(Loc.F($"Oro: {view.Gold} · la banca pide con 17 blando y se planta en 17 duro, el blackjack paga 3 a 2"))
             .Build();
     }
 
-    // Los botones de una mano en juego (ninguno si ya terminó). Doblar solo se ofrece con las dos primeras cartas y con oro para igualar la apuesta.
+    // Los botones de una mano en juego (ninguno si ya terminó): Pedir y Plantarse.
     public static MessageComponent? BuildComponents(BlackjackView view, ulong owner)
     {
         if (view.State.Finished)
@@ -148,7 +143,6 @@ public class BlackjackModule(IBlackjackService blackjack) : InteractionModuleBas
         return new ComponentBuilder()
             .WithButton(Loc.T("Pedir"), $"{HitPrefix}:{owner}:{game}", ButtonStyle.Primary, new Emoji("➕"))
             .WithButton(Loc.T("Plantarse"), $"{StandPrefix}:{owner}:{game}", ButtonStyle.Secondary, new Emoji("✋"))
-            .WithButton(Loc.T("Doblar"), $"{DoublePrefix}:{owner}:{game}", ButtonStyle.Success, new Emoji("⏫"), disabled: !view.CanDouble)
             .Build();
     }
 }

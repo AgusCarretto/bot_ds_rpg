@@ -48,10 +48,8 @@ Check(dnLost.Outcome == BlackjackOutcome.DealerWin && Blackjack.Payout(dnLost) =
 var dnHand = Deal(100, 10, 6, 1, 13, out var dnR, 5);
 var dnPush = Blackjack.Hit(dnHand, () => new Card(dnR.Dequeue(), 0));
 Check(dnPush.Outcome == BlackjackOutcome.Push && Blackjack.Payout(dnPush) == 100 && dnPush.Dealer.Count == 2, "llegar a 21 pidiendo (10 + 6 + 5) contra el blackjack de la banca: EMPATA y devuelve la apuesta");
-var dnDouble = Blackjack.Double(Deal(100, 5, 6, 1, 13, out var dnR2, 9), () => new Card(dnR2.Dequeue(), 0));
-Check(dnDouble.Outcome == BlackjackOutcome.DealerWin && Blackjack.Net(dnDouble) == -200, "doblar contra el blackjack de la banca y no llegar a 21: pierde la apuesta doble");
 var s1 = Deal(100, 13, 9, 13, 7, out var r1);
-Check(s1.Outcome == BlackjackOutcome.InProgress && s1.CanDouble, "una mano normal queda en juego y se puede doblar");
+Check(s1.Outcome == BlackjackOutcome.InProgress, "una mano normal queda en juego");
 var won = Blackjack.Stand(s1, () => new Card(r1.Dequeue(), 0));
 Check(won.Outcome == BlackjackOutcome.PlayerWin && Blackjack.Payout(won) == 200 && Blackjack.Net(won) == 100 && won.Dealer.Count == 2, "19 contra 17 de la banca: gana 1 a 1 (cobra 200) y la banca se planta en 17 sin pedir");
 var s2 = Deal(100, 13, 8, 6, 5, out var r2, 13);
@@ -61,9 +59,9 @@ int Evaluate(IReadOnlyList<Card> hand) => Blackjack.Evaluate(hand).Total;
 var s3 = Deal(100, 13, 8, 13, 6, out var r3, 9);
 var busted = Blackjack.Stand(s3, () => new Card(r3.Dequeue(), 0));
 Check(busted.Outcome == BlackjackOutcome.PlayerWin && Evaluate(busted.Dealer) == 25, "la banca se pasa (16 + 9): gana el jugador");
-var s4 = Deal(100, 13, 8, 1, 6, out var r4);
+var s4 = Deal(100, 13, 8, 1, 6, out var r4, 2);
 var soft17 = Blackjack.Stand(s4, () => new Card(r4.Dequeue(), 0));
-Check(soft17.Outcome == BlackjackOutcome.PlayerWin && soft17.Dealer.Count == 2, "la banca se planta también en el 17 BLANDO (A + 6): el 18 le gana sin que pida");
+Check(soft17.Outcome == BlackjackOutcome.DealerWin && soft17.Dealer.Count == 3 && Evaluate(soft17.Dealer) == 19, "con 17 BLANDO (A + 6) la banca PIDE desde la v0.64.1 (le vino un 2: 19) y le gana al 18; con 17 duro (K + 7) se planta, ver arriba");
 var s5 = Deal(100, 13, 8, 13, 8, out var r5);
 var pushState = Blackjack.Stand(s5, () => new Card(r5.Dequeue(), 0));
 Check(pushState.Outcome == BlackjackOutcome.Push && Blackjack.Payout(pushState) == 100, "18 contra 18: empate, devuelve la apuesta");
@@ -73,42 +71,31 @@ Check(bust.Outcome == BlackjackOutcome.PlayerBust && bust.Dealer.Count == 2 && B
 var s7 = Deal(100, 5, 6, 13, 8, out var r7, 13);
 var auto21 = Blackjack.Hit(s7, () => new Card(r7.Dequeue(), 0));
 Check(auto21.Outcome == BlackjackOutcome.PlayerWin && Evaluate(auto21.Player) == 21 && auto21.Finished, "llegar a 21 pidiendo se planta solo: 21 contra 18, gana");
-var s8 = Deal(100, 5, 6, 13, 7, out var r8, 13);
-var doubled = Blackjack.Double(s8, () => new Card(r8.Dequeue(), 0));
-Check(doubled.Doubled && doubled.Stake == 200 && doubled.Player.Count == 3 && doubled.Outcome == BlackjackOutcome.PlayerWin && Blackjack.Payout(doubled) == 400 && Blackjack.Net(doubled) == 200, "doblar con 11: una carta más (un 10 = 21), la apuesta pasa a 200 y gana 400");
-var s9 = Deal(100, 13, 6, 13, 7, out var r9, 13);
-var doubleBust = Blackjack.Double(s9, () => new Card(r9.Dequeue(), 0));
-Check(doubleBust.Outcome == BlackjackOutcome.PlayerBust && doubleBust.Stake == 200 && Blackjack.Net(doubleBust) == -200, "doblar y pasarse: pierde la apuesta doble");
-var s10 = Deal(100, 5, 6, 13, 7, out var r10, 2, 13);
-var afterHit = Blackjack.Hit(s10, () => new Card(r10.Dequeue(), 0));
-Check(!afterHit.CanDouble && Blackjack.Double(afterHit, () => throw new InvalidOperationException("no tiene que pedir carta")) == afterHit && Blackjack.Hit(won, () => throw new InvalidOperationException("ya terminó")) == won && !won.CanDouble, "doblar solo con las dos primeras cartas; una mano terminada no se toca");
+Check(Blackjack.Hit(won, () => throw new InvalidOperationException("ya terminó")) == won && Blackjack.Stand(won, () => throw new InvalidOperationException("ya terminó")) == won, "una mano terminada no se toca");
 
 Console.WriteLine("\n== 3. El retorno (la casa no regala) ==");
 int BasicStrategy(BlackjackState st)
 {
     var (total, soft) = Blackjack.Evaluate(st.Player);
     int up = st.Dealer[0].Rank == 1 ? 11 : st.Dealer[0].Value;
-    if (st.CanDouble)
-    {
-        if (soft && ((total is 13 or 14 && up is >= 5 and <= 6) || (total is 15 or 16 && up is >= 4 and <= 6) || (total is 17 or 18 && up is >= 3 and <= 6))) return 2;
-        if (!soft && ((total == 9 && up is >= 3 and <= 6) || (total == 10 && up is >= 2 and <= 9) || (total == 11 && up is >= 2 and <= 10))) return 2;
-    }
-
+    // Sin doblar (v0.64.1): 1 = plantarse, 0 = pedir.
     if (soft) return total >= 19 ? 1 : total == 18 ? (up is 2 or 7 or 8 ? 1 : 0) : 0;
     return total >= 17 ? 1 : total >= 13 ? (up <= 6 ? 1 : 0) : total == 12 ? (up is >= 4 and <= 6 ? 1 : 0) : 0;
 }
 
-double Rtp(Func<BlackjackState, int> policy, int hands, int seed)
+// deck: como juega el bot desde la v0.64.1 (un mazo de 52 nuevo por mano); false = el mazo infinito de antes, solo para comparar.
+double Rtp(Func<BlackjackState, int> policy, int hands, int seed, bool deck = true)
 {
     var rng = new Random(seed);
     long staked = 0, returned = 0;
-    Func<Card> draw = () => Blackjack.RandomCard(rng);
+    Func<Card> infinite = () => Blackjack.RandomCard(rng);
     for (int i = 0; i < hands; i++)
     {
+        var draw = deck ? Blackjack.NewDeck(rng) : infinite;
         var st = Blackjack.Start(10, draw);
         while (!st.Finished)
         {
-            st = policy(st) switch { 2 => Blackjack.Double(st, draw), 1 => Blackjack.Stand(st, draw), _ => Blackjack.Hit(st, draw) };
+            st = policy(st) == 1 ? Blackjack.Stand(st, draw) : Blackjack.Hit(st, draw);
         }
 
         staked += st.Stake;
@@ -120,10 +107,26 @@ double Rtp(Func<BlackjackState, int> policy, int hands, int seed)
 
 double rtpBasic = Rtp(BasicStrategy, 1_000_000, 1);
 double rtpNaive = Rtp(st => Blackjack.Evaluate(st.Player).Total >= 12 ? 1 : 0, 500_000, 2);
-Check(rtpBasic is > 0.975 and < 1.0, $"jugando con la estrategia básica el retorno es {rtpBasic:F4} (la casa se queda con ~{(1 - rtpBasic) * 100:F1} %): siempre por debajo de 1, como las slots");
+// v0.64.1: mazo de 52 por mano, la banca pide con 17 blando y no se dobla. Medido al decidirlo (2026-11-18): con doblar quedaba en ~0,998 y sin doblar en ~0,983 (antes de la v0.64.1, con mazo infinito, ~0,991).
+Check(rtpBasic is > 0.975 and < 0.99, $"jugando con la estrategia básica el retorno es {rtpBasic:F4} (la casa se queda con ~{(1 - rtpBasic) * 100:F1} %): siempre por debajo de 1, como las slots");
 Check(rtpNaive < rtpBasic && rtpNaive < 0.97, $"jugando peor (plantarse siempre desde 12) es peor: {rtpNaive:F4}");
-double natRate = Enumerable.Range(0, 200_000).Count(i => { var r = new Random(i); return Blackjack.Start(10, () => Blackjack.RandomCard(r)).Outcome == BlackjackOutcome.PlayerBlackjack; }) / 200_000.0;
-Check(natRate is > 0.04 and < 0.055, $"el blackjack natural sale ~4,7 % de las manos ({natRate * 100:F2} %): el mazo infinito reparte bien");
+double natRate = Enumerable.Range(0, 200_000).Count(i => Blackjack.Start(10, Blackjack.NewDeck(new Random(i))).Outcome == BlackjackOutcome.PlayerBlackjack) / 200_000.0;
+Check(natRate is > 0.04 and < 0.055, $"el blackjack natural sale ~4,8 % de las manos ({natRate * 100:F2} %): el mazo de 52 reparte bien");
+
+// Sin cartas repetidas (2026-11-18, el dueño: «que no repita cartas»): el mazo tiene las 52 distintas, y en 100.000 manos jugadas hasta el final (la banca pidiendo todo lo que pide) ninguna carta sale dos veces.
+var fullDeck = Blackjack.NewDeck(new Random(7));
+var dealt52 = Enumerable.Range(0, 52).Select(_ => fullDeck()).ToList();
+Check(dealt52.Distinct().Count() == 52 && dealt52.GroupBy(c => c.Rank).All(g => g.Count() == 4) && dealt52.GroupBy(c => c.Suit).All(g => g.Count() == 13), "el mazo reparte las 52 cartas, cada una una sola vez (4 de cada valor, 13 de cada palo)");
+int repeatedHands = 0;
+for (int i = 0; i < 100_000; i++)
+{
+    var d = Blackjack.NewDeck(new Random(1000 + i));
+    var st = Blackjack.Start(10, d);
+    while (!st.Finished) st = Blackjack.Hit(st, d);
+    var all = st.Player.Concat(st.Dealer).ToList();
+    if (all.Distinct().Count() != all.Count) repeatedHands++;
+}
+Check(repeatedHands == 0, $"en 100.000 manos ninguna carta se repite entre el jugador y la banca ({repeatedHands} con repetidas)");
 
 Console.WriteLine("\n== 4. La plata, contra la base real ==");
 string conn = TestEnv.Connection();
@@ -171,22 +174,6 @@ var h4 = await svc4.StartAsync(U(4), "1000");
 var push4 = await svc4.ActAsync(U(4), h4.View!.GameId, BlackjackAction.Stand);
 Check(push4.View is { State.Outcome: BlackjackOutcome.Push } && await Gold(4) == 10_000 && (await Events(4)).Length == 0, "empate: devuelve la apuesta (10.000) y no deja evento de ganada ni perdida");
 
-// Doblar.
-await Reset(5, 10_000);
-var svc5 = Svc(5, 6, 13, 7, 13);
-var h5 = await svc5.StartAsync(U(5), "1000");
-Check(h5.View!.CanDouble, "con 11 y oro suficiente se puede doblar");
-var d5 = await svc5.ActAsync(U(5), h5.View.GameId, BlackjackAction.Double);
-Check(d5.View is { State: { Doubled: true, Stake: 2000, Outcome: BlackjackOutcome.PlayerWin } } && await Gold(5) == 12_000 && (await Events(5)).SequenceEqual([("casino_win", 2000L)]), "doblar cobra otros 1.000 (8.000), saca un 10 (21), gana: 4.000 → queda en 12.000 y el evento es +2.000");
-
-// Doblar sin oro: la mano sigue.
-await Reset(6, 1500);
-var svc6 = Svc(5, 6, 13, 7, 2, 13);
-var h6 = await svc6.StartAsync(U(6), "1000");
-Check(!h6.View!.CanDouble && await Gold(6) == 500, "con 500 de oro después de apostar 1.000 no se ofrece doblar");
-var d6 = await svc6.ActAsync(U(6), h6.View.GameId, BlackjackAction.Double);
-Check(d6.Message!.Contains("No te alcanza") && d6.View is null && await Gold(6) == 500 && svc6.Peek(U(6)) is { State.Finished: false }, "doblar sin el oro se rechaza sin tocar nada y la mano sigue en juego");
-
 // Rechazos al empezar.
 await Reset(7, 500);
 var svc7 = Svc(13, 9, 13, 7);
@@ -231,18 +218,14 @@ Check(embedIn.Title!.Contains("apuesta 500") && embedIn.Description.Contains("Tu
     "en juego: tus cartas con el total (blando), UNA carta de la banca y la otra tapada, y cómo seguir");
 var compsIn = BlackjackModule.BuildComponents(viewIn, 77)!;
 var buttons = compsIn.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<ButtonComponent>().ToList();
-Check(buttons.Count == 3 && buttons[0].CustomId == $"bj_hit:77:{viewIn.GameId:N}" && buttons[1].CustomId == $"bj_stand:77:{viewIn.GameId:N}" && buttons[2].CustomId == $"bj_double:77:{viewIn.GameId:N}" && !buttons[2].IsDisabled, "tres botones (Pedir, Plantarse, Doblar) con el dueño y la mano en el id");
-var poor = BlackjackModule.BuildComponents(viewIn with { Gold = 100 }, 77)!.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<ButtonComponent>().Last();
-Check(poor.IsDisabled && !BlackjackModule.BuildEmbed(viewIn with { Gold = 100 }).Description.Contains("aa bj double"), "sin oro para igualar la apuesta, Doblar queda deshabilitado y no se ofrece");
-var hit1 = Blackjack.Hit(viewIn.State, () => new Card(2, 1));
-var viewHit = viewIn with { State = hit1 };
-Check(!viewHit.CanDouble && BlackjackModule.BuildComponents(viewHit, 77)!.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<ButtonComponent>().Last().IsDisabled, "después de pedir una carta ya no se puede doblar");
+Check(buttons.Count == 2 && buttons[0].CustomId == $"bj_hit:77:{viewIn.GameId:N}" && buttons[1].CustomId == $"bj_stand:77:{viewIn.GameId:N}" && !embedIn.Description.Contains("double") && !embedIn.Description.Contains("Doblar"),
+    "dos botones (Pedir y Plantarse) con el dueño y la mano en el id; Doblar ya no existe (v0.64.1) ni se ofrece en el texto");
 var viewWin = new BlackjackView(Guid.NewGuid(), won, 11_000);
 var embedWin = BlackjackModule.BuildEmbed(viewWin);
 Check(BlackjackModule.BuildComponents(viewWin, 77) is null && embedWin.Description.Contains("¡Ganaste!") && embedWin.Description.Contains("(+100)") && embedWin.Description.Contains($"`{string.Join(" ", won.Dealer.Select(c => c.Label))}`") && embedWin.Color == Color.Green, "terminada: sin botones, con la banca entera, el total, el resultado y color verde");
 Check(BlackjackModule.BuildEmbed(new BlackjackView(Guid.NewGuid(), nat, 0)).Description.Contains("3 a 2") && BlackjackModule.BuildEmbed(new BlackjackView(Guid.NewGuid(), dnLost, 0)).Description.Contains("La banca tenía blackjack") && BlackjackModule.BuildEmbed(new BlackjackView(Guid.NewGuid(), dnPush, 0)).Description.Contains("llegaste a 21")
-      && BlackjackModule.BuildEmbed(new BlackjackView(Guid.NewGuid(), bust, 0)).Description.Contains("Te pasaste") && BlackjackModule.BuildEmbed(new BlackjackView(Guid.NewGuid(), pushState, 0)).Color == Color.LightGrey
-      && BlackjackModule.BuildEmbed(new BlackjackView(Guid.NewGuid(), doubled, 0)).Title!.Contains("doblada"), "cada resultado tiene su texto: blackjack (3 a 2), blackjack de la banca, pasarse, empate y apuesta doblada");
+      && BlackjackModule.BuildEmbed(new BlackjackView(Guid.NewGuid(), bust, 0)).Description.Contains("Te pasaste") && BlackjackModule.BuildEmbed(new BlackjackView(Guid.NewGuid(), pushState, 0)).Color == Color.LightGrey,
+    "cada resultado tiene su texto: blackjack (3 a 2), blackjack de la banca, pasarse y empate");
 Check(BlackjackModule.BuildEmbed(new BlackjackView(Guid.NewGuid(), busted, 0, "⏰ nota de prueba")).Description.Contains("⏰ nota de prueba"), "la nota (por ejemplo «te plantó la banca») se muestra");
 
 Console.WriteLine("\n== 6. Comandos, historial y DI con el InteractionService real ==");
@@ -255,9 +238,9 @@ var gameParam = play.Parameters.Single(p => p.Name == "game");
 Check(play.Description.Length <= 100 && play.Description.Contains("Blackjack") && gameParam.Choices.Select(c => c.Value.ToString()).SequenceEqual(["coinflip", "slots", "blackjack", "ruleta", "elementos"]) && play.Parameters.Single(p => p.Name == "apuesta").Description.Length <= 100, "/play ofrece Blackjack entre los juegos, con sus descripciones dentro de los 100 caracteres");
 IComponentInteraction Click(string id) => FakeProxy.Make<IComponentInteraction>(new() { ["Data"] = FakeProxy.Make<IComponentInteractionData>(new() { ["CustomId"] = id }) });
 string gid = Guid.NewGuid().ToString("N");
-var rHit = interactions.SearchComponentCommand(Click($"bj_hit:{U(1)}:{gid}")); var rStand = interactions.SearchComponentCommand(Click($"bj_stand:{U(1)}:{gid}")); var rDouble = interactions.SearchComponentCommand(Click($"bj_double:{U(1)}:{gid}"));
-Check(rHit.IsSuccess && rHit.Command.MethodName == "HandleHitAsync" && rHit.RegexCaptureGroups is { Length: 2 } g1 && g1[0] == U(1).ToString() && g1[1] == gid && rStand.IsSuccess && rStand.Command.MethodName == "HandleStandAsync" && rDouble.IsSuccess && rDouble.Command.MethodName == "HandleDoubleAsync",
-    "los tres botones llegan a su método con el dueño y la mano");
+var rHit = interactions.SearchComponentCommand(Click($"bj_hit:{U(1)}:{gid}")); var rStand = interactions.SearchComponentCommand(Click($"bj_stand:{U(1)}:{gid}"));
+Check(rHit.IsSuccess && rHit.Command.MethodName == "HandleHitAsync" && rHit.RegexCaptureGroups is { Length: 2 } g1 && g1[0] == U(1).ToString() && g1[1] == gid && rStand.IsSuccess && rStand.Command.MethodName == "HandleStandAsync",
+    "los dos botones llegan a su método con el dueño y la mano");
 var texts = new Discord.Commands.CommandService(new Discord.Commands.CommandServiceConfig { CaseSensitiveCommands = false });
 texts.AddTypeReader<IUser>(new GuildUserTypeReader(), true);
 var textMods = await texts.AddModulesAsync(typeof(BoxModule).Assembly, sp);

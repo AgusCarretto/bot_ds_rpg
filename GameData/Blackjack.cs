@@ -11,25 +11,23 @@ public readonly record struct Card(int Rank, int Suit)
 
 public enum BlackjackOutcome { InProgress, PlayerBlackjack, PlayerWin, Push, DealerWin, PlayerBust }
 
-// Una mano. Stake es lo apostado EN TOTAL (se duplica al doblar).
-public sealed record BlackjackState(IReadOnlyList<Card> Player, IReadOnlyList<Card> Dealer, int Stake, bool Doubled, BlackjackOutcome Outcome)
+// Una mano. Stake es lo apostado (desde la v0.64.1 no se dobla: la apuesta no cambia en toda la mano).
+public sealed record BlackjackState(IReadOnlyList<Card> Player, IReadOnlyList<Card> Dealer, int Stake, BlackjackOutcome Outcome)
 {
     public bool Finished => Outcome != BlackjackOutcome.InProgress;
-
-    // Doblar: solo con las dos primeras cartas, una vez, y con la mano en juego.
-    public bool CanDouble => !Finished && Player.Count == 2 && !Doubled;
 }
 
-// El blackjack del casino (v0.25.0, el dueño: «armate el bj, aa bj 10k»). Puro: las cartas salen de la función draw que se le pasa (en el juego, un mazo infinito al azar; en las pruebas, un guion).
+// El blackjack del casino (v0.25.0, el dueño: «armate el bj, aa bj 10k»). Puro: las cartas salen de la función draw que se le pasa (en el juego, un mazo de 52 mezclado para cada mano, ver NewDeck; en las pruebas, un guion).
 // Reglas, todas acá:
-//   · Mazo infinito: cada carta es uniforme entre 13 valores (el 10, J, Q y K valen 10, o sea 4 de cada 13).
+//   · Un mazo de 52 por mano (desde la v0.64.1; antes era infinito y una carta podía repetirse): sin cartas repetidas en la mano, el 10, J, Q y K valen 10 (16 de 52).
 //   · Se reparten dos cartas al jugador y dos a la banca (de la banca se ve una). Un blackjack «natural» (As + 10 en las dos primeras) paga 3 a 2; si los dos lo tienen es empate. Si lo tiene SOLO la banca,
 //     la mano SIGUE (v0.46.0, el dueño: «que no pierdas al instante cuando la máquina tiene 21, porque si llegás a 21 podrías empatar»): el jugador juega a ciegas como siempre y, al
-//     comparar, su 21 empata con el de la banca y cualquier otra cosa pierde (doblando, pierde el doble). Hasta la v0.45 la banca «miraba» y la mano se perdía antes de jugar.
-//   · El jugador pide, se planta o dobla (solo con las dos primeras cartas: una sola carta más y la apuesta se duplica). Sin dividir, sin seguro, sin rendirse. Llegar a 21 pidiendo planta solo.
-//   · La banca pide hasta 17 y SE PLANTA en todos los 17 (también en el 17 blando).
+//     comparar, su 21 empata con el de la banca y cualquier otra cosa pierde. Hasta la v0.45 la banca «miraba» y la mano se perdía antes de jugar.
+//   · El jugador pide o se planta. Sin doblar (se sacó en la v0.64.1, el dueño: «vamos a sacar el doblar y chau, nadie lo usa»), sin dividir, sin seguro, sin rendirse. Llegar a 21 pidiendo planta solo.
+//   · La banca pide hasta 17 y también con el 17 BLANDO (desde la v0.64.1); con 17 duro o más se planta (DealerHits).
 //   · Pierde quien se pasa de 21 (el jugador se pasa primero: la banca ni juega). Ganar paga 1 a 1, empatar devuelve la apuesta.
-// Retorno medido (1.000.000 de manos con la estrategia básica de estas reglas): ~0,99 (la banca se queda con ~1 %); jugando peor, menos. Igual que las tragamonedas, se mantiene por debajo de 1.
+// Retorno medido (1.000.000 de manos con la estrategia básica de estas reglas, v0250test): ~0,983 (la banca se queda con ~1,7 %); jugando peor, menos. Antes de la v0.64.1 (mazo infinito, banca plantada en 17 blando,
+// con doblar) era ~0,991; solo con el mazo de 52 había quedado en ~0,9998 y por eso se sumaron el 17 blando y sacar el doblar. Igual que las tragamonedas, se mantiene por debajo de 1.
 public static class Blackjack
 {
     public const int Target = 21;
@@ -48,6 +46,14 @@ public static class Blackjack
 
     public static bool IsBlackjack(IReadOnlyList<Card> cards) => cards.Count == 2 && Evaluate(cards).Total == Target;
 
+    // La banca pide con menos de 17 y TAMBIÉN con el 17 blando (un 17 con un As que vale 11, como A+6) desde la v0.64.1 (el dueño, 2026-11-18: «mepa bien que pida con 17 blando»): con el mazo de 52 por mano la
+    // casa casi no ganaba y esto le devuelve parte de su ventaja. Con 17 duro (10+7) o más, se planta.
+    public static bool DealerHits(IEnumerable<Card> dealer)
+    {
+        var (total, soft) = Evaluate(dealer);
+        return total < DealerStandsOn || (total == DealerStandsOn && soft);
+    }
+
     public static BlackjackState Start(int stake, Func<Card> draw)
     {
         var player = new List<Card> { draw(), draw() };
@@ -59,7 +65,7 @@ public static class Blackjack
             : playerNatural ? BlackjackOutcome.PlayerBlackjack
             : BlackjackOutcome.InProgress;
 
-        return new BlackjackState(player, dealer, stake, false, outcome);
+        return new BlackjackState(player, dealer, stake, outcome);
     }
 
     public static BlackjackState Hit(BlackjackState state, Func<Card> draw)
@@ -86,7 +92,7 @@ public static class Blackjack
         }
 
         var dealer = state.Dealer.ToList();
-        while (Evaluate(dealer).Total < DealerStandsOn)
+        while (DealerHits(dealer))
         {
             dealer.Add(draw());
         }
@@ -98,18 +104,6 @@ public static class Blackjack
         return state with { Dealer = dealer, Outcome = outcome };
     }
 
-    // Dobla: una sola carta más, la apuesta se duplica y se planta sola. Si no se puede doblar devuelve la mano igual.
-    public static BlackjackState Double(BlackjackState state, Func<Card> draw)
-    {
-        if (!state.CanDouble)
-        {
-            return state;
-        }
-
-        var hand = state.Player.Append(draw()).ToList();
-        var doubled = state with { Player = hand, Stake = state.Stake * 2, Doubled = true };
-        return Evaluate(hand).Total > Target ? doubled with { Outcome = BlackjackOutcome.PlayerBust } : Stand(doubled, draw);
-    }
 
     // Lo que se le DEVUELVE al jugador al terminar (ya incluye su apuesta): ganar 2 × apuesta, blackjack apuesta + 1,5 × apuesta (redondeado hacia abajo), empate la apuesta, perder 0.
     public static int Payout(BlackjackState state) => state.Outcome switch
@@ -123,6 +117,34 @@ public static class Blackjack
     // Lo que ganó (positivo) o perdió (negativo) de neto.
     public static int Net(BlackjackState state) => Payout(state) - state.Stake;
 
-    // Una carta al azar de un mazo infinito.
+    // Una carta al azar de un mazo infinito (lo que usaba el juego hasta la v0.64.0; queda para las pruebas que miden con él).
     public static Card RandomCard(Random rng) => new(rng.Next(1, 14), rng.Next(4));
+
+    // UN MAZO DE 52 POR MANO (2026-11-18, el dueño: «arreglar el bj para que no repita cartas»): las 52 cartas mezcladas (Fisher-Yates) y se reparten de arriba sin volver al mazo, así en una mano nunca sale
+    // dos veces la misma carta (el 7♥ una sola vez). Cada mano empieza con un mazo nuevo y completo. Una mano usa como mucho ~20 cartas, así que nunca se acaba; si igual se acabara, se mezcla otro mazo entero.
+    public static Func<Card> NewDeck(Random rng)
+    {
+        var deck = new Stack<Card>(Shuffled(rng));
+        return () =>
+        {
+            if (deck.Count == 0)
+            {
+                deck = new Stack<Card>(Shuffled(rng));
+            }
+
+            return deck.Pop();
+        };
+    }
+
+    private static Card[] Shuffled(Random rng)
+    {
+        var cards = new Card[52];
+        for (int i = 0; i < 52; i++)
+        {
+            cards[i] = new Card(i % 13 + 1, i / 13);
+        }
+
+        rng.Shuffle(cards);
+        return cards;
+    }
 }
