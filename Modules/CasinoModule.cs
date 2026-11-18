@@ -33,7 +33,7 @@ public class CasinoModule(
 
         try
         {
-            // El blackjack es una mano con botones (Pedir / Plantarse / Doblar): no es una jugada de una sola tirada (v0.25.0, ver Modules/BlackjackModule.cs).
+            // El blackjack es una mano con botones (Pedir / Plantarse): no es una jugada de una sola tirada (v0.25.0, ver Modules/BlackjackModule.cs).
             if (game.Trim().ToLowerInvariant() == "blackjack")
             {
                 var hand = await BlackjackModule.ExecuteStartAsync(blackjack, Context.User.Id, bet);
