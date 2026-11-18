@@ -226,12 +226,12 @@
   {
     "type": 1,
     "name": "cook",
-    "description": "Cociná un plato con tus pescados y materiales (sin plato, mirá las recetas).",
+    "description": "Cociná un plato con tus pescados y materiales (sin plato, entrás a la cocina).",
     "options": [
       {
         "type": 3,
         "name": "plato",
-        "description": "Qué cocinar (si lo dejás vacío ves las recetas).",
+        "description": "Qué cocinar (si lo dejás vacío entrás a la cocina).",
         "required": false,
         "autocomplete": true,
         "min_value": -9007199254740991,

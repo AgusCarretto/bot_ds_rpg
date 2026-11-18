@@ -20,6 +20,14 @@ public partial class TextCommandModule
                 return;
             }
 
+            // «aa cook» a secas entra a la cocina (el Cocinero y la lista para cocinar); «aa cook recipes» muestra los ingredientes de cada plato.
+            if (request.ShowRecipes && string.IsNullOrWhiteSpace(args))
+            {
+                var scene = await CookModule.BuildSceneAsync(inventoryRepository, cookingRepository, Context.User.Id);
+                await NpcImages.SendAsync(Context.Channel, scene.Embed, scene.Components);
+                return;
+            }
+
             if (request.ShowRecipes)
             {
                 await ReplyAsync(embed: await CookModule.BuildRecipesEmbedAsync(inventoryRepository, cookingRepository, Context.User.Id));

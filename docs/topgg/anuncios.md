@@ -7,7 +7,7 @@ fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo
 
 ---
 
-## 2026-11-18 — La Aventura, más dura y más completa (v0.59.0)
+## 2026-11-18 — La Aventura, más dura y más completa, y la cocina con el Cocinero (v0.59.0 y v0.64.0)
 
 **Título:** 🗺️ La Aventura ahora es para valientes
 
@@ -24,6 +24,8 @@ fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo
 🎁 **Sabés cuánto te jugás:** la primera escena te dice la zona y el premio base, y al final ves el resumen: peleas ganadas, eventos que te tocaron y el botín total.
 
 📋 **Misión semanal nueva** («Completá 2 aventuras») y **logro Aventurero** (5, 25 y 100 aventuras, con cajas y tres títulos: Andariego, Aventurero y Vencedor del Guardián).
+
+🍳 **La cocina ahora es una escena:** en **/cook** te atiende el Cocinero, ves cada plato con lo que te da y un ✅ si te alcanza, y lo cocinás eligiéndolo de la lista. Los ingredientes, en el botón 📖 Recetas o con `aa cook recipes`.
 
 📖 Todo explicado en **/info tema:aventura**.
 
