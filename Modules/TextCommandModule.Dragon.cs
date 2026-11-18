@@ -108,4 +108,28 @@ public partial class TextCommandModule
             await ReplyAsync(Loc.T("¡Upa! No pude abrir el tablón, intentá de nuevo en un momento."));
         }
     }
+
+    // "aa dragon list [tier]" / "aa dragon tier 5" — todos los dragones del juego (v0.63.0): cuántos hay de cada tier y de quién son. Misma pantalla que /dragon-list.
+    [Command("dragon list")]
+    [Alias("dragon lista", "dragón lista", "dragon tier", "dragón tier", "dragon mercado", "dragones")]
+    [Summary("Todos los dragones del juego, cuántos hay de cada tier y de quién son: \"aa dragon list\" o \"aa dragon list 5\".")]
+    public async Task DragonListAsync(int? tier = null)
+    {
+        try
+        {
+            if (tier is int t && t is < 1 or > DragonRules.MaxTier)
+            {
+                await ReplyAsync(Loc.F($"El tier va de 1 a {DragonRules.MaxTier}: `aa dragon list 5`."));
+                return;
+            }
+
+            var (embed, components) = await DragonModule.BuildDragonListAsync(dragonRepository, Context.User.Id, tier, 1);
+            await ReplyAsync(embed: embed, components: components, allowedMentions: AllowedMentions.None);
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            await ReplyAsync(Loc.T("¡Upa! No pude armar la lista de dragones, intentá de nuevo en un momento."));
+        }
+    }
 }

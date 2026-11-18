@@ -6,6 +6,9 @@ public sealed record PlayerDragon(string Kind, int Tier, int FailStreak, TimeSpa
     public bool CanBreed => Wait <= TimeSpan.Zero;
 }
 
+// Un dragón con su dueño, para el listado de todos los dragones (v0.63.0, /dragon-list).
+public sealed record DragonListing(ulong DiscordId, PlayerDragon Dragon);
+
 public enum DragonBuyStatus { Bought, AlreadyHave, NotEnoughGold, NoAccount }
 
 public sealed record DragonBuyResult(DragonBuyStatus Status, PlayerDragon? Dragon = null);
@@ -53,4 +56,11 @@ public interface IDragonRepository
 
     // Cuántas Comidas de Dragón tiene en la mochila (0 si no tiene o si el ítem todavía no está en la base).
     Task<int> CountFoodAsync(ulong discordId, CancellationToken cancellationToken = default);
+
+    // El listado de TODOS los dragones (v0.63.0, /dragon-list): una página, del tier más alto al más bajo y, en el mismo tier, del nivel más alto al más bajo (empate: el más viejo primero).
+    // tier null = todos los tiers. Solo lee.
+    Task<IReadOnlyList<DragonListing>> ListAsync(int? tier, int limit, int offset, CancellationToken cancellationToken = default);
+
+    // Cuántos dragones hay de cada tier (los tiers sin ninguno no aparecen). Solo lee.
+    Task<IReadOnlyDictionary<int, int>> CountByTierAsync(CancellationToken cancellationToken = default);
 }

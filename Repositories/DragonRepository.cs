@@ -38,6 +38,29 @@ public sealed class DragonRepository(IDbConnectionFactory connectionFactory) : I
         return row is null ? null : ToDragon(row);
     }
 
+    public async Task<IReadOnlyList<DragonListing>> ListAsync(int? tier, int limit, int offset, CancellationToken cancellationToken = default)
+    {
+        using DbConnection connection = connectionFactory.CreateConnection();
+        var rows = await connection.QueryAsync<DragonRow>(new CommandDefinition(
+            $"""
+            SELECT {SelectColumns} FROM player_dragons
+            WHERE (@Tier::int IS NULL OR tier = @Tier::int)
+            ORDER BY tier DESC, level DESC, created_at, discord_id
+            LIMIT @Limit OFFSET @Offset;
+            """,
+            new { Tier = tier, Limit = Math.Clamp(limit, 1, 100), Offset = Math.Max(0, offset), Cooldown = DragonRules.BreedCooldown.TotalSeconds },
+            cancellationToken: cancellationToken));
+        return rows.Select(r => new DragonListing((ulong)r.DiscordId, ToDragon(r))).ToList();
+    }
+
+    public async Task<IReadOnlyDictionary<int, int>> CountByTierAsync(CancellationToken cancellationToken = default)
+    {
+        using DbConnection connection = connectionFactory.CreateConnection();
+        var rows = await connection.QueryAsync<(int Tier, int Count)>(new CommandDefinition(
+            "SELECT tier AS Tier, count(*)::int AS Count FROM player_dragons GROUP BY tier;", cancellationToken: cancellationToken));
+        return rows.ToDictionary(r => r.Tier, r => r.Count);
+    }
+
     public async Task<DragonBuyResult> BuyAsync(ulong discordId, int price, string kind, CancellationToken cancellationToken = default)
     {
         if (!DragonRules.IsKind(kind))

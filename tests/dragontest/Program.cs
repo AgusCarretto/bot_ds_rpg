@@ -649,6 +649,41 @@ var rToggle = interactions.SearchComponentCommand(Click($"dragon_board_toggle:{A
 Check(slashBoard.Description.Length <= 100 && slashBoard.Parameters.Count == 0 && rToggle.IsSuccess && rToggle.Command.MethodName == "HandleBoardToggleAsync" && rRefresh.IsSuccess && rRefresh.Command.MethodName == "HandleBoardRefreshAsync" && interactions.ComponentCommands.Any(c => c.MethodName == "HandleBoardPickAsync") && texts.Search("dragon board").Commands.Any(c => c.Command.Name == "dragon board") && !FightLock.IsAllowed("dragon-board"),
     "/dragon-board y «aa dragon board» existen, los botones del tablón se rutean con Discord.Net de verdad y es un comando que no vale en plena pelea");
 
+// v0.63.0: el listado de TODOS los dragones (/dragon-list, «aa dragon list [tier]», «aa dragon tier 5»). El dueño: «que alguien pueda ver los dragones de todos para informarse cómo está el mercado».
+// La base local puede tener otros dragones: lo que se prueba son proporciones (los totales cuadran con el repositorio) y el orden, no números fijos.
+await Clean(); await Player(A); await Player(B); await Player(C);
+await Dragon(A, "oro", 9); await Dragon(B, "fuerza", 9, rested: false); await Dragon(C, "defensa", 9);
+await db.ExecuteAsync("UPDATE player_dragons SET level = 80, name = 'Brasita' WHERE discord_id = @id", new { id = (long)C });
+var tierCounts = await dragons.CountByTierAsync();
+var tier9 = await dragons.ListAsync(9, 100, 0);
+var ours = tier9.Where(d => d.DiscordId is A or B or C).Select(d => d.DiscordId).ToList();
+Check(tier9.All(d => d.Dragon.Tier == 9) && tier9.Count == tierCounts[9] && ours.IndexOf(C) < ours.IndexOf(A) && ours.Count == 3
+      && (await dragons.ListAsync(null, 5, 0)).Select(d => d.Dragon.Tier).SequenceEqual((await dragons.ListAsync(null, 5, 0)).Select(d => d.Dragon.Tier).OrderByDescending(t => t)),
+    "el repositorio lista por tier (y con un tier, solo ese), del tier más alto al más bajo y en el mismo tier del nivel más alto al más bajo; el conteo por tier cuadra");
+var (allList, allButtons) = await DragonModule.BuildDragonListAsync(dragons, A, null, 1);
+int totalDragons = tierCounts.Values.Sum();
+Check(allList.Description!.Contains(GameHistory.Number(totalDragons)) && allList.Fields.Count(f => f.Inline) == 3 && allList.Fields.First().Value.Contains("**Tier 1**")
+      && allList.Fields.Where(f => !f.Inline).Sum(f => f.Value.Split('\n').Length) == Math.Min(DragonModule.ListPageSize, totalDragons) && allList.Fields.All(f => f.Value.Length <= 1024) && allList.Length <= 6000
+      && (totalDragons > DragonModule.ListPageSize) == (allButtons is not null),
+    $"la vista de todos: el total ({totalDragons}), el mercado por tier en dos columnas, una página de hasta 10 y los botones solo si hay más de una página");
+var (t9List, _) = await DragonModule.BuildDragonListAsync(dragons, A, 9, 1);
+string t9Text = string.Join('\n', t9List.Fields.Select(f => f.Value));
+Check(t9List.Title!.Contains("tier 9") && t9List.Fields.All(f => !f.Inline) && t9Text.Contains($"<@{C}>") && t9Text.Contains("**Brasita**") && t9Text.Contains("nivel 80")
+      && t9Text.Contains($"<@{A}> **(vos)**") && t9Text.Contains("✅ puede criar") && t9Text.Contains("💤 cría en"),
+    "con un tier: solo ese tier, con el dueño, el nombre, el nivel, «(vos)» en el tuyo y si puede criar o descansa");
+var (emptyTier, emptyButtons) = await DragonModule.BuildDragonListAsync(dragons, A, 10, 99);
+Check(tierCounts.ContainsKey(10) || (emptyTier.Description!.Contains("Todavía nadie") && emptyButtons is null), "un tier sin dragones lo dice (y una página de más se acomoda sola)");
+using (Loc.Use("en"))
+{
+    var (enList, _) = await DragonModule.BuildDragonListAsync(dragons, A, 9, 1);
+    Check(string.Join('\n', enList.Fields.Select(f => f.Value)).Contains("level 80") && enList.Title!.Contains("Tier 9"), "en inglés");
+}
+var slashList = interactions.SlashCommands.Single(c => c.Name == "dragon-list");
+var rListPage = interactions.SearchComponentCommand(Click($"dragon_list:{A}:9:2"));
+Check(slashList.Description.Length <= 100 && slashList.Parameters.Count == 1 && rListPage.IsSuccess && rListPage.Command.MethodName == "HandleListPageAsync"
+      && texts.Search("dragon list 5").IsSuccess && texts.Search("dragon tier 5").IsSuccess && texts.Search("dragones").IsSuccess,
+    "/dragon-list (con tier opcional), sus botones de página y «aa dragon list 5» / «aa dragon tier 5» / «aa dragones» existen");
+
 var reminderSvc = sp.GetRequiredService<IReminderService>();
 async Task<List<(string Kind, double Secs)>> ReminderRows(ulong id) => (await db.QueryAsync<(string Kind, double Secs)>("SELECT kind AS Kind, EXTRACT(EPOCH FROM (due_at - now()))::float8 AS Secs FROM reminders WHERE discord_id = @id", new { id = (long)id })).ToList();
 await Clean(); await Player(A); await Player(B); await Player(C); await Player(D);
