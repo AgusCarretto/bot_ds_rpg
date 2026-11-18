@@ -263,6 +263,21 @@ Check(recipes.Fields.Length == dishes.Count && recipesText.Contains("Surubí al 
     $"las recetas muestran los 3 platos con ✅/❌ de lo que tenés ({recipes.Length} de 6000)");
 var recipesFresh = await CookModule.BuildRecipesEmbedAsync(inventory, cooking, U1);
 Check(recipesFresh.Fields.All(f => f.Value.Length <= 1024), "cada campo entra en los 1024 de Discord");
+// La cocina como escena (2026-11-18, como la taberna): una línea por plato con ✅/❌ y lo que da, SIN ingredientes (eso es «aa cook recipes»); debajo la lista (un plato por opción, el valor es la clave, el id lleva al
+// dueño y dice para cuántos alcanza) y el botón 📖 Recetas.
+var scene = await CookModule.BuildSceneAsync(inventory, cooking, U1);
+var sceneRows = scene.Components.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).ToList();
+var cookSelect = sceneRows.OfType<SelectMenuComponent>().Single();
+string sceneText = scene.Embed.Description + "\n" + string.Join("\n", scene.Embed.Fields.Select(f => f.Name + " " + f.Value));
+Check(cookSelect.CustomId == $"cook_pick:{U1}" && cookSelect.Options.Count == dishes.Count && cookSelect.Options.All(o => CookingCatalog.Find(o.Value) is not null)
+      && cookSelect.Options.All(o => o.Label.Length <= 100 && (o.Description?.Length ?? 0) <= 100)
+      && cookSelect.Options.Single(o => o.Value == CookingCatalog.MojarrasEscabeche).Description!.StartsWith("✅ Te alcanza para 1")
+      && cookSelect.Options.Single(o => o.Value == CookingCatalog.DoradoParrilla).Description!.StartsWith("❌")
+      && sceneRows.OfType<ButtonComponent>().Any(b => b.CustomId == $"cook_recipes:{U1}"),
+    "la lista de /cook tiene un plato por opción, con su clave de valor y para cuántos te alcanza, y el botón de las recetas");
+Check(scene.Embed.Fields.Sum(f => f.Value.Split('\n').Length) == dishes.Count && sceneText.Contains("✅ 🍳 **Mojarras en Escabeche**") && sceneText.Contains("❌ 🍳 **Dorado a la Parrilla**")
+      && !sceneText.Contains("Combustible") && !sceneText.Contains("Madera de Ébano") && scene.Embed.Description.Contains("El Cocinero") && scene.Embed.Length <= 6000,
+    "la escena de /cook tiene una línea por plato con ✅/❌ y lo que da, sin ingredientes, y habla el Cocinero");
 await Stock(U1, locro, 1);
 var timedReply = await CookModule.ExecuteCookAsync(cooking, recorder, U1, "locro del pescador", 1);
 var withActive = await CookModule.BuildRecipesEmbedAsync(inventory, cooking, U1);

@@ -4,6 +4,8 @@ public enum BlacksmithLine { Greeting, Success, NotEnough, UnknownRecipe, WrongC
 
 public enum CarpenterLine { Greeting, Success, NotEnough, Locked, AlreadyHave, UnknownTool, Maxed }
 
+public enum CookLine { Greeting }
+
 public enum ShopkeeperLine { Greeting, BuySuccess, NoGold, BoxWait, SellSuccess, SellAll, NothingToSell, NotForSale, NotOwned, Unsellable, GearConfirm, GearKept, Exchange }
 
 public enum InnkeeperLine { Healed, NothingToEat, FullHp, InCombat }
@@ -126,6 +128,20 @@ public static class NpcDialogue
 
     public static string Carpenter(CarpenterLine line, Random? rng = null) =>
         Say("El Carpintero", "🪚", Pick(CarpenterLines[line], rng));
+
+    // ---------------- El Cocinero (2026-11-18, /cook: la cocina como escena) ----------------
+    private static readonly Dictionary<CookLine, string[]> CookLines = new()
+    {
+        [CookLine.Greeting] =
+        [
+            Loc.Mark("Pase, que el carbón ya está prendido. ¿Qué le cocino hoy?"),
+            Loc.Mark("Traiga pescado y le hago maravillas. Elija nomás."),
+            Loc.Mark("Acá se cocina y se come en el momento, nada de llevarse táper. ¿Qué va a ser?"),
+        ],
+    };
+
+    public static string Cook(CookLine line, Random? rng = null) =>
+        Say("El Cocinero", "👨‍🍳", Pick(CookLines[line], rng));
 
     // ---------------- El Tendero ----------------
     private static readonly Dictionary<ShopkeeperLine, string[]> ShopkeeperLines = new()
@@ -603,6 +619,14 @@ public static class NpcImages
         Find("Images__Carpenter", "carpenter.jpg")
         ?? (ItemDisplay.ImageUrl(UiEmojis.Icon(CarpenterEmojiName, string.Empty), size: 256) is { } carpenterUrl ? new NpcImage(carpenterUrl, null) : null);
 
+    // El Cocinero (2026-11-18, /cook): igual que el Carpintero, una URL (Images__Cook), el archivo Assets/npc/cook.jpg (256x256) o un emoji de la APLICACIÓN llamado «cocinero» (por NOMBRE: se sube al portal y en unos
+    // minutos aparece de miniatura en /cook). Sin ninguno, la cocina sale igual, sin foto.
+    public const string CookEmojiName = "cocinero";
+
+    public static NpcImage? Cook =>
+        Find("Images__Cook", "cook.jpg")
+        ?? (ItemDisplay.ImageUrl(UiEmojis.Icon(CookEmojiName, string.Empty), size: 256) is { } cookUrl ? new NpcImage(cookUrl, null) : null);
+
     private static NpcImage? Find(string urlKey, string? fileName)
     {
         string? url = Environment.GetEnvironmentVariable(urlKey);
@@ -633,7 +657,7 @@ public static class NpcImages
             return null;
         }
 
-        return new[] { Blacksmith, Innkeeper, Carpenter }.FirstOrDefault(image => image?.Reference == url)?.LocalPath;
+        return new[] { Blacksmith, Innkeeper, Carpenter, Cook }.FirstOrDefault(image => image?.Reference == url)?.LocalPath;
     }
 
     // Manda el embed al canal, con su imagen adjunta si la tiene (comandos de texto).
