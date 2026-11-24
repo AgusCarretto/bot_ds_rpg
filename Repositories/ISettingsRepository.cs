@@ -19,4 +19,7 @@ public interface ISettingsRepository
 
     // Guarda (o pisa) qué líneas de /cd ve y en qué orden (v0.51.0, GameData/CooldownLayout.cs); null = todas, como siempre. No toca las demás opciones del jugador.
     Task SetCdLayoutAsync(ulong discordId, string? layout, CancellationToken cancellationToken = default);
+
+    // Guarda (o pisa) cómo ve /drops: true = todas las zonas juntas (la vista compacta), false = una zona por vez con un menú (v0.65.0). No toca las demás opciones del jugador.
+    Task SetDropsAllZonesAsync(ulong discordId, bool value, CancellationToken cancellationToken = default);
 }

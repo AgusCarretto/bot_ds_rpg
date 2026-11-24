@@ -51,10 +51,10 @@ totals.Add(new RewardReceipt(roble, 100, 0, 5));
 totals.Add(new RewardReceipt(roble3, 100, 0, 5));
 Check(totals.Describe().Contains($"{Roble} 4× Baúl de Roble") && !totals.Describe().Contains("📦"), "el recibo con varios premios suma las cajas y lleva el emoji propio");
 ItemEmojiRegistry.Set([("Piedra", Piedra)]);
-Check(MiniEventRules.Describe(new MiniEventReward("Piedra", 4, 0)) == $"4× {Piedra} Piedra" && MiniEventRules.Describe(new MiniEventReward(null, 0, 70)) == "💰 70 oro",
+Check(MiniEventRules.Describe(new MiniEventReward([new MiniEventItem(1, "Piedra", 4)], 0)) == $"4× {Piedra} Piedra" && MiniEventRules.Describe(new MiniEventReward([], 70)) == "💰 70 oro",
     "el premio del mini-evento (piedras/madera) lleva el emoji del material; la plata no cambia");
 ItemEmojiRegistry.Set([]);
-Check(MiniEventRules.Describe(new MiniEventReward("Piedra", 4, 0)) == "4× Piedra", "mini-evento sin registro: queda el texto de siempre");
+Check(MiniEventRules.Describe(new MiniEventReward([new MiniEventItem(1, "Piedra", 4)], 0)) == "4× Piedra", "mini-evento sin registro: queda el texto de siempre");
 
 Console.WriteLine("\n== 3. El refresco lee el catálogo de la base ==");
 ItemEmojiRegistry.Set([]);

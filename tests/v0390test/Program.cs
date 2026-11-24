@@ -334,10 +334,15 @@ Check(CooldownModule.ExpeditionLine(active with { Remaining = TimeSpan.Zero }) i
 var cdEmbed = await CooldownModule.BuildStatusEmbedAsync(cooldowns, users, U, null, null, false, petRepo, null, expRepo);
 Check(cdEmbed.Description.Contains("Expedición") && cdEmbed.Length <= 6000, "/cd muestra la línea de la expedición en curso");
 await db.ExecuteAsync("DELETE FROM pet_expeditions WHERE discord_id = @u", new { u = (long)U });
-Check(!(await CooldownModule.BuildStatusEmbedAsync(cooldowns, users, U, null, null, false, petRepo, null, expRepo)).Description.Contains("Expedición"), "y sin expedición no sale");
+// v0.65.0: sin expedición en curso pero con una mascota de nivel 10 que ya puede salir, /cd avisa «sin mandar» (como el jefe mundial y la Arena); sin mascota que pueda salir, la línea no sale.
+var canSendEmbed = await CooldownModule.BuildStatusEmbedAsync(cooldowns, users, U, null, null, false, petRepo, null, expRepo);
+Check(canSendEmbed.Description.Contains("🧭 **Expedición**: ⚠️ sin mandar · `/pet expedition`"), "/cd: sin expedición y con una mascota de nivel 10, avisa «⚠️ sin mandar» y dice con qué comando");
+Check(!(await CooldownModule.BuildStatusEmbedAsync(cooldowns, users, U, null, null, false, null, null, expRepo)).Description.Contains("Expedición"), "/cd: si no se pueden leer las mascotas (o no hay ninguna que pueda salir), la línea no sale");
+Check(CooldownModule.ExpeditionLine(null, canSend: false) is null && CooldownModule.ExpeditionLine(null, canSend: true, other: true) == "🧭 **Expedición**: ⚠️ sin mandar" && CooldownModule.ExpeditionLine(null, canSend: true)!.EndsWith("`/pet expedition`"), "la línea pura: sin nada, nada; al mirar a otro jugador el aviso no le da la orden");
+Check(CooldownModule.ExpeditionLine(active, canSend: true) is { } stillOut && stillOut.Contains("restantes"), "con una expedición en curso manda lo de siempre (el aviso de «sin mandar» es solo si no hay ninguna)");
 using (Loc.Use("en"))
 {
-    Check(ReminderCatalog.Compose(U, ["expedition"]).Contains("is back from its expedition") && CooldownModule.ExpeditionLine(active)!.Contains("Expedition") && CooldownModule.ExpeditionLine(active)!.Contains("left"), "en inglés: el aviso y la línea de /cd");
+    Check(ReminderCatalog.Compose(U, ["expedition"]).Contains("is back from its expedition") && CooldownModule.ExpeditionLine(active)!.Contains("Expedition") && CooldownModule.ExpeditionLine(active)!.Contains("left") && CooldownModule.ExpeditionLine(null, canSend: true)!.Contains("not sent"), "en inglés: el aviso, la línea de /cd y el «sin mandar»");
 }
 
 Console.WriteLine("\n== 8. Comando, menú, DI y ayuda (InteractionService real) ==");

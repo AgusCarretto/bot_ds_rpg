@@ -11,10 +11,15 @@ public sealed record ArenaListing(DateOnly Day, IReadOnlyList<ArenaEntry> Entrie
 
 public sealed record ArenaResults(ArenaDayInfo Info, IReadOnlyList<ArenaMatchRow> Matches);
 
+// Un puesto del podio (2.º o 3.º) para el anuncio: quién y qué cobró (RewardText null = ya no tenía cuenta). v0.65.0.
+public sealed record ArenaPodiumLine(int Place, ulong DiscordId, string Name, string? RewardText);
+
 // Lo que pasó al cerrar un día: o se jugó (hay campeón y llave) o se canceló por falta de gente. ChannelId = dónde anunciarlo.
+// Podium (v0.65.0): el 2.º y los 3.º con lo que cobraron (sin él, el anuncio sale como antes, solo con el campeón).
 public sealed record ArenaResolution(
     DateOnly Day, bool Cancelled, ulong? ChannelId, ulong? WinnerId, string? WinnerName, int Participants, int Rounds,
-    string? RewardText, int LevelsGained, int NewLevel, IReadOnlyList<ArenaMatchRow> Matches, IReadOnlyList<ArenaFightStory>? Stories = null);
+    string? RewardText, int LevelsGained, int NewLevel, IReadOnlyList<ArenaMatchRow> Matches, IReadOnlyList<ArenaFightStory>? Stories = null,
+    IReadOnlyList<ArenaPodiumLine>? Podium = null);
 
 public interface IArenaService
 {
@@ -155,9 +160,20 @@ public sealed class ArenaService(
         var zones = ZoneRanking.OrderByDifficulty(await zoneRepository.GetAllAsync(cancellationToken));
         int zoneRank = Math.Max(1, ZoneRanking.RankOf(zones, champion?.CurrentZoneId ?? 0));
 
+        // El podio (v0.65.0): el 2.º (perdió la final) y los 3.º (perdieron las semifinales) cobran también, cada uno con el premio de SU zona.
+        var placings = new List<ArenaPlacing>();
+        var zoneByPlayer = new Dictionary<ulong, int?>();
+        foreach (var place in ArenaPodium.Of(rows, bracket.Rounds))
+        {
+            var runnerUp = await userRepository.GetByDiscordIdAsync(place.DiscordId, cancellationToken);
+            zoneByPlayer[place.DiscordId] = runnerUp?.CurrentZoneId;
+            placings.Add(new ArenaPlacing(
+                place.Place, place.DiscordId, place.Name, ArenaRules.RewardFor(place.Place)!, Math.Max(1, ZoneRanking.RankOf(zones, runnerUp?.CurrentZoneId ?? 0))));
+        }
+
         var outcome = await arenaRepository.ResolveDayAsync(
             day, rows, fighters.Count, bracket.Rounds, bracket.Champion.DiscordId, bracket.Champion.Name,
-            ArenaRules.ChampionReward, zoneRank, cancellationToken);
+            ArenaRules.ChampionReward, zoneRank, placings, cancellationToken);
 
         if (!outcome.Resolved)
         {
@@ -172,10 +188,23 @@ public sealed class ArenaService(
                 bracket.Champion.DiscordId, GameEventKinds.LevelUp, champion?.CurrentZoneId, leveled.LevelsGained, leveled.NewLevel.ToString());
         }
 
+        // Del podio solo se registra la subida de nivel (como la del campeón): el título «ganar la Arena» y su logro son del campeón.
+        var podium = new List<ArenaPodiumLine>();
+        foreach (var other in outcome.Others ?? [])
+        {
+            if (other.Receipt is { LevelsGained: > 0 } otherLeveled)
+            {
+                await gameEvents.RecordAsync(
+                    other.DiscordId, GameEventKinds.LevelUp, zoneByPlayer.GetValueOrDefault(other.DiscordId), otherLeveled.LevelsGained, otherLeveled.NewLevel.ToString());
+            }
+
+            podium.Add(new ArenaPodiumLine(other.Place, other.DiscordId, other.Name, other.Receipt is { } paid ? MissionRewards.Describe(paid.Reward) : null));
+        }
+
         return new ArenaResolution(
             day, false, Channel(info), bracket.Champion.DiscordId, bracket.Champion.Name, fighters.Count, bracket.Rounds,
             outcome.Receipt is { } receipt ? MissionRewards.Describe(receipt.Reward) : null,
-            outcome.Receipt?.LevelsGained ?? 0, outcome.Receipt?.NewLevel ?? 0, rows, stories);
+            outcome.Receipt?.LevelsGained ?? 0, outcome.Receipt?.NewLevel ?? 0, rows, stories, podium);
     }
 
     private static ulong? Channel(ArenaDayInfo info) => info.ChannelId;

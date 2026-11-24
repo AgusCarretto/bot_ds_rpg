@@ -164,3 +164,7 @@ Cómo se leen las columnas: **Cómo se consigue** es lo que ve el jugador mientr
 | Cliente del Inframundo | Comprale algo al Tabernero del Inframundo con /deepshop | Especial |
 | Brasa Soberana | Sacá un encantamiento de tier V (Soberano) con /enchant | Especial |
 | Recién Llegado | Lo tenés desde el primer día | Especial |
+
+## Dificultad con color (v0.65.0)
+
+Cada título lleva un círculo de color en `/titles` según qué tan difícil es conseguirlo: ⚪ sencillo (1) → 🟢 (2) → 🔵 (3) → 🟣 (4) → 🟠 (5) → 🔴 el más difícil (6). Los de los logros salen de `TitleCatalog.AchievementLevels` (1-2-3 por tramo salvo los de mucho tiempo) y los demás llevan su nivel en la definición; ver `docs/claude/economia-progreso.md`. Es una propuesta sin medir: se retoca ahí.

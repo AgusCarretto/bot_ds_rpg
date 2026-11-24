@@ -28,6 +28,7 @@ public class DragonModule(
     private const string AcceptPrefix = "dragon_accept";
     private const string DeclinePrefix = "dragon_decline";
     private const string TrainPrefix = "dragon_train";
+    private const string TrainMaxPrefix = "dragon_trainmax";
     private const string BoardTogglePrefix = "dragon_board_toggle";
     private const string BoardRefreshPrefix = "dragon_board_refresh";
     private const string BoardPickPrefix = "dragon_board_pick";
@@ -67,7 +68,13 @@ public class DragonModule(
 
     // El botón «Entrenar» de la pantalla del dragón: entrena UN nivel, refresca la pantalla en su lugar y dice cómo salió (solo lo ves vos).
     [ComponentInteraction($"{TrainPrefix}:*")]
-    public async Task HandleTrainButtonAsync(string ownerRaw)
+    public async Task HandleTrainButtonAsync(string ownerRaw) => await TrainFromButtonAsync(ownerRaw, 1);
+
+    // «Entrenar al máximo» (v0.65.0): los niveles que alcance el oro, hasta el tope del tier. Es el mismo ExecuteTrainAsync con «todos los que se pueda» (TrainAsync corta solo en el oro y en el tope).
+    [ComponentInteraction($"{TrainMaxPrefix}:*")]
+    public async Task HandleTrainMaxButtonAsync(string ownerRaw) => await TrainFromButtonAsync(ownerRaw, DragonRules.MaxLevel);
+
+    private async Task TrainFromButtonAsync(string ownerRaw, int times)
     {
         await DeferAsync();
 
@@ -79,7 +86,7 @@ public class DragonModule(
                 return;
             }
 
-            string message = await ExecuteTrainAsync(dragonRepository, ownerId, 1);
+            string message = await ExecuteTrainAsync(dragonRepository, ownerId, times);
             var view = await BuildDragonViewAsync(dragonRepository, ownerId);
             await ModifyOriginalResponseAsync(p =>
             {
@@ -852,9 +859,15 @@ public class DragonModule(
                 false);
         }
 
-        MessageComponent? components = dragon.Level >= cap
-            ? null
-            : new ComponentBuilder().WithButton(Loc.F($"Entrenar ({GameHistory.Number(DragonRules.TrainCost(dragon.Level))} oro)"), $"{TrainPrefix}:{discordId}", ButtonStyle.Primary, new Emoji("🏋️")).Build();
+        // v0.65.0 (jugadores: «no estar haciendo click de a 1»): al lado de «Entrenar» (un nivel) va «Entrenar al máximo», que sube todos los niveles que alcance el oro (hasta el tope del tier).
+        // Con un solo nivel por delante los dos botones hacen lo mismo y sobra el segundo.
+        var trainButtons = new ComponentBuilder().WithButton(Loc.F($"Entrenar ({GameHistory.Number(DragonRules.TrainCost(dragon.Level))} oro)"), $"{TrainPrefix}:{discordId}", ButtonStyle.Primary, new Emoji("🏋️"));
+        if (dragon.Level + 1 < cap)
+        {
+            trainButtons.WithButton(Loc.T("Entrenar al máximo"), $"{TrainMaxPrefix}:{discordId}", ButtonStyle.Success, new Emoji("⏫"));
+        }
+
+        MessageComponent? components = dragon.Level >= cap ? null : trainButtons.Build();
 
         return new DragonView(embed.Build(), components);
     }

@@ -43,6 +43,24 @@ public static class RarityCatalog
     // Usado por /chop y /mine: Común 69.5% / Raro 21% / Épico 6% / Legendario 3% / Mítico 0.5%.
     public static string RollGatheringRarity() => Roll(GatheringWeights);
 
+    // Lo mismo con el azar inyectado (para probarlo) y SIN el Mítico: si sale, cuenta como Legendario (la Corteza y el Meteorito siguen siendo solo de /chop y /mine y de unos pocos lugares más). Lo usan el hallazgo
+    // de la Chispa en las expediciones y el mini-evento de piedras y madera.
+    public static string RollGatheringRarityNoMythic(Random rng)
+    {
+        double roll = rng.NextDouble() * 100.0;
+        double cumulative = 0;
+        foreach (var (rarity, percent) in GatheringChances)
+        {
+            cumulative += percent;
+            if (roll < cumulative)
+            {
+                return rarity == "Mítico" ? "Legendario" : rarity;
+            }
+        }
+
+        return "Común";
+    }
+
     // Las chances de rareza de /chop y /mine en porcentaje (para listarlas y para probar que suman 100).
     public static IReadOnlyList<(string Rarity, double Percent)> GatheringChances =>
         GatheringWeights.Select(w => (w.Rarity, w.Weight / 10.0)).ToList();

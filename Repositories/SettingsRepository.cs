@@ -15,6 +15,7 @@ public sealed class SettingsRepository(IDbConnectionFactory connectionFactory) :
         public bool FullRecipeBook { get; set; }
         public string? ProfileBanner { get; set; }
         public string? CdLayout { get; set; }
+        public bool DropsAllZones { get; set; }
     }
 
     public async Task<PlayerSettings?> GetAsync(ulong discordId, CancellationToken cancellationToken = default)
@@ -24,6 +25,7 @@ public sealed class SettingsRepository(IDbConnectionFactory connectionFactory) :
         // De la más nueva a la más vieja: una base a la que todavía le faltan las columnas nuevas (los scripts add_*.sql se corren a mano) sigue leyendo lo que tiene en vez de dejar a todos sin su configuración.
         string[] columnSets =
         [
+            "show_fight_summary AS ShowFightSummary, full_recipe_book AS FullRecipeBook, profile_banner AS ProfileBanner, cd_layout AS CdLayout, drops_all_zones AS DropsAllZones",
             "show_fight_summary AS ShowFightSummary, full_recipe_book AS FullRecipeBook, profile_banner AS ProfileBanner, cd_layout AS CdLayout",
             "show_fight_summary AS ShowFightSummary, full_recipe_book AS FullRecipeBook, profile_banner AS ProfileBanner",
             "show_fight_summary AS ShowFightSummary, full_recipe_book AS FullRecipeBook",
@@ -44,7 +46,7 @@ public sealed class SettingsRepository(IDbConnectionFactory connectionFactory) :
             }
         }
 
-        return row is null ? null : new PlayerSettings(row.ShowFightSummary, row.FullRecipeBook, row.ProfileBanner, row.CdLayout);
+        return row is null ? null : new PlayerSettings(row.ShowFightSummary, row.FullRecipeBook, row.ProfileBanner, row.CdLayout, row.DropsAllZones);
     }
 
     // Cada guardado toca SOLO su columna: el INSERT deja el valor por defecto de las demás (una fila nueva) y el UPDATE de un conflicto no las nombra, así que elegir una opción nunca pisa otra.
@@ -85,6 +87,19 @@ public sealed class SettingsRepository(IDbConnectionFactory connectionFactory) :
             ON CONFLICT (discord_id) DO UPDATE SET profile_banner = EXCLUDED.profile_banner, updated_at = now();
             """,
             new { DiscordId = (long)discordId, Value = blessingKey }, cancellationToken: cancellationToken));
+    }
+
+    public async Task SetDropsAllZonesAsync(ulong discordId, bool value, CancellationToken cancellationToken = default)
+    {
+        using DbConnection connection = connectionFactory.CreateConnection();
+
+        await connection.ExecuteAsync(new CommandDefinition(
+            """
+            INSERT INTO player_settings (discord_id, drops_all_zones)
+            VALUES (@DiscordId, @Value)
+            ON CONFLICT (discord_id) DO UPDATE SET drops_all_zones = EXCLUDED.drops_all_zones, updated_at = now();
+            """,
+            new { DiscordId = (long)discordId, Value = value }, cancellationToken: cancellationToken));
     }
 
     public async Task SetCdLayoutAsync(ulong discordId, string? layout, CancellationToken cancellationToken = default)

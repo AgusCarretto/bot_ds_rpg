@@ -16,7 +16,8 @@ public class DropsModule(
     IZoneRepository zoneRepository,
     IMonsterRepository monsterRepository,
     IItemRepository itemRepository,
-    IZoneBoxService zoneBoxService) : InteractionModuleBase<SocketInteractionContext>
+    IZoneBoxService zoneBoxService,
+    IPlayerSettingsService settings) : InteractionModuleBase<SocketInteractionContext>
 {
     private const string ZonePrefix = "drops_zone";
 
@@ -27,7 +28,9 @@ public class DropsModule(
 
         try
         {
-            var message = await BuildDropsMessageAsync(userRepository, zoneRepository, monsterRepository, itemRepository, Context.User.Id, zoneBoxService);
+            // v0.65.0: quien eligió en /config ver todas las zonas juntas las ve juntas (la vista compacta); el resto, una zona por vez.
+            bool allZones = (await settings.GetAsync(Context.User.Id)).DropsAllZones;
+            var message = await BuildDropsMessageAsync(userRepository, zoneRepository, monsterRepository, itemRepository, Context.User.Id, zoneBoxService, allZones: allZones);
             await FollowupAsync(NullIfEmpty(message.Text), embeds: message.Embeds, components: message.Components);
         }
         catch (Exception ex)
@@ -77,6 +80,7 @@ public class DropsModule(
     // Estático (sin Context) y público por el mismo motivo que ZoneModule.BuildZoneListEmbedAsync: lo reusa "aa drops".
     // GetByDiscordIdAsync y no GetOrCreateUserAsync: mirar esta lista no tiene que crear una cuenta.
     // zoneId: la zona pedida; si no está en la escalera del jugador (o no se pide), la zona donde está parado, y si no, la primera.
+    // allZones (v0.65.0, /config): la vista compacta con TODAS las zonas juntas (cacería y viaje de cada una). Una zona pedida a mano (el menú, «aa drops 3») gana: siempre muestra esa zona sola.
     public static async Task<DropsMessage> BuildDropsMessageAsync(
         IUserRepository userRepository,
         IZoneRepository zoneRepository,
@@ -84,7 +88,8 @@ public class DropsModule(
         IItemRepository itemRepository,
         ulong discordId,
         IZoneBoxService? zoneBoxService = null,
-        int? zoneId = null)
+        int? zoneId = null,
+        bool allZones = false)
     {
         var player = await userRepository.GetByDiscordIdAsync(discordId);
         // Solo las zonas que su Fuego Nuevo ya abrió (v0.47.0): las de más arriba son una sorpresa.
@@ -93,6 +98,11 @@ public class DropsModule(
         {
             var empty = new EmbedBuilder().WithTitle(Loc.T("🎁 Drops")).WithDescription(Loc.T("_Todavía no hay zonas cargadas._")).Build();
             return new DropsMessage(string.Empty, [empty]);
+        }
+
+        if (allZones && zoneId is null)
+        {
+            return await BuildCompactMessageAsync(zones, player, monsterRepository, itemRepository, zoneBoxService);
         }
 
         int index = IndexOf(zones, zoneId);
@@ -106,18 +116,7 @@ public class DropsModule(
             .ToDictionary(item => item.Name, item => new DropItemInfo(item.Name, item.Rarity, item.Emoji));
 
         // La caja de las repeticiones del jefe sale de zone_boxes; si no se puede leer, el bloque del jefe solo dice qué pasa la primera vez.
-        ZoneBoxTable? boxTable = null;
-        if (zoneBoxService is not null)
-        {
-            try
-            {
-                boxTable = await zoneBoxService.GetAsync();
-            }
-            catch (Exception ex)
-            {
-                BotLog.Warn(ex);
-            }
-        }
+        var boxTable = await TryLoadBoxTableAsync(zoneBoxService);
 
         var embed = new EmbedBuilder()
             .WithTitle(Loc.F($"{zone.Emoji} Zona {zone.ZoneId} · {zone.Name}"))
@@ -145,6 +144,84 @@ public class DropsModule(
 
         return new DropsMessage(string.Empty, [embed.Build()], BuildZoneMenu(zones, zone.ZoneId, discordId));
     }
+
+    // La tabla de cajas por zona; null si no hay servicio o no se pudo leer (el resto de la pantalla sale igual, solo sin las cajas).
+    private static async Task<ZoneBoxTable?> TryLoadBoxTableAsync(IZoneBoxService? zoneBoxService)
+    {
+        if (zoneBoxService is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return await zoneBoxService.GetAsync();
+        }
+        catch (Exception ex)
+        {
+            BotLog.Warn(ex);
+            return null;
+        }
+    }
+
+    // La vista compacta (v0.65.0): TODAS las zonas que el jugador tiene abiertas, cada una con su cacería y su viaje (DropsCatalog.BuildCompactZone), separadas por una línea en blanco. Una zona por mensaje de 4.096 caracteres
+    // no entra, así que si no entran todas en un embed se reparten en varios (de a zonas enteras: nunca una zona partida al medio); con las 10 zonas son ~2.000 caracteres y alcanza con uno.
+    private static async Task<DropsMessage> BuildCompactMessageAsync(
+        IReadOnlyList<Zone> zones, User? player, IMonsterRepository monsterRepository, IItemRepository itemRepository, IZoneBoxService? zoneBoxService)
+    {
+        var monsters = await monsterRepository.GetAllAsync();
+        var dropItems = (await itemRepository.GetAllByTypeAsync("Material")).Concat(await itemRepository.GetAllByTypeAsync("Caja"))
+            .ToDictionary(item => item.Name, item => new DropItemInfo(item.Name, item.Rarity, item.Emoji));
+        var boxTable = await TryLoadBoxTableAsync(zoneBoxService);
+
+        var blocks = new List<string>();
+        foreach (var zone in zones)
+        {
+            string title = $"{zone.Emoji} **" + Loc.F($"Zona {zone.ZoneId} · {zone.Name}") + "**" + (player is not null && zone.ZoneId == player.CurrentZoneId ? " " + Loc.T("📍 _acá estás_") : string.Empty);
+            blocks.Add(DropsCatalog.BuildCompactZone(title, monsters.Where(m => m.ZoneId == zone.ZoneId), dropItems, boxTable?.ForZone(zone.ZoneId, ZoneBoxRole.Travel)));
+        }
+
+        // De a zonas enteras, sin pasar de CompactEmbedLimit por embed (el límite de Discord es 4096 por descripción y 6000 entre todos los embeds del mensaje).
+        var descriptions = new List<string>();
+        var current = new List<string>();
+        int length = 0;
+        foreach (string block in blocks)
+        {
+            if (current.Count > 0 && length + block.Length + 2 > CompactEmbedLimit)
+            {
+                descriptions.Add(string.Join("\n\n", current));
+                current.Clear();
+                length = 0;
+            }
+
+            current.Add(block);
+            length += block.Length + 2;
+        }
+
+        descriptions.Add(string.Join("\n\n", current));
+
+        // El título va en el primer embed y el pie en el último (con uno solo, los dos).
+        var embeds = descriptions.Select((text, i) =>
+        {
+            var builder = new EmbedBuilder().WithColor(Color.Gold).WithDescription(text);
+            if (i == 0)
+            {
+                builder.WithTitle(Loc.T("🎁 Drops de todas las zonas"));
+            }
+
+            if (i == descriptions.Count - 1)
+            {
+                builder.WithFooter(Loc.T("Cacería y viaje de cada zona · el jefe y el detalle, en /drops con una zona por vez (cambialo en /config)"));
+            }
+
+            return builder.Build();
+        }).ToArray();
+
+        return new DropsMessage(string.Empty, embeds);
+    }
+
+    // Lo que entra en la descripción de UN embed de la vista compacta (por debajo de los 4.096 de Discord; deja aire para el título y el pie).
+    private const int CompactEmbedLimit = 3500;
 
     // Una opción por zona de su escalera (hasta 10, el desplegable admite 25), sin emoji en la opción: el texto alcanza y un
     // emoji que Discord no acepte rechaza el mensaje entero. Con una sola zona no hay a dónde ir.

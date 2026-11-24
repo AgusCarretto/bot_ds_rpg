@@ -268,6 +268,13 @@ Check(slots.Value.Contains("+2.400") && slots.Value.Contains("−1.100") && slot
 Check(GameHistory.Number(1234567) == "1.234.567" && GameHistory.Number(0) == "0" && GameHistory.Number(999) == "999", "los números llevan punto de miles, sin depender de la cultura del servidor");
 Check(GameHistory.DescribeArena(report)!.Value.Value.Contains("**3** torneo") && GameHistory.DescribeArena(report)!.Value.Value.Contains("**1** campeonato") && GameHistory.DescribeArena(GameHistory.Build([])) is null, "la arena: torneos y campeonatos; sin haberse anotado nunca no aparece");
 Check(GameHistory.Build([]).Games.Count == 0 && GameHistory.Describe(new GameRecord("🏹", "X", 1, 0)).Title.EndsWith("1 vez"), "sin eventos no hay juegos, y 1 se escribe 'vez'");
+// v0.65.0: las aventuras (/aventura) entran al historial: ganadas = adventure_win, perdidas = fight_lost con detail «aventura»; van entre el viaje y el jefe.
+var advReport = GameHistory.Build([new("hunt_win", null, 4, 4), new("travel_win", null, 3, 3), new("adventure_win", null, 7, 7), new("fight_lost", "aventura", 2, 2), new("fight_lost", "travel", 1, 1), new("boss_win", null, 1, 1)]);
+var advGame = advReport.Games.Single(g => g.Name == "Aventura");
+var advText = GameHistory.Describe(advGame);
+Check(advReport.Games.Select(g => g.Name).SequenceEqual(["Cacería", "Viaje", "Aventura", "Jefe"]) && advGame.Won == 7 && advGame.Lost == 2 && advGame.Played == 9 && advText.Title == "🗺️ Aventura · 9 veces" && advText.Value.Contains("**7** ganada(s)") && advText.Value.Contains("**2** perdida(s)") && advText.Value.Contains("78%"),
+    $"la Aventura: {advText.Title} / {advText.Value.Replace("\n", " / ")}");
+Check(advReport.Games.Single(g => g.Name == "Viaje").Lost == 1 && GameHistory.Kinds.Contains(GameEventKinds.AdventureWin) && GameHistory.Build([new("fight_lost", "aventura", 3, 3)]).Games.Single().Name == "Aventura" && GameHistory.Build([new("hunt_win", null, 1, 1)]).Games.All(g => g.Name != "Aventura"), "una derrota de la Aventura no cuenta como derrota de viaje; sin aventuras no aparece y el historial pide adventure_win");
 
 Console.WriteLine("\n== 9. Historial con la base real ==");
 await Make(U, "Guerrero", 5, gold: 100000);

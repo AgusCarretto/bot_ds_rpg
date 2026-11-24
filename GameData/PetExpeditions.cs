@@ -111,21 +111,7 @@ public static class PetExpeditions
         return totals.Values.OrderBy(t => RarityCatalog.RankOf(t.Item.Rarity)).ThenBy(t => t.Item.Name).ToList();
     }
 
-    private static string RollGatherRarity(Random rng)
-    {
-        double roll = rng.NextDouble() * 100.0;
-        double cumulative = 0;
-        foreach (var (rarity, percent) in RarityCatalog.GatheringChances)
-        {
-            cumulative += percent;
-            if (roll < cumulative)
-            {
-                return rarity == "Mítico" ? "Legendario" : rarity;
-            }
-        }
-
-        return "Común";
-    }
+    private static string RollGatherRarity(Random rng) => RarityCatalog.RollGatheringRarityNoMythic(rng);
 
     // «1 hora» / «4 horas» / «8 horas».
     public static string HoursText(int hours) => hours == 1 ? Loc.T("1 hora") : Loc.F($"{hours} horas");

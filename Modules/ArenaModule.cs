@@ -133,22 +133,37 @@ public class ArenaModule(IArenaService arena) : InteractionModuleBase<SocketInte
                 Loc.T("La Arena todavía no se jugó ni una vez. Anotate con **/arena join**: el torneo de hoy se juega a las 00:00."));
         }
 
+        // El podio sale de las mismas peleas guardadas; lo que cobró cada uno solo se cuenta en el anuncio de las 00:00 (no se guarda por jugador).
         var info = results.Info;
         return BuildResultsEmbed(
-            info.Day, info.WinnerName, info.Participants, info.Rounds, info.RewardText, results.Matches, extra: null);
+            info.Day, info.WinnerName, info.Participants, info.Rounds, info.RewardText, results.Matches, extra: null,
+            podium: ArenaPodium.Of(results.Matches, info.Rounds).Select(p => new ArenaPodiumLine(p.Place, p.DiscordId, p.Name, null)).ToList());
     }
 
+    // El podio de la llave (v0.65.0), una línea por jugador: «🥈 Subcampeón: Ana · 💰 112 oro» y «🥉 Tercer puesto: Beto». Sin lo que cobraron (/arena results) sale solo el nombre.
+    public static IReadOnlyList<string> PodiumLines(IReadOnlyList<ArenaPodiumLine>? podium) =>
+        (podium ?? []).OrderBy(p => p.Place).Select(p =>
+        {
+            string prize = p.RewardText is null ? string.Empty : $" · {p.RewardText}";
+            return p.Place == 2
+                ? Loc.F($"🥈 Subcampeón: **{Short(p.Name, 24)}**{prize}")
+                : Loc.F($"🥉 Tercer puesto: **{Short(p.Name, 24)}**{prize}");
+        }).ToList();
+
     // La llave de un torneo jugado: el campeón, lo que cobró y cada ronda con sus cruces. Se usa en /arena results y en el anuncio de las
-    // 00:00 (con "extra" para sumar, por ejemplo, que el campeón subió de nivel).
+    // 00:00 (con "extra" para sumar, por ejemplo, que el campeón subió de nivel). podium: el 2.º y los 3.º (v0.65.0), debajo del campeón.
     public static Embed BuildResultsEmbed(
-        DateOnly day, string? winnerName, int participants, int rounds, string? rewardText, IReadOnlyList<ArenaMatchRow> matches, string? extra)
+        DateOnly day, string? winnerName, int participants, int rounds, string? rewardText, IReadOnlyList<ArenaMatchRow> matches, string? extra,
+        IReadOnlyList<ArenaPodiumLine>? podium = null)
     {
+        string podiumText = string.Concat(PodiumLines(podium).Select(line => line + "\n"));
         var embed = new EmbedBuilder()
             .WithTitle(Loc.F($"🏆 Arena del {ArenaRules.Format(day)}"))
             .WithColor(Color.Gold)
             .WithDescription(
                 Loc.F($"👑 Campeón: **{Short(winnerName ?? "—", 24)}**\n") +
                 Loc.F($"🎁 Premio: {rewardText ?? "—"}\n") +
+                podiumText +
                 Loc.F($"👥 {participants} participantes · {rounds} ronda(s){(extra is null ? string.Empty : $"\n{extra}")}"));
 
         foreach (var group in matches.GroupBy(m => m.Round).OrderBy(g => g.Key))
@@ -195,7 +210,7 @@ public class ArenaModule(IArenaService arena) : InteractionModuleBase<SocketInte
         string? levelUp = resolution.LevelsGained > 0 ? Loc.F($"🎉 ¡Y subió al nivel **{resolution.NewLevel}**!") : null;
         string? extra = string.Join("\n", new[] { crown, levelUp }.Where(x => x is not null)) is { Length: > 0 } joined ? joined : null;
         var embed = BuildResultsEmbed(
-            resolution.Day, resolution.WinnerName, resolution.Participants, resolution.Rounds, resolution.RewardText, resolution.Matches, extra);
+            resolution.Day, resolution.WinnerName, resolution.Participants, resolution.Rounds, resolution.RewardText, resolution.Matches, extra, resolution.Podium);
 
         return (Loc.F($"🎉 ¡{MentionUtils.MentionUser(resolution.WinnerId!.Value)} es el campeón de la Arena!"), embed);
     }

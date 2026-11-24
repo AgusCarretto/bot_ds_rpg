@@ -228,6 +228,34 @@ bool badThrew = false; try { ArenaBracket.Run([new ArenaEntrant(1, "a"), new Are
 Check(oneThrew && badThrew, "un solo anotado no es torneo, y una pelea que devuelve un ganador que no peleó se rechaza");
 var seedsDiffer = Enumerable.Range(0, 30).Select(i => ArenaBracket.Run(Enumerable.Range(1, 8).Select(k => new ArenaEntrant((ulong)k, "x")).ToList(), new Random(i), (a, b) => new ArenaFightOutcome(a.DiscordId, 1)).Matches.First().P1.DiscordId).Distinct().Count();
 Check(seedsDiffer > 3, $"el sorteo cambia el cruce ({seedsDiffer} primeros distintos en 30 sorteos)");
+
+// v0.65.0: el podio de la llave (ArenaPodium): el 2.º perdió la final y los 3.º las semifinales; los pase directo no pierden nadie.
+bool okPodium = true; string whyPodium = string.Empty;
+for (int n = 2; n <= 32; n++)
+{
+    var entrants = Enumerable.Range(1, n).Select(k => new ArenaEntrant((ulong)k, $"P{k}")).ToList();
+    var bracket = ArenaBracket.Run(entrants, new Random(n), (a, b) => new ArenaFightOutcome(Random.Shared.Next(2) == 0 ? a.DiscordId : b.DiscordId, 3));
+    var rowsP = bracket.Matches.Select(m => new ArenaMatchRow(m.Round, m.Slot, m.P1.DiscordId, m.P1.Name, m.P2?.DiscordId, m.P2?.Name, m.WinnerId, m.Actions, m.WinnerHpPercent)).ToList();
+    var podiumP = ArenaPodium.Of(rowsP, bracket.Rounds);
+    var final = bracket.Matches.Single(m => m.Round == bracket.Rounds);
+    ulong finalLoser = final.WinnerId == final.P1.DiscordId ? final.P2!.DiscordId : final.P1.DiscordId;
+    int wantThirds = n == 2 ? 0 : n == 3 ? 1 : 2;
+    var semiLosers = bracket.Matches.Where(m => m.Round == bracket.Rounds - 1 && m.P2 is not null).Select(m => m.WinnerId == m.P1.DiscordId ? m.P2!.DiscordId : m.P1.DiscordId).OrderBy(x => x).ToList();
+    bool good = podiumP.Count(p => p.Place == 2) == 1 && podiumP.Single(p => p.Place == 2).DiscordId == finalLoser && podiumP.Count(p => p.Place == 3) == wantThirds
+        && podiumP.Where(p => p.Place == 3).Select(p => p.DiscordId).OrderBy(x => x).SequenceEqual(wantThirds == 0 ? new List<ulong>() : semiLosers)
+        && podiumP.All(p => p.DiscordId != bracket.Champion.DiscordId) && podiumP.Select(p => p.DiscordId).Distinct().Count() == podiumP.Count;
+    if (!good) { okPodium = false; whyPodium += $" n={n}(2.º {podiumP.Count(p => p.Place == 2)}, 3.º {podiumP.Count(p => p.Place == 3)} de {wantThirds})"; }
+}
+
+Check(okPodium, "de 2 a 32 anotados: un 2.º (el que perdió la final) y los 3.º son los que perdieron las semifinales (0 con 2 anotados, 1 con 3, 2 desde 4); nunca el campeón ni repetidos" + whyPodium);
+Check(ArenaPodium.Of([], 3).Count == 0 && ArenaPodium.Of([new ArenaMatchRow(1, 0, 1, "a", null, null, 1, 0)], 1).Count == 0, "una llave vacía, o con solo un pase directo, no genera podio");
+Check(ArenaRules.RewardFor(1) == ArenaRules.ChampionReward && ArenaRules.RewardFor(2) == ArenaRules.RunnerUpReward && ArenaRules.RewardFor(3) == ArenaRules.ThirdPlaceReward && ArenaRules.RewardFor(4) is null && ArenaRules.RunnerUpReward.Box == BoxGrant.None && ArenaRules.ThirdPlaceReward.Box == BoxGrant.None
+    && ArenaRules.ChampionReward.GoldUnits > ArenaRules.RunnerUpReward.GoldUnits && ArenaRules.RunnerUpReward.GoldUnits > ArenaRules.ThirdPlaceReward.GoldUnits && ArenaRules.ChampionReward.XpPercent > ArenaRules.RunnerUpReward.XpPercent && ArenaRules.RunnerUpReward.XpPercent > ArenaRules.ThirdPlaceReward.XpPercent,
+    "cada puesto cobra menos que el anterior y solo el campeón se lleva caja");
+var podiumLines = ArenaModule.PodiumLines([new ArenaPodiumLine(3, 8, "Beto", "💰 56 oro"), new ArenaPodiumLine(2, 7, "Ana", "💰 112 oro · ⭐ 3 XP"), new ArenaPodiumLine(3, 9, "Caro", null)]);
+Check(podiumLines.Count == 3 && podiumLines[0].StartsWith("🥈 Subcampeón: **Ana**") && podiumLines[0].Contains("112") && podiumLines[1].StartsWith("🥉 Tercer puesto: **Beto**") && podiumLines[2].EndsWith("**Caro**"), "las líneas del podio: el 2.º primero, cada 3.º en su renglón y sin premio si no cobró");
+var embedPodium = ArenaModule.BuildResultsEmbed(new DateOnly(2026, 10, 1), "Zeta", 4, 2, "💰 210 oro", [new ArenaMatchRow(1, 0, 1, "a", 2, "b", 1, 5)], extra: null, podium: [new ArenaPodiumLine(2, 7, "Ana", "💰 112 oro")]);
+Check(embedPodium.Description.Contains("🥈 Subcampeón: **Ana** · 💰 112 oro") && embedPodium.Description.IndexOf("🥈") > embedPodium.Description.IndexOf("Campeón") && embedPodium.Description.IndexOf("🥈") < embedPodium.Description.IndexOf("participantes"), "la llave y el anuncio llevan el podio debajo del campeón y arriba de los participantes");
 Check(ArenaBracket.RoundName(5, 5) == "🏆 Final" && ArenaBracket.RoundName(4, 5) == "Semifinal" && ArenaBracket.RoundName(3, 5) == "Cuartos de final" && ArenaBracket.RoundName(2, 5) == "Octavos de final" && ArenaBracket.RoundName(1, 5) == "Ronda 1", "nombres de ronda");
 
 Console.WriteLine("\n== 6. Día de Uruguay y premio ==");
@@ -398,7 +426,14 @@ var champId = (long)res!.WinnerId!.Value;
 long goldAfter = await db.ExecuteScalarAsync<long>("SELECT COALESCE(SUM(gold),0) FROM users WHERE discord_id BETWEEN @a AND @b", new { a = BaseId + 10, b = BaseId + 13 });
 var champ = (await pUsers.GetByDiscordIdAsync((ulong)champId))!;
 int boxes = await db.ExecuteScalarAsync<int>("SELECT COALESCE(SUM(quantity),0) FROM inventory inv JOIN items i USING (item_id) WHERE inv.discord_id = @id AND i.type = 'Caja'", new { id = champId });
-Check(goldAfter - goldBefore == 210 && boxes == 1 && champ.Xp + (champ.Level - 5) * 1 >= 0, $"solo el campeón cobra: +210 de oro (zona 1), una caja ({goldAfter - goldBefore} oro, {boxes} caja)");
+// v0.65.0: el podio completo cobra: campeón 15 cacerías (210 en zona 1) y una caja; el 2.º 8 cacerías (112); los dos 3.º 4 cacerías cada uno (56), sin caja.
+Check(goldAfter - goldBefore == 210 + 112 + 56 + 56 && boxes == 1 && champ.Xp + (champ.Level - 5) * 1 >= 0, $"el campeón cobra +210 de oro (zona 1) y una caja; el podio suma 112 + 56 + 56 ({goldAfter - goldBefore} oro en total, {boxes} caja del campeón)");
+Check(res.Podium is { Count: 3 } && res.Podium.Count(p => p.Place == 2) == 1 && res.Podium.Count(p => p.Place == 3) == 2 && res.Podium.All(p => p.DiscordId != (ulong)champId && p.RewardText is not null), "v0.65.0: el anuncio trae al 2.º y a los dos 3.º con lo que cobraron");
+var second = res.Podium!.Single(p => p.Place == 2); var thirds = res.Podium!.Where(p => p.Place == 3).ToList();
+int boxesPodium = db.ExecuteScalar<int>("SELECT COALESCE(SUM(quantity),0) FROM inventory inv JOIN items i USING (item_id) WHERE inv.discord_id = ANY(@ids) AND i.type = 'Caja'", new { ids = res.Podium!.Select(p => (long)p.DiscordId).ToArray() });
+Check(second.RewardText!.Contains("112") && thirds.All(t => t.RewardText!.Contains("56")) && boxesPodium == 0, $"el 2.º cobra 112 y cada 3.º 56 de oro, y ninguno recibe caja ({second.RewardText} / {string.Join(" y ", thirds.Select(t => t.RewardText))})");
+var storedPodium = ArenaPodium.Of(await arenaRepo.GetMatchesAsync(day1), 2);
+Check(storedPodium.Count == 3 && storedPodium.Single(p => p.Place == 2).DiscordId == second.DiscordId && storedPodium.Where(p => p.Place == 3).Select(p => p.DiscordId).Order().SequenceEqual(thirds.Select(t => t.DiscordId).Order()), "el podio también se deduce de la llave guardada (lo que muestra /arena results)");
 var infoAfter = await arenaRepo.GetDayAsync(day1);
 Check(infoAfter is { Status: "resolved", Participants: 4, Rounds: 2 } && infoAfter.WinnerId == (ulong)champId && infoAfter.RewardText!.Contains("210") && infoAfter.ResolvedAtUtc is not null, $"el día queda resuelto con campeón y premio guardados ({infoAfter?.RewardText})");
 var stored = await arenaRepo.GetMatchesAsync(day1);
@@ -417,7 +452,7 @@ var racers = await Task.WhenAll(Enumerable.Range(0, 20).Select(_ => Task.Run(() 
 long ga = await db.ExecuteScalarAsync<long>("SELECT SUM(gold) FROM users WHERE discord_id BETWEEN @a AND @b", new { a = BaseId + 20, b = BaseId + 23 });
 int boxCount = await db.ExecuteScalarAsync<int>("SELECT COALESCE(SUM(quantity),0) FROM inventory inv JOIN items i USING (item_id) WHERE inv.discord_id BETWEEN @a AND @b AND i.type = 'Caja'", new { a = BaseId + 20, b = BaseId + 23 });
 int matchRows = await db.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM arena_matches WHERE day = '2020-03-03'");
-Check(racers.Count(r => r is not null) == 1 && ga - gb == 210 && boxCount == 1 && matchRows == 3, $"20 cierres a la vez del mismo día: uno solo juega y paga (+{ga - gb} oro, {boxCount} caja, {matchRows} peleas guardadas)");
+Check(racers.Count(r => r is not null) == 1 && ga - gb == 210 + 112 + 56 + 56 && boxCount == 1 && matchRows == 3, $"20 cierres a la vez del mismo día: uno solo juega y paga a todo el podio (+{ga - gb} oro, {boxCount} caja, {matchRows} peleas guardadas)");
 
 // Cancelación con un solo anotado
 var lonely = new DateOnly(2020, 3, 4);
@@ -643,8 +678,8 @@ sealed class FilteredArenaRepo(IArenaRepository inner, DateOnly[] visible) : IAr
     public async Task<IReadOnlyList<DateOnly>> GetOpenDaysBeforeAsync(DateOnly today, CancellationToken cancellationToken = default) =>
         (await inner.GetOpenDaysBeforeAsync(today, cancellationToken)).Where(visible.Contains).ToList();
     public Task<bool> CancelDayAsync(DateOnly day, int participants, CancellationToken cancellationToken = default) => inner.CancelDayAsync(day, participants, cancellationToken);
-    public Task<ArenaResolveOutcome> ResolveDayAsync(DateOnly day, IReadOnlyList<ArenaMatchRow> matches, int participants, int rounds, ulong winnerId, string winnerName, RewardSpec reward, int zoneRank, CancellationToken cancellationToken = default) =>
-        inner.ResolveDayAsync(day, matches, participants, rounds, winnerId, winnerName, reward, zoneRank, cancellationToken);
+    public Task<ArenaResolveOutcome> ResolveDayAsync(DateOnly day, IReadOnlyList<ArenaMatchRow> matches, int participants, int rounds, ulong winnerId, string winnerName, RewardSpec reward, int zoneRank, IReadOnlyList<ArenaPlacing>? others = null, CancellationToken cancellationToken = default) =>
+        inner.ResolveDayAsync(day, matches, participants, rounds, winnerId, winnerName, reward, zoneRank, others, cancellationToken);
 }
 
 // Un IArenaService a medida para probar los mensajes y el reloj sin tocar la base.

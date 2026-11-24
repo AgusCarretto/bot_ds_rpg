@@ -7,6 +7,30 @@ fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo
 
 ---
 
+## 2026-11-24 — Podio en la Arena, juntar que vale la pena, entrenar al máximo y más (v0.65.0)
+
+**Título:** 🏟️ ¡Premios para el 2.º y el 3.º de la Arena y más cambios que pidieron ustedes!
+
+**Texto:**
+
+Todo esto salió de sugerencias de la comunidad, ¡gracias!
+
+🥈🥉 **La Arena ahora premia al podio:** además del campeón, cobran **el subcampeón** (el que perdió la final) y **los dos terceros** (los que perdieron las semifinales), con oro y EXP de su zona. La caja sigue siendo solo del campeón.
+
+🪨 **Los eventos de «¡Juntar!» valen la pena en cualquier Fuego Nuevo:** ahora rinden como tirar `/mine` o `/chop` con **tu** multiplicador, así que a FN alto te llevás mucho más (¡y puede salir algo mejor que lo común!). Cuanta más gente se suma, más tiradas.
+
+🐲 **Dragón:** botón nuevo **«Entrenar al máximo»** en `/dragon`: sube todos los niveles que te alcance el oro, de una.
+
+🎁 **Drops todas juntas:** en `/config` podés elegir ver **todas las zonas de una** en `/drops` (la cacería y el viaje de cada una). También con `aa config drops todas`.
+
+🧭 **`/cd` te avisa si no mandaste la expedición** de tu mascota (⚠️ sin mandar), como el jefe mundial y la Arena.
+
+📜 **`/history` ahora cuenta las aventuras** (ganadas y perdidas).
+
+🏷️ **Los títulos tienen color de dificultad:** ⚪ los más sencillos, 🟢, 🔵, 🟣, 🟠 y 🔴 los más difíciles. Mirá `/titles`.
+
+---
+
 ## 2026-11-18 — La Aventura, más dura y más completa, la cocina con el Cocinero y el blackjack sin cartas repetidas (v0.59.0, v0.64.0 y v0.64.1)
 
 **Título:** 🗺️ La Aventura ahora es para valientes

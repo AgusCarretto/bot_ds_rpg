@@ -22,6 +22,7 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
     // El id del botón lleva a quién pertenece la pantalla y el valor al que PASA al tocarlo (on / off; full / classic): nadie puede cambiar la configuración de otro con una pantalla vieja o ajena.
     public const string SummaryButton = "config_summary";
     public const string RecipesButton = "config_recipes";
+    public const string DropsButton = "config_drops";
     public const string BannerSelect = "config_banner";
     public const string CdShowSelect = "config_cdshow";
     public const string CdFirstSelect = "config_cdfirst";
@@ -50,6 +51,11 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
     [ComponentInteraction($"{RecipesButton}:*:*")]
     public async Task HandleRecipesButtonAsync(string ownerRaw, string valueRaw) =>
         await ApplyButtonAsync(ownerRaw, owner => TrySetRecipeBookAsync(settings, owner, valueRaw == "full"));
+
+    // /drops (v0.65.0): el valor es «all» (todas las zonas juntas, la vista compacta) o «zone» (una zona por vez, lo de siempre).
+    [ComponentInteraction($"{DropsButton}:*:*")]
+    public async Task HandleDropsButtonAsync(string ownerRaw, string valueRaw) =>
+        await ApplyButtonAsync(ownerRaw, owner => TrySetDropsAllZonesAsync(settings, owner, valueRaw == "all"));
 
     // El menú del banner (v0.50.0): el valor es «none» (sin banner), «auto» (el mejor: el de tu nivel, mejora solo) o el número de tier (1 a 5) que elegiste.
     [ComponentInteraction($"{BannerSelect}:*")]
@@ -124,6 +130,7 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
         var current = await service.GetAsync(discordId);
         bool on = current.ShowFightSummary;
         bool full = current.FullRecipeBook;
+        bool dropsAll = current.DropsAllZones;
         bool hasSnow = await HasSnowBannerAsync(stats, discordId);
         bool snowOn = ProfileBanners.IsSnow(current.ProfileBanner);
 
@@ -157,6 +164,12 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
                     ? Loc.T("📜 **Completo**: todas las zonas juntas en un solo mensaje, una línea por receta.")
                     : Loc.T("📖 **Clásico**: las recetas de una zona por vez, con lo que tenés de cada material (✅/❌)."),
                 false)
+            .AddField(
+                Loc.T("🎁 Drops"),
+                dropsAll
+                    ? Loc.T("📋 **Todas las zonas juntas**: la cacería y el viaje de cada zona en un solo mensaje.")
+                    : Loc.T("🗺️ **Una zona por vez**: con un menú para pasar a otra y el detalle del jefe."),
+                false)
             .Build();
 
         IReadOnlyList<(BlessingDefinition Blessing, int Level)> unlocked = levels is null ? [] : ProfileBanners.Unlocked(levels);
@@ -179,7 +192,12 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
                 full ? Loc.T("Recetario clásico") : Loc.T("Recetario completo"),
                 $"{RecipesButton}:{discordId}:{(full ? "classic" : "full")}",
                 ButtonStyle.Secondary,
-                new Emoji(full ? "📖" : "📜"));
+                new Emoji(full ? "📖" : "📜"))
+            .WithButton(
+                dropsAll ? Loc.T("Drops por zona") : Loc.T("Drops de todas las zonas"),
+                $"{DropsButton}:{discordId}:{(dropsAll ? "zone" : "all")}",
+                ButtonStyle.Secondary,
+                new Emoji(dropsAll ? "🗺️" : "📋"));
 
         // El menú para elegir el banner (v0.50.0), en su propia fila y solo para quien tiene la Brasa de Color: «Sin banner», «El mejor» (el de su nivel, mejora solo) y un tier por cada nivel que ya tiene la bendición.
         // v0.61.0: también para quien compró el Banner de Nieve (una opción más; se ve UNO solo).
@@ -379,6 +397,21 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
         }
     }
 
+    // Lo mismo para /drops (v0.65.0): true = todas las zonas juntas (compacto), false = una zona por vez.
+    public static async Task<bool> TrySetDropsAllZonesAsync(IPlayerSettingsService service, ulong discordId, bool allZones)
+    {
+        try
+        {
+            await service.SetDropsAllZonesAsync(discordId, allZones);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            BotLog.Error(ex);
+            return false;
+        }
+    }
+
     // Lo mismo para el recetario (v0.28.1): true = el completo, false = el clásico.
     public static async Task<bool> TrySetRecipeBookAsync(IPlayerSettingsService service, ulong discordId, bool full)
     {
@@ -408,8 +441,9 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
         {
             SettingKey.FightSummary => await ExecuteSummaryTypedAsync(service, discordId, value),
             SettingKey.RecipeBook => await ExecuteRecipeBookTypedAsync(service, discordId, value),
+            SettingKey.Drops => await ExecuteDropsTypedAsync(service, discordId, value),
             SettingKey.Banner => await ExecuteBannerTypedAsync(service, blessings, discordId, value, stats),
-            _ => (Loc.T("No conozco esa opción. Probá `aa config resumen off`, `aa config recetas completo` o `aa banner on`."), await BuildScreenAsync(service, discordId, blessings, stats)),
+            _ => (Loc.T("No conozco esa opción. Probá `aa config resumen off`, `aa config recetas completo`, `aa config drops todas` o `aa banner on`."), await BuildScreenAsync(service, discordId, blessings, stats)),
         };
     }
 
@@ -483,6 +517,27 @@ public class ConfigModule(IPlayerSettingsService settings, IBlessingRepository b
         }
 
         return (target ? Loc.T("✅ Listo: el resumen del combate está **activado**.") : Loc.T("✅ Listo: el resumen del combate está **desactivado**."), screen);
+    }
+
+    // «aa config drops todas» (también «compacto», «viejo», on) = todas las zonas juntas; «aa config drops zona» (también «menú», off) = una por vez; toggle la invierte.
+    private static async Task<(string? Note, ConfigScreen Screen)> ExecuteDropsTypedAsync(IPlayerSettingsService service, ulong discordId, string? value)
+    {
+        var (wanted, toggle) = SettingWords.ParseDropsView(value);
+        if (wanted is null && !toggle)
+        {
+            return (Loc.T("Decime cuál querés, **todas** las zonas juntas o **zona** por zona: `aa config drops todas`."), await BuildScreenAsync(service, discordId));
+        }
+
+        bool target = wanted ?? !(await service.GetAsync(discordId)).DropsAllZones;
+        bool saved = await TrySetDropsAllZonesAsync(service, discordId, target);
+        var screen = await BuildScreenAsync(service, discordId);
+
+        if (!saved)
+        {
+            return (Loc.T("No pude guardar el cambio, intentá de nuevo en un momento."), screen);
+        }
+
+        return (target ? Loc.T("✅ Listo: **/drops** muestra **todas las zonas juntas**.") : Loc.T("✅ Listo: **/drops** muestra **una zona por vez**."), screen);
     }
 
     private static async Task<(string? Note, ConfigScreen Screen)> ExecuteRecipeBookTypedAsync(IPlayerSettingsService service, ulong discordId, string? value)

@@ -104,7 +104,9 @@ public class CooldownModule(
         }
 
         // La comida de las mascotas: una hora por mascota (menos con la bendición Buen Pienso), y no vive en la tabla cooldowns sino en player_pets.
-        if (await TryBuildPetLineAsync(petRepository, discordId, bonuses?.PetFeedCooldown) is { } petLine)
+        // Las mascotas se leen UNA vez: las usan esta línea y la de la expedición (v0.65.0, para saber si hay alguna que ya pueda salir).
+        var ownedPets = await TryGetPetsAsync(petRepository, discordId);
+        if (ownedPets is not null && PetLine(ownedPets, bonuses?.PetFeedCooldown, DateTime.UtcNow) is { } petLine)
         {
             lines.Add((CooldownLayout.PetsKey, petLine));
         }
@@ -115,8 +117,9 @@ public class CooldownModule(
             lines.Add((CooldownLayout.DragonKey, dragonLine));
         }
 
-        // La expedición de la mascota (v0.39.0): vive en pet_expeditions. Sin expedición en curso la línea no sale; si falla leerla, tampoco.
-        if (await TryBuildExpeditionLineAsync(expeditionRepository, discordId) is { } expeditionLine)
+        // La expedición de la mascota (v0.39.0): vive en pet_expeditions. En curso o ya vuelta, la línea dice cuánto falta o que la recojas; desde la v0.65.0, sin ninguna en curso pero con una mascota que ya puede salir (nivel 10),
+        // avisa «sin mandar» como el jefe mundial y la Arena. Sin mascota que pueda salir la línea no sale; si falla leerla, tampoco.
+        if (await TryBuildExpeditionLineAsync(expeditionRepository, ownedPets, discordId, other) is { } expeditionLine)
         {
             lines.Add((CooldownLayout.ExpeditionKey, expeditionLine));
         }
@@ -274,7 +277,7 @@ public class CooldownModule(
     private static string UnknownLineNote() =>
         Loc.T("No conozco esa línea. Probá con: cazar, viajar, talar, minar, pescar, cajas, mascotas, dragón, expedición, diario, jefe, jefe mundial o arena.");
 
-    private static async Task<string?> TryBuildExpeditionLineAsync(IPetExpeditionRepository? expeditionRepository, ulong discordId)
+    private static async Task<string?> TryBuildExpeditionLineAsync(IPetExpeditionRepository? expeditionRepository, IReadOnlyList<OwnedPet>? pets, ulong discordId, bool other = false)
     {
         if (expeditionRepository is null)
         {
@@ -283,7 +286,8 @@ public class CooldownModule(
 
         try
         {
-            return ExpeditionLine(await expeditionRepository.GetAsync(discordId));
+            var active = await expeditionRepository.GetAsync(discordId);
+            return ExpeditionLine(active, active is null && pets is not null && pets.Any(PetExpeditions.IsEligible), other);
         }
         catch (Exception ex)
         {
@@ -292,12 +296,18 @@ public class CooldownModule(
         }
     }
 
-    // La línea de la expedición (pura, para probarla sin base): «¡Listo!» si ya volvió o lo que falta. Null si no hay ninguna en curso.
-    public static string? ExpeditionLine(ActiveExpedition? expedition)
+    // La línea de la expedición (pura, para probarla sin base): «¡Listo!» si ya volvió o lo que falta. Sin ninguna en curso: null, salvo canSend (hay una mascota de nivel 10 que todavía no mandaste), que da el aviso ⚠️ como el
+    // del jefe mundial y la Arena (v0.65.0, sugerencia de jugadores: «mostrar cuando la expedición se puede hacer, no solo cuando termina»). other: al mirar a OTRO jugador la línea no le da la orden.
+    public static string? ExpeditionLine(ActiveExpedition? expedition, bool canSend = false, bool other = false)
     {
         if (expedition is null)
         {
-            return null;
+            if (!canSend)
+            {
+                return null;
+            }
+
+            return $"🧭 **{Loc.T("Expedición")}**: " + (other ? Loc.T("⚠️ sin mandar") : Loc.T("⚠️ sin mandar · `/pet expedition`"));
         }
 
         string status = expedition.IsReady ? Loc.T("**¡Listo!** ✅") + " — **/pet expedition**" : Loc.F($"{TimeFormat.Remaining(expedition.Remaining)} restantes");
@@ -334,7 +344,8 @@ public class CooldownModule(
         return $"{DragonRules.KindEmoji(dragon.Kind)} **{Loc.T("Dragón (criar)")}**: {status}";
     }
 
-    private static async Task<string?> TryBuildPetLineAsync(IPetRepository? petRepository, ulong discordId, TimeSpan? feedCooldown)
+    // Las mascotas del jugador, leídas una sola vez para las líneas que las necesitan (la comida y la expedición). null si no hay repositorio o si falla: /cd nunca se rompe por esto.
+    private static async Task<IReadOnlyList<OwnedPet>?> TryGetPetsAsync(IPetRepository? petRepository, ulong discordId)
     {
         if (petRepository is null)
         {
@@ -343,7 +354,7 @@ public class CooldownModule(
 
         try
         {
-            return PetLine(await petRepository.GetOwnedAsync(discordId), feedCooldown, DateTime.UtcNow);
+            return await petRepository.GetOwnedAsync(discordId);
         }
         catch (Exception ex)
         {

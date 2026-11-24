@@ -21,6 +21,9 @@ public interface IPlayerSettingsService
 
     // Qué líneas de /cd ve y en qué orden (v0.51.0): null = todas, como siempre. Misma regla: no atrapa errores.
     Task SetCdLayoutAsync(ulong discordId, string? layout);
+
+    // Cómo ve /drops (v0.65.0): true = todas las zonas juntas (compacto), false = una zona por vez. Misma regla: no atrapa errores.
+    Task SetDropsAllZonesAsync(ulong discordId, bool value);
 }
 
 public sealed class PlayerSettingsService(ISettingsRepository repository) : IPlayerSettingsService
@@ -81,6 +84,12 @@ public sealed class PlayerSettingsService(ISettingsRepository repository) : IPla
     public async Task SetCdLayoutAsync(ulong discordId, string? layout)
     {
         await repository.SetCdLayoutAsync(discordId, layout);
+        await RefreshAsync(discordId);
+    }
+
+    public async Task SetDropsAllZonesAsync(ulong discordId, bool value)
+    {
+        await repository.SetDropsAllZonesAsync(discordId, value);
         await RefreshAsync(discordId);
     }
 
