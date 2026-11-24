@@ -22,7 +22,22 @@ public sealed record TitleDefinition(
     // La pista en el idioma de quien la lee (v0.44.0). Hint queda en español (lo que se arma al cargar el catálogo y lo que leen las pruebas); HintFn, si está, la vuelve a armar con Loc.
     public Func<string>? HintFn { get; init; }
 
+    // Qué tan difícil es conseguirlo, de 1 (⚪ el más sencillo) a 6 (🔴 el más difícil) — v0.65.0, pedido de los jugadores: «con un color demostrando la dificultad». Ver TitleDifficulty.
+    public int Difficulty { get; init; } = TitleDifficulty.Min;
+
     public string DisplayHint => HintFn?.Invoke() ?? Loc.Tr(Hint);
+}
+
+// La dificultad de un título (v0.65.0): seis escalones como los colores de rareza de otros juegos, del blanco (el más sencillo) al rojo (el más difícil). Es solo para MOSTRAR (un círculo de color al lado del
+// nombre en /titles): no cambia cómo se desbloquea ningún título. Los niveles de cada título están en TitleCatalog (los de los logros salen de AchievementLevels, el resto va en su propia definición).
+public static class TitleDifficulty
+{
+    public const int Min = 1;
+    public const int Max = 6;
+
+    private static readonly string[] Emojis = ["⚪", "🟢", "🔵", "🟣", "🟠", "🔴"];
+
+    public static string Emoji(int difficulty) => Emojis[Math.Clamp(difficulty, Min, Max) - Min];
 }
 
 // Una página de /titles (hasta 25 títulos: el desplegable de equipar admite 25 opciones).
@@ -110,6 +125,22 @@ public static class TitleCatalog
         ("hz_explorador", "hazanas2", Loc.Mark("Horas de expedición de tus mascotas"), ["Explorador", "Gran Explorador", "Leyenda de los Caminos"]),
     ];
 
+    // La dificultad de los tres títulos de cada logro (tramo I, II, III). Lo que no está acá va 1-2-3 (blanco, verde, azul): los logros de contadores corrientes. Suben los que piden mucho tiempo (días seguidos, Fuegos Nuevos,
+    // torneos) y, de las hazañas, los tramos de miles de repeticiones. Es una PROPUESTA mía por lo que cuesta cada meta (el dueño la puede retocar acá: nada más depende de estos números).
+    private static readonly Dictionary<string, int[]> AchievementLevels = new()
+    {
+        ["aventurero"] = [1, 2, 4],    // 100 aventuras = una cada 3 h
+        ["constante"] = [1, 2, 4],     // 100 días reclamando
+        ["racha"] = [1, 3, 5],         // 100 días SEGUIDOS
+        ["gladiador"] = [1, 2, 4],     // 60 torneos
+        ["asador"] = [2, 3, 4],
+        ["renacido"] = [2, 3, 5],      // FN 1, 5 y 20
+        ["companero"] = [4, 5, 6],     // FN 10, 25 y 50
+        ["volvio"] = [5, 6, 6],        // FN 75, 90 y 100 (el final de la historia)
+        ["hz_cazador"] = [3, 4, 6], ["hz_viajero"] = [3, 4, 5], ["hz_jefes"] = [3, 4, 5], ["hz_recolector"] = [3, 4, 6],
+        ["hz_herrero"] = [3, 4, 5], ["hz_magnate"] = [3, 5, 6], ["hz_encantador"] = [3, 4, 6], ["hz_explorador"] = [3, 5, 6],
+    };
+
     // Los jefes de la escalera por orden de zona (los mismos de Lore.Chapters cap1..cap5).
     private static readonly string[] LadderBosses = ["Rey Jabalí", "Lobisón Alfa", "Capataz de Hierro", "Señor del Volcán", "Soberano de la Escoria"];
     private static readonly string[] BossTitles = ["Destronador del Rey Jabalí", "Domador de Lobisones", "Quebrador de Capataces", "Apagavolcanes", "Verdugo del Soberano"];
@@ -129,7 +160,7 @@ public static class TitleCatalog
             {
                 long threshold = achievement.Tiers[i].Threshold;
                 all.Add(new TitleDefinition($"{achievementKey}_{i + 1}", names[i], page, TitleRule.Stat, $"{goal}: {GameHistory.Number(threshold)}", achievement.StatKind, threshold, achievementKey, i + 1)
-                    { HintFn = () => $"{Loc.Tr(goal)}: {GameHistory.Number(threshold)}" });
+                    { HintFn = () => $"{Loc.Tr(goal)}: {GameHistory.Number(threshold)}", Difficulty = AchievementLevels.TryGetValue(achievementKey, out var levels) ? levels[i] : i + 1 });
             }
         }
 
@@ -139,14 +170,14 @@ public static class TitleCatalog
             string boss = LadderBosses[rank - 1];
             int bossRank = rank;
             all.Add(new TitleDefinition($"jefe_{rank}", BossTitles[rank - 1], "jefes", TitleRule.BossRank, $"Vencé a {boss}, el jefe de la Zona {rank}", Threshold: rank)
-                { HintFn = () => Loc.F($"Vencé a {boss}, el jefe de la Zona {bossRank}") });
+                { HintFn = () => Loc.F($"Vencé a {boss}, el jefe de la Zona {bossRank}"), Difficulty = new[] { 2, 2, 3, 4, 5 }[rank - 1] });
         }
 
         all.Add(new TitleDefinition("jefe_50", "Jefe de Jefes", "jefes", TitleRule.Stat, $"Jefes vencidos: {GameHistory.Number(50)}", GameEventKinds.BossWin, 50)
-            { HintFn = () => Loc.F($"Jefes vencidos: {GameHistory.Number(50)}") });
-        foreach (var (key, name, level) in new[] { ("nivel_10", "Fogonero", 10), ("nivel_25", "Parrillero Hecho y Derecho", 25), ("nivel_40", "Asador de Ley", 40), ("nivel_60", "Maestro Parrillero", 60) })
+            { HintFn = () => Loc.F($"Jefes vencidos: {GameHistory.Number(50)}"), Difficulty = 4 });
+        foreach (var (key, name, level, difficulty) in new[] { ("nivel_10", "Fogonero", 10, 1), ("nivel_25", "Parrillero Hecho y Derecho", 25, 2), ("nivel_40", "Asador de Ley", 40, 3), ("nivel_60", "Maestro Parrillero", 60, 4) })
         {
-            all.Add(new TitleDefinition(key, name, "jefes", TitleRule.Level, $"Llegá al nivel {level}", Threshold: level) { HintFn = () => Loc.F($"Llegá al nivel {level}") });
+            all.Add(new TitleDefinition(key, name, "jefes", TitleRule.Level, $"Llegá al nivel {level}", Threshold: level) { HintFn = () => Loc.F($"Llegá al nivel {level}"), Difficulty = difficulty });
         }
 
         string[] colorTitles = ["Brasa Viva", "Llama Dorada", "Fuego Azul", "Ascua Violeta", "Sol del Fogón"];
@@ -154,7 +185,7 @@ public static class TitleCatalog
         {
             int colorLevel = level;
             all.Add(new TitleDefinition($"color_{level}", colorTitles[level - 1], "jefes", TitleRule.BlessingColor, $"Bendición Brasa de Color, nivel {level}", Threshold: level)
-                { HintFn = () => Loc.F($"Bendición Brasa de Color, nivel {colorLevel}") });
+                { HintFn = () => Loc.F($"Bendición Brasa de Color, nivel {colorLevel}"), Difficulty = new[] { 3, 4, 4, 5, 6 }[level - 1] });
         }
 
         // 3) Maestros de oficio: el nivel 25, 50 y 100 de cada oficio (la meta se expresa en el contador de su XP, que es lo que ven los avisos).
@@ -173,40 +204,41 @@ public static class TitleCatalog
                 long threshold = (ProfessionRules.XpToReach(levels[i]) + profession.XpPerAction - 1) / profession.XpPerAction;
                 int professionLevel = levels[i];
                 all.Add(new TitleDefinition($"{professionKey}_{levels[i]}", names[i], "maestros", TitleRule.Stat, $"Subí el oficio de {profession.Name} al nivel {levels[i]}", profession.StatKind, threshold)
-                    { HintFn = () => Loc.F($"Subí el oficio de {profession.DisplayName} al nivel {professionLevel}") });
+                    { HintFn = () => Loc.F($"Subí el oficio de {profession.DisplayName} al nivel {professionLevel}"), Difficulty = new[] { 2, 3, 5 }[i] });
             }
         }
 
         // 4) PvP y comunidad.
-        AddStatTitles(all, "pvp", GameEventKinds.DuelWin, "duelo", Loc.Mark("Duelos amistosos ganados"), [(1, "Peleador de Barrio"), (10, "Duelista"), (50, "Espada Libre")]);
-        AddStatTitles(all, "pvp", GameEventKinds.ArenaWin, "arena", Loc.Mark("Torneos de la Arena ganados"), [(1, "Campeón del Día"), (5, "Campeón de Campeones"), (20, "Leyenda de la Arena")]);
-        AddStatTitles(all, "pvp", GameEventKinds.Vote, "voto", Loc.Mark("Votos cobrados con /vote"), [(1, "Votante"), (10, "Voz del Pueblo"), (50, "Padrino de la Casa")]);
-        AddStatTitles(all, "pvp", GameEventKinds.Trade, "trueque", Loc.Mark("Cambios hechos con otros jugadores"), [(1, "Trocador"), (10, "Cambista"), (50, "Rey del Trueque")]);
+        AddStatTitles(all, "pvp", GameEventKinds.DuelWin, "duelo", Loc.Mark("Duelos amistosos ganados"), [(1, "Peleador de Barrio"), (10, "Duelista"), (50, "Espada Libre")], [1, 2, 3]);
+        AddStatTitles(all, "pvp", GameEventKinds.ArenaWin, "arena", Loc.Mark("Torneos de la Arena ganados"), [(1, "Campeón del Día"), (5, "Campeón de Campeones"), (20, "Leyenda de la Arena")], [3, 5, 6]);
+        AddStatTitles(all, "pvp", GameEventKinds.Vote, "voto", Loc.Mark("Votos cobrados con /vote"), [(1, "Votante"), (10, "Voz del Pueblo"), (50, "Padrino de la Casa")], [1, 2, 4]);
+        AddStatTitles(all, "pvp", GameEventKinds.Trade, "trueque", Loc.Mark("Cambios hechos con otros jugadores"), [(1, "Trocador"), (10, "Cambista"), (50, "Rey del Trueque")], [1, 2, 3]);
 
         // 5) Curiosos.
-        AddStatTitles(all, "curiosos", GameEventKinds.FightLost, "derrota", Loc.Mark("Peleas perdidas"), [(10, "Caído y Levantado"), (50, "Terco como Mula"), (200, "Cabeza de Hierro")]);
-        all.Add(new TitleDefinition("hallazgo_corteza", "Ojo de Savia", "curiosos", TitleRule.Flag, Loc.Mark("Encontrá una Corteza del Árbol de Vida con /chop"), FlagCorteza));
-        all.Add(new TitleDefinition("hallazgo_meteorito", "Tocado por el Cielo", "curiosos", TitleRule.Flag, Loc.Mark("Encontrá un Fragmento de Meteorito con /mine"), FlagMeteorito));
-        all.Add(new TitleDefinition("inframundo", "Cliente del Inframundo", "curiosos", TitleRule.Stat, Loc.Mark("Comprale algo al Tabernero del Inframundo con /deepshop"), GameEventKinds.DeepShopBuy, 1));
-        all.Add(new TitleDefinition("encanto_v", "Brasa Soberana", "curiosos", TitleRule.Flag, Loc.Mark("Sacá un encantamiento de tier V o más (Soberano o mejor) con /enchant"), FlagEnchantV));
-        all.Add(new TitleDefinition(DefaultKey, "Recién Llegado", "curiosos", TitleRule.Always, Loc.Mark("Lo tenés desde el primer día")));
+        AddStatTitles(all, "curiosos", GameEventKinds.FightLost, "derrota", Loc.Mark("Peleas perdidas"), [(10, "Caído y Levantado"), (50, "Terco como Mula"), (200, "Cabeza de Hierro")], [1, 2, 3]);
+        all.Add(new TitleDefinition("hallazgo_corteza", "Ojo de Savia", "curiosos", TitleRule.Flag, Loc.Mark("Encontrá una Corteza del Árbol de Vida con /chop"), FlagCorteza) { Difficulty = 5 });
+        all.Add(new TitleDefinition("hallazgo_meteorito", "Tocado por el Cielo", "curiosos", TitleRule.Flag, Loc.Mark("Encontrá un Fragmento de Meteorito con /mine"), FlagMeteorito) { Difficulty = 5 });
+        all.Add(new TitleDefinition("inframundo", "Cliente del Inframundo", "curiosos", TitleRule.Stat, Loc.Mark("Comprale algo al Tabernero del Inframundo con /deepshop"), GameEventKinds.DeepShopBuy, 1) { Difficulty = 3 });
+        all.Add(new TitleDefinition("encanto_v", "Brasa Soberana", "curiosos", TitleRule.Flag, Loc.Mark("Sacá un encantamiento de tier V o más (Soberano o mejor) con /enchant"), FlagEnchantV) { Difficulty = 5 });
+        all.Add(new TitleDefinition(DefaultKey, "Recién Llegado", "curiosos", TitleRule.Always, Loc.Mark("Lo tenés desde el primer día")) { Difficulty = TitleDifficulty.Min });
 
         // 6) Navidad en el Fogón (v0.57.0): se compran con Regalos en la tienda navideña (/navidad) y quedan para siempre.
-        all.Add(new TitleDefinition("xmas_elfo", "Elfo del Fogón", "navidad", TitleRule.Stat, Loc.Mark("Compralo en la tienda de Navidad (/navidad)"), ChristmasShop.TitleElfStat, 1));
-        all.Add(new TitleDefinition("xmas_espiritu", "Espíritu de la Navidad", "navidad", TitleRule.Stat, Loc.Mark("Compralo en la tienda de Navidad (/navidad)"), ChristmasShop.TitleSpiritStat, 1));
-        all.Add(new TitleDefinition("xmas_munieco_1", "Rompenieves", "navidad", TitleRule.Stat, Loc.Mark("Ayudá a derribar al Muñeco de Nieve Gigante (/munieco)"), SnowmanRules.KillStat, 1));
-        all.Add(new TitleDefinition("xmas_munieco_3", "Azote del Muñeco", "navidad", TitleRule.Stat, Loc.Mark("Ayudá a derribar al Muñeco de Nieve Gigante 3 veces"), SnowmanRules.KillStat, 3));
+        all.Add(new TitleDefinition("xmas_elfo", "Elfo del Fogón", "navidad", TitleRule.Stat, Loc.Mark("Compralo en la tienda de Navidad (/navidad)"), ChristmasShop.TitleElfStat, 1) { Difficulty = 3 });
+        all.Add(new TitleDefinition("xmas_espiritu", "Espíritu de la Navidad", "navidad", TitleRule.Stat, Loc.Mark("Compralo en la tienda de Navidad (/navidad)"), ChristmasShop.TitleSpiritStat, 1) { Difficulty = 4 });
+        all.Add(new TitleDefinition("xmas_munieco_1", "Rompenieves", "navidad", TitleRule.Stat, Loc.Mark("Ayudá a derribar al Muñeco de Nieve Gigante (/munieco)"), SnowmanRules.KillStat, 1) { Difficulty = 3 });
+        all.Add(new TitleDefinition("xmas_munieco_3", "Azote del Muñeco", "navidad", TitleRule.Stat, Loc.Mark("Ayudá a derribar al Muñeco de Nieve Gigante 3 veces"), SnowmanRules.KillStat, 3) { Difficulty = 4 });
 
         return all;
     }
 
-    // Tres títulos por contador: (meta, nombre) en orden. Las claves salen de «prefijo_meta».
-    private static void AddStatTitles(List<TitleDefinition> all, string page, string kind, string prefix, string goal, (long Threshold, string Name)[] tiers)
+    // Tres títulos por contador: (meta, nombre) en orden y la dificultad de cada uno. Las claves salen de «prefijo_meta».
+    private static void AddStatTitles(List<TitleDefinition> all, string page, string kind, string prefix, string goal, (long Threshold, string Name)[] tiers, int[] difficulties)
     {
-        foreach (var (threshold, name) in tiers)
+        for (int i = 0; i < tiers.Length; i++)
         {
+            var (threshold, name) = tiers[i];
             all.Add(new TitleDefinition($"{prefix}_{threshold}", name, page, TitleRule.Stat, $"{goal}: {GameHistory.Number(threshold)}", kind, threshold)
-                { HintFn = () => $"{Loc.Tr(goal)}: {GameHistory.Number(threshold)}" });
+                { HintFn = () => $"{Loc.Tr(goal)}: {GameHistory.Number(threshold)}", Difficulty = difficulties[i] });
         }
     }
 

@@ -150,6 +150,7 @@ sealed class CountingThrowingRepo : ISettingsRepository
     public Task SetFullRecipeBookAsync(ulong discordId, bool value, CancellationToken ct = default) { Interlocked.Increment(ref Calls); throw new InvalidOperationException("simulado"); }
     public Task SetProfileBannerAsync(ulong discordId, string? blessingKey, CancellationToken ct = default) { Interlocked.Increment(ref Calls); throw new InvalidOperationException("simulado"); }
     public Task SetCdLayoutAsync(ulong discordId, string? layout, CancellationToken ct = default) { Interlocked.Increment(ref Calls); throw new InvalidOperationException("simulado"); }
+    public Task SetDropsAllZonesAsync(ulong discordId, bool value, CancellationToken ct = default) { Interlocked.Increment(ref Calls); throw new InvalidOperationException("simulado"); }
 }
 
 // Un servicio que lee bien pero NO puede guardar.
@@ -160,6 +161,7 @@ sealed class FailingSetService : IPlayerSettingsService
     public Task SetFullRecipeBookAsync(ulong discordId, bool value) => throw new InvalidOperationException("simulado");
     public Task SetProfileBannerAsync(ulong discordId, string? blessingKey) => throw new InvalidOperationException("simulado");
     public Task SetCdLayoutAsync(ulong discordId, string? layout) => throw new InvalidOperationException("simulado");
+    public Task SetDropsAllZonesAsync(ulong discordId, bool value) => throw new InvalidOperationException("simulado");
 }
 
 public class FakeProxy : DispatchProxy

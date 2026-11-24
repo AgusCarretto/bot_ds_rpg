@@ -32,7 +32,9 @@ public partial class TextCommandModule
     {
         try
         {
-            var message = await DropsModule.BuildDropsMessageAsync(userRepository, zoneRepository, monsterRepository, itemRepository, Context.User.Id, zoneBoxService, zona);
+            // v0.65.0: sin zona pedida, quien eligió en /config ver todas las zonas juntas las ve juntas; con «aa drops 3» siempre sale esa zona sola.
+            bool allZones = zona is null && (await settingsService.GetAsync(Context.User.Id)).DropsAllZones;
+            var message = await DropsModule.BuildDropsMessageAsync(userRepository, zoneRepository, monsterRepository, itemRepository, Context.User.Id, zoneBoxService, zona, allZones);
             await ReplyAsync(DropsModule.NullIfEmpty(message.Text), embeds: message.Embeds, components: message.Components);
         }
         catch (Exception ex)

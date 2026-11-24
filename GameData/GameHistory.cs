@@ -20,7 +20,7 @@ public static class GameHistory
     // Los tipos de evento que lee el historial.
     public static readonly IReadOnlyCollection<string> Kinds =
     [
-        GameEventKinds.HuntWin, GameEventKinds.TravelWin, GameEventKinds.BossWin, GameEventKinds.RaidWin, GameEventKinds.FightLost,
+        GameEventKinds.HuntWin, GameEventKinds.TravelWin, GameEventKinds.AdventureWin, GameEventKinds.BossWin, GameEventKinds.RaidWin, GameEventKinds.FightLost,
         GameEventKinds.DuelWin, GameEventKinds.DuelLoss, GameEventKinds.ArenaJoin, GameEventKinds.ArenaWin,
         GameEventKinds.CasinoWin, GameEventKinds.CasinoLoss,
         GameEventKinds.RpsWin, GameEventKinds.RpsLoss, GameEventKinds.RpsGoldWon, GameEventKinds.RpsGoldLost,
@@ -40,6 +40,9 @@ public static class GameHistory
         {
             new("🏹", Loc.T("Cacería"), Count(GameEventKinds.HuntWin), Count(GameEventKinds.FightLost, "hunt")),
             new("🗺️", Loc.T("Viaje"), Count(GameEventKinds.TravelWin), Count(GameEventKinds.FightLost, "travel")),
+            // v0.65.0 (jugadores: «no muestra la historia de las aventuras»): ganada = llegó al final y cobró (adventure_win); perdida = murió en una pelea de la Aventura (fight_lost con detail «aventura», el CommandName de AdventureRules).
+            // Una aventura que se abandona sin morir no cuenta como ninguna de las dos.
+            new("🗺️", Loc.T("Aventura"), Count(GameEventKinds.AdventureWin), Count(GameEventKinds.FightLost, AdventureRules.CommandName)),
             new("👑", Loc.T("Jefe"), Count(GameEventKinds.BossWin), Count(GameEventKinds.FightLost, "boss")),
             new("🛡️", Loc.T("Jefe en equipo"), Count(GameEventKinds.RaidWin), Count(GameEventKinds.FightLost, "raid")),
             new("🥊", Loc.T("Duelos"), Count(GameEventKinds.DuelWin), Count(GameEventKinds.DuelLoss)),

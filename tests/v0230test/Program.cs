@@ -179,6 +179,19 @@ Check(TitleCatalog.UnlockedCount(everything) == all.Count && TitleCatalog.Pages.
 var nothing = TitlesModule.BuildEmbed(TitleCatalog.PageOf("combate"), TitleContext.Empty, null);
 Check(nothing.Description.Split("🔒").Length - 1 == 21 && !nothing.Description.Contains("✅"), "sin nada, los 21 de Combate se ven bloqueados (v0.59.0: +3 de Aventurero)");
 
+// v0.65.0: la dificultad de cada título, con un círculo de color (⚪ el más sencillo → 🔴 el más difícil).
+var difficulties = all.Select(t => t.Difficulty).ToList();
+Check(difficulties.All(d => d is >= TitleDifficulty.Min and <= TitleDifficulty.Max) && Enumerable.Range(TitleDifficulty.Min, TitleDifficulty.Max).All(d => difficulties.Contains(d)), $"todo título tiene una dificultad de 1 a 6 y se usan los seis colores ({string.Join(" ", Enumerable.Range(1, 6).Select(d => $"{TitleDifficulty.Emoji(d)}{difficulties.Count(x => x == d)}"))})");
+Check(Enumerable.Range(1, 6).Select(TitleDifficulty.Emoji).SequenceEqual(["⚪", "🟢", "🔵", "🟣", "🟠", "🔴"]) && TitleDifficulty.Emoji(-3) == "⚪" && TitleDifficulty.Emoji(99) == "🔴", "blanco, verde, azul, violeta, naranja y rojo; un valor fuera de rango se acota");
+Check(AchievementCatalog.All.Where(a => TitleCatalog.ForAchievementTier(a.Key, 1) is not null).All(a => TitleCatalog.ForAchievementTier(a.Key, 1)!.Difficulty <= TitleCatalog.ForAchievementTier(a.Key, 2)!.Difficulty && TitleCatalog.ForAchievementTier(a.Key, 2)!.Difficulty <= TitleCatalog.ForAchievementTier(a.Key, 3)!.Difficulty), "dentro de cada logro, el tramo II nunca es más fácil que el I ni el III que el II");
+Check(T(TitleCatalog.DefaultKey).Difficulty == 1 && T("cazador_1").Difficulty == 1 && T("volvio_3").Difficulty == 6 && T("hz_magnate_3").Difficulty == 6 && T("jefe_1").Difficulty < T("jefe_5").Difficulty && T("nivel_10").Difficulty < T("nivel_60").Difficulty, "el título de bienvenida es blanco, los del final de la historia y las hazañas más grandes son rojos y los jefes y niveles suben");
+var colored = TitlesModule.BuildEmbed(TitleCatalog.PageOf("combate"), TitleContext.Empty, null);
+Check(colored.Description.Contains("⚪ 🔒 Rastreador de Pradera") && colored.Description.Contains($"{TitleDifficulty.Emoji(T("cazador_3").Difficulty)} 🔒 Azote de las Bestias") && colored.Footer!.Value.Text.Contains("⚪") && colored.Footer!.Value.Text.Contains("🔴"), "bloqueado: «⚪ 🔒 Nombre — cómo conseguirlo», con el color de su dificultad, y el pie explica la escala");
+var coloredAll = TitlesModule.BuildEmbed(TitleCatalog.PageOf("combate"), everything, "cazador_1");
+Check(coloredAll.Description.Contains("⚪ ✅ **Rastreador de Pradera** ◀ puesto") && coloredAll.Description.Contains($"{TitleDifficulty.Emoji(T("cazador_2").Difficulty)} ✅ **Cazador Curtido**"), "desbloqueado: «⚪ ✅ **Nombre**», con el color de su dificultad (y la marca de puesto)");
+var equipOptions = Flat(TitlesModule.BuildComponents(U, TitleCatalog.PageOf("combate"), everything, "cazador_1")).OfType<SelectMenuComponent>().Single(m => m.CustomId.StartsWith("titles_equip")).Options;
+Check(equipOptions.Count > 0 && equipOptions.All(o => o.Emote is Emoji e && e.Name == TitleDifficulty.Emoji(T(o.Value).Difficulty)), "en el desplegable de equipar cada título lleva el círculo de su dificultad");
+
 Console.WriteLine("\n== 8. El perfil: Nombre - Título (Clase) ==");
 async Task<Embed> Profile() => await GameModule.BuildProfileEmbedAsync(users, itemsRepo, zonesRepo, buffRepo, U, "Agus", "https://example.com/a.png");
 var p0 = await Profile();

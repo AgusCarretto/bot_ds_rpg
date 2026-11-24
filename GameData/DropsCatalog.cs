@@ -39,6 +39,36 @@ public static class DropsCatalog
         return blocks;
     }
 
+    // La vista COMPACTA (v0.65.0, pedido de los jugadores: «la versión vieja, que muestra todas las zonas de una»): el texto de UNA zona en tres renglones: el título, la cacería (cada monstruo con lo que suelta) y el viaje (el élite y
+    // la caja que puede dar). Sin el jefe (el dueño: «zona 1: fila 1 hunt y qué da, fila 2 travel y qué da»): es la versión corta, el detalle de cada zona sigue en la vista de siempre. Las zonas se separan con una línea en blanco.
+    public static string BuildCompactZone(
+        string title, IEnumerable<ZoneMonster> zoneMonsters, IReadOnlyDictionary<string, DropItemInfo> items, ZoneBoxRow? travelBox = null)
+    {
+        var monsters = zoneMonsters.ToList();
+        var lines = new List<string> { title };
+
+        var hunt = monsters.Where(m => m.Kind == MonsterKind.Hunt).Select(m => $"**{m.Monster.Name}** → {DescribeDrops(m.Monster, items)}").ToList();
+        if (hunt.Count > 0)
+        {
+            lines.Add("🏹 " + string.Join(" · ", hunt));
+        }
+
+        var travel = monsters.Where(m => m.Kind == MonsterKind.Travel).Select(m =>
+            travelBox is null ? $"**{m.Monster.Name}**" : $"**{m.Monster.Name}** → {DescribeItem(travelBox.BoxName, items)} ({travelBox.ChancePercent}%)").ToList();
+        if (travel.Count > 0)
+        {
+            lines.Add("🗺️ " + string.Join(" · ", travel));
+        }
+
+        return string.Join('\n', lines);
+    }
+
+    // Lo que suelta un monstruo, ya formateado («_nada_» si no suelta nada).
+    private static string DescribeDrops(MonsterTemplate monster, IReadOnlyDictionary<string, DropItemInfo> items) =>
+        monster.DropItemNames.Count == 0
+            ? Loc.T("_nada_")
+            : string.Join(" / ", monster.DropItemNames.Select(name => DescribeItem(name, items)));
+
     private static void AddBlock(
         List<DropsBlock> blocks, string title, string chanceText, List<ZoneMonster> monsters, MonsterKind kind,
         IReadOnlyDictionary<string, DropItemInfo> items, string extraLine = "", bool showDrops = true, string? travelBox = null)
@@ -58,10 +88,7 @@ public static class DropsCatalog
                 return travelBox is null ? $"**{monster.Name}**" : $"**{monster.Name}** → {travelBox}";
             }
 
-            string drops = monster.DropItemNames.Count == 0
-                ? Loc.T("_nada_")
-                : string.Join(" / ", monster.DropItemNames.Select(name => DescribeItem(name, items)));
-            return $"**{monster.Name}** → {drops}";
+            return $"**{monster.Name}** → {DescribeDrops(monster, items)}";
         });
 
         // v0.53.2: un renglón por monstruo y sin el emoji del monstruo (el dueño: «es mucho emoji junto»); solo el ítem lleva el suyo.

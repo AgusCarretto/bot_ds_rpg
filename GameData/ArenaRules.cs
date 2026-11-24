@@ -15,6 +15,21 @@ public static class ArenaRules
     // dos de logro: una gracia, no una forma de hacer plata (por eso va por unidades de zona y no un monto fijo).
     public static readonly RewardSpec ChampionReward = new(GoldUnits: 15, XpPercent: 6, Box: BoxGrant.ZoneTier);
 
+    // El podio completo (v0.65.0, pedido de los jugadores: «premios para el puesto 2 y 3»): el 2.º es quien perdió la final y los 3.º, los dos que perdieron las semifinales (la llave no juega un partido por el 3.er puesto,
+    // así que empatan). Cobran aproximadamente la mitad (2.º) y la cuarta parte (3.º) del oro y de la EXP del campeón, SIN caja (la caja es del campeón). PROPUESTA sin medir: los números de balance
+    // los decide el dueño y son estos dos renglones.
+    public static readonly RewardSpec RunnerUpReward = new(GoldUnits: 8, XpPercent: 3);
+    public static readonly RewardSpec ThirdPlaceReward = new(GoldUnits: 4, XpPercent: 2);
+
+    // El premio de cada puesto del podio (1 = campeón); null para quien no está en el podio.
+    public static RewardSpec? RewardFor(int place) => place switch
+    {
+        1 => ChampionReward,
+        2 => RunnerUpReward,
+        3 => ThirdPlaceReward,
+        _ => null,
+    };
+
     // El día (de Uruguay) al que pertenece un instante: es la fecha local, que es lo que identifica al torneo.
     public static DateOnly DayOf(DateTime utcNow) => DateOnly.FromDateTime(UruguayCalendar.ToLocal(utcNow));
 

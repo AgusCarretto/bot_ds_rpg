@@ -160,7 +160,7 @@ public sealed class ArenaRepository(IDbConnectionFactory connectionFactory) : IA
 
     public async Task<ArenaResolveOutcome> ResolveDayAsync(
         DateOnly day, IReadOnlyList<ArenaMatchRow> matches, int participants, int rounds, ulong winnerId, string winnerName,
-        RewardSpec reward, int zoneRank, CancellationToken cancellationToken = default)
+        RewardSpec reward, int zoneRank, IReadOnlyList<ArenaPlacing>? others = null, CancellationToken cancellationToken = default)
     {
         await using DbConnection connection = connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
@@ -199,21 +199,38 @@ public sealed class ArenaRepository(IDbConnectionFactory connectionFactory) : IA
         }
 
         RewardReceipt? receipt = null;
+        var otherReceipts = new List<ArenaPlacingReceipt>();
 
-        // Bloquear al campeón primero (de ahí sale su nivel para el XP). Si borró su cuenta mientras tanto, el torneo igual queda jugado
-        // y simplemente no hay a quién pagarle.
-        var champion = await RewardPayer.LockUserAsync(connection, transaction, winnerId, cancellationToken);
-        if (champion is not null)
+        // Se paga al campeón y, desde la v0.65.0, al 2.º y a los 3.º: UNA transacción y las filas de usuario bloqueadas ordenadas por discord_id (la regla de siempre para más de un jugador a la vez, así dos cierres
+        // que se crucen nunca se esperan en círculo). Si alguien borró su cuenta mientras tanto, el torneo igual queda jugado y simplemente no hay a quién pagarle.
+        var payees = new List<(int Place, ulong Id, string Name, RewardSpec Spec, int Rank)> { (1, winnerId, winnerName, reward, zoneRank) };
+        payees.AddRange((others ?? []).Select(o => (o.Place, o.DiscordId, o.Name, o.Reward, o.ZoneRank)));
+
+        foreach (var payee in payees.OrderBy(p => p.Id))
         {
-            receipt = await RewardPayer.PayAsync(connection, transaction, champion, reward, zoneRank, cancellationToken);
+            var user = await RewardPayer.LockUserAsync(connection, transaction, payee.Id, cancellationToken);
+            RewardReceipt? paid = user is null
+                ? null
+                : await RewardPayer.PayAsync(connection, transaction, user, payee.Spec, payee.Rank, cancellationToken);
 
-            await connection.ExecuteAsync(new CommandDefinition(
-                "UPDATE arena_days SET reward_text = @Text WHERE day = @Day::date;",
-                new { Day = Key(day), Text = MissionRewards.Describe(receipt.Reward) }, transaction: transaction, cancellationToken: cancellationToken));
+            if (payee.Place == 1)
+            {
+                receipt = paid;
+                if (paid is not null)
+                {
+                    await connection.ExecuteAsync(new CommandDefinition(
+                        "UPDATE arena_days SET reward_text = @Text WHERE day = @Day::date;",
+                        new { Day = Key(day), Text = MissionRewards.Describe(paid.Reward) }, transaction: transaction, cancellationToken: cancellationToken));
+                }
+            }
+            else
+            {
+                otherReceipts.Add(new ArenaPlacingReceipt(payee.Place, payee.Id, payee.Name, paid));
+            }
         }
 
         await transaction.CommitAsync(cancellationToken);
-        return new ArenaResolveOutcome(true, receipt);
+        return new ArenaResolveOutcome(true, receipt, otherReceipts.OrderBy(r => r.Place).ToList());
     }
 
     private static ArenaDayInfo ToInfo(DayRow r) => new(

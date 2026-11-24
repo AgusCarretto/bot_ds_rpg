@@ -21,5 +21,12 @@ public sealed record ArenaDayInfo(
 public sealed record ArenaMatchRow(
     int Round, int Slot, ulong P1Id, string P1Name, ulong? P2Id, string? P2Name, ulong WinnerId, int Actions, int WinnerHpPercent = 100);
 
+// Un puesto del podio que cobra ADEMÁS del campeón (v0.65.0): el 2.º (perdió la final) o un 3.º (perdió una semifinal). zoneRank es la zona de ESE jugador (el premio escala con ella, como el del campeón).
+public sealed record ArenaPlacing(int Place, ulong DiscordId, string Name, GameData.RewardSpec Reward, int ZoneRank);
+
+// Lo que cobró cada uno de esos puestos. Receipt null = ya no tenía cuenta (el torneo igual queda jugado y no hay a quién pagarle).
+public sealed record ArenaPlacingReceipt(int Place, ulong DiscordId, string Name, RewardReceipt? Receipt);
+
 // Resolved false = otro proceso ya había cerrado ese día (no se pagó nada de nuevo). Receipt null con Resolved true = el campeón ya no tenía cuenta.
-public sealed record ArenaResolveOutcome(bool Resolved, RewardReceipt? Receipt);
+// Others (v0.65.0): lo que cobraron el 2.º y los 3.º; vacío si no se pidió pagarles.
+public sealed record ArenaResolveOutcome(bool Resolved, RewardReceipt? Receipt, IReadOnlyList<ArenaPlacingReceipt>? Others = null);

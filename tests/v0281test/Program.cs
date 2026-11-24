@@ -97,9 +97,9 @@ ConfigScreen screenFullEn; using (Loc.Use("en")) { screenFullEn = await ConfigMo
 await service.SetFullRecipeBookAsync(U4, false);
 ConfigScreen screenClassicEn; using (Loc.Use("en")) { screenClassicEn = await ConfigModule.BuildScreenAsync(service, U4); }
 List<ButtonComponent> ButtonsOf(ConfigScreen s) => s.Components.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<ButtonComponent>().ToList();
-Check(screenClassic.Embed.Fields.Length == 3 && screenClassic.Embed.Fields[0].Name == "📋 Resumen del combate" && screenClassic.Embed.Fields[1].Name == "📜 Recetario de la herrería" && screenClassic.Embed.Fields[2].Name == "⏱️ Cooldowns (/cd)" && screenClassic.Embed.Fields[1].Value.Contains("**Clásico**") && ButtonsOf(screenClassic).Count == 2
-    && ButtonsOf(screenClassic)[0].CustomId.StartsWith("config_summary:") && ButtonsOf(screenClassic)[1] is { Label: "Recetario completo" } b1 && b1.CustomId == $"config_recipes:{U4}:full",
-    "tres opciones: el resumen, el recetario («Clásico» por defecto) con un botón que pasa al completo (el id lleva al dueño y el valor al que pasa) y, abajo, los cooldowns de /cd (v0.51.0)");
+Check(screenClassic.Embed.Fields.Length == 4 && screenClassic.Embed.Fields[0].Name == "📋 Resumen del combate" && screenClassic.Embed.Fields[1].Name == "📜 Recetario de la herrería" && screenClassic.Embed.Fields[2].Name == "🎁 Drops" && screenClassic.Embed.Fields[3].Name == "⏱️ Cooldowns (/cd)" && screenClassic.Embed.Fields[1].Value.Contains("**Clásico**") && ButtonsOf(screenClassic).Count == 3
+    && ButtonsOf(screenClassic)[0].CustomId.StartsWith("config_summary:") && ButtonsOf(screenClassic)[1] is { Label: "Recetario completo" } b1 && b1.CustomId == $"config_recipes:{U4}:full" && ButtonsOf(screenClassic)[2] is { Label: "Drops de todas las zonas" } b3d && b3d.CustomId == $"config_drops:{U4}:all",
+    "cuatro opciones: el resumen, el recetario («Clásico» por defecto) con un botón que pasa al completo (el id lleva al dueño y el valor al que pasa), los drops (v0.65.0: un botón que pasa a todas las zonas juntas) y, abajo, los cooldowns de /cd (v0.51.0)");
 Check(screenFull.Embed.Fields[1].Value.Contains("**Completo**") && ButtonsOf(screenFull)[1] is { Label: "Recetario clásico" } b2 && b2.CustomId == $"config_recipes:{U4}:classic", "con el completo elegido: dice «Completo» y el botón vuelve al clásico");
 Check(screenFullEn.Embed.Fields[1].Name == "📜 Forge recipe book" && screenFullEn.Embed.Fields[1].Value.Contains("**Full**") && ButtonsOf(screenFullEn)[1].Label == "Classic recipe book" && screenClassicEn.Embed.Fields[1].Value.Contains("**Classic**") && ButtonsOf(screenClassicEn)[1].Label == "Full recipe book",
     $"y en inglés ({screenFullEn.Embed.Fields[1].Name} | {screenFullEn.Embed.Fields[1].Value})");
@@ -118,10 +118,27 @@ Check((await service.GetAsync(U5)).FullRecipeBook && n4!.Contains("completo") &&
 await ConfigModule.ExecuteTypedAsync(service, U5, "resumen", "off");
 Check(!(await service.GetAsync(U5)).ShowFightSummary && (await service.GetAsync(U5)).FullRecipeBook, "tocar el resumen por escrito no cambia el recetario");
 var (n5, _) = await ConfigModule.ExecuteTypedAsync(service, U5, "color", "off");
-Check(n5!.Contains("recetas") && n5.Contains("resumen"), $"una opción desconocida lista las dos que existen ({n5})");
+Check(n5!.Contains("recetas") && n5.Contains("resumen") && n5.Contains("drops"), $"una opción desconocida lista las dos que existen ({n5})");
 string n6; using (Loc.Use("en")) { (n6, _) = await ConfigModule.ExecuteTypedAsync(service, U5, "recipes", "classic"); }
 Check(n6.Contains("Done") && n6.Contains("**classic**") && LeakCheck.NoSpanish(n6, []).Ok, $"el aviso en inglés ({n6})");
 
+
+Console.WriteLine("\n== 5b. /drops con todas las zonas juntas (v0.65.0) ==");
+Check(!(await service.GetAsync(U5)).DropsAllZones && PlayerSettings.Default.DropsAllZones == false, "por defecto /drops muestra una zona por vez (como siempre)");
+await service.SetFullRecipeBookAsync(U5, true);
+var (d1, dScreen) = await ConfigModule.ExecuteTypedAsync(service, U5, "drops", "todas");
+Check((await service.GetAsync(U5)).DropsAllZones && d1!.Contains("todas las zonas juntas") && dScreen.Embed.Fields.Single(f => f.Name == "🎁 Drops").Value.Contains("Todas las zonas juntas")
+    && ButtonsOf(dScreen)[2] is { Label: "Drops por zona" } b4d && b4d.CustomId == $"config_drops:{U5}:zone", $"«aa config drops todas» lo prende, la pantalla de vuelta ya está al día y el botón vuelve a una zona por vez ({d1})");
+Check((await service.GetAsync(U5)).FullRecipeBook && !(await service.GetAsync(U5)).ShowFightSummary, "prender los drops no pisa el recetario ni el resumen que ya tenía");
+var (d2, _) = await ConfigModule.ExecuteTypedAsync(service, U5, "loot", "zona");
+Check(!(await service.GetAsync(U5)).DropsAllZones && d2!.Contains("una zona por vez"), $"«aa config loot zona» (otra forma de llamarlo) vuelve a una zona por vez ({d2})");
+await ConfigModule.ExecuteTypedAsync(service, U5, "drops", "toggle");
+Check((await service.GetAsync(U5)).DropsAllZones, "«toggle» lo invierte");
+var (d3, _) = await ConfigModule.ExecuteTypedAsync(service, U5, "drops", "quizás");
+Check((await service.GetAsync(U5)).DropsAllZones && d3!.Contains("todas") && d3.Contains("zona"), $"un valor que no se entiende no cambia nada y dice cuáles hay ({d3})");
+Check(SettingWords.KeyOf("drops") == SettingKey.Drops && SettingWords.ParseDropsView("compacto") is (true, false) && SettingWords.ParseDropsView("menú") is (false, false) && SettingWords.ParseDropsView("off") is (false, false) && SettingWords.ParseDropsView("toggle") is (null, true) && SettingWords.ParseDropsView("xyz") is (null, false), "las palabras de la opción: drops/loot, todas/compacto, zona/menú, on/off y toggle");
+string d4; using (Loc.Use("en")) { (d4, _) = await ConfigModule.ExecuteTypedAsync(service, U5, "drops", "zone"); }
+Check(d4.Contains("Done") && d4.Contains("one zone at a time") && LeakCheck.NoSpanish(d4, []).Ok, $"el aviso en inglés ({d4})");
 Console.WriteLine("\n== 6. La página clásica de una zona ==");
 var z1 = zonesByRank[0]; var z2 = zonesByRank[1];
 var page1 = RecipeCatalog.PageFor(recipes, zones, "Guerrero", z1.ZoneId);
@@ -227,6 +244,7 @@ sealed class ThrowingRepo : ISettingsRepository
     public Task SetFullRecipeBookAsync(ulong discordId, bool value, CancellationToken ct = default) => throw new InvalidOperationException("simulado");
     public Task SetProfileBannerAsync(ulong discordId, string? blessingKey, CancellationToken ct = default) => throw new InvalidOperationException("simulado");
     public Task SetCdLayoutAsync(ulong discordId, string? layout, CancellationToken ct = default) => throw new InvalidOperationException("simulado");
+    public Task SetDropsAllZonesAsync(ulong discordId, bool value, CancellationToken ct = default) => throw new InvalidOperationException("simulado");
 }
 
 public class FakeProxy : DispatchProxy

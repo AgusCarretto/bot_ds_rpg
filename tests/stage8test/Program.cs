@@ -89,16 +89,38 @@ var withTip = (Embed)victory.Invoke(null, [cs, turn, new CombatReward(10, 10, fa
 Check(!withTip.Fields.Any(f => f.Name.Contains("💡")) && withTip.Length < 6000, "la victoria de combate YA NO lleva el consejo (ahora está en /tips)");
 
 Console.WriteLine("\n== 3. Reglas del minievento ==");
-Check(MiniEventRules.Reward(MiniEventKind.Stones, 1, 1) == new MiniEventReward("Piedra", 2, 0) && MiniEventRules.Reward(MiniEventKind.Stones, 3, 1).Quantity == 6 && MiniEventRules.Reward(MiniEventKind.Wood, 4, 1) == new MiniEventReward("Madera de Pino", 8, 0), "piedra y madera: 2 unidades solo y +2 por cada persona más (1 -> 2, 3 -> 6, 4 -> 8)");
-Check(MiniEventRules.Reward(MiniEventKind.Stones, 10, 1).Quantity == 20 && MiniEventRules.Reward(MiniEventKind.Stones, 50, 1).Quantity == 20 && MiniEventRules.Reward(MiniEventKind.Stones, 0, 1).Quantity == 2, "tope en 10 personas (20 unidades) y nunca menos que el mínimo");
-Check(MiniEventRules.Reward(MiniEventKind.Silver, 1, 1).Gold == 14 && MiniEventRules.Reward(MiniEventKind.Silver, 4, 1).Gold == 56 && MiniEventRules.Reward(MiniEventKind.Silver, 4, 3).Gold == 4 * 118 && MiniEventRules.Reward(MiniEventKind.Silver, 4, 5).Gold == 4 * 375, "plata: tantas cacerías de oro de TU zona como personas (1 persona en zona 1 = 14, 4 personas en zona 3 = 472)");
-foreach (var kind in Enum.GetValues<MiniEventKind>())
+// v0.65.0: las piedras y la leña son TIRADAS de /mine y /chop (la tabla de rarezas de siempre, con el multiplicador de cada jugador): antes eran 2 unidades fijas por persona.
+var gatherPool = new List<GatherCandidate>
 {
-    var rewards = Enumerable.Range(1, 10).Select(n => MiniEventRules.Reward(kind, n, 2)).Select(r => r.ItemName is null ? r.Gold : r.Quantity).ToList();
-    if (!rewards.Zip(rewards.Skip(1), (x, y) => y > x).All(b => b)) { Check(false, $"{kind}: la recompensa NO crece con la gente"); }
+    new(1, "Piedra", "Común", null, "Mineral"), new(2, "Carbón", "Raro", null, "Mineral"), new(3, "Oro Puro", "Épico", null, "Mineral"), new(4, "Zafiro", "Legendario", null, "Mineral"), new(5, "Fragmento de Meteorito", "Mítico", null, "Mineral"),
+    new(11, "Madera de Pino", "Común", null, "Madera"), new(12, "Roble", "Raro", null, "Madera"), new(13, "Corteza del Árbol de Vida", "Mítico", null, "Madera"),
+};
+Check(MiniEventRules.Rolls(MiniEventKind.Stones, 1) == 1 && MiniEventRules.Rolls(MiniEventKind.Wood, 3) == 3 && MiniEventRules.Rolls(MiniEventKind.Stones, 10) == 10 && MiniEventRules.Rolls(MiniEventKind.Stones, 50) == 10 && MiniEventRules.Rolls(MiniEventKind.Stones, 0) == 1 && MiniEventRules.Rolls(MiniEventKind.Silver, 4) == 0, "piedra y madera: una tirada por persona que se suma (1 -> 1, 3 -> 3), tope en 10 personas y nunca menos que 1; la plata no tira");
+Check(MiniEventRules.GatherType(MiniEventKind.Stones) == "Mineral" && MiniEventRules.GatherType(MiniEventKind.Wood) == "Madera", "las piedras salen de /mine (Mineral) y la leña de /chop (Madera)");
+Check(MiniEventRules.Reward(MiniEventKind.Silver, 1, 1, gatherPool, 1).Gold == 14 && MiniEventRules.Reward(MiniEventKind.Silver, 4, 1, gatherPool, 1).Gold == 56 && MiniEventRules.Reward(MiniEventKind.Silver, 4, 3, gatherPool, 1).Gold == 4 * 118 && MiniEventRules.Reward(MiniEventKind.Silver, 4, 5, gatherPool, 1).Gold == 4 * 375 && MiniEventRules.Reward(MiniEventKind.Silver, 4, 5, gatherPool, 1).Items.Count == 0, "plata: tantas cacerías de oro de TU zona como personas (1 persona en zona 1 = 14, 4 personas en zona 3 = 472), sin materiales");
+var rolledStones = MiniEventRules.Reward(MiniEventKind.Stones, 3, 1, gatherPool, 1, new Random(7));
+var rolledWood = MiniEventRules.Reward(MiniEventKind.Wood, 3, 1, gatherPool, 1, new Random(7));
+Check(rolledStones.Gold == 0 && rolledStones.Items.Count > 0 && rolledStones.Items.All(i => gatherPool.Any(p => p.ItemId == i.ItemId && p.Type == "Mineral")) && rolledWood.Items.All(i => gatherPool.Any(p => p.ItemId == i.ItemId && p.Type == "Madera")), "las piedras son solo Minerales y la leña solo Madera, nunca plata");
+Random stat = new(2026);
+long mythicSeen = 0; long totalOne = 0; long totalThree = 0; long unitsFloor = 0;
+for (int i = 0; i < 4000; i++)
+{
+    var one = MiniEventRules.RollMaterials(gatherPool, "Mineral", 10, 1.0, stat);
+    var triple = MiniEventRules.RollMaterials(gatherPool, "Mineral", 10, 3.0, stat);
+    totalOne += one.Sum(x => x.Quantity); totalThree += triple.Sum(x => x.Quantity);
+    mythicSeen += one.Concat(triple).Count(x => x.ItemId == 5);
+    unitsFloor += one.Sum(x => x.Quantity) >= 10 ? 1 : 0;
 }
 
-Check(true, "para los tres tipos: cuantas más personas, más se lleva cada uno (estrictamente creciente de 1 a 10)");
+double ratio = totalThree / (double)totalOne;
+Check(mythicSeen == 0, "jamás sale un Mítico (la Corteza y el Meteorito siguen siendo de /chop y /mine): si la tabla lo sortea, cuenta como Legendario");
+Check(unitsFloor == 4000, "cada tirada da al menos 1 unidad: 10 tiradas dan 10 unidades o más");
+Check(Math.Abs(ratio - 3.0) < 0.15, $"con el multiplicador del Fuego Nuevo 10 (×3) se lleva ~3 veces más que sin él (×{ratio:0.00})");
+Check(MiniEventRules.RollMaterials([new GatherCandidate(1, "Piedra", "Común", null, "Mineral")], "Mineral", 10, 1.0, new Random(1)).Sum(x => x.Quantity) >= 10 && MiniEventRules.RollMaterials([], "Mineral", 10, 1.0, new Random(1)).Count == 0, "un catálogo con solo Comunes igual paga (lo que sale de otra rareza cuenta como Común) y uno vacío no paga ni rompe");
+double AvgUnits(int rolls) { var r = new Random(rolls); return Enumerable.Range(0, 3000).Average(_ => MiniEventRules.RollMaterials(gatherPool, "Mineral", rolls, 1.0, r).Sum(x => x.Quantity)); }
+var growth = Enumerable.Range(1, 10).Select(AvgUnits).ToList();
+Check(growth.Zip(growth.Skip(1), (x, y) => y > x).All(b => b) && MiniEventRules.Reward(MiniEventKind.Silver, 10, 2, gatherPool, 1).Gold > MiniEventRules.Reward(MiniEventKind.Silver, 9, 2, gatherPool, 1).Gold, "para los tres tipos: cuantas más personas, más se lleva cada uno (crece de 1 a 10)");
+Check(MiniEventRules.Describe(new MiniEventReward([new MiniEventItem(1, "Piedra", 6), new MiniEventItem(2, "Carbón", 1)], 0)) == "6× Piedra · 1× Carbón" && MiniEventRules.Describe(new MiniEventReward([], 70)) == "💰 70 oro", "el premio se escribe «6× Piedra · 1× Carbón» o «💰 70 oro»");
 Check(MiniEventRules.AllAnnouncements().All(a => a.Stories.Count >= 2 && a.Title.Length > 5) && MiniEventRules.AllAnnouncements().Count() == 3, "los 3 tipos tienen aviso con 2 o más relatos para variar");
 Check(MiniEventSettings.Default == new MiniEventSettings(3, TimeSpan.FromMinutes(30), TimeSpan.FromSeconds(15)), "por defecto: 3% por comando, uno cada 30 min por canal, 15 s para sumarse");
 Environment.SetEnvironmentVariable("MiniEvent__ChancePercent", "100"); Environment.SetEnvironmentVariable("MiniEvent__ChannelCooldownMinutes", "0"); Environment.SetEnvironmentVariable("MiniEvent__JoinSeconds", "1");
@@ -138,9 +160,10 @@ Check(clicks.Count(c => c.Status == JoinStatus.Joined) == 3 && clicks.Count(c =>
     $"9 clics a la vez: se suman 3 personas (el que clickeó 5 veces cuenta UNA), sin cuenta no cuenta, y un aviso inexistente da 'ya terminó'");
 await Task.Delay(1600);
 var result1 = log1[0].Item4.Last;
-int p0Pino = await Have(P[0], "Piedra");
-Check(result1 is not null && result1.Title!.Contains("Entre 3") && result1.Description.Contains($"<@{P[0]}>") && result1.Description.Contains("6× Piedra"), $"al cerrar la ventana edita el mensaje: «{result1?.Title}» / «{result1?.Description.Split((char)10).First(l => l.Contains("Cada"))}»");
-Check(await Have(P[0], "Piedra") == 6 && await Have(P[1], "Piedra") == 6 && await Have(P[2], "Piedra") == 6 && await Have(P[3], "Piedra") == 0, "cada uno de los 3 cobró 6 Piedra (2 + 2 por cada persona más); el que no se sumó, nada");
+async Task<int> OfType(ulong id, string type) => await db.ExecuteScalarAsync<int>("SELECT COALESCE(SUM(quantity), 0) FROM inventory inv JOIN items i USING (item_id) WHERE inv.discord_id = @id AND i.type = @t", new { id = (long)id, t = type });
+Check(result1 is not null && result1.Title!.Contains("Entre 3") && result1.Description.Contains($"<@{P[0]}>") && result1.Description.Contains("×"), $"al cerrar la ventana edita el mensaje: «{result1?.Title}»");
+int[] mined = [await OfType(P[0], "Mineral"), await OfType(P[1], "Mineral"), await OfType(P[2], "Mineral")];
+Check(mined.All(m => m >= 3) && await OfType(P[0], "Madera") == 0 && await OfType(P[3], "Mineral") == 0, $"cada uno de los 3 cobró 3 tiradas de /mine (3 unidades o más: {string.Join(", ", mined)}); el que no se sumó, nada, y no cobró leña");
 var late = await svc.JoinAsync(evId, P[3]);
 Check(late.Status is JoinStatus.Gone or JoinStatus.Finished, "llegar tarde: ya no deja sumarse");
 Check(await db.ExecuteScalarAsync<int>("SELECT count(*) FROM game_events WHERE kind = 'mini_event' AND discord_id = ANY(@ids)", new { ids = P.Select(x => (long)x).ToArray() }) == 3, "quedaron 3 eventos mini_event registrados (uno por participante)");
@@ -161,7 +184,16 @@ var woodSvc = Svc(100, TimeSpan.Zero, SeedFor(MiniEventKind.Wood));
 await woodSvc.MaybeSpawnAsync(556, Publisher(log2)(556));
 await woodSvc.JoinAsync(IdOf(log2[0].Item3), P[0]);
 await Task.Delay(1600);
-Check(await Have(P[0], "Madera de Pino") == 2 && log2[0].Item4.Last!.Title!.Contains("Entre 1"), "madera con una sola persona: 2 Madera de Pino");
+Check(await OfType(P[0], "Madera") >= 1 && await OfType(P[0], "Mineral") == 0 && log2[0].Item4.Last!.Title!.Contains("Entre 1"), "leña con una sola persona: una tirada de /chop (1 unidad de Madera o más)");
+// Con el Fuego Nuevo 10 la cantidad por tirada se triplica (×3): una tirada da 3 unidades o más.
+await Reset();
+await db.ExecuteAsync("UPDATE users SET fuego_nuevo = 10 WHERE discord_id = @id", new { id = (long)P[0] });
+var log2b = new List<(ulong, Embed, MessageComponent, FakeAnnouncement)>();
+var fnSvc = new MiniEventService(users, zones, items, payouts, gameEvents, new MiniEventSettings(100, TimeSpan.Zero, TimeSpan.FromMilliseconds(700)), new Random(SeedFor(MiniEventKind.Wood)), sp.GetRequiredService<IPlayerBonusService>());
+await fnSvc.MaybeSpawnAsync(556, Publisher(log2b)(556));
+await fnSvc.JoinAsync(IdOf(log2b[0].Item3), P[0]);
+await Task.Delay(1600);
+Check(await OfType(P[0], "Madera") >= 3, $"en el Fuego Nuevo 10 una sola tirada de leña da 3 unidades o más (×3 la cantidad, como /chop): {await OfType(P[0], "Madera")}");
 await Reset();
 await db.ExecuteAsync("UPDATE users SET current_zone_id = (SELECT zone_id FROM zones ORDER BY min_level OFFSET 2 LIMIT 1) WHERE discord_id = @id", new { id = (long)P[1] });
 var log3 = new List<(ulong, Embed, MessageComponent, FakeAnnouncement)>();

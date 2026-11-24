@@ -65,7 +65,7 @@ public interface IMiniEventService
 // el botón queda "ya terminó" y nadie pierde nada.
 public sealed class MiniEventService(
     IUserRepository userRepository, IZoneRepository zoneRepository, IItemRepository itemRepository, IMiniEventRepository payouts,
-    IGameEvents gameEvents, MiniEventSettings? settings = null, Random? random = null) : IMiniEventService
+    IGameEvents gameEvents, MiniEventSettings? settings = null, Random? random = null, IPlayerBonusService? bonusService = null) : IMiniEventService
 {
     private readonly MiniEventSettings _settings = settings ?? MiniEventSettings.FromEnvironment();
     private readonly Random _random = random ?? Random.Shared;
@@ -217,6 +217,12 @@ public sealed class MiniEventService(
 
         var zones = ZoneRanking.OrderByDifficulty(await zoneRepository.GetAllAsync());
 
+        // v0.65.0: las piedras y la leña son TIRADAS de /mine o /chop (la tabla de rarezas de siempre) con el multiplicador de cada uno; los materiales de ese tipo se leen una vez para todos.
+        string gatherType = MiniEventRules.GatherType(kind);
+        IReadOnlyList<GatherCandidate> pool = kind == MiniEventKind.Silver
+            ? []
+            : (await itemRepository.GetAllByTypeAsync(gatherType)).Select(i => new GatherCandidate(i.ItemId, i.Name, i.Rarity, i.Emoji, gatherType)).ToList();
+
         foreach (ulong userId in participants)
         {
             try
@@ -227,10 +233,28 @@ public sealed class MiniEventService(
                     continue;
                 }
 
-                var reward = MiniEventRules.Reward(kind, participants.Count, ZoneRanking.RankOf(zones, user.CurrentZoneId));
-                int? itemId = reward.ItemName is null ? null : (await itemRepository.GetByNameAsync(reward.ItemName))?.ItemId;
+                // El multiplicador de /mine (piedras) o /chop (leña): Fuego Nuevo, bendiciones y oficio. Sin el servicio de bonus (los arneses viejos) o si falla leerlo, ×1: nunca se queda sin premio.
+                double multiplier = 1.0;
+                if (kind != MiniEventKind.Silver && bonusService is not null)
+                {
+                    try
+                    {
+                        var bonuses = await bonusService.GetAsync(userId, user.FuegoNuevo);
+                        multiplier = kind == MiniEventKind.Stones ? bonuses.MineMultiplier : bonuses.ChopMultiplier;
+                    }
+                    catch (Exception ex)
+                    {
+                        BotLog.Warn(ex);
+                    }
+                }
 
-                if (await payouts.PayAsync(userId, itemId, reward.Quantity, reward.Gold))
+                var reward = MiniEventRules.Reward(kind, participants.Count, ZoneRanking.RankOf(zones, user.CurrentZoneId), pool, multiplier, _random);
+                if (reward.Items.Count == 0 && reward.Gold <= 0)
+                {
+                    continue; // un catálogo sin materiales de ese tipo: no hay nada que pagar (y no se anuncia un premio vacío)
+                }
+
+                if (await payouts.PayAsync(userId, reward.Items.Select(i => (i.ItemId, i.Quantity)).ToList(), reward.Gold))
                 {
                     paid.Add((userId, reward));
                     await gameEvents.RecordAsync(userId, GameEventKinds.MiniEvent, user.CurrentZoneId, detail: kind.ToString());
@@ -267,9 +291,9 @@ public sealed class MiniEventService(
         }
 
         string who = string.Join(", ", paid.Select(p => MentionUtils.MentionUser(p.UserId)));
-        bool sameForAll = paid.Select(p => p.Reward).Distinct().Count() <= 1;
+        bool sameForAll = paid.Select(p => MiniEventRules.Describe(p.Reward)).Distinct().Count() <= 1;
 
-        // Con material todos se llevan lo mismo; con plata depende de la zona de cada uno, así que va una línea por persona.
+        // Si todos se llevan lo mismo, una sola línea; si no (la plata depende de la zona de cada uno y, desde la v0.65.0, los materiales salen de tiradas con el multiplicador de cada uno), una línea por persona.
         string reward = sameForAll && paid.Count > 0
             ? Loc.F($"Cada uno se llevó **{MiniEventRules.Describe(paid[0].Reward)}**.")
             : string.Join('\n', paid.Select(p => $"{MentionUtils.MentionUser(p.UserId)}: **{MiniEventRules.Describe(p.Reward)}**"));

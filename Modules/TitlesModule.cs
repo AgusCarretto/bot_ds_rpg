@@ -188,26 +188,28 @@ public class TitlesModule(IUserRepository userRepository, IZoneRepository zoneRe
             : Loc.F($"Puesto: **{equipped.Name}**"));
         lines.Add(string.Empty);
 
+        // v0.65.0: delante de cada título, el círculo de su dificultad (⚪ el más sencillo → 🔴 el más difícil) y después si lo tenés (✅) o te falta (🔒). El color va primero para que quede en una columna y se lea de un vistazo.
         foreach (var title in TitleCatalog.OfPage(page.Key))
         {
+            string color = TitleDifficulty.Emoji(title.Difficulty);
             if (TitleCatalog.IsUnlocked(title, context))
             {
-                lines.Add($"✅ **{title.Name}**" + (equipped?.Key == title.Key ? Loc.T(" ◀ puesto") : string.Empty));
+                lines.Add($"{color} ✅ **{title.Name}**" + (equipped?.Key == title.Key ? Loc.T(" ◀ puesto") : string.Empty));
             }
             else
             {
                 string? progress = TitleCatalog.Progress(title, context);
-                lines.Add($"🔒 {title.Name} — {title.DisplayHint}" + (progress is null ? string.Empty : $" _({progress})_"));
+                lines.Add($"{color} 🔒 {title.Name} — {title.DisplayHint}" + (progress is null ? string.Empty : $" _({progress})_"));
             }
         }
 
-        // Footer corto y con la página, como en /achievements (auditoría de UI, M13).
+        // Footer corto y con la página, como en /achievements (auditoría de UI, M13); el color es la dificultad: el círculo más claro es el más sencillo.
         int pageNumber = Math.Max(0, TitleCatalog.Pages.ToList().FindIndex(p => p.Key == page.Key)) + 1;
         return new EmbedBuilder()
             .WithTitle(Loc.F($"🏷️ Títulos · {page.Emoji} {page.Name}"))
             .WithColor(Color.Gold)
             .WithDescription(string.Join("\n", lines))
-            .WithFooter(Loc.F($"Página {pageNumber}/{TitleCatalog.Pages.Count} · Tenés {TitleCatalog.UnlockedCount(context)} de {TitleCatalog.All.Count}"))
+            .WithFooter(Loc.F($"Página {pageNumber}/{TitleCatalog.Pages.Count} · Tenés {TitleCatalog.UnlockedCount(context)} de {TitleCatalog.All.Count} · {TitleDifficulty.Emoji(TitleDifficulty.Min)} sencillo → {TitleDifficulty.Emoji(TitleDifficulty.Max)} difícil"))
             .Build();
     }
 
@@ -238,7 +240,7 @@ public class TitlesModule(IUserRepository userRepository, IZoneRepository zoneRe
                 .WithMaxValues(1);
             foreach (var title in owned)
             {
-                equipMenu.AddOption(title.Name, title.Key, equippedKey == title.Key ? Loc.T("Puesto ahora") : null);
+                equipMenu.AddOption(title.Name, title.Key, equippedKey == title.Key ? Loc.T("Puesto ahora") : null, new Emoji(TitleDifficulty.Emoji(title.Difficulty)));
             }
 
             builder.WithSelectMenu(equipMenu, row: 1);

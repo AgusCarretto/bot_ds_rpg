@@ -277,6 +277,7 @@ sealed class FailingSetService : IPlayerSettingsService
     public Task SetFullRecipeBookAsync(ulong discordId, bool value) => throw new InvalidOperationException("simulado");
     public Task SetProfileBannerAsync(ulong discordId, string? blessingKey) => throw new InvalidOperationException("simulado");
     public Task SetCdLayoutAsync(ulong discordId, string? layout) => throw new InvalidOperationException("simulado");
+    public Task SetDropsAllZonesAsync(ulong discordId, bool value) => throw new InvalidOperationException("simulado");
 }
 
 public class FakeProxy : DispatchProxy

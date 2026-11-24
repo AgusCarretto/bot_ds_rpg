@@ -5,7 +5,8 @@ namespace BotDsRpg.GameData;
 // FullRecipeBook (v0.28.1): qué recetario ve en la herrería. false (lo de siempre) = el CLÁSICO, una zona por página con lo que tenés de cada material; true = el COMPLETO de la v0.27.0, todas las zonas juntas.
 // ProfileBanner (v0.50.0): la clave de la bendición cuyo banner (GameData/ProfileBanners.cs) se ve al pie del /profile; null = ninguno.
 // CdLayout (v0.51.0): qué líneas de /cd ve y en qué orden (GameData/CooldownLayout.cs); null = todas, en el orden de siempre.
-public sealed record PlayerSettings(bool ShowFightSummary = true, bool FullRecipeBook = false, string? ProfileBanner = null, string? CdLayout = null)
+// DropsAllZones (v0.65.0): cómo ve /drops. false (lo de siempre) = UNA zona por mensaje con un menú para pasar a otra; true = la vista compacta de antes: todas las zonas juntas, con la cacería y el viaje de cada una.
+public sealed record PlayerSettings(bool ShowFightSummary = true, bool FullRecipeBook = false, string? ProfileBanner = null, string? CdLayout = null, bool DropsAllZones = false)
 {
     // Lo que ve quien nunca tocó nada (o cuando la base no responde): todo como siempre.
     public static readonly PlayerSettings Default = new();
@@ -17,6 +18,7 @@ public enum SettingKey
     FightSummary,
     RecipeBook,
     Banner,
+    Drops,
 }
 
 public static class SettingWords
@@ -24,7 +26,10 @@ public static class SettingWords
     private static readonly string[] FightSummaryWords = ["summary", "fightsummary", "fight summary", "resumen", "resumen del combate", "resumendelcombate", "tabla", "tablita", "stats"];
     private static readonly string[] RecipeBookWords = ["recipes", "recipe", "recipebook", "recipe book", "recetas", "receta", "recetario", "forge", "herreria", "herrería"];
     private static readonly string[] BannerWords = ["banner", "banners", "bg", "background", "backgrounds", "fondo", "fondos", "perfil", "profile"];
-    private static readonly string[] FullBookWords = ["completo", "completa", "full", "todo", "todas", "all", "libro", "book"];
+    private static readonly string[] DropsWords = ["drops", "drop", "botin", "botín", "loot"];
+    private static readonly string[] AllZonesWords = ["todas", "todo", "all", "compacto", "compacta", "compact", "juntas", "viejo", "vieja", "old", "lista", "list"];
+    private static readonly string[] OneZoneWords = ["zona", "zone", "una", "single", "menu", "menú", "normal", "nuevo", "nueva", "new", "separadas"];
+    private static readonly string[] FullBookWords =["completo", "completa", "full", "todo", "todas", "all", "libro", "book"];
     private static readonly string[] ClassicBookWords = ["clasico", "clásico", "clasica", "clásica", "classic", "simple", "normal", "zona", "zone", "pagina", "página", "page"];
 
     public static SettingKey? KeyOf(string? text)
@@ -38,6 +43,11 @@ public static class SettingWords
         if (BannerWords.Contains(word))
         {
             return SettingKey.Banner;
+        }
+
+        if (DropsWords.Contains(word))
+        {
+            return SettingKey.Drops;
         }
 
         return RecipeBookWords.Contains(word) ? SettingKey.RecipeBook : null;
@@ -62,5 +72,17 @@ public static class SettingWords
         }
 
         return ClassicBookWords.Contains(word) ? (false, false) : ParseSwitch(text);
+    }
+
+    // Para /drops (v0.65.0): «todas» / «compacto» / «viejo» → true (todas las zonas juntas), «zona» / «menú» → false (una zona por vez, lo de siempre); también on/off (on = todas juntas) y toggle.
+    public static (bool? AllZones, bool Toggle) ParseDropsView(string? text)
+    {
+        string word = (text ?? string.Empty).Trim().ToLowerInvariant();
+        if (AllZonesWords.Contains(word))
+        {
+            return (true, false);
+        }
+
+        return OneZoneWords.Contains(word) ? (false, false) : ParseSwitch(text);
     }
 }

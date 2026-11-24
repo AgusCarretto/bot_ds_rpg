@@ -30,7 +30,8 @@ public interface IArenaRepository
 
     // Cierra el día jugado: guarda la llave y paga el premio al campeón, TODO en una transacción. El cierre es un UPDATE ... WHERE status = 'open'
     // (si dos procesos intentan cerrar el mismo día, solo uno lo consigue y el otro no paga nada). zoneRank: la zona del campeón (el premio escala).
+    // others (v0.65.0): el 2.º y los 3.º con su premio y su zona, que cobran en la MISMA transacción (si algo falla, no cobra nadie y el día sigue abierto). Las filas de usuario se bloquean ordenadas por discord_id.
     Task<ArenaResolveOutcome> ResolveDayAsync(
         DateOnly day, IReadOnlyList<ArenaMatchRow> matches, int participants, int rounds, ulong winnerId, string winnerName,
-        RewardSpec reward, int zoneRank, CancellationToken cancellationToken = default);
+        RewardSpec reward, int zoneRank, IReadOnlyList<ArenaPlacing>? others = null, CancellationToken cancellationToken = default);
 }

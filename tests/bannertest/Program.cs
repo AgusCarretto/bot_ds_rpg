@@ -176,7 +176,7 @@ await settingsService.SetProfileBannerAsync(U1, $"{Key}:2");
 var sTier = await ConfigModule.BuildScreenAsync(settingsService, U1, blessings);
 Check(MenuOf(sTier)!.Options.Single(o => o.IsDefault == true).Value == "2" && sTier.Embed.Fields.Any(f => f.Value.Contains("**Tier II**") && f.Value.Contains("hasta el III")), "con el tier II elegido el menú lo marca y el campo lo dice");
 Check(MenuOf(sTier)!.Options.All(o => o.Label.Length <= 100 && (o.Description?.Length ?? 0) <= 100) && MenuOf(sTier)!.Options.Skip(1).All(o => o.Emote is Emoji)
-    && sTier.Components.Components.OfType<ActionRowComponent>().ToList() is { Count: 4 } rows && rows[0].Components.Count == 2, "las opciones entran en los límites de Discord y llevan emoji (de texto); los dos botones de antes siguen en su fila");
+    && sTier.Components.Components.OfType<ActionRowComponent>().ToList() is { Count: 4 } rows && rows[0].Components.Count == 3, "las opciones entran en los límites de Discord y llevan emoji (de texto); los tres botones (resumen, recetario y, desde la v0.65.0, drops) siguen en su fila");
 
 async Task<string?> Stored(ulong id) => (await settingsService.GetAsync(id)).ProfileBanner;
 await settingsService.SetProfileBannerAsync(U1, null);

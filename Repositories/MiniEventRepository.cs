@@ -6,7 +6,7 @@ namespace BotDsRpg.Repositories;
 
 public sealed class MiniEventRepository(IDbConnectionFactory connectionFactory) : IMiniEventRepository
 {
-    public async Task<bool> PayAsync(ulong discordId, int? itemId, int quantity, int gold, CancellationToken cancellationToken = default)
+    public async Task<bool> PayAsync(ulong discordId, IReadOnlyList<(int ItemId, int Quantity)> items, int gold, CancellationToken cancellationToken = default)
     {
         await using DbConnection connection = connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
@@ -22,9 +22,12 @@ public sealed class MiniEventRepository(IDbConnectionFactory connectionFactory) 
             return false;
         }
 
-        if (itemId is int id && quantity > 0)
+        foreach (var (itemId, quantity) in items)
         {
-            await InventoryUpsert.AddItemAsync(connection, transaction, discordId, id, quantity, cancellationToken);
+            if (quantity > 0)
+            {
+                await InventoryUpsert.AddItemAsync(connection, transaction, discordId, itemId, quantity, cancellationToken);
+            }
         }
 
         await transaction.CommitAsync(cancellationToken);

@@ -60,6 +60,18 @@ var menuJson = msg.Components!.Components.OfType<ActionRowComponent>().SelectMan
 Check(menuJson.CustomId == "drops_zone:1" && menuJson.Options.Count == ladder.Count && menuJson.Options.Count(o => o.IsDefault == true) == 1 && menuJson.Options.All(o => o.Emote is null), "el desplegable lleva una opción por zona, marca la que se ve y no lleva emojis");
 var fallback = await DropsModule.BuildDropsMessageAsync(dropUsers, zoneRepo, dropMonsters, dropItems, 1UL, dropBoxes, 999);
 Check(fallback.Embeds[0].Title!.Contains($"Zona {ladder[0].ZoneId} "), "una zona que no está en la escalera abre la primera");
+
+// v0.65.0: la vista compacta (/config): TODAS las zonas juntas, con la cacería y el viaje de cada una.
+var compact = await DropsModule.BuildDropsMessageAsync(dropUsers, zoneRepo, dropMonsters, dropItems, 1UL, dropBoxes, allZones: true);
+string compactText = string.Join("\n\n", compact.Embeds.Select(e => e.Description));
+Check(compact.Components is null && compact.Embeds.Length >= 1 && compact.Embeds.All(e => e.Description.Length <= 4096) && compact.Embeds.Sum(Total) < 6000, $"vista compacta: sin menú, {compact.Embeds.Length} mensaje(s) de {compact.Embeds.Sum(Total)} caracteres (cabe en los 6000)");
+Check(ladder.All(z => compactText.Contains($"Zona {z.ZoneId} · {z.Name}")) && compactText.Split("🏹").Length - 1 == ladder.Count && compactText.Split("🗺️").Length - 1 == ladder.Count, $"las {ladder.Count} zonas, cada una con su renglón de cacería (🏹) y su renglón de viaje (🗺️)");
+Check(compactText.Contains(" → ") && !compactText.Contains("👑") && compact.Embeds[0].Title == "🎁 Drops de todas las zonas" && compact.Embeds[^1].Footer is not null && compact.Embeds.Skip(1).All(e => e.Title is null), "cada monstruo con lo que suelta; sin el jefe; título en el primero y pie en el último");
+var compactTravel = compactText.Split('\n').First(l => l.StartsWith("🗺️"));
+Check(compactTravel.Contains("→") && compactTravel.Contains("%)"), $"el viaje dice la caja y su chance: «{compactTravel}»");
+var oneEvenIfAll = await DropsModule.BuildDropsMessageAsync(dropUsers, zoneRepo, dropMonsters, dropItems, 1UL, dropBoxes, ladder[1].ZoneId, allZones: true);
+Check(oneEvenIfAll.Embeds.Length == 1 && oneEvenIfAll.Embeds[0].Fields.Length == 3 && oneEvenIfAll.Components is not null, "con una zona pedida a mano (el menú, «aa drops 3») sale esa zona sola aunque la vista compacta esté activa");
+foreach (var e in compact.Embeds) { Console.WriteLine($"\n--- {e.Title}"); Console.WriteLine(e.Description); }
 foreach (var e in perZone.Take(2).Select(m => m.Embeds[0])) { Console.WriteLine($"\n--- {e.Title} ({e.Description})"); foreach (var f in e.Fields) Console.WriteLine($"{f.Name}\n{f.Value}\n"); }
 
 Console.WriteLine(fails == 0 ? "\nTODO OK" : $"\n{fails} FALLAS");

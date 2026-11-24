@@ -281,9 +281,28 @@ var trainRace = await Task.WhenAll(Enumerable.Range(0, 10).Select(_ => dragons.T
 Check(trainRace.Count(r => r.Status == DragonTrainStatus.Trained) == 3 && trainRace.Count(r => r.Status == DragonTrainStatus.NotEnoughGold) == 7 && await Gold(C) == 0 && (await dragons.GetAsync(C))!.Level == 3, "10 entrenamientos a la vez con oro para tres niveles: se entrenan exactamente 3 y el oro no queda en negativo");
 Check((await DragonModule.ExecuteTrainAsync(dragons, GHOST, 1)).Contains("/taberna") && (await DragonModule.ExecuteTrainAsync(dragons, B, 1)).Contains("Te falta oro") && (await DragonModule.ExecuteTrainAsync(dragons, A, 1)).Contains("nivel 12/20"), "los mensajes del entrenamiento: sin dragón, sin oro y éxito (con el nivel nuevo y el tope del tier)");
 var trainView = await DragonModule.BuildDragonViewAsync(dragons, B);
-var trainButton = trainView.Components!.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<ButtonComponent>().Single();
+var trainButtons = trainView.Components!.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<ButtonComponent>().ToList();
+var trainButton = trainButtons.Single(b => b.CustomId.StartsWith("dragon_train:"));
+var trainMaxButton = trainButtons.Single(b => b.CustomId.StartsWith("dragon_trainmax:"));
 await Dragon(B, "fuerza", 1); await db.ExecuteAsync("UPDATE player_dragons SET level = 10 WHERE discord_id = @id", new { id = (long)B });
 Check(trainButton.CustomId == $"dragon_train:{B}" && trainButton.Label.StartsWith("Entrenar (") && (await DragonModule.BuildDragonViewAsync(dragons, B)).Components is null, "la pantalla trae el botón «Entrenar (costo)» y en el tope del tier ya no lo trae");
+// v0.65.0: «Entrenar al máximo» (dragon_trainmax): sube todos los niveles que alcance el oro hasta el tope del tier.
+Check(trainMaxButton.Label == "Entrenar al máximo" && trainMaxButton.CustomId == $"dragon_trainmax:{B}" && trainMaxButton.Style == ButtonStyle.Success && trainButtons.IndexOf(trainButton) < trainButtons.IndexOf(trainMaxButton) && trainButtons.Count == 2, "al lado de «Entrenar» está el botón «Entrenar al máximo» (verde, con su id lleva al dueño)");
+var slashMax = interactions.SearchComponentCommand(Click($"dragon_trainmax:{A}"));
+Check(slashMax.IsSuccess && slashMax.Command.MethodName == "HandleTrainMaxButtonAsync" && interactions.SearchComponentCommand(Click($"dragon_train:{A}")).Command.MethodName == "HandleTrainButtonAsync", "el botón nuevo llega a su método y el de siempre sigue en el suyo (los ids no se pisan)");
+await Dragon(B, "fuerza", 2); await db.ExecuteAsync("UPDATE player_dragons SET level = 8 WHERE discord_id = @id", new { id = (long)B });
+long toCap20 = DragonRules.TrainCostBetween(8, 20);
+await db.ExecuteAsync("UPDATE users SET gold = @g WHERE discord_id = @id", new { id = (long)B, g = (int)toCap20 + 7 });
+string maxMessage = await DragonModule.ExecuteTrainAsync(dragons, B, DragonRules.MaxLevel);
+Check((await dragons.GetAsync(B))!.Level == 20 && await Gold(B) == 7 && maxMessage.Contains("12 niveles") && maxMessage.Contains("nivel 20/20"), $"con oro de sobra: sube los 12 niveles hasta el tope del tier y deja lo que sobra ({maxMessage})");
+await Dragon(B, "fuerza", 2); await db.ExecuteAsync("UPDATE player_dragons SET level = 8 WHERE discord_id = @id", new { id = (long)B });
+int fourLevels = DragonRules.TrainCost(8) + DragonRules.TrainCost(9) + DragonRules.TrainCost(10) + DragonRules.TrainCost(11);
+await db.ExecuteAsync("UPDATE users SET gold = @g WHERE discord_id = @id", new { id = (long)B, g = fourLevels + DragonRules.TrainCost(12) - 1 });
+string partialMessage = await DragonModule.ExecuteTrainAsync(dragons, B, DragonRules.MaxLevel);
+Check((await dragons.GetAsync(B))!.Level == 12 && partialMessage.Contains("4 niveles") && partialMessage.Contains("El próximo nivel cuesta"), $"con oro para 4 de los 12: sube 4, no se pasa de lo que alcanza y dice cuánto cuesta el próximo ({partialMessage})");
+await db.ExecuteAsync("UPDATE player_dragons SET level = 19 WHERE discord_id = @id", new { id = (long)B });
+var lastLevelButtons = (await DragonModule.BuildDragonViewAsync(dragons, B)).Components!.Components.OfType<ActionRowComponent>().SelectMany(r => r.Components).OfType<ButtonComponent>().ToList();
+Check(lastLevelButtons.Count == 1 && lastLevelButtons[0].CustomId == $"dragon_train:{B}", "a un solo nivel del tope el botón «al máximo» sobra y no sale");
 
 Console.WriteLine("\n== 12. El Aliento final (tier 4) en el resolutor de combate ==");
 var ghostProfile = new CombatantProfile(50, 0, "Guerrero", ClassPassives.For("Guerrero") with { LastStand = true });
