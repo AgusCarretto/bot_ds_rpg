@@ -7,6 +7,16 @@ fijado en la página, así que cada uno tiene que entenderse solo. El más nuevo
 
 ---
 
+## 2026-11-25 — La mazmorra de la Zona 9 ya funciona (v0.65.1)
+
+**Título:** 🔒 ¡Arreglada la mazmorra de la Zona 9!
+
+**Texto:**
+
+**El candado del Fogón** no aparecía al entrar. Ya está arreglado: andá a la Zona 9 con tu **Reliquia de Hielo**, usá `/boss` y a descifrar la clave.
+
+---
+
 ## 2026-11-24 — Podio en la Arena, juntar que vale la pena, entrenar al máximo y más (v0.65.0)
 
 **Título:** 🏟️ ¡Premios para el 2.º y el 3.º de la Arena y más cambios que pidieron ustedes!

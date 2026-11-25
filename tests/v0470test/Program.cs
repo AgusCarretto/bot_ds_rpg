@@ -388,6 +388,21 @@ Check(DungeonRules.ForZoneRank(6) == DungeonKind.FirePattern && DungeonRules.For
 }
 Check(DungeonActions.Parse(DungeonKind.FirePattern, "Agua") == "W" && DungeonActions.Parse(DungeonKind.SmokeMaze, "izquierda") == "l" && DungeonActions.Parse(DungeonKind.Lock, "probar") == FireLock.Try && DungeonActions.Parse(DungeonKind.Rhythm, "ráfaga") == Rhythm.Gust && DungeonActions.Parse(DungeonKind.FirePattern, "banana") is null,
     "las jugadas escritas («aa d agua», «aa d izquierda», «aa d probar», «aa d ráfaga»)");
+{
+    // Discord rechaza el mensaje ENTERO si un botón lleva un símbolo que no es emoji (pasó en la Zona 9 con «⌫»: la mazmorra no se veía). Vale lo del plano suplementario
+    // (U+1F000 en adelante) y, de lo de más abajo, solo los que se sabe que son emoji: sumar acá el que se agregue, mirando que figure como emoji en Unicode.
+    int[] bmpEmoji = [0x26AA, 0x26AB, 0x2B05, 0x2B06, 0x2B07, 0x27A1, 0x21A9, 0x26A1];
+    var bad = new List<string>();
+    foreach (DungeonKind kind in Enum.GetValues<DungeonKind>())
+    {
+        var puzzle = DungeonRules.Create(kind, new Random(1));
+        var buttons = puzzle.Buttons().ToList();
+        if (puzzle is FirePattern) { puzzle.Apply(FirePattern.Ready); buttons.AddRange(puzzle.Buttons()); }
+        bad.AddRange(buttons.Where(b => b.Emoji is { } e && char.ConvertToUtf32(e, 0) is var cp && cp < 0x1F000 && !bmpEmoji.Contains(cp)).Select(b => $"{kind}: {b.Emoji}"));
+    }
+
+    Check(bad.Count == 0, $"todos los botones de las mazmorras llevan emojis de verdad ({string.Join(", ", bad)})");
+}
 
 Console.WriteLine("\n== 6. La mazmorra de punta a punta (base real) ==");
 var cooldowns = new CooldownRepository(factory);
