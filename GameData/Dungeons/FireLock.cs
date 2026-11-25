@@ -1,6 +1,6 @@
 namespace BotDsRpg.GameData.Dungeons;
 
-// Zona 9 — El candado del Fogón. Una clave de 4 símbolos distintos de 5 (🔥 💧 🪨 🌿 ⚡), sorteada en cada corrida. Se arma un intento tocando los símbolos en orden (⌫ borra el
+// Zona 9 — El candado del Fogón. Una clave de 4 símbolos distintos de 5 (🔥 💧 🪨 🌿 ⚡), sorteada en cada corrida. Se arma un intento tocando los símbolos en orden (↩️ borra el
 // último) y se prueba: el candado dice cuántos están EN SU LUGAR (✅) y cuántos están en la clave pero en otro lugar (🔸). Cada intento fallido quema; con 8 intentos fallidos el candado
 // se traba y la mazmorra se pierde. Es de pura lógica: con buenos intentos se abre en 4 o 5.
 public sealed class FireLock : IDungeonPuzzle
@@ -125,7 +125,7 @@ public sealed class FireLock : IDungeonPuzzle
         }
 
         var buttons = Symbols.Select((s, i) => new DungeonButton($"s{i}", string.Empty, s, 0, Disabled: _current.Contains(i) || _current.Count >= Length)).ToList();
-        buttons.Add(new DungeonButton(Delete, Loc.T("Borrar"), "⌫", 1, Disabled: _current.Count == 0));
+        buttons.Add(new DungeonButton(Delete, Loc.T("Borrar"), "↩️", 1, Disabled: _current.Count == 0));
         buttons.Add(new DungeonButton(Try, Loc.T("Probar"), "🔑", 1, Primary: true, Disabled: _current.Count < Length));
         return buttons;
     }
